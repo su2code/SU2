@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -134,7 +134,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
   
   unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
 
@@ -142,7 +142,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
   Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
+  NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
   
   /*--- Disable the screen output if we're running SU2_CFD ---*/
@@ -170,10 +170,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
     MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-    
-    /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    
-    NumError = MinVolume * Tol_Factor;
     
     /*--- Set the boundary and volume displacements (as prescribed by the 
      design variable perturbations controlling the surface shape) 
@@ -442,7 +438,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -460,7 +457,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1655,17 +1653,45 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
+  /*--- Set the known displacements, note that some points of the moving surfaces
+   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
+  
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
       
+      su2double *Coord_0 = NULL;
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
+      
+      /*--- Store the coord of the first point to help identify the axis. ---*/
+      
+      iPoint  = geometry->vertex[iMarker][0]->GetNode();
+      Coord_0 = geometry->node[iPoint]->GetCoord();
+      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->node[iPoint]->GetCoord();
         for (iDim = 0; iDim < nDim; iDim++)
-          MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
+          MeanCoord[iDim] += (VarCoord[iDim]-Coord_0[iDim])*(VarCoord[iDim]-Coord_0[iDim]);
       }
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
       if (nDim==3) {
@@ -1684,27 +1710,6 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         LinSysRes[total_index] = 0.0;
         LinSysSol[total_index] = 0.0;
         StiffMatrix.DeleteValsRowi(total_index);
-      }
-    }
-  }
-
-  /*--- Set the known displacements, note that some points of the moving surfaces
-   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
-        }
       }
     }
   }
@@ -1800,7 +1805,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -2729,7 +2735,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+              (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
           }
@@ -8500,12 +8507,11 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   
   nDim = geometry->GetnDim();
   
-  if ((original) && (iFFDBox == 0)) new_file = true;
+  if (original) new_file = true;
   else new_file = false;
 
-  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
-  else SPRINTF (FFDBox_filename, "ffd_boxes_def.vtk");
-  
+  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes_%d.vtk", SU2_TYPE::Int(iFFDBox));
+  else SPRINTF (FFDBox_filename, "ffd_boxes_def_%d.vtk", SU2_TYPE::Int(iFFDBox));
   
   FFDBox_file.open(FFDBox_filename, ios::out);
   FFDBox_file << "# vtk DataFile Version 3.0" << endl;

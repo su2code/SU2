@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -718,15 +718,6 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry_donor - Geometry of the donor zone.
-	 * \param[in] config_donor - Definition of the donor problem.
-	 */
-	virtual void MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
-			unsigned short val_iZone, unsigned short val_nZone);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
@@ -1324,6 +1315,12 @@ public:
    * \param config - Config
    */
   virtual void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1991,15 +1988,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void MatchInterface(CConfig *config);
 
 	/*! 
-	 * \brief Mach the interface boundary condition.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry_donor - Geometry of the donor zone.
-	 * \param[in] config_donor - Definition of the donor problem.
-	 */
-	void MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
-			unsigned short val_iZone, unsigned short val_nZone);
-
-	/*! 
 	 * \brief Set boundary vertex structure of the control volume.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] action - Allocate or not the new elements.
@@ -2465,6 +2453,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief Read the sensitivity from unordered ASCII adjoint solution file and store it.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief Get the Sensitivity at a specific point.

@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -4798,7 +4798,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *residual_turbulent    = NULL,
     *residual_transition   = NULL;
     su2double *residual_adjflow      = NULL,
-    *residual_adjturbulent = NULL;
+    *residual_adjturbulent = NULL,
+    *residual_adjheat = NULL;
     su2double *residual_fea          = NULL;
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
@@ -4823,7 +4824,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Heat = 0,
-    nVar_AdjFlow = 0, nVar_AdjTurb = 0,
+    nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_AdjHeat = 0,
     nVar_FEM = 0, nVar_Poisson = 0;
     
     /*--- Direct problem variables ---*/
@@ -4855,6 +4856,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
+    if (weakly_coupled_heat) nVar_AdjHeat = 1;
     
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
@@ -4866,6 +4868,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
+    residual_adjheat      = new su2double[nVar_AdjHeat];
+
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5113,6 +5117,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!frozen_visc) {
               for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
                 residual_adjturbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
+            }
+          }
+
+          if (weakly_coupled_heat) {
+            for (iVar = 0; iVar < nVar_Heat; iVar++) {
+              residual_adjheat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJHEAT_SOL]->GetRes_RMS(iVar);
             }
           }
           
@@ -5881,6 +5891,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout << "   Res[Psi_Velx]";}}
                 else cout << "     Res[Psi_E]";
               }
+              if (weakly_coupled_heat) {
+                cout << "     Res[Psi_E]";
+              }
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -6302,6 +6315,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout.width(15); cout << log10(residual_adjflow[1]);}
                 }
               }
+            if (weakly_coupled_heat) {
+              cout.width(17); cout << log10(residual_adjheat[0]);
+            }
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -6346,7 +6362,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     delete [] residual_adjflow;
     delete [] residual_adjturbulent;
-
+    delete [] residual_adjheat;
+    
     delete [] Surface_CL;
     delete [] Surface_CD;
     delete [] Surface_CSF;
@@ -6811,7 +6828,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
     
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -6831,7 +6848,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
     Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
+    Breakdown_file << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
     Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
@@ -7025,6 +7042,20 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
             break;
             
         }
+        
+        if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+          switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
+            case CONSTANT_PRANDTL_TURB:
+              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
+              break;
+            case NO_CONDUCTIVITY_TURB:
+              Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
+              break;
+          }
+        }
+        
       }
     }
     
@@ -7287,6 +7318,30 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
           if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
           else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
           break;
+          
+        case INC_IDEAL_GAS_POLY:
+          Breakdown_file << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
+          Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
+          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+          Breakdown_file << "Molecular weight: " << config[val_iZone]->GetMolecular_Weight() << " g/mol." << endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << endl;
+          Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND() << endl;
+          Breakdown_file << "Thermodynamic pressure: " << config[val_iZone]->GetPressure_Thermodynamic();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+          Breakdown_file << "Cp(T) polynomial coefficients: \n  (";
+          for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+            Breakdown_file << config[val_iZone]->GetCp_PolyCoeff(iVar);
+            if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+          }
+          Breakdown_file << ")." << endl;
+          Breakdown_file << "Cp(T) polynomial coefficients (non-dim.): \n  (";
+          for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+            Breakdown_file << config[val_iZone]->GetCp_PolyCoeffND(iVar);
+            if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+          }
+          Breakdown_file << ")." << endl;
+          break;
 
       }
       if (viscous) {
@@ -7315,6 +7370,22 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
             Breakdown_file << "Ref. Temperature (non-dim): " << config[val_iZone]->GetMu_Temperature_RefND()<< "\n";
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
+            
+          case POLYNOMIAL_VISCOSITY:
+            Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
+            Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
+            for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+              Breakdown_file << config[val_iZone]->GetMu_PolyCoeff(iVar);
+              if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+            }
+            Breakdown_file << ")." << endl;
+            Breakdown_file << "Mu(T) polynomial coefficients (non-dim.): \n  (";
+            for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+              Breakdown_file << config[val_iZone]->GetMu_PolyCoeffND(iVar);
+              if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+            }
+            Breakdown_file << ")." << endl;
+            break;
 
         }
 
@@ -7324,7 +7395,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
             case CONSTANT_PRANDTL:
               Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Prandtl (Laminar): " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
-              Breakdown_file << "Prandtl (Turbulent): " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
               break;
 
             case CONSTANT_CONDUCTIVITY:
@@ -7333,7 +7403,37 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
               break;
 
+            case POLYNOMIAL_CONDUCTIVITY:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+              Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
+              for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+                Breakdown_file << config[val_iZone]->GetKt_PolyCoeff(iVar);
+                if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+              }
+              Breakdown_file << ")." << endl;
+              Breakdown_file << "Kt(T) polynomial coefficients (non-dim.): \n  (";
+              for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
+                Breakdown_file << config[val_iZone]->GetKt_PolyCoeffND(iVar);
+                if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+              }
+              Breakdown_file << ")." << endl;
+              break;
+              
           }
+          
+          if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+            switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
+              case CONSTANT_PRANDTL_TURB:
+                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+                Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
+                break;
+              case NO_CONDUCTIVITY_TURB:
+                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+                Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
+                break;
+            }
+          }
+          
         }
 
       }
@@ -8578,8 +8678,13 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
           default:
             break;
           }
+          
         }
-
+        
+        if (config[iZone]->GetWrt_Projected_Sensitivity()) {
+          WriteProjectedSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
+        }
+        
         if (FileFormat == TECPLOT_BINARY) {
           if (!wrote_base_file)
             DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
@@ -11555,10 +11660,11 @@ void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsi
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX )   ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL )  ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )  ||
+      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
+
         
         nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
 
@@ -13102,6 +13208,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
   bool pressure_based   = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
+  bool wrt_cp           = (variable_density &&
+                           (config->GetKind_FluidModel() == INC_IDEAL_GAS_POLY));
+  bool wrt_kt           = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
+                           (config->GetViscous()));
+
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -13330,13 +13441,23 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       }
     }
 
-    /*--- New variables get registered here before the end of the loop. ---*/
-
     if (variable_density) {
       nVar_Par += 1;
       Variable_Names.push_back("Density");
     }
     
+    if (wrt_cp) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Specific_Heat");
+    }
+    
+    if (wrt_kt) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Thermal_Conductivity");
+    }
+    
+    /*--- New variables get registered here before the end of the loop. ---*/
+
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13569,6 +13690,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         
         if (variable_density) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
+        }
+        
+        /*--- Load Cp and conductivity if they are temperature-dependent. ---*/
+        if (wrt_cp) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCp(); iVar++;
+        }
+        
+        if (wrt_kt) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -17616,7 +17746,12 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
     restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
     restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
+    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    }
   }
 
   /*--- All processors close the file. ---*/
@@ -17711,7 +17846,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  }
 
   /*--- Set a timer for the binary file writing. ---*/
   

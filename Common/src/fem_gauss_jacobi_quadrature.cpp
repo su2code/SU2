@@ -4,7 +4,7 @@
           quadrature rules. All the functions in this file are based on the
           program JACOBI_RULE of John Burkardt.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -88,7 +88,7 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,   
                                                  vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights) {
 
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
-  unsigned int nIntPoints = GJPoints.size();
+  unsigned int nIntPoints = (unsigned int)GJPoints.size();
   if(nIntPoints < 1 || nIntPoints > 100)
     SU2_MPI::Error("Invalid number of Gauss Jacobi integration points", CURRENT_FUNCTION);
 

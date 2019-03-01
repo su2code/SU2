@@ -4084,7 +4084,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	for (iPoint = 0; iPoint < nPoint; iPoint++) 
 		Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
     
-    PCorr_Ref = 0.0;//solver_container[POISSON_SOL]->node[PRef_Point]->GetSolution(0);
+    PCorr_Ref = solver_container[POISSON_SOL]->node[PRef_Point]->GetSolution(0);
 	
 
   /*--- Velocity Corrections ---*/

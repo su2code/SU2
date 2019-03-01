@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -51,8 +51,6 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  unsigned short iVar, iDim;
-
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -66,7 +64,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nVertex = new unsigned long[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
-
 
 }
 
@@ -778,7 +775,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity_Old();
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           

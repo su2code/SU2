@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [6.1.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [6.2.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://su2code.github.io])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -343,7 +343,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 6.1.0 'Falcon'                            |
+|   / __| | | |_  )   Release 6.2.0 'Falcon'                            |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -362,7 +362,7 @@ AC_MSG_RESULT([
 | - Prof. Edwin van der Weide's group at the University of Twente.      |
 | - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
 -------------------------------------------------------------------------
-| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |
+| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |
 |                      Tim Albring, and the SU2 contributors.           |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |

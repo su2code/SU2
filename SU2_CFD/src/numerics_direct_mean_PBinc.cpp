@@ -132,128 +132,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
 
 }
 
-CCentJSTPB_Flow::CCentJSTPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  grid_movement = config->GetGrid_Movement();
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  gravity = config->GetGravityForce();
-  Froude = config->GetFroude();
-  
-  /*--- Artifical dissipation part ---*/
-  Param_p = 0.3;
-  Param_Kappa_2 = config->GetKappa_2nd_Flow();
-  Param_Kappa_4 = config->GetKappa_4th_Flow();
-  
-  /*--- Allocate some structures ---*/
-  Diff_U = new su2double [nVar];
-  Diff_Lapl = new su2double [nVar];
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  MeanVelocity = new su2double [nDim];
-  ProjFlux = new su2double [nVar];
-  
-}
-
-CCentJSTPB_Flow::~CCentJSTPB_Flow(void) {
-  
-  delete [] Diff_U;
-  delete [] Diff_Lapl;
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  delete [] MeanVelocity;
-  delete [] ProjFlux;
-  
-}
-
-void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
-                                           su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-
-  /*--- Primitive variables at point i and j ---*/
-  
-  Pressure_i =    V_i[0];       Pressure_j = V_j[0];
-  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
-  
-
-  sq_vel_i = 0.0; sq_vel_j = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];
-    Velocity_j[iDim] = V_j[iDim+1];
-    sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
-    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
-  }
-  
-  /*--- Compute mean values of the variables ---*/
-  
-  MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
-  MeanPressure = 0.5*(Pressure_i + Pressure_j);
-  
-  /*--- Get projected flux tensor ---*/
-  
-  GetInviscidPBProjFlux(&MeanDensity, MeanVelocity, &MeanPressure,  Normal, ProjFlux);
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = ProjFlux[iVar];
-  
-  /*--- Jacobians of the inviscid flux ---*/
-  
-  if (implicit) {
-    GetInviscidPBProjJac(&MeanDensity, MeanVelocity,  Normal, 0.5, val_Jacobian_i);
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
-  }
-  
-  /*--- Computes differences between Laplacians and conservative variables ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
-    Diff_U[iVar] = U_i[iVar]-U_j[iVar];
-  }
-  
-  /*--- Compute the local espectral radius and the stretching factor ---*/
-  
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
-    ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
-    Area += Normal[iDim]*Normal[iDim];
-  }
-  Area = sqrt(Area);
-    
-  Local_Lambda_i = fabs(2.0*ProjVelocity_i);
-  Local_Lambda_j = fabs(2.0*ProjVelocity_j);
-  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
-  
-  Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
-  Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
-  StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
-  
-  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
-  sc4 = sc2*sc2/4.0;
-  
-  Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
-  Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
-  
-  /*--- Compute viscous part of the residual ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
-
-  if (implicit) {
-    cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-    cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      val_Jacobian_i[iVar][iVar] += cte_0;
-      val_Jacobian_j[iVar][iVar] -= cte_1;
-    }
-  }
-  
-}
-
-CCentLaxPB_Flow::CCentLaxPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentPB_Flow::CCentPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -273,7 +152,7 @@ CCentLaxPB_Flow::CCentLaxPB_Flow(unsigned short val_nDim, unsigned short val_nVa
   
 }
 
-CCentLaxPB_Flow::~CCentLaxPB_Flow(void) {
+CCentPB_Flow::~CCentPB_Flow(void) {
   
   delete [] Diff_U;
   delete [] Velocity_i;
@@ -283,7 +162,7 @@ CCentLaxPB_Flow::~CCentLaxPB_Flow(void) {
   
 }
 
-void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+void CCentPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                            CConfig *config) {
   
   su2double U_i[3] = {0.0,0.0,0.0}, U_j[3] = {0.0,0.0,0.0};
