@@ -15587,6 +15587,7 @@ private:
                                           by  the boundary conditions
    * \param[in]  surfElem               - Surface boundary elements for which the
                                           viscous fluxes must be computed.
+   * \param[in]  solIntL                - Left states in the integration points of the face.
    * \param[out] workArray              - Storage array
    * \param[out] viscFluxes             - To be computed viscous fluxes in the
                                           integration points.
@@ -15604,6 +15605,7 @@ private:
                                   const su2double          Wall_Temperature,
                                   const bool               Temperature_Prescribed,
                                   const CSurfaceElementFEM *surfElem,
+                                  const su2double          *solIntL,
                                         su2double          *workArray,
                                         su2double          *viscFluxes,
                                         su2double          *viscosityInt,
