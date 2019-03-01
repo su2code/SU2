@@ -15435,6 +15435,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     node[iPoint]->SetMaxLength(max_delta);
   }
 
+  /*--- Distribute information twice for periodic boundaries ---*/
+  Set_MPI_MaxLength(config);
   Set_MPI_MaxLength(config);
 }
 

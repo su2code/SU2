@@ -8,22 +8,13 @@ assignees: ''
 ---
 
 **Describe the bug**
-*A clear and concise description of what the bug is.*
+*A clear and concise description of what the bug is and what you expect the behavior to be instead. If applicable, add screenshots to help explain your problem.*
+
 
 
 **To Reproduce**
-*Steps to reproduce the behavior:*
-1. Choose config option '...'
-2. Run '....'
-3. See error
+*Please provide a config file and mesh for a minimal example that recreates the problem.*
 
-
-**Expected behavior**
-*A clear and concise description of what you expected to happen.*
-
-
-**Screenshots**
-*If applicable, add screenshots to help explain your problem.*
 
 
 **Desktop (please complete the following information):**
@@ -32,6 +23,3 @@ assignees: ''
  - MPI implementation and version: [e.g., OpenMPI 3.0.0]
  - SU2 Version: [e.g., v6.2.0]
 
-
-**Additional context**
-Add any other context about the problem here.

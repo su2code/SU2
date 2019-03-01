@@ -118,8 +118,6 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
   
-  bool fsi = donor_config->GetFSI_Simulation();
-  
 #ifdef HAVE_MPI
   int *Buffer_Recv_mark = NULL, iRank;
 

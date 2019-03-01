@@ -66,7 +66,7 @@ Thanks for building, and happy optimizing!
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The current SU2 release has been coordinated by the SU2 International Developers Society <www.su2devsociety.org> with selected contributions from the open-source community.
+The current SU2 release has been coordinated by the SU2 International Developers Society with selected contributions from the open-source community.
 
 The main research teams contributing to the current release are:
 - Prof. Juan J. Alonso's group at Stanford University.
