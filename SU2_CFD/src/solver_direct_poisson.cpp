@@ -1259,7 +1259,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 1.0e-3*config->GetCFL(iMesh);
+		Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
@@ -1358,52 +1358,66 @@ void CPoissonSolverFVM::BC_Neumann(CGeometry *geometry, CSolver **solver_contain
 void CPoissonSolverFVM::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
-su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
+su2double Poisson_Coeff_i, Poissonval_i;
+su2double Velocity_i[3], MassFlux;
 unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 						
-	  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-            
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);      
       
-      /*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = node[iPoint]->GetSolution(0);
-		
-		Sol_i_Grad = node[iPoint]->GetGradient();
-		
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];		
+      /*--- The farfield boundary is considered as an inlet-outlet boundary, where flow 
+       * can either enter or leave. If the flow is entering the domain, a zero gradient 
+       * bounary condition is applied on pressure i.e. treated as an inlet and if the 
+       * flow is leaving, the pressure is set to P_Ref and a dirichlet BC is applied, i.e.
+       * treated as a fully developed outlet. ---*/
+      
+      MassFlux = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+			Velocity_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+			MassFlux += Velocity_i[iDim]*Normal[iDim];
 		}
 		
-     /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
+	 if (MassFlux > 0.0) {
+		
+     /*--- Flow is entering the domain and treat the marker as an inlet face and apply Neumann BC ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+             Residual[iVar] = 0.0;
         }
-      }
 
-	/*--- Add and subtract residual, and update Jacobians ---*/
+	 /*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
 		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 	  }
-      
+     }
+     else {
+    /*--- Flow is leaving the domain and a Dirichlet BC is applied at the farfield boundary like a
+     *    fully developed outlet and pressure is assigned the value of P_ref. ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] = 0.0;
+      }
+
+	  node[iPoint]->SetSolution(Residual);
+	  node[iPoint]->Set_OldSolution();
+    
+	  if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
+			Jacobian.DeleteValsRowi(iPoint);
+	  }
+     
      }
    }
+  }
+   delete [] Normal;
 }
                                 
                                 
@@ -1423,39 +1437,22 @@ su2double *Normal = new su2double[nDim];
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-            
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      
-      /*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = node[iPoint]->GetSolution(0);
-		
-		Sol_i_Grad = node[iPoint]->GetGradient();
-		
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];		
-		}
-		
-     /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+     /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        /*for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }*/
       }
 
-	/*--- Add and subtract residual, and update Jacobians ---*/
+	 /*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
 		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 	  }
-      
      }
-   }
+	}
+	/*--- Free locally allocated memory ---*/
+  delete [] Normal;
 }
                                  
                                  
@@ -1468,6 +1465,7 @@ unsigned long iVertex, iPoint, jPoint, total_index;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 
+/*--- Only fixed velocity inlet is considered ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -1475,50 +1473,34 @@ su2double *Normal = new su2double[nDim];
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-            
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      /*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = node[iPoint]->GetSolution(0);
-		
-		Sol_i_Grad = node[iPoint]->GetGradient();
-		
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];		
-		}
-		
-     /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+     /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        /*for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }*/
       }
 
-	/*--- Add and subtract residual, and update Jacobians ---*/
+	 /*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
 		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 	  }
-      
      }
-     
 	}
-   
+	/*--- Free locally allocated memory ---*/
+  delete [] Normal;
 }
 
 
 void CPoissonSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+								
 su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
 su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
 unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
+/*--- Only fully developed case is considered ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1531,65 +1513,67 @@ su2double *Normal = new su2double[nDim];
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
-      /*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = node[iPoint]->GetSolution(0);
-		
-		Sol_i_Grad = node[iPoint]->GetGradient();
-		
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];		
-		}
-		
-     /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+     /*--- A Dirichlet BC is applied at the fully developed outlet, pressure is
+      * assumed to be uniform and assigned the value of P_ref. ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        /*for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }*/
       }
-
-	/*--- Add and subtract residual, and update Jacobians ---*/
-		//LinSysRes.SubtractBlock(iPoint, Residual);
-		
-       if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
-		   Jacobian_i[0][0] = 0.0;
-		//Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-	  }
       
-     }
-     
-     //--- Assign the dirichlet BC value to the solution ---//
+      for (iDim = 0; iDim < nDim; iDim++)
+        LinSysRes.SetBlock_Zero(iPoint, iDim);
+
     node[iPoint]->SetSolution(Residual);
     node[iPoint]->Set_OldSolution();
     
 	if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
 		Jacobian.DeleteValsRowi(iPoint);
 	}
-    //LinSysRes.SetBlock_Zero(iPoint, iVar);
-    //if (config->GetnMGLevels() > 0) node[Point]->SetVal_ResTruncError_Zero(iVar);
-    //LinSysSol.SetBlock(iPoint, Solution);
-     
-     
-     
    } 
-  
+  }
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
 }
 
 
 void CPoissonSolverFVM::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                 CConfig *config, unsigned short val_marker) {
-  
-  /*--- Call the Euler wall residual method. ---*/
-  
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
-  
+									
+su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
+su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
+unsigned long iVertex, iPoint, jPoint, total_index;
+unsigned short iDim, iVar;
+su2double *Normal = new su2double[nDim];
+
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+     /*--- Zero flux (Neumann) BC on pressure ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] = 0.0;
+      }
+
+	 /*--- Add and subtract residual, and update Jacobians ---*/
+		LinSysRes.SubtractBlock(iPoint, Residual);
+		
+       if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
+		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+	  }
+     }
+	}
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
 }
 
 
 void CPoissonSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+									 
 su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
 su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
 unsigned long iVertex, iPoint, jPoint, total_index;
@@ -1603,38 +1587,20 @@ su2double *Normal = new su2double[nDim];
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-            
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      /*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = node[iPoint]->GetSolution(0);
-		
-		Sol_i_Grad = node[iPoint]->GetGradient();
-		
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];		
-		}
-		
-     /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+     /*--- Zero flux (Neumann) BC on pressure ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        /*for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }*/
       }
 
-	/*--- Add and subtract residual, and update Jacobians ---*/
+	 /*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
 		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 	  }
-      
      }
-     
-     
-   }
+	}
+	/*--- Free locally allocated memory ---*/
+  delete [] Normal;
 }
