@@ -712,6 +712,7 @@ void CDriver::Postprocessing() {
     }
     delete [] config_container;
   }
+  if (driver_config != NULL) delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   if (nInst != NULL) delete [] nInst;
@@ -2342,36 +2343,36 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       if (ideal_gas) {
         
         /*--- Compressible flow Ideal gas ---*/
-        numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+        numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, false, config);
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, false, config);
         
       } else {
         
         /*--- Compressible flow Realgas ---*/
-        numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+        numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, true, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+          numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
         
       }
     }
     if (incompressible) {
       /*--- Incompressible flow, use preconditioning method ---*/
-      numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedInc_Flow(nDim, nVar_Flow, config);
+      numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
       
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -4204,8 +4205,8 @@ void CDriver::Output(unsigned long ExtIter) {
     
     if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (ExtIter+1 >= nExtIter) cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
       if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
 

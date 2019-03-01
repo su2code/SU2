@@ -99,6 +99,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
 
+  Inlet_Ttotal = NULL; Inlet_Ptotal = NULL; Inlet_FlowDir = NULL;
+  nVertex = NULL;
+
   Smatrix = NULL; Cvector = NULL;
  
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
@@ -4245,7 +4248,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -14793,6 +14799,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  HF_Visc = NULL; MaxHF_Visc = NULL;
 
   /*--- Inlet Variables ---*/
   Inlet_Ttotal = NULL;
@@ -14802,6 +14809,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
   
+  HeatConjugateVar = NULL;
+
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -15654,7 +15663,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
   bool wall_functions       = config->GetWall_Functions();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
@@ -17256,12 +17268,9 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
-      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
-        wall_distance = geometry->node[iPoint]->GetWall_Distance();
-      } else {
-        wall_distance = node[iPoint]->GetDES_LengthScale();
-      }
-      
+    
+      wall_distance = geometry->node[iPoint]->GetWall_Distance();
+    
       node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
 
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {

@@ -520,7 +520,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->node[iPoint]->Get_femSolution_time_n()[iVar]);
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
       }
     }
     for (iPoint = 0; iPoint < nPoint; iPoint++){
