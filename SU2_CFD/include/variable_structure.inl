@@ -153,6 +153,12 @@ inline su2double *CVariable::GetResidual_Sum(void) { return Residual_Sum; }
 
 inline su2double *CVariable::GetResidual_Old(void) { return Residual_Old; }
 
+inline void CVariable::SetAdapParam(su2double val_adap_param) { AdapParam = val_adap_param; }
+
+inline void CVariable::AddAdapParam(su2double val_adap_param) { AdapParam += val_adap_param; }
+
+inline su2double CVariable::GetAdapParam(void) { return AdapParam; }
+
 inline void CVariable::SetGradient(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient[val_var][val_dim] = val_value; }
 
 inline void CVariable::AddGradient(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient[val_var][val_dim] += val_value; }

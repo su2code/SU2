@@ -2241,7 +2241,6 @@ void CErrorEstimationDriver::ComputeAdaptationParameter(CSolver**  coarse_solver
             *ResAdjTurb = new su2double[nVarTurb];
 
   /*--- Allocate memory for the adaptation parameter ---*/
-  epsilon_coarse.resize(nPointCoarse);
   epsilon_fine.resize(nPointFine);
 
   /*--- Perform the inner product on the fine mesh ---*/
@@ -2287,14 +2286,14 @@ void CErrorEstimationDriver::ComputeAdaptationParameter(CSolver**  coarse_solver
   for(unsigned long iPoint = 0; iPoint < nPointCoarse; ++iPoint){
 
     /*--- Contribution from coincident node ---*/
-    epsilon_coarse[iPoint] = 0.5*epsilon_fine[iPoint];
+    coarse_solver[FLOW_SOL]->node[iPoint]->SetAdapParam(0.5*epsilon_fine[iPoint]);
 
     /*--- Contributions from neighbor nodes ---*/
     for(unsigned short iNeighb = 0; iNeighb < fine_geometry->node[iPoint]->GetnNeighbor(); ++iNeighb){
       const unsigned long jPoint = fine_geometry->node[iPoint]->GetPoint(iNeighb);
       const su2double TotalVol = fine_geometry->node[iPoint]->GetVolume();
       const su2double fraction = 0.5*fine_geometry->node[iPoint]->GetPartialVolume(iNeighb)/TotalVol;
-      epsilon_coarse[iPoint] += fraction*epsilon_fine[jPoint];
+      coarse_solver[FLOW_SOL]->node[iPoint]->AddAdapParam(fraction*epsilon_fine[jPoint]);
     }
   }
 }

@@ -96,8 +96,7 @@ private:
   su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
   CIteration** direct_iteration;                /*!< \brief A pointer to the direct iteration.*/
 
-  vector<su2double> epsilon_coarse,             /*!< \brief A vector to store the adaptation parameter at each coarse mesh node. */
-                    epsilon_fine;               /*!< \brief A vector to store the adaptation parameter at each fine mesh node. */
+  vector<su2double> epsilon_fine;               /*!< \brief A vector to store the adaptation parameter at each fine mesh node. */
 
 public:
 

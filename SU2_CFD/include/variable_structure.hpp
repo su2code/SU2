@@ -80,7 +80,8 @@ protected:
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual,        /*!< \brief nVar vector for storing residual. */
-  *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  *Residual_Sum,    /*!< \brief Auxiliar structure for residual smoothing. */
+  AdapParam;        /*!< \brief Parameter used to drive mesh adaptation. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
@@ -381,6 +382,23 @@ public:
    * \brief Set summed residual vector to zero value.
    */
   void SetResidualSumZero(void);
+
+  /*!
+   * \brief Set the value of the adaptation parameter.
+   * \param[in] val_adap_param - Adaptation parameter value.
+   */
+  void SetAdapParam(su2double val_adap_param);
+
+  /*!
+   * \brief Add the value of the adaptation parameter.
+   * \param[in] val_adap_param - Adaptation parameter value.
+   */
+  void AddAdapParam(su2double val_adap_param);
+
+  /*!
+   * \brief Get the value of the adaptation parameter.
+   */
+  su2double GetAdapParam(void);
   
   /*!
    * \brief Set the velocity of the truncation error to zero.
