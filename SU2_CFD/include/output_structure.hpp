@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_structure.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
@@ -900,6 +900,15 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint TNE2 problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_AdjTNE2(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.

@@ -871,18 +871,18 @@ CUpwAUSMPLUSUP2_TNE2::CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned sho
   u_j    = new su2double [nDim];
 
   /*--- Allocate arrays ---*/
-  Diff_U      = new double [nVar];
-  RoeU        = new double[nVar];
-  RoeV        = new double[nPrimVar];
-  RoedPdU     = new double [nVar];
-  RoeEve      = new double [nSpecies];
-  Lambda      = new double [nVar];
-  Epsilon     = new double [nVar];
-  P_Tensor    = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U      = new su2double [nVar];
+  RoeU        = new su2double[nVar];
+  RoeV        = new su2double[nPrimVar];
+  RoedPdU     = new su2double [nVar];
+  RoeEve      = new su2double [nSpecies];
+  Lambda      = new su2double [nVar];
+  Epsilon     = new su2double [nVar];
+  P_Tensor    = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 
 }
@@ -2417,11 +2417,10 @@ CSource_TNE2::~CSource_TNE2(void) {
 
 void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
                                    CConfig *config) {
-  unsigned short ii, iSpecies, iIndex, tbl_offset;
-  su2double N, pwr;
+  unsigned short ii, iSpecies, iIndex, tbl_offset, pwr;
+  su2double N;
   su2double *Ms;
   su2double tmp1, tmp2;
-
   /*--- Acquire database constants from CConfig ---*/
   Ms = config->GetMolar_Mass();
   config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction);

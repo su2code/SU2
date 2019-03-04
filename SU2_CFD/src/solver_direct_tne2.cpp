@@ -1824,6 +1824,62 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *c
   delete [] Limiter;
 }
 
+void CTNE2EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+
+  unsigned long iPoint;
+  unsigned short iMesh;
+  bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool rans = ((config->GetKind_Solver() == RANS) ||
+               (config->GetKind_Solver() == ADJ_RANS) ||
+               (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+
+  /*--- Make sure that the solution is well initialized for unsteady
+   calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
+
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))) {
+
+    /*--- Push back the initial condition to previous solution containers
+     for a 1st-order restart or when simply intitializing to freestream. ---*/
+
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        solver_container[iMesh][TNE2_SOL]->node[iPoint]->Set_Solution_time_n();
+        solver_container[iMesh][TNE2_SOL]->node[iPoint]->Set_Solution_time_n1();
+        if (rans) {
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
+        }
+      }
+    }
+
+    if ((restart && (long)ExtIter == config->GetUnst_RestartIter()) &&
+        (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+
+      /*--- Load an additional restart file for a 2nd-order restart ---*/
+
+      solver_container[MESH_0][TNE2_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
+
+      /*--- Load an additional restart file for the turbulence model ---*/
+      if (rans)
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+
+      /*--- Push back this new solution to time level N. ---*/
+
+      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+          solver_container[iMesh][TNE2_SOL]->node[iPoint]->Set_Solution_time_n();
+          if (rans) {
+            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+          }
+        }
+      }
+    }
+  }
+}
+
 void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
@@ -2199,7 +2255,8 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh) {
-  unsigned long iEdge, iPoint, jPoint;
+
+  unsigned long iEdge, iPoint, jPoint, counter_local=0, counter_global=0;
   unsigned long ExtIter = config->GetExtIter();
   unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
   unsigned short iDim, iVar, jVar;
@@ -2211,7 +2268,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-  su2double counter_local=0, counter_global=0;
   su2double lim_i, lim_j;
 
   //Unused at the momment
@@ -2563,13 +2619,13 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   }
 
-
-  /*--- Weird MPI STUFF in old solver ---*/
+  /*--- Checking for NaN ---*/
   eAxi_global = eAxi_local;
   eChm_global = eChm_local;
   eVib_global = eVib_local;
 
-  if ((rank == MASTER_NODE) &&
+  //THIS IS NO FUN
+  if ((rank != MASTER_NODE) &&
       (
         (eAxi_global != 0) ||
         (eChm_global != 0) ||
@@ -5576,7 +5632,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      double Area = 0.0;su2double UnitaryNormal[3];
+      su2double Area = 0.0;su2double UnitaryNormal[3];
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
@@ -5697,11 +5753,8 @@ void CTNE2EulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
 }
 
-void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config,
-                                    unsigned short val_marker) {
+void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Call the Euler wall routine ---*/
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
@@ -5716,8 +5769,8 @@ void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry,
                                             unsigned short RunTime_EqSystem) {
   unsigned short iVar, jVar;
   unsigned long iPoint;
-  double *U_time_nM1, *U_time_n, *U_time_nP1;
-  double Volume_nM1, Volume_n, Volume_nP1, TimeStep;
+  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
+  su2double Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool Grid_Movement = config->GetGrid_Movement();
@@ -5880,7 +5933,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 
       /*--- If necessary, read in the grid velocities for the unsteady adjoint ---*/
       if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
-        double Volume, GridVel[3];
+        su2double Volume, GridVel[3];
         if (nDim == 2) point_line >> Volume >> GridVel[0] >> GridVel[1];
         if (nDim == 3) point_line >> Volume >> GridVel[0] >> GridVel[1] >> GridVel[2];
         if (iPoint_Local >= 0)
@@ -5898,6 +5951,229 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 
   /*--- Free memory needed for the transformation ---*/
   delete [] Global2Local;
+
+}
+
+void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  bool grid_movement  = config->GetGrid_Movement();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool static_fsi = ((config->GetUnsteady_Simulation() == STEADY) &&
+                     (config->GetFSI_Simulation()));
+  bool steady_restart = config->GetSteadyRestart();
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Store the number of variables for the turbulence model
+   (that could appear in the restart file before the grid velocities). ---*/
+  unsigned short turbVars = 0;
+  if (turbulent){
+    if (turb_model == SST) turbVars = 2;
+    else turbVars = 1;
+  }
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+  if (nZone > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+      if (grid_movement && val_update_geo) {
+
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[1];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[1] + skipVars + nVar + turbVars;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
+        }
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+      }
+
+      if (static_fsi && val_update_geo) {
+       /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+        }
+      }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+  solver[MESH_0][TNE2_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][TNE2_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][TNE2_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][TNE2_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][TNE2_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][TNE2_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][TNE2_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][TNE2_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
+  }
+
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  if (grid_movement && val_update_geo) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->Set_MPI_GridVel(config);
+
+    /*--- Recompute the edges and dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      geometry[iMesh]->SetMaxLength(config);
+      }
+    }
+
+  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
+  if (static_fsi && val_update_geo) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    geometry[MESH_0]->Set_MPI_Coord(config);
+
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetMaxLength(config);
+    }
+  }
+
+
+  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
+  if (dual_time && grid_movement)
+    Restart_OldGeometry(geometry[MESH_0], config);
+
+  delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
 
 }
 
@@ -6875,7 +7151,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   unsigned short iDim, iMarker, iSpecies;
   unsigned short VEL_INDEX, RHO_INDEX, RHOS_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iEdge, iVertex, iPoint, jPoint;
-  double *Normal, Area, Vol;
+  su2double *Normal, Area, Vol;
   su2double Mean_SoundSpeed, Mean_ProjVel;
   su2double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
   su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
@@ -7902,8 +8178,8 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   unsigned short iDim, iVar;
   unsigned short T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, total_index;
-  double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
-  double *Normal, Area;
+  su2double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
+  su2double *Normal, Area;
   su2double **GradV;
 
   /*--- Assign booleans ---*/
@@ -8091,9 +8367,9 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, iVar;
   unsigned short T_INDEX, TVE_INDEX, RHOS_INDEX, RHO_INDEX;
   unsigned long iVertex, iPoint, total_index;
-  double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
+  su2double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
   su2double rho, Ys, eves, hs;
-  double *Normal, Area;
+  su2double *Normal, Area;
   su2double *Ds, *V, *dYdn, SdYdn;
   su2double **GradV, **GradY;
 
@@ -8411,10 +8687,10 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
   unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  double pcontrol;
+  su2double pcontrol;
   su2double rho, *eves, *hs, RuSI, Ru, *Ms, *xi;
   su2double *dTdU, *dTvedU, *Cvtr, *Cvve;
-  double *Normal, Area, dij, UnitNormal[3];
+  su2double *Normal, Area, dij, UnitNormal[3];
   su2double *Di, *Dj, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn;
   su2double **GradY;
   su2double **dVdU;
