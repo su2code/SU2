@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
-  tne2     = ((config->GetKind_Solver() == TNE2_EULER) || (config->GetKind_Solver()==TNE2_NAVIER_STOKES));
+  tne2     = ((config->GetKind_Solver() == DISC_ADJ_TNE2_EULER) || (config->GetKind_Solver()==DISC_ADJ_TNE2_NAVIER_STOKES));
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   zone_specific = config->GetBoolZoneSpecific();
 

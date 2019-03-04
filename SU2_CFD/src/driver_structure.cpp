@@ -3473,7 +3473,7 @@ void CDriver::Iteration_Preprocessing() {
 
       if (rank == MASTER_NODE)
           cout << ": Two-Temp Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration_container[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+        iteration_container[iZone][iInst] = new CTNE2Iteration(config_container[iZone]);
 
       break;
 
@@ -5130,7 +5130,7 @@ CDiscAdjTNE2Driver::CDiscAdjTNE2Driver(char* confFile,
       direct_iteration[iZone] = new CTurboIteration(config_container[iZone]);
     }
     else{
-      direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+      direct_iteration[iZone] = new CTNE2Iteration(config_container[iZone]);
     }
   }
 }
@@ -5296,7 +5296,6 @@ void CDiscAdjTNE2Driver::SetRecording(unsigned short kind_recording){
       solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
     }
   }
-
 
   /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
