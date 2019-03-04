@@ -2280,7 +2280,22 @@ void CErrorEstimationDriver::ComputeAdaptationParameter(CSolver**  coarse_solver
         epsilon_fine[iPoint] += abs(ResAdjTurb[iVar]*(Sol2[iVar]-Sol[iVar])) + abs((SolAdj2[iVar]-SolAdj[iVar])*ResTurb[iVar]);
 
     }
-    
+
+  }
+
+  /*--- Sum up contributions of error from fine mesh nodes on coarse mesh ---*/
+  for(unsigned long iPoint = 0; iPoint < nPointCoarse; ++iPoint){
+
+    /*--- Contribution from coincident node ---*/
+    epsilon_coarse[iPoint] = 0.5*epsilon_fine[iPoint];
+
+    /*--- Contributions from neighbor nodes ---*/
+    for(unsigned short iNeighb = 0; iNeighb < fine_geometry->node[iPoint]->GetnNeighbor(); ++iNeighb){
+      const unsigned long jPoint = fine_geometry->node[iPoint]->GetPoint(iNeighb);
+      const su2double TotalVol = fine_geometry->node[iPoint]->GetVolume();
+      const su2double fraction = 0.5*fine_geometry->node[iPoint]->GetPartialVolume(iNeighb)/TotalVol;
+      epsilon_coarse[iPoint] += fraction*epsilon_fine[jPoint];
+    }
   }
 }
 

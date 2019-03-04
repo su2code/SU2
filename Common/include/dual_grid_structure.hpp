@@ -147,6 +147,7 @@ private:
   vector<unsigned long> Point;        /*!< \brief Points surrounding the central node of the control volume. */
   vector<long> Edge;                  /*!< \brief Edges that set up a control volume. */
   su2double *Volume;                  /*!< \brief Volume or Area of the control volume in 3D and 2D. */
+  vector<vector<su2double> > PartialVolume;     /*!< \brief Volume or Area of the control volume associated with 2 nodes in 3D and 2D. */
   bool Domain,                        /*!< \brief Indicates if a point must be computed or belong to another boundary */
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
@@ -402,6 +403,33 @@ public:
 	 * \return Area or volume of the control volume.
 	 */
 	su2double GetVolume(void);
+
+    /*! 
+	 * \brief Sets number of partial CVs to be stored.
+	 * \param[in] val_nFace  - Number of partial CVs associated with a node.
+	 */
+	void SetnPartialVolume(unsigned short val_nFace);
+
+	/*! 
+	 * \brief Sets some area or volume of the partial CV.
+	 * \param[in] val_iFace  - Index of the face.
+	 * \param[in] val_Volume - Local partial volume to be set.
+	 */
+	void SetPartialVolume(unsigned short val_iFace, su2double val_Volume);
+
+	/*! 
+	 * \brief Adds some area or volume of the partialCV.
+	 * \param[in] val_iFace  - Index of the face.
+	 * \param[in] val_Volume - Local partial volume to be added.
+	 */
+	void AddPartialVolume(unsigned short val_iFace, su2double val_Volume);
+	
+	/*! 
+	 * \brief Get partial area or volume of the control volume between 2 nodes.
+	 * \param[in] val_iFace  - Index of the face.
+	 * \return Area or volume of the control volume.
+	 */
+	su2double GetPartialVolume(unsigned short val_iFace);
 	
 	/*!
 	 * \brief Get the maximum cell-center to cell-center length.
