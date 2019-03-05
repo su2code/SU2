@@ -906,7 +906,11 @@ CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) {
 void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
 
   unsigned short iDim, iVar, jVar;
-  su2double Body_Force;
+  bool turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  su2double Body_Force, dot_product, Body_Force_T_factor;
+
+  su2double integrated_heatflux = config->GetPeriodic_HeatfluxIntegrated();
+  su2double massflow = config->GetPeriodic_MassFlow("outlet");  // TK hardcoded outlet!
 
   /*--- Initialize the Jacobian contribution to zero ---*/
   if (implicit) {
@@ -930,14 +934,29 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
   val_residual[nDim+1] = 0.0;
   if (config->GetEnergy_Equation()) {
     
-    su2double Body_Force_T_factor = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / (config->GetPeriodic_MassFlow("outlet") * norm2_translation); // TK hardcoded outlet!
+    Body_Force_T_factor = integrated_heatflux * DensityInc_i / (massflow * norm2_translation);
     
     /*--- Compute scalar-product v*t ---*/
-    su2double dot_product = 0.0;
+    dot_product = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       dot_product += V_i[iDim+1] * config->GetPeriodicTranslation(0)[iDim];
     }
     val_residual[nDim+1] = Volume * Body_Force_T_factor * dot_product;
+
+    /*--- If a RANS turbulence model is used an additional source term, based on the eddy viscosity
+          gradient is added. ---*/
+    if(turbulent) {
+
+      /*--- Compute the scalar factor ---*/
+      Body_Force_T_factor = integrated_heatflux / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());
+
+      /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
+      dot_product = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dot_product += config->GetPeriodicTranslation(0)[iDim] * PrimVar_Grad_i[nDim+4][iDim]; // gradient of eddy viscosity, TK not readliy available yet +4 only to prevent out of bound error/segfault
+
+      val_residual[nDim+1] -= Volume * Body_Force_T_factor * dot_product;
+    } // turbulent
     
     /*--- Jacobian contribution of energy equation periodic source term ---*/
     if (implicit) {
