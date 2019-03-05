@@ -6173,8 +6173,8 @@ public:
   bool GetContinuous_Adjoint(void);
   
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines if problem is a reduced order modelling problem
+   * \return true if ROM
    */
   bool GetReduced_Model(void);
   

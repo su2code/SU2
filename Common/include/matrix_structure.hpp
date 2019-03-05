@@ -148,7 +148,7 @@ public:
    * \param[in] iPoint - Base point to compute neighbours.
    * \param[in] deep_level - Deep level for the recursive algorithm.
    * \param[in] fill_level - ILU fill in level.
-   * \param[in] EdgeConnect - There is (or not) an edge structure).
+   * \param[in] EdgeConnect - There is (or not) an edge structure.
    * \param[in] vneighs - Storage the neighbours points to iPoint.
    */
   void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
