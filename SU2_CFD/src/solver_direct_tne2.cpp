@@ -1859,7 +1859,6 @@ void CTNE2EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
-
       solver_container[MESH_0][TNE2_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
 
       /*--- Load an additional restart file for the turbulence model ---*/
@@ -5955,6 +5954,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 }
 
 void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
 
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh, iMeshFine;

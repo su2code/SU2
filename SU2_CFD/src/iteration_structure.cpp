@@ -1160,7 +1160,6 @@ void CTNE2Iteration::Iterate(COutput *output,
   else IntIter = config_container[val_iZone]->GetIntIter();
 
   /*--- Update global parameters ---*/
-
   switch( config_container[val_iZone]->GetKind_Solver() ) {
 
     case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
@@ -1170,7 +1169,6 @@ void CTNE2Iteration::Iterate(COutput *output,
       config_container[val_iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter); break;
 
   }
-
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
@@ -1209,7 +1207,6 @@ void CTNE2Iteration::Iterate(COutput *output,
     SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, val_iInst, IntIter, ExtIter);
 
   }
-
 
   /*--- Write the convergence history ---*/
 

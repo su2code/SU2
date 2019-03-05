@@ -1562,7 +1562,6 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 
 void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry,
                              CConfig *config, bool update_geo, unsigned short val_iInst) {
-
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb, tne2_euler, tne2_ns,
   heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
@@ -1615,6 +1614,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
