@@ -13838,6 +13838,13 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
     nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
+
+    /*--- Plot the ECC if performing error estimation. ---*/
+
+    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
+      Variable_Names.push_back("Adaptation_Parameter");
+      nVar_Par += 1;
+    }
     
     /*--- For the continouus adjoint, we write either convective scheme's
      dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/
@@ -14033,6 +14040,13 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         /*--- Load data for the surface sensitivity. ---*/
         
         Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;
+
+        /*--- Load data for the ECC. ---*/
+        
+        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
+          iVar++;
+        }
         
         /*--- Load data for the convective scheme sensor. ---*/
         

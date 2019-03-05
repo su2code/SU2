@@ -2308,7 +2308,7 @@ void CErrorEstimationDriver::Output() {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-  output->SetResult_Files_Parallel(fine_solver_container, fine_geometry_container, fine_config_container, ExtIter, nZone);
+  output->SetResult_Files_Parallel(coarse_solver_container, coarse_geometry_container, coarse_config_container, ExtIter, nZone);
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
