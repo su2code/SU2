@@ -2786,6 +2786,7 @@ private:
   Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
   ProjGridVel;  /*!< \brief Projected grid velocity. */
   bool implicit, /*!< \brief Implicit calculation. */
+  rom,           /*!< \brief Reduced order model problem. */
   grid_movement; /*!< \brief Modification for grid movement. */
   
   

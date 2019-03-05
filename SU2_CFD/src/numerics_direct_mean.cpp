@@ -41,6 +41,7 @@
 CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  rom = config->GetReduced_Model();
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -130,7 +131,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
-  if (implicit) {
+  if (implicit or rom) {
     GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
@@ -145,7 +146,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar] + U_j[iVar]);
-      if (implicit) {
+      if (implicit or rom) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
       }
@@ -202,7 +203,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Jacobian computation ---*/
 
-  if (implicit) {
+  if (implicit or rom) {
 
     cte_0 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;

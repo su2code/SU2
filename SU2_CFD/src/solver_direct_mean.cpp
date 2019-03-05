@@ -4231,6 +4231,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rom              = config->GetReduced_Model();
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
@@ -4315,6 +4316,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
+  if (rom) TestBasis.SetValZero();
 
   /*--- Error message ---*/
   
@@ -6251,6 +6253,8 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+        
+        
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
@@ -6278,6 +6282,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   bool low_mach_prec = config->Low_Mach_Preconditioning();
+  bool rom = config->GetReduced_Model();
   
   /*--- Set maximum residual to zero ---*/
   
@@ -6353,12 +6358,53 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   SetIterLinSolver(IterLinSol);
   
-  /*--- Update solution (system written in terms of increments) ---*/
+  /*--- Update ROM-specific variables ---*/
+  rom = false;
+  if (rom) {
+    // compute W = J * Phi
+    // QR decomp W
+    // R*x = -Q*res, find x
+    // line search to update y
+    // solution = Phi*y
+    //ComputeTestBasis(Jacobian);
+    
+    
+    
+    
+  }
   
+  /*--- Update solution (system written in terms of increments) ---*/
   if (!adjoint) {
+    std::cout << nPointDomain << std::endl;
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+        if (rom) {
+          // use computed y*Phi
+          node[iPoint]->AddROMSolution(iVar, LinSysRes[iPoint*nVar+iVar]);
+        }
+        else {
+          //std::cout<< "iPoint: " << iPoint << std::endl;
+          //su2double test = Jacobian.GetBlock(iPoint, iPoint, iVar, 0);
+          //std::cout<< "Test Jacobian point: " << test << std::endl;
+          //test = Jacobian.GetBlock(iPoint, iPoint, iVar, 1);
+          //std::cout<< "Test Jacobian point: " << test << std::endl;
+          //
+          //su2double* mat = Jacobian.GetBlock(iPoint, iPoint);
+          //std::cout << "Printing block:" << std::endl;
+          //for (unsigned short i = 0; i < nVar; i++){
+          //  std::cout << mat[i*nVar] << " " << mat[i*nVar+1] << " " << mat[i*nVar+2] << " " << mat[i*nVar+3] << std::endl;
+          //}
+          //std::cout<< "Size of mat: " << sizeof(mat)/sizeof(*mat) << " and nvar: " << nVar << std::endl;
+          //su2double* mat2 = Jacobian.GetBlock(iPoint, iPoint);
+          //su2double prod2 = *mat2;
+          //Jacobian.MatrixMatrixProduct(mat, mat2, &prod2);
+          //su2double* prod = &prod2;
+          //for (unsigned short i = 0; i < nVar; i++){
+          //  std::cout << prod[i*nVar] << " " << prod[i*nVar+1] << " " << prod[i*nVar+2] << " " << prod[i*nVar+3] << std::endl;
+          //}
+          
+          node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+        }
       }
     }
   }
