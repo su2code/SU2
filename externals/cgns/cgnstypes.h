@@ -37,6 +37,11 @@
 #define CG_MAX_INT32 0x7FFFFFFF
 #ifdef _WIN32
 # define CG_LONG_T __int64
+#ifdef _MSC_VER
+# ifdef CG_BUILD_64BIT
+#  define stat _stat32i64
+# endif
+#endif
 #else
 # define CG_LONG_T long
 #endif
@@ -54,7 +59,13 @@
 
 #define HDF5_HAVE_MULTI_DATASETS 
 
+/* Determine if hdf5 has collective metadata APIs  */
+
+#define HDF5_HAVE_COLL_METADATA 
+
 #endif
+
+#define  CG_HAVE_STAT64_STRUCT 0
 
 #if CG_BUILD_LEGACY
 # define CG_SIZEOF_SIZE    32
