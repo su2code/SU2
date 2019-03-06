@@ -17,3 +17,4 @@ from .deform     import deform
 from .geometry   import geometry
 from .adaptation import adaptation
 from .merge      import merge
+from .amg        import amg
