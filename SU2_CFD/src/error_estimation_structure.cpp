@@ -124,9 +124,9 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
     coarse_config_container[iZone]->SetMPICommunicator(MPICommunicator);
     fine_config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
-    /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
+    /* --- For the output config, enable restart reading (to export sensor fields) and change grid file to target mesh ---*/
 
-    coarse_config_container[iZone]->SetRestart(false);
+    coarse_config_container[iZone]->SetRestart(true);
     fine_config_container[iZone]->SetRestart(true);
     fine_config_container[iZone]->SetMesh_FileName(fine_config_container[iZone]->GetTarget_Mesh_FileName());
 
@@ -487,8 +487,8 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
 
       /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
 
-      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
+      // if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      // geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
 
       /*--- recompute elements surrounding points, points surrounding points ---*/
 
@@ -2258,16 +2258,18 @@ void CErrorEstimationDriver::ComputeAdaptationParameter(CSolver**  coarse_solver
     SolAdj2 = fine_solver2[ADJFLOW_SOL]->node[iPoint]->GetSolution();
 
     epsilon_fine[iPoint] = 0.0;
-    for(unsigned short iVar = 0; iVar < nVarFlow; ++iVar)
+    for(unsigned short iVar = 0; iVar < nVarFlow; ++iVar){
       epsilon_fine[iPoint] += abs(ResAdjFlow[iVar]*(Sol2[iVar]-Sol[iVar])) + abs((SolAdj2[iVar]-SolAdj[iVar])*ResFlow[iVar]);
+    }
 
     /*--- Add turbulent contributions ---*/
     if(turbulent){
 
       /*--- Extract residuals ---*/
       ResTurb = fine_solver[TURB_SOL]->LinSysRes.GetBlock(iPoint);
-      for(unsigned short iVar = 0; iVar < nVarTurb; ++iVar)
+      for(unsigned short iVar = 0; iVar < nVarTurb; ++iVar){
         ResAdjTurb[iVar] = fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution(iVar) - fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution_Old(iVar);
+      }
 
       /*--- Extract solutions ---*/
       Sol     = fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution_Direct();
@@ -2302,6 +2304,17 @@ void CErrorEstimationDriver::Output() {
 
   unsigned long ExtIter = coarse_config_container[ZONE_0]->GetExtIter_OffSet();
 
+  /*--- Set Kind_Solver to primal since adaptation requires Mach (or pressure) ---*/
+
+  switch (coarse_config_container[ZONE_0]->GetKind_Solver()) {
+    case DISC_ADJ_EULER: coarse_config_container[ZONE_0]->SetKind_Solver(EULER); break;
+    case DISC_ADJ_NAVIER_STOKES: coarse_config_container[ZONE_0]->SetKind_Solver(EULER); break;
+    case DISC_ADJ_RANS: coarse_config_container[ZONE_0]->SetKind_Solver(RANS); break;
+  }
+
+  /*--- Set DiscreteAdjoint flag to false so we write to correct files ---*/
+
+  coarse_config_container[ZONE_0]->SetDiscrete_Adjoint(false);
 
   if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 

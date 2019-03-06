@@ -16078,6 +16078,20 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint]->SetVolume (0.0);
   }
+
+  /*--- Allocate partial control volume for error estimation ---*/
+  if(config->GetError_Estimate()){
+    for(iPoint = 0; iPoint < nPoint; iPoint++){
+      if(action == ALLOCATE){
+        node[iPoint]->SetnPartialVolume(node[iPoint]->GetnNeighbor());
+      }
+      else{
+        for(unsigned short iNeighb = 0; iNeighb < node[iPoint]->GetnNeighbor(); ++iNeighb){
+          node[iPoint]->SetPartialVolume(iNeighb, 0.0);
+        }
+      }
+    }
+  }
   
   Coord_Edge_CG = new su2double [nDim];
   Coord_FaceElem_CG = new su2double [nDim];
@@ -16124,12 +16138,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
-
-        /*--- Store partial control volume for error estimation ---*/
-        if(config->GetError_Estimate()){
-          node[face_iPoint]->SetnPartialVolume(node[face_iPoint]->GetnNeighbor());
-          node[face_jPoint]->SetnPartialVolume(node[face_jPoint]->GetnNeighbor());
-        }
         
         switch (nDim) {
           case 2:
@@ -16139,20 +16147,24 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
             if(config->GetError_Estimate()){
-              /*--- Loop over neighbors to find corresponding edge, and store partial volume ---*/
+              /*--- Loop over neighbors of iPoint to find corresponding edge, and store partial volume ---*/
               for(unsigned short iNeighb = 0; iNeighb < node[face_iPoint]->GetnNeighbor(); ++iNeighb){
-                if(face_jPoint == node[face_iPoint]->GetPoint(iNeighb)) node[face_iPoint]->AddPartialVolume(iNeighb, Area);
-                break;
+                if(face_jPoint == node[face_iPoint]->GetPoint(iNeighb)){
+                  node[face_iPoint]->AddPartialVolume(iNeighb, Area);
+                  break;
+                }
               }
             }
 
             Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Area); my_DomainVolume +=Area;
             if(config->GetError_Estimate()){
-              /*--- Loop over neighbors to find corresponding edge, and store partial volume ---*/
+              /*--- Loop over neighbors of jPoint to find corresponding edge, and store partial volume ---*/
               for(unsigned short jNeighb = 0; jNeighb < node[face_jPoint]->GetnNeighbor(); ++jNeighb){
-                if(face_iPoint == node[face_jPoint]->GetPoint(jNeighb)) node[face_jPoint]->AddPartialVolume(jNeighb, Area);
-                break;
+                if(face_iPoint == node[face_jPoint]->GetPoint(jNeighb)){
+                  node[face_jPoint]->AddPartialVolume(jNeighb, Area);
+                  break;
+                }
               }
             }
             break;
@@ -16161,22 +16173,26 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
             if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
             else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
             if(config->GetError_Estimate()){
-              /*--- Loop over neighbors to find corresponding face, and store partial volume ---*/
+              /*--- Loop over neighbors of iPoint to find corresponding face, and store partial volume ---*/
               for(unsigned short iNeighb = 0; iNeighb < node[face_iPoint]->GetnNeighbor(); ++iNeighb){
-                if(face_jPoint == node[face_iPoint]->GetPoint(iNeighb)) node[face_iPoint]->AddPartialVolume(iNeighb, Volume);
-                break;
+                if(face_jPoint == node[face_iPoint]->GetPoint(iNeighb)){
+                  node[face_iPoint]->AddPartialVolume(iNeighb, Volume);
+                  break;
+                }
               }
             }
 
-            node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
             Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
             node[face_jPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
             if(config->GetError_Estimate()){
-              /*--- Loop over neighbors to find corresponding face, and store partial volume ---*/
+              /*--- Loop over neighbors of jPoint to find corresponding face, and store partial volume ---*/
               for(unsigned short jNeighb = 0; jNeighb < node[face_jPoint]->GetnNeighbor(); ++jNeighb){
-                if(face_iPoint == node[face_jPoint]->GetPoint(jNeighb)) node[face_jPoint]->AddPartialVolume(jNeighb, Volume);
-                break;
+                if(face_iPoint == node[face_jPoint]->GetPoint(jNeighb)){
+                  node[face_jPoint]->AddPartialVolume(jNeighb, Volume);
+                  break;
+                }
               }
             }
             break;

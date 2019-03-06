@@ -106,12 +106,7 @@ inline void CPoint::AddPartialVolume (unsigned short val_iFace, su2double val_Vo
 
 inline void CPoint::SetPartialVolume (unsigned short val_iFace, su2double val_Volume) { PartialVolume[0][val_iFace] = val_Volume; }
 
-inline void CPoint::SetnPartialVolume (unsigned short val_nFace) { 
-	if(PartialVolume[0].empty()){
-		PartialVolume[0].resize(val_nFace);
-		for(unsigned short iFace = 0; iFace < val_nFace; ++iFace) SetPartialVolume(iFace, 0.0);
-	} 
-}
+inline void CPoint::SetnPartialVolume (unsigned short val_nFace) { PartialVolume[0].resize(val_nFace, 0.0); }
 
 inline void CPoint::SetMaxLength(su2double val_max_length) { MaxLength = val_max_length; }
 

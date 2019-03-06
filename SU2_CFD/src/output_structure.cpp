@@ -12874,6 +12874,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par +=1;
       Variable_Names.push_back("Roe_Dissipation");
     }
+
+    /*--- Plot the ECC if performing error estimation. ---*/
+
+    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
+      Variable_Names.push_back("Adaptation_Parameter");
+      nVar_Par += 1;
+    }
     
     /*--- New variables get registered here before the end of the loop. ---*/
     
@@ -13105,6 +13112,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
+        }
+
+        /*--- Load data for the ECC. ---*/
+
+        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
+          iVar++;
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -14042,7 +14056,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;
 
         /*--- Load data for the ECC. ---*/
-        
+
         if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
           iVar++;

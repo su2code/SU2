@@ -8561,6 +8561,11 @@ public:
    * \return direct differentiation method.
    */
   unsigned short GetDirectDiff();
+
+  /*!
+   * \brief Set the indicator whether we are solving an discrete adjoint problem.
+   */
+  void SetDiscrete_Adjoint(bool val_discadj);
   
   /*!
    * \brief Get the indicator whether we are solving an discrete adjoint problem.

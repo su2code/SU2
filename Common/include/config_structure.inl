@@ -1972,6 +1972,8 @@ inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_Lo
 
 inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
+inline void CConfig::SetDiscrete_Adjoint(bool val_discadj) { DiscreteAdjoint = val_discadj; }
+
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
