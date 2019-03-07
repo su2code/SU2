@@ -2303,7 +2303,7 @@ void CFEMInterpolationSol::HighOrderContainmentSearch(
   
   // Definition of the maximum number of iterations in the Newton solver
   // and the tolerance level. */
-  const unsigned short maxIt = 50;
+  const unsigned short maxIt = 1000;
   const su2double tolNewton  = 1.e-10;
   
   /*--------------------------------------------------------------------------*/
