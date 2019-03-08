@@ -524,6 +524,14 @@ public:
                             vector<vector<su2double> >       &vmat);
 
   /*!
+   * \brief Function, which creates an approximate Vandermonde matrix for an overdetermined system on a 3D mesh.
+   */
+  void ApproxVandermonde_3D(const unsigned short             nPoly,
+                            const vector<vector<su2double> > &coor,
+                            const vector<su2double>          &weights,
+                            vector<vector<su2double> >       &vmat);
+
+  /*!
    * \brief Function, which performs a QR factorization using the Householder method.
    */
   void Householder(const vector<vector<su2double> >  &mat,

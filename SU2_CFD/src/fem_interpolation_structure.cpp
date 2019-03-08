@@ -3105,7 +3105,7 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   // Compute approximate Vandermonde matrix
   vector<vector<su2double> > vmat, vmatTranspose;
   if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffset, weights, vmat);
-  else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
+  else          ApproxVandermonde_3D(nPoly, coorOffset, weights, vmat);
 
   // Perform QR factorization
   vector<vector<su2double> > Q, R;
@@ -3119,7 +3119,7 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   for(i = 0; i < vmat.size(); i++) vmat[i].clear();
   vmat.clear();
   if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffsetInterpol, weightsInterpol, vmat);
-  else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
+  else          ApproxVandermonde_3D(nPoly, coorOffsetInterpol, weightsInterpol, vmat);
 
   // Interpolate the solution
   solInterpol.resize(nVar);
@@ -3186,7 +3186,7 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short            
 
   vmat.resize(nPoint);
   for(i = 0; i < nPoint; i++)
-    vmat[i].resize(2*nPoly+2);
+    vmat[i].resize(6);
   
   j = 0;
 
@@ -3197,6 +3197,36 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short            
         vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy) * weights[i];
       }
       j++;
+    }
+  }
+
+}
+
+void CFEMInterpolationSol::ApproxVandermonde_3D(const unsigned short              nPoly,
+                                                const vector<vector<su2double> >  &coor,
+                                                const vector<su2double>           &weights,
+                                                vector<vector<su2double> >        &vmat)
+{
+
+  unsigned short nPoint = coor[0].size();
+  short iPoint, ix, iy, iz, i, j;
+
+  vmat.resize(nPoint);
+  for(i = 0; i < nPoint; i++)
+    vmat[i].resize(10);
+  
+  j = 0;
+
+  for(ix = 0; ix <= nPoly; ix++){
+    for(iy = 0; iy <= nPoly; iy++){
+      for(iz = 0; iz <= nPoly; iz++){
+        if(ix + iy + iz <= nPoly){
+          for(i = 0; i < nPoint; i++){
+            vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy) * weights[i];
+          }
+          j++;
+        }
+      }
     }
   }
 
