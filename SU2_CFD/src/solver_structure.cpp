@@ -421,7 +421,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              we can accumulate the total control volume size on all
              periodic faces. ---*/
             
-            bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume();
+            bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume() +
+            geometry->node[iPoint]->GetPeriodicVolume();
             
             break;
             

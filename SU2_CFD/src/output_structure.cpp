@@ -12889,6 +12889,34 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
       nVar_Par +=1;
       Variable_Names.push_back("Q_Criterion");
+      
+      nVar_Par += 2;
+      Variable_Names.push_back("Grad_XVelocity_x");
+      Variable_Names.push_back("Grad_XVelocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Grad_XVelocity_z");
+      }
+      
+      nVar_Par += 2;
+      Variable_Names.push_back("Grad_YVelocity_x");
+      Variable_Names.push_back("Grad_YVelocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Grad_YVelocity_z");
+      }
+      
+      nVar_Par += 2;
+      Variable_Names.push_back("Grad_ZVelocity_x");
+      Variable_Names.push_back("Grad_ZVelocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Grad_ZVelocity_z");
+      }
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Volume");
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Time_Step");
+      
     }
     
     if (rotating_frame) {
@@ -13170,6 +13198,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
           su2double Q = 0.5*(OmegaMag - StrainMag);
           Local_Data[jPoint][iVar] = Q; iVar++;
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              Local_Data[jPoint][iVar] = Grad_Vel[iDim][jDim]; iVar++;
+            }
+          }
+         
+         Local_Data[jPoint][iVar] =  (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());  iVar++;
+          
+          
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDelta_Time();  iVar++;
+          
           
         }
         

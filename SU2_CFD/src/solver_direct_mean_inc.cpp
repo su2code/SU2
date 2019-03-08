@@ -6432,6 +6432,29 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
 void CIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *numerics, CConfig *config) {
   
+  unsigned short iMarker, iVar;
+  unsigned long  iVertex, iPoint;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  /*--- For the first pass through the periodic BC, make all nodes on
+   the periodic surfaces act as point implicit so that we maintain a
+   consistent implicit solution on both sides of the periodic boundary. ---*/
+  
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        if (implicit) {
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            unsigned long total_index = iPoint*nVar+iVar;
+//            Jacobian.SetPointImplicit(total_index);
+//          }
+//        }
+//      }
+//    }
+//  }
+  
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
