@@ -90,8 +90,6 @@ def main():
         os.system('mkdir ' + folderName)
         sendOutputFiles(konfig, folderName)
 
-        if quiet: redirect_output('flow/log_flow.out')
-
         # run su2
         if quiet:
             log = 'flow/log_flow.out'
@@ -278,7 +276,9 @@ def main():
         info = SU2.run.ECC(konfig)
 
 def sendOutputFiles( config, folderName = ''):
+    
     config.CONV_FILENAME = folderName + config.CONV_FILENAME
+    config.BREAKDOWN_FILENAME = folderName + config.BREAKDOWN_FILENAME
 
     config.RESTART_FLOW_FILENAME = folderName + config.RESTART_FLOW_FILENAME
     config.RESTART_ADJ_FILENAME = folderName + config.RESTART_ADJ_FILENAME

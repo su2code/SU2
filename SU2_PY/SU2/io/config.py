@@ -619,6 +619,8 @@ def read_config(filename):
         data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if 'GRAD_OBJFUNC_FILENAME' not in data_dict:
         data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+    if 'BREAKDOWN_FILENAME' not in data_dict:
+        data_dict['BREAKDOWN_FILENAME'] = 'forces_breakdown.dat'
     if 'AOA' not in data_dict:
         data_dict['AOA'] = 0.0
     if 'SIDESLIP_ANGLE' not in data_dict:
