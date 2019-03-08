@@ -93,13 +93,18 @@ def main():
         if quiet: redirect_output('flow/log_flow.out')
 
         # run su2
-        info = SU2.run.CFD(konfig)
-        ztate.update(info)
+        if quiet:
+            log = 'flow/log_flow.out'
+        else:
+            log = None
+        with redirect_output(log):   
+            info = SU2.run.CFD(konfig)
+            ztate.update(info)
     
-        # Solution merging
-        konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
-        info = SU2.run.merge(konfig)
-        ztate.update(info)
+            # Solution merging
+            konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+            info = SU2.run.merge(konfig)
+            ztate.update(info)
 
         print "\n\n =================== Computing Adjoint Solution =================== \n\n"
 
@@ -117,16 +122,19 @@ def main():
         os.system('mkdir ' + folderName)
         sendOutputFiles(konfig, folderName)
 
-        if quiet: redirect_output('adjoint/log_adjoint.out')
-
         # run su2
-        info = SU2.run.CFD(konfig)
-        ztate.update(info)
+        if quiet:
+            log = 'adjoint/log_adjoint.out'
+        else:
+            log = None
+        with redirect_output(log):   
+            info = SU2.run.CFD(konfig)
+            ztate.update(info)
     
-        # Solution merging
-        konfig.SOLUTION_ADJ_FILENAME = konfig.RESTART_ADJ_FILENAME
-        info = SU2.run.merge(konfig)
-        ztate.update(info)
+            # Solution merging
+            konfig.SOLUTION_ADJ_FILENAME = konfig.RESTART_ADJ_FILENAME
+            info = SU2.run.merge(konfig)
+            ztate.update(info)
 
     else:
         # send output to a folder
@@ -163,9 +171,12 @@ def main():
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
-    if quiet: redirect_output('linear/flow/log_interp.out')
-
-    info = SU2.run.INTERP(konfig)
+    if quiet:
+        log = 'linear/flow/log_interp.out'
+    else:
+        log = None
+    with redirect_output(log):   
+        info = SU2.run.INTERP(konfig)
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -181,9 +192,12 @@ def main():
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
-    if quiet: redirect_output('linear/adjoint/log_interp.out')
-
-    info = SU2.run.INTERP(konfig)
+    if quiet:
+        log = 'linear/adjoint/log_interp.out'
+    else:
+        log = None
+    with redirect_output(log):   
+        info = SU2.run.INTERP(konfig)
 
     # perform quadratic interpolation
     print "\n\n =================== Performing Quadratic Interpolation =================== \n\n"
@@ -205,9 +219,12 @@ def main():
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
-    if quiet: redirect_output('quadratic/flow/log_interp.out')
-
-    info = SU2.run.INTERP(konfig)
+    if quiet:
+        log = 'quadratic/flow/log_interp.out'
+    else:
+        log = None
+    with redirect_output(log):   
+        info = SU2.run.INTERP(konfig)
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -223,9 +240,12 @@ def main():
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
-    if quiet: redirect_output('quadratic/adjoint/log_interp.out')
-
-    info = SU2.run.INTERP(konfig)
+    if quiet:
+        log = 'quadratic/adjoint/log_interp.out'
+    else:
+        log = None
+    with redirect_output(log):   
+        info = SU2.run.INTERP(konfig)
 
     # compute ECC
     print "\n\n =================== Computing Error in Computable Correction =================== \n\n"
@@ -250,9 +270,12 @@ def main():
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
-    if quiet: redirect_output('ecc/log_ecc.out')
-    
-    info = SU2.run.ECC(konfig)
+    if quiet:
+        log = 'ecc/log_ecc.out'
+    else:
+        log = None
+    with redirect_output(log):   
+        info = SU2.run.ECC(konfig)
 
 def sendOutputFiles( config, folderName = ''):
     config.CONV_FILENAME = folderName + config.CONV_FILENAME
