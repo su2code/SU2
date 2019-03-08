@@ -2308,7 +2308,7 @@ void CErrorEstimationDriver::Output() {
 
   switch (coarse_config_container[ZONE_0]->GetKind_Solver()) {
     case DISC_ADJ_EULER: coarse_config_container[ZONE_0]->SetKind_Solver(EULER); break;
-    case DISC_ADJ_NAVIER_STOKES: coarse_config_container[ZONE_0]->SetKind_Solver(EULER); break;
+    case DISC_ADJ_NAVIER_STOKES: coarse_config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
     case DISC_ADJ_RANS: coarse_config_container[ZONE_0]->SetKind_Solver(RANS); break;
   }
 

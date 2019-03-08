@@ -8,6 +8,8 @@ from .interface import (
     DEF               ,
     DOT               ,
     SOL               ,
+    INTERP            ,
+    ECC               ,
     SOL_FSI)
 
 from .direct     import direct

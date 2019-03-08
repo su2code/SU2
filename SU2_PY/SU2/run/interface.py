@@ -242,6 +242,38 @@ def SOL(config):
     
     return
 
+def INTERP(config):
+    """ run SU2_INTERP
+        partitions set by config.NUMBER_PART
+    """
+    konfig = copy.deepcopy(config)
+
+    tempname = 'config_INTERP.cfg'
+    konfig.dump(tempname)
+    # for now run in serial
+    the_Command = 'SU2_INTERP%s %s' % (quote, tempname)
+    run_command( the_Command )
+    
+    #os.remove(tempname)
+    
+    return
+
+def ECC(config):
+    """ run SU2_ECC
+        partitions set by config.NUMBER_PART
+    """
+    konfig = copy.deepcopy(config)
+
+    tempname = 'config_ECC.cfg'
+    konfig.dump(tempname)
+    # for now run in serial
+    the_Command = 'SU2_ECC%s %s' % (quote, tempname)
+    run_command( the_Command )
+    
+    #os.remove(tempname)
+    
+    return
+
 def SOL_FSI(config):
     """ run SU2_SOL for FSI problems
       partitions set by config.NUMBER_PART
