@@ -3248,6 +3248,10 @@ int cg_elements_partial_read(int file_number, int B, int Z, int S,
                                        start - section->range[0], data, NULL);
         size = cgi_element_data_size(section->el_type,
                                      end - start + 1, &data[offset], NULL);
+        if (section->range[1] - section->range[0] + 1 > 1e7) {
+          printf("\n\n!!! WARNING: CG_SIZE_DATATYPE != data type size in the CGNS file,\n and a large read was requested. To avoid memory exhaustion,\n please switch between 64 bit and 32 bit mode with the CG_BUILD_64BIT\n macro in cgnstypes.h to match the datatype in your CGNS file\n and recompile the CGNS library and SU2. !!!\n\n");
+          return CG_ERROR;
+        }
         memcpy(elements, &data[offset], (size_t)(size*sizeof(cgsize_t)));
     }
 

@@ -12746,14 +12746,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         break;
     }
     
-    /*--- Print some information to the console. ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Section " << string(sectionNames[s].data());
-      cout << " contains " << element_count << " elements";
-      cout << " of type " << currentElem << "." << endl;
-    }
-    
     if ((element_count < (unsigned long)size) && isVolume[s]) {
       SU2_MPI::Error(string("Section has fewer volume element than cores.") +
                      string("\nPlease rerun the calculation with fewer cores."),
@@ -12766,6 +12758,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     elemOffset[s+1] = elemOffset[s];
     if (!isVolume[s]) elemOffset[s+1] += element_count;
     else interiorElems += element_count;
+    
+    /*--- Print some information to the console. ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Section " << string(sectionNames[s].data());
+      cout << " contains " << element_count << " elements";
+      cout << " of type " << currentElem << "." << endl;
+      if (isVolume[s]) cout << "  Interior range is " << startE-elemOffset[s] << " --> " << endE-elemOffset[s] << endl;
+      if (isVolume[s]) cout << "  Interior element count " << interiorElems << endl;
+
+    }
     
   }
   
