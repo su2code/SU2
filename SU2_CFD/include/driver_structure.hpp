@@ -854,7 +854,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
    */
-  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal);
+  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ttotal);
 
   /*!
    * \brief Set the total pressure of a vertex on a specified inlet marker.
@@ -862,7 +862,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
    */
-  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal);
+  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, passivedouble val_Ptotal);
 
   /*!
    * \brief Set the flow direction of a vertex on a specified inlet marker.
@@ -871,7 +871,7 @@ public:
    * \param[in] iDim - Index of the flow direction unit vector
    * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
    */
-  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir);
+  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_FlowDir);
 
   /*!
    * \brief Set a turbulence variable on a specified inlet marker.
@@ -880,7 +880,7 @@ public:
    * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
    * \param[in] val_turb_var - Value of the turbulence variable to be used.
    */
-  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
+  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, passivedouble val_tub_var);
 
 };
 
