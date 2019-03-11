@@ -6,3 +6,6 @@
 	path = externals/medi
 	url = https://github.com/SciCompKL/MeDiPack
 	ignore = dirty
+[submodule "externals/libMeshb"]
+	path = externals/libMeshb
+	url = https://github.com/bmunguia/libMeshb
