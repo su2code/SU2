@@ -2,7 +2,7 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2211,6 +2211,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();  
         break;
       }
+    } else {
+      ModelTable << "-" << "-";
     }
     
     switch (config->GetKind_FluidModel()){
@@ -3506,6 +3508,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
@@ -8120,10 +8123,11 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   string Marker_Tag, Monitoring_Tag;
 
-  su2double Alpha     = config->GetAoA()*PI_NUMBER/180.0;
-  su2double Beta      = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefArea   = config->GetRefArea();
-  su2double RefLength = config->GetRefLength();
+  su2double Alpha       = config->GetAoA()*PI_NUMBER/180.0;
+  su2double Beta        = config->GetAoS()*PI_NUMBER/180.0;
+  su2double RefArea     = config->GetRefArea();
+  su2double RefLength   = config->GetRefLength();
+  su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   su2double *Origin = NULL;
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
@@ -8189,7 +8193,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == CHT_WALL_INTERFACE)) {
 
       /*--- Forces initialization at each Marker ---*/
 
@@ -8283,7 +8287,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         
         thermal_conductivity       = node[iPoint]->GetThermalConductivity();
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
         HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
         MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
