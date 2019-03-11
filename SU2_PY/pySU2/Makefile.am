@@ -89,8 +89,19 @@ if BUILD_TECIO
 endif
 
 #SU2Core lib
-SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
-		${abs_top_builddir}/Common/lib/libSU2.a
+if BUILD_NORMAL
+  SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
+    ${abs_top_builddir}/Common/lib/libSU2.a
+  PYLIB = "${bindir}/pysu2.py"
+  SOLIB = "${bindir}/_pysu2.so"
+endif
+
+if BUILD_REVERSE
+  SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core_AD.a \
+    ${abs_top_builddir}/Common/lib/libSU2_AD.a
+  PYLIB = "${bindir}/pysu2ad.py"
+  SOLIB = "${bindir}/_pysu2ad.so"
+endif
 
 # Set the linking flags to use
 pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB} ${PY_LIB}
@@ -124,6 +135,6 @@ clean:
 	rm -f ${CURRENT_DIR}/*.py
 
 install: all
-	${INSTALL} pysu2.py ${bindir}
-	${INSTALL} _pysu2.so ${bindir}
+	${INSTALL} pysu2.py ${PYLIB}
+	${INSTALL} _pysu2.so ${SOLIB}
 
