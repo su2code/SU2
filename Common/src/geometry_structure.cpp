@@ -101,9 +101,9 @@ CGeometry::CGeometry(void) {
   
   /*--- Arrays for defining the linear partitioning ---*/
   
-  beg_node = NULL;
+  beg_node   = NULL;
   end_node   = NULL;
-  nPoint_Lin  = NULL;
+  nPoint_Lin = NULL;
   nPoint_Cum = NULL;
 
   /*--- Containers for customized boundary conditions ---*/
@@ -12801,7 +12801,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     
     if (isVolume[s]) {
       
-              
       /*--- Read the connectivity details for this section.
        Store the total number of elements in this section
        to be used later for memory allocation. ---*/
@@ -12841,15 +12840,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       elemB[0] = startE;
       elemE[0] = startE + nElem_Linear[0] - 1;
       for (iElem = 1; iElem < (unsigned long)size; iElem++) {
-        elemB[iElem] = elemE[iElem-1]+1;
+        elemB[iElem] = elemE[iElem-1] + 1;
         elemE[iElem] = elemB[iElem] + nElem_Linear[iElem] - 1;
       }
       
       /*--- Allocate some memory for the handling the connectivity
        and auxiliary data that we are need to communicate. ---*/
       
-      unsigned short *elemTypes = new unsigned short[nElems[s]];
-      unsigned short *nPoinPerElem = new unsigned short[nElems[s]];
+      unsigned long *elemTypes    = new unsigned long[nElems[s]];
+      unsigned long *nPoinPerElem = new unsigned long[nElems[s]];
       
       cgsize_t *elemGlobalID = new cgsize_t[nElems[s]];
       
@@ -13410,12 +13409,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
         /*--- Get the global ID for this element. ---*/
         
-        Global_Index_Elem = connElems[s][jElem*connSize+0];
+        Global_Index_Elem = connElems[s][jElem*connSize + 0];
         
         /*--- Get the VTK type for this element. This is stored in the
          first entry of the connectivity structure. ---*/
         
-        VTK_Type = connElems[s][jElem*connSize+1];
+        VTK_Type = connElems[s][jElem*connSize + 1];
         
         /*--- Instantiate this element in the proper SU2 data structure. ---*/
         
@@ -13423,7 +13422,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case TRIANGLE:
             
-            for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
+            for ( unsigned long j = 0; j < N_POINTS_TRIANGLE; j++ ) {
               vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
@@ -13436,7 +13435,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case QUADRILATERAL:
             
-            for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
+            for ( unsigned long j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
               vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
@@ -13450,8 +13449,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case TETRAHEDRON:
             
-            for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
-              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
+            for ( unsigned long j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
             Global_to_Local_Elem[Global_Index_Elem] = iElem;
@@ -13464,8 +13463,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case HEXAHEDRON:
             
-            for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
-              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
+            for ( unsigned long j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
             Global_to_Local_Elem[Global_Index_Elem] = iElem;
@@ -13482,8 +13481,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case PRISM:
             
-            for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
-              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
+            for ( unsigned long j = 0; j < N_POINTS_PRISM; j++ ) {
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
             Global_to_Local_Elem[Global_Index_Elem] = iElem;
@@ -13498,8 +13497,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             
           case PYRAMID:
             
-            for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
-              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
+            for ( unsigned long j = 0; j < N_POINTS_PYRAMID; j++ ) {
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
             Global_to_Local_Elem[Global_Index_Elem] = iElem;
@@ -13882,8 +13881,7 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
 #ifdef HAVE_PARMETIS
   
   long local_index;
-  unsigned short iNode, jNode;
-  unsigned long iElem, cgns_nodes[8] = {0,0,0,0,0,0,0,0};
+  unsigned long iNode, jNode, iElem, cgns_nodes[8] = {0,0,0,0,0,0,0,0};
   
   /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
   
@@ -13891,8 +13889,6 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
   adj_nodes.resize(nPoint);
   for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
     it2->resize(0);
-  
-  cout << " Rank " << rank << " has " << nPoint << " total local points." << endl;
   
   /*--- Loop over all elements that are now loaded and store adjacency. ---*/
   
@@ -18680,7 +18676,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     /*--- Calling ParMETIS ---*/
     if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-    ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
+    ParMETIS_V3_PartKway(vtxdist, xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
