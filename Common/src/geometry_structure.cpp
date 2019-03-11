@@ -8469,75 +8469,72 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Executing the partitioning functions." << endl;
   
+  unsigned long iPoint, jPoint, local_size;
   vector<unsigned long>::iterator it;
-  unsigned long i, j;
+  vector<unsigned long> adjacency_vector;
   
   /*--- Post process the adjacency information in order to get it into the
-   proper format before sending the data to ParMETIS. We need to remove
+   CSR format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
   
-  unsigned long loc_adjc_size=0;
-  vector<unsigned long> adjac_vec;
-  unsigned long adj_elem_size;
+  /*--- We can already create the array that indexes the adjacency. ---*/
   
-  xadj = new idx_t [nPoint_Lin[rank]+1];
-  xadj[0]=0;
-  vector<unsigned long> temp_adjacency;
-  unsigned long local_count=0;
+  xadj_size = nPoint_Lin[rank]+1;
+  xadj      = new idx_t[xadj_size];
+  xadj[0]   = 0;
   
   /*--- Here, we transfer the adjacency information from a multi-dim vector
    on a node-by-node basis into a single vector container. First, we sort
    the entries and remove the duplicates we find for each node, then we
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
   
-  for (i = 0; i < nPoint; i++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    for (j = 0; j<adj_nodes[i].size(); j++) {
-      temp_adjacency.push_back(adj_nodes[i][j]);
+    /*--- For each point, sort the adjacency in ascending order
+     so that we can remove duplicates and complete the size for
+     unique set of adjacent nodes for that point. ---*/
+    
+    sort(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
+    it = unique(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
+    local_size = it - adj_nodes[iPoint].begin();
+    adj_nodes[iPoint].resize(local_size);
+    
+    /*--- Move the sorted adjacency into a 1-D vector for all
+     points in order to make creating the copy for ParMETIS easier. ---*/
+    
+    for (jPoint = 0; jPoint < local_size; jPoint++) {
+      adjacency_vector.push_back(adj_nodes[iPoint][jPoint]);
     }
     
-    sort(temp_adjacency.begin(), temp_adjacency.end());
-    it = unique(temp_adjacency.begin(), temp_adjacency.end());
-    loc_adjc_size = it - temp_adjacency.begin();
+    /*--- Increment the starting index for the next point (CSR). ---*/
     
-    temp_adjacency.resize(loc_adjc_size);
-    xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
-    local_count++;
+    xadj[iPoint+1] = xadj[iPoint] + local_size;
     
-    for (j = 0; j<loc_adjc_size; j++) {
-      adjac_vec.push_back(temp_adjacency[j]);
-    }
+    /*--- Free vector memory as we go. ---*/
     
-    //vector<unsigned long>().swap(temp_adjacency);
-    //vector<unsigned long>().swap(adj_nodes[i]);
-    
-    temp_adjacency.clear();
-    adj_nodes[i].clear();
+    vector<unsigned long>().swap(adj_nodes[iPoint]);
+
   }
   
+  /*--- Force free the entire old multi-dim. adjacency vector. ---*/
+  
+  vector< vector<unsigned long> >().swap(adj_nodes);
+
   /*--- Now that we know the size, create the final adjacency array. This
    is the array that we will feed to ParMETIS for partitioning. ---*/
   
-  adj_elem_size = xadj[nPoint_Lin[rank]];
-  adjacency = new idx_t [adj_elem_size];
-  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
+  adjacency_size = xadj[nPoint_Lin[rank]];
+  adjacency      = new idx_t[adjacency_size];
+  copy(adjacency_vector.begin(), adjacency_vector.end(), adjacency);
   
-  xadj_size = nPoint_Lin[rank]+1;
-  adjacency_size = adj_elem_size;
-  
+  cout << " Rank " << rank << " adjacency_size: " << adjacency_size << " xadj_size: " << xadj_size << " len of vec " << adjacency_vector.size() << endl;
+
   /*--- Free temporary memory used to build the adjacency. ---*/
   
-//  vector<unsigned long>().swap(adjac_vec);
-//  vector< vector<unsigned long> >().swap(adj_nodes);
-  
-  adjac_vec.clear();
-  vector< vector<unsigned long> >::iterator it2;
-  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
-    it2->clear();
-  adj_nodes.clear();
+  vector<unsigned long>().swap(adjacency_vector);
   
 #endif
 #endif
@@ -11041,7 +11038,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
-    SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."), CURRENT_FUNCTION);
+    SU2_MPI::Error(val_mesh_filename +
+                   string(" was not found or is not a properly formatted CGNS file.\n") +
+                   string("Note that SU2 expects unstructured CGNS files in ADF data format."),
+                   CURRENT_FUNCTION);
   }
   
   /*--- Open the CGNS file for reading. The value of fn returned
@@ -12508,7 +12508,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   
   if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
     SU2_MPI::Error(val_mesh_filename +
-                   string(" is not a CGNS file."), CURRENT_FUNCTION);
+                   string(" was not found or is not a properly formatted CGNS file.\n") +
+                   string("Note that SU2 expects unstructured CGNS files in ADF data format."),
+                   CURRENT_FUNCTION);
   }
   
   /*--- Open the CGNS file for reading. The value of fn returned
@@ -13879,7 +13881,9 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   
-  unsigned long cgns_nodes[8] = {0,0,0,0,0,0,0,0};
+  long local_index;
+  unsigned short iNode, jNode;
+  unsigned long iElem, cgns_nodes[8] = {0,0,0,0,0,0,0,0};
   
   /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
   
@@ -13888,9 +13892,11 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
   for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
     it2->resize(0);
   
+  cout << " Rank " << rank << " has " << nPoint << " total local points." << endl;
+  
   /*--- Loop over all elements that are now loaded and store adjacency. ---*/
   
-  for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+  for (iElem = 0; iElem < nElem; iElem++) {
     
     /*--- Get the VTK type for this element. This is stored in the
      first entry of the connectivity structure. ---*/
@@ -13903,17 +13909,34 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
         
       case TRIANGLE:
         
-        for (unsigned short j = 0; j < N_POINTS_TRIANGLE; j++) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_TRIANGLE; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
-              if (ii!=j) adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[j]);
+        for (iNode = 0; iNode < N_POINTS_TRIANGLE; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            for (jNode = 0; jNode < N_POINTS_TRIANGLE; jNode++) {
+              
+              /*--- Build adjacency assuming the VTK connectivity ---*/
+              
+              if (iNode != jNode)
+                adj_nodes[local_index].push_back(cgns_nodes[jNode]);
+              
             }
+            
           }
         }
         
@@ -13921,34 +13944,65 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
         
       case QUADRILATERAL:
         
-        for (unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_QUADRILATERAL; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+1)%4]);
-            adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+3)%4]);
+        for (iNode = 0; iNode < N_POINTS_QUADRILATERAL; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            
+            adj_nodes[local_index].push_back(cgns_nodes[(iNode+1)%4]);
+            adj_nodes[local_index].push_back(cgns_nodes[(iNode+3)%4]);
+            
           }
         }
-        
+
         break;
         
       case TETRAHEDRON:
         
-        for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_TETRAHEDRON; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
-              if (ii!=j) adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[j]);
+        for (iNode = 0; iNode < N_POINTS_TETRAHEDRON; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            for (jNode = 0; jNode < N_POINTS_TETRAHEDRON; jNode++) {
+              
+              /*--- Build adjacency assuming the VTK connectivity ---*/
+              
+              if (iNode != jNode)
+                adj_nodes[local_index].push_back(cgns_nodes[jNode]);
+              
             }
+            
           }
         }
         
@@ -13956,45 +14010,73 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
         
       case HEXAHEDRON:
         
-        for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_HEXAHEDRON; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            if (ii < 4) {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+1)%4]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+3)%4]);
+        for (iNode = 0; iNode < N_POINTS_HEXAHEDRON; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            
+            if (iNode < 4) {
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+1)%4]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+3)%4]);
             } else {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii-3)%4+4]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii-1)%4+4]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode-3)%4+4]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode-1)%4+4]);
             }
-            adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+4)%8]);
+            adj_nodes[local_index].push_back(cgns_nodes[(iNode+4)%8]);
+            
           }
         }
-        
+
         break;
         
       case PRISM:
         
-        for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_PRISM; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            if (ii < 3) {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+1)%3]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+2)%3]);
+        for (iNode = 0; iNode < N_POINTS_PRISM; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            
+            if (iNode < 3) {
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+1)%3]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+2)%3]);
             } else {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii-2)%3+3]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii-1)%3+3]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode-2)%3+3]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode-1)%3+3]);
             }
-            adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+3)%6]);
+            adj_nodes[local_index].push_back(cgns_nodes[(iNode+3)%6]);
+            
           }
         }
         
@@ -14002,27 +14084,42 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
         
       case PYRAMID:
         
-        for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
-          cgns_nodes[j] = elem[iElem]->GetNode(j);
+        
+        /*--- Store the connectivity for this element more easily. ---*/
+        
+        for (iNode = 0; iNode < N_POINTS_PYRAMID; iNode++) {
+          cgns_nodes[iNode] = elem[iElem]->GetNode(iNode);
         }
         
-        /*--- Build adjacency assuming the VTK connectivity ---*/
+        /*--- Decide whether we need to store the adjacency for any nodes
+         in the current element, i.e., check if any of the nodes have a
+         global index value within the range of our linear partitioning. ---*/
         
-        for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
-          if ((cgns_nodes[ii]>=beg_node[rank])&&(cgns_nodes[ii]<end_node[rank])) {
-            if (ii < 4) {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+1)%4]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[(ii+3)%4]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[4]);
+        for (iNode = 0; iNode < N_POINTS_PYRAMID; iNode++) {
+          
+          local_index = cgns_nodes[iNode]-beg_node[rank];
+          
+          if ((local_index >= 0) && (local_index < (long)nPoint)) {
+            
+            /*--- This node is within our linear partition.
+             Add the neighboring nodes to this nodes' adjacency list. ---*/
+            
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            
+            if (iNode < 4) {
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+1)%4]);
+              adj_nodes[local_index].push_back(cgns_nodes[(iNode+3)%4]);
+              adj_nodes[local_index].push_back(cgns_nodes[4]);
             } else {
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[0]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[1]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[2]);
-              adj_nodes[cgns_nodes[ii]-beg_node[rank]].push_back(cgns_nodes[3]);
+              adj_nodes[local_index].push_back(cgns_nodes[0]);
+              adj_nodes[local_index].push_back(cgns_nodes[1]);
+              adj_nodes[local_index].push_back(cgns_nodes[2]);
+              adj_nodes[local_index].push_back(cgns_nodes[3]);
             }
+            
           }
         }
-        
+
         break;
         
       default:
