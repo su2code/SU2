@@ -43,6 +43,9 @@ SUBDIRS =
 if BUILD_TECIO
   SUBDIRS += tecio
 endif
+if BUILD_INRIA
+  SUBDIRS += libMeshb
+endif
 
 if BUILD_METIS
   SUBDIRS += metis

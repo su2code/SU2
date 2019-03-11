@@ -69,6 +69,8 @@ def main():
                       help="Enable Python wrapper compilation", dest="py_wrapper_enabled", default=False)
     parser.add_option("--disable-tecio", action="store_true",
                       help="Disable Tecplot binary support", dest="tecio_disabled", default=False)
+    parser.add_option("--disable-inria", action="store_true",
+                      help="Disable Inria mesh I/O support", dest="inria_disabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
                       help="Disable normal mode support", dest="normal_mode", default=False)
     parser.add_option("-c" , "--check", action="store_true",
@@ -121,6 +123,7 @@ def main():
                   options.mpi_enabled,
                   options.py_wrapper_enabled,
                   options.tecio_disabled,
+                  options.inria_disabled,
                   modes,
                   made_adolc,
                   made_codi)
@@ -408,6 +411,7 @@ def configure(argument_dict,
               mpi_support,
               py_wrapper,
               tecio,
+              inria,
               modes,
               made_adolc,
               made_codi):
@@ -428,6 +432,8 @@ def configure(argument_dict,
         configure_base = configure_base + ' --enable-PY_WRAPPER'
     if tecio:
         configure_base = configure_base + ' --disable-tecio'
+    if inria:
+        configure_base = configure_base + ' --disable-inria'
 
     build_dirs = ''
    

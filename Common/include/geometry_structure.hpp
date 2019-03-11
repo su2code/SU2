@@ -51,6 +51,11 @@ extern "C" {
 #ifdef HAVE_CGNS
   #include "fem_cgns_elements.hpp"
 #endif
+#ifdef HAVE_INRIA
+extern "C" {
+#include "libmesh6.h"
+}
+#endif
 #include <string>
 #include <fstream>
 #include <sstream>
