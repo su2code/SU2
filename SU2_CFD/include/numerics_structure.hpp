@@ -4504,6 +4504,8 @@ class CNumericsRadiation : public CNumerics {
   su2double Scattering_Coeff; /*!< \brief Scattering coefficient. */
   su2double Refractive_Index; /*!< \brief Refractive index n = c/c_medium. */
 
+  su2double Temperature_Ref;  /*!< \brief Reference temperature for redimensionalization of P1 solver. */
+
  public:
 
   /*!

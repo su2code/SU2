@@ -51,6 +51,8 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
 
   Absorption_Coeff = max(Absorption_Coeff,0.01);
 
+  Temperature_Ref = config->GetTemperature_Ref();
+
 }
 
 CNumericsRadiation::~CNumericsRadiation(void) {
