@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
@@ -3274,9 +3274,11 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   if (RoeSoundSpeed2 <= 0.0) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.0;
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][iVar] = 0.0;
-        val_Jacobian_j[iVar][iVar] = 0.0;
+      if (implicit){
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_i[iVar][jVar] = 0.0;
+          val_Jacobian_j[iVar][jVar] = 0.0;
+        }
       }
     }
     AD::SetPreaccOut(val_residual, nVar);
