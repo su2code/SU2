@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for the output of ParaView visualization files.
  * \author F. Palacios, T. Economon, E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2876,7 +2876,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
-   to write a fresh restart file, so we delete any existing files and create
+   to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
   
   ierr = MPI_File_open(MPI_COMM_WORLD, fname,

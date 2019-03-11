@@ -2,7 +2,7 @@
  * \file solution_direct_mean_fem.cpp
  * \brief Main subroutines for solving finite element flow problems (Euler, Navier-Stokes, etc.).
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15418,56 +15418,40 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             work, solIntL);
 
-    /*--- Compute the right states. A distinction must be made whether or not
-          all functions are used. ---*/
-    if( boundaries[val_marker].wallModel ) {
+    /*--- Integration to the wall is used, so the no-slip condition is enforced,
+          albeit weakly. Loop over the number of faces in this chunk and the
+          number of integration points and apply the isothermal wall boundary
+          conditions to compute the right state. There are two options. Either
+          the velocity is negated or it is set to zero. Some experiments are
+          needed to see which formulation gives better results. ---*/
+    for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned long  lll    = l + ll;
+      const unsigned short llNVar = ll*nVar;
 
-      /*--- Wall functions are used to model the lower part of the boundary
-            layer. Consequently, a slip boundary condition is used for the
-            velocities and the skin friction and heat flux from the wall
-            should drive the velocities towards the no-slip and prescribed
-            temperature. Therefore the right states for the actual flow solver
-            can be computed using BoundaryStates_Euler_Wall. ---*/
-      BoundaryStates_Euler_Wall(config, llEnd, NPad, &surfElem[l],
-                                solIntL, solIntR);
-    }
-    else {
+      for(unsigned short i=0; i<nInt; ++i) {
 
-      /*--- Integration to the wall is used, so the no-slip condition is enforced,
-            albeit weakly. Loop over the number of faces in this chunk and the
-            number of integration points and apply the isothermal wall boundary
-            conditions to compute the right state. There are two options. Either
-            the velocity is negated or it is set to zero. Some experiments are
-            needed to see which formulation gives better results. ---*/
-      for(unsigned short ll=0; ll<llEnd; ++ll) {
-        const unsigned long  lll    = l + ll;
-        const unsigned short llNVar = ll*nVar;
+         /* Easier storage of the grid velocity and the left and right solution
+           for this integration point. */
+        const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
+        const su2double *UL      = solIntL + NPad*i + llNVar;
+              su2double *UR      = solIntR + NPad*i + llNVar;
 
-        for(unsigned short i=0; i<nInt; ++i) {
+        /* Set the right state for the density and the momentum variables of the
+           right state. Compute twice the possible kinetic energy. */
+        UR[0] = UL[0];
+        su2double DensityInv = 1.0/UL[0];
+        su2double kinEner    = 0.0;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+          const su2double velL = DensityInv*UL[iDim+1];
+          const su2double dV   = factWallVel*(velL-gridVel[iDim]);
+          const su2double velR = gridVel[iDim] - dV;
 
-           /* Easier storage of the grid velocity and the left and right solution
-             for this integration point. */
-          const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
-          const su2double *UL      = solIntL + NPad*i + llNVar;
-                su2double *UR      = solIntR + NPad*i + llNVar;
-
-          /* Set the right state for the density and the momentum variables of the
-             right state. Compute twice the possible kinetic energy. */
-          UR[0] = UL[0];
-          su2double DensityInv = 1.0/UL[0];
-          su2double kinEner    = 0.0;
-          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-            const su2double velL = DensityInv*UL[iDim+1];
-            const su2double dV   = factWallVel*(velL-gridVel[iDim]);
-            const su2double velR = gridVel[iDim] - dV;
-
-            UR[iDim+1] = UR[0]*velR;
-            kinEner   += velR*velR;
-          }
-
-          /* Compute the total energy of the right state. */
-          UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
+          UR[iDim+1] = UR[0]*velR;
+          kinEner   += velR*velR;
         }
+
+        /* Compute the total energy of the right state. */
+        UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
       }
     }
 
@@ -15706,7 +15690,7 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
   if( wallModel ) {
     WallTreatmentViscousFluxes(config, nFaceSimul, NPad, nInt, Wall_HeatFlux,
                                HeatFlux_Prescribed, Wall_Temperature,
-                               Temperature_Prescribed, surfElem,
+                               Temperature_Prescribed, surfElem, solIntL,
                                gradSolInt, viscFluxes, viscosityInt,
                                kOverCvInt, wallModel);
   }
@@ -15813,6 +15797,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                   const su2double          Wall_Temperature,
                                   const bool               Temperature_Prescribed,
                                   const CSurfaceElementFEM *surfElem,
+                                  const su2double          *solIntL,
                                         su2double          *workArray,
                                         su2double          *viscFluxes,
                                         su2double          *viscosityInt,
@@ -15899,6 +15884,13 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                               FluidModel, tauWall, qWall, ViscosityWall,
                                               kOverCvWall);
 
+        /* Compute the wall velocity in tangential direction. */
+        const su2double *solWallInt = solIntL + NPad*ii + llNVar;
+        su2double velWallTan = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          velWallTan += solWallInt[k+1]*dirTan[k];
+        velWallTan /= solWallInt[0];
+
         /* Determine the position where the viscous fluxes, viscosity and
            thermal conductivity must be stored. */
         su2double *normalFlux = viscFluxes + NPad*ii + llNVar;
@@ -15907,17 +15899,12 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         viscosityInt[ind] = ViscosityWall;
         kOverCvInt[ind]   = kOverCvWall;
 
-        /* Compute the prescribed velocity in tangential direction. */
-        su2double velTanPrescribed = 0.0;
-        for(unsigned short k=0; k<nDim; ++k)
-          velTanPrescribed += gridVel[k]*dirTan[k];
-
         /* Compute the viscous normal flux. Note that the unscaled normals
            must be used, hence the multiplication with normals[nDim]. */
         normalFlux[0] = 0.0;
         for(unsigned short k=0; k<nDim; ++k)
           normalFlux[k+1] = -normals[nDim]*tauWall*dirTan[k];
-        normalFlux[nVar-1] = normals[nDim]*(qWall - tauWall*velTanPrescribed);
+        normalFlux[nVar-1] = normals[nDim]*(qWall - tauWall*velWallTan);
       }
     }
   }
