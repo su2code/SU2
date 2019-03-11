@@ -20993,14 +20993,14 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
     /*--- New variables get registered here before the end of the loop. ---*/
     
-//    if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
-//      nVar_Par += 1;
-//      Variable_Names.push_back("Laminar_Viscosity");
-//    }
-//    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-//      nVar_Par += 1;
-//      Variable_Names.push_back("Eddy_Viscosity");
-//    }
+    if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
+      nVar_Par += 1;
+      Variable_Names.push_back("Laminar_Viscosity");
+    }
+    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+      nVar_Par += 1;
+      Variable_Names.push_back("Eddy_Viscosity");
+    }
     
     /*--- Add the average of conservative variables ---*/
     
