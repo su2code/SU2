@@ -433,19 +433,19 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
 passivedouble CDriver::GetVertexForceX(unsigned short iMarker, unsigned short iVertex) {
 
-  return PyWrapNodalForce[0];
+  return SU2_TYPE::GetValue(PyWrapNodalForce[0]);
 
 }
 
 passivedouble CDriver::GetVertexForceY(unsigned short iMarker, unsigned short iVertex) {
 
-  return PyWrapNodalForce[1];
+  return SU2_TYPE::GetValue(PyWrapNodalForce[1]);
 
 }
 
 passivedouble CDriver::GetVertexForceZ(unsigned short iMarker, unsigned short iVertex) {
 
-  return PyWrapNodalForce[2];
+  return SU2_TYPE::GetValue(PyWrapNodalForce[2]);
 
 }
 
@@ -507,7 +507,7 @@ passivedouble CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short 
     geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(PyWrapVarCoord);
     nodalVarCoordNorm = sqrt((PyWrapVarCoord[0])*(PyWrapVarCoord[0]) + (PyWrapVarCoord[1])*(PyWrapVarCoord[1]) + (PyWrapVarCoord[2])*(PyWrapVarCoord[2]));
 
-  return nodalVarCoordNorm;
+  return SU2_TYPE::GetValue(nodalVarCoordNorm);
 
 }
 
@@ -528,7 +528,7 @@ passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned sho
 
 }
 
-void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, su2double val_WallTemp){
+void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallTemp){
 
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
@@ -629,7 +629,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   return SU2_TYPE::GetValue(vertexWallHeatFlux);
 }
 
-void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, su2double val_WallHeatFlux){
+void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, passivedouble val_WallHeatFlux){
 
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryHeatFlux(iMarker, iVertex, val_WallHeatFlux);
 }
