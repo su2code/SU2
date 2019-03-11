@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -21,7 +21,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -4441,7 +4441,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -13280,7 +13280,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -13558,6 +13558,7 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
+  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -13890,6 +13891,7 @@ public:
                              su2double                *resFaces,
                              CNumerics                *conv_numerics,
                              su2double                *workArray);
+  using CSolver::BC_Euler_Wall;
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
@@ -13911,6 +13913,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Far_Field;
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
@@ -13932,6 +13935,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Sym_Plane;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition. It is a virtual
@@ -13953,6 +13957,7 @@ public:
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray);
+  using CSolver::BC_Supersonic_Outlet;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
@@ -13976,6 +13981,7 @@ public:
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
                         su2double                *workArray);
+  using CSolver::BC_Inlet;
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
@@ -13999,6 +14005,7 @@ public:
                          CNumerics                *conv_numerics,
                          unsigned short           val_marker,
                          su2double                *workArray);
+  using CSolver::BC_Outlet;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
@@ -14022,6 +14029,7 @@ public:
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker,
                                 su2double                *workArray);
+  using CSolver::BC_HeatFlux_Wall;
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
@@ -14045,6 +14053,7 @@ public:
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker,
                                   su2double                *workArray);
+  using CSolver::BC_Isothermal_Wall;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
@@ -14068,6 +14077,7 @@ public:
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
                           su2double                *workArray);
+  using CSolver::BC_Riemann;
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
@@ -14089,6 +14099,7 @@ public:
                          su2double                *resFaces,
                          CNumerics                *conv_numerics,
                          su2double                *workArray);
+  using CSolver::BC_Custom;
 
 #ifdef RINGLEB
   /*!
@@ -14901,7 +14912,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:

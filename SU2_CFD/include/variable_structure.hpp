@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -20,7 +20,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -357,12 +357,6 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   su2double *GetSolution_time_n1(void);
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  virtual su2double *Get_femSolution_time_n(void);
 
   /*!
    * \brief Set the value of the old residual.
@@ -2021,7 +2015,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the solution for the index <i>val_var</i>.
    */
-  virtual su2double GetSolution_time_n(unsigned short val_var);
+  su2double GetSolution_time_n(unsigned short val_var);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2504,7 +2498,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
@@ -2539,7 +2533,7 @@ public:
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -2557,8 +2551,6 @@ protected:
   su2double *Residual_Ext_Body;        /*!< \brief Term of the residual due to body forces */
   
   su2double VonMises_Stress;         /*!< \brief Von Mises stress. */
-  
-  su2double *Solution_time_n;        /*!< \brief Displacement at the nodes at time n */
   
   su2double *Solution_Vel,          /*!< \brief Velocity of the nodes. */
   *Solution_Vel_time_n;          /*!< \brief Velocity of the nodes at time n. */
@@ -2756,25 +2748,6 @@ public:
    * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
    */
   void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
-  
-  /*!
-   * \brief Get the solution at time n.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the solution for the index <i>val_var</i>.
-   */
-  su2double GetSolution_time_n(unsigned short val_var);
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *Get_femSolution_time_n(void);
-  
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *GetSolution_time_n(void);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -4857,7 +4830,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
@@ -5001,13 +4974,6 @@ public:
       * \return Pointer to the old solution vector.
       */
      su2double GetSolution_Vel_time_n(unsigned short val_var);
-
-       /*!
-      * \brief Get the solution at time n.
-      * \param[in] val_var - Index of the variable.
-      * \return Value of the solution for the index <i>val_var</i>.
-      */
-     su2double GetSolution_time_n(unsigned short val_var);
 
     /*!
      * \brief Set the value of the old solution.

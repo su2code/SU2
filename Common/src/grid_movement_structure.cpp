@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -134,7 +134,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
   
   unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
 
@@ -142,7 +142,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
   Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
+  NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
   
   /*--- Disable the screen output if we're running SU2_CFD ---*/
@@ -170,10 +170,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
     MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-    
-    /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    
-    NumError = MinVolume * Tol_Factor;
     
     /*--- Set the boundary and volume displacements (as prescribed by the 
      design variable perturbations controlling the surface shape) 
@@ -442,7 +438,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -460,7 +457,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1807,7 +1805,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
@@ -9316,14 +9315,43 @@ void CElasticityMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
 
-  unsigned short iMarker;
-
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
    deforming meshes (MARKER_FSI_INTERFACE). ---*/
 
   unsigned short Kind_SU2 = config->GetKind_SU2();
 
-  /*--- First of all, move the FSI interfaces. ---*/
+  /*--- Share halo vertex displacements across ranks using the solution vector.
+   The transfer routines do not do this, i.e. halo vertices have wrong values. ---*/
+
+  unsigned short iMarker, iDim;
+  unsigned long iNode, iVertex;
+
+  su2double VarIncrement = 1.0/su2double(config->GetGridDef_Nonlinear_Iter());
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Get node index ---*/
+        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iNode]->GetDomain()) {
+
+          /*--- Get the displacement on the vertex ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+             Solution[iDim] = geometry->vertex[iMarker][iVertex]->GetVarCoord()[iDim] * VarIncrement;
+
+          /*--- Initialize the solution vector ---*/
+          LinSysSol.SetBlock(iNode, Solution);
+        }
+      }
+    }
+  }
+  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+
+  /*--- Apply displacement boundary conditions to the FSI interfaces. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
@@ -9359,8 +9387,6 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
   unsigned long iNode, iVertex;
   unsigned long iPoint, jPoint;
 
-  su2double valJacobian_ij_00 = 0.0;
-
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
@@ -9387,35 +9413,24 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-          }
+        if (iNode != jPoint) {
+          StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
+        }
+        else{
+          StiffMatrix.SetBlock(iNode,jPoint,matrixId);
         }
       }
 
       /*--- Delete the full column for node iNode ---*/
       for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint, iNode,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != iPoint) {
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-          }
+        if (iNode != iPoint) {
+          StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
         }
       }
+    }
+    else {
+      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
+      for (iPoint = 0; iPoint < nPoint; iPoint++) StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
     }
   }
 
@@ -9425,12 +9440,8 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
   unsigned short iDim, jDim;
 
-  su2double *VarCoord = NULL;
-
   unsigned long iNode, iVertex;
   unsigned long iPoint, jPoint;
-
-  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 
   su2double valJacobian_ij_00 = 0.0;
   su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -9441,82 +9452,64 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Get the displ;acement on the vertex ---*/
+    /*--- Get the displacement of the node ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-       VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
+       Solution[iDim] = LinSysSol.GetBlock(iNode, iDim);
 
     if (geometry->node[iNode]->GetDomain()) {
 
-      if (nDim == 2) {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
-      }
-      else {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
-      }
-
       /*--- Initialize the reaction vector ---*/
 
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
+      LinSysRes.SetBlock(iNode, Solution);
 
       /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-          }
+        if (iNode != jPoint) {
+          StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
         }
-      }
-
-      /*--- Delete the columns for a particular node ---*/
-
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
-
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
-
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
-            }
-          }
-
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
-            }
-          }
-
-          /*--- For the whole column, except the diagonal term ---*/
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-          }
+        else{
+          StiffMatrix.SetBlock(iNode,jPoint,matrixId);
         }
       }
     }
+
+    /*--- Always delete the iNode column, even for halos ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
+
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
+
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
+          }
+        }
+
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Solution[jDim];
+          }
+        }
+
+        /*--- For the whole column, except the diagonal term ---*/
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+        }
+      }
+    }
+
   }
 
 }

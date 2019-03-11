@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -566,7 +566,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEMFluidIteration : public CIteration {
 public:
@@ -595,16 +595,16 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
   void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
+                  CIntegration ****integration_container,
+                  CGeometry ****geometry_container,
+                  CSolver *****solver_container,
+                  CNumerics ******numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
+                  CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   /*!
    * \brief Perform a single iteration of the finite element flow system.
    * \param[in] output - Pointer to the COutput class.
@@ -631,44 +631,53 @@ public:
   
   /*!
    * \brief Updates the containers for the finite element flow system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] ??? - Description here.
    */
   void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
+              CIntegration ****integration_container,
+              CGeometry ****geometry_container,
+              CSolver *****solver_container,
+              CNumerics ******numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
+              CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the finite element flow system.
    * \param[in] ??? - Description here.
    */
-  void Monitor();
+  bool Monitor(COutput *output,
+               CIntegration ****integration_container,
+               CGeometry ****geometry_container,
+               CSolver *****solver_container,
+               CNumerics ******numerics_container,
+               CConfig **config_container,
+               CSurfaceMovement **surface_movement,
+               CVolumetricMovement ***grid_movement,
+               CFreeFormDefBox*** FFDBox,
+               unsigned short val_iZone,
+               unsigned short val_iInst);
   
   /*!
-   * \brief Outputs desired files and quantities for the finite element flow system.
-   * \param[in] ??? - Description here.
+   * \brief Postprocess routine for the finite element flow system.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
    */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the finite element flow system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
+  void Postprocess(COutput *output,
+                   CIntegration ****integration_container,
+                   CGeometry ****geometry_container,
+                   CSolver *****solver_container,
+                   CNumerics ******numerics_container,
+                   CConfig **config_container,
+                   CSurfaceMovement **surface_movement,
+                   CVolumetricMovement ***grid_movement,
+                   CFreeFormDefBox*** FFDBox,
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
 };
 
 /*!
@@ -811,7 +820,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -1644,12 +1653,30 @@ public:
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
    */
-  void Monitor();
+  bool Monitor(COutput *output,
+               CIntegration ****integration_container,
+               CGeometry ****geometry_container,
+               CSolver *****solver_container,
+               CNumerics ******numerics_container,
+               CConfig **config_container,
+               CSurfaceMovement **surface_movement,
+               CVolumetricMovement ***grid_movement,
+               CFreeFormDefBox*** FFDBox,
+               unsigned short val_iZone,
+               unsigned short val_iInst);
 
   /*!
    * \brief Outputs desired files and quantities for the discrete adjoint fluid system.
    */
-  void Output();
+  void Output(COutput *output,
+              CGeometry ****geometry_container,
+              CSolver *****solver_container,
+              CConfig **config_container,
+              unsigned long ExtIter,
+              bool StopCalc,
+              unsigned short val_iZone,
+              unsigned short val_iInst);
+  
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
