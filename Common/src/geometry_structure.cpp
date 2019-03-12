@@ -8528,12 +8528,14 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
   
   adjacency_size = xadj[nPoint_Lin[rank]];
   adjacency      = new idx_t[adjacency_size];
-  copy(adjacency_vector.begin(), adjacency_vector.end(), adjacency);
+
+  for (iPoint = 0; iPoint < adjacency_size; iPoint++)
+    adjacency[iPoint] = (idx_t)adjacency_vector[iPoint];
+
+  /*--- Sync up the ranks before we call ParMETIS. ---*/
   
-  /*--- Free temporary memory used to build the adjacency. ---*/
-  
-  vector<unsigned long>().swap(adjacency_vector);
-  
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+ 
 #endif
 #endif
   
@@ -12751,9 +12753,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       cout << "Section " << string(sectionNames[s].data());
       cout << " contains " << element_count << " elements";
       cout << " of type " << currentElem << "." << endl;
-      if (isVolume[s]) cout << "  Interior range is " << startE-elemOffset[s] << " --> " << endE-elemOffset[s] << endl;
-      if (isVolume[s]) cout << "  Interior element count " << interiorElems << endl;
-
     }
     
   }
@@ -12793,7 +12792,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       if (cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
                           &elemType, &startE, &endE, &nbndry,
                           &parent_flag)) cg_error_exit();
-      
       
       /*--- Initialize some additional counters for the partitioning ---*/
       
@@ -12869,6 +12867,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
                                    (cgsize_t)elemE[rank], connElemCGNS.data(),
                                    NULL) != CG_OK) cg_error_exit();
       
+      /*--- Sync up the ranks after accessing the CGNS data. ---*/
+  
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      
+      /*--- Print some information to the console. ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << "Loading volume section " << string(sectionNames[s].data());
+        cout <<  " from file." << endl;
+      }
+
       /*--- Find the number of nodes required to represent
        this type of element. ---*/
       
@@ -12956,13 +12965,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
       }
       
-      /*--- Print some information to the console. ---*/
-      
-      if (rank == MASTER_NODE) {
-        cout << "Loading volume section " << string(sectionNames[s].data());
-        cout <<  "." << endl;
-      }
-      
       /*--- These are internal elems. Allocate memory on each proc. ---*/
       
       vector<cgsize_t> connElemTemp(nElems[s]*connSize);
@@ -13040,7 +13042,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Communicate the number of cells to be sent/recv'd amongst
        all processors. After this communication, each proc knows how
        many cells it will receive from each other processor. ---*/
-      
+
       SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                         &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
       
@@ -13143,7 +13145,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       if (nRecvs > 0) {
         connRecvReq = new SU2_MPI::Request[nRecvs];
       }
-      
+
       /*--- Launch the non-blocking sends and receives. ---*/
       
       InitiateComms(connSend, nElem_Send, connSendReq,
@@ -13163,12 +13165,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Complete the non-blocking communications. ---*/
       
       CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
+
+      /*--- Sync up the ranks after communicating. ---*/
+  
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
       
       /*--- Store the connectivity for this rank in the proper data
        structure before post-processing below. First, allocate the
        appropriate amount of memory for this section. ---*/
       
       if (nElem_Recv[size] > 0) {
+
         connElems[s] = new cgsize_t[nElem_Recv[size]*connSize];
         unsigned long count = 0;
         for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
@@ -13177,12 +13184,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             count++;
           }
         }
-      } else connElems[s] = NULL;
       
-      /*--- Store the total number of elements I now have for
-       the current section after completing the communications. ---*/
+        /*--- Store the total number of elements I now have for
+         the current section after completing the communications. ---*/
       
-      nElems[s] = nElem_Recv[size];
+        nElems[s] = nElem_Recv[size];
+
+      } else {
+
+        /*--- We do not have elements in this section. ---*/
+
+        nElems[s]    = 0; 
+        connElems[s] = NULL;
+
+      }
       
       /*--- Free temporary memory from communications ---*/
       
@@ -13193,10 +13208,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       delete [] connRecv;
       delete [] nElem_Recv;
       delete [] nElem_Send;
-      delete [] nElem_Flag;
-      
-    }
+      delete [] nElem_Flag;      
     
+    }
+
   } // end section
   
   /*--- Perform the loop over only the surface sections and have the
@@ -13235,7 +13250,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
         if (rank == MASTER_NODE) {
           cout << "Loading surface section " << string(sectionNames[s].data());
-          cout <<  "." << endl;
+          cout <<  " from file." << endl;
         }
         
         /*--- Store the number of elems (all on the master). ---*/
