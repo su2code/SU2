@@ -2271,7 +2271,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 
   /*--- Prepare sparsity structure ---*/
 
-  /*--- We need the it in global coordinates, i.e. shifted according to the position
+  /*--- We need it in global coordinates, i.e. shifted according to the position
    of the current rank in the linear partitioning space, and "unpacked" halo part.
    The latter forces us to re-sort the column indices of rows with halo points, which
    in turn requires blocks to be swapped accordingly. Moreover we need "pointer" and
@@ -2351,6 +2351,17 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
   if (pastix_data.rowidx.size() != nNonZero)
     SU2_MPI::Error("Error during preparation of PaStiX data", CURRENT_FUNCTION);
 
+  /*--- 4 - Perform ordering, symbolic factorization, and analysis steps ---*/
+
+  if (rank == MASTER_NODE && pastix_data.verb > 0) cout << endl;
+
+  pastix_data.iparm[IPARM_START_TASK] = API_TASK_ORDERING;
+  pastix_data.iparm[IPARM_END_TASK]   = API_TASK_ANALYSE;
+  pastix_data.run();
+
+  if (rank == MASTER_NODE && pastix_data.verb > 0)
+    cout << " +--------------------------------------------------------------------+" << endl;
+
   pastix_data.isinitialized = true;
 #endif
 }
@@ -2399,14 +2410,14 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
 
   if (!factorize) return; // No
 
-  /*--- Yes, clean old solver data (safer this way) ---*/
+  /*--- Yes ---*/
 
   if (rank == MASTER_NODE && pastix_data.verb > 0) {
     cout << endl;
-    if (pastix_data.isfactorized)
-      cout << " +--------------------------------------------------------------------+" << endl;
+    cout << " +--------------------------------------------------------------------+" << endl;
+    cout << " +              PaStiX : Parallel Sparse matriX package               +" << endl;
+    cout << " +--------------------------------------------------------------------+" << endl;
   }
-  pastix_data.clean();
 
   unsigned long i, j, iRow, begin, target, source, szBlk = nVar*nVar, nNonZero = pastix_data.values.size();
 
@@ -2451,7 +2462,7 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
 
   /*--- Compute factorization ---*/
 
-  pastix_data.iparm[IPARM_START_TASK] = API_TASK_ORDERING;
+  pastix_data.iparm[IPARM_START_TASK] = API_TASK_NUMFACT;
   pastix_data.iparm[IPARM_END_TASK]   = API_TASK_NUMFACT;
   pastix_data.run();
 
