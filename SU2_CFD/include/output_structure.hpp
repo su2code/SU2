@@ -486,6 +486,31 @@ public:
   void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
+   * \brief Write a native Inria restart file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Write solutions of interest.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Write a native Inria meshb file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SetInriaMesh(CConfig *config, CGeometry *geometry);
+
+  /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

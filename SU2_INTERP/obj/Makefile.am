@@ -79,6 +79,7 @@ ___bin_SU2_INTERP_LDADD = \
   ../../SU2_CFD/src/libSU2Core_a-output_physics.o \
   ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
   ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_inria.o \
   ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
   ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
   ../../SU2_CFD/src/libSU2Core_a-python_wrapper_structure.o \

@@ -85,6 +85,7 @@ ___bin_SU2_ECC_LDADD += \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-output_physics.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_inria.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-python_wrapper_structure.$(OBJEXT) \

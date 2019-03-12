@@ -2323,6 +2323,11 @@ void CErrorEstimationDriver::Output() {
 
   output->SetResult_Files_Parallel(coarse_solver_container, coarse_geometry_container, coarse_config_container, ExtIter, nZone);
 
+  /*--- Write an Inria format restart file ---*/
+  if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
+  output->SetInriaRestart(coarse_config_container[ZONE_0], coarse_geometry_container[ZONE_0][INST_0][MESH_0], coarse_solver_container[ZONE_0][INST_0][MESH_0] , ZONE_0);
+  output->WriteInriaOutputs(coarse_config_container[ZONE_0], coarse_geometry_container[ZONE_0][INST_0][MESH_0], coarse_solver_container[ZONE_0][INST_0][MESH_0] , ZONE_0);
+
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
   

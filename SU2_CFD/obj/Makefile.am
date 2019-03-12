@@ -120,6 +120,7 @@ libSU2Core_sources = \
   ../src/output_physics.cpp \
   ../src/output_tecplot.cpp \
   ../src/output_fieldview.cpp \
+  ../src/output_inria.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
   ../src/python_wrapper_structure.cpp \

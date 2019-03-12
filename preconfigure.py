@@ -118,6 +118,9 @@ def main():
         if any([modes["SU2_AD"] == 'CODI',  modes["SU2_DIRECTDIFF"] == 'CODI']):
             conf_environ, made_codi  = init_codi(argument_dict,modes,options.mpi_enabled, options.update)
 
+        if not options.inria_disabled:
+            made_inria  = init_inria(argument_dict,modes,options.update)
+
         configure(argument_dict,
                   conf_environ,
                   options.mpi_enabled,
@@ -126,7 +129,8 @@ def main():
                   options.inria_disabled,
                   modes,
                   made_adolc,
-                  made_codi)
+                  made_codi,
+                  made_inria)
 
     if options.check:
         prepare_source(options.replace, options.remove, options.revert)
@@ -332,6 +336,36 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
 
     return pkg_environ, True
 
+def init_inria(argument_dict, modes, update = False):
+
+    modules_failed = True
+    
+    # This information of the modules is used if projects was not cloned using git
+    # The sha tag must be maintained manually to point to the correct commit
+    sha_version_inria = 'e17db951bc137f025ab3b140297fc1ae3c33b832'
+    github_repo_inria = 'https://github.com/bmunguia/libMeshb'
+
+    inria_name = 'libMeshb'
+
+    alt_name_inria = 'externals/libMeshb'
+
+    # Some log and error files
+    log = open( 'preconf_inria.log', 'w' )
+    err = open( 'preconf_inria.err', 'w' )
+    pkg_environ = os.environ
+
+    inria_status = False
+
+    # Remove modules if update is requested
+    if update:
+        if os.path.exists(alt_name_inria):
+            print('Removing ' + alt_name_inria)
+            shutil.rmtree(alt_name_inria)
+
+    submodule_check(inria_name, alt_name_inria, github_repo_inria, sha_version_inria, log, err, update)
+
+    return True
+
 def submodule_check(name, alt_name, github_rep, sha_tag, log, err, update = False):
 
     try:
@@ -414,7 +448,8 @@ def configure(argument_dict,
               inria,
               modes,
               made_adolc,
-              made_codi):
+              made_codi,
+              made_inria):
 
     # Boostrap to generate Makefile.in
     bootstrap_command = './bootstrap'
