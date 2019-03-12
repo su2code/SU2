@@ -42,9 +42,17 @@ CURRENT_DIR = ${abs_top_builddir}/SU2_PY/pySU2
 
 SO_EXT=so
 
-SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
-SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
-SWIG_SO_REAL = _pysu2.${SO_EXT}
+if BUILD_NORMAL
+  SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
+  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
+  SWIG_SO_REAL = _pysu2.${SO_EXT}
+endif
+
+if BUILD_REVERSE
+  SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2ad.i
+  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
+  SWIG_SO_REAL = _pysu2ad.${SO_EXT}
+endif
 
 PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
@@ -88,19 +96,20 @@ if BUILD_TECIO
   TECIO_LIB += ${abs_top_builddir}/externals/tecio/libtecio.a
 endif
 
-#SU2Core lib
+#SU2_BASE lib
 if BUILD_NORMAL
   SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
     ${abs_top_builddir}/Common/lib/libSU2.a
-  PYLIB = "${bindir}/pysu2.py"
-  SOLIB = "${bindir}/_pysu2.so"
+  PYLIB = pysu2.py"
+  SOLIB = _pysu2.so
 endif
 
+#SU2_AD lib
 if BUILD_REVERSE
   SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core_AD.a \
     ${abs_top_builddir}/Common/lib/libSU2_AD.a
-  PYLIB = "${bindir}/pysu2ad.py"
-  SOLIB = "${bindir}/_pysu2ad.so"
+  PYLIB = pysu2ad.py
+  SOLIB = _pysu2ad.so
 endif
 
 # Set the linking flags to use
@@ -135,6 +144,6 @@ clean:
 	rm -f ${CURRENT_DIR}/*.py
 
 install: all
-	${INSTALL} pysu2.py ${PYLIB}
-	${INSTALL} _pysu2.so ${SOLIB}
+	${INSTALL} ${PYLIB} ${bindir}
+	${INSTALL} ${SOLIB} ${bindir}
 
