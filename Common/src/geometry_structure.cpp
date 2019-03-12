@@ -11741,7 +11741,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           unsigned long *connSend = NULL;
           connSend = new unsigned long[connSize*nElem_Send[size]];
-          for (int iSend = 0; iSend < connSize*nElem_Send[size]; iSend++)
+          for (iSend = 0; iSend < connSize*nElem_Send[size]; iSend++)
             connSend[iSend] = 0;
           
           /*--- Create an index variable to keep track of our index
@@ -12654,9 +12654,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   
   vector<vector<char> > sectionNames(nsections, vector<char>(CGNS_STRING_SIZE));
   
-  vector<bool> isVolume(nsections);
+  vector<bool> isVolume(nsections, true);
   
-  vector<unsigned long> elemOffset(nsections+1);
+  vector<unsigned long> elemOffset(nsections+1, 0);
   elemOffset[0] = 0;
   interiorElems = 0;
   
@@ -12762,11 +12762,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
    stored in this manner so that it can be written to
    SU2 memory later. ---*/
   
-  vector<int> elemTypeVTK(nsections);
+  vector<int> elemTypeVTK(nsections,0);
   
-  vector<unsigned long> elemIndex(nsections);
-  vector<unsigned long> nElems(nsections);
-  vector<unsigned long> dataSize(nsections);
+  vector<unsigned long> elemIndex(nsections,0);
+  vector<unsigned long> nElems(nsections,0);
+  vector<unsigned long> dataSize(nsections,0);
   
   cgsize_t **connElems = new cgsize_t*[nsections];
   
@@ -12802,9 +12802,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Allocate memory for the linear partitioning of the mesh. These
        arrays are the size of the number of ranks. ---*/
       
-      vector<unsigned long> nElem_Linear(size);
-      vector<unsigned long> elemB(size);
-      vector<unsigned long> elemE(size);
+      vector<unsigned long> nElem_Linear(size,0);
+      vector<unsigned long> elemB(size,0);
+      vector<unsigned long> elemE(size,0);
 
       /*--- Compute element linear partitioning ---*/
       
@@ -12839,13 +12839,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Allocate some memory for the handling the connectivity
        and auxiliary data that we are need to communicate. ---*/
       
-      vector<cgsize_t> elemTypes(nElems[s]);
-      vector<cgsize_t> nPoinPerElem(nElems[s]);
-      vector<cgsize_t> elemGlobalID(nElems[s]);
+      vector<cgsize_t> elemTypes(nElems[s],0);
+      vector<cgsize_t> nPoinPerElem(nElems[s],0);
+      vector<cgsize_t> elemGlobalID(nElems[s],0);
 
-      vector<bool> isMixed(nElems[s]);
-      for (iElem = 0; iElem < nElems[s]; iElem++)
-        isMixed[iElem] = false;
+      vector<bool> isMixed(nElems[s],false);
       
       /*--- Determine the size of the vector needed to read the connectivity
        data from the CGNS file. ---*/
@@ -12857,7 +12855,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       
       /*--- Allocate the memory for the connectivity and read the data. ---*/
       
-      vector<cgsize_t> connElemCGNS(sizeNeeded);
+      vector<cgsize_t> connElemCGNS(sizeNeeded,0);
       
       /*--- Retrieve the connectivity information and store. Note that
        we are only accessing our rank's piece of the data here in the
@@ -12967,7 +12965,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       
       /*--- These are internal elems. Allocate memory on each proc. ---*/
       
-      vector<cgsize_t> connElemTemp(nElems[s]*connSize);
+      vector<cgsize_t> connElemTemp(nElems[s]*connSize,0);
 
       /*--- Copy these values into the larger array into a standard
        format: [globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. ---*/
@@ -13226,17 +13224,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         /*--- Allocate some memory for the handling the connectivity
          and auxiliary data that we are need to communicate. ---*/
         
-        vector<cgsize_t> connElemCGNS(nElems[s]*connSize);
+        vector<cgsize_t> connElemCGNS(nElems[s]*connSize,0);
         
-        vector<unsigned short> elemTypes(nElems[s]);
-        vector<unsigned short> nPoinPerElem(nElems[s]);
+        vector<unsigned short> elemTypes(nElems[s],0);
+        vector<unsigned short> nPoinPerElem(nElems[s],0);
         
-        vector<unsigned long> elemGlobalID(nElems[s]);
+        vector<unsigned long> elemGlobalID(nElems[s],0);
         
-        vector<bool> isMixed(nElems[s]);
-        
-        for (iElem = 0; iElem < nElems[s]; iElem++)
-          isMixed[iElem] = false;
+        vector<bool> isMixed(nElems[s],false);
         
         /*--- First increment the markers ---*/
         
@@ -13331,7 +13326,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         /*--- Allocate memory for accessing the connectivity and to
          store it in the proper data structure for post-processing. ---*/
         
-        vector<cgsize_t> connElemTemp(dataSize[s]);
+        vector<cgsize_t> connElemTemp(dataSize[s],0);
         
         connElems[s] = new cgsize_t[nElems[s]*connSize];
         
@@ -13886,14 +13881,14 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
 #ifdef HAVE_PARMETIS
   
   long local_index;
-  unsigned long iNode, jNode, iElem, cgns_nodes[8] = {0,0,0,0,0,0,0,0};
+  unsigned long iPoint, iNode, jNode, iElem, cgns_nodes[8] = {0,0,0,0,0,0,0,0};
   
   /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
-  
-  vector< vector<unsigned long> >::iterator it2;
+
+  adj_nodes.clear();
   adj_nodes.resize(nPoint);
-  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
-    it2->resize(0);
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    adj_nodes[iPoint].resize(0);
   
   /*--- Loop over all elements that are now loaded and store adjacency. ---*/
   
