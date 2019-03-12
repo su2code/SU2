@@ -16080,7 +16080,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
 
   /*--- Allocate partial control volume for error estimation ---*/
-  if(config->GetError_Estimate()){
+  if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
     for(iPoint = 0; iPoint < nPoint; iPoint++){
       if(action == ALLOCATE){
         node[iPoint]->SetnPartialVolume(node[iPoint]->GetnNeighbor());
