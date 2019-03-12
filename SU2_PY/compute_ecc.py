@@ -183,7 +183,7 @@ def main():
     konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
     konfig.SOLUTION_ADJ_FILENAME  = 'adjoint/' + konfig.RESTART_ADJ_FILENAME
     konfig.RESTART_ADJ_FILENAME   = konfig.INTERPOLATED_RESTART_ADJ_FILENAME
-    konfig.ERROR_ESTIMATE == 'YES'
+    konfig.ERROR_ESTIMATE == 'NO'
     konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
     folderName = 'linear/adjoint/'
