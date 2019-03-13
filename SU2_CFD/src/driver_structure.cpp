@@ -2306,7 +2306,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       if (config->GetBody_Force() == YES)
         if (incompressible) numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
         else numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
-      else if (incompressible && (config->GetPeriodic_BC_Body_Force() == YES))
+      else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE))
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ))
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBoussinesq(nDim, nVar_Flow, config);

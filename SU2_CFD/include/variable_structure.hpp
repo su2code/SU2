@@ -871,26 +871,28 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Recovered/Physical pressure for periodic flow.
+   * \param[in] val_pressure - pressure value.
    */
-  virtual su2double GetPressure_Recovered(void); // TK
+  virtual void SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure);
   
   /*!
    * \brief A virtual member.
-   * \return Recovered/Physical temperature for periodic flow.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  virtual su2double GetTemperature_Recovered(void);
+  virtual su2double GetStreamwise_Periodic_RecoveredPressure(void);
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_temperature - temperature value.
    */
-  virtual void SetPressure_Recovered(su2double val_pressure);
+  virtual void SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature);
   
   /*!
    * \brief A virtual member.
+   * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  virtual void SetTemperature_Recovered(su2double val_temperature);
-  
+  virtual su2double GetStreamwise_Periodic_RecoveredTemperature(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the flow density.
@@ -3607,8 +3609,8 @@ protected:
   
   su2double Density_Old;
   
-  su2double Pressure_Recovered;
-  su2double Temperature_Recovered;
+  su2double Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure for streamwise periodic flow. */
+            Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature for streamwise periodic flow. */
 
 public:
   
@@ -3790,27 +3792,29 @@ public:
   su2double GetDensity_Old(void);
   
   /*!
-   * \brief A virtual member.
-   * \return Recovered/Physical pressure for periodic flow.
+   * \brief Set the recovered pressure for streamwise periodic flow.
+   * \param[in] val_pressure - pressure value.
    */
-  su2double GetPressure_Recovered(void); // TK
+  void SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure);
   
   /*!
-   * \brief A virtual member.
-   * \return Recovered/Physical temperature for periodic flow.
+   * \brief Get the recovered pressure for streamwise periodic flow.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  su2double GetTemperature_Recovered(void);
+  su2double GetStreamwise_Periodic_RecoveredPressure(void);
   
   /*!
-   * \brief A virtual member.
+   * \brief Set the recovered pressure for streamwise periodic flow.
+   * \param[in] val_temperature - temperature value.
    */
-  void SetPressure_Recovered(su2double val_pressure);
+  void SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature);
   
   /*!
-   * \brief A virtual member.
+   * \brief Get the recovered temperature for streamwise periodic flow.
+   * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  void SetTemperature_Recovered(su2double val_temperature);
-  
+  su2double GetStreamwise_Periodic_RecoveredTemperature(void);
+
   /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.

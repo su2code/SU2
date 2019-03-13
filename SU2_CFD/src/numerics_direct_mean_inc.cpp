@@ -891,27 +891,36 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
 CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
+  implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  energy    = config->GetEnergy_Equation();
+
+  Streamwise_Coord_Vector = new su2double[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Streamwise_Coord_Vector[iDim] = config->GetPeriodicTranslation(0)[iDim];
+
   /*--- Compute square of the distance between the 2 periodic surfaces ---*/
   norm2_translation = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+    norm2_translation += pow(Streamwise_Coord_Vector[iDim],2);
+    
 }
 
 CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) {
+
+  if (Streamwise_Coord_Vector != NULL) delete [] Streamwise_Coord_Vector;
 
 }
 
 void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
 
   unsigned short iDim, iVar, jVar;
-  bool turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-  su2double Body_Force, dot_product, Body_Force_T_factor;
+  su2double dot_product, scalar_factor;
 
-  su2double integrated_heatflux = config->GetPeriodic_HeatfluxIntegrated();
-  su2double massflow = config->GetPeriodic_MassFlow("outlet");  // TK hardcoded outlet!
-
+  delta_p             = config->GetStreamwise_Periodic_PressureDrop();
+  massflow            = config->GetStreamwise_Periodic_MassFlow();
+  integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow(); 
+  
   /*--- Initialize the Jacobian contribution to zero ---*/
   if (implicit) {
     for (iVar=0; iVar < nVar; iVar++)
@@ -926,42 +935,42 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
 
   /*--- Compute the momentum equation source based on the prescribed (or computed if massflow) delta pressure ---*/ 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Body_Force = ( config->GetDeltaP_BodyForce()/config->GetPressure_Ref() ) / norm2_translation * config->GetPeriodicTranslation(0)[iDim]; // TK check if pres_ref is the same as force ref, TK is the (0) hardcoded?
-    val_residual[iDim+1] = -Volume * Body_Force;
+    scalar_factor = ( delta_p/config->GetPressure_Ref() ) / norm2_translation * Streamwise_Coord_Vector[iDim]; // TK check if pres_ref is the same as force ref, TK the (0) is hardcoded! streamwise periodic has to be the first marker
+    val_residual[iDim+1] = -Volume * scalar_factor;
   }
 
   /*--- Compute the periodic temperature contribution to the energy equation, if energy equation is considered ---*/
   val_residual[nDim+1] = 0.0;
-  if (config->GetEnergy_Equation()) {
+  if (energy) {
     
-    Body_Force_T_factor = integrated_heatflux * DensityInc_i / (massflow * norm2_translation);
+    scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
     
     /*--- Compute scalar-product v*t ---*/
     dot_product = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      dot_product += V_i[iDim+1] * config->GetPeriodicTranslation(0)[iDim];
+      dot_product += V_i[iDim+1] * Streamwise_Coord_Vector[iDim];
     }
-    val_residual[nDim+1] = Volume * Body_Force_T_factor * dot_product;
+    val_residual[nDim+1] = Volume * scalar_factor * dot_product;
 
     /*--- If a RANS turbulence model is used an additional source term, based on the eddy viscosity
           gradient is added. ---*/
     if(turbulent) {
 
       /*--- Compute the scalar factor ---*/
-      Body_Force_T_factor = integrated_heatflux / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());
+      scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
       dot_product = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += config->GetPeriodicTranslation(0)[iDim] * PrimVar_Grad_i[nDim+4][iDim]; // gradient of eddy viscosity, TK not readliy available yet +4 only to prevent out of bound error/segfault
+        dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+4][iDim]; // gradient of eddy viscosity, TK not readliy available yet +4 only to prevent out of bound error/segfault
 
-      val_residual[nDim+1] -= Volume * Body_Force_T_factor * dot_product;
+      val_residual[nDim+1] -= Volume * scalar_factor * dot_product;
     } // turbulent
     
     /*--- Jacobian contribution of energy equation periodic source term ---*/
     if (implicit) {
       for (iDim = 0; iDim < nDim; iDim++)
-        Jacobian_i[nDim+1][iDim+1] = 0.0;//Volume * Body_Force_T_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
+        Jacobian_i[nDim+1][iDim+1] = 0.0;//Volume * scalar_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
     }
   } // Energy
 

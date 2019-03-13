@@ -480,7 +480,6 @@ void CConfig::SetPointersNull(void) {
   Surface_DC60             = NULL;    Surface_IDC = NULL;
 
   Outlet_MassFlow      = NULL;       Outlet_Density      = NULL;      Outlet_Area     = NULL;
-  Periodic_MassFlow      = NULL;       Periodic_Heatflux      = NULL;
 
   Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
   Surface_MomentumDistortion = NULL;
@@ -527,8 +526,8 @@ void CConfig::SetPointersNull(void) {
   Kind_ObjFunc   = NULL;
 
   Weight_ObjFunc = NULL;
-  
-  PeriodicRefNode_BodyForce = NULL;
+
+  Streamwise_Periodic_RefNode = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -757,13 +756,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
-  
-  /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions (NO, YES) */
-  addBoolOption("PERIODIC_BC_BODY_FORCE", Periodic_BC_Body_Force, false);
-  /* DESCRIPTION: Delta pressure on which basis body force will be computed  */ // TK 1.0 is now the starting value for specified massflow, or simply the value that you specify
-  addDoubleOption("DELTA_P_BODY_FORCE", DeltaP_BodyForce, 1.0);
+
+  /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions (NONE, PRESSURE_DROP, MASSFLOW) */
+  addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
+  /* DESCRIPTION: Delta pressure on which basis body force will be computed, serves as initial value if MASSFLOW is chosen */
+  addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Massflow basis body (via Delta P) force will be computed  */
-  addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_periodic_massflow, 0.0);
+  addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
   
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
@@ -4254,21 +4253,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Check for Body Force driven case with Periodic Boundary conditions ---*/
+  /*--- Check for Streamwise Periodic Boundary conditions ---*/
+  if (Kind_Streamwise_Periodic != NONE) {
+    if (Kind_Solver == EULER) SU2_MPI::Error("Didn't test dat shit yet.", CURRENT_FUNCTION);
+    if (Kind_Regime != INCOMPRESSIBLE) SU2_MPI::Error("Streamwise Periodic BC currently only implemented for incompressible flow.", CURRENT_FUNCTION);
+    if (nMarker_PerBound != 2) SU2_MPI::Error("Streamwise Periodic BC currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible.", CURRENT_FUNCTION);
+    if (Energy_Equation && nMarker_Isothermal != 0) SU2_MPI::Error("No isothermal marker allowed with streamwise periodicity, only heatflux..", CURRENT_FUNCTION);
   
-  if ((Periodic_BC_Body_Force == YES) && !(Kind_Regime == INCOMPRESSIBLE)) {
-    SU2_MPI::Error("Body Force driven Periodic BC currently only implemented for incompressible flow.", CURRENT_FUNCTION);
-  }
-  cout << "nMarker_PerBound : " << nMarker_PerBound << endl;
-  if ((Periodic_BC_Body_Force == YES) && !(nMarker_PerBound == 2)) {
-    SU2_MPI::Error("Body Force driven Periodic BC currently only implemented for one Periodic Boundary pair.", CURRENT_FUNCTION);
-  }
-  
-  /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
-  // NEED TO PROPERLY INITIALIZE INTEGRATED VALUE USING BC FOR TEMPERATURE
-  if (Periodic_BC_Body_Force == YES) {
-    PeriodicRefNode_BodyForce = new su2double[val_nDim];
-    Heatflux_Integrated = 1e-10;
+    /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
+    Streamwise_Periodic_RefNode = new su2double[val_nDim];
   }
 
   /*--- Handle default options for topology optimization ---*/
@@ -4369,7 +4362,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
-  nMarker_All = nMarker_Max;
+  nMarker_All = nMarker_Max; // TK:: one of these is unecessary
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
@@ -4606,16 +4599,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Outlet_Density[iMarker_Outlet]  = 0.0;
     Outlet_Area[iMarker_Outlet]     = 0.0;
   }
-
-  Periodic_MassFlow = new su2double[nMarker_PerBound];
-  Periodic_Heatflux  = new su2double[nMarker_HeatFlux];
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_PerBound; iMarker_Outlet++) {
-    Periodic_MassFlow[iMarker_Outlet] = 0.0;
-  }
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_HeatFlux; iMarker_Outlet++) {
-    Periodic_Heatflux[iMarker_Outlet] = 0.0;
-  }
-  
 
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -7144,10 +7127,7 @@ CConfig::~CConfig(void) {
   
   if (Outlet_Area != NULL) delete[] Outlet_Area;
   if (Outlet_Density != NULL) delete[] Outlet_Density;
-  if (Outlet_MassFlow != NULL) delete[] Outlet_MassFlow;
-  if (Periodic_MassFlow != NULL) delete[] Periodic_MassFlow;
-  if (Periodic_Heatflux != NULL) delete[] Periodic_Heatflux;
-  
+  if (Outlet_MassFlow != NULL) delete[] Outlet_MassFlow;  
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
   if (Surface_Mach != NULL)    delete[]  Surface_Mach;
   if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
@@ -7250,7 +7230,7 @@ CConfig::~CConfig(void) {
   if (MG_CorrecSmooth != NULL)           delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)                  delete[] PlaneTag;
   if (CFL != NULL)                       delete[] CFL;
-  if (PeriodicRefNode_BodyForce != NULL) delete[] PeriodicRefNode_BodyForce;
+  if (Streamwise_Periodic_RefNode != NULL) delete[] Streamwise_Periodic_RefNode;
 
   /*--- String markers ---*/
   
@@ -7853,13 +7833,6 @@ su2double CConfig::GetOutlet_MassFlow(string val_marker) {
   return Outlet_MassFlow[iMarker_Outlet];
 }
 
-su2double CConfig::GetPeriodic_MassFlow(string val_marker) {
-  unsigned short iMarker_Outlet;
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_PerBound; iMarker_Outlet++)
-    if ((Marker_PerBound[iMarker_Outlet] == val_marker)) break;
-  return Periodic_MassFlow[iMarker_Outlet];
-}
-
 su2double CConfig::GetOutlet_Density(string val_marker) {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
@@ -7872,13 +7845,6 @@ su2double CConfig::GetOutlet_Area(string val_marker) {
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
   return Outlet_Area[iMarker_Outlet];
-}
-
-su2double CConfig::GetPeriodic_Heatflux(string val_marker) {
-  unsigned short iMarker_Outlet;
-  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_HeatFlux; iMarker_Outlet++)
-    if ((Marker_HeatFlux[iMarker_Outlet] == val_marker)) break;
-  return Periodic_Heatflux[iMarker_Outlet];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {

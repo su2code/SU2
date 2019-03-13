@@ -2163,7 +2163,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -8687,9 +8687,9 @@ public:
   void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
-   * \brief A virtual member. - add documentaiton
+   * \brief Compute necessary quantities (massflow, integrated heatflux, ...) for streamwise periodic cases.
    */
-  void GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   
 };

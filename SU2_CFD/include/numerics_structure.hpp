@@ -5266,16 +5266,24 @@ public:
 };
 
 /*!
- * \class CSourceIncPeriodicBodyForce
+ * \class CSourceIncStreamwise_Periodic
  * \brief Class for the source term integration of a body force in the incompressible solver. Used for periodic BC.
  * \ingroup SourceDiscr
- * \author T. Economon
+ * \author T. Kattmann
  * \version 6.1.0 "Falcon"
  */
 class CSourceIncStreamwise_Periodic : public CNumerics {
-  bool implicit; /*!< \brief Implicit calculation. */
-  su2double norm2_translation; /*!< \brief Square of distance between the 2 periodic surfaces. */
-  
+  bool implicit, /*!< \brief Implicit calculation. */
+       turbulent,  /*!< \brief Turbulence model used. */
+       energy;  /*!< \brief Energy equation on. */
+
+  su2double *Streamwise_Coord_Vector; /*!< \brief Translation vector between periodic surfaces. */
+
+  su2double norm2_translation, /*!< \brief Square of distance between the 2 periodic surfaces. */
+            integrated_heatflow,  /*!< \brief Total heat added intto the domain via heatflux marker. */
+            massflow,  /*!< \brief Massflow through streamwise periodic 'outlet' marker. */
+            delta_p; /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+
 public:
 
   /*!

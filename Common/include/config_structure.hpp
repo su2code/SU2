@@ -359,9 +359,6 @@ private:
   su2double *Outlet_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
   su2double *Outlet_Density;    /*!< \brief Avg. density for outlet boundaries. */
   su2double *Outlet_Area;    /*!< \brief Area for outlet boundaries. */
-  su2double *Periodic_Heatflux;    /*!< \brief Area for outlet boundaries. */
-  su2double *Periodic_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
-  su2double Heatflux_Integrated;   /*!< \brief Heatflux integrated over all nonyero heatflux boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
@@ -1053,10 +1050,14 @@ private:
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
-  bool Periodic_BC_Body_Force; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
-  su2double DeltaP_BodyForce;  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
-  su2double Streamwise_periodic_massflow;  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
-  su2double *PeriodicRefNode_BodyForce; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+
+  unsigned short Kind_Streamwise_Periodic; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
+  su2double Streamwise_Periodic_PressureDrop;  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_TargetMassFlow;  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow; /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double *Streamwise_Periodic_RefNode; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -2921,16 +2922,22 @@ public:
   su2double *GetWeightsIntegrationADER_DG(void);
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers of the local process.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
   
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers in the cfg plus the possible send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_Max(void);
+
+  /*!
+   * \brief Get the total number of boundary markers in the cfg file.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_CfgFile(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -5992,40 +5999,64 @@ public:
   su2double* GetBody_Force_Vector(void);
 
   /*!
-   * \brief Get information about the body force.
-   * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
+   * \brief Get information about the streamwise periodicity (None, Pressure_Drop, Massflow).
+   * \return Driving force identification.
    */
-  bool GetPeriodic_BC_Body_Force(void);
+  unsigned short GetKind_Streamwise_Periodic(void);
 
   /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.
    * \return Delta Pressure for body force computation.
    */
-  su2double GetDeltaP_BodyForce(void);
+  su2double GetStreamwise_Periodic_PressureDrop(void);
   
   /*!
    * \brief Set the value of the pressure delta from which body force vector is computed.
    * \param[in] delta_p - pressure difference between in- and outlet.
    */
-  void SetDeltaP_BodyForce(su2double delta_p);
+  void SetStreamwise_Periodic_PressureDrop(su2double delta_p);
 
-/*!
+  /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */
-  su2double GetStreamwise_periodic_massflow(void);
+  su2double GetStreamwise_Periodic_TargetMassFlow(void);
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  su2double* GetPeriodicRefNode_BodyForce(void);
+  su2double* GetStreamwise_Periodic_RefNode(void);
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  void SetPeriodicRefNode_BodyForce(su2double* RefNode, unsigned short nDim);
+  void SetStreamwise_Periodic_RefNode(su2double* RefNode, unsigned short nDim);
+
+  /*!
+   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
+   * \return The streamwise periodic donor/outlet massflow.
+   */
+  su2double GetStreamwise_Periodic_MassFlow();
+  
+  /*!
+   * \brief Set the massflow at the streamwise periodic donor/outlet boundary.
+   * \param[in] val_massflow - Massflow at the streamwise periodic donor marker.
+   */
+  void SetStreamwise_Periodic_MassFlow(su2double val_massflow);
+
+  /*!
+   * \brief Get the net sum of the heatflow into the domain.
+   * \return The net sum of the heatflow into the domain.
+   */
+  su2double GetStreamwise_Periodic_IntegratedHeatFlow();
+  
+  /*!
+   * \brief Set the net sum of the heatflow into the domain.
+   * \param[in] val_heatflow - Net sum of the heatflow into the domain.
+   */
+  void SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow);
 
   /*!
    * \brief Get information about the rotational frame.
@@ -6101,7 +6132,7 @@ public:
    * \return Kind of convergence criteria.
    */
   unsigned short GetConvCriteria(void);
-  
+
   /*!
    * \brief Get the index in the config information of the marker <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
@@ -7589,34 +7620,6 @@ public:
    * \return The outlet pressure.
    */
   void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
-
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetPeriodic_Heatflux(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  void SetPeriodic_Heatflux(unsigned short val_imarker, su2double val_heatflux);
-
-  /*!
-   * \brief 
-   * \param[in]
-   * \return
-   */
-  su2double GetPeriodic_HeatfluxIntegrated();
-
-  /*!
-   * \brief 
-   * \param[in]
-   * \return
-   */
-  void SetPeriodic_HeatfluxIntegrated(su2double IntegratedHeatflux);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

@@ -2687,9 +2687,9 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
-  /*--- Compute integrated Heatflux and massflow, TK Euler equations not implemented yet ---*/
-  
-  if (config->GetPeriodic_BC_Body_Force()) GetPeriodic_Properties(geometry, config, iMesh, Output);
+  /*--- Compute integrated Heatflux and massflow, TK:: Euler equations not implemented yet, probalby wasted here ---*/
+
+  if (config->GetKind_Streamwise_Periodic()) GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -3129,7 +3129,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   bool body_force     = config->GetBody_Force();
-  bool streamwise_periodic = config->GetPeriodic_BC_Body_Force();
+  bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
   bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous        = config->GetViscous();
 
@@ -11092,468 +11092,182 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   
 }
 
-void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { // TK Heatflux computation only if energy equation is on
-  
+void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { 
+  if (rank == MASTER_NODE) { cout << "------------------------------- New Routine Start --------------------------" << endl; }
+  /*---------------------------------------------------------------------------------------------*/
+  // 1. evaluate massflow, avg_density, Area at streamwise periodic outlet. also bulk temp at in/outlet. Loop periodic markers. Communicate and set results
+  // 2. Update delta_p is target massflow is chosen.
+  // 3. Loop Heatflux (or all for real heatflux) markers. compute heatflux in domain via config or real heatflux, communicate and set results. only if energy equation is on.
+  /*---------------------------------------------------------------------------------------------*/
+
+  /*--- Initialization and allocation done here. ---*/
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet = NULL, Pressure, Temperature, Velocity[3], MassFlow,
-  Velocity2, Density, Area, Vel_Infty2, AxiFactor;
-  unsigned short iMarker_Outlet, nMarker_Outlet;
-  string Inlet_TagBound, Outlet_TagBound;
-  su2double Heatflux_Integrated = 0.0;
-  
-  bool axisymmetric = config->GetAxisymmetric();
 
+  bool axisymmetric = config->GetAxisymmetric();
   bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0) // TK output at every iteration
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
+
+  su2double AxiFactor;
+
+  /*-------------------------------------------------------------------------------------------------*/
+  /*--- 1. Evaluate Massflow [kg/s], area-averaged density [kg/m^3] and Area [m^2] at the         ---*/
+  /*---    (there can be only one) streamwise periodic outlet/donor marker. Massflow is obviously ---*/
+  /*---    needed for prescribed massflow but also for the additional source and heatflux         ---*/
+  /*---    boundary terms of the energy equation. Area and the avg-density are used for the       ---*/
+  /*---    Pressure-Drop update in case of a prescribed massflow.                                 ---*/
+  /*-------------------------------------------------------------------------------------------------*/
   
-  /*--- Get the number of outlet markers and check for any mass flow BCs. ---*/
+  su2double Area_Local = 0.0, Area_Global = 0.0, FaceArea,
+            MassFlow_Local = 0.0, MassFlow_Global = 0.0,
+            Average_Density_Local = 0.0, Average_Density_Global = 0.0;
+
+  su2double *AreaNormal = new su2double[nDim];
   
-  nMarker_Outlet = config->GetnMarker_Periodic();
-  bool Evaluate_BC = true;
-  
-  /*--- If we have a massflow outlet BC, then we need to compute and
-   communicate the total massflow, density, and area through each outlet
-   boundary, so that it can be used in the iterative procedure to update
-   the back pressure until we converge to the desired mass flow. This
-   routine is called only once per iteration as a preprocessing and the
-   values for all outlets are stored and retrieved later in the BC_Outlet
-   routines. ---*/
-  
-  if (Evaluate_BC) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    su2double *Outlet_MassFlow    = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Density     = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Temperature = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Area        = new su2double[config->GetnMarker_All()];
-    
-    /*--- Comute MassFlow, average temp, press, etc. ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY && config->GetMarker_All_PerBound(iMarker) == 2) { // outlet/donor periodic marker
       
-      Outlet_MassFlow[iMarker] = 0.0;
-      Outlet_Density[iMarker]  = 0.0;
-      Outlet_Temperature[iMarker]  = 0.0;
-      Outlet_Area[iMarker]     = 0.0;
-      
-      if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) ) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
           
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal);
           
-          if (geometry->node[iPoint]->GetDomain()) {
-            
-            V_outlet = node[iPoint]->GetPrimitive();
-            
-            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-            
-            if (axisymmetric) {
-              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-              else
-                AxiFactor = 1.0;
-            } else {
+          if (axisymmetric) {
+            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+            else
               AxiFactor = 1.0;
-            }
-            
-            Pressure     = V_outlet[0];
-            Density      = V_outlet[nDim+2];
-            
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
-            
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-              Velocity[iDim] = V_outlet[iDim+1];
-              Velocity2 += Velocity[iDim] * Velocity[iDim];
-              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
-            }
-            Area = sqrt (Area);
-            
-            Temperature  = node[iPoint]->GetTemperature_Recovered();
-            //cout << iPoint << "  " << Temperature << endl;
-            
-            Outlet_MassFlow[iMarker]    += MassFlow;
-            Outlet_Density[iMarker]     += Density*Area;
-            Outlet_Temperature[iMarker] += Temperature*Area;
-            Outlet_Area[iMarker]        += Area;
+          } else {
+            AxiFactor = 1.0;
           }
-        }
-      }
-    }
-    
-    /*--- Copy to the appropriate structure ---*/
-    
-    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Temperature_Local  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
-    
-    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Temperature_Total  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
-    
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
-      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
-      Outlet_Temperature_Local[iMarker_Outlet]  = 0.0;
-      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
-      
-      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
-      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
-      Outlet_Temperature_Total[iMarker_Outlet]  = 0.0;
-      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
-    }
-    
-    /*--- Copy the values to the local array for MPI ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)) {
-        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-          Outlet_TagBound = config->GetMarker_Periodic_TagBound(iMarker_Outlet);
-          cout << Outlet_TagBound << endl;
-          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
-            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
-            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
-            Outlet_Temperature_Local[iMarker_Outlet]  += Outlet_Temperature[iMarker];
-            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
+          
+          FaceArea = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
+            MassFlow_Local += AreaNormal[iDim] * AxiFactor * node[iPoint]->GetDensity() * node[iPoint]->GetVelocity(iDim);
           }
-        }
-      }
-    }
-    
-    /*--- All the ranks to compute the total value ---*/
-    
-#ifdef HAVE_MPI
-    
-    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Temperature_Local, Outlet_Temperature_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
-#else
-    
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
-      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
-      Outlet_Temperature_Total[iMarker_Outlet]  = Outlet_Temperature_Local[iMarker_Outlet];
-      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
-    }
-    
-#endif
-    
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
-        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
-        Outlet_Temperature_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
-      }
-      else {
-        Outlet_Density_Total[iMarker_Outlet] = 0.0;
-        Outlet_Temperature_Total[iMarker_Outlet] = 0.0;
-      }
-      
-      if (iMesh == MESH_0) {
-        config->SetPeriodic_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
-        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]); // TK maybe use own function here, but otherwise no problem
-        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]); // TK maybe use own function here, but otherwise no problem
-      }
-    }
-    
-    // Subtract the bulk temperature to set Q
-    // OPTION 3 compute energy Q via inlet and outlet bulk temperature, after FLuent way bulk tmep is not computed correctly
-    // HARD CODED for 2 markers and the absolutr value should not be here!!! TDE
-    su2double dT = 0.0;
-      dT = fabs(Outlet_Temperature_Total[1] - Outlet_Temperature_Total[0]); // TK !! Here was Density before  as the container was used for that
-    
-    if (iMesh == MESH_0) {
-      if (config->GetExtIter() == 0) { config->SetPeriodic_HeatfluxIntegrated(3.1415); } // TK HARDCODED starting help with value from BC definition
-      else { config->SetPeriodic_HeatfluxIntegrated(dT*config->GetPeriodic_MassFlow("outlet")*node[0]->GetSpecificHeatCp());}
-    }
-    
-    /*--- Screen output using the values already stored in the config container ---*/
-    
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
-      
-      cout.precision(5);
-      cout.setf(ios::fixed, ios::floatfield);
-      
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-        cout << endl   << "---------------------------- Outlet properties Fluent way --------------------------" << endl;
-      }
-      
-      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-        Outlet_TagBound = config->GetMarker_Periodic_TagBound(iMarker_Outlet);
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-          
-          /*--- Geometry defintion ---*/
-          
-          cout <<"Outlet surface: " << Outlet_TagBound << "." << endl;
+          FaceArea = sqrt(FaceArea);
+          Area_Local += FaceArea;
+          Average_Density_Local += FaceArea * node[iPoint]->GetDensity();
 
-          
-          su2double Outlet_mDot = fabs(config->GetPeriodic_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
-          
-          cout <<"Bulk temperature difference: " << dT * config->GetTemperature_Ref()<< " : Q : " << config->GetPeriodic_HeatfluxIntegrated() * config->GetHeat_Flux_Ref() << endl;
+        } // if domain
+      } // loop vertices
+    } // loop periodic boundaries
+  } // loop MarkerAll
 
-        }
-      }
-      
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
-        cout << "-------------------------------------------------------------------------" << endl << endl;
-      }
-      
-      cout.unsetf(ios_base::floatfield);
-      
-    }
-    
+  // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflwo
+  SU2_MPI::Allreduce(&Area_Local,            &Area_Global,            1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Average_Density_Local, &Average_Density_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MassFlow_Local,        &MassFlow_Global,        1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    // BEGIN HEAT FLUX LOOP =====================================
+  // Set quantity by stringtag
+  Average_Density_Global /= Area_Global;
+  config->SetStreamwise_Periodic_MassFlow(MassFlow_Global);
 
-    nMarker_Outlet = config->GetnMarker_HeatFlux();
+  if (rank == MASTER_NODE) { cout << "MassFlow_Global: " << MassFlow_Global * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
+  if (rank == MASTER_NODE) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
 
+  if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
+    /*------------------------------------------------------------------------------------------------*/
+    /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/ 
+    /*---    The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
+    /*------------------------------------------------------------------------------------------------*/
 
-    /*--- Comute MassFlow, average temp, press, etc. ---*/
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-      Outlet_MassFlow[iMarker] = 0.0;
-      Outlet_Density[iMarker]  = 0.0;
-      Outlet_Temperature[iMarker]  = 0.0;
-      Outlet_Area[iMarker]     = 0.0;
-
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ) { // This if-clause can be omitted for OPTION 2 
-
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if (geometry->node[iPoint]->GetDomain()) {
-
-            V_outlet = node[iPoint]->GetPrimitive();
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-
-            if (axisymmetric) {
-              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-              else
-                AxiFactor = 1.0;
-            } else {
-              AxiFactor = 1.0;
-            }
-
-            Temperature  = V_outlet[nDim+1];
-            Pressure     = V_outlet[0];
-            Density      = V_outlet[nDim+2];
-
-            /*--- Identify the boundary by string name ---*/
-
-            string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-              Velocity[iDim] = V_outlet[iDim+1];
-              Velocity2 += Velocity[iDim] * Velocity[iDim];
-              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
-            }
-            Area = sqrt (Area);
-            
-            /*--- Get the specified wall heat flux from config ---*/
-            su2double Wall_HeatFlux = 0.0;
-            
-            /*--- OPTION 2 for Heatflux calculation from computing actual heatflux ---*/
-            su2double GradTemperature = 0.0;
-            // turn off for no energy equation
-            for (iDim = 0; iDim < nDim; iDim++) // TK This would need to be done with recoverd Temperature!!!
-              GradTemperature -= node[iPoint]->GetGradient_Primitive(nDim+1, iDim)*Vector[iDim]; // Vector is Area normal TK should it be unit normal here? A test with division by Area showed that the area normal is correct
-            
-            su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
-            Wall_HeatFlux = -thermal_conductivity*GradTemperature;
-            
-            /*--- OPTION 1 for Heatflux calculation from config file ---*/
-            Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-            
-            /*--- END OPTIONS ---*/
-            
-            Outlet_MassFlow[iMarker] += MassFlow;
-            Outlet_Density[iMarker]  += Density*Area;
-            Outlet_Temperature[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
-            Outlet_Area[iMarker]     += Area;
-            
-          }
-        }
-      }
-    }
-
-    /*--- Copy to the appropriate structure ---*/
-
-
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
-      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
-      Outlet_Temperature_Local[iMarker_Outlet]  = 0.0;
-      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
-
-      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
-      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
-      Outlet_Temperature_Total[iMarker_Outlet]  = 0.0;
-      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
-    }
-
-    /*--- Copy the values to the local array for MPI ---*/
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)) {
-        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-          Outlet_TagBound = config->GetMarker_HeatFlux_TagBound(iMarker_Outlet);
-          cout << Outlet_TagBound << endl;
-          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
-            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
-            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
-            Outlet_Temperature_Local[iMarker_Outlet]  += Outlet_Temperature[iMarker];
-            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
-          }
-        }
-      }
-    }
-
-    /*--- All the ranks to compute the total value ---*/
-
-#ifdef HAVE_MPI
-
-    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Temperature_Local, Outlet_Temperature_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-#else
-
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
-      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
-      Outlet_Temperature_Total[iMarker_Outlet]  = Outlet_Temperature_Local[iMarker_Outlet];
-      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
-    }
-
-#endif
-    
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
-        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
-      }
-      else {
-        Outlet_Density_Total[iMarker_Outlet] = 0.0;
-      }
-      
-      if (iMesh == MESH_0) {
-        config->SetPeriodic_Heatflux(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
-        Heatflux_Integrated += Outlet_Temperature_Total[iMarker_Outlet];
-      }
-    }
-
-    if (iMesh == MESH_0) {
-      config->SetPeriodic_HeatfluxIntegrated(Heatflux_Integrated);
-    }
-
-    /*--- Screen output using the values already stored in the config container ---*/
-
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
-
-      cout.precision(5);
-      cout.setf(ios::fixed, ios::floatfield);
-
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-        cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
-      }
-
-      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-        Outlet_TagBound = config->GetMarker_HeatFlux_TagBound(iMarker_Outlet);
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-
-          /*--- Geometry defintion ---*/
-
-          cout <<"Heat flux surface: " << Outlet_TagBound << "." << endl;
-
-          cout << setprecision(5) << scientific << "Q on surface: " <<  config->GetPeriodic_Heatflux(Outlet_TagBound) * config->GetHeat_Flux_Ref()  << endl;
-        }
-      }
-
-      cout << "Heatflux_Integrated: " << Heatflux_Integrated * config->GetHeat_Flux_Ref() << endl;
-
-      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
-        cout << "-------------------------------------------------------------------------" << endl << endl;
-      }
-
-      cout.unsetf(ios_base::floatfield);
-
-    }
-
-    /*--- Compute Update for Delta P if a massflow is prescribed for streamwise periodic BC ---*/
-    
-    if (config->GetStreamwise_periodic_massflow() != 0.0) {
-      
       /*--- Load/define all necessary variables ---*/
-      
-      su2double Delta_P_old = config->GetDeltaP_BodyForce() / config->GetPressure_Ref(); // Nondimensionalize the dimensional cfg value
-      su2double Delta_P;
-      su2double Density_avg = config->GetOutlet_Density("outlet");
-      su2double Area = config->GetOutlet_Area("outlet");
-      su2double Massflow = config->GetPeriodic_MassFlow("outlet");
-      su2double target_Massflow = config->GetStreamwise_periodic_massflow()/(config->GetDensity_Ref() * config->GetVelocity_Ref()); // Nondimensionalize the dimensional cfg value
-      su2double ddP;
-      su2double Damping = config->GetInc_Outlet_Damping();
-      
+      su2double Pressure_Drop  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
+      su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+      su2double damping_factor = config->GetInc_Outlet_Damping();
+      su2double Pressure_Drop_new, ddP;
+
       /*--- Compute update to Delta p based on massflow-difference ---*/
-      ddP = 0.5 / ( Density_avg * Area*Area) * (target_Massflow*target_Massflow - Massflow*Massflow);
+      ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
       
       /*--- Store updated pressure difference ---*/
-      Delta_P = Delta_P_old + Damping*ddP;
-      config->SetDeltaP_BodyForce(Delta_P);
+      Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
+      config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
       
       /*--- Output the new value of Delta P and ddp ---*/
-      
       if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK Move whole computation up in front of output
       
         cout.precision(5);
         cout.setf(ios::fixed, ios::floatfield);
-  
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-          cout << endl << "---------------------------- Streamwise periodic pressure: massflow update --------------------------" << endl;
-        }
 
         cout << "Delta Delta P: " << ddP * config->GetPressure_Ref() << endl;
-        cout << "New Delta P: " << Delta_P * config->GetPressure_Ref() << endl;
-  
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
-          cout << "-------------------------------------------------------------------------" << endl << endl;
-        }
-  
+        cout << "New Delta P: " << Pressure_Drop_new * config->GetPressure_Ref() << endl;
+
         cout.unsetf(ios_base::floatfield);
 
-      }
-    }
-    
-    delete [] Outlet_MassFlow_Local;
-    delete [] Outlet_Density_Local;
-    delete [] Outlet_Temperature_Local;
-    delete [] Outlet_Area_Local;
-    
-    delete [] Outlet_MassFlow_Total;
-    delete [] Outlet_Density_Total;
-    delete [] Outlet_Temperature_Total;
-    delete [] Outlet_Area_Total;
-    
-    delete [] Outlet_MassFlow;
-    delete [] Outlet_Density;
-    delete [] Outlet_Temperature;
-    delete [] Outlet_Area;
-    
-  }
+      } // output
+    } // if massflow
   
+  if (config->GetEnergy_Equation()) {
+    /*---------------------------------------------------------------------------------------------*/
+    /*--- 3. Compute the integrated Heatflow [W] for the energy equation source term, heatflux  ---*/
+    /*---    boundary term and recovered Temperature. The computation is not completely clear.  ---*/
+    /*---    Here the Heatflux from all Bounary markers in the config-file is used.             ---*/
+    /*---------------------------------------------------------------------------------------------*/
+
+    su2double HeatFlux, HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
+    string Marker_StringTag;
+
+    /*--- Loop over all Marker ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      // Loop over all Heatflux marker
+      if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+        // Add up Heatflux
+        /*--- Identify the boundary by string name ---*/
+        Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal);
+
+            if (axisymmetric) {
+              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              else
+                AxiFactor = 1.0;
+            } else {
+              AxiFactor = 1.0;
+            }
+
+            FaceArea = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
+            FaceArea = sqrt(FaceArea);
+
+            /*--- OPTION 1 for Heatflux calculation from config file ---*/
+            HeatFlux = -config->GetWall_HeatFlux(Marker_StringTag)/config->GetHeat_Flux_Ref();
+            
+            /*--- END OPTIONS ---*/
+            HeatFlow_Local += HeatFlux * FaceArea; // /Area added due to real GradTemperature (Heatflux) computation.
+          } // if Domain
+        } // loop Vertices
+      } // loop Heatflux marker
+    } // loop AllMarker
+
+    // Mpi Communication sum up integrated Heatfdlux from all processes
+    SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Set the Integrated Heatflux ---*/
+    if (iMesh == MESH_0)
+      config->SetStreamwise_Periodic_IntegratedHeatFlow(HeatFlow_Global);
+
+    if (rank == MASTER_NODE) { cout << "HeatFlow_Global: " << HeatFlow_Global * config->GetHeat_Flux_Ref() << endl; }
+  } // if energy
+
+  /*--- Free allocated memory. ---*/
+  delete [] AreaNormal;
+  if (rank == MASTER_NODE) { cout << "------------------------------- New Routine End --------------------------" << endl; }
 }
 
 void CIncEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
@@ -12556,6 +12270,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet               = ((config->GetnMarker_Outlet() != 0));
+  bool energy               = config->GetEnergy_Equation();
 
   /*--- Store the original volume for periodic cells on the boundaries,
    since this will be increased as we complete the CVs during our
@@ -12614,19 +12329,27 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
-  /*--- Compute recovered pressure and temperature for streamwise periodic BC ---*/
+  /*--- Compute recovered pressure and temperature for streamwise periodic BC
+        Second conditional is there to avoid a zero (massflow) in the denominator for recovered temperature. ---*/
   
-  if (config->GetPeriodic_BC_Body_Force()) {
+  if (config->GetKind_Streamwise_Periodic()) {
     
     /*--- Define and initialize helping variables ---*/
-    su2double norm2_translation = 0.0, dot_product;
-    su2double Pressure_Recovered, Temperature_Recovered;
+    su2double norm2_translation = 0.0,
+              dot_product,
+              Pressure_Recovered,
+              Temperature_Recovered;
+
+    su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref(),
+              HeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow(),
+              MassFlow = config->GetStreamwise_Periodic_MassFlow();
+
     su2double *Reference_node = new su2double[nDim];
     
     /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector
           and compute square of the distance between the 2 periodic surfaces. ---*/
     for (iDim = 0; iDim < nDim; iDim++) {
-      Reference_node[iDim] = config->GetPeriodicRefNode_BodyForce()[iDim];
+      Reference_node[iDim] = config->GetStreamwise_Periodic_RefNode()[iDim];
       norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
     }
     
@@ -12636,25 +12359,21 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
       dot_product = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += fabs((geometry->node[iPoint]->GetCoord(iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
+        dot_product += fabs( (geometry->node[iPoint]->GetCoord(iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
             
       /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
-      Pressure_Recovered = node[iPoint]->GetSolution(0) - ( config->GetDeltaP_BodyForce()/config->GetPressure_Ref() ) / norm2_translation * dot_product;
-      node[iPoint]->SetPressure_Recovered(Pressure_Recovered);
+      Pressure_Recovered = node[iPoint]->GetSolution(0) - delta_p / norm2_translation * dot_product;
+      node[iPoint]->SetStreamwise_Periodic_RecoveredPressure(Pressure_Recovered);
 
-      if (config->GetEnergy_Equation()) {
-        Temperature_Recovered = node[iPoint]->GetSolution(nDim+1);
-
-        /*--- Avoid m_dot=0 in 0th iteration, as m_dot is in the denominator ---*/
-        if (config->GetExtIter() > 0)
-          Temperature_Recovered += config->GetPeriodic_HeatfluxIntegrated()/config->GetPeriodic_MassFlow("outlet")/node[iPoint]->GetSpecificHeatCp()*dot_product/norm2_translation;  // TK HARDCODED inlet !!!!!
-        
-        node[iPoint]->SetTemperature_Recovered(Temperature_Recovered);
+      if (energy && ExtIter > 0) {
+        Temperature_Recovered  = node[iPoint]->GetSolution(nDim+1);
+        Temperature_Recovered += HeatFlow / (MassFlow * node[iPoint]->GetSpecificHeatCp() * norm2_translation) * dot_product;       
+        node[iPoint]->SetStreamwise_Periodic_RecoveredTemperature(Temperature_Recovered);
       }
     }
     
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    GetPeriodic_Properties(geometry, config, iMesh, Output);
+    GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
     /*--- Free allocated memory. ---*/
     delete [] Reference_node;
@@ -13561,7 +13280,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         
         /*--- With streamwise periodic BC and heatflux walls an additional
               term is introduced in the boundary formulation ---*/    
-        if (config->GetPeriodic_BC_Body_Force()) {
+        if (config->GetKind_Streamwise_Periodic()) {
           
           su2double Cp = node[iPoint]->GetSpecificHeatCp();
           su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
@@ -13569,16 +13288,16 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           for (iDim = 0; iDim < nDim; iDim++) {
             norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
           }
-          
+
           /*--- Scalar part of the contribution ---*/
-          su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated()*thermal_conductivity / (config->GetPeriodic_MassFlow("outlet") * Cp * norm2_translation); // TK hardcoded outlet!
+          su2double scalar_factor = config->GetStreamwise_Periodic_IntegratedHeatFlow()*thermal_conductivity / (config->GetStreamwise_Periodic_MassFlow() * Cp * norm2_translation);
           
           /*--- Scalar product ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
             dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
           }
           
-          Res_Visc[nDim+1] -= Body_Force_T*dot_product;
+          Res_Visc[nDim+1] -= scalar_factor*dot_product;
         }
 
         /*--- Viscous contribution to the residual at the wall ---*/

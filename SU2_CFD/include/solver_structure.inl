@@ -829,7 +829,7 @@ inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, u
 
 inline void CSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
-inline void CSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 

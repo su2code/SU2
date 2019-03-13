@@ -13464,7 +13464,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       
     }
     
-    if (config->GetPeriodic_BC_Body_Force()) {
+    if (config->GetKind_Streamwise_Periodic()) {
       
       nVar_Par += 1;
       Variable_Names.push_back("Recovered_Pressure");
@@ -13782,11 +13782,13 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         }
         
         /*--- Recovered p/T for streamwise periodic BC ---*/
-        if (config->GetPeriodic_BC_Body_Force()) {
+        if (config->GetKind_Streamwise_Periodic()) {
           
-          /*--- TK Recovered p/T comp is already done in CIncNSSolver::Preprocessing() ---*/
-          Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetPressure_Recovered();    iVar++;
-          if(energy) { Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetTemperature_Recovered(); iVar++; }
+          /*--- Recovered p/T comp is already done in CIncNSSolver::Preprocessing() ---*/
+          Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetStreamwise_Periodic_RecoveredPressure(); iVar++;
+          if(energy) {
+             Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetStreamwise_Periodic_RecoveredTemperature(); iVar++; 
+          }
                     
           Local_Data[jPoint][iVar] = rank; iVar++;
           

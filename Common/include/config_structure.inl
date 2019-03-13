@@ -107,17 +107,9 @@ inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_
 
 inline void CConfig::SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow) { Outlet_MassFlow[val_imarker] = val_massflow; }
 
-inline void CConfig::SetPeriodic_MassFlow(unsigned short val_imarker, su2double val_massflow) { Periodic_MassFlow[val_imarker] = val_massflow; }
-
 inline void CConfig::SetOutlet_Density(unsigned short val_imarker, su2double val_density) { Outlet_Density[val_imarker] = val_density; }
 
 inline void CConfig::SetOutlet_Area(unsigned short val_imarker, su2double val_area) { Outlet_Area[val_imarker] = val_area; }
-
-inline void CConfig::SetPeriodic_Heatflux(unsigned short val_imarker, su2double val_heatflux) { Periodic_Heatflux[val_imarker] = val_heatflux; }
-
-inline void CConfig::SetPeriodic_HeatfluxIntegrated(su2double HeatfluxIntegrated) { Heatflux_Integrated = HeatfluxIntegrated; }
-
-inline su2double CConfig::GetPeriodic_HeatfluxIntegrated() { return Heatflux_Integrated; }
 
 inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
 
@@ -1442,6 +1434,8 @@ inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
+inline unsigned short CConfig::GetnMarker_CfgFile(void) { return nMarker_CfgFile; }
+
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
@@ -1642,21 +1636,29 @@ inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
 inline bool CConfig::GetBody_Force(void) { return Body_Force; }
 
-inline bool CConfig::GetPeriodic_BC_Body_Force(void) { return Periodic_BC_Body_Force; }
-
 inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
 
-inline su2double CConfig::GetDeltaP_BodyForce(void) { return DeltaP_BodyForce; }
+inline unsigned short CConfig::GetKind_Streamwise_Periodic(void) { return Kind_Streamwise_Periodic; }
 
-inline void CConfig::SetDeltaP_BodyForce(su2double delta_p) { DeltaP_BodyForce = delta_p; }
+inline su2double CConfig::GetStreamwise_Periodic_PressureDrop(void) { return Streamwise_Periodic_PressureDrop; }
 
-inline su2double CConfig::GetStreamwise_periodic_massflow(void) { return Streamwise_periodic_massflow; }
+inline void CConfig::SetStreamwise_Periodic_PressureDrop(su2double delta_p) { Streamwise_Periodic_PressureDrop = delta_p; }
 
-inline su2double* CConfig::GetPeriodicRefNode_BodyForce(void) { return PeriodicRefNode_BodyForce; }
+inline su2double CConfig::GetStreamwise_Periodic_TargetMassFlow(void) { return Streamwise_Periodic_TargetMassFlow; }
 
-inline void CConfig::SetPeriodicRefNode_BodyForce(su2double* RefNode, unsigned short nDim) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) PeriodicRefNode_BodyForce[iDim] = RefNode[iDim];
+inline su2double* CConfig::GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
+
+inline void CConfig::SetStreamwise_Periodic_RefNode(su2double* RefNode, unsigned short nDim) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Streamwise_Periodic_RefNode[iDim] = RefNode[iDim];
 }
+
+inline void CConfig::SetStreamwise_Periodic_MassFlow(su2double val_massflow) { Streamwise_Periodic_MassFlow = val_massflow; }
+
+inline su2double CConfig::GetStreamwise_Periodic_MassFlow() { return Streamwise_Periodic_MassFlow; }
+  
+inline void CConfig::SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow) { Streamwise_Periodic_IntegratedHeatFlow = val_heatflow; }
+
+inline su2double CConfig::GetStreamwise_Periodic_IntegratedHeatFlow() { return Streamwise_Periodic_IntegratedHeatFlow; }
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 

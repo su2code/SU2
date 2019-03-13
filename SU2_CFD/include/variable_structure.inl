@@ -251,13 +251,13 @@ inline su2double CVariable::GetDensity(void) {  return 0; }
 
 inline su2double CVariable::GetDensity_Old(void) {  return 0; }
 
-inline su2double CVariable::GetPressure_Recovered(void) {  return 0; }
+inline void CVariable::SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure) { }
 
-inline su2double CVariable::GetTemperature_Recovered(void) {  return 0; }
+inline su2double CVariable::GetStreamwise_Periodic_RecoveredPressure(void) { return 0; }
 
-inline void CVariable::SetPressure_Recovered(su2double val_pressure) { }
+inline void CVariable::SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature) { }
 
-inline void CVariable::SetTemperature_Recovered(su2double val_temperature) { }
+inline su2double CVariable::GetStreamwise_Periodic_RecoveredTemperature(void) { return 0; }
 
 inline su2double CVariable::GetDensity(unsigned short val_iSpecies) {  return 0; }
 
@@ -963,13 +963,13 @@ inline su2double CIncEulerVariable::GetDensity(void) { return Primitive[nDim+2];
 
 inline su2double CIncEulerVariable::GetDensity_Old(void) { return Density_Old; }
 
-inline su2double CIncEulerVariable::GetPressure_Recovered(void) {  return Pressure_Recovered; }
+inline void CIncEulerVariable::SetStreamwise_Periodic_RecoveredPressure(su2double val_pressure) { Streamwise_Periodic_RecoveredPressure =  val_pressure; }
 
-inline su2double CIncEulerVariable::GetTemperature_Recovered(void) {  return Temperature_Recovered; }
+inline su2double CIncEulerVariable::GetStreamwise_Periodic_RecoveredPressure(void) { return Streamwise_Periodic_RecoveredPressure; }
 
-inline void CIncEulerVariable::SetPressure_Recovered(su2double val_pressure) { Pressure_Recovered = val_pressure; }
+inline void CIncEulerVariable::SetStreamwise_Periodic_RecoveredTemperature(su2double val_temperature) { Streamwise_Periodic_RecoveredTemperature = val_temperature; }
 
-inline void CIncEulerVariable::SetTemperature_Recovered(su2double val_temperature) { Temperature_Recovered = val_temperature; }
+inline su2double CIncEulerVariable::GetStreamwise_Periodic_RecoveredTemperature(void) { return Streamwise_Periodic_RecoveredTemperature; }
 
 inline su2double CIncEulerVariable::GetBetaInc2(void) { return Primitive[nDim+3]; }
 

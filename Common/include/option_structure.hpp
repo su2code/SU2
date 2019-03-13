@@ -1980,6 +1980,19 @@ static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCr
 ("HEAVISIDE_UP"  , HEAVISIDE_UP)
 ("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
 
+/*!
+ * \brief types of streamwise periodicity.
+ */
+enum ENUM_STREAMWISE_PERIODIC {
+  NO_STREAMWISE_PERIODIC = 0,      /*!< \brief No projection. */
+  PRESSURE_DROP          = 1,      /*!< \brief Prescribed pressure drop. */
+  STREAMWISE_MASSFLOW    = 2,      /*!< \brief Prescribed massflow. */
+};
+static const map<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = CCreateMap<string, ENUM_STREAMWISE_PERIODIC>
+("NONE"          , NO_STREAMWISE_PERIODIC)
+("PRESSURE_DROP" , PRESSURE_DROP)
+("MASSFLOW"      , STREAMWISE_MASSFLOW);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {
