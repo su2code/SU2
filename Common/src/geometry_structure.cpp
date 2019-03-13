@@ -11808,7 +11808,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             connRecv[iRecv] = 0;
           
           /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
-          
+         
+          connSendReq = NULL;
+          connRecvReq = NULL;
+ 
+          idSendReq = NULL;
+          idRecvReq = NULL;
+
           if (nSends > 0) {
             connSendReq = new SU2_MPI::Request[nSends];
             idSendReq   = new SU2_MPI::Request[nSends];
@@ -11852,12 +11858,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 connElems[j-1][s-1][iNode][iElem] = (cgsize_t)connRecv[iElem*connSize+iNode];
               }
             }
+          
+            /*--- Store the total number of elements I now have for
+             the current section after completing the communications. ---*/
+          
+            nElems[j-1][s-1] = nElem_Recv[size];
+
+          } else {
+            
+            /*--- We do not have elements in this section. ---*/
+            
+            nElems[j-1][s-1]    = 0;
+            connElems[j-1][s-1] = new cgsize_t*[connSize];
+            for (iNode = 0; iNode < connSize; iNode++) {
+              connElems[j-1][s-1][iNode] = new cgsize_t[1];
+            }
+            
           }
-          
-          /*--- Store the total number of elements I now have for
-           the current section after completing the communications. ---*/
-          
-          nElems[j-1][s-1] = nElem_Recv[size];
 
           /*--- Free temporary memory from communications ---*/
           
