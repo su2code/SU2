@@ -5522,167 +5522,237 @@ CFSIDriver::~CFSIDriver(void) {
 
 void CFSIDriver::Run() {
 
+  using namespace Eigen;
+
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+  unsigned long iOuter_Iter = 0;
+  bool Convergence = false;
+
+  /*--- Method parameters, size of history matrix, initial relaxation, residual norm, and tolerance ---*/
+  unsigned long M = 0, N = max<unsigned long>(1,config_container[ZONE_STRUCT]->GetnIterIQN_HistorySize());
+  su2double alpha = config_container[ZONE_STRUCT]->GetAitkenStatRelax(), resNorm = 1.0,
+            tol = pow(10.0,config_container[ZONE_STRUCT]->GetMinLogResidualFSI());
+
+  /*--- This vector is used to get and set interface values ---*/
+  vector<passivedouble> interfaceValues;
+
+  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+  /*--- Predict structural displacements ---*/
+  Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
+
+  /*--- Initial values ---*/
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
+
+  /*--- Variables to store the history of values at start and end of each outer iteration ---*/
+  M = interfaceValues.size();
+  MatrixXd X(M,N), Y(M,N);
+  for(unsigned long i=0; i<M; ++i) X(i,0) = interfaceValues[i];
+
+  /*--- Initial interface residual ---*/
+  StepGaussSeidel(iOuter_Iter);
+
+  output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container, config_container,
+                            integration_container, 0, ZONE_FLOW, ZONE_STRUCT, false);
+
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
+  for(unsigned long i=0; i<M; ++i) Y(i,0) = interfaceValues[i];
+
+  VectorXd R = Y.col(0)-X.col(0);
+  resNorm = R.norm();
+  su2double interface_res = 1.0; // by definition
+
+  Convergence = BGSConvergence(iOuter_Iter, ZONE_FLOW, ZONE_STRUCT);
+
+  /*--- Loop over the number of outer iterations ---*/
+  for (iOuter_Iter = 1; iOuter_Iter < config_container[ZONE_FLOW]->GetnIterFSI() && !Convergence; iOuter_Iter++){
+
+    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+    unsigned long cols = min<unsigned long>(iOuter_Iter-1,N-1);
+    unsigned long targ = min<unsigned long>(cols+1,N-1); // for when N=1 and we recover BGS
+
+    if (cols == 0) {
+      /*--- No history yet, simple relaxed BGS update ---*/
+      R *= SU2_TYPE::GetValue(alpha);
+    }
+    else {
+      /*--- Use history to "predict" the interface values ---*/
+      /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1) ---*/
+      MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
+
+      /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration ---*/
+      VectorXd C = H.colPivHouseholderQr().solve(-R);
+
+      /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1) ---*/
+      H = Y.block(0,1,M,cols)-Y.leftCols(cols);
+
+      /*--- Correct the BGS solution, delta Y's correspond 1:1 with delta R's ---*/
+      R += H*C;
+
+      /*--- Check if we need to discard data (shift left to delete oldest data) ---*/
+      if(cols == N-1) {
+        X.leftCols(N-1) = X.rightCols(N-1);
+        Y.leftCols(N-1) = Y.rightCols(N-1);
+        cols--;
+      }
+    }
+
+    /*--- Set values ---*/
+    X.col(targ) = X.col(cols)+R;
+    for(unsigned long i=0; i<M; ++i) interfaceValues[i] = X(i,targ);
+    iteration_container[ZONE_STRUCT][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
+
+    /*--- Evaluate the residual ---*/
+    StepGaussSeidel(iOuter_Iter);
+
+    /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
+    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container, config_container,
+                              integration_container, 0, ZONE_FLOW, ZONE_STRUCT, false);
+
+    /*--- Get values ---*/
+    iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
+    for(unsigned long i=0; i<M; ++i) Y(i,targ) = interfaceValues[i];
+
+    /*--- Compute residual and check convergence ---*/
+    R = Y.col(targ)-X.col(targ);
+    interface_res = R.norm()/resNorm;
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(&interface_res,1,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+
+    Convergence = BGSConvergence(iOuter_Iter, ZONE_FLOW, ZONE_STRUCT) || interface_res<tol;
+
+  }
+
+}
+
+void CFSIDriver::StepGaussSeidel(unsigned long OuterIter) {
+
   /*--- As of now, we are coding it for just 2 zones. ---*/
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
 
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
-  bool stat_fsi = ((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == STEADY) && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == STATIC));
-  bool dyn_fsi = (((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND))
-                   && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC));
+  bool stat_fsi = config_container[ZONE_FLOW]->GetUnsteady_Simulation() == STEADY &&
+                  config_container[ZONE_STRUCT]->GetDynamic_Analysis() == STATIC;
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
-  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
-  unsigned long nIntIter;
+  bool dyn_fsi = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+                  config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+                  config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC;
 
-  bool Convergence = false;
+  unsigned long nIntIter, IntIter = 0;
 
-  bool StopCalc_Flow = false;
-
-  /*--- Be careful with whether or not we load the coords and grid velocity
-   from the restart files... this needs to be standardized for the different
-   solvers, in particular with FSI. ---*/
+  for (iZone = 0; iZone < nZone; iZone++)
+  {
+    config_container[iZone]->SetIntIter(IntIter);
+    config_container[iZone]->SetOuterIter(OuterIter);
+  }
 
   /*-----------------------------------------------------------------*/
-  /*---------------- Predict structural displacements ---------------*/
+  /*------------------- Transfer Displacements ----------------------*/
   /*-----------------------------------------------------------------*/
 
-  Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
+  Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
-  while (OuterIter < nOuterIter) {
+  /*-----------------------------------------------------------------*/
+  /*--------------------- Mesh deformation --------------------------*/
+  /*-----------------------------------------------------------------*/
 
-    /*-----------------------------------------------------------------*/
-    /*------------------- Transfer Displacements ----------------------*/
-    /*-----------------------------------------------------------------*/
-  if(transfer_container[ZONE_STRUCT][ZONE_FLOW] != NULL)
-      Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
+  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement,
+                                                           FFDBox, solver_container, config_container, ZONE_FLOW,
+                                                           INST_0, 0, ExtIter);
 
-    /*-----------------------------------------------------------------*/
-    /*--------------------- Mesh deformation --------------------------*/
-    /*-----------------------------------------------------------------*/
-
-  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
-        config_container, ZONE_FLOW, INST_0, 0, ExtIter);
-
-    /*-----------------------------------------------------------------*/
-    /*-------------------- Fluid subiteration -------------------------*/
-    /*-----------------------------------------------------------------*/
+  /*-----------------------------------------------------------------*/
+  /*-------------------- Fluid subiteration -------------------------*/
+  /*-----------------------------------------------------------------*/
 
   iteration_container[ZONE_FLOW][INST_0]->Preprocess(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
-  if ( stat_fsi ) {
-
+  if ( stat_fsi )
+  {
     /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
     /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
     nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
 
-    for (IntIter = 0; IntIter < nIntIter; IntIter++){
-
+    for (IntIter = 0; IntIter < nIntIter; IntIter++)
+    {
       /*--- Set ExtIter to iExtIter_FLOW; this is a trick to loop on the steady-state flow solver ---*/
       config_container[ZONE_FLOW]->SetExtIter(IntIter);
 
       iteration_container[ZONE_FLOW][INST_0]->Iterate(output, integration_container, geometry_container,
-          solver_container, numerics_container, config_container,
-          surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
+                                                      solver_container, numerics_container, config_container,
+                                                      surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
       /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-      output->SetConvHistory_Body(&ConvHist_file[ZONE_0][INST_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
+      output->SetConvHistory_Body(&ConvHist_file[ZONE_0][INST_0], geometry_container, solver_container,
+                                  config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
-      StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
-      if (StopCalc_Flow) break;
+      if (integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence()) break;
 
     }
 
   }
-  else if ( dyn_fsi ) {
-
+  else if ( dyn_fsi ) 
+  {
     /*--- For unsteady flow simulations, we need to loop over nIntIter for the number of time steps ---*/
-
     nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
 
-    for (IntIter = 0; IntIter < nIntIter; IntIter++){
-
+    for (IntIter = 0; IntIter < nIntIter; IntIter++)
+    {
       config_container[ZONE_FLOW]->SetIntIter(IntIter);
 
-      iteration_container[ZONE_FLOW][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
+      iteration_container[ZONE_FLOW][INST_0]->Iterate(output, integration_container, geometry_container,
+                                                      solver_container, numerics_container, config_container,
+                                                      surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
       /*--- If convergence was reached in every zone --*/
-
       if (integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence() == 1) break;
     }
 
     /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW, INST_0);
-
-  } else {
-
+     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container,
+                                 integration_container, true, 0.0, ZONE_FLOW, INST_0);
+  }
+  else
+  {
     SU2_MPI::Error( "The definition of Fluid and Structural solvers is inconsistent for FSI applications ", CURRENT_FUNCTION);
-    
   }
 
   /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
-
   integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->SetConvergence(false);
 
   /*-----------------------------------------------------------------*/
   /*------------------- Set FEA loads from fluid --------------------*/
   /*-----------------------------------------------------------------*/
-  if(transfer_container[ZONE_FLOW][ZONE_STRUCT] != NULL)
-      Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
 
-    /*-----------------------------------------------------------------*/
-    /*------------------ Structural subiteration ----------------------*/
-    /*-----------------------------------------------------------------*/
+  Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
+
+  /*-----------------------------------------------------------------*/
+  /*------------------ Structural subiteration ----------------------*/
+  /*-----------------------------------------------------------------*/
 
   iteration_container[ZONE_STRUCT][INST_0]->Iterate(output, integration_container, geometry_container,
-                                  solver_container, numerics_container, config_container,
-                                  surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
+                                                    solver_container, numerics_container, config_container,
+                                                    surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
 
-    /*--- Write the convergence history for the structure (only screen output) ---*/
+  /*--- Write the convergence history for the structure (only screen output) ---*/
+  output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container,
+                              integration_container, false, 0.0, ZONE_STRUCT, INST_0);
 
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT, INST_0);
+  /*--- Set the structural convergence to false (to make sure FSI subiterations converge) ---*/
+  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence(false);
 
-    /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
+  /*-----------------------------------------------------------------*/
+  /*----------------- Displacements relaxation ----------------------*/
+  /*-----------------------------------------------------------------*/
 
-    integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence(false);
-
-    /*-----------------------------------------------------------------*/
-    /*----------------- Displacements relaxation ----------------------*/
-    /*-----------------------------------------------------------------*/
-
-    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, OuterIter);
-
-    /*-----------------------------------------------------------------*/
-    /*-------------------- Check convergence --------------------------*/
-    /*-----------------------------------------------------------------*/
-
-    Convergence = BGSConvergence(OuterIter, ZONE_FLOW, ZONE_STRUCT);
-
-    /*-----------------------------------------------------------------*/
-    /*-------------------- Output FSI history -------------------------*/
-    /*-----------------------------------------------------------------*/
-
-    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-                              config_container, integration_container, 0,
-                              ZONE_FLOW, ZONE_STRUCT, false);
-
-    if (Convergence) break;
-
-    /*-----------------------------------------------------------------*/
-    /*--------------------- Update OuterIter ---------------------------*/
-    /*-----------------------------------------------------------------*/
-
-    OuterIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
-
-  }
+  Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, OuterIter);
 
 }
 

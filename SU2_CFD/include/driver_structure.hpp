@@ -1130,6 +1130,11 @@ public:
   void Run();
 
   /*!
+   * \brief Run a step of Block Gauss-Seidel
+   */
+  void StepGaussSeidel(unsigned long OuterIter);
+
+  /*!
    * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
