@@ -6238,7 +6238,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (!grid_movement) {
+  // if (!grid_movement) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
@@ -6321,208 +6321,211 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
     }
     
-  }
+  // }
   
-  else {
+  // else {
     
-    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
-     dynamically deforming), the Geometric Conservation Law (GCL) should be
-     satisfied in conjunction with the ALE formulation of the governing
-     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
-     a uniform free-stream should be preserved through a moving grid. First,
-     we will loop over the edges and boundaries to compute the GCL component
-     of the dual time source term that depends on grid velocities. ---*/
+  //   /*--- For unsteady flows on dynamic meshes (rigidly transforming or
+  //    dynamically deforming), the Geometric Conservation Law (GCL) should be
+  //    satisfied in conjunction with the ALE formulation of the governing
+  //    equations. The GCL prevents accuracy issues caused by grid motion, i.e.
+  //    a uniform free-stream should be preserved through a moving grid. First,
+  //    we will loop over the edges and boundaries to compute the GCL component
+  //    of the dual time source term that depends on grid velocities. ---*/
     
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  //   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
-      /*--- Initialize the Residual / Jacobian container to zero. ---*/
+  //     /*--- Initialize the Residual / Jacobian container to zero. ---*/
       
-      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+  //     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
       
-      /*--- Get indices for nodes i & j plus the face normal ---*/
+  //     /*--- Get indices for nodes i & j plus the face normal ---*/
       
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      Normal = geometry->edge[iEdge]->GetNormal();
+  //     iPoint = geometry->edge[iEdge]->GetNode(0);
+  //     jPoint = geometry->edge[iEdge]->GetNode(1);
+  //     Normal = geometry->edge[iEdge]->GetNormal();
       
-      /*--- Grid velocities stored at nodes i & j ---*/
+  //     /*--- Grid velocities stored at nodes i & j ---*/
       
-      GridVel_i = geometry->node[iPoint]->GetGridVel();
-      GridVel_j = geometry->node[jPoint]->GetGridVel();
+  //     GridVel_i = geometry->node[iPoint]->GetGridVel();
+  //     GridVel_j = geometry->node[jPoint]->GetGridVel();
       
-      /*--- Compute the GCL term by averaging the grid velocities at the
-       edge mid-point and dotting with the face normal. ---*/
+  //     /*--- Compute the GCL term by averaging the grid velocities at the
+  //      edge mid-point and dotting with the face normal. ---*/
       
-      Residual_GCL = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+  //     Residual_GCL = 0.0;
+  //     for (iDim = 0; iDim < nDim; iDim++)
+  //       Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+  //     /*if (iEdge == geometry->GetnEdge() - 1) {
+  //       cout << "CVC: Debug: CIncEulerSolver::SetResidual_DualTime" << endl;
+  //       cout << "CVC: Debug: Residual_GCL = " << Residual_GCL << endl;
+  //     }*/
+  //     /*--- Compute the GCL component of the source term for node i ---*/
       
-      /*--- Compute the GCL component of the source term for node i ---*/
+  //     V_time_n = node[iPoint]->GetSolution_time_n();
       
-      V_time_n = node[iPoint]->GetSolution_time_n();
+  //     /*--- Access the density and Cp at this node (constant for now). ---*/
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+  //     Density     = node[iPoint]->GetDensity();
+  //     Cp          = node[iPoint]->GetSpecificHeatCp();
       
-      Density     = node[iPoint]->GetDensity();
-      Cp          = node[iPoint]->GetSpecificHeatCp();
+  //     /*--- Compute the conservative variable vector for all time levels. ---*/
       
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+  //     U_time_n[0] = Density;
+  //     for (iDim = 0; iDim < nDim; iDim++) {
+  //       U_time_n[iDim+1] = Density*V_time_n[iDim+1];
+  //     }
+  //     U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      U_time_n[0] = Density;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        U_time_n[iDim+1] = Density*V_time_n[iDim+1];
-      }
-      U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
+  //     for (iVar = 0; iVar < nVar; iVar++)
+  //       Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+  //     LinSysRes.AddBlock(iPoint, Residual);
       
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
-      LinSysRes.AddBlock(iPoint, Residual);
+  //     /*--- Compute the GCL component of the source term for node j ---*/
       
-      /*--- Compute the GCL component of the source term for node j ---*/
+  //     V_time_n = node[jPoint]->GetSolution_time_n();
       
-      V_time_n = node[jPoint]->GetSolution_time_n();
+  //     U_time_n[0] = Density;
+  //     for (iDim = 0; iDim < nDim; iDim++) {
+  //       U_time_n[iDim+1] = Density*V_time_n[iDim+1];
+  //     }
+  //     U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      U_time_n[0] = Density;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        U_time_n[iDim+1] = Density*V_time_n[iDim+1];
-      }
-      U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
+  //     for (iVar = 0; iVar < nVar; iVar++)
+  //       Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+  //     LinSysRes.SubtractBlock(jPoint, Residual);
       
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
-      LinSysRes.SubtractBlock(jPoint, Residual);
-      
-    }
+  //   }
     
-    /*---  Loop over the boundary edges ---*/
+  //   /*---  Loop over the boundary edges ---*/
     
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+  //   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  //     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
-        /*--- Initialize the Residual / Jacobian container to zero. ---*/
+  //       /*--- Initialize the Residual / Jacobian container to zero. ---*/
         
-        for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+  //       for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
         
-        /*--- Get the index for node i plus the boundary face normal ---*/
+  //       /*--- Get the index for node i plus the boundary face normal ---*/
         
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+  //       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  //       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         
-        /*--- Grid velocities stored at boundary node i ---*/
+  //       /*--- Grid velocities stored at boundary node i ---*/
         
-        GridVel_i = geometry->node[iPoint]->GetGridVel();
+  //       GridVel_i = geometry->node[iPoint]->GetGridVel();
         
-        /*--- Compute the GCL term by dotting the grid velocity with the face
-         normal. The normal is negated to match the boundary convention. ---*/
+  //       /*--- Compute the GCL term by dotting the grid velocity with the face
+  //        normal. The normal is negated to match the boundary convention. ---*/
         
-        Residual_GCL = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+  //       Residual_GCL = 0.0;
+  //       for (iDim = 0; iDim < nDim; iDim++)
+  //         Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
         
-        /*--- Compute the GCL component of the source term for node i ---*/
+  //       /*--- Compute the GCL component of the source term for node i ---*/
         
-        V_time_n = node[iPoint]->GetSolution_time_n();
+  //       V_time_n = node[iPoint]->GetSolution_time_n();
         
-        /*--- Access the density and Cp at this node (constant for now). ---*/
+  //       /*--- Access the density and Cp at this node (constant for now). ---*/
         
-        Density     = node[iPoint]->GetDensity();
-        Cp          = node[iPoint]->GetSpecificHeatCp();
+  //       Density     = node[iPoint]->GetDensity();
+  //       Cp          = node[iPoint]->GetSpecificHeatCp();
         
-        U_time_n[0] = Density;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          U_time_n[iDim+1] = Density*V_time_n[iDim+1];
-        }
-        U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
+  //       U_time_n[0] = Density;
+  //       for (iDim = 0; iDim < nDim; iDim++) {
+  //         U_time_n[iDim+1] = Density*V_time_n[iDim+1];
+  //       }
+  //       U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
         
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
-        LinSysRes.AddBlock(iPoint, Residual);
+  //       for (iVar = 0; iVar < nVar; iVar++)
+  //         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+  //       LinSysRes.AddBlock(iPoint, Residual);
         
-      }
-    }
+  //     }
+  //   }
     
-    /*--- Loop over all nodes (excluding halos) to compute the remainder
-     of the dual time-stepping source term. ---*/
+  //   /*--- Loop over all nodes (excluding halos) to compute the remainder
+  //    of the dual time-stepping source term. ---*/
     
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
-      /*--- Initialize the Residual / Jacobian container to zero. ---*/
+  //     /*--- Initialize the Residual / Jacobian container to zero. ---*/
       
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-      }
+  //     for (iVar = 0; iVar < nVar; iVar++) {
+  //       Residual[iVar] = 0.0;
+  //       if (implicit) {
+  //         for (jVar = 0; jVar < nVar; jVar++)
+  //           Jacobian_i[iVar][jVar] = 0.0;
+  //       }
+  //     }
       
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
+  //     /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+  //      we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+  //      previous solutions that are stored in memory. ---*/
       
-      V_time_nM1 = node[iPoint]->GetSolution_time_n1();
-      V_time_n   = node[iPoint]->GetSolution_time_n();
-      V_time_nP1 = node[iPoint]->GetSolution();
+  //     V_time_nM1 = node[iPoint]->GetSolution_time_n1();
+  //     V_time_n   = node[iPoint]->GetSolution_time_n();
+  //     V_time_nP1 = node[iPoint]->GetSolution();
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+  //     /*--- Access the density and Cp at this node (constant for now). ---*/
       
-      Density     = node[iPoint]->GetDensity();
-      Cp          = node[iPoint]->GetSpecificHeatCp();
+  //     Density     = node[iPoint]->GetDensity();
+  //     Cp          = node[iPoint]->GetSpecificHeatCp();
       
-      /*--- Compute the conservative variable vector for all time levels. ---*/
+  //     /*--- Compute the conservative variable vector for all time levels. ---*/
       
-      U_time_nM1[0] = Density;
-      U_time_n[0]   = Density;
-      U_time_nP1[0] = Density;
+  //     U_time_nM1[0] = Density;
+  //     U_time_n[0]   = Density;
+  //     U_time_nP1[0] = Density;
       
-      for (iDim = 0; iDim < nDim; iDim++) {
-        U_time_nM1[iDim+1] = Density*V_time_nM1[iDim+1];
-        U_time_n[iDim+1]   = Density*V_time_n[iDim+1];
-        U_time_nP1[iDim+1] = Density*V_time_nP1[iDim+1];
-      }
+  //     for (iDim = 0; iDim < nDim; iDim++) {
+  //       U_time_nM1[iDim+1] = Density*V_time_nM1[iDim+1];
+  //       U_time_n[iDim+1]   = Density*V_time_n[iDim+1];
+  //       U_time_nP1[iDim+1] = Density*V_time_nP1[iDim+1];
+  //     }
       
-      U_time_nM1[nDim+1] = Density*Cp*V_time_nM1[nDim+1];
-      U_time_n[nDim+1]   = Density*Cp*V_time_n[nDim+1];
-      U_time_nP1[nDim+1] = Density*Cp*V_time_nP1[nDim+1];
+  //     U_time_nM1[nDim+1] = Density*Cp*V_time_nM1[nDim+1];
+  //     U_time_n[nDim+1]   = Density*Cp*V_time_n[nDim+1];
+  //     U_time_nP1[nDim+1] = Density*Cp*V_time_nP1[nDim+1];
       
-      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
-       grids, the volumes will change. On rigidly transforming grids, the
-       volumes will remain constant. ---*/
+  //     /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
+  //      grids, the volumes will change. On rigidly transforming grids, the
+  //      volumes will remain constant. ---*/
       
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+  //     Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
+  //     Volume_nP1 = geometry->node[iPoint]->GetVolume();
       
-      /*--- Compute the dual time-stepping source residual. Due to the
-       introduction of the GCL term above, the remainder of the source residual
-       due to the time discretization has a new form.---*/
+  //     /*--- Compute the dual time-stepping source residual. Due to the
+  //      introduction of the GCL term above, the remainder of the source residual
+  //      due to the time discretization has a new form.---*/
       
-      for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-          + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
-      }
+  //     for (iVar = 0; iVar < nVar; iVar++) {
+  //       if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+  //         Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+  //       if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+  //         Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+  //         + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+  //     }
       
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
+  //     /*--- Store the residual and compute the Jacobian contribution due
+  //      to the dual time source term. ---*/
       
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
+  //     LinSysRes.AddBlock(iPoint, Residual);
+  //     if (implicit) {
+  //       for (iVar = 0; iVar < nVar; iVar++) {
+  //         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+  //           Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
+  //         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+  //           Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
+  //       }
+  //       for (iDim = 0; iDim < nDim; iDim++)
+  //         Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+  //       Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
         
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-    }
-  }
+  //       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  //     }
+  //   }
+  // }
   
 }
 
