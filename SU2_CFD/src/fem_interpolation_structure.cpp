@@ -4360,6 +4360,15 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
     vector<unsigned long> neighb(nNeighb);
     for(jElem = 0; jElem < nNeighb; jElem++)
       neighb[jElem] = geometry->elem[iElem]->GetNeighbor_Elements(jElem);
+
+    // Check that all neighbors have non-negative indices.
+    for(jElem = 0; jElem < nNeighb; jElem++){
+      if(neighb[jElem] > geometry->GetnElem()){
+        neighb.erase(neighb.begin()+jElem);
+        nNeighb--;
+        jElem--;
+      }
+    }
     
     // Store the data for this element.
     mVolElems[iElem].StoreElemData(iElem, VTKType, nPolyGrid, nPolySol, nDOFsGrid,
@@ -4417,6 +4426,15 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       vector<unsigned long> neighb(nNeighb);
       for(jElem = 0; jElem < nNeighb; jElem++)
         neighb[jElem] = geometry->elem[iElem]->GetNeighbor_Elements(jElem);
+
+      // Check that all neighbors have non-negative indices.
+      for(jElem = 0; jElem < nNeighb; jElem++){
+        if(neighb[jElem] > geometry->GetnElem_Local_Bound()){
+          neighb.erase(neighb.begin()+jElem);
+          nNeighb--;
+          jElem--;
+        }
+      }
 
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid, nNeighb,
