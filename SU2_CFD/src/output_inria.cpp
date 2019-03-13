@@ -56,7 +56,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   
   unsigned long OutSol,i, npoin = geometry->GetGlobal_nPointDomain();
   int VarTyp[GmfMaxTyp];
-  double bufDbl[GmfMaxTyp];
+  passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024], BasNam[1024];
   char *ptr=NULL;
 	
@@ -129,7 +129,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
 	
     /*--- Loop over the variables and write the values to file ---*/
     for (iVar = 0; iVar < nVar_Total; iVar++) {
-			bufDbl[iVar] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+			bufDbl[iVar] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
     }
 
 		GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
@@ -165,7 +165,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   
   unsigned long OutMach, OutPres, OutECC, i, npoin = geometry->GetGlobal_nPointDomain();
   int VarTyp[GmfMaxTyp];
-  double bufDbl[GmfMaxTyp];
+  passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024], BasNam[1024];
   char *ptr=NULL;
 	
@@ -201,7 +201,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      idxVar += nDim + 2; // Add laminar biscosity, skin friction, heat flux
+      idxVar += nDim + 2; // Add laminar viscosity, skin friction, heat flux
       if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR) idxVar += 1; // Add buffet sensor
     }
         
@@ -268,7 +268,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   for (iPoint = 0; iPoint < npoin; iPoint++) {
 	iVar = TagBc[bcMach];
-	bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
 	GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
   }
 	
@@ -305,7 +305,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   for (iPoint = 0; iPoint < npoin; iPoint++) {
 	iVar = TagBc[bcPres];
-	bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
 	GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
   }
 		
@@ -346,7 +346,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
     for (iPoint = 0; iPoint < npoin; iPoint++) {
 	  iVar = TagBc[bcAdap];
-	  bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+	  bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
 	  GmfSetLin(OutECC, GmfSolAtVertices, bufDbl);
     }
 		
@@ -384,7 +384,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
   int Dim;
   int OutMsh,i;
   int iVer,iTri,iEfr,iTet;
-  double bufDbl[8];
+  passivedouble bufDbl[8];
   char OutNam[2014];
   int bufInt[8];
 	
