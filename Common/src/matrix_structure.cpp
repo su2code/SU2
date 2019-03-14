@@ -2262,6 +2262,17 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 
   /*--- Customize important parameters ---*/
 
+  switch (pastix_data.verb) {
+  case 1:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_NO;
+    break;
+  case 2:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_YES;
+    break;
+  default:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_NOT;
+    break;
+  }
   pastix_data.iparm[IPARM_DOF_NBR]             = pastix_int_t(nVar);
   pastix_data.iparm[IPARM_MATRIX_VERIFICATION] = API_NO;
   pastix_data.iparm[IPARM_FREE_CSCPASTIX]      = API_CSC_FREE;
