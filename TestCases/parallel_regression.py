@@ -90,7 +90,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-13.393796, -12.922372, 0.282557, 0.012706] #last 4 columns
+    oneram6.test_vals = [-10.392429, -9.840519, 0.282580, 0.012694] #last 4 columns
     oneram6.su2_exec  = "parallel_computation.py -f"
     oneram6.timeout   = 3200
     oneram6.tol       = 0.00001
@@ -139,7 +139,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648345, 0.813157, -0.130644, 0.024357] #last 4 columns
+    flatplate.test_vals = [-4.648252, 0.813253, -0.130643, 0.024357] #last 4 columns
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
@@ -220,7 +220,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.146812, -6.734016, -0.176480, 0.057451] #last 4 columns
+    turb_flatplate.test_vals = [-4.145487, -6.734014, -0.176490, 0.057451] #last 4 columns
     turb_flatplate.su2_exec  = "parallel_computation.py -f"
     turb_flatplate.timeout   = 1600
     turb_flatplate.tol       = 0.00001
@@ -231,7 +231,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.327522, -6.564350, 0.230471, 0.155843] #last 4 columns
+    turb_oneram6.test_vals = [-2.327430, -6.564331, 0.230257, 0.155839] #last 4 columns
     turb_oneram6.su2_exec  = "parallel_computation.py -f"
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001
@@ -469,7 +469,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.219132, -14.278207, 0.000041, 0.007987] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-7.994738, -14.278082, 0.000046, 0.007987] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -753,7 +753,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714721, -5.883008, -0.214968, 0.023783] #last 4 columns
+    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783] #last 4 columns
     ddes_flatplate.su2_exec  = "parallel_computation.py -f"
     ddes_flatplate.timeout   = 1600
     ddes_flatplate.tol       = 0.00001
@@ -854,7 +854,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 50
-    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.test_vals = [-0.368877, 5.156053, 0.000000, 0.000000] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -902,7 +902,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [-1.253430, 4.531359, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.test_vals = [1.219987, 7.729743, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -914,7 +914,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.126767, 4.600769, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-1.124318, 4.605281, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1001,7 +1001,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.792549, -10248.498468] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.813888, -2543.238968] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
@@ -1125,7 +1125,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.166172, 0.053116] #last 4 columns
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.165766, 0.053239] #last 4 columns
     tutorial_inv_onera.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_onera.timeout    = 1600
     tutorial_inv_onera.tol        = 0.00001
@@ -1149,7 +1149,7 @@ def main():
     tutorial_lam_flatplate.cfg_dir    = "../Tutorials/Laminar_Flat_Plate"
     tutorial_lam_flatplate.cfg_file   = "lam_flatplate.cfg"
     tutorial_lam_flatplate.test_iter  = 0
-    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.683901, 0.028634] #last 4 columns
+    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.683968, 0.028634] #last 4 columns
     tutorial_lam_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_lam_flatplate.timeout    = 1600
     tutorial_lam_flatplate.tol        = 0.00001
@@ -1161,7 +1161,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
-    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899476, -0.792617, 0.200320] #last 4 columns
+    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899474, -0.753783, 0.200410] #last 4 columns
     tutorial_turb_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_flatplate.timeout    = 1600
     tutorial_turb_flatplate.tol        = 0.00001
@@ -1185,7 +1185,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.499497, -11.518486, 0.391887, 0.343811] #last 4 columns
+    tutorial_turb_oneram6.test_vals  = [-4.499497, -11.518421, 0.391293, 0.343702] #last 4 columns
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
