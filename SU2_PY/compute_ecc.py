@@ -84,7 +84,7 @@ def main():
         konfig.MATH_PROBLEM = 'DIRECT'
 
         # send output to a folder
-        folderName = 'flow/'
+        folderName = 'PRIMAL/'
         if os.path.isdir(folderName):
            os.system('rm -R '+folderName)
         os.system('mkdir ' + folderName)
@@ -92,7 +92,7 @@ def main():
 
         # run su2
         if quiet:
-            log = 'flow/log_flow.out'
+            log = 'PRIMAL/log_primal.out'
         else:
             log = None
         with redirect_output(log):   
@@ -110,11 +110,11 @@ def main():
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
-        konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
+        konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
         konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
         # send output to a folder
-        folderName = 'adjoint/'
+        folderName = 'ADJOINT/'
         if os.path.isdir(folderName):
            os.system('rm -R '+folderName)
         os.system('mkdir ' + folderName)
@@ -122,7 +122,7 @@ def main():
 
         # run su2
         if quiet:
-            log = 'adjoint/log_adjoint.out'
+            log = 'ADJOINT/log_adjoint.out'
         else:
             log = None
         with redirect_output(log):   
@@ -136,13 +136,13 @@ def main():
 
     else:
         # send output to a folder
-        folderName = 'flow/'
+        folderName = 'PRIMAL/'
         if os.path.isdir(folderName):
            os.system('rm -R '+folderName)
         os.system('mkdir ' + folderName)
         os.system('cp ' + konfig.SOLUTION_FLOW_FILENAME + ' ' + folderName)
 
-        folderName = 'adjoint/'
+        folderName = 'ADJOINT/'
         if os.path.isdir(folderName):
            os.system('rm -R '+folderName)
         os.system('mkdir ' + folderName)
@@ -156,21 +156,21 @@ def main():
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
 
-    konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
     konfig.RESTART_FLOW_FILENAME  = konfig.INTERPOLATED_RESTART_FILENAME
     konfig.ERROR_ESTIMATE = 'NO'
     konfig.MATH_PROBLEM = 'DIRECT'
 
-    folderName = 'linear/'
+    folderName = 'LINEAR/'
     if os.path.isdir(folderName):
        os.system('rm -R '+folderName)
     os.system('mkdir ' + folderName)
-    folderName = folderName + 'flow/'
+    folderName = folderName + 'PRIMAL/'
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'linear/flow/log_interp.out'
+        log = 'LINEAR/PRIMAL/log_interp.out'
     else:
         log = None
     with redirect_output(log):   
@@ -180,18 +180,18 @@ def main():
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
 
-    konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
-    konfig.SOLUTION_ADJ_FILENAME  = 'adjoint/' + konfig.RESTART_ADJ_FILENAME
+    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_ADJ_FILENAME  = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
     konfig.RESTART_ADJ_FILENAME   = konfig.INTERPOLATED_RESTART_ADJ_FILENAME
     konfig.ERROR_ESTIMATE = 'NO'
     konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
-    folderName = 'linear/adjoint/'
+    folderName = 'LINEAR/ADJOINT/'
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'linear/adjoint/log_interp.out'
+        log = 'LINEAR/ADJOINT/log_interp.out'
     else:
         log = None
     with redirect_output(log):   
@@ -204,21 +204,21 @@ def main():
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
 
-    konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
     konfig.RESTART_FLOW_FILENAME  = konfig.ECC_RESTART_FILENAME
     konfig.ERROR_ESTIMATE = 'YES'
     konfig.MATH_PROBLEM = 'DIRECT'
 
-    folderName = 'quadratic/'
+    folderName = 'QUADRATIC/'
     if os.path.isdir(folderName):
        os.system('rm -R '+folderName)
     os.system('mkdir ' + folderName)
-    folderName = folderName + 'flow/'
+    folderName = folderName + 'PRIMAL/'
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'quadratic/flow/log_interp.out'
+        log = 'QUADRATIC/PRIMAL/log_interp.out'
     else:
         log = None
     with redirect_output(log):   
@@ -228,18 +228,18 @@ def main():
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
 
-    konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
-    konfig.SOLUTION_ADJ_FILENAME  = 'adjoint/' + konfig.RESTART_ADJ_FILENAME
+    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_ADJ_FILENAME  = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
     konfig.RESTART_ADJ_FILENAME   = konfig.ECC_RESTART_ADJ_FILENAME
     konfig.ERROR_ESTIMATE = 'YES'
     konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
-    folderName = 'quadratic/adjoint/'
+    folderName = 'QUADRATIC/ADJOINT/'
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'quadratic/adjoint/log_interp.out'
+        log = 'QUADRATIC/ADJOINT/log_interp.out'
     else:
         log = None
     with redirect_output(log):   
@@ -255,21 +255,21 @@ def main():
     konfig.ERROR_ESTIMATE = 'YES'
     konfig.MATH_PROBLEM = 'DIRECT'
 
-    konfig.SOLUTION_FLOW_FILENAME = 'flow/' + konfig.RESTART_FLOW_FILENAME
-    konfig.SOLUTION_ADJ_FILENAME = 'adjoint/' + konfig.RESTART_ADJ_FILENAME
-    konfig.INTERPOLATED_SOLUTION_FILENAME = 'linear/flow/' + konfig.INTERPOLATED_RESTART_FILENAME
-    konfig.INTERPOLATED_SOLUTION_ADJ_FILENAME = 'linear/adjoint/' + konfig.INTERPOLATED_RESTART_ADJ_FILENAME
-    konfig.ECC_SOLUTION_FILENAME = 'quadratic/flow/' + konfig.ECC_RESTART_FILENAME
-    konfig.ECC_SOLUTION_ADJ_FILENAME = 'quadratic/adjoint/' + konfig.ECC_RESTART_ADJ_FILENAME
+    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_ADJ_FILENAME = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
+    konfig.INTERPOLATED_SOLUTION_FILENAME = 'LINEAR/PRIMAL/' + konfig.INTERPOLATED_RESTART_FILENAME
+    konfig.INTERPOLATED_SOLUTION_ADJ_FILENAME = 'LINEAR/ADJOINT/' + konfig.INTERPOLATED_RESTART_ADJ_FILENAME
+    konfig.ECC_SOLUTION_FILENAME = 'QUADRATIC/PRIMAL/' + konfig.ECC_RESTART_FILENAME
+    konfig.ECC_SOLUTION_ADJ_FILENAME = 'QUADRATIC/ADJOINT/' + konfig.ECC_RESTART_ADJ_FILENAME
 
-    folderName = 'ecc/'
+    folderName = 'ECC/'
     if os.path.isdir(folderName):
        os.system('rm -R '+folderName)
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'ecc/log_ecc.out'
+        log = 'ECC/log_ecc.out'
     else:
         log = None
     with redirect_output(log):   
