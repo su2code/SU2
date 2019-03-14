@@ -176,7 +176,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   TagBc = new unsigned short [100];
 	
   idxVar=0;
-  idxVar += nVar_Consv; // Add conservative variables
+  idxVar += nDim + nVar_Consv; // Add coordinates and conservative variables
   
   if (!config->GetLow_MemoryOutput()) {
     
@@ -215,10 +215,8 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS) idxVar += 1; // Add Roe dissipation
 
-    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
-      TagBc[bcAdap] = idxVar;
-      idxVar += 1; // Add adaptation parameter
-    }
+    TagBc[bcAdap] = idxVar;
+    idxVar += 1; // Add adaptation parameter
   }
 	
   /*--- Retrieve filename from config ---*/

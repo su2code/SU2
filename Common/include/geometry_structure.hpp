@@ -53,7 +53,7 @@ extern "C" {
 #endif
 #ifdef HAVE_INRIA
 extern "C" {
-#include "libmesh6.h"
+#include "libmeshb7.h"
 }
 #endif
 #include <string>

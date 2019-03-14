@@ -36,7 +36,7 @@ AC_DEFUN([CONFIGURE_INRIA],
         ;;
     esac
 
-     INRIA_INCLUDE="-I\$(top_srcdir)/externals/libMeshb/legacy_sources/v6"
+     INRIA_INCLUDE="-I\$(top_srcdir)/externals/libMeshb/sources"
      INRIA_LIB="\$(top_builddir)/externals/libMeshb/libMeshb.a"
      AC_DEFINE(HAVE_INRIA, 1, [Flag indicating whether the library will be compiled with libMeshb support])
      AC_MSG_RESULT(<<< Configuring library with libMeshb support >>>)
