@@ -68,6 +68,7 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
+#include "../../Common/include/toolboxes/solution_toolbox.hpp"
 
 using namespace std;
 
@@ -13291,6 +13292,8 @@ protected:
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
   CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
+
+  CExactSolution *ExactSolution; /*!< \brief Exact solution class used within the solver. */
 
   su2double
   Mach_Inf,	       /*!< \brief Mach number at infinity. */

@@ -67,6 +67,11 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
+  
+  /*--- Initialize pointer for any exact solutions. ---*/
+  
+  ExactSolution = NULL;
+  
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
@@ -111,6 +116,11 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
+  
+  /*--- Initialize pointer for any exact solutions. ---*/
+  
+  ExactSolution = NULL;
+  
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -259,6 +269,16 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     sizeWorkArray = max(sizeWorkArray, sizePredictorADER);
   }
 
+  /* TDE: in the future, we can call the exact solution constructor first
+   so that we can override any fluid reference values or non-dim. choices.
+   We could also put the instantiation directly inside the SetNondim()
+   routine since they are somehow related. I am open here to ideas of course.
+   Note also that we can do the error checking inside the constructor for
+   the exact sols so that we make sure users have set all the parameters
+   and BCs correctly. */
+  
+  ExactSolution = new CTGVSolution(nDim, nVar, config);
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
   SetNondimensionalization(config, iMesh, true);
@@ -3138,6 +3158,25 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
+  /* TDE: this is just a first prototype to show how this might work for TGV.
+   Ideally, this routine can be reduced to basically this small loop and won't
+   need to change. The correct class is chosen in the solver constructor. */
+  
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+      
+      ExactSolution->GetInitialCondition(0, NULL, coor, solDOF);
+      
+    }
+  }
+  
 #ifdef INVISCID_VORTEX
 
   /* Write a message that the solution is initialized for the inviscid vortex
@@ -6080,7 +6119,51 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /* Initialize addSourceTerms to body_force. The value of addSourceTerms
        is set to true when a manufactured solution is computed. */
     bool addSourceTerms = body_force;
-
+    
+    /* TDE: here is what I had in mind for the MMS sources. More or less
+     the same concept as the others. Note that all of these are virtual,
+     so if no exact sol is defined, the base implementation does nothing. */
+    
+    const su2double RGas = config->GetGas_ConstantND();
+    
+    /*--- Loop over the chunk of elements and its integration points. ---*/
+    for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned short llNVar = ll*nVar;
+      const unsigned long  lInd   = l + ll;
+      for(unsigned short i=0; i<nInt; ++i) {
+        const unsigned short iNPad = i*NPad;
+        
+        /* Determine the integration weight multiplied by the Jacobian. */
+        const su2double *metricTerms = volElem[lInd].metricTerms.data()
+        + i*nMetricPerPoint;
+        const su2double weightJac    = weights[i]*metricTerms[0];
+        
+        /* Set the pointer to the coordinates in this integration point and
+         call the function to compute the source terms for the manufactured
+         solution. Note that this is an inviscid computation, so for
+         viscosity and thermal conductivity a zero is passed. */
+        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
+      
+        su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
+        
+        su2double* params = new su2double[4];
+        params[0] = Gamma;
+        params[1] = RGas;
+        params[2] = 0.0;
+        params[3] = 0.0;
+        
+        ExactSolution->GetMMSSourceTerm(4, params, coor, 0.0, sourceMan);
+        
+        /*--- Subtract the source term of the manufactured solution, multiplied
+         by the appropriate weight, from the possibly earlier computed
+         source term. It is subtracted in order to be consistent with
+         the definition of the residual used in this code. ---*/
+        su2double *source = sources + iNPad + llNVar;
+        for(unsigned short k=0; k<nVar; ++k)
+          source[k] -= weightJac*sourceMan[k];
+      }
+    }
+    
 #ifdef MANUFACTURED_SOLUTION
 
     /*--- For the manufactured solutions a source term must be added. If a
@@ -8681,6 +8764,19 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
         DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, UR);
 
 #else
+        
+        /* TDE: here is what the BC could look like for a general exact sol.
+         I put as input a variable parameter set that we can tune as necessary,
+         but this might need to be refined. */
+        
+        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
+        su2double *UR   = solIntR + NPad*i + ll*nVar;
+        
+        su2double *params = new su2double[1];
+        params[0] = config->GetGas_ConstantND();
+        
+        ExactSolution->GetBCState(1, params, coor, 0.0, UR);
+    
         /* No compiler directive specified. Write an error message and exit. */
         SU2_MPI::Error("No or wrong compiler directive specified. This is necessary for customized boundary conditions.",
                        CURRENT_FUNCTION);
