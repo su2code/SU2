@@ -48,6 +48,9 @@ CDriver::CDriver(char* confFile,
                  bool val_periodic,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
 
+#ifdef CODI_REVERSE_TYPE
+  SU2_MPI::Init_AMPI();
+#endif
 
   unsigned short jZone, iSol;
   unsigned short Kind_Grid_Movement;
