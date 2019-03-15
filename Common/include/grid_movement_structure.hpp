@@ -53,6 +53,7 @@
 #include "matrix_structure.hpp"
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
+#include "linear_solvers_structure_b.hpp"
 #include "element_structure.hpp"
 
 using namespace std;
