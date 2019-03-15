@@ -38,7 +38,7 @@
 
 #include "../include/output_structure.hpp"
 
-enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcAdap };
+enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcGoal };
 
 void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
@@ -163,7 +163,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   //ofstream restart_file;
   string filename;
   
-  unsigned long OutMach, OutPres, OutECC, i, npoin = geometry->GetGlobal_nPointDomain();
+  unsigned long OutMach, OutPres, OutGoal, i, npoin = geometry->GetGlobal_nPointDomain();
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024], BasNam[1024];
@@ -215,7 +215,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS) idxVar += 1; // Add Roe dissipation
 
-    TagBc[bcAdap] = idxVar;
+    TagBc[bcGoal] = idxVar;
     idxVar += 1; // Add adaptation parameter
   }
 	
@@ -320,10 +320,10 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
   if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
 
-    sprintf(OutNam, "ecc.solb");
-    OutECC = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
+    sprintf(OutNam, "goal.solb");
+    OutGoal = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
 	
-    if ( !OutECC ) {
+    if ( !OutGoal ) {
       printf("\n\n   !!! Error !!!\n" );
       printf("Unable to open %s", OutNam);
       printf("Now exiting...\n\n");
@@ -335,7 +335,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     NbrVar = 1;
     VarTyp[0]  = GmfSca;
 	
-    if ( !GmfSetKwd(OutECC, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
+    if ( !GmfSetKwd(OutGoal, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
       printf("\n\n   !!! Error !!!\n" );
       printf("Unable to write ECC");
       printf("Now exiting...\n\n");
@@ -343,14 +343,14 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     }
 	
     for (iPoint = 0; iPoint < npoin; iPoint++) {
-	  iVar = TagBc[bcAdap];
+	  iVar = TagBc[bcGoal];
 	  bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
-	  GmfSetLin(OutECC, GmfSolAtVertices, bufDbl);
+	  GmfSetLin(OutGoal, GmfSolAtVertices, bufDbl);
     }
 		
 	/*--- Close files ---*/
   	
-    if ( !GmfCloseMesh(OutECC) ) {
+    if ( !GmfCloseMesh(OutGoal) ) {
       printf("\n\n   !!! Error !!!\n" );
       printf("Cannot close solution file");
       printf("Now exiting...\n\n");
