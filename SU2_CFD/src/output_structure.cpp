@@ -12434,6 +12434,15 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       delete [] Local_Data_Copy;
       
     }
+
+    /*--- Write an Inria format restart file.
+          Note: currently only for serial, and uses Local_Data so must be
+          performed before SortOutputData. ---*/
+    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_ECC){
+      if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
+      SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+      WriteInriaOutputs(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+    }
     
     /*--- After loading the data local to a processor, we perform a sorting,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
