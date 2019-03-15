@@ -50,7 +50,7 @@ endif
 
 if BUILD_REVERSE
   SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2ad.i
-  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
+  SWIG_WRAP_REAL = SU2_APIPYTHON_wrap_AD
   SWIG_SO_REAL = _pysu2ad.${SO_EXT}
 endif
 
@@ -62,8 +62,8 @@ MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
 
 SWIG = swig
 
-pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
-	-I${abs_top_srcdir}/SU2_CFD/include
+pySU2_INCLUDE = -I${abs_top_builddir}/Common/include \
+	-I${abs_top_builddir}/SU2_CFD/include
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
@@ -83,7 +83,15 @@ all:
 # List the dependencies
 real: ${SWIG_SO_REAL}
 
-EXTRA_CC_FLAGS = -fPIC -O3
+if BUILD_NORMAL
+#  EXTRA_CC_FLAGS = -fPIC -O3
+  EXTRA_CC_FLAGS = -fPIC -g3
+endif
+
+if BUILD_REVERSE
+#  EXTRA_CC_FLAGS = -fPIC -O3 -DCODI_REVERSE_TYPE
+  EXTRA_CC_FLAGS = -fPIC -g3 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
+endif
 
 #External includes
 METIS_INCLUDE = -I${abs_top_srcdir}/externals/metis/include
@@ -100,7 +108,7 @@ endif
 if BUILD_NORMAL
   SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
     ${abs_top_builddir}/Common/lib/libSU2.a
-  PYLIB = pysu2.py"
+  PYLIB = pysu2.py
   SOLIB = _pysu2.so
 endif
 
