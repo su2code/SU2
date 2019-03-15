@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-0.774805, -0.801209, 3.1979e+02, 0.0000e+00] #last 4 columns
+    discadj_arina2k.test_vals    = [-0.776022, -0.795092, 319.800000, 0.000000] #last 4 columns
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -223,7 +223,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.176483, 1.144873, -1040.512028, -3277.663739] #last 4 columns
+    discadj_heat.test_vals = [3.139355, 1.144919, -1040.637744, -2464.935518] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
