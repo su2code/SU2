@@ -219,6 +219,8 @@ public:
   
   static void Init(int *argc, char***argv);
 
+  static void Init_AMPI(void);
+
   static void Buffer_attach(void *buffer, int size);
 
   static void Buffer_detach(void *buffer, int *size);
