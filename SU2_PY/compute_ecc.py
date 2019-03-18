@@ -253,7 +253,7 @@ def main():
     ztate  = copy.deepcopy(state)
 
     konfig.ERROR_ESTIMATE = 'YES'
-    konfig.MATH_PROBLEM = 'DIRECT'
+    konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
 
     konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
     konfig.SOLUTION_ADJ_FILENAME = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
