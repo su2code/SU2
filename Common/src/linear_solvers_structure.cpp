@@ -729,6 +729,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         break;
     }
     
+#ifdef CODI_REVERSE_TYPE
     AD::FuncHelper->addUserData(&LinSysRes);
     AD::FuncHelper->addUserData(&LinSysSol);
     AD::FuncHelper->addUserData(mat_vec_b);
@@ -737,7 +738,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     AD::FuncHelper->addUserData(MaxIter);
     AD::FuncHelper->addUserData(config->GetKind_DiscAdj_Linear_Solver());
     AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
-    
+#endif   
 
     /*--- Prepare the externally differentiated linear solver ---*/
 
