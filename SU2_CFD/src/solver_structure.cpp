@@ -91,6 +91,9 @@ CSolver::CSolver(void) {
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
   IterLinSolver = 0;
+
+  /*--- Initialize pointer for any verification solution. ---*/
+  VerificationSolution = NULL;
 }
 
 CSolver::~CSolver(void) {
@@ -208,6 +211,7 @@ CSolver::~CSolver(void) {
   if (nCol_InletFile    != NULL) {delete [] nCol_InletFile;    nCol_InletFile    = NULL;}
   if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
 
+  if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
@@ -3425,6 +3429,31 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (Inlet_Fine   != NULL) delete [] Inlet_Fine;
   delete [] Normal;
   
+}
+
+void CSolver::SetVerificationSolution(unsigned short nDim,
+                                      unsigned short nVar,
+                                      CConfig        *config) {
+
+  /*--- Determine the verification solution to be set and
+        allocate memory for the corresponding class. ---*/
+  switch( config->GetVerification_Solution() ) {
+
+    case NO_VERIFICATION_SOLUTION:
+      VerificationSolution = NULL; break;
+    case INVISCID_VORTEX:
+      VerificationSolution = new CInviscidVortexSolution(nDim, nVar, config); break;
+    case RINGLEB:
+      VerificationSolution = new CRinglebSolution(nDim, nVar, config); break;
+    case NS_UNIT_QUAD:
+      VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, config); break;
+    case TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CTGVSolution(nDim, nVar, config); break;
+    case MMS_NS_UNIT_QUAD:
+      VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, config); break;
+    case USER_DEFINED_SOLUTION:
+      VerificationSolution = new CUserDefinedSolution(nDim, nVar, config); break;
+  }
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }

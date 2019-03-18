@@ -1,7 +1,7 @@
 /*!
  * \file solution_toolbox.hpp
- * \brief Header file for the exact solution classes.
- *        The implementations are in the <i>solution_toolbox.inl</i> file.
+ * \brief Header file for the verification solution classes.
+ *        The implementations are in the <i>solution_toolbox.cpp</i> file.
  * \author T. Economon, E. van der Weide
  * \version 6.2.0 "Falcon"
  *
@@ -40,12 +40,12 @@
 #include "../config_structure.hpp"
 
 /*!
- * \class CExactSolution
- * \brief Class for holding exact PDE solutions, e.g., phi = phi(x,y,z,t),
+ * \class CVerificationSolution
+ * \brief Class for holding verification PDE solutions, e.g., phi = phi(x,y,z,t),
  *        used for initial conditions, analytic solutions, manufactured solutions.
  * \author T. Economon, E. van der Weide
  */
-class CExactSolution {
+class CVerificationSolution {
   
 protected:
   
@@ -60,7 +60,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CExactSolution(void);
+  CVerificationSolution(void);
   
   /*!
    * \overload
@@ -68,15 +68,15 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config   - Definition of the particular problem.
    */
-  CExactSolution(unsigned short val_nDim,
-                 unsigned short val_nvar,
-                 CConfig *config);
+  CVerificationSolution(unsigned short val_nDim,
+                        unsigned short val_nvar,
+                        CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CExactSolution(void);
-  
+  virtual ~CVerificationSolution(void);
+
   /*!
    * \brief Get the exact solution at the current position and time.
    * \param[in] val_nParams  - Number of additional input parameters.
@@ -130,16 +130,227 @@ public:
                                 const su2double      *val_coords,
                                 const su2double      val_t,
                                 su2double            *val_source);
-  
+
+  /*!
+   * \brief Whether or not this verification solution is a manufactured solution.
+   * \return  - False as default value. Overwrite this function for a
+                manufactured solution.
+   */
+  virtual bool IsManufacturedSolution(void);
 };
 
+/*!
+ * \class CInviscidVortexSolution
+ * \brief Class to define the required data for the Inviscid Vortex.
+ * \author E. van der Weide, T. Economon
+ */
+class CInviscidVortexSolution: public CVerificationSolution {
+
+protected:
+
+  /*--- Specific conditions for the inviscid vortex. ---*/
+  su2double MachVortex;     /*!< \brief Mach number of the undisturbed flow. */
+  su2double x0Vortex;       /*!< \brief Initial x-coordinate of the vortex center. */
+  su2double y0Vortex;       /*!< \brief Initial y-coordinate of the vortex center. */
+  su2double RVortex;        /*!< \brief Radius of the vortex. */
+  su2double epsVortex;      /*!< \brief Strength of the vortex. */
+  su2double thetaVortex;    /*!< \brief Advection angle (in degrees) of the vortex. */
+
+  /*--- Variables involving gamma. */
+  su2double Gamma;        /*!< \brief Gamma */
+  su2double Gm1;          /*!< \brief Gamma minus 1 */
+  su2double ovGm1;        /*!< \brief 1 over Gamma minus 1 */
+  su2double gamOvGm1;     /*!< \brief Gamma over Gamma minus 1 */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CInviscidVortexSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CInviscidVortexSolution(unsigned short val_nDim,
+                          unsigned short val_nvar,
+                          CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CInviscidVortexSolution(void);
+
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+};
+
+/*!
+ * \class CRinglebSolution
+ * \brief Class to define the required data for the Ringleb flow.
+ * \author E. van der Weide, T. Economon
+ */
+class CRinglebSolution: public CVerificationSolution {
+
+protected:
+
+  /*--- Variables involving gamma. ---*/
+  su2double Gamma;        /*!< \brief Gamma */
+  su2double Gm1;          /*!< \brief Gamma minus 1 */
+  su2double tovGm1;       /*!< \brief 2 over Gamma minus 1 */
+  su2double tGamOvGm1;    /*!< \brief 2 Gamma over Gamma minus 1 */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CRinglebSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CRinglebSolution(unsigned short val_nDim,
+                   unsigned short val_nvar,
+                   CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CRinglebSolution(void);
+
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+};
+
+/*!
+ * \class CNSUnitQuadSolution
+ * \brief Class to define the required data for the Navier-Stokes solution
+          on a unit quad, heat conduction is neglected.
+ * \author E. van der Weide, T. Economon
+ */
+class CNSUnitQuadSolution: public CVerificationSolution {
+
+protected:
+
+  /*--- Variables that define the soltion. ---*/
+  su2double Gm1;          /*!< \brief Gamma minus 1 */
+  su2double flowAngle;    /*!< \brief Angle of the velocity vector in radians. */
+  su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CNSUnitQuadSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CNSUnitQuadSolution(unsigned short val_nDim,
+                      unsigned short val_nvar,
+                      CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CNSUnitQuadSolution(void);
+
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+};
 
 /*!
  * \class CTGVSolution
- * \brief Class for a generic user-specified initial condition.
+ * \brief Class to define the required data for the Taylor Green Vortex.
  * \author E. van der Weide, T. Economon
  */
-class CTGVSolution: public CExactSolution {
+class CTGVSolution: public CVerificationSolution {
   
 protected:
   
@@ -187,4 +398,204 @@ public:
                    const su2double      val_t,
                    su2double            *val_solution);
   
+};
+
+/*!
+ * \class CMMSNSUnitQuadSolution
+ * \brief Class to define the required data for the manufactured solution of the
+          laminar Navier-Stokes equations on a unit quad.
+ * \author E. van der Weide, T. Economon
+ */
+class CMMSNSUnitQuadSolution: public CVerificationSolution {
+
+protected:
+
+  /*--- Variables that define the solution and MMS source term. ---*/
+  su2double Gamma;        /*!< \brief Specific heat ratio. */
+  su2double RGas;         /*!< \brief Gas constant. */
+  su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
+  su2double Conductivity; /*!< \brief Thermal conductivity, must be constant. */
+
+  /*--- Constants, which describe this manufactured solution. This is a viscous
+        solution on the unit quad, where the primitive variables vary as a
+        combination of sine and cosine functions. The unit quad is probably not
+        necessary, and an arbitrary domain should work as well. ---*/
+
+  su2double L;        /*!< \brief Length scale. */
+  su2double a_Px;     /*!< \brief Parameter for the pressure solution. */
+  su2double a_Pxy;    /*!< \brief Parameter for the pressure solution. */
+  su2double a_Py;     /*!< \brief Parameter for the pressure solution. */
+  su2double a_rhox;   /*!< \brief Parameter for the density solution. */
+  su2double a_rhoxy;  /*!< \brief Parameter for the density solution. */
+  su2double a_rhoy;   /*!< \brief Parameter for the density solution. */
+  su2double a_ux;     /*!< \brief Parameter for the x-velocity solution. */
+  su2double a_uxy;    /*!< \brief Parameter for the x-velocity solution. */
+  su2double a_uy;     /*!< \brief Parameter for the x-velocity solution. */
+  su2double a_vx;     /*!< \brief Parameter for the y-velocity solution. */
+  su2double a_vxy;    /*!< \brief Parameter for the y-velocity solution. */
+  su2double a_vy;     /*!< \brief Parameter for the y-velocity solution. */
+  su2double P_0;      /*!< \brief Parameter for the pressure solution. */
+  su2double P_x;      /*!< \brief Parameter for the pressure solution. */
+  su2double P_xy;     /*!< \brief Parameter for the pressure solution. */
+  su2double P_y;      /*!< \brief Parameter for the pressure solution. */ 
+  su2double rho_0;    /*!< \brief Parameter for the density solution. */
+  su2double rho_x;    /*!< \brief Parameter for the density solution. */
+  su2double rho_xy;   /*!< \brief Parameter for the density solution. */
+  su2double rho_y;    /*!< \brief Parameter for the density solution. */
+  su2double u_0;      /*!< \brief Parameter for the x-velocity solution. */
+  su2double u_x;      /*!< \brief Parameter for the x-velocity solution. */
+  su2double u_xy;     /*!< \brief Parameter for the x-velocity solution. */
+  su2double u_y;      /*!< \brief Parameter for the x-velocity solution. */
+  su2double v_0;      /*!< \brief Parameter for the y-velocity solution. */
+  su2double v_x;      /*!< \brief Parameter for the y-velocity solution. */
+  su2double v_xy;     /*!< \brief Parameter for the y-velocity solution. */
+  su2double v_y;      /*!< \brief Parameter for the y-velocity solution. */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CMMSNSUnitQuadSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CMMSNSUnitQuadSolution(unsigned short val_nDim,
+                         unsigned short val_nvar,
+                         CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMMSNSUnitQuadSolution(void);
+
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+
+  /*!
+   * \brief Get the source term for the manufactured solution (MMS).
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetMMSSourceTerm(const unsigned short val_nParams,
+                        const su2double      *val_params,
+                        const su2double      *val_coords,
+                        const su2double      val_t,
+                        su2double            *val_source);
+
+  /*!
+   * \brief Whether or not this verification solution is a manufactured solution.
+   * \return  - True, because this is a manufactured solution.
+   */
+  bool IsManufacturedSolution(void);
+};
+
+/*!
+ * \class CUserDefinedSolution
+ * \brief Class to define the required data for a user defined solution.
+ * \author E. van der Weide, T. Economon
+ */
+class CUserDefinedSolution: public CVerificationSolution {
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CUserDefinedSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CUserDefinedSolution(unsigned short val_nDim,
+                       unsigned short val_nvar,
+                       CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUserDefinedSolution(void);
+
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+
+  /*!
+   * \brief Get the source term for the manufactured solution (MMS).
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetMMSSourceTerm(const unsigned short val_nParams,
+                        const su2double      *val_params,
+                        const su2double      *val_coords,
+                        const su2double      val_t,
+                        su2double            *val_source);
+
+  /*!
+   * \brief Whether or not this verification solution is a manufactured solution.
+   * \return  - True if this is a manufactured solution and false otherwise.
+   */
+  bool IsManufacturedSolution(void);
 };
