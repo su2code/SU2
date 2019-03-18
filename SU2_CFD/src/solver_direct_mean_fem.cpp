@@ -30,7 +30,6 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../include/data_manufactured_solutions.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -67,10 +66,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
-  
-  /*--- Initialize pointer for any exact solutions. ---*/
-  
-  ExactSolution = NULL;
   
 }
 
@@ -116,10 +111,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
   blasFunctions = NULL;
-  
-  /*--- Initialize pointer for any exact solutions. ---*/
-  
-  ExactSolution = NULL;
   
 }
 
@@ -276,8 +267,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
    Note also that we can do the error checking inside the constructor for
    the exact sols so that we make sure users have set all the parameters
    and BCs correctly. */
-  
-  ExactSolution = new CTGVSolution(nDim, nVar, config);
+  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
@@ -3158,256 +3148,23 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
-  /* TDE: this is just a first prototype to show how this might work for TGV.
-   Ideally, this routine can be reduced to basically this small loop and won't
-   need to change. The correct class is chosen in the solver constructor. */
-  
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+  /*--- Check if a verification solution is to be computed. ---*/
+  if( VerificationSolution ) {
+
+    /* Loop over the owned elements. */
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
     
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      /* Loop over the DOFs of this element. */
+      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
       
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+        su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
       
-      ExactSolution->GetInitialCondition(0, NULL, coor, solDOF);
-      
+        VerificationSolution->GetInitialCondition(0, NULL, coor, solDOF);
+      }
     }
   }
-  
-#ifdef INVISCID_VORTEX
-
-  /* Write a message that the solution is initialized for the inviscid vortex
-     test case. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for the inviscid vortex test case!!!" << endl;
-    cout << endl << flush;
-  }
-
-  /* The initial conditions are set to the solution of the inviscid vortex,
-     which is an exact solution of the Euler equations. The initialization
-     below is valid for both 2D and 3D. For the 3D case the z-direction is
-     assumed to be the direction in which the solution does not change.
-     First set the parameters, which define this test case. */
-
-  const su2double MachVortex  =  0.5;     // Mach number of the undisturbed flow.
-  const su2double x0Vortex    = -0.5;     // Initial x-coordinate of the vortex center.
-  const su2double y0Vortex    =  0.0;     // Initial y-coordinate of the vortex center.
-  const su2double RVortex     =  0.1;     // Radius of the vortex.
-  const su2double epsVortex   =  1.0;     // Strength of the vortex.
-  const su2double thetaVortex =  0.0;     // Advection angle (in degrees) of the vortex.
-
-  /* Compute the free stream velocities in x- and y-direction. */
-  const su2double VelInf = MachVortex*sqrt(Gamma);
-  const su2double uInf   = VelInf*cos(thetaVortex*PI_NUMBER/180.0);
-  const su2double vInf   = VelInf*sin(thetaVortex*PI_NUMBER/180.0);
-
-  /* Useful coefficients in which Gamma is present. */
-  const su2double ovGm1    = 1.0/Gamma_Minus_One;
-  const su2double gamOvGm1 = Gamma*ovGm1;
-
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      /* Compute the coordinates relative to the center of the vortex. */
-      const su2double dx = coor[0] - x0Vortex;
-      const su2double dy = coor[1] - y0Vortex;
-
-      /* Compute the components of the velocity. */
-      su2double f  = 1.0 - (dx*dx + dy*dy)/(RVortex*RVortex);
-      su2double t1 = epsVortex*dy*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
-      su2double u  = uInf - VelInf*t1;
-
-      t1          = epsVortex*dx*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
-      su2double v = vInf + VelInf*t1;
-
-      /* Compute the density and the pressure. */
-      t1 = 1.0 - epsVortex*epsVortex*Gamma_Minus_One
-         *       MachVortex*MachVortex*exp(f)/(8.0*PI_NUMBER*PI_NUMBER);
-
-      su2double rho = pow(t1,ovGm1);
-      su2double p   = pow(t1,gamOvGm1);
-
-      /* Compute the conservative variables. Note that both 2D and 3D
-         cases are treated correctly. */
-      solDOF[0]      = rho;
-      solDOF[1]      = rho*u;
-      solDOF[2]      = rho*v;
-      solDOF[3]      = 0.0;
-      solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
-    }
-  }
-
-#elif RINGLEB
-
-  /* The initial conditions are set to the exact solution of the Ringleb flow.
-     The reason for doing so, is that the Ringleb flow is an isolated solution
-     of the Euler equations. If the initialization is too far off from the
-     final solution, shocks develop, which may destabilize the solution and it
-     is impossible to obtain a converged solution. */
-
-  /* Write a message that the solution is initialized for the Ringleb test case. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for the Ringleb test case!!!" << endl;
-    cout << endl << flush;
-  }
-
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      /* Compute the conservative flow variables of the Ringleb solution for the
-         given coordinates. Note that it is possible to run this case in both 2D
-         and 3D, where the z-direction is assumed to be the inactive direction. */
-      RinglebSolution(coor, solDOF);
-    }
-  }
-
-#elif CUSTOM_BC_NSUNITQUAD
-
-  /* Write a message that the solution is initialized for the navier stokes test case
-     on the unit quad. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for the Navier Stokes test case on the unit quad!!!" << endl;
-    cout << endl << flush;
-  }
-
-  /* Get the flow angle, which is stored in the angle of attack and the
-     viscosity coefficient. */
-  const su2double flowAngle = config->GetAoA()*PI_NUMBER/180.0;
-  const su2double mu        = config->GetViscosity_FreeStreamND();
-
-  const su2double cosFlowAngle = cos(flowAngle);
-  const su2double sinFlowAngle = sin(flowAngle);
-
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      /*--- Set the exact solution in this DOF. ---*/
-      const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
-      const double yTilde = coor[0]*sinFlowAngle + coor[1]*cosFlowAngle;
-
-      solDOF[0]      =  1.0;
-      solDOF[1]      =  cosFlowAngle*yTilde*yTilde;
-      solDOF[2]      = -sinFlowAngle*yTilde*yTilde;
-      solDOF[3]      =  0.0;
-      solDOF[nVar-1] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
-                     +  0.5*yTilde*yTilde*yTilde*yTilde;
-    }
-  }
-
-#elif TAYLOR_GREEN
-
-  /* Write a message that the solution is initialized for the Taylor-Green vortex
-     test case. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
-    cout << endl << flush;
-  }
-
-  /* The initial conditions are set for the Taylor-Green vortex case, which
-   is a DNS case that features vortex breakdown into turbulence. These
-   particular settings are for the typical Re = 1600 case (M = 0.08) with
-   an initial temperature of 300 K. Note that this condition works in both
-   2D and 3D. */
-
-  const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
-  const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
-  const su2double tgvDensity  = 1.0;     // Taylor-Green density.
-  const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
-
-  /* Useful coefficient in which Gamma is present. */
-  const su2double ovGm1    = 1.0/Gamma_Minus_One;
-
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      su2double coorZ = 0.0;
-      if (nDim == 3) coorZ = coor[2];
-
-      /* Compute the primitive variables. */
-      su2double rho = tgvDensity;
-      su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
-                                      cos(coor[1]/tgvLength)*
-                                      cos(coorZ  /tgvLength));
-      su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
-                                      sin(coor[1]/tgvLength)*
-                                      cos(coorZ  /tgvLength));
-      su2double factorA = cos(2.0*coorZ/tgvLength) + 2.0;
-      su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
-      su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
-
-      /* Compute the conservative variables. Note that both 2D and 3D
-       cases are treated correctly. */
-      solDOF[0]      = rho;
-      solDOF[1]      = rho*u;
-      solDOF[2]      = rho*v;
-      solDOF[3]      = 0.0;
-      solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
-    }
-  }
-
-#elif MANUFACTURED_SOLUTION
-
-  /* Write a message that the solution is initialized for a manufactured solution. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for a manufactured solution!!!" << endl;
-    cout << endl << flush;
-  }
-
-  const su2double RGas = config->GetGas_ConstantND();
-
-  /* Loop over the owned elements. */
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Loop over the DOFs of this element. */
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
-      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      /* Compute the solution. */
-      DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, solDOF);
-    }
-  }
-
-#endif
-
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -6119,99 +5876,53 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /* Initialize addSourceTerms to body_force. The value of addSourceTerms
        is set to true when a manufactured solution is computed. */
     bool addSourceTerms = body_force;
-    
-    /* TDE: here is what I had in mind for the MMS sources. More or less
-     the same concept as the others. Note that all of these are virtual,
-     so if no exact sol is defined, the base implementation does nothing. */
-    
-    const su2double RGas = config->GetGas_ConstantND();
-    
-    /*--- Loop over the chunk of elements and its integration points. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      const unsigned short llNVar = ll*nVar;
-      const unsigned long  lInd   = l + ll;
-      for(unsigned short i=0; i<nInt; ++i) {
-        const unsigned short iNPad = i*NPad;
+
+    /* Check whether or not a manufactured solution is used. */
+    if( VerificationSolution ) {
+      if( VerificationSolution->IsManufacturedSolution() ) {
+
+        /*--- For the manufactured solutions a source term must be added. If a
+              standard source term has not been specified, initialize the source
+              terms to zero and set addSourceTerms to true. ---*/
+        addSourceTerms = true;
+        if( !body_force ) {
+          for(unsigned short i=0; i<(nInt*NPad); ++i)
+            sources[i] = 0.0;
+        }
+
+        /*--- Loop over the chunk of elements and its integration points. ---*/
+        for(unsigned short ll=0; ll<llEnd; ++ll) {
+          const unsigned short llNVar = ll*nVar;
+          const unsigned long  lInd   = l + ll;
+          for(unsigned short i=0; i<nInt; ++i) {
+            const unsigned short iNPad = i*NPad;
         
-        /* Determine the integration weight multiplied by the Jacobian. */
-        const su2double *metricTerms = volElem[lInd].metricTerms.data()
-        + i*nMetricPerPoint;
-        const su2double weightJac    = weights[i]*metricTerms[0];
+            /* Determine the integration weight multiplied by the Jacobian. */
+            const su2double *metricTerms = volElem[lInd].metricTerms.data()
+                                         + i*nMetricPerPoint;
+            const su2double weightJac    = weights[i]*metricTerms[0];
         
-        /* Set the pointer to the coordinates in this integration point and
-         call the function to compute the source terms for the manufactured
-         solution. Note that this is an inviscid computation, so for
-         viscosity and thermal conductivity a zero is passed. */
-        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
+            /* Set the pointer to the coordinates in this integration point and
+               call the function to compute the source terms for the manufactured
+               solution. */
+            const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
       
-        su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
+            su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
         
-        su2double* params = new su2double[4];
-        params[0] = Gamma;
-        params[1] = RGas;
-        params[2] = 0.0;
-        params[3] = 0.0;
+            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
         
-        ExactSolution->GetMMSSourceTerm(4, params, coor, 0.0, sourceMan);
-        
-        /*--- Subtract the source term of the manufactured solution, multiplied
-         by the appropriate weight, from the possibly earlier computed
-         source term. It is subtracted in order to be consistent with
-         the definition of the residual used in this code. ---*/
-        su2double *source = sources + iNPad + llNVar;
-        for(unsigned short k=0; k<nVar; ++k)
-          source[k] -= weightJac*sourceMan[k];
+            /*--- Subtract the source term of the manufactured solution, multiplied
+                  by the appropriate weight, from the possibly earlier computed
+                  source term. It is subtracted in order to be consistent with
+                  the definition of the residual used in this code. ---*/
+            su2double *source = sources + iNPad + llNVar;
+            for(unsigned short k=0; k<nVar; ++k)
+              source[k] -= weightJac*sourceMan[k];
+          }
+        }
       }
     }
     
-#ifdef MANUFACTURED_SOLUTION
-
-    /*--- For the manufactured solutions a source term must be added. If a
-          standard source term has not been specified, initialize the source
-          terms to zero and set addSourceTerms to true. ---*/
-    addSourceTerms = true;
-    if( !body_force ) {
-      for(unsigned short i=0; i<(nInt*NPad); ++i)
-        sources[i] = 0.0;
-    }
-
-
-    /* Easier storage of the gas constant. */
-    const su2double RGas = config->GetGas_ConstantND();
-
-    /*--- Loop over the chunk of elements and its integration points. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      const unsigned short llNVar = ll*nVar;
-      const unsigned long  lInd   = l + ll;
-      for(unsigned short i=0; i<nInt; ++i) {
-        const unsigned short iNPad = i*NPad;
-
-        /* Determine the integration weight multiplied by the Jacobian. */
-        const su2double *metricTerms = volElem[lInd].metricTerms.data()
-                                     + i*nMetricPerPoint;
-        const su2double weightJac    = weights[i]*metricTerms[0];
-
-        /* Set the pointer to the coordinates in this integration point and
-           call the function to compute the source terms for the manufactured
-           solution. Note that this is an inviscid computation, so for
-           viscosity and thermal conductivity a zero is passed. */
-        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
-
-        su2double sourceMan[5];
-        SourceTermManufacturedSolution(nDim, Gamma, RGas, 0.0, 0.0, coor, sourceMan);
-
-        /*--- Subtract the source term of the manufactured solution, multiplied
-              by the appropriate weight, from the possibly earlier computed
-              source term. It is subtracted in order to be consistent with
-              the definition of the residual used in this code. ---*/
-        su2double *source = sources + iNPad + llNVar;
-        for(unsigned short k=0; k<nVar; ++k)
-          source[k] -= weightJac*sourceMan[k];
-      }
-    }
-
-#endif
-
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
@@ -8735,53 +8446,28 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             work, solIntL);
 
-    /*--- Loop over the number of simultaneously treated faces and integration points
-          to compute the right state via the customized boundary conditions. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      for(unsigned short i=0; i<nInt; ++i) {
+    /* Check for a verification solution. */
+    if( VerificationSolution ) {
 
-#ifdef RINGLEB
+      /*--- Loop over the number of simultaneously treated faces and integration points
+            to compute the right state for the boundary conditions. ---*/
+      for(unsigned short ll=0; ll<llEnd; ++ll) {
+        for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Ringleb case. Specify the exact solution for the right solution.
-           First determine the pointer to the coordinates of this integration
-           point and the pointer to the solution. Afterwards call the function
-           RinglebSolution to do the actual job. */
-        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
-              su2double *UR   = solIntR + NPad*i + ll*nVar;
-
-        RinglebSolution(coor, UR);
-
-#elif MANUFACTURED_SOLUTION
-
-        /* Manufactured solution. Specify the exact solution for the right solution.
-           First determine the pointer to the coordinates of this integration
-           point and the pointer to the solution. Afterwards call the function
-           DetermineManufacturedSolution to do the actual job. */
-        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
-              su2double *UR   = solIntR + NPad*i + ll*nVar;
-
-        const su2double RGas = config->GetGas_ConstantND();
-        DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, UR);
-
-#else
+          /* Determine the pointer to the coordinates of this integration
+             point and the pointer to the solution and call the function
+             GetBCState to determine the actual boundary state. */
+          const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
+          su2double *UR   = solIntR + NPad*i + ll*nVar;
         
-        /* TDE: here is what the BC could look like for a general exact sol.
-         I put as input a variable parameter set that we can tune as necessary,
-         but this might need to be refined. */
-        
-        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
-        su2double *UR   = solIntR + NPad*i + ll*nVar;
-        
-        su2double *params = new su2double[1];
-        params[0] = config->GetGas_ConstantND();
-        
-        ExactSolution->GetBCState(1, params, coor, 0.0, UR);
-    
-        /* No compiler directive specified. Write an error message and exit. */
-        SU2_MPI::Error("No or wrong compiler directive specified. This is necessary for customized boundary conditions.",
-                       CURRENT_FUNCTION);
-#endif
+          VerificationSolution->GetBCState(0, NULL, coor, 0.0, UR);
+        }
       }
+    }
+    else {
+    
+      /* The user must specify the custom BC's here. */
+      SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
     }
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -9452,117 +9138,6 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
     }
   }
 }
-
-#ifdef RINGLEB
-
-void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
-                                                su2double *sol) {
-
-  /* Compute several expononts involving Gamma. */
-  const su2double gm1     = Gamma_Minus_One;
-  const su2double tovgm1  = 2.0/gm1;
-  const su2double tgovgm1 = Gamma*tovgm1;
-
-  /* Easier storage of the coordinates and abbreviate y*y. */
-  const su2double x  = coor[0], y = coor[1];
-  const su2double y2 = y*y;
-
-  /* Initial guess for q (velocity magnitude) and k (streamline parameter). */
-  su2double k = 1.2;
-  su2double q = 1.0;
-
-  /* Newton algorithm to solve for the variables q and k for the given x and y. */
-  const int iterMax = 500;
-  su2double duMaxPrev = 10.0;
-
-  int iter;
-  for(iter=0; iter<iterMax; ++iter) {
-
-    /* Compute the speed of sound, the density, the parameter JJ
-       and its derivatives w.r.t. q. */
-    const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
-    const su2double rho = pow(a,tovgm1);
-    const su2double JJ  = 1.0/a + 1.0/(3.0*a*a*a) + 1.0/(5.0*a*a*a*a*a)
-                        - 0.5*log((1.0+a)/(1.0-a));
-
-    const su2double dadq   = -0.5*gm1*q/a;
-    const su2double drhodq =  2.0*rho*dadq/(gm1*a);
-    const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
-
-    /* Determine the values of the nonlinear equations to solve
-       and its corresponding Jacobian matrix. */
-    const su2double y2c = (k*k - q*q)/(k*k*k*k*rho*rho*q*q);
-    const su2double f[] = {(2.0/(k*k) - 1.0/(q*q))/(2.0*rho) - 0.5*JJ - x,
-                           y2c - y2};
-    su2double Jac[2][2];
-    Jac[0][0] = -(1.0/(k*k) - 0.50/(q*q))*drhodq/(rho*rho)
-              + 1.0/(rho*q*q*q) - 0.5*dJJdq;
-    Jac[0][1] = -2.0/(rho*k*k*k);
-    Jac[1][0] = -2.0/(k*k*rho*rho*q*q*q) - 2.0*y2c*drhodq/rho;
-    Jac[1][1] = (4.0*q*q - 2.0*k*k)/(k*k*k*k*k*rho*rho*q*q);
-
-    /* Determine the update dU. */
-    const su2double det  = Jac[0][0]*Jac[1][1] - Jac[0][1]*Jac[1][0];
-    const su2double dU[] = {(f[0]*Jac[1][1] - f[1]*Jac[0][1])/det,
-                            (f[1]*Jac[0][0] - f[0]*Jac[1][0])/det};
-
-    /* Determine the underrelaxation coefficient alp. */
-    const su2double dUMax = max(fabs(dU[0]), fabs(dU[1]));
-    su2double alp = 1.0;
-    if(     dUMax > 1.0) alp = 0.04;
-    else if(dUMax > 0.1) alp = 0.2;
-
-    /* Update q and k. */
-    q -= alp*dU[0];
-    k -= alp*dU[1];
-
-    /* Convergence check, which is independent of the precision used. */
-    if((dUMax < 1.e-3) && (dUMax >= duMaxPrev)) break;
-    duMaxPrev = dUMax;
-  }
-
-  /* Check if the Newton algorithm actually converged. */
-  if(iter == iterMax) {
-    cout << "In function CFEM_DG_EulerSolver::RinglebSolution: "
-         << "Newton algorithm did not converge." << endl << flush;
-    exit(1);
-  }
-
-  /* Compute the speed of sound, density and pressure. */
-  const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
-  const su2double rho = pow(a,tovgm1);
-  const su2double p   = pow(a,tgovgm1)/Gamma;
-
-  /* Determine the derivative of x w.r.t. q and ydxdq. */
-  const su2double dadq   = -0.5*gm1*q/a;
-  const su2double drhodq =  2.0*rho*dadq/(gm1*a);
-  const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
-
-  const su2double dxdq  = -(1.0/(k*k) - 0.5/(q*q))*drhodq/(rho*rho)
-                        +   1.0/(rho*q*q*q) - 0.5*dJJdq;
-  const su2double ydxdq = y*dxdq;
-
-  /* Determine the derivative of 1/2 y2 w.r.t. q, which is ydydq. The reason is
-     that ydydq is always well defined, while dydyq is singular for y = 0. */
-  const su2double ydydq = drhodq*(q*q-k*k)/(k*k*k*k*rho*rho*rho*q*q)
-                        - 1.0/(k*k*rho*rho*q*q*q);
-
-  /* Determine the direction of the streamline. */
-  const su2double vecLen = sqrt(ydxdq*ydxdq + ydydq*ydydq);
-
-  su2double velDir[] = {ydxdq/vecLen, ydydq/vecLen};
-  if(velDir[1] > 0.0){velDir[0] = -velDir[0]; velDir[1] = -velDir[1];}
-
-  /* Compute the conservative variables. Note that both 2D and 3D
-     cases are treated correctly. */
-  sol[0]      = rho;
-  sol[1]      = rho*q*velDir[0];
-  sol[2]      = rho*q*velDir[1];
-  sol[3]      = 0.0;
-  sol[nVar-1] = p/gm1 + 0.5*rho*q*q;
-}
-
-#endif
 
 void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
@@ -12975,67 +12550,51 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
        is set to true when a manufactured solution is computed. */
     bool addSourceTerms = body_force;
 
-#ifdef MANUFACTURED_SOLUTION
+    /* Check whether or not a manufactured solution is used. */
+    if( VerificationSolution ) {
+      if( VerificationSolution->IsManufacturedSolution() ) {
 
-    /*--- For the manufactured solutions a source term must be added. If a
-          standard source term has not been specified, initialize the source
-          terms to zero and set addSourceTerms to true. ---*/
-    addSourceTerms = true;
-    if( !body_force ) {
-      for(unsigned short i=0; i<(nInt*NPad); ++i)
-        sources[i] = 0.0;
-    }
-
-    /* Easier storage of the gas constant. */
-    const su2double RGas = config->GetGas_ConstantND();
-
-    /*--- Loop over the chunk of elements and its integration points. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      const unsigned short llNVar = ll*nVar;
-      const unsigned long  lInd   = l + ll;
-      for(unsigned short i=0; i<nInt; ++i) {
-        const unsigned short iNPad = i*NPad;
-
-        /* Determine the value of the viscosity and thermal conductivity. */
-        const su2double *sol = solAndGradInt + iNPad + llNVar;
-        const su2double rhoInv = 1.0/sol[0];
-        su2double kinEner = 0.0;
-        for(unsigned short k=1; k<=nDim; ++k) {
-          const su2double vel = sol[k]*rhoInv;
-          kinEner += 0.5*vel*vel;
+        /*--- For the manufactured solutions a source term must be added. If a
+              standard source term has not been specified, initialize the source
+              terms to zero and set addSourceTerms to true. ---*/
+        addSourceTerms = true;
+        if( !body_force ) {
+          for(unsigned short i=0; i<(nInt*NPad); ++i)
+            sources[i] = 0.0;
         }
-        const su2double StaticEnergy = sol[nVar-1]*rhoInv - kinEner;
 
-        FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-        const su2double ViscosityLam        = FluidModel->GetLaminarViscosity();
-        const su2double ThermalConductivity = FluidModel->GetThermalConductivity();
+        /*--- Loop over the chunk of elements and its integration points. ---*/
+        for(unsigned short ll=0; ll<llEnd; ++ll) {
+          const unsigned short llNVar = ll*nVar;
+          const unsigned long  lInd   = l + ll;
+          for(unsigned short i=0; i<nInt; ++i) {
+            const unsigned short iNPad = i*NPad;
 
-        /* Determine the integration weight multiplied by the Jacobian. */
-        const su2double *metricTerms = volElem[lInd].metricTerms.data()
-                                     + i*nMetricPerPoint;
-        const su2double weightJac    = weights[i]*metricTerms[0];
+            /* Determine the integration weight multiplied by the Jacobian. */
+            const su2double *metricTerms = volElem[lInd].metricTerms.data()
+                                         + i*nMetricPerPoint;
+            const su2double weightJac    = weights[i]*metricTerms[0];
 
-        /* Set the pointer to the coordinates in this integration point and
-           call the function to compute the source terms for the manufactured
-           solution. Note that this is an inviscid computation, so for
-           viscosity and thermal conductivity a zero is passed. */
-        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
+            /* Set the pointer to the coordinates in this integration point and
+               call the function to compute the source terms for the manufactured
+               solution. */
+            const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
 
-        su2double sourceMan[5];
-        SourceTermManufacturedSolution(nDim, Gamma, RGas, ViscosityLam,
-                                       ThermalConductivity, coor, sourceMan);
+            su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
 
-        /*--- Subtract the source term of the manufactured solution, multiplied
-              by the appropriate weight, from the possibly earlier computed
-              source term. It is subtracted in order to be consistent with
-              the definition of the residual used in this code. ---*/
-        su2double *source = sources + iNPad + llNVar;
-        for(unsigned short k=0; k<nVar; ++k)
-          source[k] -= weightJac*sourceMan[k];
+            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+            /*--- Subtract the source term of the manufactured solution, multiplied
+                  by the appropriate weight, from the possibly earlier computed
+                  source term. It is subtracted in order to be consistent with
+                  the definition of the residual used in this code. ---*/
+            su2double *source = sources + iNPad + llNVar;
+            for(unsigned short k=0; k<nVar; ++k)
+              source[k] -= weightJac*sourceMan[k];
+          }
+        }
       }
     }
-
-#endif
 
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
@@ -15416,16 +14975,6 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
                                  CNumerics                *conv_numerics,
                                  su2double                *workArray) {
 
-#ifdef CUSTOM_BC_NSUNITQUAD
-  /* Get the flow angle, which is stored in the angle of attack and the
-     viscosity coefficient. */
-  const su2double flowAngle = config->GetAoA()*PI_NUMBER/180.0;
-  const su2double mu        = config->GetViscosity_FreeStreamND();
-
-  const su2double cosFlowAngle = cos(flowAngle);
-  const su2double sinFlowAngle = sin(flowAngle);
-#endif
-
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
 
@@ -15467,51 +15016,30 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             work, solIntL);
 
-    /*--- Loop over the number of faces and integration points to compute the
-          right state via the customized boundary conditions. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      for(unsigned short i=0; i<nInt; ++i) {
+    /* Check for a verification solution. */
+    if( VerificationSolution ) {
 
-#ifdef CUSTOM_BC_NSUNITQUAD
+      /*--- Loop over the number of simultaneously treated faces and integration points
+            to compute the right state for the boundary conditions. ---*/
+      for(unsigned short ll=0; ll<llEnd; ++ll) {
+        for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Easier storage of the right solution for this integration point and
-           the coordinates of this integration point. */
-        const su2double *coor = surfElem[l+ll].coorIntegrationPoints.data() + i*nDim;
-              su2double *UR   = solIntR + NPad*i + ll*nVar;
+          /* Determine the pointer to the coordinates of this integration
+             point and the pointer to the solution and call the function
+             GetBCState to determine the actual boundary state. */
+          const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
+          su2double *UR   = solIntR + NPad*i + ll*nVar;
 
-        /*--- Set the exact solution in this integration point. ---*/
-        const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
-        const double yTilde = coor[0]*sinFlowAngle + coor[1]*cosFlowAngle;
-
-        UR[0]      =  1.0;
-        UR[1]      =  cosFlowAngle*yTilde*yTilde;
-        UR[2]      = -sinFlowAngle*yTilde*yTilde;
-        UR[3]      =  0.0;
-        UR[nVar-1] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
-                   +  0.5*yTilde*yTilde*yTilde*yTilde;
-
-#elif MANUFACTURED_SOLUTION
-
-        /* Manufactured solution. Specify the exact solution for the right solution.
-           First determine the pointer to the coordinates of this integration
-           point and the pointer to the solution. Afterwards call the function
-           DetermineManufacturedSolution to do the actual job. */
-        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
-              su2double *UR   = solIntR + NPad*i + ll*nVar;
-
-        const su2double RGas = config->GetGas_ConstantND();
-        DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, UR);
-
-#else
-
-        /* No compiler directive specified. Write an error message and exit. */
-
-        SU2_MPI::Error("No or wrong compiler directive specified. This is necessary for customized boundary conditions.",
-                       CURRENT_FUNCTION);
-
-#endif
+          VerificationSolution->GetBCState(0, NULL, coor, 0.0, UR);
+        }
       }
     }
+    else {
+
+      /* The user must specify the custom BC's here. */
+      SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+    }
+
 
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */

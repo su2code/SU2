@@ -141,6 +141,8 @@ protected:
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
+  CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4368,6 +4370,16 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
+protected:
+  /*!
+   * \brief Allocate the memory for the verification solution, if necessary.
+   * \param[in] nDim   - Number of dimensions of the problem.
+   * \param[in] nVar   - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVerificationSolution(unsigned short nDim, 
+                               unsigned short nVar, 
+                               CConfig        *config);
 };
 
 /*!
@@ -13293,8 +13305,6 @@ protected:
 
   CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
 
-  CExactSolution *ExactSolution; /*!< \brief Exact solution class used within the solver. */
-
   su2double
   Mach_Inf,	       /*!< \brief Mach number at infinity. */
   Density_Inf,	       /*!< \brief Density at infinity. */
@@ -14103,16 +14113,6 @@ public:
                          CNumerics                *conv_numerics,
                          su2double                *workArray);
   using CSolver::BC_Custom;
-
-#ifdef RINGLEB
-  /*!
-   * \brief Compute the exact solution of the Ringleb flow for the given coordinates.
-   * \param[in]  coor - Coordinates for which the solution must be computed.
-   * \param[out] sol  - Conservative variables to be computed.
-   */
-  void RinglebSolution(const su2double *coor,
-                       su2double *sol);
-#endif
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.

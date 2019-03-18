@@ -1979,6 +1979,27 @@ static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCr
 ("HEAVISIDE_UP"  , HEAVISIDE_UP)
 ("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
 
+/*!
+ * \brief the different validation solution
+ */
+enum ENUM_VERIFICATION_SOLUTIONS {
+  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
+  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+};
+static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
+("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
+("INVISCID_VORTEX",          INVISCID_VORTEX)
+("RINGLEB",                  RINGLEB)
+("NS_UNIT_QUAD",             NS_UNIT_QUAD)
+("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
+("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
+("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {
