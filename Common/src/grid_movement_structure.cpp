@@ -9634,7 +9634,8 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
     AD::StartRecording();
     
     AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-
+    
+#ifdef CODI_REVERSE_TYPE
     AD::FuncHelper->addUserData(&LinSysRes);
     AD::FuncHelper->addUserData(&LinSysSol);
     AD::FuncHelper->addUserData(mat_vec_b);
@@ -9643,7 +9644,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
     AD::FuncHelper->addUserData(MaxIter);
     AD::FuncHelper->addUserData(config->GetKind_Deform_Linear_Solver());
     AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
-    
+#endif
     /*--- Build preconditioner for the transposed Jacobian ---*/
   
     switch(config->GetKind_Deform_Linear_Solver_Prec()) {
