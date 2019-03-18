@@ -5492,7 +5492,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT) || (val_software == SU2_ECC)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
