@@ -2361,6 +2361,9 @@ void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
   total_viscosity = (val_laminar_viscosity);
 
   /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
+  /*--- Note: Gradients are computed as [iDim][jDim] and not [iDim+1][jDim] because 
+   *--- the mean gradient passed here contains only velocities and no pressure. The 
+   *--- mean gradient is computed as PrimVar_Grad[iVar+1][iDim], so no need to repeat.---*/
   
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
@@ -2415,7 +2418,7 @@ void CNumerics::GetViscousPBIncProjJacs(su2double val_laminar_viscosity,
   for (iDim = 0; iDim < nDim; iDim++)
     theta += val_normal[iDim]*val_normal[iDim];
 
-  su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+  su2double total_viscosity = val_laminar_viscosity ;//+ val_eddy_viscosity;
   su2double factor = total_viscosity/(val_dist_ij)*val_dS;
 
   if (nDim == 3) {

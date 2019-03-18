@@ -711,11 +711,19 @@ inline su2double CVariable::GetMassFlux() {}
 
 inline su2double CVariable::Get_Mom_Coeff(unsigned short val_Var) { return 0.0;}
 
+inline su2double CVariable::Get_Mom_Coeff_nb(unsigned short val_Var) {return 0.0;}
+
 inline su2double CVariable::GetPoisson_Coeff() { }
   
 inline void CVariable::SetPoisson_Coeff(su2double val_Poisson_Coeff){ }
 
 inline void CVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {  }
+
+inline void CVariable::Set_Mom_Coeff_nb(su2double *val_Mom_Coeff) { }
+
+inline void CVariable::Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) { }
+  
+inline void CVariable::Set_Mom_Coeff_nbZero() { }
 
 inline void CVariable::SetSourceTerm(su2double val_SourceTerm) {  }
   
@@ -1100,7 +1108,7 @@ inline su2double *CPBIncEulerVariable::GetPrimitive(void) { return Primitive; }
 
 inline void CPBIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_Old[iDim] = val_velocity[iDim]*Primitive[nDim+1];
+    Solution_Old[iDim] = val_velocity[iDim];
 }
 
 inline void CPBIncEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
@@ -1139,6 +1147,22 @@ inline void CPBIncEulerVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {
 inline su2double CPBIncEulerVariable::GetSolution_iter_m(unsigned short val_var) { return Solution_iter_m[val_var]; }
 
 inline void CPBIncEulerVariable::AddSolution_iter_m(unsigned short val_var, su2double val_solution) { Solution_iter_m[val_var] += val_solution;}
+
+inline su2double CPBIncEulerVariable::Get_Mom_Coeff_nb(unsigned short val_Var) { return Mom_Coeff_nb[val_Var];}
+
+inline void CPBIncEulerVariable::Set_Mom_Coeff_nb(su2double *val_Mom_Coeff_nb) { 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Mom_Coeff_nb[iDim] = val_Mom_Coeff_nb[iDim]; 
+}
+
+inline void CPBIncEulerVariable::Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) { Mom_Coeff_nb[val_Var] += val_coeff_nb;}
+
+inline void CPBIncEulerVariable::Set_Mom_Coeff_nbZero(void)  {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Mom_Coeff_nb[iDim] = 0.0;
+}
+
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------//
 
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+5]; }

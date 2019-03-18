@@ -2563,7 +2563,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (poisson) {
 		  /*--- Pressure correction (Poisson) equation ---*/
      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-           numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+           numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_TERM] = new CAvgGradCorrected_Poisson(nDim, nVar_Poisson, config);
 		   numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 		   /*--- Assign the convective boundary term as well to account for flow BCs as well --*/
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][CONV_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);

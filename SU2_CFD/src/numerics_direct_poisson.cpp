@@ -98,8 +98,22 @@ CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
 
 void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
 
-
+  su2double Coeff_Mean;
+  su2double *MomCoeffxNormal = new su2double[nDim];
+  su2double *MomCoeffxNormalCorrected = new su2double[nDim];
+  su2double  Mean_GradPoissonVar_Edge[3], GradPoisson[3];
+  su2double  Mean_GradPoissonVar_Face[3][3];
+  
+  
+  
   Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
+
+ /*--- Multiply the normal with the coefficients of the momentum equation
+   *    and use it instead of the normal during the projection operation ---*/
+   for (iDim = 0; iDim < nDim; iDim++) {
+	   Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
+	   MomCoeffxNormal[iDim] = Coeff_Mean*Normal[iDim];
+   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -107,10 +121,37 @@ void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2doub
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+  /*--- Correct the face gradient for odd-even decoupling ---*/
+  /*--- Steps are 
+   * 1. Interpolate the gradient at the face -> du/ds|_in
+   * 2. Find the projection of the interpolated gradient on the edge vector -> (du/ds|_in) . e
+   * 3. Find the gradient as the difference between the neighboring nodes -> (u_j - u_i)/ds
+   * 4. Correct the gradient at the face using du/ds = du/ds|_in + ( (u_j - u_i)/ds - (du/ds|_in . e) ) . e ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+	  Mean_GradPoissonVar_Edge[iVar] = 0.0;	  
+	  
+	  GradPoisson[iVar] = (Poissonval_j - Poissonval_i)/sqrt(dist_ij_2);
+	  
+	  for (iDim = 0; iDim < nDim; iDim++) {
+		  Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);  
+		  
+		  Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim]/dist_ij_2;
+       }
+   }
+   
+   for (iVar = 0; iVar < nVar; iVar++) {
+	   for (iDim = 0; iDim < nDim; iDim++) {
+		   Mean_GradPoissonVar_Face[iVar][iDim] = Mean_GradPoissonVar[iVar][iDim] + 
+                                        (GradPoisson[iVar] - Mean_GradPoissonVar_Edge[iVar])*Edge_Vector[iDim]/dist_ij_2;
+       }
+   }
+
 
   /*--- Mean gradient approximation. Projection of the mean gradient
    in the direction of the edge ---*/
@@ -118,19 +159,18 @@ void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2doub
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPoissonVar_Edge[iVar] = 0.0;
     Proj_Mean_GradPoissonVar_Kappa[iVar] = 0.0;
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
+
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
-      Proj_Mean_GradPoissonVar_Kappa[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
+      Proj_Mean_GradPoissonVar_Kappa[iVar] += Mean_GradPoissonVar[iVar][iDim]*MomCoeffxNormal[iDim];
       Proj_Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim];
     }
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = (Poissonval_j-Poissonval_i)*proj_vector_ij;
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Corrected[iVar] + Proj_Mean_GradPoissonVar_Kappa[iVar] ;
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Corrected[iVar] - Proj_Mean_GradPoissonVar_Edge[iVar]*proj_vector_ij;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Kappa[iVar];
+    Proj_Mean_GradPoissonVar_Corrected[iVar] -= Proj_Mean_GradPoissonVar_Edge[iVar]*proj_vector_ij -
+    (Poissonval_j-Poissonval_i)*proj_vector_ij;
   }
 
-  val_residual[0] = Poisson_Coeff_Mean*Proj_Mean_GradPoissonVar_Corrected[0];
-
+  val_residual[0] = Proj_Mean_GradPoissonVar_Corrected[0];
+  
   /*--- Jacobians for implicit scheme ---*/
 
   if (implicit) {
@@ -140,6 +180,8 @@ void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2doub
 
   /*AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();*/
+  
+  delete [] MomCoeffxNormal;
 }
 
 CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar,
@@ -207,8 +249,20 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
 
 
   su2double Coeff_Mean;
+  su2double *MomCoeffxNormal = new su2double[nDim];
+  su2double  Mean_GradPoissonVar_Edge[3], GradPoisson[3];
+  su2double  Mean_GradPoissonVar_Face[3][3];
+  
+  
+  
+  Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
 
-  Poisson_Coeff_Mean = 1.0;
+  /*--- Multiply the normal with the coefficients of the momentum equation
+   *    and use it instead of the normal during the projection operation ---*/
+   for (iDim = 0; iDim < nDim; iDim++) {
+	   Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
+	   MomCoeffxNormal[iDim] = Coeff_Mean*Normal[iDim];
+   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -216,36 +270,47 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
+  
+  /*--- Correct the face gradient for odd-even decoupling ---*/
+  /*--- Steps are 
+   * 1. Interpolate the gradient at the face -> du/ds|_in
+   * 2. Find the projection of the interpolated gradient on the edge vector -> (du/ds|_in) . e
+   * 3. Find the gradient as the difference between the neighboring nodes -> (u_j - u_i)/ds
+   * 4. Correct the gradient at the face using du/ds = du/ds|_in + ( (u_j - u_i)/ds - (du/ds|_in . e) ) . e ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+	  Mean_GradPoissonVar_Edge[iVar] = 0.0;	  
+	  
+	  GradPoisson[iVar] = (Poissonval_j - Poissonval_i)/sqrt(dist_ij_2);
+	  
+	  for (iDim = 0; iDim < nDim; iDim++) {
+		  Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);  
+		  
+		  Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim]/sqrt(dist_ij_2);
+       }
+   }
+   
+   for (iVar = 0; iVar < nVar; iVar++) {
+	   for (iDim = 0; iDim < nDim; iDim++) {
+		   Mean_GradPoissonVar_Face[iVar][iDim] = Mean_GradPoissonVar[iVar][iDim] + 
+                                        (GradPoisson[iVar] - Mean_GradPoissonVar_Edge[iVar])*Edge_Vector[iDim]/sqrt(dist_ij_2);
+       }
+   }
 
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPoissonVar_Normal[iVar] = 0.0;
     Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
-      
-      Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
-      
-      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
+      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar_Face[iVar][iDim]*MomCoeffxNormal[iDim];
     }
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }
 
-  val_residual[0] = Proj_Mean_GradPoissonVar_Corrected[0];
-  
-  if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
-     Poisson_Coeff_Mean = 0.0;
-     for (iDim = 0; iDim < nDim; iDim++)
-         Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
-      Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
-  }
-  else {
-	 Poisson_Coeff_Mean = 1.0;
-  }
+  val_residual[0] = Proj_Mean_GradPoissonVar_Normal[0];
   
   /*--- Jacobians for implicit scheme ---*/
   if (implicit) {

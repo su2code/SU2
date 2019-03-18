@@ -8595,6 +8595,8 @@ protected:
   
   su2double ResMassFlux;
   
+  su2double *FaceVelocity;
+  
   unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
 

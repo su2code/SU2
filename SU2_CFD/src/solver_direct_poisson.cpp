@@ -767,8 +767,8 @@ unsigned short iDim;
 		}
 		else {
 			for (iDim = 0; iDim < nDim; iDim++) {
-				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
-			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim);
+				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim);
+			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(iDim);
 
 				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
 				Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];
@@ -957,7 +957,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   
 	/*--- Build implicit system ---*/
-	
 
 	/*--- Set maximum residual to zero ---*/
 
@@ -1204,17 +1203,14 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		    Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
 		    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];
 		
-		    Poisson_Coeff += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
+		    Poisson_Coeff += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
 	    }
-	
-	    Poisson_Coeff = Poisson_Coeff/dist_ij_2;
     }
     else {
 		Poisson_Coeff = 1.0;
 	}
     
-    
-    Lambda = Poisson_Coeff*Area*Area;
+    Lambda = abs(Poisson_Coeff*Area);
     
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
@@ -1234,7 +1230,19 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       
       
       Poisson_Coeff = 1.0;//node[iPoint]->GetPoisson_Coeff();
-      Lambda = Poisson_Coeff*Area*Area;
+      if (config->GetKind_Incomp_System() == PRESSURE_BASED ){
+		Poisson_Coeff = 0.0;
+        Volume = 0.5*(geometry->node[iPoint]->GetVolume() + geometry->node[jPoint]->GetVolume());
+        for (iDim = 0; iDim < nDim; iDim++) {
+			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
+		    
+		    Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
+		
+		    Poisson_Coeff += Mom_Coeff_i[iDim]*Normal[iDim];
+	    }
+       }
+    
+      Lambda = abs(Poisson_Coeff*Area);
      
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
       
@@ -1251,15 +1259,13 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
 	if (Vol != 0.0) {
 		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
-		//Local_Delta_Time = 0.5*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
-
+		
 		/*--- Min-Max-Logic ---*/
 		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
 		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
@@ -1409,6 +1415,9 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
 	  node[iPoint]->SetSolution(Residual);
 	  node[iPoint]->Set_OldSolution();
+	  
+	  for (iVar = 0; iVar < nVar; iVar++)
+        LinSysRes.SetBlock_Zero(iPoint, iVar);
     
 	  if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
 			Jacobian.DeleteValsRowi(iPoint);
@@ -1519,8 +1528,8 @@ su2double *Normal = new su2double[nDim];
         Residual[iVar] = 0.0;
       }
       
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim);
+      for (iVar = 0; iVar < nVar; iVar++)
+        LinSysRes.SetBlock_Zero(iPoint, iVar);
 
     node[iPoint]->SetSolution(Residual);
     node[iPoint]->Set_OldSolution();

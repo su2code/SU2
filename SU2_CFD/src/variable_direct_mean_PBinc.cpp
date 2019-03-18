@@ -59,6 +59,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(void) : CVariable() {
   Undivided_Laplacian = NULL;
   
   Mom_Coeff = NULL;
+  Mom_Coeff_nb = NULL;
  
 }
 
@@ -180,6 +181,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   
   /*--- Store coefficients of momentum equation ---*/
   Mom_Coeff = new su2double [nDim];
+  Mom_Coeff_nb = new su2double [nDim];
 
 }
 
@@ -295,6 +297,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
   
   /*--- Store coefficients of momentum equation ---*/
   Mom_Coeff = new su2double [nDim];
+  Mom_Coeff_nb = new su2double [nDim];
   
 
 }
@@ -316,6 +319,7 @@ CPBIncEulerVariable::~CPBIncEulerVariable(void) {
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
   //if (Mom_Coeff != NULL) delete Mom_Coeff;
+  //if (Mom_Coeff_nb != NULL) delete Mom_Coeff_nb;
  
 
 }

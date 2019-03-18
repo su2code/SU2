@@ -2416,6 +2416,14 @@ public:
   
   virtual su2double Get_Mom_Coeff(unsigned short val_Var);
   
+  virtual su2double Get_Mom_Coeff_nb(unsigned short val_Var);
+  
+  virtual void Set_Mom_Coeff_nb(su2double *val_Mom_Coeff);
+  
+  virtual void Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var);
+  
+  virtual void Set_Mom_Coeff_nbZero();
+  
   virtual su2double GetMassFlux();
   
   virtual su2double GetPoisson_Coeff();
@@ -3867,6 +3875,7 @@ protected:
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double MassFlux;   /*!< \brief Massflux associated with each CV */
   su2double *Mom_Coeff;
+  su2double *Mom_Coeff_nb;
   
 
 public:
@@ -4096,6 +4105,18 @@ public:
 
 
   void Set_Mom_Coeff(su2double *val_Mom_Coeff);
+  
+
+  su2double Get_Mom_Coeff_nb(unsigned short val_Var);
+
+
+  void Set_Mom_Coeff_nb(su2double *val_Mom_Coeff);
+  
+  
+  void Set_Mom_Coeff_nbZero();
+  
+
+  void Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var);
 
 };
 

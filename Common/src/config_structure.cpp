@@ -1294,7 +1294,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_EXPLICIT);
+  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/

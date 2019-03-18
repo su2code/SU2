@@ -1127,12 +1127,18 @@ void CPBFluidIteration::Iterate(COutput *output,
   /* ---- Start velocity and pressure correction loop---*/
   
   /*--- Have to check net mass flux/convergence to stop the loop, this value is provisional ---*/
-  nMassIter = 10; nPressureIter = 10;
+  nMassIter = 2; nPressureIter = 5;
   
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
-  config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
+  switch( config_container[val_iZone]->GetKind_Solver() ) {
+    case EULER: 
+      config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+    case NAVIER_STOKES:
+      config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+  }
   
   for (MassIter = 0; MassIter < nMassIter; MassIter++) {
       integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -1141,6 +1147,8 @@ void CPBFluidIteration::Iterate(COutput *output,
   if (MassIter == 0) first_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
   if (MassIter == nMassIter-1) last_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
   }
+  /*integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   */
 	
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
 	
