@@ -1211,7 +1211,6 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Assign booleans ---*/
-  
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
@@ -5123,7 +5122,6 @@ CDiscAdjTNE2Driver::CDiscAdjTNE2Driver(char* confFile,
                                                                                  MPICommunicator) {
   RecordingState = NONE;
   unsigned short iZone;
-
   direct_iteration = new CIteration*[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -5376,7 +5374,6 @@ void CDiscAdjTNE2Driver::SetAdj_ObjFunction(){
       seeding = 0.0;
     }
   }
-
   if (rank == MASTER_NODE){
     SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
   } else {
@@ -7117,7 +7114,6 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
   /*----------------------------------------------------------------------------*/
   /*--------------------- ADJOINT SOLVER PREPROCESSING -------------------------*/
   /*----------------------------------------------------------------------------*/
-
   solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0], solver_container[ZONE_FLOW][INST_0][MESH_0],  config_container[ZONE_FLOW] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
 
   if (turbulent){
@@ -7125,8 +7121,6 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
   }
 
   solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->Preprocessing(geometry_container[ZONE_STRUCT][INST_0][MESH_0], solver_container[ZONE_STRUCT][INST_0][MESH_0],  config_container[ZONE_STRUCT] , MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
-
-
 
 }
 

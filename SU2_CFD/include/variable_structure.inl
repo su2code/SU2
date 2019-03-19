@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -1479,8 +1479,8 @@ inline su2double *CAdjTurbVariable::GetEddyViscSens(void) { return EddyViscSens;
 
 inline void CVariable::RegisterSolution(bool input) {
   if (input) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterInput(Solution[iVar]);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+      AD::RegisterInput(Solution[iVar]);}
   }
   else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
       AD::RegisterOutput(Solution[iVar]);}

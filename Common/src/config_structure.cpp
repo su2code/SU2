@@ -6337,7 +6337,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)   cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-	if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
           
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
@@ -6378,7 +6378,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ( (Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ) {
+    if ( (Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ||
+         (Kind_Solver == DISC_ADJ_TNE2_EULER) || (Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES)) {
 
       if (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED) {
         if (Kind_Centered_TNE2 == JST) {
@@ -6728,7 +6729,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ) {
+   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ||
+       (Kind_Solver == DISC_ADJ_TNE2_EULER) || (Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES)) {
       switch (Kind_TimeIntScheme_TNE2) {
         case RUNGE_KUTTA_EXPLICIT:
           cout << "Runge-Kutta explicit method for the flow equations." << endl;

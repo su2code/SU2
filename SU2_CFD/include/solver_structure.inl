@@ -2315,6 +2315,9 @@ inline su2double CTNE2EulerSolver::GetCSF_Inv(unsigned short val_marker) { retur
 
 inline su2double CTNE2EulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
 
+inline void CTNE2EulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
+
+inline su2double CTNE2EulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 inline su2double CTNE2EulerSolver::GetTotal_CL() { return Total_CL; }
 
 inline su2double CTNE2EulerSolver::GetTotal_CD() { return Total_CD; }
