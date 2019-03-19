@@ -171,7 +171,7 @@ namespace AD{
     }
   }
   
-  inline void InitExtFunc(bool storePrimalInput, bool storePrimalOutput){
+  inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
     FuncHelper = new ExtFuncHelper(true);
     if (!storePrimalInput){
       FuncHelper->disableInputPrimalStore();
@@ -228,6 +228,9 @@ namespace AD{
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();
   }
+  
+  inline void EndExtFunc(){delete FuncHelper;}
+  
 #else
 
   /*--- Default implementation if reverse mode is disabled ---*/
@@ -264,7 +267,7 @@ namespace AD{
 
   inline void EndPreacc() {}
   
-  inline void InitExtFunc(bool storePrimalInput, bool storePrimalOutput){}
+  inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){}
   
   inline void SetExtFuncIn(const su2double &data) {}
 
@@ -277,5 +280,7 @@ namespace AD{
   inline void SetExtFuncOut(su2double* data, const int size) {}
 
   inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {}
+  
+  inline void EndExtFunc(){}
 #endif
 }

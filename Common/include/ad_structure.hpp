@@ -154,7 +154,7 @@ namespace AD{
    * \param[in] storePrimalInput - Specifies whether the primal input values are stored for the reverse call of the external function.
    * \param[in] storePrimalOutput - Specifies whether the primal output values are stored for the reverse call of the external function.
    */
-  void InitExtFunc(bool storePrimalInput, bool storePrimalOutput);
+  void StartExtFunc(bool storePrimalInput, bool storePrimalOutput);
   
   /*!
    * \brief Sets the scalar input of a externally differentiated function.
@@ -197,6 +197,11 @@ namespace AD{
   * \param[in] size_y - number of columns.
   */
   void SetExtFuncOut(su2double** data, const int size_x, const int size_y);
+  
+  /*!
+   * \brief Ends an external function section by deleting the structures.
+   */
+  void EndExtFunc();
 
 }
 

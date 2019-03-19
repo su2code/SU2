@@ -602,8 +602,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     
     TapeActive = AD::globalTape.isActive();
 
-    AD::InitExtFunc(false, false);
-    
+    AD::StartExtFunc(false, false);
 
     AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
 
@@ -739,12 +738,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     AD::FuncHelper->addUserData(config->GetKind_DiscAdj_Linear_Solver());
     AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
 #endif   
+    
+    AD::EndExtFunc();
 
-    /*--- Prepare the externally differentiated linear solver ---*/
-
-//    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-    delete AD::FuncHelper;
   }
 
   return IterLinSol;

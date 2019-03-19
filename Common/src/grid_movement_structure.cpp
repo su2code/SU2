@@ -9539,7 +9539,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
     
     TapeActive = AD::globalTape.isActive();
     
-    AD::InitExtFunc(false, false);
+    AD::StartExtFunc(false, false);
 
     AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
 
@@ -9645,6 +9645,9 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
     AD::FuncHelper->addUserData(config->GetKind_Deform_Linear_Solver());
     AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
 #endif
+    
+    AD::EndExtFunc();
+    
     /*--- Build preconditioner for the transposed Jacobian ---*/
   
     switch(config->GetKind_Deform_Linear_Solver_Prec()) {
@@ -9659,7 +9662,6 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
         break;
     }
 
-    delete AD::FuncHelper;
   }
 
   delete system;
