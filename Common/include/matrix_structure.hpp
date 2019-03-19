@@ -184,7 +184,7 @@ public:
    * \brief Set the value of a block in the sparse matrix.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
+   * \param[in] *val_block - Block to set to A(i, j).
    */
   void SetBlock(unsigned long block_i, unsigned long block_j, su2double *val_block);
   
@@ -197,12 +197,28 @@ public:
   void AddBlock(unsigned long block_i, unsigned long block_j, su2double **val_block);
   
   /*!
+   * \brief Adds the specified block to the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] *val_block - Block to add to A(i, j).
+   */
+  void AddBlock(unsigned long block_i, unsigned long block_j, su2double *val_block);
+  
+  /*!
    * \brief Subtracts the specified block to the sparse matrix.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
   void SubtractBlock(unsigned long block_i, unsigned long block_j, su2double **val_block);
+  
+  /*!
+   * \brief Subtracts the specified block to the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] *val_block - Block to subtract to A(i, j).
+   */
+  void SubtractBlock(unsigned long block_i, unsigned long block_j, su2double *val_block);
   
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.

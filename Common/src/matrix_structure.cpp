@@ -485,6 +485,23 @@ void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2doubl
   
 }
 
+void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          //          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += SU2_TYPE::GetValue(val_block[iVar*nVar+jVar]);
+      break;
+    }
+  }
+  
+}
+
 void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
@@ -496,6 +513,23 @@ void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2
         for (jVar = 0; jVar < nEqn; jVar++)
 //         matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetValue(val_block[iVar][jVar]);
+      break;
+    }
+  }
+  
+}
+
+void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          //         matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetValue(val_block[iVar*nVar+jVar]);
       break;
     }
   }
