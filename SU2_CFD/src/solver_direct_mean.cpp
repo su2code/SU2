@@ -8770,7 +8770,6 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
-  
   Total_ComboObj = 0.0;
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/

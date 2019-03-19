@@ -2269,7 +2269,6 @@ void CAdjFluidIteration::Preprocess(COutput *output,
     for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
       
       /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
-      
       solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->SetTotal_CD(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->SetTotal_CL(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->SetTotal_CT(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CT());
@@ -2313,8 +2312,8 @@ void CAdjFluidIteration::Iterate(COutput *output,
   /*--- Set the value of the internal iteration ---*/
   
   ExtIter = config_container[val_iZone]->GetExtIter();
-  
-  /* --- Setting up iteration values depending on if this is a 
+
+  /* --- Setting up iteration values depending on if this is a
   steady or an unsteady simulaiton */
 
   if ( !unsteady ) 
@@ -2443,7 +2442,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
-
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {
 
     Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
@@ -2946,7 +2944,6 @@ void CDiscAdjTNE2Iteration::Preprocess(COutput *output,
   bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
-
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {
 
     Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
@@ -3108,7 +3105,7 @@ void CDiscAdjTNE2Iteration::Preprocess(COutput *output,
     }
   }
 
-  solver_container[val_iZone][val_iInst][MESH_0][ADJTNE2_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
+  solver_container[val_iZone][val_iInst][MESH_0][ADJTNE2_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTNE2_SYS, false);
   if (turbulent && !config_container[val_iZone]->GetFrozen_Visc_Disc()){
     solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
   }

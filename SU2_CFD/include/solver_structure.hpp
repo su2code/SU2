@@ -9495,6 +9495,13 @@ public:
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
+
+  /*!
      * \brief Impose via the residual the Euler wall boundary condition.
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] solver_container - Container vector with all the solutions.
@@ -9664,9 +9671,23 @@ public:
   void SetTotal_CL(su2double val_Total_CL);
 
   /*!
-     * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
-     * \return Value of the lift coefficient (inviscid + viscous contribution).
-     */
+   * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+  void SetTotal_ComboObj(su2double ComboObj);
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
+   * \return Value of the lift coefficient (inviscid + viscous contribution).
+   */
   su2double GetTotal_CL(void);
 
   /*!
