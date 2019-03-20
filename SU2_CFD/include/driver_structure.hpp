@@ -1553,17 +1553,17 @@ public:
   /*!
    * \brief Preprocess the single-zone iteration
    */
-  void Preprocess(unsigned long TimeIter);
+  virtual void Preprocess(unsigned long TimeIter);
 
   /*!
    * \brief Run the iteration for ZONE_0.
    */
-  void Run();
+  virtual void Run();
 
   /*!
-   * \brief Use a corrector step to prevent convergence issues.
+   * \brief Postprocess the iteration for ZONE_0.
    */
-  void Corrector();
+  virtual void Postprocess();
 
   /*!
    * \brief Update the dual-time solution within multiple zones.
@@ -1582,6 +1582,94 @@ public:
 
 
 };
+
+/*!
+ * \class CDiscAdjSinglezoneDriver
+ * \brief Class for driving single-zone adjoint solvers.
+ * \author R. Sanchez
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
+protected:
+
+  unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
+  unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
+  unsigned short MainVariables,                 /*!< \brief The kind of recording linked to the main variables of the problem.*/
+                 SecondaryVariables;            /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
+  su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
+  CIteration* direct_iteration;                 /*!< \brief A pointer to the direct iteration.*/
+
+  CConfig *config;                              /*!< \brief Definition of the particular problem. */
+  CIteration *iteration;                        /*!< \brief Container vector with all the iteration methods. */
+  CIntegration **integration;                   /*!< \brief Container vector with all the integration methods. */
+  CGeometry *geometry;                          /*!< \brief Geometrical definition of the problem. */
+  CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
+
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CDiscAdjSinglezoneDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             bool val_periodic,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSinglezoneDriver(void);
+
+  /*!
+   * \brief Preprocess the single-zone iteration
+   */
+  void Preprocess(unsigned long TimeIter);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver with a single zone.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Postprocess the adjoint iteration for ZONE_0.
+   */
+  void Postprocess();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver.
+   */
+  void DirectRun(unsigned short kind_recording);
+
+  /*!
+   * \brief Set the objective function.
+   */
+  void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+
+  /*!
+   * \brief Print out the direct residuals.
+   */
+  void Print_DirectResidual(unsigned short kind_recording);
+
+};
+
 
 /*!
  * \class CMultizoneDriver

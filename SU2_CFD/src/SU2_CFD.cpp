@@ -109,8 +109,10 @@ int main(int argc, char *argv[]) {
     if (nZone > 1 ) {
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
-
-    driver = new CSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+    if (config->GetDiscrete_Adjoint())
+       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+    else
+       driver = new CSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   }
   else if ( (config->GetKind_Solver() == FEM_ELASTICITY ||

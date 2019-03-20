@@ -86,6 +86,10 @@ void CSinglezoneDriver::StartSolver() {
 
     Run();
 
+    /*--- Perform some postprocessing on the solution before the update ---*/
+
+    Postprocess();
+
     /*--- Update the solution for dual time stepping strategy ---*/
 
     Update();
@@ -157,13 +161,11 @@ void CSinglezoneDriver::Run() {
   iteration_container[ZONE_0][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-  /*--- A corrector step can help preventing numerical instabilities ---*/
-  Corrector();
-
-
 }
 
-void CSinglezoneDriver::Corrector() {
+void CSinglezoneDriver::Postprocess() {
+
+    /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
       iteration_container[ZONE_0][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
