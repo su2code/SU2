@@ -4903,6 +4903,55 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
   }
 
   /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[4];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+        } 
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
   /*--- Compute the residual in the DOFs, which is the matrix product of   ---*/
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
@@ -5134,6 +5183,56 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
   }
 
   /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[5];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+          divFluxInt[4] -= weightJac*sourceMan[4];
+        } 
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
   /*--- Compute the residual in the DOFs, which is the matrix product of   ---*/
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
@@ -5290,6 +5389,55 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
       divFluxInt[1] -= weightJac*bodyForceX;
       divFluxInt[2] -= weightJac*bodyForceY;
       divFluxInt[3] -= weightJac*(u*bodyForceX + v*bodyForceY);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[4];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+        } 
+      }
     }
   }
 
@@ -5476,6 +5624,56 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
       divFluxInt[2] -= weightJac*bodyForceY;
       divFluxInt[3] -= weightJac*bodyForceZ;
       divFluxInt[4] -= weightJac*(u*bodyForceX + v*bodyForceY + w*bodyForceZ);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[5];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+          divFluxInt[4] -= weightJac*sourceMan[4];
+        } 
+      }
     }
   }
 
@@ -5911,7 +6109,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                solution. */
             const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
       
-            su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
+            su2double sourceMan[5];
         
             VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
         
@@ -10695,6 +10893,55 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   }
 
   /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[4];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+        } 
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
   /*--- Compute the residual in the DOFs, which is the matrix product of   ---*/
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
@@ -11028,6 +11275,56 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
         divFluxInt[3] -= weightJac*body_force_vector[2];
         divFluxInt[4] -= weightJac*(u*body_force_vector[0] + v*body_force_vector[1]
                        +            w*body_force_vector[2]);
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[5];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+          divFluxInt[4] -= weightJac*sourceMan[4];
+        } 
       }
     }
   }
@@ -11372,6 +11669,55 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
       divFluxInt[1] -= weightJac*bodyForceX;
       divFluxInt[2] -= weightJac*bodyForceY;
       divFluxInt[3] -= weightJac*(u*bodyForceX + v*bodyForceY);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[4];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+        } 
+      }
     }
   }
 
@@ -11885,6 +12231,56 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
       divFluxInt[2] -= weightJac*bodyForceY;
       divFluxInt[3] -= weightJac*bodyForceZ;
       divFluxInt[4] -= weightJac*(u*bodyForceX + v*bodyForceY + w*bodyForceZ);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Add the source terms of the manufactured solution to the divergence---*/
+  /*--- of the fluxes, if a manufactured solution is used.                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Loop over the number of entities that are treated simultaneously. */
+      for(unsigned short simul=0; simul<nSimul; ++simul) {
+
+        /*--- Loop over the integration points of the element. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Set the pointers for this integration point. */
+          const unsigned short offInt  = i*NPad + simul*nVar;
+          su2double       *divFluxInt = divFlux + offInt;
+
+          /* Set the pointer to the coordinates in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *coor = elem->coorIntegrationPoints.data() + i*nDim;
+
+          /* Easier storage of the metric terms in this integration point.
+             THIS IS A TEMPORARY IMPLEMENTATION. WHEN AN ACTUAL MOTION IS SPECIFIED,
+             THE DATA FOR THIS DOF FOR THE CURRENT TIME INTEGRATION POINT MUST
+             BE TAKEN. */
+          const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+          const su2double weightJac    = weights[i]*metricTerms[0];
+
+          /* Compute the source terms of the manufactured solution.
+             THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
+             SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
+          su2double sourceMan[5];
+          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+
+          /* Add the source terms to the flux divergence. Note that the source
+             terms are multiplied with minus the integration weight in order
+             to be consistent with the formulation of the residual. */
+          divFluxInt[0] -= weightJac*sourceMan[0];
+          divFluxInt[1] -= weightJac*sourceMan[1];
+          divFluxInt[2] -= weightJac*sourceMan[2];
+          divFluxInt[3] -= weightJac*sourceMan[3];
+          divFluxInt[4] -= weightJac*sourceMan[4];
+        } 
+      }
     }
   }
 
@@ -12592,7 +12988,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                solution. */
             const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
 
-            su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
+            su2double sourceMan[5];
 
             VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
 
