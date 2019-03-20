@@ -746,7 +746,7 @@ inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                   CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                      CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
@@ -963,6 +963,32 @@ inline void CSolver::AddRes_Max_BGS(unsigned short val_var, su2double val_residu
 inline su2double CSolver::GetRes_Max_BGS(unsigned short val_var) { return Residual_Max_BGS[val_var]; }
 
 inline su2double CSolver::GetRes_FEM(unsigned short val_var) { return 0.0; }
+
+inline void CSolver::SetError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] = val_error; }
+
+inline void CSolver::AddError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] += val_error; }
+
+inline su2double CSolver::GetError_RMS(unsigned short val_var) { return Error_RMS[val_var]; }
+
+inline void CSolver::SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point) {
+  Error_Max[val_var]       = val_error;
+  Error_Point_Max[val_var] = val_point;
+}
+
+inline void CSolver::AddError_Max(unsigned short val_var, su2double val_error, unsigned long val_point, su2double* val_coord) {
+  if (val_error > Error_Max[val_var]) {
+    Error_Max[val_var] = val_error;
+    Error_Point_Max[val_var] = val_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Error_Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+  }
+}
+
+inline su2double CSolver::GetError_Max(unsigned short val_var) { return Error_Max[val_var]; }
+
+inline unsigned long CSolver::GetError_Point_Max(unsigned short val_var) { return Error_Point_Max[val_var]; }
+
+inline su2double* CSolver::GetError_Point_Max_Coord(unsigned short val_var) { return Error_Point_Max_Coord[val_var]; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
 
@@ -1184,6 +1210,8 @@ inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, C
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
+
+inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 

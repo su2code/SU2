@@ -100,6 +100,26 @@ void CVerificationSolution::GetMMSSourceTerm(const unsigned short val_nParams,
 
 bool CVerificationSolution::IsManufacturedSolution(void) {return false;}
 
+void CVerificationSolution::GetLocalError(const unsigned short val_nParams,
+                                          const su2double      *val_params,
+                                          const su2double      *val_coords,
+                                          const su2double      val_t,
+                                          su2double            *val_solution,
+                                          su2double            *val_error) {
+  
+  /*--- Get the value of the verification solution first. ---*/
+  
+  vector<su2double> verificationSol(nVar);
+  GetSolution(val_nParams, val_params, val_coords, val_t, verificationSol.data());
+  
+  /*--- Compute the local error as the difference between the current
+   numerical solution and the verification solution. ---*/
+  
+  for (unsigned short iVar=0; iVar<nVar; ++iVar)
+    val_error[iVar] = val_solution[iVar] - verificationSol[iVar];
+  
+}
+
 CInviscidVortexSolution::CInviscidVortexSolution(void) : CVerificationSolution() { }
 
 CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
@@ -926,6 +946,128 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const unsigned short val_nParams,
 }
 
 bool CMMSNSUnitQuadSolution::IsManufacturedSolution(void) {
+  return true;
+}
+
+CMMSIncNSSolution::CMMSIncNSSolution(void) : CVerificationSolution() { }
+
+CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
+                                     unsigned short val_nVar,
+                                     CConfig*       config)
+: CVerificationSolution(val_nDim, val_nVar, config) {
+  
+  /*--- Write a message that the solution is initialized for the manufactured
+   solution for the incompressible Navier-Stokes equations. ---*/
+  if (rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Fluid properties and solution are being " << endl;
+    cout << "         initialized for the manufactured solution " << endl;
+    cout << "         of the incompressible Navier-Stokes equations!!!" << endl;
+    cout << endl << flush;
+  }
+  
+  /*--- Coefficients, needed to determine the solution. ---*/
+  Viscosity  = config->GetViscosity_FreeStreamND();
+  Density    = config->GetDensity_FreeStreamND();
+  
+  /*--- Constants, which describe this manufactured solution. This is a
+   viscous solution where the primitive variables vary as a combination
+   of sine and cosine functions. The solution is from Salari K, and
+   Knupp P, "Code verification by the method of manufactured solutions,"
+   SAND 2000-1444, Sandia National Laboratories, Albuquerque, NM, 2000. ---*/
+  
+  P_0     =   1.0;
+  u_0     =   1.0;
+  v_0     =   1.0;
+  epsilon = 0.001;
+  
+  /*--- Perform some sanity and error checks for this solution here. ---*/
+  if(config->GetUnsteady_Simulation() != STEADY)
+    SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_Regime() != INCOMPRESSIBLE)
+    SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_Solver() != NAVIER_STOKES)
+    SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+    SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+    SU2_MPI::Error("Constant viscosity must be selected for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetEnergy_Equation())
+    SU2_MPI::Error("Energy equation must be disabled (isothermal) for the MMS incompressible NS case",
+                   CURRENT_FUNCTION);
+}
+
+CMMSIncNSSolution::~CMMSIncNSSolution(void) { }
+
+void CMMSIncNSSolution::GetBCState(const unsigned short val_nParams,
+                                   const su2double      *val_params,
+                                   const su2double      *val_coords,
+                                   const su2double      val_t,
+                                   su2double            *val_solution) {
+  
+  /*--- The exact solution is prescribed on the boundaries. ---*/
+  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+}
+
+void CMMSIncNSSolution::GetSolution(const unsigned short val_nParams,
+                                    const su2double      *val_params,
+                                    const su2double      *val_coords,
+                                    const su2double      val_t,
+                                    su2double            *val_solution) {
+  
+  /* Easier storage of the x- and y-coordinates. */
+  const su2double x = val_coords[0];
+  const su2double y = val_coords[1];
+  
+  /* Compute the primitives from the defined solution. */
+  const su2double u = u_0*(sin(x*x + y*y) + epsilon);
+  const su2double v = v_0*(cos(x*x + y*y) + epsilon);
+  const su2double p = P_0*(sin(x*x + y*y) +     2.0);
+  
+  /* For the incompressible solver, we return the primitive variables
+   directly, as they are used for the working variables in the solver.
+   Note that the implementation below is valid for both 2D and 3D. */
+  val_solution[0] = p;
+  val_solution[1] = u;
+  val_solution[2] = v;
+  if (nDim == 3) val_solution[3] = 0.0;
+}
+
+void CMMSIncNSSolution::GetMMSSourceTerm(const unsigned short val_nParams,
+                                         const su2double      *val_params,
+                                         const su2double      *val_coords,
+                                         const su2double      val_t,
+                                         su2double            *val_source) {
+  
+  /*--- Easier storage of the x- and y-coordinates. ---*/
+  const su2double x = val_coords[0];
+  const su2double y = val_coords[1];
+  
+  /*--- Some repeated terms for shorthand. ---*/
+  const su2double sxy = sin(x*x + y*y);
+  const su2double cxy = cos(x*x + y*y);
+  
+  /*--- The expressions for the source terms are given in
+   the paper by Salari & Knupp. Note that the leading 1.0/rho
+   term does not appear here, because our formulation allows
+   for variable density (source should be multiplied by density). ---*/
+  val_source[0] = 2.0*u_0*x*cxy - 2.0*v_0*y*sxy;
+  val_source[1] = 2.0*((P_0*x + Density*u_0*(2.0*epsilon*u_0*x - 2.0*Viscosity + epsilon*v_0))*cxy + Density*u_0*(v_0*y*cos(2.0*(x*x + y*y)) + (2.0*x*x*Viscosity - epsilon*v_0*y + 2.0*Viscosity*y*y + 2.0*u_0*x*cxy)*sxy));
+  val_source[2] = 2.0*((epsilon*Density*u_0*v_0*x + 2.0*Density*v_0*x*x*Viscosity + P_0*y + 2.0*Density*v_0*Viscosity*y*y)*cxy - Density*v_0*(-1.0*u_0*x*cos(2.0*(x*x + y*y)) + (epsilon*u_0*x - 2.0*Viscosity + 2.0*epsilon*v_0*y + 2.0*v_0*y*cxy)*sxy));
+  if (nDim == 3) val_source[3] = 0.0;
+}
+
+bool CMMSIncNSSolution::IsManufacturedSolution(void) {
   return true;
 }
 

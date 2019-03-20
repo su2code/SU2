@@ -231,6 +231,15 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iMarker = 0; iMarker < nMarker; iMarker++) 
     nVertex[iMarker] = geometry->nVertex[iMarker];
  
+  /* TDE: in the future, we can call the exact solution constructor first
+   so that we can override any fluid reference values or non-dim. choices.
+   We could also put the instantiation directly inside the SetNondim()
+   routine since they are somehow related. I am open here to ideas of course.
+   Note also that we can do the error checking inside the constructor for
+   the exact sols so that we make sure users have set all the parameters
+   and BCs correctly. */
+  SetVerificationSolution(nDim, nVar, config);
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
@@ -2371,6 +2380,26 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ( VerificationSolution ) {
+    
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      
+      /*--- Loop over all grid points. ---*/
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
+        
+        /* Get initial condition from the verification solution class. */
+        VerificationSolution->GetInitialCondition(0, NULL, coor, solDOF);
+        
+      }
+    }
+  }
+  
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
   
@@ -3158,6 +3187,40 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
+    }
+  }
+  
+  /*--- Check if a verification solution is to be computed. ---*/
+  
+  if ( VerificationSolution ) {
+    if ( VerificationSolution->IsManufacturedSolution() ) {
+      
+      /*--- Get the physical time. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      
+      /*--- Loop over points ---*/
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        
+        /*--- Get control volume size. ---*/
+        su2double Volume = geometry->node[iPoint]->GetVolume();
+        
+        /*--- Get the current point coordinates. ---*/
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the MMS source term. ---*/
+        su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
+        VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
+        
+        /*--- Compute the residual for this control volume. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] = sourceMan[iVar]*Volume;
+        }
+        
+        /*--- Add Residual ---*/
+        LinSysRes.AddBlock(iPoint, Residual);
+        
+      }
     }
   }
   
@@ -4210,6 +4273,10 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   
   SetResidual_RMS(geometry, config);
   
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
+  
 }
 
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -4255,6 +4322,10 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -4353,6 +4424,10 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -6209,7 +6284,180 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
   delete [] PrimVar_j;
 }
 
-void CIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+void CIncEulerSolver::BC_Custom(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) {
+  
+  /* Check for a verification solution. */
+  
+  if ( VerificationSolution ) {
+    
+    unsigned short iDim;
+    
+    unsigned long iVertex, iPoint, Point_Normal;
+    
+    su2double *V_custom, *V_domain;
+    su2double Density, Pressure, Temperature;
+    su2double Velocity2;
+    su2double *Normal   = new su2double[nDim];
+    su2double *Velocity = new su2double[nDim];
+    
+    bool implicit      = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
+    bool grid_movement = config->GetGrid_Movement();
+    bool viscous       = config->GetViscous();
+    
+    /*--- Get the physical time. ---*/
+    su2double time = 0.0;
+    if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      
+      /*--- Get the point index for the current node and nearest normal node. ---*/
+      
+      iPoint       = geometry->vertex[val_marker][iVertex]->GetNode();
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      
+      if (geometry->node[iPoint]->GetDomain()) {
+        
+        /*--- Get the coordinates for the current node. ---*/
+        
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the primitive state from the verification solution. ---*/
+        
+        su2double V_verif[5] = {0.0,0.0,0.0,0.0,0.0};
+        VerificationSolution->GetBCState(0, NULL, coor, time, V_verif);
+        
+        /*--- Compute the primitive state from the conservative state
+         using the current fluid model for consistency. ---*/
+        
+        Pressure  = V_verif[0];
+        Velocity2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim]  = V_verif[iDim+1];
+          Velocity2      += Velocity[iDim]*Velocity[iDim];
+        }
+        Temperature = V_verif[nVar-1];
+        
+        /*--- Use the fluid model to compute the new value of density. ---*/
+        
+        FluidModel->SetTDState_T(Temperature);
+        Density = FluidModel->GetDensity();
+        
+        /*--- Get the pointer to the primitive state at this boundary node. ---*/
+        
+        V_custom = GetCharacPrimVar(val_marker, iVertex);
+        
+        /*--- Store primitive variables, using the derived quantities ---*/
+        
+        V_custom[0] = Pressure;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_custom[iDim+1] = Velocity[iDim];
+        V_custom[nDim+1] = Temperature;
+        V_custom[nDim+2] = Density;
+        
+        /*--- Factor for pseudo compressibility ---*/
+        
+        V_custom[nDim+3] = node[iPoint]->GetBetaInc2();
+        
+        /*--- Cp is needed for Temperature equation. ---*/
+        
+        V_custom[nDim+7] = FluidModel->GetCp();
+        
+        /*--- Current solution at this boundary node ---*/
+        
+        V_domain = node[iPoint]->GetPrimitive();
+        
+        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+        
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        
+        /*--- Set various quantities in the solver class ---*/
+        
+        conv_numerics->SetNormal(Normal);
+        conv_numerics->SetPrimitive(V_domain, V_custom);
+        
+        if (grid_movement)
+          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                    geometry->node[iPoint]->GetGridVel());
+        
+        /*--- Compute the residual using an upwind scheme ---*/
+        
+        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.AddBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
+        /*--- Viscous contribution. ---*/
+        
+        if (viscous) {
+          
+          /*--- Set transport properties at the custom boundary ---*/
+          
+          V_custom[nDim+4] = FluidModel->GetLaminarViscosity();
+          V_custom[nDim+5] = node[iPoint]->GetEddyViscosity();
+          V_custom[nDim+6] = FluidModel->GetThermalConductivity();
+          
+          /*--- Set the normal vector and the coordinates ---*/
+          
+          visc_numerics->SetNormal(Normal);
+          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                  geometry->node[Point_Normal]->GetCoord());
+          
+          /*--- Primitive variables, and gradient ---*/
+          
+          visc_numerics->SetPrimitive(V_domain, V_custom);
+          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                            node[iPoint]->GetGradient_Primitive());
+          
+          /*--- Turbulent kinetic energy ---*/
+          
+          if (config->GetKind_Turb_Model() == SST)
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                                solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+          
+          /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+          
+          visc_numerics->SetTauWall(-1.0, -1.0);
+          
+          /*--- Compute and update residual ---*/
+          
+          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          
+          /*--- Jacobian contribution for implicit integration ---*/
+          
+          if (implicit)
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+        
+      }
+    }
+    
+    /*--- Free locally allocated memory ---*/
+    
+    delete [] Normal;
+    delete [] Velocity;
+    
+  } else {
+    
+    /* The user must specify the custom BC's here. */
+    SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+    
+  }
+  
+}
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -6776,6 +7024,56 @@ void CIncEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
 }
 
+void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
+                                               CConfig   *config) {
+  
+  /*--- If this is a verification case, we can compute the global
+   error metrics by using the difference between the local error
+   and the known solution at each DOF. This is then collected into
+   RMS (L2) and maximum (Linf) global error norms. From these
+   global measures, one can compute the order of accuracy. ---*/
+  
+  if (VerificationSolution) {
+    
+    /*--- Get the physical time if necessary. ---*/
+    su2double time = 0.0;
+    if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+    /*--- Reset the global error measures to zero. ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetError_RMS(iVar, 0.0);
+      SetError_Max(iVar, 0.0, 0);
+    }
+    
+    /*--- Loop over all owned points. ---*/
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = geometry->node[iPoint]->GetCoord();
+      su2double *solDOF     = node[iPoint]->GetSolution();
+      su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+      
+      /* Get local error from the verification solution class. */
+      VerificationSolution->GetLocalError(0, NULL, coor, time, solDOF, error);
+      
+      /* Increment the global error measures */
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        AddError_RMS(iVar, error[iVar]*error[iVar]);
+        AddError_Max(iVar, fabs(error[iVar]),
+                     geometry->node[iPoint]->GetGlobalIndex(),
+                     geometry->node[iPoint]->GetCoord());
+      }
+    }
+    
+    /* Finalize the calculation of the global error measures. */
+    SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
+    
+    //    if (rank == MASTER_NODE)
+    //      cout << "  Error_RMS[P]: " << GetError_RMS(0) << "  Error_Max[P]: " << GetError_Max(0) << endl;
+  }
+  
+}
+
 void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
   
   /*--- Restart the solution from file information ---*/
@@ -7168,6 +7466,15 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   FluidModel = NULL;
 
+  /* TDE: in the future, we can call the exact solution constructor first
+   so that we can override any fluid reference values or non-dim. choices.
+   We could also put the instantiation directly inside the SetNondim()
+   routine since they are somehow related. I am open here to ideas of course.
+   Note also that we can do the error checking inside the constructor for
+   the exact sols so that we make sure users have set all the parameters
+   and BCs correctly. */
+  SetVerificationSolution(nDim, nVar, config);
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   

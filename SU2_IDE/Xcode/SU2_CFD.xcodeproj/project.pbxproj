@@ -79,7 +79,6 @@
 		E96FAF142189FECA0046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */; };
 		E96FAF152189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */; };
 		E96FAF162189FECA0046BF5D /* fem_cgns_elements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF132189FECA0046BF5D /* fem_cgns_elements.cpp */; };
-		E96FAF182189FF0A0046BF5D /* data_manufactured_solutions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF172189FF0A0046BF5D /* data_manufactured_solutions.cpp */; };
 		E995CAB5223B100C00663CA5 /* solution_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E995CAB4223B100C00663CA5 /* solution_toolbox.cpp */; };
 		E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9AA98A61BB3436900B7FE37 /* driver_structure.cpp */; };
 		E9C8307F2061E60E004417A9 /* fem_geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9C830752061E60E004417A9 /* fem_geometry_structure.cpp */; };
@@ -241,7 +240,6 @@
 		E96FAF112189FECA0046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
 		E96FAF122189FECA0046BF5D /* fem_gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_gauss_jacobi_quadrature.cpp; path = ../../Common/src/fem_gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
 		E96FAF132189FECA0046BF5D /* fem_cgns_elements.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_cgns_elements.cpp; path = ../../Common/src/fem_cgns_elements.cpp; sourceTree = "<group>"; };
-		E96FAF172189FF0A0046BF5D /* data_manufactured_solutions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = data_manufactured_solutions.cpp; path = ../../SU2_CFD/src/data_manufactured_solutions.cpp; sourceTree = "<group>"; };
 		E96FAF192189FF620046BF5D /* graph_coloring_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = graph_coloring_structure.hpp; path = ../../Common/include/graph_coloring_structure.hpp; sourceTree = "<group>"; };
 		E96FAF1A2189FF620046BF5D /* blas_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = blas_structure.hpp; path = ../../Common/include/blas_structure.hpp; sourceTree = "<group>"; };
 		E96FAF1B2189FF620046BF5D /* fem_gauss_jacobi_quadrature.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_gauss_jacobi_quadrature.inl; path = ../../Common/include/fem_gauss_jacobi_quadrature.inl; sourceTree = "<group>"; };
@@ -551,7 +549,6 @@
 				E9FDF6E91D2DD0560066E49C /* adt_structure.cpp */,
 				E96FAF0F2189FE9C0046BF5D /* blas_structure.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
-				E96FAF172189FF0A0046BF5D /* data_manufactured_solutions.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
 				400CEC2921FA80180019B790 /* driver_direct_multizone.cpp */,
 				400CEC2A21FA80180019B790 /* driver_direct_singlezone.cpp */,
@@ -730,7 +727,6 @@
 				E96FAF162189FECA0046BF5D /* fem_cgns_elements.cpp in Sources */,
 				05E6DC1B17EB62A100FA1F7E /* output_paraview.cpp in Sources */,
 				05E6DC1C17EB62A100FA1F7E /* output_structure.cpp in Sources */,
-				E96FAF182189FF0A0046BF5D /* data_manufactured_solutions.cpp in Sources */,
 				3599C5D32121FAC9003AAF05 /* wall_model.cpp in Sources */,
 				05E6DC1D17EB62A100FA1F7E /* output_tecplot.cpp in Sources */,
 				E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */,

@@ -13399,6 +13399,20 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Thermal_Conductivity");
     }
     
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      nVar_Par += 2*nVar_Consv_Par;
+      Variable_Names.push_back("Verification_Pressure");
+      Variable_Names.push_back("Verification_Velocity_x");
+      Variable_Names.push_back("Verification_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Velocity_z");
+      if (energy || weakly_coupled_heat) Variable_Names.push_back("Verification_Temperature");
+      Variable_Names.push_back("Error_Pressure");
+      Variable_Names.push_back("Error_Velocity_x");
+      Variable_Names.push_back("Error_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Velocity_z");
+      if (energy || weakly_coupled_heat) Variable_Names.push_back("Error_Temperature");
+    }
+    
     /*--- New variables get registered here before the end of the loop. ---*/
 
   }
@@ -13633,6 +13647,34 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         
         if (wrt_kt) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
+        }
+        
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          
+          /*--- Get the physical time if necessary. ---*/
+          su2double time = 0.0;
+          if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+          
+          /* Set the pointers to the coordinates and solution of this DOF. */
+          const su2double *coor = geometry->node[iPoint]->GetCoord();
+          su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+          su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
+          su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+          
+          /* Get the verification solution. */
+          solver[FLOW_SOL]->VerificationSolution->GetSolution(0, NULL, coor, time, mmsSol);
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[jPoint][iVar] = mmsSol[jVar];
+            iVar++;
+          }
+          
+          /* Get local error from the verification solution class. */
+          solver[FLOW_SOL]->VerificationSolution->GetLocalError(0, NULL, coor, time, solDOF, error);
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[jPoint][iVar] = error[jVar];
+            iVar++;
+          }
+
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,

@@ -5597,6 +5597,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
   bool body_force = config->GetBody_Force();
   const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
 
+  /*--- Get the physical time for MMS if necessary. ---*/
+  su2double time = 0.0;
+  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
   const unsigned short nPadInput  = config->GetSizeMatMulPadding();
@@ -5909,7 +5913,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       
             su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
         
-            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
         
             /*--- Subtract the source term of the manufactured solution, multiplied
                   by the appropriate weight, from the possibly earlier computed
@@ -8418,6 +8422,10 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
+  /*--- Get the physical time if necessary. ---*/
+  su2double time = 0.0;
+  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -8460,7 +8468,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
           const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
           su2double *UR   = solIntR + NPad*i + ll*nVar;
         
-          VerificationSolution->GetBCState(0, NULL, coor, 0.0, UR);
+          VerificationSolution->GetBCState(0, NULL, coor, time, UR);
         }
       }
     }
@@ -12073,6 +12081,10 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   bool body_force = config->GetBody_Force();
   const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
 
+  /*--- Get the physical time if necessary. ---*/
+  su2double time = 0.0;
+  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -12582,7 +12594,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
             su2double sourceMan[5] = {0.0,0.0,0.0,0.0,0.0};
 
-            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
 
             /*--- Subtract the source term of the manufactured solution, multiplied
                   by the appropriate weight, from the possibly earlier computed
@@ -14987,6 +14999,10 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
+  /*--- Get the physical time if necessary. ---*/
+  su2double time = 0.0;
+  if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+  
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -15030,7 +15046,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
           const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
           su2double *UR   = solIntR + NPad*i + ll*nVar;
 
-          VerificationSolution->GetBCState(0, NULL, coor, 0.0, UR);
+          VerificationSolution->GetBCState(0, NULL, coor, time, UR);
         }
       }
     }
