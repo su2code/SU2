@@ -141,8 +141,11 @@ protected:
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
-  CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
-
+  su2double *Error_RMS;                        /*!< \brief Vector with the global RMS error for each variable in a verification case. */
+  su2double *Error_Max;                        /*!< \brief Vector with the global max error for each variable in a verification case. */
+  unsigned long *Error_Point_Max;              /*!< \brief Global index for the node with the max error in a verification case. */
+  su2double **Error_Point_Max_Coord;           /*!< \brief Coordinates for the node with the max error in a verification case. */
+  
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -158,6 +161,8 @@ public:
   CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
+  CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
+
   /*!
    * \brief Constructor of the class.
    */
@@ -505,6 +510,64 @@ public:
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
+  
+  /*!
+   * \brief Set the global RMS error for verification cases.
+   * \param[in] val_var   - Index of the variable.
+   * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
+   */
+  void SetError_RMS(unsigned short val_var, su2double val_error);
+  
+  /*!
+   * \brief Increments the global RMS error for verification cases.
+   * \param[in] val_var   - Index of the variable.
+   * \param[in] val_error - Value of the RMS error to store in the position <i>val_var</i>.
+   */
+  void AddError_RMS(unsigned short val_var, su2double val_error);
+  
+  /*!
+   * \brief Get the global RMS error for verification cases.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of global RMS error for the variable in the position <i>val_var</i>.
+   */
+  su2double GetError_RMS(unsigned short val_var);
+  
+  /*!
+   * \brief Set the global maximum error for verification cases.
+   * \param[in] val_var   - Index of the variable.
+   * \param[in] val_error - Value of the maximum error to store in the position <i>val_var</i>.
+   */
+  void SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point);
+  
+  /*!
+   * \brief Increment the global maximum error for verification cases.
+   * \param[in] val_var   - Index of the variable.
+   * \param[in] val_error - Value of the maximum error to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max error.
+   * \param[in] val_coord - Location (x, y, z) of the max error point.
+   */
+  void AddError_Max(unsigned short val_var, su2double val_error, unsigned long val_point, su2double* val_coord);
+  
+  /*!
+   * \brief Get the global maximum error for verification cases.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of global maximum error for the variable in the position <i>val_var</i>.
+   */
+  su2double GetError_Max(unsigned short val_var);
+  
+  /*!
+   * \brief Get the global index of the node with the max error for verification cases.
+   * \param[in] val_var - Index of the variable.
+   * \return Global index of the point with the max error for the variable in the position <i>val_var</i>.
+   */
+  unsigned long GetError_Point_Max(unsigned short val_var);
+  
+  /*!
+   * \brief Get the coordinates of the node with the max error for verification cases.
+   * \param[in] val_var - Index of the variable.
+   * \return Coordinates of the point with the max error for the variable in the position <i>val_var</i>.
+   */
+  su2double* GetError_Point_Max_Coord(unsigned short val_var);
   
   /*!
    * \brief Set Value of the residual if there is a grid movement.
@@ -1187,14 +1250,15 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] geometry         - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] conv_numerics    - Description of the convective numerical method.
+   * \param[in] visc_numerics    - Description of the viscous numerical method.
+   * \param[in] config           - Definition of the particular problem.
+   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short val_marker);
+  virtual void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                 CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -4370,6 +4434,13 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+  
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4380,6 +4451,13 @@ protected:
   void SetVerificationSolution(unsigned short nDim, 
                                unsigned short nVar, 
                                CConfig        *config);
+  /*!
+   * \brief Calculate the global error metrics for verification cases.
+   * \param[in] nDOFsGlobal - Global number of degrees of freedom for the current problem.
+   * \param[in] config      - Definition of the particular problem.
+   */
+  void SetVerificationError(unsigned long nDOFsGlobal,
+                            CConfig       *config);
 };
 
 /*!
@@ -5326,14 +5404,15 @@ public:
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
-   * \brief Impose the dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Impose a custom or verification boundary condition.
+   * \param[in] geometry         - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] conv_numerics    - Description of the convective numerical method.
+   * \param[in] visc_numerics    - Description of the viscous numerical method.
+   * \param[in] config           - Definition of the particular problem.
+   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
    */
-  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
   /*!
@@ -7474,14 +7553,15 @@ public:
                 CConfig *config, unsigned short val_marker);
   
   /*!
-   * \brief Impose the dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Impose a custom or verification boundary condition.
+   * \param[in] geometry         - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] conv_numerics    - Description of the convective numerical method.
+   * \param[in] visc_numerics    - Description of the viscous numerical method.
+   * \param[in] config           - Definition of the particular problem.
+   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
    */
-  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
   /*!
@@ -8381,7 +8461,12 @@ public:
    */
    su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
-  
+  /*!
+   * \brief Compute the global error measures (L2, Linf) for verification cases.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -12619,14 +12704,15 @@ public:
                     unsigned short val_marker);
   
   /*!
-   * \brief Impose the dirichlet boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Impose a custom or verification boundary condition.
+   * \param[in] geometry         - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] conv_numerics    - Description of the convective numerical method.
+   * \param[in] visc_numerics    - Description of the viscous numerical method.
+   * \param[in] config           - Definition of the particular problem.
+   * \param[in] val_marker       - Surface marker where the boundary condition is applied.
    */
-  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
   /*!
