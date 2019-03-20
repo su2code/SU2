@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2662,18 +2662,19 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-		fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
+    ret = sizeof(int) + 8*sizeof(passivedouble);
+    fseek(fhw,-ret, SEEK_END);
 
-		/*--- Read the external iteration. ---*/
+    /*--- Read the external iteration. ---*/
 
-		ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
     if (ret != 1) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
-		/*--- Read the metadata. ---*/
+    /*--- Read the metadata. ---*/
 
-		ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
     if (ret != 8) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
@@ -2681,9 +2682,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     for (unsigned short iVar = 0; iVar < 8; iVar++)
       Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-		/*--- Close the file. ---*/
+    /*--- Close the file. ---*/
 
-		fclose(fhw);
+    fclose(fhw);
 
 #else
 

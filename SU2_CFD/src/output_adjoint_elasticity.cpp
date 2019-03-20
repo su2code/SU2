@@ -48,6 +48,36 @@ CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsig
   
   nDim = geometry->GetnDim();
 
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+
+  if (nRequestedHistoryFields == 0){
+    RequestedHistoryFields.push_back("ITER");
+    RequestedHistoryFields.push_back("RESIDUALS");
+    RequestedHistoryFields.push_back("SENSITIVITY");
+    nRequestedHistoryFields = RequestedHistoryFields.size();
+  }
+
+  if (nRequestedScreenFields == 0){
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");
+    RequestedScreenFields.push_back("ADJOINT_DISP_X");
+    RequestedScreenFields.push_back("ADJOINT_DISP_Y");
+    RequestedScreenFields.push_back("SENS_E");
+    RequestedScreenFields.push_back("SENS_NU");
+    nRequestedScreenFields = RequestedScreenFields.size();
+  }
+
+  if (nRequestedVolumeFields == 0){
+    RequestedVolumeFields.push_back("COORDINATES");
+    RequestedVolumeFields.push_back("SOLUTION");
+    nRequestedVolumeFields = RequestedVolumeFields.size();
+  }
+
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
+  MultiZoneHeaderString = ss.str();
+
+
 }
 
 CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {
@@ -68,8 +98,12 @@ inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_du
 void CDiscAdjFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER");
+  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "ITER");
+  // Temporarily add both
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER");
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
   
   // Residuals
   AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS");
@@ -88,6 +122,10 @@ inline void CDiscAdjFEAOutput::LoadHistoryData(CGeometry ****geometry, CSolver *
   
   SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
   SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
+
+  SetHistoryOutputValue("TIME_ITER",  config[val_iZone]->GetTimeIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
   
   SetHistoryOutputValue("PHYS_TIME", timeused);
   
@@ -102,18 +140,47 @@ inline void CDiscAdjFEAOutput::LoadHistoryData(CGeometry ****geometry, CSolver *
     Total_SensNu = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
   }
   else{
+    // TODO: Update this and change tests
     for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
-        Total_SensE += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
-            *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-        Total_SensNu += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-            *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+      Total_SensE += solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+      Total_SensNu += solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                     *solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
     }
-    Total_SensE = sqrt(Total_SensE);
-    Total_SensNu = sqrt(Total_SensNu);
-
+  Total_SensE = sqrt(Total_SensE);
+  Total_SensNu = sqrt(Total_SensNu);
   }
   SetHistoryOutputValue("SENS_E", Total_SensE);
   SetHistoryOutputValue("SENS_NU", Total_SensNu);
   
 }
 
+void CDiscAdjFEAOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+
+  CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint];
+  CPoint*    Node_Geo  = geometry->node[iPoint];
+
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+
+  SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSolution(0));
+  SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSolution(1));
+  if (nDim == 3) SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_Struc->GetSolution(2));
+
+}
+
+void CDiscAdjFEAOutput::SetVolumeOutputFields(CConfig *config){
+
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+
+  AddVolumeOutput("SENSITIVITY-X",    "Sensitivity_x", "SOLUTION");
+  AddVolumeOutput("SENSITIVITY-Y",    "Sensitivity_y", "SOLUTION");
+  if (nDim == 3) AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SOLUTION");
+
+}

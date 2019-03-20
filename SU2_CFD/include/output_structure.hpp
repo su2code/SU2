@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -60,6 +60,7 @@
 
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../Common/include/toolboxes/signal_processing_toolbox.hpp"
+#include "../include/output_structure_legacy.hpp"
 
 using namespace std;
 
@@ -72,6 +73,8 @@ using namespace std;
 class COutput {
 
 protected:
+  
+  COutputLegacy *output_legacy;
 
   unsigned long nGlobal_Poin;   // Global number of nodes with halos
   unsigned long nSurf_Poin;   // Global number of nodes of the surface
@@ -264,12 +267,12 @@ protected:
     VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
       FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup){}
   };
-  
-  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */ 
-  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */ 
-  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */ 
-  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */ 
-  
+
+  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */
+  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */
+  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */
+  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */
+
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
   
@@ -292,7 +295,7 @@ protected:
   
   map<string, Signal_Processing::RunningAverage> RunningAverages;
   
-  bool multizone, grid_movement;
+  bool multizone, grid_movement, fem_output;
   
 public:
 
@@ -418,15 +421,6 @@ public:
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Merge the FEM solution into a data structure used for output file writing.
@@ -626,6 +620,15 @@ public:
    */
   void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
+  /*!
+   * \brief Write a file with the adjoint sensitivities projected onto each surface node.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void WriteProjectedSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.
@@ -1019,7 +1022,9 @@ public:
   
   void AddVolumeOutput(string name, string field_name, string groupname);
   
-  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
+  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  virtual void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
   
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
   
@@ -1035,11 +1040,13 @@ public:
   virtual bool SetUpdate_Averages(CConfig *config, bool dualtime);
   
   void Postprocess_HistoryFields(CConfig *config);
+  
+  COutputLegacy* GetLegacyOutput();
 };
 
 /*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
 class CFlowOutput : public COutput {
@@ -1077,7 +1084,7 @@ public:
   
   void SetVolumeOutputFields(CConfig *config);
   
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint); 
   
   void SetHistoryOutputFields(CConfig *config);
   
@@ -1109,7 +1116,7 @@ public:
 
 /*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
 class CIncFlowOutput : public COutput {
@@ -1176,9 +1183,80 @@ public:
   
 };
 
+
+/*! \class CFlowFEMOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez, T. Albring.
+ *  \date May 30, 2018.
+ */
+class CFlowFEMOutput : public COutput {
+private:
+  
+  unsigned short nVar;
+
+  unsigned short turb_model;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFlowFEMOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
+  
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+  
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
+};
+
 /*! \class CFEAOutput
  *  \brief Output class for FEA problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 24, 2018.
  */
 class CFEAOutput : public COutput {
@@ -1187,6 +1265,9 @@ private:
 protected:
 
   unsigned short nVar_FEM;
+  bool linear_analysis,
+       nonlinear_analysis,
+       dynamic;
 
 public:
 
@@ -1236,7 +1317,7 @@ public:
 
 /*! \class CHeatOutput
  *  \brief Output class for heat problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CHeatOutput : public COutput {
@@ -1296,7 +1377,7 @@ public:
 
 /*! \class CAdjFlowOutput
  *  \brief Output class for flow continuous adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CAdjFlowOutput : public COutput {
@@ -1360,7 +1441,7 @@ public:
 
 /*! \class CDiscAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFlowOutput : public COutput {
@@ -1425,7 +1506,7 @@ public:
 
 /*! \class CDiscAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFlowIncOutput : public COutput {
@@ -1557,7 +1638,7 @@ public:
 
 /*! \class CDiscAdjFEAOutput
  *  \brief Output class for elasticity discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFEAOutput : public COutput {
@@ -1606,6 +1687,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  void SetVolumeOutputFields(CConfig *config);
+
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
 
 };
 

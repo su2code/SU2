@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,7 +41,7 @@ using namespace std;
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CLong3T {
 public:
@@ -71,7 +71,7 @@ private:
  * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CReorderElements {
 public:
@@ -163,7 +163,7 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class CSortFaces {
@@ -204,7 +204,7 @@ private:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CSurfaceElementFEM;   // Forward declaration to avoid problems.
 class CSortBoundaryFaces {
@@ -232,7 +232,7 @@ public:
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CVolumeElementFEM {
 public:
@@ -336,7 +336,7 @@ public:
  * \class CPointFEM
  * \brief Class to a point for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CPointFEM {
 public:
@@ -388,7 +388,7 @@ private:
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CInternalFaceElementFEM {
 public:
@@ -459,7 +459,7 @@ private:
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CSurfaceElementFEM {
 public:
@@ -548,7 +548,7 @@ private:
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CBoundaryFEM {
 public:
@@ -581,7 +581,7 @@ public:
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CMeshFEM: public CGeometry {
 protected:
@@ -855,7 +855,7 @@ protected:
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CMeshFEM_DG: public CMeshFEM {
 private:
