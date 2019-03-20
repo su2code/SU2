@@ -776,7 +776,32 @@ void CFluidIteration::Postprocess(COutput *output,
                                   CVolumetricMovement ***grid_movement,
                                   CFreeFormDefBox*** FFDBox,
                                   unsigned short val_iZone,
-                                  unsigned short val_iInst) { }
+                                  unsigned short val_iInst) {
+
+  /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
+
+  if(config_container[val_iZone]->GetSinglezone_Driver()){
+
+    if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
+        config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+        config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS){
+
+      /*--- Read the target pressure ---*/
+
+      if (config_container[val_iZone]->GetInvDesign_Cp() == YES)
+        output->SetCp_InverseDesign(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetExtIter());
+
+      /*--- Read the target heat flux ---*/
+
+      if (config_container[val_iZone]->GetInvDesign_HeatFlux() == YES)
+        output->SetHeatFlux_InverseDesign(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetExtIter());
+
+    }
+
+  }
+
+
+}
 
 void CFluidIteration::Solve(COutput *output,
                                  CIntegration ****integration_container,
@@ -2097,6 +2122,12 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            unsigned short val_iZone,
                                            unsigned short val_iInst) {
 
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+
   unsigned long IntIter = 0, iPoint;
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
@@ -2457,6 +2488,28 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 
 }
 
+void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
+                                          CGeometry ****geometry_container,
+                                          CConfig **config_container,
+                                          unsigned short val_iZone,
+                                          unsigned short val_iInst,
+                                          unsigned short kind_recording) {
+
+  unsigned short iMesh;
+
+  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
+  for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+    solver_container[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][iMesh], config_container[val_iZone]);
+  }
+  if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[val_iZone]->GetFrozen_Visc_Disc()) {
+    solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  }
+
+}
+
 void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
@@ -2569,7 +2622,33 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
+    unsigned short val_iInst)     {
+
+  bool StopCalc = false;
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[val_iZone][INST_0][ADJFLOW_SOL]->GetConvergence();
+
+  /*--- Write the convergence history for the fluid (only screen output) ---*/
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+
+  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+
+  return StopCalc;
+
+}
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,
@@ -3039,6 +3118,19 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
 }
 
+
+void CDiscAdjFEAIteration::SetRecording(CSolver *****solver_container,
+                                        CGeometry ****geometry_container,
+                                        CConfig **config_container,
+                                        unsigned short val_iZone,
+                                        unsigned short val_iInst,
+                                        unsigned short kind_recording) {
+
+  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
+}
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
