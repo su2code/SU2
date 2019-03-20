@@ -346,6 +346,13 @@ public:
                                         unsigned short val_iInst,
                                         int val_DirectIter){}
 
+  virtual void SetRecording(CSolver *****solver_container,
+                            CGeometry ****geometry_container,
+                            CConfig **config_container,
+                            unsigned short val_iZone,
+                            unsigned short val_iInst,
+                            unsigned short kind_recording) { }
+
 };
 
 
@@ -1302,6 +1309,23 @@ public:
                       unsigned short kind_recording);
 
   /*!
+   * \brief Record a single iteration of the direct mean flow system.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iZone - Index of the instance.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+
+  void SetRecording(CSolver *****solver_container,
+                    CGeometry ****geometry_container,
+                    CConfig **config_container,
+                    unsigned short val_iZone,
+                    unsigned short val_iInst,
+                    unsigned short kind_recording);
+
+  /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
    * (e.g. turbulent variables, normals, volumes).
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1514,6 +1538,23 @@ public:
                       unsigned short val_iZone,
                       unsigned short val_iInst,
                       unsigned short kind_recording);
+
+  /*!
+   * \brief Record a single iteration of the direct mean flow system.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iZone - Index of the instance.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+
+  void SetRecording(CSolver *****solver_container,
+                    CGeometry ****geometry_container,
+                    CConfig **config_container,
+                    unsigned short val_iZone,
+                    unsigned short val_iInst,
+                    unsigned short kind_recording);
 
   /*!
    * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)
@@ -1746,7 +1787,7 @@ public:
                       unsigned short iZone, unsigned short iInst);
 
   /*!
-   * \brief Record a single iteration of the direct mean flow system.
+   * \brief Record a single iteration of the direct heat system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -1770,6 +1811,23 @@ public:
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
                       unsigned short kind_recording);
+
+  /*!
+   * \brief Record a single iteration of the direct mean flow system.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iZone - Index of the instance.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+
+  void SetRecording(CSolver *****solver_container,
+                    CGeometry ****geometry_container,
+                    CConfig **config_container,
+                    unsigned short val_iZone,
+                    unsigned short val_iInst,
+                    unsigned short kind_recording) { }
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
