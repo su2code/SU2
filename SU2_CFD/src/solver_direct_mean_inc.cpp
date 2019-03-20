@@ -6220,10 +6220,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   /*--- Local variables ---*/
   
-  unsigned short iVar, jVar, iMarker, iDim;
+  unsigned short iVar, jVar, iMarker, iDim, jDim;
   unsigned long iPoint, jPoint, iEdge, iVertex;
   
   su2double Density, Cp;
+  su2double BetaInc2, dRhodT, Temperature, oneOverCp;
+  su2double  Velocity[3] = {0.0,0.0,0.0};
   su2double *V_time_nM1, *V_time_n, *V_time_nP1;
   su2double U_time_nM1[5], U_time_n[5], U_time_nP1[5];
   su2double Volume_nM1, Volume_nP1, TimeStep;
@@ -6231,6 +6233,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement    = config->GetGrid_Movement();
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool energy           = config->GetEnergy_Equation();
 
   /*--- Store the physical time step ---*/
   
@@ -6263,11 +6267,27 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = node[iPoint]->GetSolution_time_n();
       V_time_nP1 = node[iPoint]->GetSolution();
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
-      
+      /*--- Access the primitive variables at this node. ---*/
+
       Density     = node[iPoint]->GetDensity();
+      BetaInc2    = node[iPoint]->GetBetaInc2();
       Cp          = node[iPoint]->GetSpecificHeatCp();
-      
+      oneOverCp   = 1.0/Cp;
+      Temperature = node[iPoint]->GetTemperature();
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+
+      /*--- We need the derivative of the equation of state to build the
+       preconditioning matrix. For now, the only option is the ideal gas
+       law, but in the future, dRhodT should be in the fluid model. ---*/
+
+      if (variable_density) {
+        dRhodT = -Density/Temperature;
+      } else {
+        dRhodT = 0.0;
+      }
+
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
       U_time_nM1[0] = Density;
@@ -6301,21 +6321,60 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                             +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
-      
+
+      if (!energy) Residual[nDim+1] = 0.0;
+
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
+
       if (implicit) {
-        for (iVar = 1; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
+
+        /*--- Calculating the inverse of the preconditioning matrix
+         that multiplies the time derivative during time integration. ---*/
+
+        /*--- For implicit calculations, we multiply the preconditioner
+        by the cell volume over the time step and add to the Jac diagonal. ---*/
+
+        Jacobian_i[0][0] = 1.0/BetaInc2;
         for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
+          Jacobian_i[iDim+1][0] = Velocity[iDim]/BetaInc2;
+
+        if (energy) Jacobian_i[nDim+1][0] = Cp*Temperature/BetaInc2;
+        else        Jacobian_i[nDim+1][0] = 0.0;
+
+        for (jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[0][jDim+1] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            if (iDim == jDim) Jacobian_i[iDim+1][jDim+1] = Density;
+            else Jacobian_i[iDim+1][jDim+1] = 0.0;
+          }
+          Jacobian_i[nDim+1][jDim+1] = 0.0;
+        }
+
+        Jacobian_i[0][nDim+1] = dRhodT;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+        else        Jacobian_i[nDim+1][nDim+1] = 1.0;
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
+          
+        if (!energy) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[iVar][nDim+1] = 0.0;
+            Jacobian_i[nDim+1][iVar] = 0.0;
+          }
+        }
 
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
@@ -6361,11 +6420,27 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       V_time_n = node[iPoint]->GetSolution_time_n();
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
-      
+      /*--- Access the primitive variables at this node. ---*/
+
       Density     = node[iPoint]->GetDensity();
+      BetaInc2    = node[iPoint]->GetBetaInc2();
       Cp          = node[iPoint]->GetSpecificHeatCp();
-      
+      oneOverCp   = 1.0/Cp;
+      Temperature = node[iPoint]->GetTemperature();
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+
+      /*--- We need the derivative of the equation of state to build the
+       preconditioning matrix. For now, the only option is the ideal gas
+       law, but in the future, dRhodT should be in the fluid model. ---*/
+
+      if (variable_density) {
+        dRhodT = -Density/Temperature;
+      } else {
+        dRhodT = 0.0;
+      }
+
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
       U_time_n[0] = Density;
@@ -6376,6 +6451,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Compute the GCL component of the source term for node j ---*/
@@ -6390,6 +6467,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.SubtractBlock(jPoint, Residual);
       
     }
@@ -6436,6 +6515,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+        
+        if (!energy) Residual[nDim+1] = 0.0;
         LinSysRes.AddBlock(iPoint, Residual);
         
       }
@@ -6506,19 +6587,54 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
-      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
         
+        /*--- Calculating the inverse of the preconditioning matrix
+         that multiplies the time derivative during time integration. ---*/
+
+        /*--- For implicit calculations, we multiply the preconditioner
+        by the cell volume over the time step and add to the Jac diagonal. ---*/
+
+        Jacobian_i[0][0] = 1.0/BetaInc2;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][0] = Velocity[iDim]/BetaInc2;
+
+        if (energy) Jacobian_i[nDim+1][0] = Cp*Temperature/BetaInc2;
+        else        Jacobian_i[nDim+1][0] = 0.0;
+
+        for (jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[0][jDim+1] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            if (iDim == jDim) Jacobian_i[iDim+1][jDim+1] = Density;
+            else Jacobian_i[iDim+1][jDim+1] = 0.0;
+          }
+          Jacobian_i[nDim+1][jDim+1] = 0.0;
+        }
+
+        Jacobian_i[0][nDim+1] = dRhodT;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+        else        Jacobian_i[nDim+1][nDim+1] = 1.0;
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
+
+        if (!energy) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[iVar][nDim+1] = 0.0;
+            Jacobian_i[nDim+1][iVar] = 0.0;
+          }
+        }
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
