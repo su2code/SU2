@@ -2,7 +2,7 @@
  * \file output_structure.inl
  * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
  * \author J. Smith
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -58,6 +58,8 @@ inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { 
 
 inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+
+inline void COutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){}
 
 inline void COutput::PrintScreenFixed(stringstream& stream, su2double val) {
   stream.precision(6); stream.setf(ios::fixed, ios::floatfield); stream.width(field_width);
@@ -138,3 +140,5 @@ inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 inline bool COutput::SetInit_Residuals(CConfig *config) {return false;}
 
 inline bool COutput::SetUpdate_Averages(CConfig *config, bool dualtime) {return false;}
+
+inline COutputLegacy* COutput::GetLegacyOutput() {return output_legacy;}

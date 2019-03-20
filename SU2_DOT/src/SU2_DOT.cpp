@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config_container            = NULL;
+  CConfig *driver_config                = NULL;
   CGeometry ***geometry_container       = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   COutput *output                       = NULL;
-  CConfig *driver_config                = NULL;  
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_DEF);
+  config = new CConfig(config_file_name, SU2_DOT);
 
   nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
   grid_movement       = new CVolumetricMovement*[nZone];
   
   nInst               = new unsigned short[nZone];
+  driver_config       = NULL;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -299,9 +300,16 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
       geometry_container[iZone][INST_0]->SetBoundSensitivity(config_container[iZone]);
     } else {
-      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
+
+      if (rank == MASTER_NODE)
+        cout << "Reading volume sensitivities at each node from file." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
-      geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
+
+      /*--- Read in sensitivities from file. ---*/
+      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
+        geometry_container[iZone][INST_0]->ReadUnorderedSensitivity(config_container[iZone]);
+      else
+        geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
 
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
@@ -317,7 +325,8 @@ int main(int argc, char *argv[]) {
      output->SetSensitivity_Files(geometry_container, config_container, nZone);
    }
 
-   if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
+   if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
+       (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)){
 
      /*--- Initialize structure to store the gradient ---*/
 

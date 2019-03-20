@@ -2,7 +2,7 @@
  * \file variable_direct_mean_inc.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -284,14 +284,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-  
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-      Solution_BGS_k  = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_BGS_k[iVar] = val_solution[iVar];
-      }
-  }
 
 }
 

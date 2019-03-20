@@ -19,6 +19,7 @@
 		05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */; };
 		E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */; };
+		E9611EFE21FBF03F00663714 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */; };
 		E96FAF6F218A048B0046BF5D /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF5E218A04890046BF5D /* element_linear.cpp */; };
 		E96FAF70218A048B0046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF5F218A048A0046BF5D /* graph_coloring_structure.cpp */; };
 		E96FAF71218A048B0046BF5D /* adt_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF60218A048A0046BF5D /* adt_structure.cpp */; };
@@ -102,6 +103,8 @@
 		E941BC061B71DB57005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = primitive_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC071B71DB57005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC081B71DB57005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
+		E9611EFF21FBF05500663714 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
 		E96FAF5E218A04890046BF5D /* element_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_linear.cpp; path = ../../Common/src/element_linear.cpp; sourceTree = "<group>"; };
 		E96FAF5F218A048A0046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
 		E96FAF60218A048A0046BF5D /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; };
@@ -179,6 +182,7 @@
 				E941BC081B71DB57005C6C06 /* mpi_structure.hpp */,
 				05E6DAF417EB609A00FA1F7E /* option_structure.hpp */,
 				05E6DAF517EB609A00FA1F7E /* primal_grid_structure.hpp */,
+				E9611EFF21FBF05500663714 /* printing_toolbox.hpp */,
 				05E6DC4F17EB636E00FA1F7E /* SU2_MSH.hpp */,
 				05E6DAF617EB609A00FA1F7E /* vector_structure.hpp */,
 				E96FAF85218A04AA0046BF5D /* wall_model.hpp */,
@@ -254,6 +258,7 @@
 				E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DB4717EB61CC00FA1F7E /* matrix_structure.cpp */,
 				05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */,
+				E9611EFD21FBF03F00663714 /* printing_toolbox.cpp */,
 				05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */,
 				E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */,
 			);
@@ -367,6 +372,7 @@
 				E96FAF6F218A048B0046BF5D /* element_linear.cpp in Sources */,
 				E96FAF74218A048B0046BF5D /* fem_gauss_jacobi_quadrature.cpp in Sources */,
 				05E6DB5117EB61CC00FA1F7E /* primal_grid_structure.cpp in Sources */,
+				E9611EFE21FBF03F00663714 /* printing_toolbox.cpp in Sources */,
 				05E6DB5217EB61CC00FA1F7E /* vector_structure.cpp in Sources */,
 				E96FAF7D218A048B0046BF5D /* interpolation_structure.cpp in Sources */,
 				05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */,

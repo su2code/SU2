@@ -2,7 +2,7 @@
  * \file task_definition.hpp
  * \brief Header of the task definition class for the SU2 solvers.
  * \author E. van der Weide, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -43,7 +43,7 @@ using namespace std;
  * \class CTaskDefinition
  * \brief Class for defining a task to be carried out
  * \author: E. van der Weide, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CTaskDefinition {
 

@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -98,6 +98,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
+
+  Inlet_Ttotal = NULL; Inlet_Ptotal = NULL; Inlet_FlowDir = NULL;
+  nVertex = NULL;
 
   Smatrix = NULL; Cvector = NULL;
  
@@ -864,6 +867,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3919,7 +3924,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
         
       }
-      
+    } else {
+      ModelTable << "-" << "-";
     }
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
@@ -4242,7 +4248,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -5451,6 +5460,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
@@ -14789,6 +14799,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  HF_Visc = NULL; MaxHF_Visc = NULL;
 
   /*--- Inlet Variables ---*/
   Inlet_Ttotal = NULL;
@@ -14798,6 +14809,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
   
+  HeatConjugateVar = NULL;
+
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -14822,8 +14835,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -15556,6 +15567,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -15650,7 +15663,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
   bool wall_functions       = config->GetWall_Functions();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
@@ -16090,8 +16106,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefArea    = config->GetRefArea();
-  su2double RefLength = config->GetRefLength();
+  su2double RefArea         = config->GetRefArea();
+  su2double RefLength       = config->GetRefLength();
+  su2double RefHeatFlux     = config->GetHeat_Flux_Ref();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin = NULL;
   
@@ -16157,7 +16174,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
     
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
       
       /*--- Forces initialization at each Marker ---*/
       
@@ -16278,7 +16295,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
         HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
         MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
@@ -16554,7 +16571,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
   su2double *Vel_FS = config->GetVelocity_FreeStream();
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
@@ -16584,14 +16601,12 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
             
       /*--- Loop over the vertices to compute the buffet sensor ---*/
             
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
         SkinFrictionMag = 0.0;
@@ -17253,12 +17268,9 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
-      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
-        wall_distance = geometry->node[iPoint]->GetWall_Distance();
-      } else {
-        wall_distance = node[iPoint]->GetDES_LengthScale();
-      }
-      
+    
+      wall_distance = geometry->node[iPoint]->GetWall_Distance();
+    
       node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
 
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {

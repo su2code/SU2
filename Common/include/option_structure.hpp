@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -341,8 +341,7 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  */
 enum ENUM_INTERPOLATOR {
   NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
   WEIGHTED_AVERAGE  = 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
   RADIAL_BASIS_FUNCTION= 4, /*!< \brief Radial basis function interpolation. */
 };
@@ -350,7 +349,6 @@ enum ENUM_INTERPOLATOR {
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC",    ISOPARAMETRIC)
-("CONSISTCONSERVE",  CONSISTCONSERVE)
 ("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE)
 ("RADIAL_BASIS_FUNCTION", RADIAL_BASIS_FUNCTION);
 
@@ -752,6 +750,7 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
+  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -759,6 +758,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
 ("AUSMPLUSUP", AUSMPLUSUP)
+("AUSMPLUSUP2", AUSMPLUSUP2)
 ("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
@@ -998,19 +998,6 @@ enum ENUM_SPACE_ITE_FEA {
 static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
 ("NEWTON_RAPHSON", NEWTON_RAPHSON)
 ("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
-
-/*!
- * \brief types of transfer methods
- */
-enum ENUM_TRANSFER_METHOD {
-  BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
-  SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
-  ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
-};
-static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
-("BROADCAST_DATA", BROADCAST_DATA)
-("SCATTER_DATA", SCATTER_DATA)
-("ALLGATHER_DATA", ALLGATHER_DATA);
 
 /*!
  * \brief types of schemes to compute the flow gradient
@@ -1568,6 +1555,18 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW)
 ("PARAVIEW_BINARY", PARAVIEW_BINARY);
+
+/*!
+ * \brief type of volume sensitivity file formats (inout to SU2_DOT)
+ */
+enum ENUM_SENSITIVITY {
+  SU2_NATIVE = 1,           /*!< \brief SU2 native binary format for the volume sensitivity input. */
+  UNORDERED_ASCII = 2           /*!< \brief Unordered ASCII list (x,y,z,dJ/dx,dJ/dy/dJ/dz) format for the volume sensitivity input. */
+};
+
+static const map<string, ENUM_SENSITIVITY> Sensitivity_Map = CCreateMap<string, ENUM_SENSITIVITY>
+("SU2_NATIVE", SU2_NATIVE)
+("UNORDERED_ASCII", UNORDERED_ASCII);
 
 /*!
  * \brief type of jump definition
