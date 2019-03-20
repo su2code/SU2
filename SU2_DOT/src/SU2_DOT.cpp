@@ -73,7 +73,6 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   COutput *output                       = NULL;
-  CConfig *driver_config                = NULL;  
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
