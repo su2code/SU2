@@ -7017,8 +7017,13 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
-
-
+  
+  /*!
+   * \brief Compute the global error measures (L2, Linf) for verification cases.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
 };
 
 /*!

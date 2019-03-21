@@ -3503,11 +3503,11 @@ void CSolver::SetVerificationError(unsigned long nDOFsGlobal,
                                    CConfig       *config) {
   unsigned short iVar;
   
-  /* Parallel mode. Disable the reduce for the error to avoid overhead if requested. */
+  /* Disable the reduce for the error to avoid overhead if requested. */
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
     
     /*--- The local L2 norms must be added to obtain the global value. ---*/
-    vector<su2double> rbufError(nVar);
+    vector<su2double> rbufError(nVar,0.0);
     SU2_MPI::Allreduce(Error_RMS, rbufError.data(), nVar,
                        MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
@@ -3516,7 +3516,7 @@ void CSolver::SetVerificationError(unsigned long nDOFsGlobal,
     }
     
     /*--- The global maximum norms must be obtained. ---*/
-    rbufError.resize(nVar*size);
+    rbufError.resize(nVar*size,0.0);
     SU2_MPI::Allgather(Error_Max, nVar, MPI_DOUBLE, rbufError.data(),
                        nVar, MPI_DOUBLE, MPI_COMM_WORLD);
     
@@ -3524,13 +3524,13 @@ void CSolver::SetVerificationError(unsigned long nDOFsGlobal,
     SU2_MPI::Allgather(Error_Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
                        nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
     
-    vector<su2double> sbufCoor(nDim*nVar);
+    vector<su2double> sbufCoor(nDim*nVar,0.0);
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       for(unsigned short iDim=0; iDim<nDim; ++iDim)
         sbufCoor[iVar*nDim+iDim] = Error_Point_Max_Coord[iVar][iDim];
     }
     
-    vector<su2double> rbufCoor(nDim*nVar*size);
+    vector<su2double> rbufCoor(nDim*nVar*size,0.0);
     SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
                        nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
     
