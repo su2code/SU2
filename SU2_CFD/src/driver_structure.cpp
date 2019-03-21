@@ -4625,7 +4625,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, config_container, iZone, INST_0, kind_recording);
+    iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, iZone, INST_0, kind_recording);
   }
 
   /*--- Do one iteration of the direct flow solver ---*/

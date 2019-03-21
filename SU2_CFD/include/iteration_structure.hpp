@@ -312,13 +312,6 @@ public:
 
   virtual void SetDependencies(CSolver *****solver_container,
                                CGeometry ****geometry_container,
-                               CConfig **config_container,
-                               unsigned short iZone,
-                               unsigned short iInst,
-                               unsigned short kind_recording){}
-
-  virtual void SetDependencies(CSolver *****solver_container,
-                               CGeometry ****geometry_container,
                                CNumerics ******numerics_container,
                                CConfig **config_container,
                                unsigned short iZone,
@@ -1336,6 +1329,7 @@ public:
    */
   void SetDependencies(CSolver *****solver_container,
                        CGeometry ****geometry_container,
+                       CNumerics ******numerics_container,
                        CConfig **config_container,
                        unsigned short iZone,
                        unsigned short iInst,
@@ -1841,6 +1835,7 @@ public:
    */
   void SetDependencies(CSolver *****solver_container,
                        CGeometry ****geometry_container,
+                       CNumerics ******numerics_container,
                        CConfig **config_container,
                        unsigned short iZone, unsigned short iInst,
                        unsigned short kind_recording);
