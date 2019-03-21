@@ -105,6 +105,10 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
+  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
+  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
+
+  config_container[ZONE_0]->SetExtIter(TimeIter);
 
   /*--- Preprocess the adjoint iteration ---*/
 
@@ -167,6 +171,9 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
+
+    if (config->GetTime_Domain())
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0, INST_0);
 
     if (StopCalc) break;
 
@@ -374,8 +381,8 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))
            << ", log10[U(2)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(2)) << "." << endl;;
-      cout << ", log10[U(3)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(3));
-      if (geometry->GetnDim() == 3) cout << "log10[U(4)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(4));
+      cout << "log10[U(3)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(3));
+      if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(4));
       cout << "." << endl;
       if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
         cout << "log10[Turb(0)]: "   << log10(solver[TURB_SOL]->GetRes_RMS(0));
