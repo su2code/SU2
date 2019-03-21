@@ -133,7 +133,6 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
-  unsigned short checkConvergence;
   unsigned long Adjoint_Iter;
 
   for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -142,8 +141,7 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- of the previous iteration. The values are passed to the AD tool. ---*/
 
     config->SetIntIter(Adjoint_Iter);
-    if(!config->GetTime_Domain())
-      config->SetExtIter(Adjoint_Iter);
+    if(!config->GetTime_Domain()) config->SetExtIter(Adjoint_Iter);
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -170,11 +168,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     AD::ClearAdjoints();
 
-    /*--- Check convergence --*/
-
-    checkConvergence = integration[ADJFLOW_SOL]->GetConvergence();
-
-    if (checkConvergence) break;
+    if (StopCalc) break;
 
   }
 
@@ -248,10 +242,13 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   iteration->SetDependencies(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
-  /*--- Do one iteration of the direct flow solver ---*/
+  /*--- Do one iteration of the direct solver ---*/
+
   DirectRun(kind_recording);
 
-  /*--- The inverse design calls were moved to DirectRun() - postprocess ---*/
+  // NOTE: The inverse design calls were moved to DirectRun() - postprocess
+
+  /*--- Store the recording state ---*/
 
   RecordingState = kind_recording;
 
