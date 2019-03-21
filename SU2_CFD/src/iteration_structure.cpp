@@ -2781,45 +2781,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
 
   solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
 
-  if (CurrentRecording != FEA_DISP_VARS || dynamic){
-
-    if (rank == MASTER_NODE){
-      cout << "Direct iteration to store computational graph." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl;
-    }
-
-    /*--- Record one FEM iteration with structural variables as input ---*/
-
-    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
-                 config_container, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst, FEA_DISP_VARS);
-
-    /*--- Print residuals in the first iteration ---*/
-
-    if (rank == MASTER_NODE && ((ExtIter == 0) || dynamic )){
-
-      if (nonlinear_analysis){
-        cout << "UTOL-A: "   << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(0))
-             << ", RTOL-A: " << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(1))
-             << ", ETOL-A: " << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_FEM(2)) << "." << endl;
-      }
-      else{
-        if (geometry_container[val_iZone][val_iInst][MESH_0]->GetnDim() == 2){
-          cout << "log10[RMS Ux]: "   << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_RMS(0))
-               << ", log10[RMS Uy]: " << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_RMS(1)) << "." << endl;
-
-        }
-        else{
-          cout << "log10[RMS Ux]: "   << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_RMS(0))
-               << ", log10[RMS Uy]: " << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_RMS(1))
-               << ", log10[RMS Uz]: " << log10(solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetRes_RMS(2))<< "." << endl;
-        }
-
-      }
-
-    }
-
-  }
-
 }
 
 
@@ -2867,163 +2828,31 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         unsigned short val_iInst) {
 
 
-  unsigned long IntIter = 0, nIntIter = 1;
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
 
-  config_container[val_iZone]->SetIntIter(IntIter);
+  unsigned long nIntIter = config_container[val_iZone]->GetnIter();
+  unsigned long IntIter  = config_container[val_iZone]->GetIntIter();
 
-  nIntIter = config_container[val_iZone]->GetDyn_nIntIter();
+  /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
-  for(IntIter = 0; IntIter < nIntIter; IntIter++){
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
+                                                                                      config_container[val_iZone]);
 
-    /*--- Set the internal iteration ---*/
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][val_iInst][MESH_0],
+                                                                                       config_container[val_iZone]);
 
-    config_container[val_iZone]->SetIntIter(IntIter);
+  /*--- Set the convergence criteria (only residual possible) ---*/
 
-    /*--- Set the adjoint values of the flow and objective function ---*/
+  integration_container[val_iZone][val_iInst][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone],
+                                                                                  IntIter,log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-    InitializeAdjoint(solver_container, geometry_container, config_container, val_iZone, val_iInst);
+  /*--- Write the convergence history (only screen output) ---*/
 
-    /*--- Run the adjoint computation ---*/
-
-    AD::ComputeAdjoint();
-
-    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
-
-    solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                              config_container[val_iZone]);
-
-    solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                               config_container[val_iZone]);
-
-    /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
-
-    AD::ClearAdjoints();
-
-    /*--- Set the convergence criteria (only residual possible) ---*/
-
-    integration_container[val_iZone][val_iInst][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone],
-                                                                          IntIter,log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
-
-    if(integration_container[val_iZone][val_iInst][ADJFEA_SOL]->GetConvergence()){
-      break;
-    }
-
-    /*--- Write the convergence history (only screen output) ---*/
-
-   if(IntIter != nIntIter-1)
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
-
-  }
-
+  if(IntIter != nIntIter-1)
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
 
   if (dynamic){
     integration_container[val_iZone][val_iInst][ADJFEA_SOL]->SetConvergence(false);
-  }
-
-  /*--- Global sensitivities ---*/
-  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone]);
-
-  // TEMPORARY output only for standalone structural problems
-  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
-
-    unsigned short iVar;
-
-    bool de_effects = config_container[val_iZone]->GetDE_Effects();
-
-    /*--- Header of the temporary output file ---*/
-    ofstream myfile_res;
-    myfile_res.open ("Results_Reverse_Adjoint.txt", ios::app);
-
-    myfile_res.precision(15);
-
-    myfile_res << config_container[val_iZone]->GetExtIter() << "\t";
-
-    switch (config_container[val_iZone]->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
-      break;
-    case REFERENCE_NODE:
-      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
-      break;
-    case VOLUME_FRACTION:
-      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
-      break;
-    }
-
-    for (iVar = 0; iVar < config_container[val_iZone]->GetnElasticityMod(); iVar++)
-        myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
-    for (iVar = 0; iVar < config_container[val_iZone]->GetnPoissonRatio(); iVar++)
-        myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
-    if (dynamic){
-        for (iVar = 0; iVar < config_container[val_iZone]->GetnMaterialDensity(); iVar++)
-            myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
-    }
-
-    if (de_effects){
-        for (iVar = 0; iVar < config_container[val_iZone]->GetnElectric_Field(); iVar++)
-          myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
-    }
-
-    for (iVar = 0; iVar < solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA(); iVar++){
-      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
-    }
-
-    myfile_res << endl;
-
-    myfile_res.close();
-  }
-
-  // TEST: for implementation of python framework in standalone structural problems
-  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
-
-    /*--- Header of the temporary output file ---*/
-    ofstream myfile_res;
-    bool outputDVFEA = false;
-
-    switch (config_container[val_iZone]->GetDV_FEA()) {
-      case YOUNG_MODULUS:
-        myfile_res.open("grad_young.opt");
-        outputDVFEA = true;
-        break;
-      case POISSON_RATIO:
-        myfile_res.open("grad_poisson.opt");
-        outputDVFEA = true;
-        break;
-      case DENSITY_VAL:
-      case DEAD_WEIGHT:
-        myfile_res.open("grad_density.opt");
-        outputDVFEA = true;
-        break;
-      case ELECTRIC_FIELD:
-        myfile_res.open("grad_efield.opt");
-        outputDVFEA = true;
-        break;
-      default:
-        outputDVFEA = false;
-        break;
-    }
-
-    if (outputDVFEA){
-
-      unsigned short iDV;
-      unsigned short nDV = solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA();
-
-      myfile_res << "INDEX" << "\t" << "GRAD" << endl;
-
-      myfile_res.precision(15);
-
-      for (iDV = 0; iDV < nDV; iDV++){
-        myfile_res << iDV;
-        myfile_res << "\t";
-        myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
-        myfile_res << endl;
-      }
-
-      myfile_res.close();
-
-    }
-
   }
 
 }
@@ -3266,10 +3095,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
 void CDiscAdjFEAIteration::RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst){
 
-  /*--- Register objective function as output of the iteration ---*/
-
-  solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[iZone]);
-
   /*--- Register conservative variables as output of the iteration ---*/
 
   solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],config_container[iZone]);
@@ -3336,6 +3161,114 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
     unsigned short val_iInst) {
+
+
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+
+  /*--- Global sensitivities ---*/
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone]);
+
+  // TEMPORARY output only for standalone structural problems
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    unsigned short iVar;
+
+    bool de_effects = config_container[val_iZone]->GetDE_Effects();
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("Results_Reverse_Adjoint.txt", ios::app);
+
+    myfile_res.precision(15);
+
+    myfile_res << config_container[val_iZone]->GetExtIter() << "\t";
+
+    switch (config_container[val_iZone]->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
+      break;
+    case REFERENCE_NODE:
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
+      break;
+    case VOLUME_FRACTION:
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
+      break;
+    }
+
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnElasticityMod(); iVar++)
+      myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnPoissonRatio(); iVar++)
+      myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
+    if (dynamic){
+      for (iVar = 0; iVar < config_container[val_iZone]->GetnMaterialDensity(); iVar++)
+        myfile_res << scientific << solver_container[ZONE_0][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
+    }
+
+    if (de_effects){
+      for (iVar = 0; iVar < config_container[val_iZone]->GetnElectric_Field(); iVar++)
+        myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
+    }
+
+    for (iVar = 0; iVar < solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA(); iVar++){
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
+    }
+
+    myfile_res << endl;
+
+    myfile_res.close();
+  }
+
+  // TEST: for implementation of python framework in standalone structural problems
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    bool outputDVFEA = false;
+
+    switch (config_container[val_iZone]->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      myfile_res.open("grad_young.opt");
+      outputDVFEA = true;
+      break;
+    case POISSON_RATIO:
+      myfile_res.open("grad_poisson.opt");
+      outputDVFEA = true;
+      break;
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+      myfile_res.open("grad_density.opt");
+      outputDVFEA = true;
+      break;
+    case ELECTRIC_FIELD:
+      myfile_res.open("grad_efield.opt");
+      outputDVFEA = true;
+      break;
+    default:
+      outputDVFEA = false;
+      break;
+    }
+
+    if (outputDVFEA){
+
+      unsigned short iDV;
+      unsigned short nDV = solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+
+      myfile_res << "INDEX" << "\t" << "GRAD" << endl;
+
+      myfile_res.precision(15);
+
+      for (iDV = 0; iDV < nDV; iDV++){
+        myfile_res << iDV;
+        myfile_res << "\t";
+        myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
+        myfile_res << endl;
+      }
+
+      myfile_res.close();
+
+    }
+
+  }
 
   unsigned short iMarker;
 

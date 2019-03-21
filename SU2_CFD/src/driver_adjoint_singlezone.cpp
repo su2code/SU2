@@ -156,7 +156,8 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- of the previous iteration. The values are passed to the AD tool. ---*/
 
     config->SetIntIter(Adjoint_Iter);
-    if(!config->GetTime_Domain()) config->SetExtIter(Adjoint_Iter);
+    if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
+      config->SetExtIter(Adjoint_Iter);
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -347,6 +348,22 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       }
     }
 
+    break;
+  case DISC_ADJ_FEM:
+    switch (config->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+        break;
+    case REFERENCE_NODE:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+        break;
+    case VOLUME_FRACTION:
+        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+        break;
+    default:
+        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+        break;
+    }
     break;
   }
 
