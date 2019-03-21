@@ -110,6 +110,19 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   config_container[ZONE_0]->SetExtIter(TimeIter);
 
+  /*--- TODO: These routines should be taken out of here and incorporated ---*/
+  /*--- into a more general framework, as they are very specific.         ---*/
+
+  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
+  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
+
+  /*--- Read the target heat flux ----------------------------------------------------------------*/
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
+
   /*--- Preprocess the adjoint iteration ---*/
 
   iteration->Preprocess(output, integration_container, geometry_container,
