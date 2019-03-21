@@ -344,7 +344,7 @@ public:
                    const su2double      *val_coords,
                    const su2double      val_t,
                    su2double            *val_solution);
-
+  
   /*!
    * \brief Get the boundary conditions state for an exact solution.
    * \param[in] val_nParams  - Number of additional input parameters.
@@ -548,8 +548,9 @@ class CMMSIncNSSolution: public CVerificationSolution {
 protected:
   
   /*--- Variables that define the solution and MMS source term. ---*/
-  su2double Viscosity;  /*!< \brief Viscosity, must be constant. */
-  su2double Density;    /*!< \brief Density, must be constant. */
+  su2double Viscosity;    /*!< \brief Viscosity, must be constant. */
+  su2double Density;      /*!< \brief Density, must be constant. */
+  su2double Temperature;  /*!< \brief Temperature, just to be safe. */
   
   /*--- Constants, which describe this manufactured solution. This is a
    viscous solution where the primitive variables vary as a combination
