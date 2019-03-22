@@ -232,6 +232,12 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     AD::ClearAdjoints();
   }
 
+  if (config->GetKind_Solver() == DISC_ADJ_FEM){
+
+    iteration->Postprocess(output,integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+
+  }
+
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
