@@ -7181,84 +7181,28 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     const su2double *solDOFsOld = VecSolDOFs.data() + offset;
     su2double *solDOFs          = solNew            + offset;
 
-    /* Loop over the DOFs for this element and update the solution and the L2 norm. */
+    /* Loop over the DOFs for this element and update the solution. */
     const su2double tmp = RK_AlphaCoeff*VecDeltaTime[l];
+    const unsigned short nVarNDOFs = nVar*volElem[l].nDOFsSol;
 
-    unsigned int i = 0;
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
-
-      for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
-        solDOFs[i] = solDOFsOld[i] - tmp*res[i];
-
-        AddRes_RMS(iVar, res[i]*res[i]);
-        AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
-      }
-    }
+    for(unsigned short j=0; j<nVarNDOFs; ++j)
+      solDOFs[j] = solDOFsOld[j] - tmp*res[j];
   }
 
-  /*--- Compute the root mean square residual. Note that the SetResidual_RMS
-        function cannot be used, because that is for the FV solver.    ---*/
+  /*--- Test for the last RK step. ---*/
+  if(iRKStep == (nRKStages-1)) {
 
-#ifdef HAVE_MPI
-  /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+          function of CSolver cannot be used, because that is for the FV solver. ---*/
+    SetResidual_RMS_FEM(geometry, config);
 
-    /*--- The local L2 norms must be added to obtain the
-          global value. Also check for divergence. ---*/
-    vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      if (rbufRes[iVar] != rbufRes[iVar])
-        SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
-
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
-    }
-
-    /*--- The global maximum norms must be obtained. ---*/
-    rbufRes.resize(nVar*size);
-    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
-                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-
-    vector<unsigned long> rbufPoint(nVar*size);
-    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
-                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-
-    vector<su2double> sbufCoor(nDim*nVar);
-    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        sbufCoor[iVar*nDim+iDim] = Point_Max_Coord[iVar][iDim];
-    }
-
-    vector<su2double> rbufCoor(nDim*nVar*size);
-    SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
-                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
-
-    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      for(int proc=0; proc<size; ++proc)
-        AddRes_Max(iVar, rbufRes[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
-                   &rbufCoor[proc*nVar*nDim+iVar*nDim]);
-    }
+    /*--- For verification cases, compute the global error metrics. ---*/
+    ComputeVerificationError(geometry, config);
   }
-
-#else
-  /*--- Sequential mode. Check for a divergence of the solver and compute
-        the L2-norm of the residuals. ---*/
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-
-    if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
-      SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
-
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
-  }
-
-#endif
 }
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                               CConfig *config, unsigned short iRKStep) {
+                                                 CConfig *config, unsigned short iRKStep) {
 
   /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
@@ -7286,6 +7230,50 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
     const su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*VecDeltaTime[l];
     const su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*VecDeltaTime[l];
 
+    const unsigned short nVarNDOFs = nVar*volElem[l].nDOFsSol;
+
+    if (iRKStep < 3) {
+      for(unsigned short j=0; j<nVarNDOFs; ++j) {
+        solDOFsNew[j] += tmp_func*res[j];
+        solDOFs[j]     = solDOFsOld[j] + tmp_time*res[j];
+      }
+    }
+    else {
+      for(unsigned short j=0; j<nVarNDOFs; ++j)
+        solDOFs[j] = solDOFsNew[j] + tmp_func*res[j];
+    }
+  }
+
+  /*--- Test for the last RK step. ---*/
+  if(iRKStep == 3) {
+
+    /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+          function of CSolver cannot be used, because that is for the FV solver. ---*/
+    SetResidual_RMS_FEM(geometry, config);
+
+    /*--- For verification cases, compute the global error metrics. ---*/
+    ComputeVerificationError(geometry, config);
+  }
+}
+
+void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
+                                              CConfig *config) {
+
+  /* Initialize the residuals to zero. */
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Loop over the owned elements. It is not possible to loop directly over the owned
+        DOFs, because the coordinates of the DOFs are only known in the volume class. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Set the pointer for the residual for this element. */
+    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
+    const su2double *res        = VecResDOFs.data() + offset;
+
+    /* Loop over the DOFs for this element and update the norms. */
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
@@ -7293,22 +7281,11 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
 
-        if (iRKStep < 3) {
-          solDOFsNew[i] += tmp_func*res[i];
-          solDOFs[i]     = solDOFsOld[i] + tmp_time*res[i];
-        } else {
-          solDOFs[i]     = solDOFsNew[i] + tmp_func*res[i];
-        }
-
         AddRes_RMS(iVar, res[i]*res[i]);
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
-
   }
-
-  /*--- Compute the root mean square residual. Note that the SetResidual_RMS
-   function cannot be used, because that is for the FV solver.    ---*/
 
 #ifdef HAVE_MPI
   /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
@@ -7364,6 +7341,106 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   }
 
 #endif
+}
+
+void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
+                                                   CConfig   *config) {
+
+  /*--- If this is a verification case, we can compute the global
+   error metrics by using the difference between the local error
+   and the known solution at each DOF. This is then collected into
+   RMS (L2) and maximum (Linf) global error norms. From these
+   global measures, one can compute the order of accuracy. ---*/
+
+  bool write_heads = ((((config->GetExtIter() %
+                         (config->GetWrt_Con_Freq()*40)) == 0) &&
+                       (config->GetExtIter()!= 0))
+                      || (config->GetExtIter() == 1));
+
+  if (VerificationSolution) {
+    if (VerificationSolution->ExactSolutionKnown()) {
+
+      /*--- Get the physical time if necessary. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+
+      /*--- Reset the global error measures to zero. ---*/
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        SetError_RMS(iVar, 0.0);
+        SetError_Max(iVar, 0.0, 0);
+      }
+
+      /*--- Loop over the owned elements. It is not possible to loop directly over the owned
+            DOFs, because the coordinates of the DOFs are only known in the volume element class. ---*/
+      for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+        /* Set the pointer for the solution for this element. */ 
+        const unsigned long offset = nVar*volElem[l].offsetDOFsSolLocal;
+        const double *solDOFs      = VecSolDOFs.data() + offset;
+
+        /* Loop over the DOFs for this element. */
+        for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+          const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+          const su2double *solDOF = solDOFs + j*nVar;
+          su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
+
+          /* Get local error from the verification solution class. */
+          vector<su2double> error(nVar,0.0);
+          VerificationSolution->GetLocalError(0, NULL, coor, time,
+                                              solDOF, error.data());
+
+          /* Increment the global error measures */
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            AddError_RMS(iVar, error[iVar]*error[iVar]);
+            AddError_Max(iVar, fabs(error[iVar]), globalIndex, coor);
+          }
+        }
+      }
+
+      /* Finalize the calculation of the global error measures. */
+      SetVerificationError(nDOFsGlobal, config);
+
+      /*--- Screen output of the error metrics. This can be improved
+       once the new output classes are in place. ---*/
+
+      if (rank == MASTER_NODE) {
+
+        cout.precision(5);
+        cout.setf(ios::scientific, ios::floatfield);
+
+        if (write_heads && !config->GetDiscrete_Adjoint()) {
+
+          cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
+
+          cout << setw(20) << "RMS Error  [Rho]: " << setw(15) << GetError_RMS(0);
+          cout << setw(20) << "Max Error  [Rho]: " << setw(15) << GetError_Max(0);
+          cout << endl;
+
+          cout << setw(20) << "RMS Error [RhoU]: " << setw(15) << GetError_RMS(1);
+          cout << setw(20) << "Max Error [RhoU]: " << setw(15) << GetError_Max(1);
+          cout << endl;
+
+          cout << setw(20) << "RMS Error [RhoV]: " << setw(15) << GetError_RMS(2);
+          cout << setw(20) << "Max Error [RhoV]: " << setw(15) << GetError_Max(2);
+          cout << endl;
+
+          if (nDim == 3) {
+            cout << setw(20) << "RMS Error [RhoW]: " << setw(15) << GetError_RMS(3);
+            cout << setw(20) << "Max Error [RhoW]: " << setw(15) << GetError_Max(3);
+            cout << endl;
+          }
+
+          cout << setw(20) << "RMS Error [RhoE]: " << setw(15) << GetError_RMS(nDim+1);
+          cout << setw(20) << "Max Error [RhoE]: " << setw(15) << GetError_Max(nDim+1);
+          cout << endl;
+
+          cout << "-------------------------------------------------------------------------" << endl << endl;
+          cout.unsetf(ios_base::floatfield);
+
+        }
+      }
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,

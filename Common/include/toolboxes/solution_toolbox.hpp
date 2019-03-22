@@ -137,6 +137,13 @@ public:
                 manufactured solution.
    */
   virtual bool IsManufacturedSolution(void);
+
+  /*!
+   * \brief Whether or not the exact solution is known for this verification solution.
+   * \return  - True as default value. Overwrite this function if the exacti
+                solution is not known.
+   */
+  virtual bool ExactSolutionKnown(void);
   
   /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
@@ -413,6 +420,11 @@ public:
                    const su2double      val_t,
                    su2double            *val_solution);
   
+  /*!
+   * \brief Whether or not the exact solution is known for this verification solution.
+   * \return  - False, because the exact solution is not known for the TGV case.
+   */
+  bool ExactSolutionKnown(void);
 };
 
 /*!
