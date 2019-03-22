@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -55,9 +55,9 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 #include "../include/ad_structure.hpp"
+#include "../include/toolboxes/printing_toolbox.hpp"
 
-
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
   
   /*--- Store MPI rank and size ---*/ 
   
@@ -86,7 +86,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
+  if ((rank == MASTER_NODE) && verb_high && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
 }
@@ -448,7 +448,6 @@ void CConfig::SetPointersNull(void) {
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
   Periodic_Translate        = NULL;
-  Rotation_Matrix           = NULL;
 
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
@@ -747,8 +746,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("TGV", TaylorGreen, false);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
-  addBoolOption("AXISYMMETRIC", Axisymmetric, false);
-  
+  addBoolOption("AXISYMMETRIC", Axisymmetric, false); 
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
@@ -1710,7 +1708,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-
+  /*!\brief COMM_LEVEL
+   *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
+  addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
@@ -1883,6 +1883,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
   addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
+  /* DESCRIPTION: File of sensitivities as an unordered ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each volume grid point. */
+  addStringOption("DV_UNORDERED_SENS_FILENAME", DV_Unordered_Sens_Filename, string("unordered_sensitivity.dat"));
+  /* DESCRIPTION: File of sensitivities as an ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each surface grid point. */
+  addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("surface_sensitivity.dat"));
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  addEnumOption("DV_SENSITIVITY_FORMAT", Sensitivity_FileFormat, Sensitivity_Map, SU2_NATIVE);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -1899,8 +1905,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
   addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
-  /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Deform limit in m or inches */
@@ -1916,7 +1920,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-5);
+  addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
 
@@ -2065,9 +2069,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
-  /* DESCRIPTION: Transfer method used for multiphysics problems */
-  addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
-
   /* DESCRIPTION: Topology optimization options */
   addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
@@ -2108,10 +2109,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
   addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
-
-  /*  DESCRIPTION: Apply dead loads
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("MATCHING_MESH", MatchingMesh, false);
 
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
@@ -2446,6 +2443,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
+          if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
           if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
           if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
           if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
@@ -4311,7 +4309,29 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Different number of topology filter kernels and respective radii.", CURRENT_FUNCTION);
     }
   }
+  
+  /*--- If we are executing SU2_DOT in surface file mode, then
+   force the projected surface sensitivity file to be written. ---*/
+  
+  Wrt_Projected_Sensitivity = false;
+  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == SURFACE_FILE)) {
+    Wrt_Projected_Sensitivity = true;
+  }
 
+  /*--- Delay the output until exit for minimal communication mode. ---*/
+  
+  if (Comm_Level != COMM_FULL) {
+    Wrt_Sol_Freq          = nExtIter+1;
+    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    
+    /*--- Write only the restart. ---*/
+    
+    Wrt_Slice   = false;
+    Wrt_Vol_Sol = false;
+    Wrt_Srf_Sol = false;
+    Wrt_Csv_Sol = false;
+  }
+  
   /*--- Check the conductivity model. Deactivate the turbulent component
    if we are not running RANS. ---*/
   
@@ -4599,7 +4619,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Outlet_Density[iMarker_Outlet]  = 0.0;
     Outlet_Area[iMarker_Outlet]     = 0.0;
   }
-
+  
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEARFIELD_BOUNDARY;
@@ -4947,7 +4967,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -4975,7 +4995,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
+  cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
   cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
@@ -5569,6 +5589,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)   cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
+	if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
           
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
@@ -6018,11 +6039,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
-        cout << "Multigrid Level:                  ";
+        PrintingToolbox::CTablePrinter MGTable(&std::cout);
+        
+        MGTable.AddColumn("MG Level",         10);
+        MGTable.AddColumn("Presmooth",     10);
+        MGTable.AddColumn("PostSmooth",    10);
+        MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+        MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          cout.width(6); cout << iLevel;
+          MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
         }
-        cout << endl;
+        MGTable.PrintFooter();
       }
 
 			if (Unsteady_Simulation != TIME_STEPPING) {
@@ -6032,33 +6060,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << endl;
 			}
 			
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PreSmooth coefficients:        ";
-        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMGLevels+1; iMG_PreSmooth++) {
-          cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PostSmooth coefficients:       ";
-        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMGLevels+1; iMG_PostSmooth++) {
-          cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG CorrecSmooth coefficients:     ";
-        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMGLevels+1; iMG_CorrecSmooth++) {
-          cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
-        }
-        cout << endl;
-      }
 
     }
 
@@ -6291,293 +6292,298 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
 
-  if (nMarker_Euler != 0) {
-    cout << "Euler wall boundary marker(s): ";
+  PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
+  BoundaryTable.AddColumn("Marker Type", 20);
+  BoundaryTable.AddColumn("Marker Name", 20);
+  
+  BoundaryTable.PrintHeader();
+  
+  if (nMarker_Euler != 0) {   
+    BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-      cout << Marker_Euler[iMarker_Euler];
-      if (iMarker_Euler < nMarker_Euler-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Euler[iMarker_Euler];
+      if (iMarker_Euler < nMarker_Euler-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_FarField != 0) {
-    cout << "Far-field boundary marker(s): ";
+    BoundaryTable << "Far-field";
     for (iMarker_FarField = 0; iMarker_FarField < nMarker_FarField; iMarker_FarField++) {
-      cout << Marker_FarField[iMarker_FarField];
-      if (iMarker_FarField < nMarker_FarField-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_FarField[iMarker_FarField];
+      if (iMarker_FarField < nMarker_FarField-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_SymWall != 0) {
-    cout << "Symmetry plane boundary marker(s): ";
+    BoundaryTable << "Symmetry plane";
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
-      cout << Marker_SymWall[iMarker_SymWall];
-      if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_SymWall[iMarker_SymWall];
+      if (iMarker_SymWall < nMarker_SymWall-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_PerBound != 0) {
-    cout << "Periodic boundary marker(s): ";
+    BoundaryTable << "Periodic boundary";
     for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
-      cout << Marker_PerBound[iMarker_PerBound];
-      if (iMarker_PerBound < nMarker_PerBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_PerBound[iMarker_PerBound];
+      if (iMarker_PerBound < nMarker_PerBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
   if (nMarker_NearFieldBound != 0) {
-    cout << "Near-field boundary marker(s): ";
+    BoundaryTable << "Near-field boundary";
     for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
-      cout << Marker_NearFieldBound[iMarker_NearFieldBound];
-      if (iMarker_NearFieldBound < nMarker_NearFieldBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_NearFieldBound[iMarker_NearFieldBound];
+      if (iMarker_NearFieldBound < nMarker_NearFieldBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_InterfaceBound != 0) {
-    cout << "Interface boundary marker(s): ";
+    BoundaryTable << "Interface boundary";
     for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-      cout << Marker_InterfaceBound[iMarker_InterfaceBound];
-      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_InterfaceBound[iMarker_InterfaceBound];
+      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
   
   if (nMarker_Fluid_InterfaceBound != 0) {
-    cout << "Fluid interface boundary marker(s): ";
+    BoundaryTable << "Fluid interface boundary";
     for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
-      cout << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
-      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_Dirichlet != 0) {
-    cout << "Dirichlet boundary marker(s): ";
+    BoundaryTable << "Dirichlet boundary";
     for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
-      cout << Marker_Dirichlet[iMarker_Dirichlet];
-      if (iMarker_Dirichlet < nMarker_Dirichlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Dirichlet[iMarker_Dirichlet];
+      if (iMarker_Dirichlet < nMarker_Dirichlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_FlowLoad != 0) {
-    cout << "Flow Load boundary marker(s): ";
+    BoundaryTable << "Flow load boundary";
     for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-      cout << Marker_FlowLoad[iMarker_FlowLoad];
-      if (iMarker_FlowLoad < nMarker_FlowLoad-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
+      if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
   
   if (nMarker_Internal != 0) {
-    cout << "Internal boundary marker(s): ";
+    BoundaryTable << "Internal boundary";
     for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
-      cout << Marker_Internal[iMarker_Internal];
-      if (iMarker_Internal < nMarker_Internal-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Internal[iMarker_Internal];
+      if (iMarker_Internal < nMarker_Internal-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_Inlet != 0) {
-    cout << "Inlet boundary marker(s): ";
+    BoundaryTable << "Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-      cout << Marker_Inlet[iMarker_Inlet];
-      if (iMarker_Inlet < nMarker_Inlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      if (iMarker_Inlet < nMarker_Inlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Riemann != 0) {
-      cout << "Riemann boundary marker(s): ";
-      for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
-        cout << Marker_Riemann[iMarker_Riemann];
-        if (iMarker_Riemann < nMarker_Riemann-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "Riemann boundary";
+    for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
+      BoundaryTable << Marker_Riemann[iMarker_Riemann];
+      if (iMarker_Riemann < nMarker_Riemann-1)  BoundaryTable << " ";
     }
-  }
+    BoundaryTable.PrintFooter();
+  } 
   
   if (nMarker_Giles != 0) {
-      cout << "Giles boundary marker(s): ";
-      for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
-        cout << Marker_Giles[iMarker_Giles];
-        if (iMarker_Giles < nMarker_Giles-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "Giles boundary";
+    for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+      BoundaryTable << Marker_Giles[iMarker_Giles];
+      if (iMarker_Giles < nMarker_Giles-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_MixingPlaneInterface != 0) {
-      cout << "MixingPlane boundary marker(s): ";
-      for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
-        cout << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
-        if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "MixingPlane boundary";
+    for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
+      BoundaryTable << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
+      if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_EngineInflow != 0) {
-    cout << "Engine inflow boundary marker(s): ";
+    BoundaryTable << "Engine inflow boundary";
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
-      cout << Marker_EngineInflow[iMarker_EngineInflow];
-      if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_EngineInflow[iMarker_EngineInflow];
+      if (iMarker_EngineInflow < nMarker_EngineInflow-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_EngineExhaust != 0) {
-    cout << "Engine exhaust boundary marker(s): ";
+    BoundaryTable << "Engine exhaust boundary";
     for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
-      cout << Marker_EngineExhaust[iMarker_EngineExhaust];
-      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_EngineExhaust[iMarker_EngineExhaust];
+      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Supersonic_Inlet != 0) {
-    cout << "Supersonic inlet boundary marker(s): ";
+    BoundaryTable << "Supersonic inlet boundary";
     for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
-      cout << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
-      if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
+      if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1)  BoundaryTable << " ";
     }
-  }
+    BoundaryTable.PrintFooter();
+  } 
   
   if (nMarker_Supersonic_Outlet != 0) {
-    cout << "Supersonic outlet boundary marker(s): ";
+    BoundaryTable << "Supersonic outlet boundary";
     for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
-      cout << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
-      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Outlet != 0) {
-    cout << "Outlet boundary marker(s): ";
+    BoundaryTable << "Outlet boundary";
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      cout << Marker_Outlet[iMarker_Outlet];
-      if (iMarker_Outlet < nMarker_Outlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Outlet[iMarker_Outlet];
+      if (iMarker_Outlet < nMarker_Outlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Isothermal != 0) {
-    cout << "Isothermal wall boundary marker(s): ";
+    BoundaryTable << "Isothermal wall";
     for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++) {
-      cout << Marker_Isothermal[iMarker_Isothermal];
-      if (iMarker_Isothermal < nMarker_Isothermal-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Isothermal[iMarker_Isothermal];
+      if (iMarker_Isothermal < nMarker_Isothermal-1)  BoundaryTable << " ";
     }
-  }
-
-  if (nMarker_HeatFlux != 0) {
-    cout << "Constant heat flux wall boundary marker(s): ";
+    BoundaryTable.PrintFooter();
+  } 
+ 
+  if (nMarker_HeatFlux != 0) {  
+    BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
-      cout << Marker_HeatFlux[iMarker_HeatFlux];
-      if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_HeatFlux[iMarker_HeatFlux];
+      if (iMarker_HeatFlux < nMarker_HeatFlux-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Clamped != 0) {
-    cout << "Clamped boundary marker(s): ";
+  
+  if (nMarker_Clamped != 0) {  
+    BoundaryTable << "Clamped boundary";
     for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
-      cout << Marker_Clamped[iMarker_Clamped];
-      if (iMarker_Clamped < nMarker_Clamped-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Clamped[iMarker_Clamped];
+      if (iMarker_Clamped < nMarker_Clamped-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Displacement != 0) {
-    cout << "Displacement boundary marker(s): ";
+  if (nMarker_Displacement != 0) {  
+    BoundaryTable << "Displacement boundary";
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
-      cout << Marker_Displacement[iMarker_Displacement];
-      if (iMarker_Displacement < nMarker_Displacement-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Displacement[iMarker_Displacement];
+      if (iMarker_Displacement < nMarker_Displacement-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Load != 0) {
-    cout << "Normal load boundary marker(s): ";
+  if (nMarker_Load != 0) {  
+    BoundaryTable << "Normal load boundary";
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
-      cout << Marker_Load[iMarker_Load];
-      if (iMarker_Load < nMarker_Load-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Load[iMarker_Load];
+      if (iMarker_Load < nMarker_Load-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Damper != 0) {
-    cout << "Damper boundary marker(s): ";
+  
+  if (nMarker_Damper != 0) {  
+    BoundaryTable << "Damper boundary";
     for (iMarker_Damper = 0; iMarker_Damper < nMarker_Damper; iMarker_Damper++) {
-      cout << Marker_Damper[iMarker_Damper];
-      if (iMarker_Damper < nMarker_Damper-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Damper[iMarker_Damper];
+      if (iMarker_Damper < nMarker_Damper-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-
-  if (nMarker_Load_Dir != 0) {
-    cout << "Load boundary marker(s) in cartesian coordinates: ";
+  
+  if (nMarker_Load_Dir != 0) {  
+    BoundaryTable << "Load boundary";
     for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++) {
-      cout << Marker_Load_Dir[iMarker_Load_Dir];
-      if (iMarker_Load_Dir < nMarker_Load_Dir-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Load_Dir[iMarker_Load_Dir];
+      if (iMarker_Load_Dir < nMarker_Load_Dir-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Disp_Dir != 0) {
-    cout << "Disp boundary marker(s) in cartesian coordinates: ";
+  
+  if (nMarker_Disp_Dir != 0) {  
+    BoundaryTable << "Disp boundary";
     for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++) {
-      cout << Marker_Disp_Dir[iMarker_Disp_Dir];
-      if (iMarker_Disp_Dir < nMarker_Disp_Dir-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Disp_Dir[iMarker_Disp_Dir];
+      if (iMarker_Disp_Dir < nMarker_Disp_Dir-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Load_Sine != 0) {
-    cout << "Sine-Wave Load boundary marker(s): ";
+  
+  if (nMarker_Load_Sine != 0) {  
+    BoundaryTable << "Sine-Wave boundary";
     for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
-      cout << Marker_Load_Sine[iMarker_Load_Sine];
-      if (iMarker_Load_Sine < nMarker_Load_Sine-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
+      if (iMarker_Load_Sine < nMarker_Load_Sine-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Neumann != 0) {
-    cout << "Neumann boundary marker(s): ";
+  
+  if (nMarker_Neumann != 0) {  
+    BoundaryTable << "Neumann boundary";
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-      cout << Marker_Neumann[iMarker_Neumann];
-      if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Neumann[iMarker_Neumann];
+      if (iMarker_Neumann < nMarker_Neumann-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Custom != 0) {
-    cout << "Custom boundary marker(s): ";
+  
+  if (nMarker_Custom != 0) {  
+    BoundaryTable << "Custom boundary";
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
-      cout << Marker_Custom[iMarker_Custom];
-      if (iMarker_Custom < nMarker_Custom-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Custom[iMarker_Custom];
+      if (iMarker_Custom < nMarker_Custom-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_ActDiskInlet != 0) {
-    cout << "Actuator disk (inlet) boundary marker(s): ";
+  
+  if (nMarker_ActDiskInlet != 0) {  
+    BoundaryTable << "Actuator disk (inlet) boundary";
     for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-      cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
-      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_ActDiskOutlet != 0) {
-    cout << "Actuator disk (outlet) boundary marker(s): ";
+  
+  if (nMarker_ActDiskOutlet != 0) {  
+    BoundaryTable << "Actuator disk (outlet) boundary";
     for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
-      cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
-      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
 }
@@ -7108,6 +7114,10 @@ CConfig::~CConfig(void) {
   if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
   if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
 
+  if (Outlet_MassFlow != NULL)    delete[]  Outlet_MassFlow;
+  if (Outlet_Density != NULL)    delete[]  Outlet_Density;
+  if (Outlet_Area != NULL)    delete[]  Outlet_Area;
+
   if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
   if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
   if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
@@ -7125,9 +7135,6 @@ CConfig::~CConfig(void) {
   if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
   
-  if (Outlet_Area != NULL) delete[] Outlet_Area;
-  if (Outlet_Density != NULL) delete[] Outlet_Density;
-  if (Outlet_MassFlow != NULL) delete[] Outlet_MassFlow;  
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
   if (Surface_Mach != NULL)    delete[]  Surface_Mach;
   if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
@@ -7221,16 +7228,12 @@ CConfig::~CConfig(void) {
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
-  
-  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    if (Rotation_Matrix != NULL) delete [] Rotation_Matrix[iPeriodic];
-  }
-  if (Rotation_Matrix   != NULL) delete [] Rotation_Matrix;
-  
-  if (MG_CorrecSmooth != NULL)           delete[] MG_CorrecSmooth;
-  if (PlaneTag != NULL)                  delete[] PlaneTag;
-  if (CFL != NULL)                       delete[] CFL;
+
   if (Streamwise_Periodic_RefNode != NULL) delete[] Streamwise_Periodic_RefNode;
+
+  if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
+  if (PlaneTag != NULL)        delete[] PlaneTag;
+  if (CFL != NULL)             delete[] CFL;
 
   /*--- String markers ---*/
   
@@ -7893,52 +7896,6 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
     Periodic_Center[i]    = new su2double[3];
     Periodic_Rotation[i]  = new su2double[3];
     Periodic_Translate[i] = new su2double[3];
-  }
-  
-}
-
-void CConfig::AllocateRotationMatrix(void) {
-  
-  /*--- Initial allocate of memory for rotation matrix ---*/
-  
-  Rotation_Matrix = new su2double**[nPeriodic_Index];
-  for (unsigned short iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    Rotation_Matrix[iPeriodic] = new su2double*[3];
-    for (unsigned short iDim = 0; iDim < 3; iDim++)
-      Rotation_Matrix[iPeriodic][iDim] = new su2double[3];
-  }
-  
-}
-
-void CConfig::SetRotationMatrix(unsigned short val_index) {
-  
-  su2double tht, cosTht, sinTht, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
-  
-  /*--- Build and store the periodic rotations for fast access later ---*/
-  
-  for (unsigned short iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    
-    /*--- Store angles separately for clarity. ---*/
-    
-    tht = Periodic_Rotation[iPeriodic][0]; cosTht = cos(tht); sinTht = sin(tht);
-    phi = Periodic_Rotation[iPeriodic][1]; cosPhi = cos(phi); sinPhi = sin(phi);
-    psi = Periodic_Rotation[iPeriodic][2]; cosPsi = cos(psi); sinPsi = sin(psi);
-    
-    /*--- Compute the rotation matrix. Note that the implicit ordering is
-     rotation about the x-axis, y-axis, then z-axis. Note that this is the
-     transpose of the matrix used during the preprocessing stage. ---*/
-    
-    Rotation_Matrix[iPeriodic][0][0] = cosPhi*cosPsi;
-    Rotation_Matrix[iPeriodic][0][1] = cosPhi*sinPsi;
-    Rotation_Matrix[iPeriodic][0][2] = -sinPhi;
-    
-    Rotation_Matrix[iPeriodic][1][0] = sinTht*sinPhi*cosPsi - cosTht*sinPsi;
-    Rotation_Matrix[iPeriodic][1][1] = sinTht*sinPhi*sinPsi + cosTht*cosPsi;
-    Rotation_Matrix[iPeriodic][1][2] = sinTht*cosPhi;
-    
-    Rotation_Matrix[iPeriodic][2][0] = cosTht*sinPhi*cosPsi + sinTht*sinPsi;
-    Rotation_Matrix[iPeriodic][2][1] = cosTht*sinPhi*sinPsi - sinTht*cosPsi;
-    Rotation_Matrix[iPeriodic][2][2] = cosTht*cosPhi;
   }
   
 }
@@ -8854,8 +8811,8 @@ void CConfig::SetProfilingCSV(void) {
 
   /*--- Allocate and initialize memory ---*/
 
-  double *l_min_red, *l_max_red, *l_tot_red, *l_avg_red;
-  int *n_calls_red;
+  double *l_min_red = NULL, *l_max_red = NULL, *l_tot_red = NULL, *l_avg_red = NULL;
+  int *n_calls_red = NULL;
   double* l_min = new double[map_size];
   double* l_max = new double[map_size];
   double* l_tot = new double[map_size];

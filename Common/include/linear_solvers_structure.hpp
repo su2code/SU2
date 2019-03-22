@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -167,10 +167,11 @@ public:
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, su2double tol,
-                                  unsigned long m, su2double *residual, bool monitoring);
+                                  unsigned long m, su2double *residual, bool monitoring, CConfig *config);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -182,10 +183,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                       CPreconditioner & precond, su2double tol,
-                      unsigned long m, su2double *residual, bool monitoring);
+                      unsigned long m, su2double *residual, bool monitoring, CConfig *config);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -197,10 +199,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, su2double tol,
-                        unsigned long m, su2double *residual, bool monitoring);
+                        unsigned long m, su2double *residual, bool monitoring, CConfig *config);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method

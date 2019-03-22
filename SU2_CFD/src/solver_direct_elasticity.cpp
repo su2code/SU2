@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -458,11 +458,19 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- If dynamic, we also need to communicate the old solution ---*/
   
-  if(dynamic) Set_MPI_Solution_Old(geometry, config);
+  if(dynamic) {
+    //Set_MPI_Solution_Old(geometry, config);
+    
+    InitiateComms(geometry, config, SOLUTION_FEA_OLD);
+    CompleteComms(geometry, config, SOLUTION_FEA_OLD);
+  }
   
 }
 
@@ -1409,8 +1417,13 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
   
+  bool fsi = config->GetFSI_Simulation();
+  bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
+                                  (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
+  
   bool topology_mode = config->GetTopology_Optimization();  // Density-based topology optimization
-
+  
+  
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     LinSysAux.SetBlock_Zero(iPoint);
@@ -1533,6 +1546,11 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
         break;
     }
   }
+  
+  /*
+   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
+   */
+  if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
 
 }
 
@@ -2503,6 +2521,12 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
         
       }
       
+    } else {
+      
+      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
+      
+      for (iVar = 0; iVar < nPoint; iVar++) Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+      
     }
     
   }
@@ -2637,52 +2661,46 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
+        if (iNode != jPoint) {
+          Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
+        }
+        else{
+          Jacobian.SetBlock(iNode,jPoint,mId_Aux);
         }
       }
 
-      /*--- Delete the columns for a particular node ---*/
+    }
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
+    /*--- Always delete the iNode column, even for halos ---*/
 
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
 
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-            }
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
+
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
           }
+        }
 
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
-            }
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
           }
+        }
 
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-          }
-
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
         }
 
       }
@@ -2690,7 +2708,6 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
     }
 
   }
-
 
 }
 
@@ -2722,7 +2739,10 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
+      //Set_MPI_Solution(geometry, config);
+      
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
     }
     else {
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2749,8 +2769,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
+      //Set_MPI_Solution(geometry, config);
 
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -2827,8 +2850,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
+      //Set_MPI_Solution(geometry, config);
 
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
     } else {
 
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2856,8 +2882,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
+      //Set_MPI_Solution(geometry, config);
 
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -3353,6 +3382,194 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNum
 
 }
 
+void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim, iNode, nNode;
+  unsigned long iPoint, iElem, nElem;
+
+  unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
+                 iMarker, nMarker = config->GetnMarker_All();
+
+  /*--- Temporary storage to store the forces on the element faces ---*/
+  vector<su2double> forces;
+
+  /*--- Loop through the FSI interface pairs ---*/
+  /*--- 1st pass to compute forces ---*/
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      /*--- Define the boundary element ---*/
+      unsigned long nodes[4];
+      su2double coords[4][3];
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+      
+      for (iNode = 0; iNode < nNode; ++iNode) {
+        nodes[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; ++iDim)
+          coords[iNode][iDim] = geometry->node[nodes[iNode]]->GetCoord(iDim)+
+                                node[nodes[iNode]]->GetSolution(iDim);
+      }
+
+      /*--- Compute the area ---*/
+      su2double area = 0.0;
+
+      if (nDim == 2)
+        area = (coords[0][0]-coords[1][0])*(coords[0][0]-coords[1][0])+
+               (coords[0][1]-coords[1][1])*(coords[0][1]-coords[1][1]);
+
+      if (nDim == 3) {
+        su2double a[3], b[3], Ni, Nj, Nk;
+
+        if (!quad) { // sides of the triangle
+          for (iDim = 0; iDim < 3; iDim++) {
+            a[iDim] = coords[1][iDim]-coords[0][iDim];
+            b[iDim] = coords[2][iDim]-coords[0][iDim];
+          }
+        }
+        else { // diagonals of the quadrilateral
+          for (iDim = 0; iDim < 3; iDim++) {
+            a[iDim] = coords[2][iDim]-coords[0][iDim];
+            b[iDim] = coords[3][iDim]-coords[1][iDim];
+          }
+        }
+        /*--- Area = 0.5*||a x b|| ---*/
+        Ni = a[1]*b[2]-a[2]*b[1];
+        Nj =-a[0]*b[2]+a[2]*b[0];
+        Nk = a[0]*b[1]-a[1]*b[0];
+
+        area = 0.25*(Ni*Ni+Nj*Nj+Nk*Nk);
+      }
+      area = sqrt(area);
+
+      /*--- Integrate ---*/
+      passivedouble weight = 1.0/nNode;
+      su2double force[3] = {0.0, 0.0, 0.0};
+
+      for (iNode = 0; iNode < nNode; ++iNode)
+        for (iDim = 0; iDim < nDim; ++iDim)
+          force[iDim] += weight*area*node[nodes[iNode]]->Get_FlowTraction(iDim);
+
+      for (iDim = 0; iDim < nDim; ++iDim) forces.push_back(force[iDim]);
+    }
+  }
+
+  /*--- 2nd pass to set values. This is to account for overlap in the markers. ---*/
+  /*--- By putting the integrated values back into the nodes no changes have to be made elsewhere. ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint)
+    node[iPoint]->Clear_FlowTraction();
+  
+  vector<su2double>::iterator force_it = forces.begin();
+  
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+      passivedouble weight = 1.0/nNode;
+
+      su2double force[3];
+      for (iDim = 0; iDim < nDim; ++iDim) force[iDim] = *(force_it++)*weight;
+
+      for (iNode = 0; iNode < nNode; ++iNode) {
+        iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+        node[iPoint]->Add_FlowTraction(force);
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Perform a global reduction, every rank will get the nodal values of all halo elements ---*/
+  /*--- This should be cheaper than the "normal" way, since very few points are both halo and interface ---*/
+  vector<unsigned long> halo_point_loc, halo_point_glb;
+  vector<su2double> halo_force;
+
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+
+      /*--- If this is an halo element we share the nodal forces ---*/
+      for (iNode = 0; iNode < nNode; ++iNode)
+        if (!geometry->node[geometry->bound[iMarker][iElem]->GetNode(iNode)]->GetDomain())
+          break;
+
+      if (iNode < nNode) {
+        for (iNode = 0; iNode < nNode; ++iNode) {
+          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+          /*--- local is for when later we update the values in this rank ---*/
+          halo_point_loc.push_back(iPoint);
+          halo_point_glb.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          for (iDim = 0; iDim < nDim; ++iDim)
+            halo_force.push_back(node[iPoint]->Get_FlowTraction(iDim));
+        }
+      }
+    }
+  }
+  /*--- Determine the size of the arrays we need ---*/
+  unsigned long nHaloLoc = halo_point_loc.size();
+  unsigned long nHaloMax;
+  MPI_Allreduce(&nHaloLoc,&nHaloMax,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD);
+
+  /*--- Shared arrays, all the: number of halo points; halo point global indices; respective forces ---*/
+  unsigned long *halo_point_num = new unsigned long[size];
+  unsigned long *halo_point_all = new unsigned long[size*nHaloMax];
+  su2double *halo_force_all = new su2double[size*nHaloMax*nDim];
+  
+  /*--- If necessary put dummy values in halo_point_glb to get a valid pointer ---*/
+  if (halo_point_glb.empty()) halo_point_glb.resize(1);
+  /*--- Pad halo_force to avoid (observed) issues in the adjoint when nHaloLoc!=nHaloMax ---*/
+  while (halo_force.size() < nHaloMax*nDim) halo_force.push_back(0.0);
+  
+  MPI_Allgather(&nHaloLoc,1,MPI_UNSIGNED_LONG,halo_point_num,1,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+  MPI_Allgather(&halo_point_glb[0],nHaloLoc,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&halo_force[0],nHaloMax*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
+
+  /*--- Find shared points with other ranks and update our values ---*/
+  for (int proc = 0; proc < size; ++proc)
+  if (proc != rank) {
+    unsigned long offset = proc*nHaloMax;
+    for (iPoint = 0; iPoint < halo_point_num[proc]; ++iPoint) {
+      unsigned long iPoint_glb = halo_point_all[offset+iPoint];
+      ptrdiff_t pos = find(halo_point_glb.begin(),halo_point_glb.end(),iPoint_glb)-halo_point_glb.begin();
+      if (pos < long(halo_point_glb.size())) {
+        unsigned long iPoint_loc = halo_point_loc[pos];
+        node[iPoint_loc]->Add_FlowTraction(&halo_force_all[(offset+iPoint)*nDim]);
+      }
+    }
+  }
+
+  delete [] halo_point_num;
+  delete [] halo_point_all;
+  delete [] halo_force_all;
+#endif
+}
+
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config){
 
   su2double LoadCoeff = 1.0;
@@ -3670,8 +3887,10 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -3733,7 +3952,10 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
   /*--- Loop over n points (as we have already communicated everything ---*/
@@ -3932,7 +4154,10 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(geometry, config);
+  //Set_MPI_Solution_DispOnly(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_DISPONLY);
+  CompleteComms(geometry, config, SOLUTION_DISPONLY);
   
 }
 
@@ -4001,7 +4226,10 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -4289,7 +4517,10 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+  //Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+  
+  InitiateComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
+  CompleteComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
   
 }
 
@@ -4852,11 +5083,27 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
 
-  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+  //solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  
+  solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
+  solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  
+  if (dynamic) {
+    //solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+    
+    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+  }
   if (fluid_structure && !dynamic){
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry[MESH_0], config);
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry[MESH_0], config);
+      //solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry[MESH_0], config);
+    
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
+    
+      //solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry[MESH_0], config);
+    
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
   }
 
   delete [] Sol;

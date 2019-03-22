@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -62,7 +62,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
-  unsigned short iMarker, KindBC, iPeriodic;
+  unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -179,15 +179,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-
-  /*--- Complete residuals for periodic boundary conditions. We loop over
-   the periodic BCs in matching pairs so that, in the event that there are
-   adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
-
-  for (iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iPeriodic);
-  }
   
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
@@ -216,7 +207,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         }
         break;
-    } 
+    }
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. ---*/
+  
+  if (config->GetnMarker_Periodic() > 0) {
+    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  }
+  
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
@@ -449,7 +450,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+    //solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+
+    solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
+    solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 

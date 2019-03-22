@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -518,13 +518,9 @@ inline su2double *CSolver::GetDonorPrimVar(unsigned short val_marker, unsigned l
 
 inline void CSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
 
-inline void CSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { }
-
 inline void CSolver::SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
 
 inline su2double CSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return 0; }
-
-inline su2double CSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return 0; }
 
 inline su2double *CSolver::GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -736,28 +732,7 @@ inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver
                                            CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_GG(CGeometry *geometry,
-                                     CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_LS(CGeometry *geometry,
-                                    CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_Limiter1(CGeometry *geometry,
-                                    CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_Limiter2(CGeometry *geometry,
-                                    CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_Eigenvalue(CGeometry *geometry,
-                                          CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_Laplacian(CGeometry *geometry,
-                                            CConfig *config, unsigned short val_periodic_index) { }
-
-inline void CSolver::BC_Periodic_Sensor(CGeometry *geometry,
-                                           CConfig *config, unsigned short val_periodic_index) { }
+                                 CNumerics *numerics, CConfig *config) { }
 
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                       CConfig *config, unsigned short val_marker) { }
@@ -1248,11 +1223,7 @@ inline su2double *CEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsig
 
 inline void CEulerSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorPrimVar[val_marker][val_vertex][val_var] = val_value; }
 
-inline void CEulerSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j] = val_value; }
-
 inline su2double CEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorPrimVar[val_marker][val_vertex][val_var]; }
-
-inline su2double CEulerSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j]; }
 
 inline unsigned long CEulerSolver::GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
 
@@ -2041,20 +2012,6 @@ inline void CIncEulerSolver::SetCPressureTarget(unsigned short val_marker, unsig
 
 inline su2double *CIncEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
 
-inline su2double *CIncEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) { return DonorPrimVar[val_marker][val_vertex]; }
-
-inline void CIncEulerSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorPrimVar[val_marker][val_vertex][val_var] = val_value; }
-
-inline void CIncEulerSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j] = val_value; }
-
-inline su2double CIncEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorPrimVar[val_marker][val_vertex][val_var]; }
-
-inline su2double CIncEulerSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j]; }
-
-inline unsigned long CIncEulerSolver::GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
-
-inline void CIncEulerSolver::SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
-
 inline su2double CIncEulerSolver::GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ttotal[val_marker][val_vertex]; }
 
 inline su2double CIncEulerSolver::GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ptotal[val_marker][val_vertex]; }
@@ -2426,23 +2383,46 @@ inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned lo
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }
 
+inline void CIncEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
+  SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+}
+
 inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
 
 inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
+
+inline su2double CIncEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return 0; }
 
 inline int CEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
 
+inline int CIncEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
+
 inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return 0; }
 
 inline void CEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
+
+inline void CIncEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
 
 inline void CSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){}
 
 inline void CSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){}
 
 inline void CEulerSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){	
+  int iVar;
+
+  for( iVar = 0; iVar < nPrimVar+1; iVar++){
+    if( SlidingState[val_marker][val_vertex][iVar] != NULL )
+      delete [] SlidingState[val_marker][val_vertex][iVar];
+  }
+
+  for( iVar = 0; iVar < nPrimVar+1; iVar++)
+    SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+}
+
+
+inline void CIncEulerSolver::SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex){
   int iVar;
 
   for( iVar = 0; iVar < nPrimVar+1; iVar++){
@@ -2492,20 +2472,6 @@ inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned lo
   else
     Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
 }
-
-inline su2double *CTurbSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) { return DonorPrimVar[val_marker][val_vertex]; }
-
-inline void CTurbSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorPrimVar[val_marker][val_vertex][val_var] = val_value; }
-
-inline void CTurbSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j] = val_value; }
-
-inline su2double CTurbSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorPrimVar[val_marker][val_vertex][val_var]; }
-
-inline su2double CTurbSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j]; }
-
-inline unsigned long CTurbSolver::GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
-
-inline void CTurbSolver::SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

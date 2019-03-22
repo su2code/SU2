@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -144,7 +144,7 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  TaylorGreen, 
+  TaylorGreen,
   Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
   su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
@@ -390,7 +390,6 @@ private:
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
   su2double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
   su2double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
-  su2double ***Rotation_Matrix;      /*!< \brief Rotation matrix for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
@@ -435,6 +434,9 @@ private:
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
+  string DV_Unordered_Sens_Filename;      /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
+  string DV_Sens_Filename;      /*!< \brief Filename of surface sensitivities written to an unordered ASCII format. */
+  unsigned short Sensitivity_FileFormat; /*!< \brief Format of the input volume sensitivity files (SU2_DOT). */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -520,8 +522,7 @@ private:
   Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -766,6 +767,7 @@ private:
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
+  Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
@@ -958,7 +960,6 @@ private:
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
   su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
@@ -1084,8 +1085,8 @@ private:
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
-  bool Compute_Average; /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
-  
+  bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -1407,7 +1408,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -3278,6 +3279,18 @@ public:
   bool GetWrt_Slice(void);
 
   /*!
+   * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
+   * \return <code>TRUE</code> means that projected sensitivities on surfaces in an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex will be written.
+   */
+  bool GetWrt_Projected_Sensitivity(void);
+  
+  /*!
+   * \brief Get information about the format for the input volume sensitvities.
+   * \return Format of the input volume sensitivities.
+   */
+  unsigned short GetSensitivity_Format(void);
+  
+  /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
    */
@@ -4148,12 +4161,6 @@ public:
    * \brief Get factor to multiply smallest volume for deform tolerance.
    * \return Factor to multiply smallest volume for deform tolerance.
    */
-  su2double GetDeform_Tol_Factor(void);
-  
-  /*!
-   * \brief Get factor to multiply smallest volume for deform tolerance.
-   * \return Factor to multiply smallest volume for deform tolerance.
-   */
   su2double GetDeform_Coeff(void);
   
   /*!
@@ -4401,14 +4408,6 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_SpaceIteScheme_FEA(void);
-  
-  /*!
-   * \brief Get the kind of transfer method we want to use for multiphysics problems
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of transfer method for multiphysics problems
-   */
-  unsigned short GetKind_TransferMethod(void);
   
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
@@ -6132,7 +6131,7 @@ public:
    * \return Kind of convergence criteria.
    */
   unsigned short GetConvCriteria(void);
-
+  
   /*!
    * \brief Get the index in the config information of the marker <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
@@ -6490,7 +6489,7 @@ public:
   su2double *GetPeriodicRotAngles(string val_marker);
   
   /*!
-   * \brief Translation vector for a translational periodic boundary.
+   * \brief Translation vector for a translational (TK:: rotational in Toms code) periodic boundary.
    */
   su2double *GetPeriodicTranslation(string val_marker);
   
@@ -6646,26 +6645,7 @@ public:
    * \param[in] translate - Pointer to a vector containing the coordinate of the center.
    */
   void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-  
-  /*!
-   * \brief Set the rotation matrix for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   */
-  void AllocateRotationMatrix(void);
-  
-  /*!
-   * \brief Set the rotation matrix for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   */
-  void SetRotationMatrix(unsigned short val_index);
-  
-  /*!
-   * \brief Get the rotation matrix for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A double pointer to the rotation matrix.
-   */
-  su2double** GetRotationMatrix(unsigned short val_index);
-  
+
   /*!
    * \brief Get the translation vector for a periodic transformation.
    * \param[in] val_index - Index corresponding to the periodic transformation.
@@ -7584,20 +7564,6 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetPeriodic_MassFlow(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  void SetPeriodic_MassFlow(unsigned short val_imarker, su2double val_massflow);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
   su2double GetOutlet_Density(string val_marker);
   
   /*!
@@ -7620,7 +7586,7 @@ public:
    * \return The outlet pressure.
    */
   void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
-
+  
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -8193,6 +8159,18 @@ public:
   string GetDV_Filename(void);
   
   /*!
+   * \brief Get name of the unordered ASCII volume sensitivity file.
+   * \return File name of the unordered ASCII volume sensitivity file.
+   */
+  string GetDV_Unordered_Sens_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII surface sensitivity file.
+   * \return File name of the unordered ASCII surface sensitivity file.
+   */
+  string GetDV_Sens_Filename(void);
+  
+  /*!
    * \brief Set the config options.
    */
   void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
@@ -8681,13 +8659,6 @@ public:
    */
   
   bool GetPseudoStatic(void);
-  
-  /*!
-    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
-    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
-    */
-  
-  bool GetMatchingMesh(void);
   
   /*!
    * \brief Identifies if we want to restart from a steady or an unsteady solution.
@@ -9261,6 +9232,12 @@ public:
   su2double GetMax_Time(void);
 
   /*!
+   * \brief Get the level of MPI communications to be performed.
+   * \return Level of MPI communications.
+   */
+  unsigned short GetComm_Level(void);
+  
+  /*
    * \brief Check if the mesh read supports multiple zones.
    * \return YES if multiple zones can be contained in the mesh file.
    */
@@ -9289,6 +9266,7 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+
 };
 
 #include "config_structure.inl"

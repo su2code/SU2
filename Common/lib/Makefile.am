@@ -3,13 +3,13 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
 # with selected contributions from the open-source community.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -121,7 +121,8 @@ lib_sources = \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
-  ../src/wall_model.cpp
+  ../src/wall_model.cpp \
+  ../src/toolboxes/printing_toolbox.cpp 
 
 lib_cxxflags = -fPIC
 lib_ldadd =
