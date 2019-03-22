@@ -259,20 +259,19 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     sizeWorkArray = max(sizeWorkArray, sizePredictorADER);
   }
-
-  /* TDE: in the future, we can call the exact solution constructor first
-   so that we can override any fluid reference values or non-dim. choices.
-   We could also put the instantiation directly inside the SetNondim()
-   routine since they are somehow related. I am open here to ideas of course.
-   Note also that we can do the error checking inside the constructor for
-   the exact sols so that we make sure users have set all the parameters
-   and BCs correctly. */
-  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
   SetNondimensionalization(config, iMesh, true);
 
+  /*--- Check if we are executing a verification case. If so, the
+   VerificationSolution object will be instantiated for a particular
+   option from the available library of verification solutions. Note
+   that this is done after SetNondim(), as problem-specific initial
+   parameters are needed by the solution constructors. ---*/
+  
+  SetVerificationSolution(nDim, nVar, config);
+  
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
@@ -3149,7 +3148,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if( VerificationSolution ) {
+  if ((VerificationSolution)  && (ExtIter == 0)) {
 
     /* Loop over the owned elements. */
     for(unsigned long i=0; i<nVolElemOwned; ++i) {

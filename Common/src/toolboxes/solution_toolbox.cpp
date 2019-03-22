@@ -72,9 +72,7 @@ void CVerificationSolution::GetInitialCondition(const unsigned short val_nParams
                                                 su2double            *val_solution) {
   
   /*--- Initial conditions call the GetSolution() method at t = 0. ---*/
-  
   GetSolution(val_nParams, val_params, val_coords, 0.0, val_solution);
-  
 }
 
 void CVerificationSolution::GetBCState(const unsigned short val_nParams,
@@ -477,8 +475,8 @@ void CNSUnitQuadSolution::GetSolution(const unsigned short val_nParams,
   const su2double cosFlowAngle = cos(flowAngle);
   const su2double sinFlowAngle = sin(flowAngle);
 
-  const double xTilde = val_coords[0]*cosFlowAngle - val_coords[1]*sinFlowAngle;
-  const double yTilde = val_coords[0]*sinFlowAngle + val_coords[1]*cosFlowAngle;
+  const su2double xTilde = val_coords[0]*cosFlowAngle - val_coords[1]*sinFlowAngle;
+  const su2double yTilde = val_coords[0]*sinFlowAngle + val_coords[1]*cosFlowAngle;
 
   /*--- Compute the exact solution for this case. Note that it works
         both in 2D and 3D. ---*/
@@ -486,7 +484,7 @@ void CNSUnitQuadSolution::GetSolution(const unsigned short val_nParams,
   val_solution[1]      =  cosFlowAngle*yTilde*yTilde;
   val_solution[2]      = -sinFlowAngle*yTilde*yTilde;
   val_solution[3]      =  0.0;
-  val_solution[nVar-1] =  (2.0*Viscosity*xTilde + 10)/Gm1
+  val_solution[nVar-1] =  (2.0*Viscosity*xTilde + 10.0)/Gm1
                        +  0.5*yTilde*yTilde*yTilde*yTilde;
 }
 
@@ -967,8 +965,9 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
   }
   
   /*--- Coefficients, needed to determine the solution. ---*/
-  Viscosity  = config->GetViscosity_FreeStreamND();
-  Density    = config->GetDensity_FreeStreamND();
+  Viscosity   = config->GetViscosity_FreeStreamND();
+  Density     = config->GetDensity_FreeStreamND();
+  Temperature = config->GetTemperature_FreeStreamND();
   
   /*--- Constants, which describe this manufactured solution. This is a
    viscous solution where the primitive variables vary as a combination
@@ -1037,10 +1036,12 @@ void CMMSIncNSSolution::GetSolution(const unsigned short val_nParams,
   /* For the incompressible solver, we return the primitive variables
    directly, as they are used for the working variables in the solver.
    Note that the implementation below is valid for both 2D and 3D. */
-  val_solution[0] = p;
-  val_solution[1] = u;
-  val_solution[2] = v;
-  if (nDim == 3) val_solution[3] = 0.0;
+  val_solution[0]      = p;
+  val_solution[1]      = u;
+  val_solution[2]      = v;
+  val_solution[3]      = 0.0;
+  val_solution[nVar-1] = Temperature;
+
 }
 
 void CMMSIncNSSolution::GetMMSSourceTerm(const unsigned short val_nParams,
@@ -1061,10 +1062,14 @@ void CMMSIncNSSolution::GetMMSSourceTerm(const unsigned short val_nParams,
    the paper by Salari & Knupp. Note that the leading 1.0/rho
    term does not appear here, because our formulation allows
    for variable density (source should be multiplied by density). ---*/
-  val_source[0] = 2.0*u_0*x*cxy - 2.0*v_0*y*sxy;
-  val_source[1] = 2.0*((P_0*x + Density*u_0*(2.0*epsilon*u_0*x - 2.0*Viscosity + epsilon*v_0))*cxy + Density*u_0*(v_0*y*cos(2.0*(x*x + y*y)) + (2.0*x*x*Viscosity - epsilon*v_0*y + 2.0*Viscosity*y*y + 2.0*u_0*x*cxy)*sxy));
-  val_source[2] = 2.0*((epsilon*Density*u_0*v_0*x + 2.0*Density*v_0*x*x*Viscosity + P_0*y + 2.0*Density*v_0*Viscosity*y*y)*cxy - Density*v_0*(-1.0*u_0*x*cos(2.0*(x*x + y*y)) + (epsilon*u_0*x - 2.0*Viscosity + 2.0*epsilon*v_0*y + 2.0*v_0*y*cxy)*sxy));
-  if (nDim == 3) val_source[3] = 0.0;
+  val_source[0]      = 2.0*u_0*x*cxy - 2.0*v_0*y*sxy;
+  val_source[1]      = 2.0*((P_0*x + Density*u_0*(2.0*epsilon*u_0*x - 2.0*Viscosity + epsilon*v_0))*cxy + Density*u_0*(v_0*y*cos(2.0*(x*x + y*y)) + (2.0*x*x*Viscosity - epsilon*v_0*y + 2.0*Viscosity*y*y + 2.0*u_0*x*cxy)*sxy));
+  
+  val_source[2]      = 2.0*((epsilon*Density*u_0*v_0*x + 2.0*Density*v_0*x*x*Viscosity + P_0*y + 2.0*Density*v_0*Viscosity*y*y)*cxy + (-1.0*Density) *v_0*(-1.0*u_0*x*cos(2.0*(x*x + y*y)) + (epsilon*u_0*x - 2.0*Viscosity + 2.0*epsilon*v_0*y + 2.0*v_0*y*cxy)*sxy));
+  
+  val_source[3]      = 0.0;
+  val_source[nVar-1] = 0.0;
+
 }
 
 bool CMMSIncNSSolution::IsManufacturedSolution(void) {
