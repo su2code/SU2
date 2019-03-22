@@ -9529,18 +9529,21 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
   /*--- Initialize the structures to solve the system ---*/
 
-  CMatrixVectorProduct* mat_vec = NULL;
+  CMatrixVectorProduct* mat_vec = NULL, *mat_vec_b;
+  CPreconditioner* precond = NULL, *precond_b = NULL;
+  
   CSysSolve *system  = new CSysSolve();
 
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()){
 #ifdef CODI_REVERSE_TYPE
-
-    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
-
+    
     TapeActive = AD::globalTape.isActive();
+    
+    AD::StartExtFunc(false, false);
 
+    AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
 
     /*--- Stop the recording for the linear solver ---*/
 
@@ -9569,27 +9572,32 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
     mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond = NULL;
+    mat_vec_b = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
 
     switch (config->GetKind_Deform_Linear_Solver_Prec()) {
     case JACOBI:
       StiffMatrix.BuildJacobiPreconditioner();
       precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+      precond_b = new CJacobiPreconditioner(StiffMatrix, geometry, config);
       break;
     case ILU:
       StiffMatrix.BuildILUPreconditioner();
       precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+      precond_b = new CILUPreconditioner(StiffMatrix, geometry, config);      
       break;
     case LU_SGS:
       precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+      precond_b = new CILUPreconditioner(StiffMatrix, geometry, config);      
       break;
     case LINELET:
       StiffMatrix.BuildJacobiPreconditioner();
       precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
+      precond_b = new CILUPreconditioner(StiffMatrix, geometry, config);              
       break;
     default:
       StiffMatrix.BuildJacobiPreconditioner();
       precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+      precond_b = new CJacobiPreconditioner(StiffMatrix, geometry, config);              
       break;
     }
 
@@ -9626,10 +9634,35 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
     /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();
-
-    /*--- Prepare the externally differentiated linear solver ---*/
-
-    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+    
+    AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+    
+#ifdef CODI_REVERSE_TYPE
+    AD::FuncHelper->addUserData(&LinSysRes);
+    AD::FuncHelper->addUserData(&LinSysSol);
+    AD::FuncHelper->addUserData(mat_vec_b);
+    AD::FuncHelper->addUserData(precond_b);
+    AD::FuncHelper->addUserData(SolverTol);
+    AD::FuncHelper->addUserData(MaxIter);
+    AD::FuncHelper->addUserData(config->GetKind_Deform_Linear_Solver());
+    AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
+#endif
+    
+    AD::EndExtFunc();
+    
+    /*--- Build preconditioner for the transposed Jacobian ---*/
+  
+    switch(config->GetKind_Deform_Linear_Solver_Prec()) {
+      case ILU:
+        StiffMatrix.BuildILUPreconditioner(true);
+        break;
+      case JACOBI:
+        StiffMatrix.BuildJacobiPreconditioner(true);
+        break;
+      default:
+        SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+        break;
+    }
 
   }
 

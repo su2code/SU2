@@ -60,14 +60,14 @@ class CMediMPIWrapper;
 typedef CMediMPIWrapper SU2_MPI;
 
 #if defined CODI_REVERSE_TYPE
-#include <medi/codiMediPackTypes.hpp>
+#include <codi/externals/codiMediPackTypes.hpp>
 #if CODI_PRIMAL_INDEX_TAPE
 typedef CoDiPackToolPrimalRestore<su2double> MediTool;
 #else
 typedef CoDiPackTool<su2double> MediTool;
 #endif // defined CODI_REVERSE_TYPE
 #elif defined CODI_FORWARD_TYPE
-#include <medi/codiForwardMediPackTypes.hpp>
+#include <codi/externals/codiForwardMediPackTypes.hpp>
 typedef CoDiPackForwardTool<su2double> MediTool;
 #endif // defined CODI_FORWARD_TYPE
 #define AMPI_ADOUBLE ((medi::MpiTypeInterface*)MediTool::MPI_TYPE)
