@@ -140,17 +140,17 @@ public:
   
   /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
-   * \param[in] val_coords   - Cartesian coordinates of the current position.
-   * \param[in] val_solution - Array where the exact solution is stored.
-   * \param[in] val_error    - Array where the local error is stored.
+   * \param[in]  val_nParams  - Number of additional input parameters.
+   * \param[in]  val_params   - Array of additional input parameters.
+   * \param[in]  val_coords   - Cartesian coordinates of the current position.
+   * \param[in]  val_solution - Array where the exact solution is stored.
+   * \param[out] val_error    - Array where the local error is stored.
    */
   void GetLocalError(const unsigned short val_nParams,
                      const su2double      *val_params,
                      const su2double      *val_coords,
                      const su2double      val_t,
-                     su2double            *val_source,
+                     const su2double      *GetLocalErrorval_solution,
                      su2double            *val_error);
 };
 

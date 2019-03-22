@@ -104,19 +104,19 @@ void CVerificationSolution::GetLocalError(const unsigned short val_nParams,
                                           const su2double      *val_params,
                                           const su2double      *val_coords,
                                           const su2double      val_t,
-                                          su2double            *val_solution,
+                                          const su2double      *val_solution,
                                           su2double            *val_error) {
   
-  /*--- Get the value of the verification solution first. ---*/
+  /*--- Get the value of the verification solution first.
+        Use val_error to store this solution. ---*/
   
-  vector<su2double> verificationSol(nVar);
-  GetSolution(val_nParams, val_params, val_coords, val_t, verificationSol.data());
+  GetSolution(val_nParams, val_params, val_coords, val_t, val_error);
   
   /*--- Compute the local error as the difference between the current
    numerical solution and the verification solution. ---*/
   
   for (unsigned short iVar=0; iVar<nVar; ++iVar)
-    val_error[iVar] = val_solution[iVar] - verificationSol[iVar];
+    val_error[iVar] = val_solution[iVar] - val_error[iVar];
   
 }
 
