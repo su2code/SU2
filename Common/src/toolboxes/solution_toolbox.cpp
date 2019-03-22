@@ -98,6 +98,8 @@ void CVerificationSolution::GetMMSSourceTerm(const unsigned short val_nParams,
 
 bool CVerificationSolution::IsManufacturedSolution(void) {return false;}
 
+bool CVerificationSolution::ExactSolutionKnown(void) {return true;}
+
 void CVerificationSolution::GetLocalError(const unsigned short val_nParams,
                                           const su2double      *val_params,
                                           const su2double      *val_coords,
@@ -590,6 +592,8 @@ void CTGVSolution::GetSolution(const unsigned short val_nParams,
   val_solution[3]      = 0.0;
   val_solution[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
 }
+
+bool CTGVSolution::ExactSolutionKnown(void) {return false;}
 
 CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(void) : CVerificationSolution() { }
 

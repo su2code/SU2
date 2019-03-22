@@ -14226,6 +14226,20 @@ public:
                               unsigned short iRKStep);
 
   /*!
+   * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetResidual_RMS_FEM(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the global error measures (L2, Linf) for verification cases.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Update the solution for the ADER-DG scheme for the given range
             of elements.
    * \param[in] elemBeg - Begin index of the element range to be computed.
