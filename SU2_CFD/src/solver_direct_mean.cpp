@@ -11998,11 +11998,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						su2double y_max, y_min, z_max, z_min, y, z, A;
 						
 						// Read in the density & Initialize the velocity
-						//Density  = config->GetInlet_Ttotal(Marker_Tag);
-            Density  = 1.224978; //Hardcoded density value for air at 288.15 K
+						Density  = config->GetInlet_Ttotal(Marker_Tag);
+            //Density  = 1.224978; //Hardcoded density value for air at 288.15 K Used for multiple jet thickness
 						A = config->GetInlet_Ptotal(Marker_Tag); // Amplitude that can be controlled from the config file
 						Vel_Mag = 0;
           
+            /*--
             // Use the data input in the density field to determine the thickness of the jet. The jets start closer to the surface and grow from there
             // 1000 is all 1 segments
             // 2000 is all 2 segments
@@ -12036,6 +12037,14 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                 z_max = 3.6140591;
                 z_min = 3.6084606;
               }
+              --*/
+              
+              if (Marker_Tag == "jet_top"){
+              // Full Scale - Thin jet sheet
+              y_max = 0.9862114;
+              y_min = -0.9862114;
+              z_max = 3.618156;
+              z_min = 3.6155;
               
               // Full scale
               //y_max = 0.97917194;
@@ -12059,6 +12068,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
+          /*--
 						else if (Marker_Tag == "jet_bottom_1" || Marker_Tag == "jet_bottom_2" || Marker_Tag == "jet_bottom_3" || Marker_Tag == "jet_bottom_4") {
               if (jetsegment < 1500) {
                 y_max = 0.97917194;
@@ -12084,7 +12094,15 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                 z_max = 0.012039528;
                 z_min = 0.0064411126;
               }
-              
+            --*/
+          
+              else if (Marker_Tag == "jet_bottom"){
+              // Full Scale - Thin jet sheet
+              y_max = 0.9862114;
+              y_min = -0.9862114;
+              z_max = 0.005;
+              z_min = 0.002344;
+                
               // Full scale
               //y_max = 0.97917194;
               //y_min = -0.97917206;
@@ -12107,6 +12125,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
+          
+          /*--
 						else if (Marker_Tag == "jet_starboard_1" || Marker_Tag == "jet_starboard_2" || Marker_Tag == "jet_starboard_3" || Marker_Tag == "jet_starboard_4") {
               if (jetsegment < 1500) {
                 y_max = 1.2892694;
@@ -12132,6 +12152,15 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                 z_max = 3.2996721;
                 z_min = 0.32082811;
               }
+           --*/
+          
+              else if (Marker_Tag == "jet_starboard"){
+              // Full Scale - Thin jet sheet
+              y_max = 1.297656;
+              y_min = 1.295;
+              z_max = 3.3067114;
+              z_min = 0.3137886;
+          
               // Full scale
               //y_max = 1.3;
               //y_min = 1.2879605;
@@ -12154,6 +12183,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440, -0.2913746290723793 , -0.0082599222660065 , 0.9999361038208008, y);
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
+          /*--
 						else if (Marker_Tag == "jet_port_1" || Marker_Tag == "jet_port_2" || Marker_Tag == "jet_port_3" || Marker_Tag == "jet_port_4") {
               if (jetsegment < 1500) {
                 y_max = -1.2879606;
@@ -12179,6 +12209,14 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                 z_max = 3.2996721;
                 z_min = 0.32082811;
               }
+           --*/
+              else if (Marker_Tag == "jet_port"){
+              // Full Scale - Thin jet sheet
+              y_max = -1.295;
+              y_min = -1.297656;
+              z_max = 3.3067114;
+              z_min = 0.3137886;
+              
               // Full scale
               //y_max = -1.2879606;
               //y_min = -1.3;
