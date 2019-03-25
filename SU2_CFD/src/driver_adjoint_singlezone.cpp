@@ -239,7 +239,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
-  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+  /*---Enable recording and register input of the iteration --- */
 
   if (kind_recording != NONE){
 
