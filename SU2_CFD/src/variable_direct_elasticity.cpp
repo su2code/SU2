@@ -46,7 +46,6 @@ CFEAVariable::CFEAVariable(void) : CVariable() {
   
   Stress           = NULL;    // Nodal stress (for output purposes)
   FlowTraction       = NULL;    // Nodal traction due to the fluid (fsi)
-  //  Residual_Int       = NULL;    // Internal component of the residual
   Residual_Ext_Surf     = NULL;    // Residual component due to external surface forces
   Residual_Ext_Body     = NULL;    // Residual component due to body forces
   
@@ -124,15 +123,19 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   FlowTraction_n = NULL;
   Solution_BGS_k = NULL;
   if (fsi_analysis) {
-    FlowTraction       =  new su2double [nVar];
     Solution_Pred       =  new su2double [nVar];
-    Solution_Pred_Old     =  new su2double [nVar];
-    Solution_BGS_k       = new su2double [nVar];
+    Solution_Pred_Old   =  new su2double [nVar];
+    Solution_BGS_k      =  new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      FlowTraction[iVar] = 0.0;
       Solution_Pred[iVar] = val_fea[iVar];
       Solution_Pred_Old[iVar] = val_fea[iVar];
       Solution_BGS_k[iVar] = 0.0;
+    }
+  }
+  if (fsi_analysis && isVertex){
+    FlowTraction       =  new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      FlowTraction[iVar] = 0.0;
     }
   }
   
@@ -150,22 +153,31 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   
   /*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
-  FlowTraction_n = NULL;
-  if (gen_alpha) {
+  FlowTraction_n      = NULL;
+  if (gen_alpha && isVertex) {
     Residual_Ext_Surf_n    = new su2double [nVar];
-    
     if (fsi_analysis) FlowTraction_n = new su2double [nVar];
-    
   }
   
-  //  if (nonlinear_analysis) Residual_Int = new su2double [nVar];  else Residual_Int = NULL;
+  /*--- Body residual ---*/
   Residual_Ext_Body = NULL;
-  if (body_forces) Residual_Ext_Body = new su2double [nVar];
-  
-  Residual_Ext_Surf = new su2double [nVar];
+  if (body_forces) {Residual_Ext_Body = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Residual_Ext_Body[iVar] = 0.0;
+    }
+  }
+
+  /*--- Surface residual ---*/
+  Residual_Ext_Surf = NULL;
+  if (isVertex){
+    Residual_Ext_Surf = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Residual_Ext_Surf[iVar] = 0.0;
+    }
+  }
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    Residual_Ext_Surf[iVar] = 0.0;
+    if (isVertex)Residual_Ext_Surf[iVar] = 0.0;
     if (body_forces) Residual_Ext_Body[iVar] = 0.0;
   }
   
@@ -182,7 +194,6 @@ CFEAVariable::~CFEAVariable(void) {
   
   if (Stress           != NULL) delete [] Stress;
   if (FlowTraction       != NULL) delete [] FlowTraction;
-  //  if (Residual_Int       != NULL) delete [] Residual_Int;
   if (Residual_Ext_Surf     != NULL) delete [] Residual_Ext_Surf;
   if (Residual_Ext_Body     != NULL) delete [] Residual_Ext_Body;
   
