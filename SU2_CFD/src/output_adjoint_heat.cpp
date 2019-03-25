@@ -66,7 +66,7 @@ CDiscAdjHeatOutput::CDiscAdjHeatOutput(CConfig *config, CGeometry *geometry, uns
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");    
+    RequestedVolumeFields.push_back("SOLUTION");
     RequestedVolumeFields.push_back("SENSITIVITIES");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
@@ -150,13 +150,13 @@ void CDiscAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
   /// DESCRIPTION: Adjoint Pressure.
-  AddVolumeOutput("ADJ_TEMPERATURE",    "Adjoint_Pressure",    "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_TEMPERATURE",    "Adjoint_Temperature",    "SOLUTION");
   /// END_GROUP
   
   
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the conservative variables. 
   /// DESCRIPTION: Residual of the adjoint Pressure.
-  AddVolumeOutput("RES_ADJ_TEMPERATURE",    "Residual_Adjoint_Pressure",    "RESIDUAL");  
+  AddVolumeOutput("RES_ADJ_TEMPERATURE",    "Residual_Adjoint_Temperature",    "RESIDUAL");
   /// END_GROUP
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
