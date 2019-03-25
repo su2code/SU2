@@ -2138,6 +2138,14 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   int Direct_Iter;
   bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
 
+  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
+  if (config_container[val_iZone]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], ExtIter);
+
+  /*--- Read the target heat flux ----------------------------------------------------------------*/
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], ExtIter);
+
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {
