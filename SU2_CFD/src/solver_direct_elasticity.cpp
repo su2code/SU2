@@ -235,10 +235,17 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
 
   /*--- Initialize from zero everywhere. ---*/
+  long iVertex;
+  bool isVertex;
 
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
+    isVertex = false;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1){isVertex = true; break;}
+    }
+    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config, isVertex);
   }
   
   bool reference_geometry = config->GetRefGeom();
