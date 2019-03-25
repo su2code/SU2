@@ -2539,7 +2539,8 @@ class CFEAVariable : public CVariable {
 protected:
   
   bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
-  bool fsi_analysis;            /*!< \brief Bool which determines if the problem is FSI. */
+  bool fsi_analysis;              /*!< \brief Bool which determines if the problem is FSI. */
+  bool isVertex;                  /*!< \brief Bool which determines if the node is a vertex. */
   
   su2double *Stress;              /*!< \brief Stress tensor. */
   su2double *FlowTraction;          /*!< \brief Traction from the fluid field. */
@@ -2582,7 +2583,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config, bool check_isVertex);
   
   /*!
    * \brief Destructor of the class.
