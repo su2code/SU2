@@ -277,7 +277,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
     
   }
-  
+
   delete [] sbuf_residual;
   delete [] rbuf_residual;
   
@@ -3469,6 +3469,8 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CTGVSolution(nDim, nVar, config); break;
     case MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, config); break;
+    case MMS_INC_EULER:
+      VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, config); break;
     case MMS_INC_NS:
       VerificationSolution = new CMMSIncNSSolution(nDim, nVar, config); break;
     case USER_DEFINED_SOLUTION:

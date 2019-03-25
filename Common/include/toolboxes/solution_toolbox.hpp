@@ -550,6 +550,102 @@ public:
 };
 
 /*!
+ * \class CMMSIncEulerSolution
+ * \brief Class to define the required data for the manufactured solution of the
+ *        incompressible Euler equations.
+ * \author T. Economon, E. van der Weide
+ */
+class CMMSIncEulerSolution: public CVerificationSolution {
+  
+protected:
+  
+  /*--- Variables that define the solution and MMS source term. ---*/
+  su2double Density;      /*!< \brief Density, must be constant. */
+  su2double Temperature;  /*!< \brief Temperature, just to be safe. */
+  
+  /*--- Constants, which describe this manufactured solution. This is a
+   solution where the primitive variables vary as a combination
+   of sine and cosine functions. The solution is from Salari K, and
+   Knupp P, "Code verification by the method of manufactured solutions,"
+   SAND 2000-1444, Sandia National Laboratories, Albuquerque, NM, 2000. ---*/
+  
+  su2double P_0;      /*!< \brief Parameter for the pressure solution. */
+  su2double u_0;      /*!< \brief Parameter for the x-velocity solution. */
+  su2double v_0;      /*!< \brief Parameter for the y-velocity solution. */
+  su2double epsilon;  /*!< \brief Parameter for the velocity solutions. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CMMSIncEulerSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CMMSIncEulerSolution(unsigned short val_nDim,
+                       unsigned short val_nvar,
+                       CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMMSIncEulerSolution(void);
+  
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+  
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+  
+  /*!
+   * \brief Get the source term for the manufactured solution (MMS).
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetMMSSourceTerm(const unsigned short val_nParams,
+                        const su2double      *val_params,
+                        const su2double      *val_coords,
+                        const su2double      val_t,
+                        su2double            *val_source);
+  
+  /*!
+   * \brief Whether or not this verification solution is a manufactured solution.
+   * \return  - True, because this is a manufactured solution.
+   */
+  bool IsManufacturedSolution(void);
+};
+
+/*!
  * \class CMMSIncNSSolution
  * \brief Class to define the required data for the manufactured solution of the
  *        laminar incompressible Navier-Stokes equations.

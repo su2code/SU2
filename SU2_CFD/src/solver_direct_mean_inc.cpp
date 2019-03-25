@@ -3209,7 +3209,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         
         /*--- Get the MMS source term. ---*/
         vector<su2double> sourceMan(nVar,0.0);
-        VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan.data());
+        VerificationSolution->GetMMSSourceTerm(0, NULL, coor,
+                                               time, sourceMan.data());
         
         /*--- Compute the residual for this control volume. ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -7959,16 +7960,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
   
-  /*--- Artificial dissipation ---*/
-  
-  if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-  }
-  
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -7983,6 +7974,16 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
       && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
+  
+  /*--- Artificial dissipation for centered schemes. ---*/
+  
+  if (center && !Output) {
+    SetMax_Eigenvalue(geometry, config);
+    if ((center_jst) && (iMesh == MESH_0)) {
+      SetCentered_Dissipation_Sensor(geometry, config);
+      SetUndivided_Laplacian(geometry, config);
+    }
+  }
   
   /*--- Update the beta value based on the maximum velocity / viscosity. ---*/
 
@@ -8316,8 +8317,6 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(),
                            node[jPoint]->GetPrimitive());
-    numerics->SetSecondary(node[iPoint]->GetSecondary(),
-                           node[jPoint]->GetSecondary());
     
     /*--- Gradient and limiters ---*/
     
