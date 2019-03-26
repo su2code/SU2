@@ -245,8 +245,12 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
       /*--- Implicit terms ---*/
       if (implicit) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -396,8 +400,12 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
       /*--- Implicit terms ---*/
       if (implicit) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -600,8 +608,12 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
       /*--- Implicit terms ---*/
       if (implicit) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
