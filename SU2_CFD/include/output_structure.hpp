@@ -49,7 +49,9 @@
 #include <fstream>
 #include <cmath>
 #include <time.h>
-#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <limits>
 
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
@@ -614,6 +616,16 @@ public:
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
   void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+
+  /*!
+   * \brief Write a Tecplot binary solution file with parallel output.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+   */
+  void WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -939,9 +951,10 @@ public:
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
+   * \param[in] val_iZone - iZone index.
+   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort);
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
@@ -956,8 +969,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, bool val_sort);
 
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors (DG-FEM solver).
