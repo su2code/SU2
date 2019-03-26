@@ -2512,9 +2512,6 @@ public:
 class CFEAVariable : public CVariable {
 protected:
   
-  bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
-  bool fsi_analysis;              /*!< \brief Bool which determines if the problem is FSI. */
-  
   su2double *Stress;              /*!< \brief Stress tensor. */
 
   su2double *Residual_Ext_Body;   /*!< \brief Term of the residual due to body forces */
