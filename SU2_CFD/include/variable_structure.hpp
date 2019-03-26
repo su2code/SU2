@@ -2512,30 +2512,25 @@ protected:
   bool isVertex;                  /*!< \brief Bool which determines if the node is a vertex. */
   
   su2double *Stress;              /*!< \brief Stress tensor. */
-  su2double *FlowTraction;          /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;          /*!< \brief Traction from the fluid field at time n. */
+
+  su2double *Residual_Ext_Body;   /*!< \brief Term of the residual due to body forces */
   
-  //  su2double *Residual_Int;          /*!< \brief Internal stress term for the calculation of the residual */
-  su2double *Residual_Ext_Surf;        /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n;        /*!< \brief Term of the residual due to external forces at time n */
-  su2double *Residual_Ext_Body;        /*!< \brief Term of the residual due to body forces */
+  su2double VonMises_Stress;      /*!< \brief Von Mises stress. */
   
-  su2double VonMises_Stress;         /*!< \brief Von Mises stress. */
+  su2double *Solution_Vel,        /*!< \brief Velocity of the nodes. */
+  *Solution_Vel_time_n;           /*!< \brief Velocity of the nodes at time n. */
   
-  su2double *Solution_Vel,          /*!< \brief Velocity of the nodes. */
-  *Solution_Vel_time_n;          /*!< \brief Velocity of the nodes at time n. */
+  su2double *Solution_Accel,      /*!< \brief Acceleration of the nodes. */
+  *Solution_Accel_time_n;         /*!< \brief Acceleration of the nodes at time n. */
   
-  su2double *Solution_Accel,          /*!< \brief Acceleration of the nodes. */
-  *Solution_Accel_time_n;          /*!< \brief Acceleration of the nodes at time n. */
+  su2double *Solution_Pred,       /*!< \brief Predictor of the solution for FSI purposes */
+  *Solution_Pred_Old;             /*!< \brief Predictor of the solution at time n for FSI purposes */
   
-  su2double *Solution_Pred,          /*!< \brief Predictor of the solution for FSI purposes */
-  *Solution_Pred_Old;            /*!< \brief Predictor of the solution at time n for FSI purposes */
+  su2double *Reference_Geometry;  /*!< \brief Reference solution for optimization problems */
   
-  su2double *Reference_Geometry;      /*!< \brief Reference solution for optimization problems */
+  su2double *Prestretch;          /*!< \brief Prestretch geometry */
   
-  su2double *Prestretch;        /*!< \brief Prestretch geometry */
-  
-  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
   
   
 public:
