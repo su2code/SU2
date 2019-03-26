@@ -1437,22 +1437,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
-  /*!
-   * \brief A virtual member.
-   
-   */
-  virtual su2double **GetTraction(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
   
   /*!
@@ -3001,11 +2985,18 @@ public:
 /*!
  * \class CFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CVariable {
+class CFEABoundVariable : public CFEAVariable {
 protected:
-  su2double **Traction;  /*!< \brief Stress tensor. */
+
+  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+
+  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
+  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
   
 public:
   
@@ -3019,38 +3010,80 @@ public:
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] val_nElBound - Number of elements in the boundary
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config);
+  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
   ~CFEABoundVariable(void);
-  
+
   /*!
-   * \brief Set the value of the stress.
-   * \param[in] iVar - index of the traction vector.
-   * \param[in] jVar - index of the boundary element.
-   * \param[in] val_stress - Value of the stress.
+   * \brief Add surface load to the residual term
    */
-  void SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
+  void Add_SurfaceLoad_Res(su2double *val_surfForce);
+
   /*!
-   * \brief Add a value to the stress matrix in the element.
-   * \param[in] iVar - index of the traction vector.
-   * \param[in] jVar - index of the boundary element.
-   * \param[in] val_stress - Value of the stress.
+   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  void AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
+  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
+
   /*!
-   * \brief Get the value of the stress.
-   * \return Value of the stress.
+   * \brief Get the residual term due to surface load
    */
-  su2double **GetTraction(void);
-  
+  su2double Get_SurfaceLoad_Res(unsigned short iVar);
+
+  /*!
+   * \brief Clear the surface load residual
+   */
+  void Clear_SurfaceLoad_Res(void);
+
+  /*!
+   * \brief Store the surface load as the load for the previous time step.
+   */
+  void Set_SurfaceLoad_Res_n(void);
+
+  /*!
+   * \brief Get the surface load from the previous time step.
+   */
+  su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
+
+  /*!
+   * \brief Set the flow traction at a node on the structural side
+   */
+  void Set_FlowTraction(su2double *val_flowTraction);
+
+  /*!
+   * \brief Add a value to the flow traction at a node on the structural side
+   */
+  void Add_FlowTraction(su2double *val_flowTraction);
+
+  /*!
+   * \brief Get the residual term due to the flow traction
+   */
+  su2double Get_FlowTraction(unsigned short iVar);
+
+  /*!
+   * \brief Set the value of the flow traction at the previous time step.
+   */
+  void Set_FlowTraction_n(void);
+
+  /*!
+   * \brief Retrieve the value of the flow traction from the previous time step.
+   */
+  su2double Get_FlowTraction_n(unsigned short iVar);
+
+  /*!
+   * \brief Clear the flow traction residual
+   */
+  void Clear_FlowTraction(void);
+
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
+
 };
 
 /*!

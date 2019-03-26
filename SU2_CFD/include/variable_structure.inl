@@ -45,12 +45,6 @@ inline void CVariable::SetVelSolutionOldDVector(void) { }
 
 inline void CVariable::SetVelSolutionDVector(void) { }
 
-inline void CVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { }
-
-inline void CVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { }
-
-inline su2double **CVariable::GetTraction(void) { return NULL; }
-
 inline void CVariable::SetStress_FEM(unsigned short iVar, su2double val_stress) { }
 
 inline void CVariable::AddStress_FEM(unsigned short iVar, su2double val_stress) { }
@@ -1253,12 +1247,6 @@ inline void CFEAVariable::SetPrestretch(unsigned short iVar, su2double val_prest
 inline su2double *CFEAVariable::GetPrestretch(void) { return Prestretch; }
 
 inline su2double CFEAVariable::GetPrestretch(unsigned short iVar) { return Prestretch[iVar]; }
-
-inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
-
-inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] += val_traction; }
-
-inline su2double **CFEABoundVariable::GetTraction(void) { return Traction; }
 
 inline su2double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
