@@ -12318,11 +12318,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 #ifdef HAVE_MPI
       /*--- Do not merge the connectivity or write the visualization files
-     if we are running in parallel, unless we are using ParaView binary.
+       if we are running in parallel, unless we are using ParaView or Tecplot binary.
        Force the use of SU2_SOL to merge and write the viz. files in this
        case to save overhead. ---*/
 
-      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY) && (FileFormat != TECPLOT_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
@@ -12479,8 +12479,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       if (fem_solver)
         SortConnectivity_FEM(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
+      else if (FileFormat == TECPLOT_BINARY)
+        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, false);
       else
-        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
+        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, true);
 
       /*--- Sort the surface data and renumber if for writing. ---*/
       if (Wrt_Srf){
@@ -12517,11 +12519,9 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
 
-            if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
+            WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                iZone, val_nZone, false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -12571,13 +12571,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
           case TECPLOT_BINARY:
 
-            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+            /*--- Write a Tecplot binary file ---*/
 
-            if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
+            WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                iZone, val_nZone, true);
             break;
 
           case PARAVIEW:
@@ -14517,7 +14515,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
 }
 
-void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort) {
 
   /*--- Flags identifying the types of files to be written. ---*/
   
@@ -14535,12 +14533,12 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
     
-    SortVolumetricConnectivity(config, geometry, TRIANGLE     );
-    SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON  );
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
-    SortVolumetricConnectivity(config, geometry, PRISM        );
-    SortVolumetricConnectivity(config, geometry, PYRAMID      );
+    SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
+    SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
+    SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
+    SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
+    SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
+    SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
     
   }
   
@@ -14571,7 +14569,10 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   
 }
 
-void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void COutput::SortVolumetricConnectivity(CConfig *config,
+                                         CGeometry *geometry,
+                                         unsigned short Elem_Type,
+                                         bool val_sort) {
   
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT = 0;
@@ -14838,15 +14839,23 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           if (newID < Global_Index) Global_Index = newID;
         }
         
-        /*--- Search for the processor that owns this point ---*/
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
+
         
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
@@ -14931,17 +14940,24 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
           if (newID < Global_Index) Global_Index = newID;
         }
+       
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        /*--- Search for the processor that owns this point ---*/
-        
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-        
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
+
         /*--- Load connectivity into the buffer for sending ---*/
         
         if (nElem_Flag[iProcessor] != ii) {
