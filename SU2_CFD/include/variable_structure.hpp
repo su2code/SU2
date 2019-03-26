@@ -2582,32 +2582,32 @@ public:
   /*!
    * \brief Add surface load to the residual term
    */
-  void Add_SurfaceLoad_Res(su2double *val_surfForce);
+  virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
   
   /*!
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
+  virtual void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
   
   /*!
    * \brief Get the residual term due to surface load
    */
-  su2double Get_SurfaceLoad_Res(unsigned short iVar);
+  virtual su2double Get_SurfaceLoad_Res(unsigned short iVar);
   
   /*!
    * \brief Clear the surface load residual
    */
-  void Clear_SurfaceLoad_Res(void);
+  virtual void Clear_SurfaceLoad_Res(void);
   
   /*!
    * \brief Store the surface load as the load for the previous time step.
    */
-  void Set_SurfaceLoad_Res_n(void);
+  virtual void Set_SurfaceLoad_Res_n(void);
   
   /*!
    * \brief Get the surface load from the previous time step.
    */
-  su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
+  virtual su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
   
   /*!
    * \brief Add body forces to the residual term.
@@ -2627,27 +2627,27 @@ public:
   /*!
    * \brief Set the flow traction at a node on the structural side
    */
-  void Set_FlowTraction(su2double *val_flowTraction);
+  virtual void Set_FlowTraction(su2double *val_flowTraction);
   
   /*!
    * \brief Add a value to the flow traction at a node on the structural side
    */
-  void Add_FlowTraction(su2double *val_flowTraction);
+  virtual void Add_FlowTraction(su2double *val_flowTraction);
   
   /*!
    * \brief Get the residual term due to the flow traction
    */
-  su2double Get_FlowTraction(unsigned short iVar);
+  virtual su2double Get_FlowTraction(unsigned short iVar);
   
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
-  void Set_FlowTraction_n(void);
+  virtual void Set_FlowTraction_n(void);
   
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  su2double Get_FlowTraction_n(unsigned short iVar);
+  virtual su2double Get_FlowTraction_n(unsigned short iVar);
   
   /*!
    * \brief Clear the flow traction residual
