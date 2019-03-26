@@ -739,8 +739,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
