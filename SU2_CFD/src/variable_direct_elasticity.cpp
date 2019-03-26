@@ -71,17 +71,16 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool incremental_load = config->GetIncrementalLoad();
-  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
 
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
   
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
   
+  bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fsi_analysis = config->GetFSI_Simulation();
+
   VonMises_Stress = 0.0;
-  
-  dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
-  fsi_analysis = config->GetFSI_Simulation();
   
   if (nDim == 2) Stress = new su2double [3];
   else if (nDim == 3) Stress = new su2double [6];
