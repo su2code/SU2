@@ -209,10 +209,9 @@ CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim
   FlowTraction_n      = NULL;
   if (gen_alpha) {
     Residual_Ext_Surf_n    = new su2double [nVar];
-    if (fsi_analysis) FlowTraction_n = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Residual_Ext_Surf_n[iVar] = 0.0;
-    };
+    }
     if (fsi_analysis){
       FlowTraction_n = new su2double [nVar];
       for (iVar = 0; iVar < nVar; iVar++) {

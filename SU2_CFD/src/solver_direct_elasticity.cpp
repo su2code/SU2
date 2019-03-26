@@ -245,7 +245,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
       iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1){isVertex = true; break;}
     }
-    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config, isVertex);
+    if (isVertex) node[iPoint] = new CFEABoundVariable(SolRest, nDim, nVar, config);
+    else          node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
   }
   
   bool reference_geometry = config->GetRefGeom();
