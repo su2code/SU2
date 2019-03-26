@@ -85,6 +85,8 @@ inline void CVariable::Set_FlowTraction_n(void) { }
 
 inline su2double CVariable::Get_FlowTraction_n(unsigned short iVar) { return 0.0; }
 
+inline bool CVariable::Get_isVertex(void) { return false; }
+
 inline su2double CVariable::GetBetaInc2(void) { return 0; }
 
 inline su2double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
@@ -1109,6 +1111,10 @@ inline void CFEAVariable::Set_FlowTraction_n(void) {
 }
 
 inline su2double CFEAVariable::Get_FlowTraction_n(unsigned short iVar) { if(isVertex){return FlowTraction_n[iVar];}else{return 0.0;}}
+
+inline bool CFEAVariable::Get_isVertex(void) { return false; }
+
+inline bool CFEABoundVariable::Get_isVertex(void) { return true; }
 
 inline void CFEAVariable::SetSolution_time_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Solution_time_n[iVar] = Solution[iVar];

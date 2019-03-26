@@ -65,7 +65,7 @@ CFEAVariable::CFEAVariable(void) : CVariable() {
 
 }
 
-CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config, bool check_isVertex) : CVariable(val_nDim, val_nvar, config) {
+CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   
   unsigned short iVar;
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -77,8 +77,6 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
   
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
-
-  isVertex = check_isVertex;                  // Determine if the node is a vertex in the boundary
   
   VonMises_Stress = 0.0;
   
@@ -186,7 +184,7 @@ CFEABoundVariable::CFEABoundVariable(void) : CFEAVariable() {
 
 }
 
-CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config, true) {
+CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
 
   unsigned short iVar;
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);

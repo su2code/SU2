@@ -1508,6 +1508,11 @@ public:
    * \brief A virtual member.
    */
   virtual void Clear_FlowTraction(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual bool Get_isVertex(void);
   
   /*!
    * \brief A virtual member.
@@ -2509,7 +2514,6 @@ protected:
   
   bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
   bool fsi_analysis;              /*!< \brief Bool which determines if the problem is FSI. */
-  bool isVertex;                  /*!< \brief Bool which determines if the node is a vertex. */
   
   su2double *Stress;              /*!< \brief Stress tensor. */
 
@@ -2547,7 +2551,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config, bool check_isVertex);
+  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -2647,7 +2651,12 @@ public:
   /*!
    * \brief Clear the flow traction residual
    */
-  void Clear_FlowTraction(void);
+  virtual void Clear_FlowTraction(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual bool Get_isVertex(void);
   
   /*!
    * \brief Set the value of the old solution.
