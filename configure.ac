@@ -156,6 +156,9 @@ su2_externals_LIBPTHREAD=""
 CONFIGURE_TECIO
 if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
+  if ( test x$have_MPI = xyes ); then
+    su2_externals_INCLUDES="-DTECIOMPI $su2_externals_INCLUDES"
+  fi
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
   # Check if boost directory exists, otherwise extract the sources
   if ( ! test -d "$srcdir/externals/tecio/boost" ); then
@@ -172,7 +175,10 @@ else
 fi
 
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
+AM_CONDITIONAL(BUILD_TECIOMPI, test x$enabletecio = xyes -a x$have_MPI = xyes)
 AC_CONFIG_FILES([externals/tecio/Makefile])
+AC_CONFIG_FILES([externals/tecio/teciosrc/Makefile])
+AC_CONFIG_FILES([externals/tecio/teciompisrc/Makefile])
 
 # Metis
 CONFIGURE_METIS
