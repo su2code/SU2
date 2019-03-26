@@ -38,10 +38,7 @@
 #include "../include/variable_structure.hpp"
 
 CFEAVariable::CFEAVariable(void) : CVariable() {
-  
-  dynamic_analysis      = false;
-  fsi_analysis          = false;
-  
+
   VonMises_Stress       = 0.0;
   
   Stress                = NULL;    // Nodal stress (for output purposes)
