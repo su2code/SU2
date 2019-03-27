@@ -192,21 +192,27 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     }
   }
 
-
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-
   if (dynamic){
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CDiscAdjFEAVariable(Solution, Solution_Accel, Solution_Vel, nDim, nVar, config);
   }
   else{
+    bool isVertex;
+    bool registerFlowTraction = config->GetRegister_FlowTraction();
+    long indexVertex;
     /*--- Restart the solution from zero ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      isVertex = false;
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (indexVertex != -1){isVertex = true; break;}
+      }
+      if (isVertex && registerFlowTraction)
+        node[iPoint] = new CDiscAdjFEABoundVariable(Solution, nDim, nVar, config);
+      else
+        node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
+    }
   }
 
   /*--- Store the direct solution ---*/
@@ -514,6 +520,13 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
         if (config->GetTopology_Optimization())
           direct_solver->RegisterVariables(geometry,config);
+
+        /*--- Register the flow traction sensitivities ---*/
+        if (config->GetRegister_FlowTraction()){
+          for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+            direct_solver->node[iPoint]->RegisterFlowTraction();
+          }
+        }
     }
 
   }
@@ -802,6 +815,18 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     if (config->GetTopology_Optimization())
       direct_solver->ExtractAdjoint_Variables(geometry,config);
+
+    /*--- Extract the flow traction sensitivities ---*/
+    if (config->GetRegister_FlowTraction()){
+      su2double val_sens;
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        for (unsigned short iDim = 0; iDim < nDim; iDim++){
+          val_sens = direct_solver->node[iPoint]->ExtractFlowTraction_Sensitivity(iDim);
+          node[iPoint]->SetFlowTractionSensitivity(iDim, val_sens);
+        }
+      }
+    }
+
   }
 
 

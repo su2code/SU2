@@ -2203,6 +2203,16 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void RegisterFlowTraction();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double ExtractFlowTraction_Sensitivity(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetAdjointSolution_Vel(su2double *adj_sol);
 
   /*!
@@ -2349,6 +2359,20 @@ public:
   virtual su2double GetSolution_Old_Vel(unsigned short iVar);
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetFlowTractionSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetFlowTractionSensitivity(unsigned short iDim);
 
 };
 
@@ -3084,6 +3108,16 @@ public:
    * \brief Get whether this node is on the boundary
    */
   bool Get_isVertex(void);
+
+  /*!
+   * \brief Register the flow tractions as input variable.
+   */
+  void RegisterFlowTraction();
+
+  /*!
+   * \brief Extract the flow traction derivatives.
+   */
+  su2double ExtractFlowTraction_Sensitivity(unsigned short iDim);
 
 };
 
@@ -5067,6 +5101,64 @@ public:
      * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
      */
     su2double Get_BGSSolution_k(unsigned short iDim);
+
+    /*!
+     * \brief Get whether this node is on the boundary
+     */
+    virtual bool Get_isVertex(void);
+};
+
+/*!
+ * \class CDiscAdjFEABoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
+ * \ingroup Discrete_Adjoint
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjFEABoundVariable : public CDiscAdjFEAVariable {
+protected:
+
+  su2double *FlowTraction_Sens;    /*!< \brief Sensitivity of the traction from the fluid field. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDiscAdjFEABoundVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjFEABoundVariable(void);
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  void SetFlowTractionSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  su2double GetFlowTractionSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
 
 };
 
