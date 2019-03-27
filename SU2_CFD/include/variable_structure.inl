@@ -643,6 +643,10 @@ inline void CVariable::RegisterSolution_Accel(bool input) { }
 
 inline void CVariable::RegisterSolution_Accel_time_n() { }
 
+inline void CVariable::RegisterFlowTraction() { }
+
+inline su2double CVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {return 0.0;}
+
 inline void CVariable::SetAdjointSolution_Vel(su2double *adj_sol) { }
 
 inline void CVariable::GetAdjointSolution_Vel(su2double *adj_sol) { }
@@ -1257,6 +1261,15 @@ inline void CFEAVariable::RegisterSolution_Accel_time_n() {
 	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
 }
 
+inline void CFEABoundVariable::RegisterFlowTraction() {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction[iVar]);
+}
+
+inline su2double CFEABoundVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {
+      su2double val_sens; val_sens = SU2_TYPE::GetDerivative(FlowTraction[iDim]); return val_sens;
+}
+
 inline su2double CFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
 inline void CFEAVariable::Set_BGSSolution_k(void) { 
@@ -1634,3 +1647,14 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
+inline void CVariable::SetFlowTractionSensitivity(unsigned short iDim, su2double val) {}
+
+inline su2double CVariable::GetFlowTractionSensitivity(unsigned short iDim) { return 0.0; }
+
+inline void CDiscAdjFEABoundVariable::SetFlowTractionSensitivity(unsigned short iDim, su2double val) { FlowTraction_Sens[iDim] = val; }
+
+inline su2double CDiscAdjFEABoundVariable::GetFlowTractionSensitivity(unsigned short iDim) { return FlowTraction_Sens[iDim]; }
+
+inline bool CDiscAdjFEAVariable::Get_isVertex(void) { return false; }
+
+inline bool CDiscAdjFEABoundVariable::Get_isVertex(void) { return true; }

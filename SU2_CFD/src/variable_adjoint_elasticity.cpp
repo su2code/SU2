@@ -244,3 +244,27 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
 
 }
 
+
+CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable() : CDiscAdjFEAVariable(){
+
+  FlowTraction_Sens = NULL;
+
+}
+
+CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(su2double* val_solution, unsigned short val_ndim,
+                               unsigned short val_nvar, CConfig *config) : CDiscAdjFEAVariable(val_solution, val_ndim, val_nvar, config){
+
+
+  unsigned short iDim;
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    FlowTraction_Sens[iDim] = val_solution[iDim];
+  }
+
+}
+
+CDiscAdjFEABoundVariable::~CDiscAdjFEABoundVariable(){
+
+  if (FlowTraction_Sens != NULL) delete [] FlowTraction_Sens;
+
+}
