@@ -1147,15 +1147,15 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   bool is_unsteady = false;
-  double solution_time = 0.0;
+  passivedouble solution_time = 0.0;
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     is_unsteady = true;
-    solution_time = config->GetDelta_UnstTime()*config->GetExtIter();
+    solution_time = SU2_TYPE::GetValue(config->GetDelta_UnstTime()*config->GetExtIter());
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     is_unsteady = true;
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-    double period = config->GetHarmonicBalance_Period();
-    double deltaT = period/(su2double)(config->GetnTimeInstances());
+    passivedouble period = SU2_TYPE::GetValue(config->GetHarmonicBalance_Period());
+    passivedouble deltaT = period/SU2_TYPE::GetValue(config->GetnTimeInstances());
     solution_time = deltaT*val_iZone;
   }
 
@@ -1174,7 +1174,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   NodePartitioner node_partitioner(num_nodes, size);
   set<unsigned long> halo_nodes;
   vector<unsigned long> sorted_halo_nodes;
-  vector<double> halo_var_data;
+  vector<passivedouble> halo_var_data;
   vector<int> num_nodes_to_receive(size, 0);
   vector<int> values_to_receive_displacements(size);
 
@@ -1269,7 +1269,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
                        MPI_COMM_WORLD);
     
     /* Now actually send and receive the data */
-    vector<double> data_to_send(max(1, total_num_nodes_to_send * nVar_Par));
+    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * nVar_Par));
     halo_var_data.resize(max((size_t)1, nVar_Par * num_halo_nodes));
     vector<int> num_values_to_send(size);
     vector<int> values_to_send_displacements(size);
@@ -1284,7 +1284,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
       for(iVar = 0; iVar < nVar_Par; ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - beg_node[rank] - 1;
-          data_to_send[index++] = Parallel_Data[iVar][node_offset];
+          data_to_send[index++] = SU2_TYPE::GetValue(Parallel_Data[iVar][node_offset]);
         }
     }
     SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
@@ -1300,8 +1300,11 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   /*--- Write surface and volumetric solution data. ---*/
   
   if (zone_type == ZONETYPE_FEBRICK) {
+    std::vector<passivedouble> values_to_write(nParallel_Poin);
     for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, nParallel_Poin, Parallel_Data[iVar]);
+      for(unsigned long i = 0; i < nParallel_Poin; ++i)
+        values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
+      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, nParallel_Poin, &values_to_write[0]);
       if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
       for (int iRank = 0; err == 0 && iRank < size; ++iRank) {
         if (num_nodes_to_receive[iRank] > 0) {
@@ -1313,7 +1316,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     }
   } else {
     if (rank == MASTER_NODE) {
-      vector<double> var_data;
+      vector<passivedouble> var_data;
       vector<unsigned long> num_surface_points(size);
       if (surf_sol)
         SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, &num_surface_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
@@ -1325,12 +1328,19 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
           rank_num_points = node_partitioner.GetRankNumNodes(iRank);
         if (rank_num_points > 0) {
           if (iRank == rank) { /* Output local data. */
+            std::vector<passivedouble> values_to_write;
             for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
               if (surf_sol) {
-                err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, Parallel_Surf_Data[iVar]);
+                values_to_write.resize(nSurf_Poin_Par);
+                for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
+                  values_to_write[i] = SU2_TYPE::GetValue(Parallel_Surf_Data[iVar][i]);
+                err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, &values_to_write[0]);
               }
               else {
-                  err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, Parallel_Data[iVar]);
+                values_to_write.resize(rank_num_points);
+                for(unsigned long i = 0; i < rank_num_points; ++i)
+                  values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
+                err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]);
               }
               if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
             }
@@ -1349,12 +1359,16 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     else { /* Send data to MASTER_NODE */
       if (surf_sol)
         SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-      vector<double> var_data;
+      vector<passivedouble> var_data;
+      size_t var_data_size = nVar_Par * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
+      var_data.reserve(var_data_size);
       for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++)
         if (surf_sol)
-          var_data.insert(var_data.begin() + iVar * nSurf_Poin_Par, Parallel_Surf_Data[iVar], Parallel_Surf_Data[iVar] + nSurf_Poin_Par);
+          for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
+            var_data.push_back(SU2_TYPE::GetValue(Parallel_Surf_Data[iVar][i]));
         else
-          var_data.insert(var_data.begin() + iVar * nParallel_Poin, Parallel_Data[iVar], Parallel_Data[iVar] + nParallel_Poin);
+          for(unsigned long i = 0; i < nParallel_Poin; ++i)
+            var_data.push_back(SU2_TYPE::GetValue(Parallel_Data[iVar][i]));
       if (var_data.size() > 0)
         SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
     }
