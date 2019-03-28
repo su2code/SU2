@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -21,7 +21,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -652,6 +652,16 @@ public:
                                          CNumerics **numerics, CConfig *config,
                                          unsigned short iMesh, unsigned short RunTime_EqSystem);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  virtual void Compute_Average(CGeometry *geometry,  CSolver **solver_container,
+                               CConfig *config, unsigned short iMesh);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4010,6 +4020,16 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual su2double* GetVecSolDOFsAve(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double* GetVecSolDOFsPrime(void);
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual unsigned long GetnDOFsGlobal(void);
 
   /*!
@@ -4441,7 +4461,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -13280,7 +13300,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -13429,6 +13449,9 @@ protected:
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
+  vector<su2double> VecSolDOFsAve; /*!< \brief Vector, which stores the average solution variables in the owned DOFs (needed for compute average process). */
+  vector<su2double> VecSolDOFsPrime; /*!< \brief Vector, which stores the prime average solution variables in the owned DOFs (needed for compute average process). */
+  
   vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
 
   vector<su2double> VecSolDOFsPredictorADER; /*!< \brief Vector, which stores the ADER predictor solution in the owned
@@ -13565,6 +13588,18 @@ public:
    * \return Pointer to the vector of the solution degrees of freedom.
    */
   su2double* GetVecSolDOFs(void);
+  
+  /*!
+   * \brief Get a pointer to the vector of the average of the solution degrees of freedom.
+   * \return Pointer to the vector of the average of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFsAve(void);
+
+  /*!
+   * \brief Get a pointer to the vector of the prime average of the solution degrees of freedom.
+   * \return Pointer to the vector of the prime average of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFsPrime(void);
 
   /*!
    * \brief Get the global number of solution degrees of freedom for the calculation.
@@ -13707,6 +13742,16 @@ public:
   void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                  CNumerics **numerics, CConfig *config,
                                  unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Function to carry out the statistical average process.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Compute_Average(CGeometry *geometry,  CSolver **solver_container, CConfig *config,
+                       unsigned short iMesh);
 
   /*!
    * \brief Function, which controls the computation of the spatial Jacobian.
@@ -14156,7 +14201,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -14912,7 +14957,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:
@@ -15587,6 +15632,7 @@ private:
                                           by  the boundary conditions
    * \param[in]  surfElem               - Surface boundary elements for which the
                                           viscous fluxes must be computed.
+   * \param[in]  solIntL                - Left states in the integration points of the face.
    * \param[out] workArray              - Storage array
    * \param[out] viscFluxes             - To be computed viscous fluxes in the
                                           integration points.
@@ -15604,6 +15650,7 @@ private:
                                   const su2double          Wall_Temperature,
                                   const bool               Temperature_Prescribed,
                                   const CSurfaceElementFEM *surfElem,
+                                  const su2double          *solIntL,
                                         su2double          *workArray,
                                         su2double          *viscFluxes,
                                         su2double          *viscosityInt,

@@ -12,15 +12,15 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - molinaedu85@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_FV_Average
 
 python:
     - 2.7
-    - 3.6
+    #- 3.6
 
 env:
     global:

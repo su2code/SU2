@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -825,6 +825,9 @@ inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **s
                                                CNumerics **numerics, CConfig *config,
                                                unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 
+inline void CSolver::Compute_Average(CGeometry *geometry,  CSolver **solver_container,
+                                     CConfig *config,  unsigned short iMesh){}
+
 inline void CSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                             CNumerics **numerics, CConfig *config,
                                             unsigned short iMesh, unsigned short RunTime_EqSystem) {}
@@ -1007,6 +1010,10 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
 inline su2double* CSolver::GetVecSolDOFs(void) {return NULL;}
+
+inline su2double* CSolver::GetVecSolDOFsAve(void) {return NULL;}
+
+inline su2double* CSolver::GetVecSolDOFsPrime(void) {return NULL;}
 
 inline unsigned long CSolver::GetnDOFsGlobal(void) {return 0;}
 
@@ -1764,6 +1771,10 @@ inline void CNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsig
 inline CFluidModel* CFEM_DG_EulerSolver::GetFluidModel(void) { return FluidModel;}
 
 inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFs(void) {return VecSolDOFs.data();}
+
+inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFsAve(void) {return VecSolDOFsAve.data();}
+
+inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFsPrime(void) {return VecSolDOFsPrime.data();}
 
 inline unsigned long CFEM_DG_EulerSolver::GetnDOFsGlobal(void) {return nDOFsGlobal;}
 

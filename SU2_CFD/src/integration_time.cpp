@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -1084,6 +1084,13 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
   /*--- Convergence strategy ---*/
 
   //Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+  
+  /*--- Calculate Statistical Proprieties ---*/
+  
+  if(config[iZone]->GetCompute_Average()){
+    solver_container[iZone][iInst][iMesh][SolContainer_Position]->Compute_Average(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                                                                                  config[iZone],iMesh);
+  }
 }
 
 void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,

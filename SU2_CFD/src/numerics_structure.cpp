@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -56,6 +56,8 @@ CNumerics::CNumerics(void) {
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
+
+  Vector = NULL;
 
   Enthalpy_formation = NULL;
   Theta_v = NULL;
@@ -1880,24 +1882,26 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
 
   /*--- Check for valid input ---*/
 
+  unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+
   assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
   assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
-  assert((Sensor_i >= 0) && (Sensor_i <= 1));
-  assert((Sensor_j >= 0) && (Sensor_j <= 1));
-
-  unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+  if (roe_low_diss == FD_DUCROS || roe_low_diss == NTS_DUCROS) {
+    assert((Sensor_i >= 0) && (Sensor_i <= 1));
+    assert((Sensor_j >= 0) && (Sensor_j <= 1));
+  }
 
   /*--- A minimum level of upwinding is used to enhance stability ---*/
 
-  const su2double Min_Dissipation = 0.05;
+  const su2double Min_Dissipation = config->GetMinLowDissipation();
   
   const su2double Mean_Dissipation = 0.5*(Dissipation_i + Dissipation_j);
   const su2double Mean_Sensor = 0.5*(Sensor_i + Sensor_j);
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
-
-    Dissipation_ij = max(0.05,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
     
+    Dissipation_ij = max(Min_Dissipation,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
+
     if (roe_low_diss == FD_DUCROS){
       
       /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
@@ -1907,7 +1911,7 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
       if (0.5*(Sensor_i + Sensor_j) > 0.65)
         Ducros_ij = 1.0;
       else
-        Ducros_ij = 0.05;
+        Ducros_ij = Min_Dissipation;
       
       Dissipation_ij = max(Ducros_ij, Dissipation_ij);
     }
