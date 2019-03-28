@@ -44,6 +44,10 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   FAux_Dead_Load = NULL;
   Rho_s_i        = NULL;
   Rho_s_DL_i     = NULL;
+  Nu_i           = NULL;
+
+  nDim = val_nDim;
+  nVar = val_nVar;
 
   unsigned long iVar;
 

@@ -2786,7 +2786,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
 
   if (dynamic_mesh)
-    numerics_container[val_iInst][MESH_0][MESH_SOL][MAT_KNOWLES] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
+    numerics_container[val_iInst][MESH_0][MESH_SOL][MESH_DEF_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
 
 }
 
