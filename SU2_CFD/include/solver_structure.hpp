@@ -15841,6 +15841,8 @@ protected:
   bool time_domain;        /*!< \brief Number of dimensions. */
   bool multizone;
 
+  bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
+
   unsigned long nElem;
 
   unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
