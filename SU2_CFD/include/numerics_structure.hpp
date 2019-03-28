@@ -1346,7 +1346,7 @@ public:
    * \brief A virtual member to set the element-based local properties in mesh problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual bool SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu);
+  virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
 
   /*!
    * \brief A virtual member
@@ -4343,7 +4343,7 @@ public:
    * \brief Set the element-based local properties in mesh problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  bool SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu);
+  void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
 
 
 };
