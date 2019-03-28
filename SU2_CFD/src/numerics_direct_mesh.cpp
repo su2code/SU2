@@ -38,7 +38,79 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CFEALinearElasticity() {
+CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity() {
+
+  DV_Val         = NULL;
+  FAux_Dead_Load = NULL;
+  Rho_s_i        = NULL;
+  Rho_s_DL_i     = NULL;
+
+  unsigned long iVar;
+
+  E = config->GetDeform_ElasticityMod();
+  Nu = config->GetDeform_PoissonRatio();
+  Compute_Lame_Parameters();
+
+  switch (config->GetDeform_Stiffness_Type()) {
+  case INVERSE_VOLUME:
+  case SOLID_WALL_DISTANCE:
+  case VOLUME_DISTANCE:
+    element_based = true;
+    break;
+  case CONSTANT_STIFFNESS:
+    element_based = false;
+    break;
+  }
+
+  E_i  = NULL;
+  Nu_i = NULL;
+  if (element_based){
+    E_i         = new su2double[val_nElem];
+    Nu_i        = new su2double[val_nElem];
+    for (iVar = 0; iVar < val_nElem; iVar++){
+      E_i[iVar] = E; Nu_i[iVar] = Nu;
+    }
+  }
+
+  KAux_ab = new su2double* [nDim];
+  for (iVar = 0; iVar < nDim; iVar++) {
+    KAux_ab[iVar] = new su2double[nDim];
+  }
+
+  if (nDim == 2) {
+    Ba_Mat = new su2double* [3];
+    Bb_Mat = new su2double* [3];
+    D_Mat  = new su2double* [3];
+    Ni_Vec  = new su2double [4];            /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+    GradNi_Ref_Mat = new su2double* [4];
+    GradNi_Curr_Mat = new su2double* [4];
+    for (iVar = 0; iVar < 3; iVar++) {
+      Ba_Mat[iVar]      = new su2double[nDim];
+      Bb_Mat[iVar]      = new su2double[nDim];
+      D_Mat[iVar]       = new su2double[3];
+    }
+    for (iVar = 0; iVar < 4; iVar++) {
+      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
+      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
+    }
+  }
+  else if (nDim == 3) {
+    Ba_Mat = new su2double* [6];
+    Bb_Mat = new su2double* [6];
+    D_Mat  = new su2double* [6];
+    Ni_Vec  = new su2double [8];           /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+    GradNi_Ref_Mat = new su2double* [8];
+    GradNi_Curr_Mat = new su2double* [8];
+    for (iVar = 0; iVar < 6; iVar++) {
+      Ba_Mat[iVar]      = new su2double[nDim];
+      Bb_Mat[iVar]      = new su2double[nDim];
+      D_Mat[iVar]        = new su2double[6];
+    }
+    for (iVar = 0; iVar < 8; iVar++) {
+      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
+      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
+    }
+  }
 
 }
 
@@ -46,15 +118,28 @@ CFEAMeshElasticity::~CFEAMeshElasticity(void) {
 
 }
 
+bool CFEAMeshElasticity::SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu)  {
+
+  if (element_based){
+    E_i[iElem]  = val_E;
+    Nu_i[iElem] = val_Nu;
+  }
+
+  return true;
+
+}
+
 void CFEAMeshElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
   /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
   Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
-  E        = E_i[element->Get_iProp()];
-  Nu       = Nu_i[element->Get_iProp()];
-  Rho_s    = 0.0;
-  Rho_s_DL = 0.0;
+  if(element_based){
+    E        = E_i[element->Get_iProp()];
+    Nu       = Nu_i[element->Get_iProp()];
+    Rho_s    = 0.0;
+    Rho_s_DL = 0.0;
 
-  Compute_Lame_Parameters();
+    Compute_Lame_Parameters();
+  }
 
 }

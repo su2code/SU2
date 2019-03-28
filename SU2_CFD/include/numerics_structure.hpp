@@ -1343,6 +1343,12 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual bool SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu);
+
+  /*!
    * \brief A virtual member
    * \param[in] config - Config structure
    */
@@ -4313,6 +4319,9 @@ public:
  */
 class CFEAMeshElasticity : public CFEALinearElasticity {
 
+  bool element_based;
+  bool stiffness_set;
+
 public:
 
   /*!
@@ -4321,7 +4330,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -4329,6 +4338,13 @@ public:
   ~CFEAMeshElasticity(void);
 
   void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief Set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  bool SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu);
+
 
 };
 

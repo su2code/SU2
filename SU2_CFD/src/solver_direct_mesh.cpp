@@ -45,6 +45,19 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     time_domain = config->GetTime_Domain();
     multizone = config->GetMultizone_Problem();
 
+    /*--- Determine if the stiffness per-element is set ---*/
+    switch (config->GetDeform_Stiffness_Type()) {
+    case INVERSE_VOLUME:
+    case SOLID_WALL_DISTANCE:
+    case VOLUME_DISTANCE:
+      stiffness_set = false;
+      break;
+    case CONSTANT_STIFFNESS:
+      stiffness_set = true;
+      break;
+    }
+
+
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
