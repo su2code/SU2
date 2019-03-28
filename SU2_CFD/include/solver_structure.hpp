@@ -11800,7 +11800,7 @@ public:
   CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
 
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
-  CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
+  CProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
 
   
   /*!
@@ -15877,12 +15877,15 @@ protected:
   su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
   su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
 
+  su2double *Res_Stress_i;
+
 public:
 
   CMeshVariable** node;          /*!< \brief Vector which defines the variables for each problem. */
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
 
-  CElement** element_container;  /*!< \brief Container which stores the element information. */
+  CElement** element_container;   /*!< \brief Container which stores the element information. */
+  CProperty** element_properties; /*!< \brief Vector which stores the indices of each element */
 
   /*!
    * \brief Constructor of the class.

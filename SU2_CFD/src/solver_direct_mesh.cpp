@@ -208,6 +208,13 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
       }
     }
 
+
+    /*--- Allocate element properties - only the index, to allow further integration with CFEASolver on a later stage ---*/
+    element_properties = new CProperty*[nElement];
+    for (iElem = 0; iElem < nElement; iElem++){
+      element_properties[iElem] = new CProperty(iElem);
+    }
+
     /*--- Compute the element volumes using the reference coordinates ---*/
     SetMinMaxVolume(geometry, config, false);
 
