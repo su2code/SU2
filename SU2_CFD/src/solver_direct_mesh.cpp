@@ -509,15 +509,15 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
+void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
-  unsigned long iElem;
+  unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, jDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
+  su2double val_Coord, val_Sol;
   int EL_KIND = 0;
 
-  su2double *Kab = NULL;
+  su2double *Kab = NULL, *Ta = NULL;
   unsigned short NelNodes, jNode;
 
   /*--- Loops over all the elements ---*/
@@ -539,38 +539,42 @@ void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
+        val_Sol   = node[indexNode[iNode]]->GetDisplacement(iDim) + val_Coord;
         element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
 
     }
 
-    /*--- Compute the stiffness of the element ---*/
-    Set_Element_Stiffness(iElem, geometry, config);
+    /*--- Set the properties of the element ---*/
+    element_container[EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    /*--- Compute the element contribution to the stiffness matrix ---*/
-
-    Compute_Element_Contribution(element_container[EL_KIND], config);
+    numerics->Compute_Tangent_Matrix(element_container[EL_KIND], config);
 
     /*--- Retrieve number of nodes ---*/
 
     NelNodes = element_container[EL_KIND]->GetnNodes();
 
-    /*--- Assemble the stiffness matrix ---*/
+    cout << "============  NEW  ==============" << endl;
 
-    for (iNode = 0; iNode < NelNodes; iNode++){
+    for (iNode = 0; iNode < NelNodes; iNode++) {
 
-      for (jNode = 0; jNode < NelNodes; jNode++){
+      Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+      for (jNode = 0; jNode < NelNodes; jNode++) {
 
         Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
-
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            Jacobian_ij[iDim][jDim] = Kab[iDim*nDim+jDim];
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+            cout << Kab[iVar*nDim+jVar] << " ";
           }
         }
-
+        cout << endl;
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-
       }
 
     }
@@ -579,40 +583,31 @@ void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
 
 }
 
-void CMeshSolver::Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config) {
+void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config){
 
-  su2double ElemVolume, ElemDistance;
+  unsigned long iElem;
 
-  ElemVolume = element[iElem].GetRef_Volume();
-  ElemDistance = element[iElem].GetWallDistance();
+  if(!stiffness_set){
+    for (iElem = 0; iElem < nElement; iElem++) {
 
-  switch (config->GetDeform_Stiffness_Type()) {
-    case INVERSE_VOLUME:
-      E = 1.0 / ElemVolume;           // Stiffness inverse of the volume of the element
-      Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
-      break;
-    case SOLID_WALL_DISTANCE:
-      E = 1.0 / ElemDistance;         // Stiffness inverse of the distance of the element to the closest wall
-      Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
-      break;
-    case CONSTANT_STIFFNESS:
-      E  = config->GetDeform_ElasticityMod();
-      Nu = config->GetDeform_PoissonRatio();
-      break;
-    case VOLUME_DISTANCE:
-      E  = 1.0 / (ElemDistance * ElemVolume);
-      Nu = config->GetDeform_PoissonRatio();
-      break;
+      switch (config->GetDeform_Stiffness_Type()) {
+      /*--- Stiffness inverse of the volume of the element ---*/
+      case INVERSE_VOLUME: E = 1.0 / element[iElem].GetRef_Volume();  break;
+      /*--- Stiffness inverse of the distance of the element to the closest wall ---*/
+      case SOLID_WALL_DISTANCE: E = 1.0 / element[iElem].GetWallDistance(); break;
+      }
+
+      /*--- Set the element elastic properties in the numerics container ---*/
+      numerics->SetMeshElasticProperties(iElem, E);
+
+    }
+
+    stiffness_set = true;
   }
-
-  /*--- Lamé parameters ---*/
-
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 
 }
 
-void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config){
+void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config){
 
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
@@ -641,7 +636,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config){
     }
 
     /*--- Compute the stiffness matrix. ---*/
-    SetStiffnessMatrix(geometry[MESH_0], config);
+    Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
     /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
     SetBoundaryDisplacements(geometry[MESH_0], config);
@@ -1023,156 +1018,6 @@ void CMeshSolver::Solve_System_Mesh(CGeometry *geometry, CConfig *config){
   /*--- Store the value of the residual. ---*/
 
   valResidual = System.GetResidual();
-
-}
-
-void CMeshSolver::Compute_Element_Contribution(CElement *element, CConfig *config){
-
-  unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
-  unsigned short iDim;
-  unsigned short bDim;
-
-  su2double Weight, Jac_X;
-
-  su2double AuxMatrix[3][6];
-
-  /*--- Initialize auxiliary matrices ---*/
-
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
-
-  for (iVar = 0; iVar < bDim; iVar++){
-    for (jVar = 0; jVar < nDim; jVar++){
-      Ba_Mat[iVar][jVar] = 0.0;
-      Bb_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < 3; iVar++){
-    for (jVar = 0; jVar < 6; jVar++){
-      AuxMatrix[iVar][jVar] = 0.0;
-    }
-  }
-
-  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_Linear();
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
-
-  /*--- Compute the constitutive matrix (D_Mat) for the element - it only depends on lambda and mu, constant for the element ---*/
-  Compute_Constitutive_Matrix();
-
-  for (iGauss = 0; iGauss < nGauss; iGauss++){
-
-    Weight = element->GetWeight(iGauss);
-    Jac_X = element->GetJ_X(iGauss);
-
-    /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
-    /*--- This avoids repeated operations ---*/
-    for (iNode = 0; iNode < nNode; iNode++){
-      for (iDim = 0; iDim < nDim; iDim++){
-        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
-      }
-    }
-
-    for (iNode = 0; iNode < nNode; iNode++){
-
-      if (nDim == 2){
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
-      }
-      else if (nDim == 3){
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
-      }
-
-        /*--- Compute the BT.D Matrix ---*/
-
-      for (iVar = 0; iVar < nDim; iVar++){
-        for (jVar = 0; jVar < bDim; jVar++){
-          AuxMatrix[iVar][jVar] = 0.0;
-          for (kVar = 0; kVar < bDim; kVar++){
-            AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
-          }
-        }
-      }
-
-      /*--- Assumming symmetry ---*/
-      for (jNode = iNode; jNode < nNode; jNode++){
-        if (nDim == 2){
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
-        }
-        else if (nDim ==3){
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
-        }
-
-        for (iVar = 0; iVar < nDim; iVar++){
-          for (jVar = 0; jVar < nDim; jVar++){
-            KAux_ab[iVar][jVar] = 0.0;
-            for (kVar = 0; kVar < bDim; kVar++){
-              KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
-            }
-          }
-        }
-
-        element->Add_Kab(KAux_ab,iNode, jNode);
-        /*--- Symmetric terms --*/
-        if (iNode != jNode){
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
-        }
-
-      }
-
-    }
-
-  }
-
-}
-
-void CMeshSolver::Compute_Constitutive_Matrix(void){
-
-  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-
-  if (nDim == 2){
-
-    /*--- Assuming plane strain ---*/
-    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
-    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
-    D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
-
-  }
-  else if (nDim == 3){
-
-    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = Lambda;           D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
-    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = Lambda;           D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
-    D_Mat[2][0] = Lambda;           D_Mat[2][1] = Lambda;           D_Mat[2][2] = Lambda + 2.0*Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
-    D_Mat[3][0] = 0.0;              D_Mat[3][1] = 0.0;              D_Mat[3][2] = 0.0;              D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
-    D_Mat[4][0] = 0.0;              D_Mat[4][1] = 0.0;              D_Mat[4][2] = 0.0;              D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
-    D_Mat[5][0] = 0.0;              D_Mat[5][1] = 0.0;              D_Mat[5][2] = 0.0;              D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
-
-  }
 
 }
 

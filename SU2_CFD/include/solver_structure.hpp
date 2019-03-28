@@ -15940,15 +15940,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   * \param[in] iElem - Element index.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config);
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -16006,17 +15998,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Solve_System_Mesh(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
-   */
-  void Compute_Element_Contribution(CElement *element, CConfig *config);
-
-  /*!
-   * \brief Compute the constitutive matrix in an element for mesh deformation problems
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  void Compute_Constitutive_Matrix(void);
 
   /*!
    * \brief Set the boundary displacements in the mesh side of the problem
