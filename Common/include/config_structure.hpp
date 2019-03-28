@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -355,6 +355,9 @@ private:
   su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Outlet_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
+  su2double *Outlet_Density;    /*!< \brief Avg. density for outlet boundaries. */
+  su2double *Outlet_Area;    /*!< \brief Area for outlet boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
@@ -430,6 +433,9 @@ private:
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
+  string DV_Unordered_Sens_Filename;      /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
+  string DV_Sens_Filename;      /*!< \brief Filename of surface sensitivities written to an unordered ASCII format. */
+  unsigned short Sensitivity_FileFormat; /*!< \brief Format of the input volume sensitivity files (SU2_DOT). */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -454,6 +460,7 @@ private:
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
+  Kind_ConductivityModel_Turb,      /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
@@ -514,8 +521,7 @@ private:
   Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -537,8 +543,11 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
+  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Inc_Outlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
   unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nInc_Outlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  su2double Inc_Inlet_Damping;  /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
+  su2double Inc_Outlet_Damping; /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -757,9 +766,11 @@ private:
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
+  Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
@@ -795,6 +806,12 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  *CpPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
+  *MuPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
+  *KtPolyCoefficients,   /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
+  *CpPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  *MuPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  *KtPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
@@ -942,7 +959,6 @@ private:
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
   su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
@@ -1028,6 +1044,9 @@ private:
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
   su2double *default_nacelle_location;        /*!< \brief Location of the nacelle. */
+  su2double *default_cp_polycoeffs;        /*!< \brief Array for specific heat polynomial coefficients. */
+  su2double *default_mu_polycoeffs;        /*!< \brief Array for viscosity polynomial coefficients. */
+  su2double *default_kt_polycoeffs;        /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
@@ -1074,6 +1093,12 @@ private:
   bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
   Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
   bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
+  
+  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  su2double uq_delta_b;            /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
+  unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
+  su2double uq_urlx;            /*!< \brief Under-relaxation factor */
+  bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -2943,6 +2968,12 @@ public:
   unsigned short GetnMarker_ActDiskOutlet(void);
   
   /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Outlet(void);
+  
+  /*!
    * \brief Get the total number of monitoring markers.
    * \return Total number of monitoring markers.
    */
@@ -3233,6 +3264,18 @@ public:
   bool GetWrt_Slice(void);
 
   /*!
+   * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
+   * \return <code>TRUE</code> means that projected sensitivities on surfaces in an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex will be written.
+   */
+  bool GetWrt_Projected_Sensitivity(void);
+  
+  /*!
+   * \brief Get information about the format for the input volume sensitvities.
+   * \return Format of the input volume sensitivities.
+   */
+  unsigned short GetSensitivity_Format(void);
+  
+  /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
    */
@@ -3268,6 +3311,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Outlet_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -3563,7 +3614,7 @@ public:
    * \return Coordinate of the nacelle location.
    */
   su2double GetNacelleLocation(unsigned short val_index);
-
+  
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
@@ -3720,9 +3771,15 @@ public:
   
   /*!
    * \brief Get the value of the thermal conductivity model.
-   * \return Connectivity model.
+   * \return Conductivity model.
    */
   unsigned short GetKind_ConductivityModel(void);
+  
+  /*!
+   * \brief Get the value of the turbulent thermal conductivity model.
+   * \return Turbulent conductivity model.
+   */
+  unsigned short GetKind_ConductivityModel_Turb(void);
   
   /*!
    * \brief Get the value of the constant viscosity.
@@ -3785,6 +3842,66 @@ public:
   su2double GetMu_SND(void);
   
   /*!
+   * \brief Get the number of coefficients in the temperature polynomial models.
+   * \return The the number of coefficients in the temperature polynomial models.
+   */
+  unsigned short GetnPolyCoeffs(void);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for specific heat Cp.
+   */
+  su2double GetCp_PolyCoeff(unsigned short val_index);
+
+  /*!
+   * \brief Get the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for specific heat Cp.
+   */
+  su2double GetCp_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for viscosity.
+   */
+  su2double GetMu_PolyCoeff(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Non-dimensional temperature polynomial coefficient for viscosity.
+   */
+  su2double GetMu_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficients for viscosity.
+   * \return Non-dimensional temperature polynomial coefficients for viscosity.
+   */
+  su2double* GetMu_PolyCoeffND(void);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Temperature polynomial coefficient for thermal conductivity.
+   */
+  su2double GetKt_PolyCoeff(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   * \return Non-dimensional temperature polynomial coefficient for thermal conductivity.
+   */
+  su2double GetKt_PolyCoeffND(unsigned short val_index);
+  
+  /*!
+   * \brief Get the temperature polynomial coefficients for thermal conductivity.
+   * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
+   */
+  su2double* GetKt_PolyCoeffND(void);
+  
+  /*!
    * \brief Set the value of the non-dimensional constant viscosity.
    */
   void SetMu_ConstantND(su2double mu_const);
@@ -3808,6 +3925,27 @@ public:
    * \brief Set the value of the non-dimensional S for Sutherland model.
    */
   void SetMu_SND(su2double mu_s);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_coeff - Temperature polynomial coefficient for specific heat Cp.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for viscosity.
+   * \param[in] val_coeff - Non-dimensional temperature polynomial coefficient for viscosity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetMu_PolyCoeffND(su2double val_coeff, unsigned short val_index);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_coeff - Non-dimensional temperature polynomial coefficient for thermal conductivity.
+   * \param[in] val_index - Index of the array with all polynomial coefficients.
+   */
+  void SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index);
   
   /*!
    * \brief Get the kind of method for computation of spatial gradients.
@@ -3995,12 +4133,6 @@ public:
    * \return <code>TRUE</code> means that grid deformation residuals will be written to the console.
    */
   bool GetDeform_Output(void);
-  
-  /*!
-   * \brief Get factor to multiply smallest volume for deform tolerance.
-   * \return Factor to multiply smallest volume for deform tolerance.
-   */
-  su2double GetDeform_Tol_Factor(void);
   
   /*!
    * \brief Get factor to multiply smallest volume for deform tolerance.
@@ -4253,14 +4385,6 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_SpaceIteScheme_FEA(void);
-  
-  /*!
-   * \brief Get the kind of transfer method we want to use for multiphysics problems
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of transfer method for multiphysics problems
-   */
-  unsigned short GetKind_TransferMethod(void);
   
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
@@ -4607,6 +4731,24 @@ public:
    */
   bool GetInc_Inlet_UseNormal(void);
 
+  /*!
+   * \brief Get the type of incompressible outlet from the list.
+   * \return Kind of the incompressible outlet.
+   */
+  unsigned short GetKind_Inc_Outlet(string val_marker);
+  
+  /*!
+   * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
+   * \return Damping factor applied to velocity updates at incompressible pressure inlets.
+   */
+  su2double GetInc_Inlet_Damping(void);
+  
+  /*!
+   * \brief Get the damping factor applied to pressure updates at incompressible mass flow outlet.
+   * \return Damping factor applied to pressure updates at incompressible mass flow outlet.
+   */
+  su2double GetInc_Outlet_Damping(void);
+  
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
@@ -7316,6 +7458,48 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  su2double GetOutlet_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Density(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Density(unsigned short val_imarker, su2double val_density);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Area(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   void SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
@@ -7883,6 +8067,18 @@ public:
   string GetDV_Filename(void);
   
   /*!
+   * \brief Get name of the unordered ASCII volume sensitivity file.
+   * \return File name of the unordered ASCII volume sensitivity file.
+   */
+  string GetDV_Unordered_Sens_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII surface sensitivity file.
+   * \return File name of the unordered ASCII surface sensitivity file.
+   */
+  string GetDV_Sens_Filename(void);
+  
+  /*!
    * \brief Set the config options.
    */
   void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
@@ -8373,13 +8569,6 @@ public:
   bool GetPseudoStatic(void);
   
   /*!
-    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
-    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
-    */
-  
-  bool GetMatchingMesh(void);
-  
-  /*!
    * \brief Identifies if we want to restart from a steady or an unsteady solution.
    * \return <code>TRUE</code> if we restart from steady state solution, <code>FALSE</code> otherwise.
    */
@@ -8728,6 +8917,36 @@ public:
    * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
    */
   inline su2double GetRadialBasisFunctionParameter(void);
+
+  /*!
+   * \brief Get information about using UQ methodology
+   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
+   */
+  bool GetUsing_UQ(void);
+
+  /*!
+   * \brief Get the amount of eigenvalue perturbation to be done
+   * \return Value of the uq_delta_b parameter
+   */
+  su2double GetUQ_Delta_B(void);
+
+  /*!
+   * \brief Get the kind of eigenspace perturbation to be done
+   * \return Value of the eig_val_comp
+   */
+  unsigned short GetEig_Val_Comp(void);
+
+  /*!
+   * \brief Get the underelaxation factor
+   * \return Value of the uq_urlx parameter
+   */
+  su2double GetUQ_URLX(void);
+
+  /*!
+   * \brief Get information about eigenspace perturbation
+   * \return <code>TRUE</code> means eigenspace perterturbation will be used
+   */
+  bool GetUQ_Permute(void);
   
   /*!
    * \brief Get information about whether to use wall functions.
