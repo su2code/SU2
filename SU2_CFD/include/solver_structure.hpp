@@ -4388,6 +4388,14 @@ public:
    */
   virtual void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+
 
 };
 
@@ -15903,6 +15911,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+
+  /*!
+   * \brief Set the stiffness of the mesh.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
