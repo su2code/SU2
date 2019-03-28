@@ -57,7 +57,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
       break;
     }
 
-
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
@@ -68,7 +67,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     nVar         = geometry->GetnDim();
     nPoint       = geometry->GetnPoint();
     nPointDomain = geometry->GetnPointDomain();
-    nElem        = geometry->GetnElem();
+    nElement     = geometry->GetnElem();
 
     nIterMesh   = 0;
     valResidual = 0.0;
@@ -92,8 +91,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     }
 
     /*--- Initialize the element structure ---*/
-    element = new CMeshElement[nElem];
-    for (iElem = 0; iElem < nElem; iElem++)
+    element = new CMeshElement[nElement];
+    for (iElem = 0; iElem < nElement; iElem++)
         element[iElem] = CMeshElement();
 
     Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
@@ -476,7 +475,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   /*--- Compute the element distances ---*/
 
-  for (iElem = 0; iElem < nElem; iElem++) {
+  for (iElem = 0; iElem < nElement; iElem++) {
 
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      nNodes = 3;
     if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nNodes = 4;

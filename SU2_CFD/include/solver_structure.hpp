@@ -4386,7 +4386,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  virtual void DeformMesh(CGeometry **geometry, CConfig *config);
+  virtual void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+
 
 };
 
@@ -15843,7 +15844,7 @@ protected:
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  unsigned long nElem;
+  unsigned long nElement;
 
   unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
   su2double valResidual;
@@ -15898,7 +15899,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void DeformMesh(CGeometry **geometry, CConfig *config);
+  void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.

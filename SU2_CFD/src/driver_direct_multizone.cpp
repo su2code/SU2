@@ -619,14 +619,14 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, numerics_container, solver_container,
         config_container, val_iZone, INST_0, 0, ExtIter);
 
 }

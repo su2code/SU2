@@ -55,6 +55,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
           CSurfaceMovement **surface_movement,
           CVolumetricMovement ***grid_movement,
           CFreeFormDefBox ***FFDBox,
+          CNumerics ******numerics_container,
           CSolver *****solver_container,
           CConfig **config_container,
           unsigned short val_iZone,
@@ -295,6 +296,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
         cout << "Deforming the volume grid." << endl;
 
       solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
+                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][MESH_DEF_TERM],
                                                                            config_container[val_iZone]);
 
       break;
@@ -645,7 +647,7 @@ void CFluidIteration::Iterate(COutput *output,
   
   if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
       
-    SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, val_iInst, IntIter, ExtIter);
+    SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, val_iZone, val_iInst, IntIter, ExtIter);
     
     /*--- Apply a Wind Gust ---*/
     

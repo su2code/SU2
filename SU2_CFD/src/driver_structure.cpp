@@ -392,7 +392,7 @@ CDriver::CDriver(char* confFile,
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
         for (iInst = 0; iInst < nInst[iZone]; iInst++){
           if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
-          iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, iInst, 0, 0);
+          iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, ZONE_0, iInst, 0, 0);
         }
       }
     }
@@ -2781,6 +2781,13 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
   }
 
+
+  /*--- We initialize the numerics for the mesh solver ---*/
+  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
+
+  if (dynamic_mesh)
+    numerics_container[val_iInst][MESH_0][MESH_SOL][MAT_KNOWLES] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
+
 }
 
 void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
@@ -4109,7 +4116,7 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 }
@@ -4211,7 +4218,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 
@@ -5585,7 +5592,7 @@ void CFSIDriver::Run() {
     /*--------------------- Mesh deformation --------------------------*/
     /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
+  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, numerics_container, solver_container,
         config_container, ZONE_FLOW, INST_0, 0, ExtIter);
 
     /*-----------------------------------------------------------------*/
@@ -5903,7 +5910,7 @@ void CFSIDriver::Update() {
   /*-------------------- Set the grid movement -------------------------*/
 
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container, surface_movement,
-                                                   grid_movement, FFDBox, solver_container,
+                                                   grid_movement, FFDBox, numerics_container, solver_container,
       config_container, ZONE_FLOW, INST_0, IntIter, ExtIter);
 
   /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
@@ -6731,7 +6738,7 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*-----------------------------------------------------------------*/
 
   direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
-                                                   grid_movement, FFDBox, solver_container,
+                                                   grid_movement, FFDBox, numerics_container, solver_container,
                                                    config_container, ZONE_FLOW, INST_0, IntIter, ExtIter);
 
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
@@ -7667,7 +7674,7 @@ void CMultiphysicsZonalDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 
