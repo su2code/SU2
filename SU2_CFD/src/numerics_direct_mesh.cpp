@@ -121,10 +121,3 @@ CFEAMeshElasticity::~CFEAMeshElasticity(void) {
 
 }
 
-void CFEAMeshElasticity::SetElement_Properties(CElement *element, CConfig *config) {
-
-  if(element_based){
-    E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();
-  }
-
-}
