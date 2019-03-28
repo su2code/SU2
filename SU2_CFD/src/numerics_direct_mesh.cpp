@@ -60,6 +60,7 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   case SOLID_WALL_DISTANCE:
   case VOLUME_DISTANCE:
     element_based = true;
+    Nu = config->GetDeform_Coeff();
     break;
   case CONSTANT_STIFFNESS:
     element_based = false;
@@ -67,12 +68,10 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   }
 
   E_i  = NULL;
-  Nu_i = NULL;
   if (element_based){
     E_i         = new su2double[val_nElem];
-    Nu_i        = new su2double[val_nElem];
     for (iVar = 0; iVar < val_nElem; iVar++){
-      E_i[iVar] = E; Nu_i[iVar] = Nu;
+      E_i[iVar] = E;
     }
   }
 
@@ -122,28 +121,10 @@ CFEAMeshElasticity::~CFEAMeshElasticity(void) {
 
 }
 
-bool CFEAMeshElasticity::SetMeshElement_Properties(unsigned long iElem, su2double val_E, su2double val_Nu)  {
-
-  if (element_based){
-    E_i[iElem]  = val_E;
-    Nu_i[iElem] = val_Nu;
-  }
-
-  return true;
-
-}
-
 void CFEAMeshElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
-  /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
-  Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
   if(element_based){
-    E        = E_i[element->Get_iProp()];
-    Nu       = Nu_i[element->Get_iProp()];
-    Rho_s    = 0.0;
-    Rho_s_DL = 0.0;
-
-    Compute_Lame_Parameters();
+    E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();
   }
 
 }
