@@ -4104,6 +4104,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEAElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4125,7 +4130,7 @@ public:
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
-  void SetElement_Properties(CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   void ReadDV(CConfig *config);
 
@@ -4173,6 +4178,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEALinearElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4293,6 +4303,35 @@ public:
 
 
 };
+
+/*!
+ * \class CFEAMeshElasticity
+ * \brief Class for computing the stiffness matrix of a linear, pseudo-elastic mesh problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 6.2.0 "Falcon"
+ */
+class CFEAMeshElasticity : public CFEALinearElasticity {
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEAMeshElasticity(void);
+
+  void SetElement_Properties(CElement *element_container, CConfig *config);
+
+};
+
 
 /*!
  * \class CFEM_NeoHookean_Comp
