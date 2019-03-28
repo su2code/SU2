@@ -290,6 +290,10 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
       if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications(new solver)." << endl;
 
+      solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetMesh_Stiffness(geometry_container[val_iZone][val_iInst],
+                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][MESH_DEF_TERM],
+                                                                           config_container[val_iZone]);
+
       /*--- Deform the volume grid around the new boundary locations ---*/
 
       if ((rank == MASTER_NODE) && (!discrete_adjoint))
