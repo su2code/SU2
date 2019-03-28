@@ -558,8 +558,6 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, 
 
     NelNodes = element_container[EL_KIND]->GetnNodes();
 
-    cout << "============  NEW  ==============" << endl;
-
     for (iNode = 0; iNode < NelNodes; iNode++) {
 
       Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
@@ -573,10 +571,8 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, 
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) {
             Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-            cout << Kab[iVar*nDim+jVar] << " ";
           }
         }
-        cout << endl;
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
       }
 
