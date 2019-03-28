@@ -15860,9 +15860,7 @@ protected:
   su2double MinDistance;
   su2double MaxDistance;
 
-  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+  CSysSolve System;
 
   su2double E;                  /*!< \brief Young's modulus of elasticity. */
   su2double Nu;                 /*!< \brief Poisson's ratio. */

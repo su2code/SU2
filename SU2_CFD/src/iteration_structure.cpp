@@ -287,7 +287,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
     case ELASTICITY:
 
       if ((rank == MASTER_NODE) && (!discrete_adjoint))
-        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
+        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications(new solver)." << endl;
 
       /*--- Deform the volume grid around the new boundary locations ---*/
 
