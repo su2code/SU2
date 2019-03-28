@@ -98,6 +98,9 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
     Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
 
+    /*--- Stress contribution to the node i ---*/
+    Res_Stress_i = new su2double[nVar];
+
     /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
