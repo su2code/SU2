@@ -3257,8 +3257,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
   switch (config_container[val_iZone]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[val_iZone][val_iInst][MESH_0],
-        solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[val_iZone], iMarker);
+        numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL][FEA_TERM],config_container[val_iZone], iMarker);
     break;
   }
 }

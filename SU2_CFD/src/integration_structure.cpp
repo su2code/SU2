@@ -163,20 +163,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case DISPLACEMENT_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_BOUNDARY:
-        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
-      case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
   }
@@ -193,9 +181,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
-        break;
-      case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -273,10 +258,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         switch (config->GetMarker_All_KindBC(iMarker)) {
           case LOAD_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
           case LOAD_SINE_BOUNDARY:
-        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
         break;
         }
       }
@@ -286,10 +271,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case LOAD_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DAMPER_BOUNDARY:
-          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
         break;
       }
     }
@@ -400,13 +385,13 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISP_DIR_BOUNDARY:
-          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
           break;
         case DISPLACEMENT_BOUNDARY:
-          solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
       }
 
@@ -433,10 +418,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+      solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
       break;
 //      case DISPLACEMENT_BOUNDARY:
-//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, numerics[CONV_BOUND_TERM], config, iMarker);
 //      break;
     }
 
