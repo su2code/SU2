@@ -1105,8 +1105,7 @@ void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
