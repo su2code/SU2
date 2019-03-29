@@ -117,19 +117,24 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
 
     /*--- Element container structure ---*/
 
-    element_container = new CElement* [MAX_FE_KINDS];
+    /*--- First level: only the FEA_TERM is considered ---*/
+    element_container = new CElement** [1];
+    element_container[FEA_TERM] = new CElement* [MAX_FE_KINDS];
+
+    /*--- Initialize all subsequent levels ---*/
     for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
-      element_container[iKind] = NULL;
+      element_container[FEA_TERM][iKind] = NULL;
     }
-    if (nDim == 2){
-      element_container[EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[EL_QUAD] = new CQUAD4(nDim, config);
+
+    if (nDim == 2) {
+        element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+        element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
     }
-    else if (nDim == 3){
-      element_container[EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[EL_PRISM] = new CPRISM6(nDim, config);
+    else if (nDim == 3) {
+        element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+        element_container[FEA_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
+        element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+        element_container[FEA_TERM][EL_PRISM] = new CPRISM6(nDim, config);
     }
 
     /*--- Matrices to impose boundary conditions ---*/
@@ -216,9 +221,10 @@ CMeshSolver::~CMeshSolver(void) {
   delete [] KAux_ab;
 
   if (element_container != NULL) {
-    for (iVar = 0; iVar < MAX_FE_KINDS; iVar++){
-      if (element_container[iVar] != NULL) delete element_container[iVar];
+    for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+       if (element_container[FEA_TERM][jVar] != NULL) delete element_container[FEA_TERM][jVar];
     }
+    delete [] element_container[FEA_TERM];
     delete [] element_container;
   }
 
@@ -266,14 +272,14 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
         if (updated) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim) 
                                + node[indexNode[iNode]]->GetDisplacement(iDim);
         else val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
 
     /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
 
-    if (nDim == 2)  ElemVolume = element_container[EL_KIND]->ComputeArea();
-    else            ElemVolume = element_container[EL_KIND]->ComputeVolume();
+    if (nDim == 2)  ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeArea();
+    else            ElemVolume = element_container[FEA_TERM][EL_KIND]->ComputeVolume();
 
     RightVol = true;
     if (ElemVolume < 0.0) RightVol = false;
@@ -488,31 +494,31 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
         val_Sol   = node[indexNode[iNode]]->GetDisplacement(iDim) + val_Coord;
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-        element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
 
     }
 
     /*--- Set the properties of the element ---*/
-    element_container[EL_KIND]->Set_ElProperties(element_properties[iElem]);
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    numerics->Compute_Tangent_Matrix(element_container[EL_KIND], config);
+    numerics->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     /*--- Retrieve number of nodes ---*/
 
-    NelNodes = element_container[EL_KIND]->GetnNodes();
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
     for (iNode = 0; iNode < NelNodes; iNode++) {
 
-      Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
       for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
       LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
 
       for (jNode = 0; jNode < NelNodes; jNode++) {
 
-        Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
+        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) {
             Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];

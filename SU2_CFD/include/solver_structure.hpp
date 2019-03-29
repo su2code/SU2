@@ -15879,6 +15879,7 @@ protected:
   su2double Mu;                 /*!< \brief Lame's coeficient. */
   su2double Lambda;             /*!< \brief Lame's coeficient. */
 
+  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
   su2double *Res_Stress_i;
 
 public:
@@ -15886,7 +15887,7 @@ public:
   CMeshVariable** node;          /*!< \brief Vector which defines the variables for each problem. */
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
 
-  CElement** element_container;   /*!< \brief Container which stores the element information. */
+  CElement*** element_container;  /*!< \brief Container which stores the element information. */
   CProperty** element_properties; /*!< \brief Vector which stores the indices of each element */
 
   /*!

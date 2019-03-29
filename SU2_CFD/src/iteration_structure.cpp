@@ -291,7 +291,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
         cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications(new solver)." << endl;
 
       solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetMesh_Stiffness(geometry_container[val_iZone][val_iInst],
-                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][MESH_DEF_TERM],
+                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][FEA_TERM],
                                                                            config_container[val_iZone]);
 
       /*--- Deform the volume grid around the new boundary locations ---*/
@@ -300,7 +300,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
         cout << "Deforming the volume grid." << endl;
 
       solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
-                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][MESH_DEF_TERM],
+                                                                           numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL][FEA_TERM],
                                                                            config_container[val_iZone]);
 
       break;
