@@ -1621,7 +1621,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
       
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
@@ -1717,7 +1717,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
 
         /*--- Set current coordinate ---*/
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
@@ -2001,7 +2001,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (prestretch_fem) {
           val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
@@ -2099,7 +2099,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       //      }
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (prestretch_fem) {
           val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
@@ -2945,7 +2945,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfi
         indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
         for (iDim = 0; iDim < nDim; iDim++) {
           val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-          val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+          val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
           /*--- Assign values to the container ---*/
           nodeCoord_ref[iNode][iDim]  = val_Coord;
           nodeCoord_curr[iNode][iDim] = val_Sol;
@@ -4850,7 +4850,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
         indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
         for (iDim = 0; iDim < nDim; iDim++) {
             val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-            val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord;
+            val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
             element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
             element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         }

@@ -493,7 +493,7 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics,
 
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim); //geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
