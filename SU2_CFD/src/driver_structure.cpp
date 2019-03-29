@@ -5799,8 +5799,7 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],config_container[ZONE_STRUCT], iMarker);
     break;
   }
   }
@@ -7309,8 +7308,7 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
     break;
   }
 
@@ -7514,8 +7512,7 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
     break;
   }
 

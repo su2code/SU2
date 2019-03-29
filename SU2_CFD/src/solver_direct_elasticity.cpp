@@ -2451,8 +2451,7 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
 }
 
 
-void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                       unsigned short val_marker) {
+void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   unsigned long iVar, jVar;
@@ -2533,8 +2532,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
   
 }
 
-void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
@@ -2563,8 +2561,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                            unsigned short val_marker) {
+void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, jDim;
 
@@ -2884,11 +2881,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                                   unsigned short val_marker) { }
+void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                           unsigned short val_marker) {
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary ---*/
   
@@ -3185,8 +3180,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) {
+void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
   su2double a[3], b[3], AC[3], BD[3];
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
@@ -3315,11 +3309,9 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
   
 }
 
-void CFEASolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                         unsigned short val_marker) { }
+void CFEASolver::BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
-void CFEASolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                      unsigned short val_marker) {
+void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar;
   su2double dampValue, dampC;
