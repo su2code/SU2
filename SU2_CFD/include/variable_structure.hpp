@@ -3082,6 +3082,48 @@ public:
   
 };
 
+
+class CGradientSmoothingVariable : public CVariable {
+protected:
+  su2double* Sensitivity;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGradientSmoothingVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CGradientSmoothingVariable(su2double *val_data, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CGradientSmoothingVariable(void);
+
+  /*!
+   * \brief Set the sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  void SetSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the Sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  su2double GetSensitivity(unsigned short iDim);
+
+  };
+
 /*!
  * \class CEulerVariable
  * \brief Main class for defining the variables of the compressible Euler solver.

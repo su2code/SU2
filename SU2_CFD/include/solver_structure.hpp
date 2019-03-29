@@ -12437,6 +12437,144 @@ public:
 
 };
 
+/*! \class CGradientSmoothingSolver
+ *  \brief Main class for defining a gradient smoothing.
+ *  \author T. Dick.
+ *  \date March 25, 2019.
+ */
+class CGradientSmoothingSolver : public CSolver {
+private:
+
+
+public:
+
+  CSysVector LinSysSol;   /*!< \brief Vector to store the solution of the problem */
+  CSysVector LinSysRes;   /*!< \brief Vector to store the residual of the problem */
+
+  CSysMatrix StiffnessMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
+
+  CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
+  CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGradientSmoothingSolver(void);
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CGradientSmoothingSolver(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CGradientSmoothingSolver(void);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set residuals to zero.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Set the initial condition for the FEM structural problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+
+  /*!
+   * \brief Compute the stiffness matrix of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Initialize_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_IntegrationConstants(CConfig *config);
+
+  /*!
+   * \brief Impose the boundary conditions
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Impose(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Postprocessing.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
+                      unsigned short iMesh);
+
+  /*!
+   * \brief Routine to solve the linear system of equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Get the residual.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the residual for the variable in the position <i>val_var</i>.
+   */
+  su2double GetRes(unsigned short val_var);
+
+  /*!
+   * \brief Set container of element properties.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Extract the Adjoint sensitivities for the right hand side of the system of equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+};
+
+
 /*!
  * \class CTemplateSolver
  * \brief Main class for defining the template model solver.
