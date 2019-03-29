@@ -688,7 +688,7 @@ inline void CSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) { 
 
 inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
-inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+inline void CSolver::Solve_System(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -1020,19 +1020,19 @@ inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config)
 
 inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
                       
-inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }  
 
@@ -1183,9 +1183,9 @@ inline void CSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config) { }
+inline void CSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config) { }
+inline void CSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
