@@ -86,12 +86,12 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 CMeshVariable::~CMeshVariable(void) {
 
   if (Mesh_Coord    != NULL)    delete [] Mesh_Coord;
-  if (Solution != NULL)         delete [] Solution;
+//  if (Solution != NULL)         delete [] Solution;
 
-  if (Solution_Old != NULL)     delete [] Solution_Old;
+//  if (Solution_Old != NULL)     delete [] Solution_Old;
 
-  if (Solution_time_n  != NULL) delete [] Solution_time_n;
-  if (Solution_time_n1 != NULL) delete [] Solution_time_n1;
+//  if (Solution_time_n  != NULL) delete [] Solution_time_n;
+//  if (Solution_time_n1 != NULL) delete [] Solution_time_n1;
 
 }
 

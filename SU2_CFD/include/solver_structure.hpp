@@ -11717,11 +11717,8 @@ private:
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
   /*!< We maintain the name to avoid defining a new function... */
   
-  unsigned long nElement;
   unsigned short nMarker;
   int nFEA_Terms;
-  
-  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
 
   su2double *GradN_X,
   *GradN_x;
@@ -11730,8 +11727,7 @@ private:
   su2double **Jacobian_s_ij;      /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
   su2double **Jacobian_k_ij;      /*!< \brief Submatrix to store the pressure contribution of node ij. */
   su2double **MassMatrix_ij;      /*!< \brief Submatrix to store the term ij of the mass matrix. */
-  su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
-  
+
   su2double *Res_Ext_Surf;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   su2double *Res_Time_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
   su2double *Res_FSI_Cont;      /*!< \brief Auxiliary vector to store the surface load contribution to the residual */
@@ -11748,9 +11744,6 @@ private:
   
   su2double *normalVertex;      /*!< \brief Auxiliary vector to store the normals to a certain vertex */
   su2double **stressTensor;      /*!< \brief Auxiliary matrix to rebuild the stress tensor and compute reactions */
-  
-  su2double **mZeros_Aux;      /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
-  su2double **mId_Aux;        /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
   
   unsigned long *elProperties;  /*!< \brief Auxiliary vector to read the element properties from file */
 
@@ -11781,6 +11774,16 @@ private:
   su2double ForceCoeff;             /*!< \brief Load transfer coefficient . */
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
+
+protected:
+
+  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+
+  unsigned long nElement;
+  su2double **mZeros_Aux;      /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
+  su2double **mId_Aux;        /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+  su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
 
 public:
   
@@ -13261,13 +13264,11 @@ public:
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-      unsigned short val_marker);
+  void BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -15820,7 +15821,7 @@ private:
  * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
  * \version 6.1.0 "Falcon"
  */
-class CMeshSolver : public CSolver {
+class CMeshSolver : public CFEASolver {
 protected:
 
   bool time_domain;        /*!< \brief Number of dimensions. */
@@ -15828,15 +15829,10 @@ protected:
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  unsigned long nElement;
-
   unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
   su2double valResidual;
 
   su2double *Coordinate;       /*!< \brief Auxiliary nDim vector. */
-
-  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
-  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
 
   su2double MinVolume_Ref,     /*!< \brief Minimum volume in  to make zeros and impose boundary conditions. */
             MinVolume_Curr;
@@ -15847,23 +15843,16 @@ protected:
   su2double MinDistance;
   su2double MaxDistance;
 
-  CSysSolve System;
-
   su2double E;                  /*!< \brief Young's modulus of elasticity. */
   su2double Nu;                 /*!< \brief Poisson's ratio. */
 
   su2double Mu;                 /*!< \brief Lame's coeficient. */
   su2double Lambda;             /*!< \brief Lame's coeficient. */
 
-  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
-  su2double *Res_Stress_i;
-
 public:
 
+  CSysSolve System;
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
-
-  CElement*** element_container;  /*!< \brief Container which stores the element information. */
-  CProperty** element_properties; /*!< \brief Vector which stores the indices of each element */
 
   /*!
    * \brief Constructor of the class.
