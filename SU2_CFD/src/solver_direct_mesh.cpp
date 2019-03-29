@@ -589,7 +589,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
     Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
     /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-    SetBoundaryDisplacements(geometry[MESH_0], config);
+    SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
     /*--- Solve the linear system. ---*/
     Solve_System_Mesh(geometry[MESH_0], config);
@@ -730,7 +730,7 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
 }
 
-void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
+void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
   unsigned short iMarker;
 
@@ -760,7 +760,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config)
 
       /*--- We must note that the FSI surfaces are not clamped ---*/
       if (config->GetMarker_All_ZoneInterface(iMarker) == 0){
-        SetClamped_Boundary(geometry, config, iMarker);
+        BC_Clamped(geometry, numerics, config, iMarker);
       }
     }
   }
@@ -769,7 +769,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config)
 
 }
 
-void CMeshSolver::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CMeshSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
 
   unsigned long iNode, iVertex;
   unsigned long iPoint, jPoint;
