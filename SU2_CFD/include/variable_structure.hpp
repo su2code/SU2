@@ -176,6 +176,12 @@ public:
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
+  virtual void SetSolution_Old(void);
+
+  /*!
+   * \brief Set the value of the old solution.
+   * \param[in] val_solution_old - Pointer to the residual vector.
+   */
   void SetSolution_Old(su2double *val_solution_old);
 
   /*!
@@ -1951,7 +1957,17 @@ public:
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   virtual void SetSolution_time_n(su2double *val_solution_time_n);
-  
+
+  /*!
+   * \brief Set the value of the old solution n-1.
+   */
+  virtual void SetSolution_time_n1(void);
+
+  /*!
+   * \brief Set the value of the old solution.
+   * \param[in] val_solution_time_n - Pointer to the residual vector.
+   */
+  virtual void SetSolution_time_n1(unsigned short val_var, su2double val_solution);
   
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
@@ -2174,6 +2190,40 @@ public:
    * \brief A virtual member.
    */
    virtual su2double GetReference_Geometry(unsigned short iVar);
+
+  /*!
+   * \brief A virtual member. Get the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the original coordinate iDim.
+   */
+  virtual su2double GetMesh_Coord(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Get the undeformed coordinates.
+   * \return Pointer to the reference coordinates.
+   */
+  virtual su2double *GetMesh_Coord();
+
+  /*!
+   * \brief A virtual member. Set the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord[nDim]
+   */
+  virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord);
+
+
+    /*!
+   * \brief A virtual member. Get the value of the wall distance in reference coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the wall distance in reference coordinates.
+   */
+  virtual su2double GetWallDistance(void);
+
+  /*!
+   * \brief A virtual member. Set the value of the wall distance in reference coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  virtual void SetWallDistance(su2double val_dist);
 
    /*!
     * \brief A virtual member.
@@ -5012,7 +5062,7 @@ public:
  * \author R. Sanchez.
  * \version 6.1.0 "Falcon"
  */
-class CMeshVariable {
+class CMeshVariable : public CVariable {
 protected:
 
   unsigned short nDim;
@@ -5021,10 +5071,6 @@ protected:
 
   su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
 
-  su2double *Displacement;        /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
-  su2double *Displacement_Old;    /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
-  su2double *Displacement_n;      /*!< \brief Displacement of the mesh at time n respect to the original coordinates. */
-  su2double *Displacement_n1;     /*!< \brief Displacement of the mesh at time n-1 respect to the original coordinates. */
 
 public:
 
@@ -5062,87 +5108,33 @@ public:
   void SetMesh_Coord(unsigned short iDim, su2double val_coord);
 
   /*!
-   * \brief Get the value of the displacement at time n+1.
-   * \param[in] iDim - Index of Displacement[nDim]
-   * \return Value of the displacement at time n+1 and position iDim.
-   */
-  su2double GetDisplacement(unsigned short iDim);
-
-  /*!
-   * \brief Get the pointer to the vector of displacements at time n+1.
-   * \return Vector of displacements at time n+1.
-   */
-  su2double *GetDisplacement();
-
-  /*!
-   * \brief Set the value of the displacement.
-   * \param[in] iDim - Index of Displacement[nDim]
-   * \param[in] val_coord - Value of Displacement[nDim]
-   */
-  void SetDisplacement(unsigned short iDim, su2double val_disp);
-
-  /*!
-   * \brief Get the value of the displacement at the previous sub-iteration (assuming multizone)
-   * \param[in] iDim - Index of Displacement_Old[nDim]
-   * \return Value of the displacement at the previous sub-iteration and position iDim.
-   */
-  su2double GetDisplacement_Old(unsigned short iDim);
-
-  /*!
    * \brief Move Displacement into Displacement_Old.
    */
-  void SetDisplacement_Old(void);
-
-  /*!
-   * \brief Get the value of the displacement at time n.
-   * \param[in] iDim - Index of Displacement_n[nDim]
-   * \return Value of the displacement at time n and position iDim.
-   */
-  su2double GetDisplacement_n(unsigned short iDim);
-
-  /*!
-   * \brief Get the pointer to the vector of displacements at time n.
-   * \return Vector of displacements at time n.
-   */
-  su2double *GetDisplacement_n();
+  void SetSolution_Old(void);
 
   /*!
    * \brief Move Displacement into Displacement_n.
    */
-  void SetDisplacement_n(void);
+  void SetSolution_time_n(void);
 
   /*!
    * \brief Set the value of the displacement at time n.
    * \param[in] iDim - Index of Displacement_n[nDim]
    * \param[in] val_coord - Value of Displacement_n[nDim]
    */
-  void SetDisplacement_n(unsigned short iDim, su2double val_disp);
-
-
-  /*!
-   * \brief Get the value of the displacement at time n-1.
-   * \param[in] iDim - Index of Coordinates[nDim]
-   * \return Value of the displacement at time n-1 and position iDim.
-   */
-  su2double GetDisplacement_n1(unsigned short iDim);
-
-  /*!
-   * \brief Get the pointer to the vector of displacements at time n-1.
-   * \return Vector of displacements at time n-1.
-   */
-  su2double *GetDisplacement_n1();
+  void SetSolution_time_n(unsigned short iDim, su2double val_disp);
 
   /*!
    * \brief Move Displacement_n into Displacement_n1.
    */
-  void SetDisplacement_n1(void);
+  void SetSolution_time_n1(void);
 
   /*!
    * \brief Set the value of the displacement at time n-1.
    * \param[in] iDim - Index of Displacement_n1[nDim]
    * \param[in] val_coord - Value of Displacement_n1[nDim]
    */
-  void SetDisplacement_n1(unsigned short iDim, su2double val_disp);
+  void SetSolution_time_n1(unsigned short iDim, su2double val_disp);
 
   /*!
    * \brief Get the value of the wall distance in reference coordinates.

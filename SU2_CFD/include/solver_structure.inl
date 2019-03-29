@@ -2532,13 +2532,13 @@ inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return 
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
 
-inline void CMeshSolver::SetDisplacement_Old(void){
+inline void CMeshSolver::SetSolution_Old(void){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetDisplacement_Old();
+    node[iPoint]->SetSolution_Old();
 }
 
 inline su2double CMeshSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetMesh_Coord(iDim);}
 
-inline su2double CMeshSolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetDisplacement(iDim);}
+inline su2double CMeshSolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetSolution(iDim);}
 
 inline void CSolver::SetDualTime_Mesh(void){ }
