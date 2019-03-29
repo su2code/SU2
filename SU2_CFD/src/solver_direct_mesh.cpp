@@ -38,7 +38,7 @@
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/adt_structure.hpp"
 
-CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), System(true) {
+CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(), System(true) {
 
     /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
@@ -139,19 +139,19 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
 
     /*--- Matrices to impose boundary conditions ---*/
 
-    matrixZeros = new su2double *[nDim];
-    matrixId    = new su2double *[nDim];
+    mZeros_Aux = new su2double *[nDim];
+    mId_Aux    = new su2double *[nDim];
     for(iDim = 0; iDim < nDim; iDim++){
-      matrixZeros[iDim] = new su2double[nDim];
-      matrixId[iDim]    = new su2double[nDim];
+      mZeros_Aux[iDim] = new su2double[nDim];
+      mId_Aux[iDim]    = new su2double[nDim];
     }
 
     for(iDim = 0; iDim < nDim; iDim++){
       for (jDim = 0; jDim < nDim; jDim++){
-        matrixZeros[iDim][jDim] = 0.0;
-        matrixId[iDim][jDim]    = 0.0;
+        mZeros_Aux[iDim][jDim] = 0.0;
+        mId_Aux[iDim][jDim]    = 0.0;
       }
-      matrixId[iDim][iDim] = 1.0;
+      mId_Aux[iDim][iDim] = 1.0;
     }
 
     /*--- Term ij of the Jacobian ---*/
@@ -162,11 +162,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
       for (jDim = 0; jDim < nDim; jDim++) {
         Jacobian_ij[iDim][jDim] = 0.0;
       }
-    }
-
-    KAux_ab = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      KAux_ab[iDim] = new su2double[nDim];
     }
 
     unsigned short iVar;
@@ -210,15 +205,13 @@ CMeshSolver::~CMeshSolver(void) {
   delete [] Solution;
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] matrixZeros[iDim];
-    delete [] matrixId[iDim];
+    delete [] mZeros_Aux[iDim];
+    delete [] mId_Aux[iDim];
     delete [] Jacobian_ij[iDim];
-    delete [] KAux_ab[iDim];
   }
-  delete [] matrixZeros;
-  delete [] matrixId;
+  delete [] mZeros_Aux;
+  delete [] mId_Aux;
   delete [] Jacobian_ij;
-  delete [] KAux_ab;
 
   if (element_container != NULL) {
     for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
@@ -809,11 +802,11 @@ void CMeshSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,matrixZeros);
+            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            Jacobian.SetBlock(iNode,jPoint,matrixId);
+            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
           }
         }
       }
@@ -827,7 +820,7 @@ void CMeshSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != iPoint) {
-            Jacobian.SetBlock(iPoint,iNode,matrixZeros);
+            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
           }
         }
       }
@@ -893,11 +886,11 @@ void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsig
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,matrixZeros);
+            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            Jacobian.SetBlock(iNode,jPoint,matrixId);
+            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
           }
         }
       }
@@ -932,7 +925,7 @@ void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsig
             /*--- The term is substracted from the residual (right hand side) ---*/
             LinSysRes.SubtractBlock(iPoint, Residual);
             /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,matrixZeros);
+            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
           }
         }
       }
