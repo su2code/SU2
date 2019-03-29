@@ -1013,8 +1013,6 @@ inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config)
 inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
 
 inline su2double CSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return 0.0;}
-
-inline su2double CSolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return 0.0;}
                       
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) { }
 
@@ -2348,8 +2346,6 @@ inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
 
 inline su2double CFEASolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return geometry->node[indexNode]->GetCoord(iDim);}
 
-inline su2double CFEASolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetSolution(iDim);}
-
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
@@ -2538,7 +2534,5 @@ inline void CMeshSolver::SetSolution_Old(void){
 }
 
 inline su2double CMeshSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetMesh_Coord(iDim);}
-
-inline su2double CMeshSolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetSolution(iDim);}
 
 inline void CSolver::SetDualTime_Mesh(void){ }

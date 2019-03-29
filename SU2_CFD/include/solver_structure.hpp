@@ -3816,13 +3816,6 @@ public:
   virtual su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
 
   /*!
-   * \brief A virtual member, get the value of the current coordinate (coordinate + solution) to set on the element structure.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  virtual su2double Get_ValSol(unsigned long indexNode, unsigned short iDim);
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Description of the numerical method.
@@ -11911,13 +11904,6 @@ public:
    * \param[in] iDim - Dimension required.
    */
   su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
-
-  /*!
-   * \brief Get the value of the current coordinate (coordinate + solution) to set on the element structure.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  su2double Get_ValSol(unsigned long indexNode, unsigned short iDim);
   
   /*!
    * \brief Compute the stiffness matrix of the problem.
@@ -15926,13 +15912,6 @@ public:
    * \param[in] iDim - Dimension required.
    */
   su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
-
-  /*!
-   * \brief Get the value of the current coordinate (coordinate + solution) to set on the element structure.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  su2double Get_ValSol(unsigned long indexNode, unsigned short iDim);
 
   /*!
    * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
