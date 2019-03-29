@@ -15879,12 +15879,6 @@ protected:
   su2double Mu;                 /*!< \brief Lame's coeficient. */
   su2double Lambda;             /*!< \brief Lame's coeficient. */
 
-  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
-            **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
-  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
-  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
-  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
-
   su2double *Res_Stress_i;
 
 public:
