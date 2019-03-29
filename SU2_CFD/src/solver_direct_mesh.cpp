@@ -463,7 +463,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config){
+void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, jDim, nNodes = 0;
@@ -503,7 +503,7 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, 
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    numerics->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     /*--- Retrieve number of nodes ---*/
 
@@ -533,7 +533,7 @@ void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, 
 
 }
 
-void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config){
+void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem;
 
@@ -548,7 +548,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, C
       }
 
       /*--- Set the element elastic properties in the numerics container ---*/
-      numerics->SetMeshElasticProperties(iElem, E);
+      numerics[FEA_TERM]->SetMeshElasticProperties(iElem, E);
 
     }
 
@@ -557,7 +557,7 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, C
 
 }
 
-void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config){
+void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 

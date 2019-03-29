@@ -1475,7 +1475,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
       (dynamic && disc_adj_fem)) {
     MassMatrix.SetValZero();
     Compute_IntegrationConstants(config);
-    Compute_MassMatrix(geometry, solver_container, numerics, config);
+    Compute_MassMatrix(geometry, numerics, config);
   }
   
   /*
@@ -1494,7 +1494,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
       for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_BodyForces_Res();
     }
     // Compute the dead load term
-    Compute_DeadLoad(geometry, solver_container, numerics, config);
+    Compute_DeadLoad(geometry, numerics, config);
   }
   
   /*
@@ -1587,7 +1587,7 @@ void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
 }
 
-void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1673,7 +1673,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1821,7 +1821,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
   
 }
 
-void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1890,7 +1890,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   unsigned long iElem, iVar, iPoint;
   unsigned short iNode, iDim, nNodes = 0;
@@ -1966,7 +1966,7 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   
   unsigned long iElem, iVar;
@@ -2045,7 +2045,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iPoint, iElem, iVar;
   unsigned short iNode, iDim, iStress;
@@ -2338,7 +2338,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
   
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
@@ -4221,7 +4221,7 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
   
 }
 
-void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   
   unsigned long IterLinSol = 0, iPoint, total_index;
   unsigned short iVar;

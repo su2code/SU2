@@ -3826,48 +3826,52 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  
+  virtual void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3877,17 +3881,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   
-  virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  
-  virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  virtual void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3895,7 +3889,7 @@ public:
    * \param[in] solver_container - Container vector with the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  virtual void Solve_System(CGeometry *geometry, CConfig *config);
   
   
   /*!
@@ -4386,7 +4380,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  virtual void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+  virtual void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4394,7 +4388,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+  virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
 
 };
@@ -11918,7 +11912,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time (more efficient if full Newton Raphson).
@@ -11927,34 +11921,31 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the mass matrix of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the mass residual of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_MassRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Compute the nodal stress terms and add them to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStressRes(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the stress at the nodes for output purposes.
@@ -11964,7 +11955,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   
-  void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Compute the dead loads.
@@ -11973,7 +11964,7 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+  void Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, CConfig *config);
   
   /*!
    * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
@@ -12165,7 +12156,7 @@ public:
    * \param[in] solver_container - Container vector with the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Solve_System(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the residual for FEM structural analysis.
@@ -15905,14 +15896,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void DeformMesh(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Set the stiffness of the mesh.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMesh_Stiffness(CGeometry **geometry, CNumerics *numerics, CConfig *config);
+  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
@@ -15935,7 +15926,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
