@@ -15874,7 +15874,6 @@ protected:
 
 public:
 
-  CMeshVariable** node;          /*!< \brief Vector which defines the variables for each problem. */
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
 
   CElement*** element_container;  /*!< \brief Container which stores the element information. */
@@ -16050,7 +16049,7 @@ public:
   /*!
    * \brief Store the old displacement before a new deformation is done.
    */
-  void SetDisplacement_Old(void);
+  void SetSolution_Old(void);
 
 
 };

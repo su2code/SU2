@@ -103,6 +103,8 @@ inline void CVariable::SetUndivided_Laplacian(unsigned short val_var, su2double 
 
 inline void CVariable::SetAuxVar(su2double val_auxvar) { AuxVar = val_auxvar; }
 
+inline void CVariable::SetSolution_Old(void) { }
+
 inline void CVariable::SetSolution_Old(unsigned short val_var, su2double val_solution_old) { Solution_Old[val_var] = val_solution_old; }
 
 inline void CVariable::SetLimiter(unsigned short val_var, su2double val_limiter) { Limiter[val_var] = val_limiter; }
@@ -559,6 +561,10 @@ inline void CVariable::SetSolution_time_n(void) { }
 
 inline void CVariable::SetSolution_time_n(unsigned short val_var, su2double val_solution_time_n) { }
 
+inline void CVariable::SetSolution_time_n1(void) { }
+
+inline void CVariable::SetSolution_time_n1(unsigned short val_var, su2double val_solution_time_n) { }
+
 inline void CVariable::SetSolution_Vel(su2double *val_solution_vel) { }
 
 inline void CVariable::SetSolution_Vel(unsigned short val_var, su2double val_solution_vel) { }
@@ -632,6 +638,16 @@ inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestret
 inline su2double *CVariable::GetPrestretch(void) { return NULL; }
 
 inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
+
+inline su2double CVariable::GetMesh_Coord(unsigned short iDim) { return 0.0; }
+
+inline su2double *CVariable::GetMesh_Coord() { return NULL; }
+
+inline void CVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { }
+
+inline su2double CVariable::GetWallDistance(void) { return 0.0; }
+
+inline void CVariable::SetWallDistance(su2double val_dist) { }
 
 inline void CVariable::Register_femSolution_time_n() { }
 
@@ -1615,40 +1631,24 @@ inline su2double *CMeshVariable::GetMesh_Coord(void) { return Mesh_Coord; }
 
 inline void CMeshVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { Mesh_Coord[iDim] = val_coord;}
 
-inline su2double CMeshVariable::GetDisplacement(unsigned short iDim) { return Displacement[iDim]; }
-
-inline su2double *CMeshVariable::GetDisplacement(void) { return Displacement; }
-
-inline void CMeshVariable::SetDisplacement(unsigned short iDim, su2double val_disp) { Displacement[iDim] = val_disp;}
-
-inline su2double CMeshVariable::GetDisplacement_Old(unsigned short iDim) { return Displacement_Old[iDim]; }
-
-inline void CMeshVariable::SetDisplacement_Old(void){
+inline void CMeshVariable::SetSolution_Old(void){
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Displacement_Old[iDim] = Displacement[iDim];
+    Solution_Old[iDim] = Solution[iDim];
 }
 
-inline su2double CMeshVariable::GetDisplacement_n(unsigned short iDim) { return Displacement_n[iDim]; }
-
-inline su2double *CMeshVariable::GetDisplacement_n(void) { return Displacement_n; }
-
-inline void CMeshVariable::SetDisplacement_n(void){
+inline void CMeshVariable::SetSolution_time_n(void){
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Displacement_n[iDim] = Displacement[iDim];
+    Solution_time_n[iDim] = Solution[iDim];
 }
 
-inline void CMeshVariable::SetDisplacement_n(unsigned short iDim, su2double val_disp) { Displacement_n[iDim] = val_disp;}
+inline void CMeshVariable::SetSolution_time_n(unsigned short iDim, su2double val_disp) { Solution_time_n[iDim] = val_disp;}
 
-inline su2double CMeshVariable::GetDisplacement_n1(unsigned short iDim) { return Displacement_n1[iDim]; }
-
-inline su2double *CMeshVariable::GetDisplacement_n1(void) { return Displacement_n1; }
-
-inline void CMeshVariable::SetDisplacement_n1(void){
+inline void CMeshVariable::SetSolution_time_n1(void){
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Displacement_n1[iDim] = Displacement_n[iDim];
+    Solution_time_n1[iDim] = Solution_time_n[iDim];
 }
 
-inline void CMeshVariable::SetDisplacement_n1(unsigned short iDim, su2double val_disp) { Displacement_n1[iDim] = val_disp;}
+inline void CMeshVariable::SetSolution_time_n1(unsigned short iDim, su2double val_disp) { Solution_time_n1[iDim] = val_disp;}
 
 inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
 

@@ -37,18 +37,17 @@
 
 #include "../include/variable_structure.hpp"
 
-CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) {
+CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
 
   unsigned short iDim;
 
   /*--- Initialize pointers to NULL ---*/
   Mesh_Coord    = NULL;
-  Displacement = NULL;
 
-  Displacement_Old = NULL;
+  Solution_Old = NULL;
 
-  Displacement_n  = NULL;
-  Displacement_n1 = NULL;
+  Solution_time_n  = NULL;
+  Solution_time_n1 = NULL;
 
   /*--- Booleans that determine the kind of problems ---*/
   bool time_domain = config->GetTime_Domain();
@@ -59,28 +58,26 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 
   /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
   Mesh_Coord    = new su2double [nDim];
-  Displacement = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     Mesh_Coord[iDim]    = val_coor[iDim];
-    Displacement[iDim] = 0.0;
   }
 
   /*--- Initialize the variables necessary when the problem is multizone ---*/
   if (multizone){
-    Displacement_Old    = new su2double [nDim];
+    Solution_Old    = new su2double [nDim];
     for (iDim = 0; iDim < nDim; iDim++){
-      Displacement_Old[iDim]    = 0.0;
+      Solution_Old[iDim]    = 0.0;
     }
   }
 
   /*--- Initialize the variables necessary when the problem is time domain ---*/
   if (time_domain){
-    Displacement_n    = new su2double [nDim];
-    Displacement_n1   = new su2double [nDim];
+    Solution_time_n    = new su2double [nDim];
+    Solution_time_n1   = new su2double [nDim];
 
     for (iDim = 0; iDim < nDim; iDim++){
-      Displacement_n[iDim]    = 0.0;
-      Displacement_n1[iDim]   = 0.0;
+      Solution_time_n[iDim]    = 0.0;
+      Solution_time_n1[iDim]   = 0.0;
     }
   }
 
@@ -88,13 +85,13 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 
 CMeshVariable::~CMeshVariable(void) {
 
-  if (Mesh_Coord    != NULL) delete [] Mesh_Coord;
-  if (Displacement != NULL) delete [] Displacement;
+  if (Mesh_Coord    != NULL)    delete [] Mesh_Coord;
+  if (Solution != NULL)         delete [] Solution;
 
-  if (Displacement_Old != NULL) delete [] Displacement_Old;
+  if (Solution_Old != NULL)     delete [] Solution_Old;
 
-  if (Displacement_n  != NULL) delete [] Displacement_n;
-  if (Displacement_n1 != NULL) delete [] Displacement_n1;
+  if (Solution_time_n  != NULL) delete [] Solution_time_n;
+  if (Solution_time_n1 != NULL) delete [] Solution_time_n1;
 
 }
 

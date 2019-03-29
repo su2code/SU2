@@ -80,7 +80,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
 
     /*--- Initialize the node structure ---*/
     Coordinate = new su2double[nDim];
-    node       = new CMeshVariable*[nPoint];
+    node       = new CVariable*[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- We store directly the reference coordinates ---*/
@@ -270,7 +270,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       /*--- Compute the volume with the reference or with the current coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         if (updated) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim) 
-                               + node[indexNode[iNode]]->GetDisplacement(iDim);
+                               + node[indexNode[iNode]]->GetSolution(iDim);
         else val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
@@ -563,7 +563,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
-  if (multizone) SetDisplacement_Old();
+  if (multizone) SetSolution_Old();
 
   /*--- Retrieve number or internal iterations from config ---*/
 
@@ -636,7 +636,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       /*--- Retrieve the displacement from the solution of the linear system ---*/
       val_disp = LinSysSol[total_index];
       /*--- Store the displacement of the mesh node ---*/
-      node[iPoint]->SetDisplacement(iDim, val_disp);
+      node[iPoint]->SetSolution(iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
       val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
       /*--- Update the geometry container ---*/
@@ -682,9 +682,9 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
 
-    Disp_nM1 = node[iPoint]->GetDisplacement_n1();
-    Disp_n   = node[iPoint]->GetDisplacement_n();
-    Disp_nP1 = node[iPoint]->GetDisplacement();
+    Disp_nM1 = node[iPoint]->GetSolution_time_n1();
+    Disp_n   = node[iPoint]->GetSolution_time_n();
+    Disp_nP1 = node[iPoint]->GetSolution();
 
     /*--- Unsteady time step ---*/
 
@@ -864,7 +864,7 @@ void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsig
     /*--- Add it to the current displacement (this will be replaced in the transfer routines
      so that the displacements at the interface are directly transferred instead of incrementally) ---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iNode]->GetDisplacement(iDim) + VarDisp[iDim];
+      VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
 
     if (geometry->node[iNode]->GetDomain()) {
 
@@ -990,7 +990,7 @@ void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *
     /*--- Add it to the current displacement (this will be replaced in the transfer routines
      so that the displacements at the interface are directly transferred instead of incrementally) ---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iPoint]->GetDisplacement(iDim) + VarDisp[iDim];
+      VarCoord[iDim] = node[iPoint]->GetSolution(iDim) + VarDisp[iDim];
 
     if (geometry->node[iPoint]->GetDomain()) {
 
@@ -1032,8 +1032,8 @@ void CMeshSolver::SetDualTime_Mesh(void){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetDisplacement_n1();
-    node[iPoint]->SetDisplacement_n();
+    node[iPoint]->SetSolution_time_n1();
+    node[iPoint]->SetSolution_time_n();
   }
 
 }
@@ -1054,7 +1054,7 @@ void CMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node[iPoint]->GetDisplacement(iVar) - node[iPoint]->GetDisplacement_Old(iVar);
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -1129,7 +1129,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-        node[iPoint_Local]->SetDisplacement(iDim, displ);
+        node[iPoint_Local]->SetSolution(iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -1247,7 +1247,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++){
         curr_coord = Restart_Data[index+iDim];
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-        node[iPoint_Local]->SetDisplacement_n(iDim, displ);
+        node[iPoint_Local]->SetSolution_time_n(iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -1320,7 +1320,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++){
           curr_coord = Restart_Data[index+iDim];
           displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-          node[iPoint_Local]->SetDisplacement_n1(iDim, displ);
+          node[iPoint_Local]->SetSolution_time_n1(iDim, displ);
         }
         iPoint_Global_Local++;
 
@@ -1394,7 +1394,7 @@ void CMeshSolver::Set_MPI_Displacement(CGeometry *geometry, CConfig *config) {
 
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Displ = node[iPoint]->GetDisplacement();
+        Displ = node[iPoint]->GetSolution();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Send_Displ[iDim*nVertexS+iVertex] = Displ[iDim];
       }
@@ -1474,7 +1474,7 @@ void CMeshSolver::Set_MPI_Displacement(CGeometry *geometry, CConfig *config) {
         /*--- Copy transformed coordinates back into buffer. ---*/
 
         for (iDim = 0; iDim < nDim; iDim++)
-          node[iPoint]->SetDisplacement(iDim, newDispl[iDim]);
+          node[iPoint]->SetSolution(iDim, newDispl[iDim]);
 
       }
 
