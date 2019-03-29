@@ -166,35 +166,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
 
     unsigned short iVar;
 
-    if (nDim == 2){
-      Ba_Mat  = new su2double* [3];
-      Bb_Mat  = new su2double* [3];
-      D_Mat   = new su2double* [3];
-      GradNi_Ref_Mat = new su2double* [4];
-      for (iVar = 0; iVar < 3; iVar++) {
-        Ba_Mat[iVar]    = new su2double[nDim];
-        Bb_Mat[iVar]    = new su2double[nDim];
-        D_Mat[iVar]     = new su2double[3];
-      }
-      for (iVar = 0; iVar < 4; iVar++) {
-        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
-      }
-    }
-    else if (nDim == 3){
-      Ba_Mat  = new su2double* [6];
-      Bb_Mat  = new su2double* [6];
-      D_Mat   = new su2double* [6];
-      GradNi_Ref_Mat = new su2double* [8];
-      for (iVar = 0; iVar < 6; iVar++) {
-        Ba_Mat[iVar]      = new su2double[nDim];
-        Bb_Mat[iVar]      = new su2double[nDim];
-        D_Mat[iVar]       = new su2double[6];
-      }
-      for (iVar = 0; iVar < 8; iVar++) {
-        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
-      }
-    }
-
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (config->GetMultizone_Residual()){
 
@@ -243,32 +214,6 @@ CMeshSolver::~CMeshSolver(void) {
   delete [] matrixId;
   delete [] Jacobian_ij;
   delete [] KAux_ab;
-
-  if (nDim == 2){
-    for (iVar = 0; iVar < 3; iVar++){
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 4; iVar++){
-      delete [] GradNi_Ref_Mat[iVar];
-    }
-  }
-  else if (nDim == 3){
-    for (iVar = 0; iVar < 6; iVar++){
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 8; iVar++){
-      delete [] GradNi_Ref_Mat[iVar];
-    }
-  }
-
-  delete [] Ba_Mat;
-  delete [] Bb_Mat;
-  delete [] D_Mat;
-  delete [] GradNi_Ref_Mat;
 
   if (element_container != NULL) {
     for (iVar = 0; iVar < MAX_FE_KINDS; iVar++){
