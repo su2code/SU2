@@ -129,39 +129,3 @@ namespace AD {
   }
 #endif
 }
-
-
-/*--- If we compile under OSX we have to overload some of the operators for
- *   complex numbers to avoid the use of the standard operators
- *  (they use a lot of functions that are only defined for doubles) ---*/
-
-#ifdef __APPLE__
-
-namespace std{
-  template<>
-  su2double abs(const complex<su2double>& x){
-    return sqrt(x.real()*x.real() + x.imag()*x.imag());
-  }
-
-  template<>
-  complex<su2double> operator/(const complex<su2double>& x, const complex<su2double>& y){
-
-    su2double d    = (y.real()*y.real() + y.imag()*y.imag());
-    su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
-    su2double imag = (x.imag()*y.real() - x.real()*y.imag())/d;
-
-    return complex<su2double>(real, imag);
-
-  }
-
-  template<>
-  complex<su2double> operator*(const complex<su2double>& x, const complex<su2double>& y){
-
-    su2double real = (x.real()*y.real() - x.imag()*y.imag());
-    su2double imag = (x.imag()*y.real() + x.real()*y.imag());
-
-    return complex<su2double>(real, imag);
-
-  }
-}
-#endif
