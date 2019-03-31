@@ -14982,7 +14982,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary%2 == 1)){
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                         nSpan++;
                     }
                   }
@@ -15027,7 +15027,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                   	jVertex = node[iPoint]->GetVertex(jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary%2 == 1)){
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = node[iPoint]->GetCoord();
                       switch (config->GetKind_TurboMachinery(val_iZone)){
                       case CENTRIFUGAL:
@@ -15160,7 +15160,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary%2 == 1)){
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = node[iPoint]->GetCoord();
                       switch (config->GetKind_TurboMachinery(val_iZone)){
                       case CENTRIFUGAL: case CENTRIPETAL:
