@@ -159,7 +159,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(void);
+  CSolver(bool mesh_deform_mode = false);
   
   /*!
    * \brief Destructor of the class.
@@ -11779,11 +11779,15 @@ protected:
 
   bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
 
-  unsigned long nElement;
-  su2double **mZeros_Aux;      /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
-  su2double **mId_Aux;        /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+  unsigned long nElement;         /*!< \brief Number of elements. */
+  unsigned long IterLinSol;       /*!< \brief Number of iterations of the linear solver. */
 
-  su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
+  su2double **mZeros_Aux;         /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
+  su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+  su2double *Res_Stress_i;        /*!< \brief Submatrix to store the nodal stress contribution of node i. */
+
+  su2double valResidual;          /*!< \brief Store the residual of the linear system solution. */
 
 public:
   
@@ -11803,7 +11807,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEASolver(void);
+  CFEASolver(bool mesh_deform_mode = false);
   
   /*!
    * \overload
@@ -15829,9 +15833,6 @@ protected:
 
   bool stiffness_set;          /*!< \brief Element-based stiffness is set. */
 
-  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
-  su2double valResidual;
-
   su2double *Coordinate;       /*!< \brief Auxiliary nDim vector. */
 
   su2double MinVolume_Ref,     /*!< \brief Minimum volume in  to make zeros and impose boundary conditions. */
@@ -15851,7 +15852,6 @@ protected:
 
 public:
 
-  CSysSolve System;
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
 
   /*!
@@ -15903,13 +15903,6 @@ public:
   su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
 
   /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -15945,26 +15938,11 @@ public:
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
   /*!
-   * \brief Set the boundary displacements to 0.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker -
-   */
-  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
-
-  /*!
    * \brief Set the boundary displacements to the imposed external value.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Solve_System_Mesh(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the boundary displacements in the mesh side of the problem

@@ -38,7 +38,7 @@
 #include "../include/solver_structure.hpp"
 #include <algorithm>
 
-CFEASolver::CFEASolver(void) : CSolver() {
+CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
   
   nElement = 0;
   nDim = 0;
@@ -4215,7 +4215,7 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **sol
 
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   
-  unsigned long IterLinSol = 0, iPoint, total_index;
+  unsigned long iPoint, total_index;
   unsigned short iVar;
   
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -4235,6 +4235,10 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
+
+  /*--- Store the value of the residual. ---*/
+
+  valResidual = System.GetResidual();
   
 }
 

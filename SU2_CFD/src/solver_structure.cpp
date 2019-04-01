@@ -37,7 +37,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CSolver::CSolver(void) {
+CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -91,6 +91,7 @@ CSolver::CSolver(void) {
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
   IterLinSolver = 0;
+
 }
 
 CSolver::~CSolver(void) {
