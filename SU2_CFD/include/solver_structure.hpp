@@ -15942,7 +15942,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+  void BC_Moving(CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Set the boundary displacements in the mesh side of the problem

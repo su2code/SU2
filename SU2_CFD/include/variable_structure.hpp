@@ -5060,7 +5060,7 @@ public:
  * \brief Main class for defining the variables of the mesh movement.
  * \ingroup Mesh deformation variables.
  * \author R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CMeshVariable : public CVariable {
 protected:
@@ -5156,7 +5156,7 @@ public:
  * \brief Main class for defining the elements of the mesh movement.
  * \ingroup Mesh deformation variables.
  * \author R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CMeshElement {
 protected:
