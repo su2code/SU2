@@ -1624,7 +1624,6 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
-
 inline su2double CMeshVariable::GetMesh_Coord(unsigned short iDim) { return Mesh_Coord[iDim]; }
 
 inline su2double *CMeshVariable::GetMesh_Coord(void) { return Mesh_Coord; }

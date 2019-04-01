@@ -656,42 +656,35 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- First of all, move the FSI interfaces. ---*/
-
+  /*--- As initialization, set to zero displacements of all non-moving surfaces ---*/
+  /*--- As exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      SetMoving_Boundary(geometry, config, iMarker);
-    }
-  }
-
-  /*--- Now, set to zero displacements of all the other boundary conditions, except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-
-
-  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+    if ((config->GetMarker_All_Moving(iMarker) == NO) &&
+        ((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
 
-      /*--- We must note that the FSI surfaces are not clamped ---*/
-      if (config->GetMarker_All_ZoneInterface(iMarker) == 0){
-        BC_Clamped(geometry, numerics, config, iMarker);
-      }
+         BC_Clamped(geometry, numerics, config, iMarker);
+
     }
   }
 
-  /*--- All others are pending. ---*/
+  /*--- Then, move all the interfaces defined as moving. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+
+      BC_Moving(geometry, config, iMarker);
+
+    }
+  }
+
+  /*--- Symmetry plane and periodic boundaries are pending. ---*/
+
 
 }
 
-void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
   unsigned short iDim, jDim;
 
