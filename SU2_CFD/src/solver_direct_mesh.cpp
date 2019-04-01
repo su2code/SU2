@@ -38,7 +38,7 @@
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/adt_structure.hpp"
 
-CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(), System(true) {
+CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
 
     /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
@@ -69,7 +69,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(), S
     nPointDomain = geometry->GetnPointDomain();
     nElement     = geometry->GetnElem();
 
-    nIterMesh   = 0;
     valResidual = 0.0;
 
     MinVolume_Ref = 0.0;
@@ -456,76 +455,6 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
-
-  unsigned long iElem, iVar, jVar;
-  unsigned short iNode, iDim, jDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
-  int EL_KIND = 0;
-
-  su2double *Kab = NULL, *Ta = NULL;
-  unsigned short NelNodes, jNode;
-
-  /*--- Loops over all the elements ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
-
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
-
-    for (iNode = 0; iNode < nNodes; iNode++) {
-
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim); //geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-      }
-
-    }
-
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
-    /*--- Retrieve number of nodes ---*/
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
-
-      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-          }
-        }
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-      }
-
-    }
-
-  }
-
-}
-
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem;
@@ -585,7 +514,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
     SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
     /*--- Solve the linear system. ---*/
-    Solve_System_Mesh(geometry[MESH_0], config);
+    Solve_System(geometry[MESH_0], config);
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
@@ -599,7 +528,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
     SetMinMaxVolume(geometry[MESH_0], config, true);
 
     if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
+      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << IterLinSol << ". ";
       if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
       else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
     }
@@ -762,73 +691,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 }
 
-void CMeshSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = 0.0;  Solution[1] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;
-      }
-      else {
-        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
-        }
-      }
-
-      /*--- Delete the full column for node iNode ---*/
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint, iNode,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != iPoint) {
-            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-          }
-        }
-      }
-    }
-  }
-
-}
-
 void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
   unsigned short iDim, jDim;
@@ -894,73 +756,42 @@ void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsig
           }
         }
       }
+    }
 
-      /*--- Delete the columns for a particular node ---*/
+    /*--- Always delete the iNode column, even for halos ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
 
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
 
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
-
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-            }
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
           }
+        }
 
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
-            }
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
           }
+        }
 
-          /*--- For the whole column, except the diagonal term ---*/
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-          }
+        /*--- For the whole column, except the diagonal term ---*/
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
         }
       }
     }
   }
-
-}
-
-void CMeshSolver::Solve_System_Mesh(CGeometry *geometry, CConfig *config){
-
-
-  unsigned long IterLinSol = 0, iPoint, total_index;
-  unsigned short iVar;
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-
-  }
-
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-  /*--- The the number of iterations of the linear solver ---*/
-
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Store the value of the residual. ---*/
-
-  valResidual = System.GetResidual();
 
 }
 
