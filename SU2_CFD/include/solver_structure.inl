@@ -709,6 +709,8 @@ inline void CSolver::BC_Sine_Load(CGeometry *geometry, CNumerics *numerics, CCon
                    
 inline void CSolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
                   
+inline void CSolver::BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
