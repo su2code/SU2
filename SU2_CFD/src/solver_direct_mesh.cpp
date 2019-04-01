@@ -101,7 +101,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
       }
 
       /*--- Temporarily, keep everything the same ---*/
-      if (isVertex) node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+      if (isVertex) node[iPoint] = new CMeshBoundVariable(Coordinate, nDim, config);
       else          node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
 
     }
@@ -673,8 +673,23 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- As initialization, set to zero displacements of all non-moving surfaces ---*/
-  /*--- As exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
+  /*--- As initialization, move all the interfaces defined as moving. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+
+      /*--- Transfer the boundary displacements (this will be replaced in the transfer routines
+      so that the displacements at the interface are directly transferred instead of incrementally) ---*/
+      Transfer_Boundary_Displacements(geometry, config, iMarker);
+
+      /*--- Impose the boundary condition ---*/
+      BC_Moving(geometry, config, iMarker);
+
+    }
+  }
+
+  /*--- Then, impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries) ---*/
+  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Moving(iMarker) == NO) &&
         ((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
@@ -682,16 +697,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
 
          BC_Clamped(geometry, numerics, config, iMarker);
-
-    }
-  }
-
-  /*--- Then, move all the interfaces defined as moving. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-
-      BC_Moving(geometry, config, iMarker);
 
     }
   }
@@ -705,8 +710,6 @@ void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short
 
   unsigned short iDim, jDim;
 
-  su2double *VarDisp = NULL;
-
   unsigned long iNode, iVertex;
   unsigned long iPoint, jPoint;
 
@@ -715,7 +718,7 @@ void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short
   su2double valJacobian_ij_00 = 0.0;
   su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
+  su2double Disp[3] = {0.0, 0.0, 0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -723,23 +726,19 @@ void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short
 
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Get the displacement on the vertex ---*/
-    VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    /*--- Add it to the current displacement (this will be replaced in the transfer routines
-     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
+    /*--- Retrieve the boundary displacement ---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
+      Disp[iDim] = node[iNode]->GetBound_Disp(iDim);
 
     if (geometry->node[iNode]->GetDomain()) {
 
       if (nDim == 2) {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
+        Solution[0] = Disp[0] * VarIncrement;  Solution[1] = Disp[1] * VarIncrement;
+        Residual[0] = Disp[0] * VarIncrement;  Residual[1] = Disp[1] * VarIncrement;
       }
       else {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
+        Solution[0] = Disp[0] * VarIncrement;  Solution[1] = Disp[1] * VarIncrement;  Solution[2] = Disp[2] * VarIncrement;
+        Residual[0] = Disp[0] * VarIncrement;  Residual[1] = Disp[1] * VarIncrement;  Residual[2] = Disp[2] * VarIncrement;
       }
 
       /*--- Initialize the reaction vector ---*/
@@ -788,7 +787,7 @@ void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short
         for (iDim = 0; iDim < nDim; iDim++){
           Residual[iDim] = 0.0;
           for (jDim = 0; jDim < nDim; jDim++){
-            Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp[jDim];
           }
         }
 
@@ -808,32 +807,30 @@ void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short
 void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
   unsigned short iDim;
-  unsigned long iPoint, iVertex;
+  unsigned long iNode, iVertex;
 
-  su2double *VarCoord = NULL, *VarDisp = NULL;
-  su2double new_coord;
+  su2double *VarDisp = NULL;
+
+  su2double VarCoord[3] = {0.0, 0.0, 0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Get the displacement on the vertex ---*/
     VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
 
     /*--- Add it to the current displacement (this will be replaced in the transfer routines
      so that the displacements at the interface are directly transferred instead of incrementally) ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iPoint]->GetSolution(iDim) + VarDisp[iDim];
+    for (iDim = 0; iDim < nDim; iDim++){
+      VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
+    }
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->node[iNode]->GetDomain()) {
 
-      /*--- Update the grid coordinates using the solution of the structural problem recorded in VarCoord. */
-      for (iDim = 0; iDim < nDim; iDim++) {
-        new_coord = node[iPoint]->GetMesh_Coord(iDim)+VarCoord[iDim];
-        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-        geometry->node[iPoint]->SetCoord(iDim, new_coord);
-      }
+      node[iNode]->SetBound_Disp(VarCoord);
+
     }
 
   }

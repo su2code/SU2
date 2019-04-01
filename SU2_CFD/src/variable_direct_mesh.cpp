@@ -94,7 +94,7 @@ CMeshBoundVariable::CMeshBoundVariable(su2double *val_coor, unsigned short val_n
   unsigned short iDim;
 
   /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Boundary_Displacement  = NULL;
+  Boundary_Displacement = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     Boundary_Displacement[iDim] = 0.0;
   }
