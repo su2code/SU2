@@ -862,7 +862,6 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   
-  
   virtual void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
@@ -894,7 +893,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  
   
   virtual void BC_Normal_Displacement(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
@@ -936,6 +934,16 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+
+  virtual void BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -12062,6 +12070,16 @@ public:
   void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
+   * \brief Moving boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+
+  void BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
    * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -15936,13 +15954,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Moving(CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Set the boundary displacements in the mesh side of the problem

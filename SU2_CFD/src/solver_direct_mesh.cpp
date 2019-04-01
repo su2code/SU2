@@ -504,52 +504,41 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) SetSolution_Old();
 
-  /*--- Retrieve number or internal iterations from config ---*/
+  /*--- Initialize vector and sparse matrix ---*/
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
+  Jacobian.SetValZero();
 
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+  /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
+  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
+    else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
+  }
 
-  /*--- Loop over the total number of grid deformation iterations. The surface
-   deformation can be divided into increments to help with stability. ---*/
+  /*--- Compute the stiffness matrix. ---*/
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
+  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
-    /*--- Initialize vector and sparse matrix ---*/
-    LinSysSol.SetValZero();
-    LinSysRes.SetValZero();
-    Jacobian.SetValZero();
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry[MESH_0], config);
 
-    /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
-      else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
-    }
-
-    /*--- Compute the stiffness matrix. ---*/
-    Compute_StiffMatrix(geometry[MESH_0], numerics, config);
-
-    /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-    SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
-
-    /*--- Solve the linear system. ---*/
-    Solve_System(geometry[MESH_0], config);
-
-    /*--- Update the grid coordinates and cell volumes using the solution
+  /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-    UpdateGridCoord(geometry[MESH_0], config);
+  UpdateGridCoord(geometry[MESH_0], config);
 
-    /*--- Update the dual grid. ---*/
-    UpdateDualGrid(geometry[MESH_0], config);
+  /*--- Update the dual grid. ---*/
+  UpdateDualGrid(geometry[MESH_0], config);
 
-    /*--- Check for failed deformation (negative volumes). ---*/
-    /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
-    SetMinMaxVolume(geometry[MESH_0], config, true);
+  /*--- Check for failed deformation (negative volumes). ---*/
+  /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
+  SetMinMaxVolume(geometry[MESH_0], config, true);
 
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << IterLinSol << ". ";
-      if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-      else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-    }
-
+  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    cout << scientific << "Linear solver iter.: " << IterLinSol << ". ";
+    if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
+    else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
   }
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
@@ -683,7 +672,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
       Transfer_Boundary_Displacements(geometry, config, iMarker);
 
       /*--- Impose the boundary condition ---*/
-      BC_Moving(geometry, config, iMarker);
+      BC_Moving(geometry, numerics, config, iMarker);
 
     }
   }
@@ -706,103 +695,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 }
 
-void CMeshSolver::BC_Moving(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-  unsigned short iDim, jDim;
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  su2double Disp[3] = {0.0, 0.0, 0.0};
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Retrieve the boundary displacement ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Disp[iDim] = node[iNode]->GetBound_Disp(iDim);
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = Disp[0] * VarIncrement;  Solution[1] = Disp[1] * VarIncrement;
-        Residual[0] = Disp[0] * VarIncrement;  Residual[1] = Disp[1] * VarIncrement;
-      }
-      else {
-        Solution[0] = Disp[0] * VarIncrement;  Solution[1] = Disp[1] * VarIncrement;  Solution[2] = Disp[2] * VarIncrement;
-        Residual[0] = Disp[0] * VarIncrement;  Residual[1] = Disp[1] * VarIncrement;  Residual[2] = Disp[2] * VarIncrement;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
-        }
-      }
-    }
-
-    /*--- Always delete the iNode column, even for halos ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
-
-      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-      if (valJacobian_ij_00 != 0.0 ){
-
-        /*--- Retrieve the Jacobian term ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-          }
-        }
-
-        /*--- Multiply by the imposed displacement ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++){
-            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp[jDim];
-          }
-        }
-
-        /*--- For the whole column, except the diagonal term ---*/
-        if (iNode != iPoint) {
-          /*--- The term is substracted from the residual (right hand side) ---*/
-          LinSysRes.SubtractBlock(iPoint, Residual);
-          /*--- The Jacobian term is now set to 0 ---*/
-          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-        }
-      }
-    }
-  }
-
-}
 
 void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
