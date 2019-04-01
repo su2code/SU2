@@ -8436,6 +8436,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
+  /*--- Correct the orientation of the elements and flip the negative ones. ---*/
+  Check_IntElem_Orientation(config);
+
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
 
@@ -8482,6 +8485,12 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       }
     }
   }
+
+  /*--- Add the entries coming from the possible wall treatment of
+   viscous wall boundaries. ---*/
+
+
+
 
   /*--- Sort the points that must be sent and delete repeated points, note
    that the sorting should be done with the global index (not the local). ---*/
