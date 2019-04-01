@@ -78,6 +78,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     MaxVolume_Curr = 0.0;
 
     /*--- Initialize the node structure ---*/
+    bool isVertex;
+    long iVertex;
     Coordinate = new su2double[nDim];
     node       = new CVariable*[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -86,7 +88,22 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
       for (iDim = 0; iDim < nDim; iDim++)
         Coordinate[iDim] = geometry->node[iPoint]->GetCoord(iDim);
 
-      node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+      /*--- In principle, the node is not at the boundary ---*/
+      isVertex = false;
+      /*--- Looping over all markers ---*/
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
+        if (config->GetMarker_All_Moving(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        else iVertex = -1;
+
+        if (iVertex != -1){isVertex = true; break;}
+      }
+
+      /*--- Temporarily, keep everything the same ---*/
+      if (isVertex) node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+      else          node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+
     }
 
     /*--- Initialize the element structure ---*/

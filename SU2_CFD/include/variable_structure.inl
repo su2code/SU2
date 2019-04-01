@@ -649,6 +649,10 @@ inline su2double CVariable::GetWallDistance(void) { return 0.0; }
 
 inline void CVariable::SetWallDistance(su2double val_dist) { }
 
+inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
+
+inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
+
 inline void CVariable::Register_femSolution_time_n() { }
 
 inline void CVariable::RegisterSolution_Vel(bool input) { }
@@ -1652,6 +1656,16 @@ inline void CMeshVariable::SetSolution_time_n1(unsigned short iDim, su2double va
 inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
 
 inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = val_dist; }
+
+inline bool CMeshVariable::Get_isVertex(void) { return false; }
+
+inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return Boundary_Displacement[iDim]; }
+
+inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
+}
+
+inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }
 
 inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
 
