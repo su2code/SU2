@@ -538,7 +538,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
 
-  /*--- Update the dual grid. ---*/
+  /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
 
 }
@@ -848,6 +848,7 @@ void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
   }
 
   UpdateDualGrid(geometry[MESH_0], config);
+  UpdateMultiGrid(geometry, config);
 
 }
 
