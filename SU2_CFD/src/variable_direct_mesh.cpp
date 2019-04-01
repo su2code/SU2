@@ -89,6 +89,24 @@ CMeshVariable::~CMeshVariable(void) {
 
 }
 
+CMeshBoundVariable::CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CMeshVariable(val_coor, val_nDim, config) {
+
+  unsigned short iDim;
+
+  /*--- Initialize Boundary Displacement container to 0.0 ---*/
+  Boundary_Displacement  = NULL;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Boundary_Displacement[iDim] = 0.0;
+  }
+
+}
+
+CMeshBoundVariable::~CMeshBoundVariable(void) {
+
+  if (Boundary_Displacement != NULL) delete [] Boundary_Displacement;
+
+}
+
 
 CMeshElement::CMeshElement(void){
 

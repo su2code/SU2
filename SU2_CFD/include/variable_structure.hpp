@@ -2225,6 +2225,18 @@ public:
    */
   virtual void SetWallDistance(su2double val_dist);
 
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  virtual su2double GetBound_Disp(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  virtual void SetBound_Disp(su2double *val_BoundDisp);
+
    /*!
     * \brief A virtual member.
     */
@@ -5148,6 +5160,59 @@ public:
    * \param[in] val_dist - Value of wall distance.
    */
   void SetWallDistance(su2double val_dist);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CMeshBoundVariable
+ * \brief Main class for defining the variables of the mesh movement at the moving boundaries.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CMeshBoundVariable : public CMeshVariable {
+protected:
+
+  su2double *Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshBoundVariable(void);
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  su2double GetBound_Disp(unsigned short iDim);
+
+  /*!
+   * \brief Set the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return True. The node is at the boundary.
+   */
+  bool Get_isVertex(void);
 
 };
 
