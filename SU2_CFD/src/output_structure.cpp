@@ -3271,13 +3271,13 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
         
         /*--- Search for the processor that owns this point ---*/
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
         
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
@@ -3362,17 +3362,17 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
           if (newID < Global_Index) Global_Index = newID;
         }
-        
+       
         /*--- Search for the processor that owns this point ---*/
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-        
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+
         /*--- Load connectivity into the buffer for sending ---*/
         
         if (nElem_Flag[iProcessor] != ii) {
