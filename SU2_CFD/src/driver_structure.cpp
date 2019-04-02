@@ -1670,7 +1670,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     }
   }
 
-  if (restart && grid_movement){
+  if (restart && grid_movement && update_geo){
     /*--- Always restart with the last state ---*/
     val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
     solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
