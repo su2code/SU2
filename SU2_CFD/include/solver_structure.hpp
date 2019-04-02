@@ -4390,6 +4390,14 @@ public:
    */
   virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  virtual void ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config);
+
 
 };
 
@@ -15897,6 +15905,13 @@ public:
   void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Compute the min and max volume of the elements in the domain.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -15954,20 +15969,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and BGS residual.

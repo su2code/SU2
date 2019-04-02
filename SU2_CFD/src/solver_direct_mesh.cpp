@@ -498,8 +498,6 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
 void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
-
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (multizone) SetSolution_Old();
@@ -667,10 +665,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
 
-      /*--- Transfer the boundary displacements (this will be replaced in the transfer routines
-      so that the displacements at the interface are directly transferred instead of incrementally) ---*/
-      Transfer_Boundary_Displacements(geometry, config, iMarker);
-
       /*--- Impose the boundary condition ---*/
       BC_Moving(geometry, numerics, config, iMarker);
 
@@ -697,58 +691,42 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 
 
-void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CMeshSolver::ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config){
 
-  unsigned short iDim;
+  unsigned short iDim, iMarker;
   unsigned long iNode, iVertex;
 
   su2double *VarDisp = NULL;
 
   su2double VarCoord[3] = {0.0, 0.0, 0.0};
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Get the displacement on the vertex ---*/
-    VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    /*--- Add it to the current displacement (this will be replaced in the transfer routines
-     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
-    for (iDim = 0; iDim < nDim; iDim++){
-      VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
-    }
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      node[iNode]->SetBound_Disp(VarCoord);
-
-    }
-
-  }
-
-}
-
-void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
-
-  unsigned short iMarker;
-
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- Set the dependencies on the FSI interfaces. ---*/
-
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Get node index ---*/
+        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Get the displacement on the vertex ---*/
+        VarDisp = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+
+        /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
+        /*--- Eventually, the displacements at the interface will be directly stored in the nodes. ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
+        }
+
+        if (geometry->node[iNode]->GetDomain()) {
+
+          node[iNode]->SetBound_Disp(VarCoord);
+
+        }
+
+      }
+
     }
   }
-
-  UpdateDualGrid(geometry[MESH_0], config);
-  UpdateMultiGrid(geometry, config);
 
 }
 
