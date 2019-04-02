@@ -119,7 +119,6 @@ public:
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          unsigned short val_nDim,
           bool val_periodic,
           SU2_Comm MPICommunicator);
 
@@ -701,7 +700,6 @@ public:
    */
   CGeneralDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim,
                  bool val_periodic,
                  SU2_Comm MPICommunicator);
 
@@ -765,7 +763,6 @@ public:
    */
   CFluidDriver(char* confFile,
                unsigned short val_nZone,
-               unsigned short val_nDim,
                bool val_periodic,
                SU2_Comm MPICommunicator);
 
@@ -869,7 +866,6 @@ public:
    */
   CTurbomachineryDriver(char* confFile,
                         unsigned short val_nZone,
-                        unsigned short val_nDim,
                         bool val_periodic,
                         SU2_Comm MPICommunicator);
 
@@ -928,7 +924,6 @@ public:
     */
   CDiscAdjFluidDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim,
                    bool val_periodic,
                    SU2_Comm MPICommunicator);
 
@@ -985,7 +980,6 @@ public:
 	   */
   CDiscAdjTurbomachineryDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim,
                    bool val_periodic,
                    SU2_Comm MPICommunicator);
 
@@ -1040,7 +1034,6 @@ public:
    */
   CHBDriver(char* confFile,
             unsigned short val_nZone,
-            unsigned short val_nDim,
             bool val_periodic,
             SU2_Comm MPICommunicator);
 
@@ -1115,7 +1108,6 @@ public:
    */
   CFSIDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
@@ -1240,7 +1232,6 @@ public:
    */
   CDiscAdjFSIDriver(char* confFile,
                     unsigned short val_nZone,
-                    unsigned short val_nDim,
                     bool val_periodic,
                     SU2_Comm MPICommunicator);
 
@@ -1484,7 +1475,6 @@ public:
    */
   CMultiphysicsZonalDriver(char* confFile,
                            unsigned short val_nZone,
-                           unsigned short val_nDim,
                            bool val_periodic,
                            SU2_Comm MPICommunicator);
 
@@ -1536,7 +1526,6 @@ public:
    */
   CSinglezoneDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
@@ -1619,7 +1608,6 @@ public:
    */
   CMultizoneDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
