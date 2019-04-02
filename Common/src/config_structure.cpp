@@ -57,14 +57,16 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, unsigned short verb_level) {
+  
+  base_config = true;
   
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  iZone = val_iZone;
+  iZone = val_nZone;
   nZone = val_nZone;
 
   /*--- Initialize pointers to Null---*/
@@ -85,7 +87,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file postprocessing ---*/
 
-  SetPostprocessing(val_software, val_iZone, val_nDim);
+  SetPostprocessing(val_software, iZone, 0);
 
   /*--- Configuration file boundaries/markers setting ---*/
 
@@ -94,11 +96,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   /*--- Configuration file output ---*/
 
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH))
-    SetOutput(val_software, val_iZone);
+    SetOutput(val_software, iZone);
 
 }
 
-CConfig::CConfig(CConfig* base_config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short verb_level) {
+  
+  unsigned short val_nDim;
+  
+  base_config = false;
   
   /*--- Store MPI rank and size ---*/ 
   
@@ -122,11 +128,15 @@ CConfig::CConfig(CConfig* base_config, char case_filename[MAX_STRING_SIZE], unsi
   
   /*--- Set default options from base config ---*/
   
-  SetDefaultFromConfig(base_config);
+  SetDefaultFromConfig(config);
   
   /*--- Set the default values for all of the options that weren't set ---*/
       
   SetDefault();
+  
+  /*--- Get the dimension --- */
+  
+  val_nDim = GetnDim(Mesh_FileName, Mesh_FileFormat);
 
   /*--- Configuration file postprocessing ---*/
 
@@ -145,6 +155,8 @@ CConfig::CConfig(CConfig* base_config, char case_filename[MAX_STRING_SIZE], unsi
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
+  base_config = true;
+  
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
@@ -186,6 +198,8 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
+  base_config = true;
+  
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
@@ -2546,6 +2560,7 @@ void CConfig::SetDefaultFromConfig(CConfig *config){
     curr_iter = iter++;   
     if (config->option_map[curr_iter->first]->GetValue().size() > 0){
       option_map[curr_iter->first]->SetValue(config->option_map[curr_iter->first]->GetValue());
+      all_options.erase(curr_iter);      
     }
   }
 }
