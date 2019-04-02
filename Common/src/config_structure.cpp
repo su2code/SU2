@@ -3146,59 +3146,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  /*--- Force number of span-wise section to 1 if 2D case ---*/
-  if(val_nDim ==2){
-    nSpanWiseSections_User=1;
-    Kind_SpanWise= EQUISPACED;
+  if (nKind_SurfaceMovement > 1 && GetSurface_Movement(FLUID_STRUCTURE)){
+    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);    
   }
 
-  /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery > 0){
-    if(nMarker_Turbomachinery > 1){
-      nMarker_TurboPerformance = nMarker_Turbomachinery + SU2_TYPE::Int(nMarker_Turbomachinery/2) + 1;
-    }else{
-      nMarker_TurboPerformance = nMarker_Turbomachinery;
-    }
-  } else {
-    nMarker_TurboPerformance = 0;
-    nSpanWiseSections =1;
-  }
-
-  /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery != 0){
-    nSpan_iZones = new unsigned short[nZone];
-  }
-
-  /*--- Set number of TurboPerformance markers ---*/
-  if(RampRotatingFrame && !DiscreteAdjoint){
-      FinalRotation_Rate_Z = Rotation_Rate[3];
-      if(abs(FinalRotation_Rate_Z) > 0.0){
-        Rotation_Rate[3] = RampRotatingFrame_Coeff[0];
-      }
-    
-  }
-
-  if(RampOutletPressure && !DiscreteAdjoint){
-    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
-      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
-        FinalOutletPressure   = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
-      }
-    }
-    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
-      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
-        FinalOutletPressure      = Riemann_Var1[iMarker];
-        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
-      }
-    }
-  }
-
-  /*--- Check on extra Relaxation factor for Giles---*/
-  if(ExtraRelFacGiles[1] > 0.5){
-    ExtraRelFacGiles[1] = 0.5;
-  }
-
-  if (nKind_SurfaceMovement != nMarker_Moving){
+  if (nKind_SurfaceMovement != nMarker_Moving && !GetSurface_Movement(FLUID_STRUCTURE)){
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -3206,10 +3158,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
   
-  if (Time_Domain && Unsteady_Simulation == STEADY){
-    SU2_MPI::Error("UNSTEADY_SIMULATION must be different from STEADY (default) if TIME_DOMAIN=YES", CURRENT_FUNCTION);
-  }
+  /*--- Fluid-Structure Interaction problems ---*/
 
+  if (FSI_Problem) {
+    unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
+    for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
+      new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
+    }
+    if (nKind_SurfaceMovement != 0) delete [] Kind_SurfaceMovement;
+    Kind_SurfaceMovement = new_surface_movement;
+    nKind_SurfaceMovement++;
+    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
+      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE_STATIC;
+    }
+    else{
+      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE;
+    }
+  }
+  
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -3220,8 +3186,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       
       if((Kind_GridMovement != ROTATING_FRAME) &&
          (Kind_GridMovement != STEADY_TRANSLATION) &&
-         (Kind_GridMovement != FLUID_STRUCTURE) && 
-         (Kind_GridMovement != FLUID_STRUCTURE_STATIC) &&
          (Kind_GridMovement != NONE)){
         SU2_MPI::Error("Unsupported kind of grid movement for steady state problems.", CURRENT_FUNCTION);      
       }
@@ -3232,7 +3196,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }  
     } 
   }
-
+  
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
   if (Kind_SU2 != SU2_DEF) {
@@ -3385,7 +3349,58 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
   	}
   }
+  
+  /*--- Force number of span-wise section to 1 if 2D case ---*/
+  if(val_nDim ==2){
+    nSpanWiseSections_User=1;
+    Kind_SpanWise= EQUISPACED;
+  }
 
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery > 0){
+    if(nMarker_Turbomachinery > 1){
+      nMarker_TurboPerformance = nMarker_Turbomachinery + SU2_TYPE::Int(nMarker_Turbomachinery/2) + 1;
+    }else{
+      nMarker_TurboPerformance = nMarker_Turbomachinery;
+    }
+  } else {
+    nMarker_TurboPerformance = 0;
+    nSpanWiseSections =1;
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery != 0){
+    nSpan_iZones = new unsigned short[nZone];
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
+      FinalRotation_Rate_Z = Rotation_Rate[2];
+      if(abs(FinalRotation_Rate_Z) > 0.0){
+        Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
+      }
+    
+  }
+
+  if(RampOutletPressure && !DiscreteAdjoint){
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
+      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
+        FinalOutletPressure   = Giles_Var1[iMarker];
+        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
+      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+        FinalOutletPressure      = Riemann_Var1[iMarker];
+        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
+      }
+    }
+  }
+
+  /*--- Check on extra Relaxation factor for Giles---*/
+  if(ExtraRelFacGiles[1] > 0.5){
+    ExtraRelFacGiles[1] = 0.5;
+  }
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
      The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
@@ -3556,17 +3571,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
       Aeroelastic_pitch[iMarker] = 0.0;
       Aeroelastic_plunge[iMarker] = 0.0;
-    }
-  }
-
-  /*--- Fluid-Structure Interaction problems ---*/
-
-  if (FSI_Problem) {
-    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
-      Kind_GridMovement = FLUID_STRUCTURE_STATIC;
-    }
-    else{
-      Kind_GridMovement = FLUID_STRUCTURE;
     }
   }
   
@@ -5110,29 +5114,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "The reference length is " << RefLength;
       if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
 
-      if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
-        cout << "Surface(s) where the force coefficients are evaluated and \n";
-        cout << "their reference origin for moment computation: \n";
-
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-          cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
-          else {
-          if (SystemMeasurements == US) cout <<" ft."<< endl;
-          else cout <<" m."<< endl;
+      if (nMarker_Monitoring != 0){
+        if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
+          cout << "Surface(s) where the force coefficients are evaluated and \n";
+          cout << "their reference origin for moment computation: \n";
+          
+          for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+            cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+            if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
+            else {
+              if (SystemMeasurements == US) cout <<" ft."<< endl;
+              else cout <<" m."<< endl;
+            }
+            
           }
-
         }
-      }
-      else {
-        cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
-        cout << "Surface(s) where the force coefficients are evaluated: ";
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-          cout << Marker_Monitoring[iMarker_Monitoring];
-          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-          else cout <<"."<< endl;
+        else {
+          cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+          cout << "Surface(s) where the force coefficients are evaluated: ";
+          for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+            cout << Marker_Monitoring[iMarker_Monitoring];
+            if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+            else cout <<"."<< endl;
+          }
+          cout<< endl;
         }
-        cout<< endl;
       }
     }
     
@@ -6796,7 +6802,7 @@ CConfig::~CConfig(void) {
   /*--- Delete all of the option objects in the global option map ---*/
     
   for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
-    delete itr->second;
+//    delete itr->second;
   }
 
   if (TimeDOFsADER_DG           != NULL) delete [] TimeDOFsADER_DG;
@@ -7803,24 +7809,23 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
 
 bool CConfig::GetVolumetric_Movement(){
   bool volumetric_movement = false;
-  if (GetGrid_Movement()){
-    switch(Kind_GridMovement){
-    case FLUID_STRUCTURE: case EXTERNAL: case EXTERNAL_ROTATION:
-    case FLUID_STRUCTURE_STATIC:
-      volumetric_movement = true;
-      break;
-    }
-    if (GetSurface_Movement(AEROELASTIC) || 
-        GetSurface_Movement(DEFORMING) ||
-        GetSurface_Movement(AEROELASTIC_RIGID_MOTION)){
-      volumetric_movement = true;
-    }
+  
+  if (GetSurface_Movement(AEROELASTIC) || 
+      GetSurface_Movement(DEFORMING) ||
+      GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
+      GetSurface_Movement(FLUID_STRUCTURE) ||
+      GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
+      GetSurface_Movement(EXTERNAL) || 
+      GetSurface_Movement(EXTERNAL_ROTATION)){
+    volumetric_movement = true;
   }
+  
+  if (Kind_SU2 == SU2_DEF){ volumetric_movement = true;}
   return volumetric_movement;
 }
 
 bool CConfig::GetSurface_Movement(unsigned short kind_movement){
-  for (unsigned short iMarkerMoving = 0; iMarkerMoving < nMarker_Moving; iMarkerMoving++){
+  for (unsigned short iMarkerMoving = 0; iMarkerMoving < nKind_SurfaceMovement; iMarkerMoving++){
     if (Kind_SurfaceMovement[iMarkerMoving] == kind_movement){
       return true;
     }

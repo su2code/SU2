@@ -9313,7 +9313,9 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0 || 
+         config->GetMarker_All_Moving(iMarker)) 
+        && (Kind_SU2 == SU2_CFD)) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -9331,13 +9333,15 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         }
       }
     }
-  }
+  } 
   StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
 
   /*--- Apply displacement boundary conditions to the FSI interfaces. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0 || 
+         config->GetMarker_All_Moving(iMarker)) 
+        && (Kind_SU2 == SU2_CFD)) {
       SetMoving_Boundary(geometry, config, iMarker);
     }
   }
