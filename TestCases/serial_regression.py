@@ -870,9 +870,10 @@ def main():
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
+    uniform_flow.multizone = True
     test_list.append(uniform_flow) 
 
-    # Channel_2D
+   # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
@@ -882,6 +883,7 @@ def main():
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
     channel_2D.unsteady  = True
+    channel_2D.multizone = True
     test_list.append(channel_2D)
 
     # Channel_3D
@@ -894,6 +896,7 @@ def main():
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
     channel_3D.unsteady  = True
+    channel_3D.multizone = True
     test_list.append(channel_3D)
 
     # Pipe
@@ -906,6 +909,7 @@ def main():
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
     pipe.unsteady  = True
+    pipe.multizone = True
     test_list.append(pipe)
 
     # Rotating cylinders
@@ -918,6 +922,7 @@ def main():
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
     rotating_cylinders.unsteady  = True
+    rotating_cylinders.multizone = True
     test_list.append(rotating_cylinders)
 
     # Supersonic vortex shedding
@@ -930,6 +935,7 @@ def main():
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
     supersonic_vortex_shedding.unsteady  = True
+    supersonic_vortex_shedding.multizone = True
     test_list.append(supersonic_vortex_shedding)
 
     # Bars_SST_2D
@@ -941,6 +947,7 @@ def main():
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
+    bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
     
     # Sliding mesh with incompressible flows (steady)
@@ -952,6 +959,7 @@ def main():
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00001
+    slinc_steady.multizone = True
     test_list.append(slinc_steady)
     
     # Sliding mesh with incompressible flows (unsteady)
