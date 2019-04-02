@@ -2484,8 +2484,8 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
       
       
       /*--- Initialize the reaction vector ---*/
-      LinSysReact.SetBlock(iPoint, Residual);
-      
+       if(LinSysReact.GetSize() != 0) LinSysReact.SetBlock(iPoint, Residual);
+
       LinSysRes.SetBlock(iPoint, Residual);
       LinSysSol.SetBlock(iPoint, Solution);
       
