@@ -49,7 +49,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     switch (config->GetDeform_Stiffness_Type()) {
     case INVERSE_VOLUME:
     case SOLID_WALL_DISTANCE:
-    case VOLUME_DISTANCE:
       stiffness_set = false;
       break;
     case CONSTANT_STIFFNESS:
