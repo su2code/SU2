@@ -649,44 +649,46 @@ static const map<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map 
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
   RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-  FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure deformation. */
-  EXTERNAL = 4,
-  EXTERNAL_ROTATION = 5,
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
   MOVING_HTP = 13,    /*!< \brief Simulation with moving HTP (rotation). */
-  FLUID_STRUCTURE_STATIC = 14 /*!< \brief Fluid structure deformation with no grid velocity. */
 
 };
 
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
 ("RIGID_MOTION", RIGID_MOTION)
-("FLUID_STRUCTURE", FLUID_STRUCTURE)
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_HTP", MOVING_HTP)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
-("GUST", GUST)
-("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
-("EXTERNAL", EXTERNAL)
-("EXTERNAL_ROTATION", EXTERNAL_ROTATION);
+("GUST", GUST);
+
 
 
 enum ENUM_SURFACEMOVEMENT {
   DEFORMING = 1,
   MOVING_WALL = 2,
   AEROELASTIC = 3,    /*!< \brief Simulation with aeroelastic motion. */
-  AEROELASTIC_RIGID_MOTION = 4 /*!< \brief Simulation with rotation and aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 4, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  FLUID_STRUCTURE = 5,		/*!< \brief Fluid structure deformation. */
+  EXTERNAL = 6,
+  EXTERNAL_ROTATION = 7,
+  FLUID_STRUCTURE_STATIC = 8 /*!< \brief Fluid structure deformation with no grid velocity. */
+  
 };
 
 static const map<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = CCreateMap<string, ENUM_SURFACEMOVEMENT>
 ("DEFORMING", DEFORMING)
 ("MOVING_WALL", MOVING_WALL)
 ("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
-("AEROELASTIC", AEROELASTIC);
+("AEROELASTIC", AEROELASTIC)
+("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
+("FLUID_STRUCTURE", FLUID_STRUCTURE)
+("EXTERNAL", EXTERNAL)
+("EXTERNAL_ROTATION", EXTERNAL_ROTATION);
 
 
 /*!
