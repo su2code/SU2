@@ -1,6 +1,7 @@
 BOOST_ROOT = /3rdpartylibs/boost/1.59.0/build/linux64-centos6.5/include
 
 SRCS = arrlist.cpp \
+       AsciiOutputInfo.cpp \
        auxdata.cpp \
        checkPercentDone.cpp \
        ClassicFEZoneConnectivityWriter.cpp \
@@ -30,6 +31,7 @@ SRCS = arrlist.cpp \
        FileSystem.cpp \
        fileStuff.cpp \
        geom2.cpp \
+       Geom_s.cpp \
        IJKSubzoneInfo.cpp \
        IJKZoneInfo.cpp \
        importSzPltFile.cpp \

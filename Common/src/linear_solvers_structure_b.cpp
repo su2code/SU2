@@ -49,22 +49,18 @@ void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::R
   CSysVector* LinSysSol_b = NULL;
   d->getData(LinSysSol_b);
   
-  CMatrixVectorProduct* MatVec = NULL;
-  d->getData(MatVec);
-  
-  CPreconditioner *Precond = NULL;
-  d->getData(Precond);
-  
-  su2double SolverTol = 0;
-  d->getData(SolverTol);
-  
-  unsigned long MaxIter = 0;
-  d->getData(MaxIter);
-  
-  unsigned short KindSolver = 0;
-  d->getData(KindSolver);
+  CSysMatrix* Jacobian = NULL;
+  d->getData(Jacobian);
 
-  CSysSolve *solver = new CSysSolve;
+  CGeometry* geometry  = NULL;
+  d->getData(geometry);
+
+  CConfig* config      = NULL;
+  d->getData(config);
+  
+  CSysSolve* solver;
+  d->getData(solver);
+  
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
@@ -73,21 +69,7 @@ void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::R
     (*LinSysSol_b)[i] = 0.0;
   }
   
-    /*--- Solve the system ---*/
-
-  su2double Residual;
-  
-  switch(KindSolver){
-  case FGMRES:
-    solver->FGMRES_LinSolver(*LinSysRes_b, *LinSysSol_b, *MatVec, *Precond, SolverTol, MaxIter, &Residual, false);
-    break;
-  case BCGSTAB:
-    solver->BCGSTAB_LinSolver(*LinSysRes_b, *LinSysSol_b, *MatVec, *Precond, SolverTol, MaxIter, &Residual, false);
-    break;
-  case CONJUGATE_GRADIENT:
-    solver->CG_LinSolver(*LinSysRes_b, *LinSysSol_b, *MatVec, *Precond, SolverTol, MaxIter, &Residual, false);
-    break;
-  }
+  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
     
   for (unsigned long i = 0; i < n; i ++) {
     x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
