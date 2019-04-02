@@ -2340,8 +2340,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     ModelTable.PrintFooter();
 
     if (unsteady){
+      NonDimTableOut << "-- Unsteady conditions" << endl;      
       NonDimTable.PrintHeader();
-      NonDimTableOut << "-- Unsteady conditions" << endl;
       NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
       Unit.str("");
       NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
