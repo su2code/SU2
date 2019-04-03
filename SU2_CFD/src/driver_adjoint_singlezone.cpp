@@ -443,6 +443,9 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
         if (solver[TURB_SOL]->GetnVar() > 1) cout << ", log10[Turb(1)]: " << log10(solver[TURB_SOL]->GetRes_RMS(1));
         cout << "." << endl;
       }
+      if (config->GetWeakly_Coupled_Heat()){
+        cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
+      }
       break;
 
     case DISC_ADJ_FEM:
