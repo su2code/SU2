@@ -79,7 +79,7 @@ inline void COutput::PrintScreenInteger(stringstream& stream, unsigned long val)
 }
 
 inline void COutput::PrintScreenHeaderString(stringstream& stream, string header) {
-  if (header.size() > field_width-1) header.resize(field_width-1);
+  if ((unsigned short)header.size() > field_width-1) header.resize(field_width-1);
   stream << std::right << std::setw(field_width) << header; 
 }
 

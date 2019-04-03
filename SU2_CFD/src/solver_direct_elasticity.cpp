@@ -525,7 +525,12 @@ CFEASolver::~CFEASolver(void) {
   delete [] normalVertex;
   delete [] stressTensor;
   
+  if (solutionPredictor != NULL) delete [] solutionPredictor;
+  
   if (iElem_iDe != NULL) delete [] iElem_iDe;
+  
+  delete [] elProperties;
+  
 }
 
 void CFEASolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {

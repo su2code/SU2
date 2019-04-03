@@ -1160,7 +1160,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   int32_t zone;
-  vector<int32_t> value_locations(nVar_Par, 1); /* Nodal variables. */
+  vector<int32_t> value_locations(GlobalField_Counter, 1); /* Nodal variables. */
   err = tecZoneCreateFE(file_handle, "Zone", zone_type, num_nodes, num_cells, NULL, NULL, &value_locations[0], NULL, 0, 0, 0, &zone);
   if (err) cout << rank << ": Error creating Tecplot zone." << endl;
   if (is_unsteady) {
@@ -1269,19 +1269,19 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
                        MPI_COMM_WORLD);
     
     /* Now actually send and receive the data */
-    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * nVar_Par));
-    halo_var_data.resize(max((size_t)1, nVar_Par * num_halo_nodes));
+    vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * GlobalField_Counter));
+    halo_var_data.resize(max((size_t)1, GlobalField_Counter * num_halo_nodes));
     vector<int> num_values_to_send(size);
     vector<int> values_to_send_displacements(size);
     vector<int> num_values_to_receive(size);
     size_t index = 0;
     for(int iRank = 0; iRank < size; ++iRank) {
-      /* We send and receive nVar_Par values per node. */
-      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * nVar_Par;
-      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * nVar_Par;
-      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * nVar_Par;
-      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * nVar_Par;
-      for(iVar = 0; iVar < nVar_Par; ++iVar)
+      /* We send and receive GlobalField_Counter values per node. */
+      num_values_to_send[iRank]              = num_nodes_to_send[iRank] * GlobalField_Counter;
+      values_to_send_displacements[iRank]    = nodes_to_send_displacements[iRank] * GlobalField_Counter;
+      num_values_to_receive[iRank]           = num_nodes_to_receive[iRank] * GlobalField_Counter;
+      values_to_receive_displacements[iRank] = nodes_to_receive_displacements[iRank] * GlobalField_Counter;
+      for(iVar = 0; iVar < GlobalField_Counter; ++iVar)
         for(int iNode = 0; iNode < num_nodes_to_send[iRank]; ++iNode) {
           unsigned long node_offset = nodes_to_send[nodes_to_send_displacements[iRank] + iNode] - beg_node[rank] - 1;
           data_to_send[index++] = SU2_TYPE::GetValue(Parallel_Data[iVar][node_offset]);
@@ -1301,7 +1301,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   
   if (zone_type == ZONETYPE_FEBRICK) {
     std::vector<passivedouble> values_to_write(nParallel_Poin);
-    for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
+    for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
       for(unsigned long i = 0; i < nParallel_Poin; ++i)
         values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, nParallel_Poin, &values_to_write[0]);
@@ -1329,7 +1329,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
         if (rank_num_points > 0) {
           if (iRank == rank) { /* Output local data. */
             std::vector<passivedouble> values_to_write;
-            for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
+            for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
               if (surf_sol) {
                 values_to_write.resize(nSurf_Poin_Par);
                 for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
@@ -1338,7 +1338,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
               }
               else {
                 values_to_write.resize(rank_num_points);
-                for(unsigned long i = 0; i < rank_num_points; ++i)
+                for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
                   values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
                 err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]);
               }
@@ -1346,9 +1346,9 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
             }
           }
           else { /* Receive data from other rank. */
-            var_data.resize(max((int64_t)1, nVar_Par * rank_num_points));
-            SU2_MPI::Recv(&var_data[0], nVar_Par * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
+            var_data.resize(max((int64_t)1, GlobalField_Counter * rank_num_points));
+            SU2_MPI::Recv(&var_data[0], GlobalField_Counter * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
             }
@@ -1360,9 +1360,9 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
       if (surf_sol)
         SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
       vector<passivedouble> var_data;
-      size_t var_data_size = nVar_Par * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
+      size_t var_data_size = GlobalField_Counter * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
       var_data.reserve(var_data_size);
-      for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++)
+      for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++)
         if (surf_sol)
           for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
             var_data.push_back(SU2_TYPE::GetValue(Parallel_Surf_Data[iVar][i]));
@@ -1379,12 +1379,12 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   unsigned short iVar;
 
   if (surf_sol) {
-    for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
+    for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, Parallel_Surf_Data[iVar]);
       if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
     }
   } else {
-    for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
+    for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
       err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nParallel_Poin, Parallel_Data[iVar]);
       if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
     }

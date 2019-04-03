@@ -70,7 +70,7 @@ void CDriverOutput::SetBody(COutput **output, CSolver *****solver, CConfig *driv
 
   if (rank == MASTER_NODE) {
 
-    bool write_header, write_history, write_screen;
+    bool write_header, write_screen;
 
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 

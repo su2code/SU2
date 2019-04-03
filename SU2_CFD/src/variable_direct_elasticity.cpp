@@ -105,7 +105,6 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   Solution_Pred       =  NULL;
   Solution_Pred_Old     =  NULL;
   Solution_Pred_Old   = NULL;
-  FlowTraction_n = NULL;
   if (fsi_analysis) {
     Solution_Pred       =  new su2double [nVar];
     Solution_Pred_Old     =  new su2double [nVar];
