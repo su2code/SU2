@@ -4603,6 +4603,9 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
     }
+    if (config_container[iZone]->GetWeakly_Coupled_Heat()) {
+      solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    }
   }
 
 
