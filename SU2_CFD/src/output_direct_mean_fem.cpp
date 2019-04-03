@@ -369,10 +369,8 @@ void CFlowFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 
 void CFlowFEMOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned short iVar;
   
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
-  CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
   
   SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());

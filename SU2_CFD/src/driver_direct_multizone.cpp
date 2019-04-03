@@ -41,11 +41,9 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
                                                           val_periodic,
                                                           MPICommunicator) {
 
@@ -114,15 +112,19 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case DEFORMING:
-      case EXTERNAL: case EXTERNAL_ROTATION:
-      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case RIGID_MOTION: 
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
-      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
-      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
+    }
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+        config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
+        config_container[iZone]->GetSurface_Movement(DEFORMING) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
+      prefixed_motion[iZone] = true;
     }
   }
 
@@ -135,7 +137,8 @@ CMultizoneDriver::~CMultizoneDriver(void) {
     delete [] residual[iZone];
     delete [] residual_rel[iZone];
   }
-
+  
+  delete [] nVarZone;
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
