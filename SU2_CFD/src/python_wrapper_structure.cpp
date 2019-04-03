@@ -1025,8 +1025,6 @@ void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, unsigned 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
   GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
 
-//  cout << "Set Load " << iPoint << ": " << GlobalIndex << " " << iGlobalIndex << " " << LoadX << " " << LoadY << " " << LoadZ << endl;
-
   solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->Set_FlowTraction(PyWrapNodalForce);
 
 }
@@ -1115,5 +1113,29 @@ vector<passivedouble> CDriver::GetVelocity_n(unsigned short iMarker, unsigned sh
   Velocity_n_passive[2] = SU2_TYPE::GetValue(Velocity_n[2]);
 
   return Velocity_n_passive;
+
+}
+
+vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint, GlobalIndex;
+  vector<su2double> FlowLoad_Sens(3, 0.0);
+  vector<passivedouble> FlowLoad_Sens_passive(3, 0.0);
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+
+  FlowLoad_Sens[0] = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->GetFlowTractionSensitivity(0);
+  FlowLoad_Sens[1] = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->GetFlowTractionSensitivity(1);
+  if (solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->GetnVar() == 3)
+    FlowLoad_Sens[2] = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->GetFlowTractionSensitivity(2);
+  else
+    FlowLoad_Sens[2] = 0.0;
+
+  FlowLoad_Sens_passive[0] = SU2_TYPE::GetValue(FlowLoad_Sens[0]);
+  FlowLoad_Sens_passive[1] = SU2_TYPE::GetValue(FlowLoad_Sens[1]);
+  FlowLoad_Sens_passive[2] = SU2_TYPE::GetValue(FlowLoad_Sens[2]);
+
+  return FlowLoad_Sens_passive;
 
 }
