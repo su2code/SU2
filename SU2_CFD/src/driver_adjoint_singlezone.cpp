@@ -63,6 +63,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Store the recording state ---*/
   RecordingState = NONE;
 
+  /*--- Determine if the problem is a turbomachinery problem ---*/
+  bool turbo = config->GetBoolTurbomachinery();
+
   /*--- Initialize the direct iteration ---*/
 
   switch (config->GetKind_Solver()) {
@@ -70,7 +73,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    direct_iteration = new CFluidIteration(config);
+    if (turbo) direct_iteration = new CTurboIteration(config);
+    else       direct_iteration = new CFluidIteration(config);
     MainVariables = FLOW_CONS_VARS;
     break;
 
@@ -308,6 +312,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool heat         = (config->GetWeakly_Coupled_Heat());
+  bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
 
@@ -343,6 +348,30 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
       }
+    }
+
+    /*--- This calls to be moved to a generic framework at a next stage         ---*/
+    /*--- Some things that are currently hacked into output must be reorganized ---*/
+    if (turbo){
+
+      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+
+      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+      case ENTROPY_GENERATION:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      case FLOW_ANGLE_OUT:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      case MASS_FLOW_IN:
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        break;
+      default:
+        break;
+      }
+
+      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
+
     }
 
     break;

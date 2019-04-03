@@ -1147,6 +1147,11 @@ void CTurboIteration::Postprocess( COutput *output,
   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
   solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);
 
+
+  /*--- Compute turboperformance for single-zone adjoint cases. ---*/
+  if (config_container[val_iZone]->GetSinglezone_Driver() && config_container[val_iZone]->GetDiscrete_Adjoint())
+    output->ComputeTurboPerformance(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
 }
 
 CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
