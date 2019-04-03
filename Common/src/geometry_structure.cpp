@@ -9501,6 +9501,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   /*--- Initialize pointers for turbomachinery computations  ---*/
   
   nSpanWiseSections       = new unsigned short[2];
+	nSpanSectionsByMarker   = new unsigned short[nMarker];
   SpanWiseValue           = new su2double*[2];
   for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
     nSpanWiseSections[iMarker]      = 0;
@@ -9521,6 +9522,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++){
+		nSpanSectionsByMarker[iMarker]  = 0;
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -14940,7 +14942,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   long jVertex;
   int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
-  short SendRecv;
+  short PeriodicBoundary;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
   
@@ -14977,15 +14979,11 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                 /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
                  * in order to caount the number of Span ---*/
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                         nSpan++;
-
-                      }
                     }
                   }
                 }
@@ -15026,43 +15024,40 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
-                    jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
-                        coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
-                        case CENTRIFUGAL:
-                          valueSpan[nSpan_loc] = coord[2];
-                          break;
-                        case CENTRIPETAL:
-                          valueSpan[nSpan_loc] = coord[2];
-                          break;
-                        case AXIAL:
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+                  	jVertex = node[iPoint]->GetVertex(jMarker);
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                      coord = node[iPoint]->GetCoord();
+                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      case CENTRIFUGAL:
+                        valueSpan[nSpan_loc] = coord[2];
+                        break;
+                      case CENTRIPETAL:
+                        valueSpan[nSpan_loc] = coord[2];
+                        break;
+                      case AXIAL:
+                        valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        break;
+                      case CENTRIPETAL_AXIAL:
+                        if (marker_flag == OUTFLOW){
                           valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          break;
-                        case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
-                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          }
-                          else{
-                            valueSpan[nSpan_loc] = coord[2];
-                          }
-                          break;
-                        case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
-                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          }
-                          else{
-                            valueSpan[nSpan_loc] = coord[2];
-                          }
-                          break;
-
                         }
-                        nSpan_loc++;
+                        else{
+                          valueSpan[nSpan_loc] = coord[2];
+                        }
+                        break;
+                      case AXIAL_CENTRIFUGAL:
+                        if (marker_flag == INFLOW){
+                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        }
+                        else{
+                          valueSpan[nSpan_loc] = coord[2];
+                        }
+                        break;
+
                       }
+                      nSpan_loc++;
                     }
                   }
                 }
@@ -15162,48 +15157,44 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
-                        coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
-                        case CENTRIFUGAL: case CENTRIPETAL:
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                          break;
-                        case AXIAL:
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                      coord = node[iPoint]->GetCoord();
+                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      case CENTRIFUGAL: case CENTRIPETAL:
+                        if (coord[2] < min) min = coord[2];
+                        if (coord[2] > max) max = coord[2];
+                        break;
+                      case AXIAL:
+                        radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        if (radius < min) min = radius;
+                        if (radius > max) max = radius;
+                        break;
+                      case CENTRIPETAL_AXIAL:
+                        if (marker_flag == OUTFLOW){
                           radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                           if (radius < min) min = radius;
                           if (radius > max) max = radius;
-                          break;
-                        case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
-                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                            if (radius < min) min = radius;
-                            if (radius > max) max = radius;
-                          }
-                          else{
-                            if (coord[2] < min) min = coord[2];
-                            if (coord[2] > max) max = coord[2];
-                          }
-                          break;
-
-                        case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
-                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                            if (radius < min) min = radius;
-                            if (radius > max) max = radius;
-                          }
-                          else{
-                            if (coord[2] < min) min = coord[2];
-                            if (coord[2] > max) max = coord[2];
-                          }
-                          break;
                         }
+                        else{
+                          if (coord[2] < min) min = coord[2];
+                          if (coord[2] > max) max = coord[2];
+                        }
+                        break;
 
+                      case AXIAL_CENTRIFUGAL:
+                        if (marker_flag == INFLOW){
+                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          if (radius < min) min = radius;
+                          if (radius > max) max = radius;
+                        }
+                        else{
+                          if (coord[2] < min) min = coord[2];
+                          if (coord[2] > max) max = coord[2];
+                        }
+                        break;
                       }
                     }
                   }
@@ -16157,7 +16148,6 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           if(allocate){
-            nSpanSectionsByMarker[iMarker]            = nSpanWiseSections[marker_flag-1];
             AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
