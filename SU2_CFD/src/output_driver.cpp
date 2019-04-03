@@ -100,7 +100,9 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
   string name, header;
   su2double val, avgsol, avgzone;
 
-  SetHistoryOutputValue("TIME_ITER", driver_config->GetTimeIter());
+  if (driver_config->GetTime_Domain()){
+    SetHistoryOutputValue("TIME_ITER", driver_config->GetTimeIter());
+  }
   SetHistoryOutputValue("OUTER_ITER", driver_config->GetOuterIter());
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -162,9 +164,11 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
   unsigned short iZone, iSol, iVar;
   unsigned short iReqField;
   string name, header;
-
-  AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
-  RequestedScreenFields.push_back("TIME_ITER"); RequestedHistoryFields.push_back("TIME_ITER");
+  
+  if (config[ZONE_0]->GetTime_Domain()){
+    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
+    RequestedScreenFields.push_back("TIME_ITER"); RequestedHistoryFields.push_back("TIME_ITER");
+  }
   AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER");
   RequestedScreenFields.push_back("OUTER_ITER"); RequestedHistoryFields.push_back("OUTER_ITER");
 

@@ -3664,7 +3664,7 @@ void CDriver::Output_Preprocessing(){
 
     /*--- Initial print to console for this zone. ---*/
 
-    if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
+    if (rank == MASTER_NODE) cout << "Zone " << iZone;
 
     /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
