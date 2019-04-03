@@ -4041,55 +4041,6 @@ CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
 
 CGeneralDriver::~CGeneralDriver(void) { }
 
-void CGeneralDriver::Run() {
-
-  unsigned short iZone;
-
-  /*--- Run a single iteration of a fem problem by looping over all
-   zones and executing the iterations. Note that data transers between zones
-   and other intermediate procedures may be required. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-}
-
-void CGeneralDriver::Update() {
-
-  for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-  if (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM){
-      iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-  }
-
-}
-
-void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
-
-  bool harmonic_balance;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-    /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
-    }
-  }
-}
-
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
