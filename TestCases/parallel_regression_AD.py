@@ -238,7 +238,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.183713, 0.923840, -223.197830, -2059.808372] #last 4 columns
+    discadj_heat.test_vals = [3.189496, 0.924785, -223.842971, -2057.494841] #last 4 columns
     discadj_heat.su2_exec  = "parallel_computation.py -f"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
