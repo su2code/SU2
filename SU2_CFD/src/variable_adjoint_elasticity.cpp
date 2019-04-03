@@ -256,7 +256,7 @@ CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(su2double* val_solution, unsi
 
 
   unsigned short iDim;
-
+  FlowTraction_Sens = new su2double[nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     FlowTraction_Sens[iDim] = val_solution[iDim];
   }

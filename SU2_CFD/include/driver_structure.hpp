@@ -706,6 +706,16 @@ public:
   vector<passivedouble> GetVelocity_n(unsigned short iMarker, unsigned short iVertex);
 
   /*!
+   * \brief Get the sensitivity of the flow loads for the structural solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] LoadX - Value of the load in the direction X.
+   * \param[in] LoadX - Value of the load in the direction Y.
+   * \param[in] LoadX - Value of the load in the direction Z.
+   */
+  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
   virtual void Run_GaussSeidel(){};
