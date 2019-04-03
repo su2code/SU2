@@ -2520,6 +2520,10 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[val_iZone]->GetFrozen_Visc_Disc()) {
     solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
   }
+  if (config_container[val_iZone]->GetWeakly_Coupled_Heat()) {
+    solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  }
+
 
 }
 
