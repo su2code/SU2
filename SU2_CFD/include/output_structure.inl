@@ -49,12 +49,6 @@ inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { ret
 inline void COutput::SetHistoryOutputFields(CConfig *config){}
 
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
- 
-inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
-
-inline bool COutput::WriteScreen_Header(CConfig *config) { return true; }
-
-inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
 
 inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }

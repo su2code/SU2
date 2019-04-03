@@ -365,7 +365,7 @@ void CMultizoneDriver::Run_Jacobi() {
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
