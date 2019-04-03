@@ -265,15 +265,15 @@ void CDriverOutput::SetScreen_Output(COutput **output, CConfig *driver_config, C
 inline bool CDriverOutput::WriteScreen_Header(CConfig *driver_config, CConfig **config) {
 
   unsigned short iZone;
-  bool write_header = true;
+  bool write_header = true, write_zone = false;
 
   /*--- If the zone output is disabled for every zone ---*/
   for (iZone = 0; iZone < nZone; iZone++){
-    write_header = (write_header && (!config[iZone]->GetWrt_ZoneConv()));
+    write_zone = config[iZone]->GetWrt_ZoneConv();
   }
 
   /*--- If the outer iteration is zero ---*/
-  write_header = (write_header && (driver_config->GetOuterIter() == 0));
+  write_header = (write_header && (driver_config->GetOuterIter() == 0)) || write_zone;
 
   return write_header;
 
