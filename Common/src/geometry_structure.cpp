@@ -8490,16 +8490,22 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
     if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
 
+    SetPoint_Connectivity();
+    SetRCM_Ordering(config);
+    SetPoint_Connectivity();
+    SetElement_Connectivity();
+    SetBoundVolume();
     /*--- Correct the orientation of the elements and flip the negative ones. ---*/
     Check_IntElem_Orientation(config);
-
+    Check_BoundElem_Orientation(config);
+    
     /*--- Calculate Normals for the wall model preprocessing ---*/
-    //Check_BoundElem_Orientation(config);
+    
     SetEdges();
     SetVertex(config);
     SetCoord_CG();
-    //SetControlVolume(config, ALLOCATE);
-    //SetBoundControlVolume(config, ALLOCATE);
+    SetControlVolume(config, ALLOCATE);
+    SetBoundControlVolume(config, ALLOCATE);
 
     /*--- Perform the preprocessing tasks when wall functions are used.
      Additional entries may be added to the vectors SendDomainLocal and
@@ -13224,15 +13230,17 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
  
           /*--- Loop over the vertices of the boundary marker. ---*/
           for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-            const unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
             
-            /*--- While I do not have a reasonable way to compute the Unit Normal
-             Assume constant.---*/
-            //if (node[iPoint]->GetDomain()) {
-            su2double normals[] = {0.0, -1.0, 0.0};
+            unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+            
+            su2double *iNormal = vertex[iMarker][iVertex]->GetNormal();
+            su2double normals[] = {0.0,0.0,0.0},Area;
             su2double *Coord  = node[iPoint]->GetCoord();
             
-            //}
+            Area = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += iNormal[iDim]*iNormal[iDim];
+            Area = sqrt(Area);
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) normals[iDim] = -iNormal[iDim]/Area;
+
             /* Determine the coordinates of the exchange location. Note that the normals
              point out of the domain, so the normals must be subtracted. */
             su2double coorExchange[] = {0.0, 0.0, 0.0};  // To avoid a compiler warning.
