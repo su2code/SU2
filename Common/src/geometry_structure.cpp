@@ -8431,13 +8431,33 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   vector<vector<unsigned long> > SendTransfLocal;	/*!< \brief Vector to store the type of transformation for this send point. */
   vector<vector<unsigned long> > ReceivedTransfLocal;	/*!< \brief Vector to store the type of transformation for this received point. */
-	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
-	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
+	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
+	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
   /*--- Correct the orientation of the elements and flip the negative ones. ---*/
   Check_IntElem_Orientation(config);
+  
+  /*--- Calculate Normals for the wall model preprocessing ---*/
+  //Check_BoundElem_Orientation(config);
+  SetEdges();
+  SetVertex(config);
+  SetCoord_CG();
+  //SetControlVolume(config, ALLOCATE);
+  //SetBoundControlVolume(config, ALLOCATE);
+  
+  if (config->GetWall_Functions()){
+    
+    /*--- Perform the preprocessing tasks when wall functions are used.
+     We need to do this before the SetSendReceive where we will make
+     sure to communicate all exchange and boundary elements that aren't in
+     the same partition.---*/
+    
+    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
+    WallModelPreprocessing(config);
+    
+  }
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
@@ -13111,12 +13131,12 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     
     unsigned short VTK_Type[] = {elem[iElem]->GetVTK_Type(), 0};
     unsigned short nSubElems[] = {1, 0};
-    unsigned short nDOFsPerSubElem[] = {elem[iElem]->GetnNodes(), 0};
+    //unsigned short nDOFsPerSubElem[] = {elem[iElem]->GetnNodes(), 0};
     
 //    /* Loop over the number of subelements and store the required data. */
     unsigned short jj = 0;
     for(unsigned short i=0; i<2; ++i) {
-      unsigned short kk = 0;
+      //unsigned short kk = 0;
       for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
         parentElement.push_back(iElem);
         subElementIDInParent.push_back(jj);
@@ -13179,6 +13199,8 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
               
+              /*--- Here we need to find a better solution for the data structure!!!! ---*/
+              
               //bound[iMarker].wallModel = new CWallModel1DEQ;
               break;
             }
@@ -13186,7 +13208,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
               
-              //bound[iMarker].wallModel = new CWallModelLogLaw;
+              //bound[iMarker] = new CWallModelLogLaw;
               break;
             }
             default: {
@@ -13200,9 +13222,43 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
           const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
           const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
           
-          /* Initialize the wall model. */
-          //boundaries[iMarker].wallModel->Initialize(intInfo, doubleInfo);
-
+          for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            const unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+            
+            /*--- While I do not have a reasonable way to compute the Unit Normal
+             Assume constant.---*/
+            //if (node[iPoint]->GetDomain()) {
+            su2double normals[] = {0.0, -1.0, 0.0};
+            su2double *Coord  = node[iPoint]->GetCoord();
+            
+            //}
+            /* Determine the coordinates of the exchange location. Note that the normals
+             point out of the domain, so the normals must be subtracted. */
+            su2double coorExchange[] = {0.0, 0.0, 0.0};  // To avoid a compiler warning.
+            for(unsigned short iDim=0; iDim<nDim; ++iDim)
+              coorExchange[iDim] = Coord[iDim] - doubleInfo[0]*normals[iDim];
+            
+            /* Search for the element, which contains the exchange location. */
+            unsigned short subElem;
+            unsigned long  parElem;
+            int            rank;
+            su2double      parCoor[3], weightsInterpol[8];
+            if( localVolumeADT.DetermineContainingElement(coorExchange, subElem,
+                                                          parElem, rank, parCoor,
+                                                          weightsInterpol) ){
+              cout << subElem << " " << parElem << " " << rank << " " << parCoor[0] << " " << parCoor[1] << " "  << node[parElem]->GetCoord(0) << " " << node[parElem]->GetCoord(1) << endl;
+              // Is the parCoor
+              cout << coorExchange[0] << " " << coorExchange[1] << " " << weightsInterpol[0] << " " << weightsInterpol[1] << " " << weightsInterpol[2] << endl;
+            }
+            else {
+              
+              /* No subelement found that contains the exchange location.
+               The partitioning is done such that this should not happen.
+               Print an error message and exit. */
+              SU2_MPI::Error("Exchange location not found in ADT",
+                             CURRENT_FUNCTION);
+            }
+          }
         }
       }
     }

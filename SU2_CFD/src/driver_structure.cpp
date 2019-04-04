@@ -175,15 +175,6 @@ CDriver::CDriver(char* confFile,
         
       }
       
-      if (config_container[iZone]->GetWall_Functions()){
-        
-        /*--- Perform the preprocessing tasks when wall functions are used. ---*/
-        
-        if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
-        geometry_container[iZone][iInst][MESH_0]->WallModelPreprocessing(config_container[iZone]);
-        
-      }
-
       /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
 
