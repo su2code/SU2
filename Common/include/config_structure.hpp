@@ -1071,10 +1071,10 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
-  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
-  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
-  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
-  Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
+  unsigned long nOuterIter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  nInnerIter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  nTimeIter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  nIter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */

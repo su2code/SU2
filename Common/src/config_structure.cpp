@@ -2177,13 +2177,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
   addBoolOption("TIME_DOMAIN", Time_Domain, false);
   /* DESCRIPTION: Number of outer iterations in the multizone problem. */
-  addUnsignedLongOption("OUTER_ITER", Outer_Iter, 1);
+  addUnsignedLongOption("OUTER_ITER", nOuterIter, 1);
   /* DESCRIPTION: Number of inner iterations in each multizone block. */
-  addUnsignedLongOption("INNER_ITER", Inner_Iter, 1);
+  addUnsignedLongOption("INNER_ITER", nInnerIter, 1);
   /* DESCRIPTION: Number of time steps solved in the multizone problem. */
-  addUnsignedLongOption("TIME_ITER", Time_Iter, 1);
+  addUnsignedLongOption("TIME_ITER", nTimeIter, 1);
   /* DESCRIPTION: Number of iterations in each single-zone block. */
-  addUnsignedLongOption("ITER", Iter, 1000);
+  addUnsignedLongOption("ITER", nIter, 1000);
   /* DESCRIPTION: Restart iteration in the multizone problem. */
   addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
@@ -3177,10 +3177,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
   
-  if (!Time_Domain){
-    Time_Iter = 1;
+  if (Unsteady_Simulation == TIME_STEPPING){
+    nIter      = 1;
+    nInnerIter  = 1;
   }
   
+  if (!Time_Domain){
+    nTimeIter = 1;
+  } 
+  
+  if (Time_Domain){
+    Delta_UnstTime = Time_Step;
+    Delta_DynTime  = Time_Step;
+  }
   /*--- Fluid-Structure Interaction problems ---*/
 
   if (FSI_Problem) {
@@ -6023,8 +6032,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
     if (SinglezoneDriver){
-      cout << "Maximum number of solver subiterations: " << Iter <<"."<< endl;
-      cout << "Maximum number of physical time-steps: " << Time_Iter <<"."<< endl;
+      cout << "Maximum number of solver subiterations: " << nIter <<"."<< endl;
+      cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
     }
     else{
       cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
