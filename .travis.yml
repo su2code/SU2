@@ -16,10 +16,10 @@ notifications:
   
 branches:
     only:
-        - feature_driver_adjoint_singlezone
+        -  feature_adjoint_single_zone
 
 python:
-    - 2.7
+        #- 2.7
     - 3.6
 
 env:
