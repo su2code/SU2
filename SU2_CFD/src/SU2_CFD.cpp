@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-  if (config->GetSinglezone_Driver()) {
+  if (config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint())) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 
@@ -115,18 +115,7 @@ int main(int argc, char *argv[]) {
        driver = new CSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   }
-  else if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
-        config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
-
-    /*--- Single zone problem: instantiate the single zone driver class. ---*/
-    
-    if (nZone > 1 ) {
-      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
-    }
-    
-    driver = new CGeneralDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
-
-  } else if (config->GetKind_Solver() == MULTIZONE) {
+  else if (config->GetKind_Solver() == MULTIZONE) {
 
     /*--- Multizone Driver. ---*/
 
@@ -164,19 +153,7 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    if (config->GetDiscrete_Adjoint()) {
-
-      if (turbo) {
-
-        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
-
-      } else {
-
-        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
-        
-      }
-
-    } else if (turbo) {
+    if (turbo) {
 
       driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
