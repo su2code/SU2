@@ -40,11 +40,9 @@
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                       unsigned short val_nZone,
-                                      unsigned short val_nDim,
                                       bool val_periodic,
                                       SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
                                                                                   val_nZone,
-                                                                                  val_nDim,
                                                                                   val_periodic,
                                                                                   MPICommunicator) {
 
@@ -243,7 +241,7 @@ void CDiscAdjMultizoneDriver::Run() {
   for (iOuter_Iter = 0; iOuter_Iter < OuterIter; iOuter_Iter++){
 
     for (iZone = 0; iZone < nZone; iZone++) {
-
+      driver_config->SetOuterIter(iOuter_Iter);
       config_container[iZone]->SetOuterIter(iOuter_Iter);
     }
 
@@ -310,7 +308,9 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
       output[iZone]->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, iZone, INST_0);
     }    
-
+    
+    OuterConvergence(iOuter_Iter);
+    
     /*--- Check convergence in each zone --*/
 
     checkConvergence = 0;

@@ -70,7 +70,7 @@ void CDriverOutput::SetBody(COutput **output, CSolver *****solver, CConfig *driv
 
   if (rank == MASTER_NODE) {
 
-    bool write_header, write_history, write_screen;
+    bool write_header, write_screen;
 
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
@@ -99,8 +99,11 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
   unsigned short nVar, nVar_Zone;
   string name, header;
   su2double val, avgsol, avgzone;
+  bool adjoint = driver_config->GetDiscrete_Adjoint();
 
-  SetHistoryOutputValue("TIME_ITER", driver_config->GetTimeIter());
+  if (driver_config->GetTime_Domain()){
+    SetHistoryOutputValue("TIME_ITER", driver_config->GetTimeIter());
+  }
   SetHistoryOutputValue("OUTER_ITER", driver_config->GetOuterIter());
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -113,36 +116,40 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
       /*-- If the solver position iSol is enabled --*/
       if (solver[iZone][INST_0][MESH_0][iSol] != NULL){
-
-        /*---Initialize values per solver ---*/
-        nVar = solver[iZone][INST_0][MESH_0][iSol]->GetnVar();
-        avgsol = 0.0;
-
-        /*-- For all the variables per solver --*/
-        for (iVar = 0; iVar < nVar; iVar++){
-
-          /*--- Get the unique name for the history data ---*/
-          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
-
-          /*--- Set the value of the BGS residual for the variable iVar, solver iSol, zone iZone ---*/
-          val = log10(solver[iZone][INST_0][MESH_0][iSol]->GetRes_BGS(iVar));
-          SetHistoryOutputValue(name, val);
-
-          /*--- Add values to averages ---*/
-          avgsol += val;
-          avgzone += val;
-          nVar_Zone++;
+        
+        /*--- If we are running an adjoint problem, only add adjoint solvers to the output --- */
+        
+        if (!adjoint || (adjoint && solver[iZone][INST_0][MESH_0][iSol]->GetAdjoint())){
+          
+          /*---Initialize values per solver ---*/
+          nVar = solver[iZone][INST_0][MESH_0][iSol]->GetnVar();
+          avgsol = 0.0;
+          
+          /*-- For all the variables per solver --*/
+          for (iVar = 0; iVar < nVar; iVar++){
+            
+            /*--- Get the unique name for the history data ---*/
+            name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
+            
+            /*--- Set the value of the BGS residual for the variable iVar, solver iSol, zone iZone ---*/
+            val = log10(solver[iZone][INST_0][MESH_0][iSol]->GetRes_BGS(iVar));
+            SetHistoryOutputValue(name, val);
+            
+            /*--- Add values to averages ---*/
+            avgsol += val;
+            avgzone += val;
+            nVar_Zone++;
+          }
+          
+          /*--- Get the unique name for the averaged history data per solver ---*/
+          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
+          
+          /*--- Compute the average and set the value for the solver iSol, zone iZone---*/
+          avgsol = avgsol / nVar;
+          SetHistoryOutputValue(name, avgsol);
+          
         }
-
-        /*--- Get the unique name for the averaged history data per solver ---*/
-        name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
-
-        /*--- Compute the average and set the value for the solver iSol, zone iZone---*/
-        avgsol = avgsol / nVar;
-        SetHistoryOutputValue(name, avgsol);
-
       }
-
     }
 
     /*--- Get an unique name for the averaged history data per zone ---*/
@@ -162,53 +169,64 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
   unsigned short iZone, iSol, iVar;
   unsigned short iReqField;
   string name, header;
-
-  AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
-  RequestedScreenFields.push_back("TIME_ITER"); RequestedHistoryFields.push_back("TIME_ITER");
+  bool adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
+  
+  
+  if (config[ZONE_0]->GetTime_Domain()){
+    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
+    RequestedScreenFields.push_back("TIME_ITER"); RequestedHistoryFields.push_back("TIME_ITER");
+  }
   AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER");
   RequestedScreenFields.push_back("OUTER_ITER"); RequestedHistoryFields.push_back("OUTER_ITER");
-
+  
   /*--- Set the fields ---*/
   for (iZone = 0; iZone < nZone; iZone++){
-
+    
     /*--- Accounting for all the solvers ---*/
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
       /*-- If the solver position iSol is enabled --*/
       if (solver[iZone][INST_0][MESH_0][iSol] != NULL){
-        /*-- For all the variables per solver --*/
-        for (iVar = 0; iVar < solver[iZone][INST_0][MESH_0][iSol]->GetnVar(); iVar++){
-
-          /*--- Set an unique name for the history data ---*/
-          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
-          /*--- Set an unique name for the history headers ---*/
-          header = "res[" + to_string(iZone) + "][" + to_string(iSol) + "][" + to_string(iVar) + "]";
-
-          AddHistoryOutput(name, header, FORMAT_FIXED,  "VAR_RES", TYPE_RESIDUAL);
-
-          /*--- Request the variable residual for history output ---*/
-          RequestedHistoryFields.push_back(name);
+        
+        /*--- If we are running an adjoint problem, only add adjoint solvers to the output --- */
+        
+        if (!adjoint || (adjoint && solver[iZone][INST_0][MESH_0][iSol]->GetAdjoint())){
+          
+          
+          /*-- For all the variables per solver --*/
+          for (iVar = 0; iVar < solver[iZone][INST_0][MESH_0][iSol]->GetnVar(); iVar++){
+            
+            /*--- Set an unique name for the history data ---*/
+            name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
+            /*--- Set an unique name for the history headers ---*/
+            header = "res[" + to_string(iZone) + "][" + to_string(iSol) + "][" + to_string(iVar) + "]";
+            
+            AddHistoryOutput(name, header, FORMAT_FIXED,  "VAR_RES", TYPE_RESIDUAL);
+            
+            /*--- Request the variable residual for history output ---*/
+            RequestedHistoryFields.push_back(name);
+          }
+          
+          /*--- Set an unique name for the averaged history data per solver ---*/
+          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
+          /*--- Set an unique name for the history headers of the averaged data per solver ---*/
+          header = solver[iZone][INST_0][MESH_0][iSol]->GetSolverName();
+          header += "[" + to_string(iZone) + "]";
+          
+          /*--- Add the average residual of the current solver to output ---*/
+          AddHistoryOutput(name, header, FORMAT_FIXED,  "SOL_AVGRES", TYPE_RESIDUAL);
+          
+          /*--- Request the average residual for screen output ---*/
+          RequestedScreenFields.push_back(name);
+          
         }
-
-        /*--- Set an unique name for the averaged history data per solver ---*/
-        name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
-        /*--- Set an unique name for the history headers of the averaged data per solver ---*/
-        header = solver[iZone][INST_0][MESH_0][iSol]->GetSolverName();
-        header += "[" + to_string(iZone) + "]";
-
-        /*--- Add the average residual of the current solver to output ---*/
-        AddHistoryOutput(name, header, FORMAT_FIXED,  "SOL_AVGRES", TYPE_RESIDUAL);
-
-        /*--- Request the average residual for screen output ---*/
-        RequestedScreenFields.push_back(name);
-
       }
     }
-
+    
     /*--- Set an unique name for the averaged history data ---*/
     name = "ZONE" + to_string(iZone);
     /*--- Set an unique name for the history headers of the averaged data ---*/
     header = "avgres[" + to_string(iZone) + "]";
-
+    
     AddHistoryOutput(name, header, FORMAT_FIXED,  "ZONE_AVGRES", TYPE_RESIDUAL);
   }
 
@@ -265,15 +283,15 @@ void CDriverOutput::SetScreen_Output(COutput **output, CConfig *driver_config, C
 inline bool CDriverOutput::WriteScreen_Header(CConfig *driver_config, CConfig **config) {
 
   unsigned short iZone;
-  bool write_header = true;
+  bool write_header = true, write_zone = false;
 
   /*--- If the zone output is disabled for every zone ---*/
   for (iZone = 0; iZone < nZone; iZone++){
-    write_header = (write_header && (!config[iZone]->GetWrt_ZoneConv()));
+    write_zone = config[iZone]->GetWrt_ZoneConv();
   }
 
   /*--- If the outer iteration is zero ---*/
-  write_header = (write_header && (driver_config->GetOuterIter() == 0));
+  write_header = (write_header && (driver_config->GetOuterIter() == 0)) || write_zone;
 
   return write_header;
 

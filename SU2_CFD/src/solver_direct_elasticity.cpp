@@ -235,10 +235,18 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
 
   /*--- Initialize from zero everywhere. ---*/
+  long iVertex;
+  bool isVertex;
 
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
+    isVertex = false;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1){isVertex = true; break;}
+    }
+    if (isVertex) node[iPoint] = new CFEABoundVariable(SolRest, nDim, nVar, config);
+    else          node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
   }
   
   bool reference_geometry = config->GetRefGeom();
@@ -517,7 +525,12 @@ CFEASolver::~CFEASolver(void) {
   delete [] normalVertex;
   delete [] stressTensor;
   
+  if (solutionPredictor != NULL) delete [] solutionPredictor;
+  
   if (iElem_iDe != NULL) delete [] iElem_iDe;
+  
+  delete [] elProperties;
+  
 }
 
 void CFEASolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -3682,7 +3695,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3784,7 +3796,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3798,7 +3809,9 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           }
         }
         else {
-          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = node[iPoint]->Get_FlowTraction(iVar);
+          }
         }
         LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
@@ -3996,7 +4009,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4083,7 +4095,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4234,8 +4245,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
-  CSysSolve femSystem;
-  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- The the number of iterations of the linear solver ---*/
   

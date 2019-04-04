@@ -556,7 +556,6 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
 
 void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned short iVar;
   
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
@@ -660,45 +659,6 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS",             config[val_iZone]->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
     SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",              config[val_iZone]->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
   }
-}
-
-bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-   return true;
- }
- else {
-   return false;
- }
-}
-
-bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
-  } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
-  }
-
-  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
-
-  return write_header;
-}
-
-bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  bool write_output = false;
-  
-  if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
-    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq_DualTime() == 0);
-  }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
-  } 
-
-  /*--- For multizone problems, print the body only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
-
-  return write_output;
 }
 
 su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){

@@ -41,12 +41,12 @@
 #ifdef VTUNEPROF
 #include <ittnotify.h>
 #endif
+#include <fenv.h>
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim,
                  bool val_periodic,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
+                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false) {
 
 
   unsigned short jZone, iSol;
@@ -193,6 +193,8 @@ CDriver::CDriver(char* confFile,
     }
 
   }
+  
+  nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
@@ -385,7 +387,7 @@ CDriver::CDriver(char* confFile,
     if (!fem_solver && (config_container[iZone]->GetGrid_Movement() ||
                         (config_container[iZone]->GetDirectDiff() == D_DESIGN))) {
       if (rank == MASTER_NODE)
-        cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
+        cout << "Setting dynamic mesh structure for zone "<< iZone <<"." << endl;
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
         grid_movement[iZone][iInst] = new CVolumetricMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
       }
@@ -427,9 +429,10 @@ CDriver::CDriver(char* confFile,
       }
     }
 
-    if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
+    if (config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
+        config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE)){
       if (rank == MASTER_NODE)
-        cout << "Setting moving mesh structure for static FSI problems." << endl;
+        cout << "Setting moving mesh structure for FSI problems." << endl;
       /*--- Instantiate the container for the grid movement structure ---*/
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
         grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
@@ -453,8 +456,8 @@ CDriver::CDriver(char* confFile,
        Not for the FEM solver, because this is handled later, because
        the integration points must be known. ---*/
   if( !fem_solver ) {
-    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement();
+    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSurface_Movement(MOVING_WALL)
                           || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
 
 
@@ -632,7 +635,10 @@ void CDriver::Postprocessing() {
   
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (interpolator_container[iZone] != NULL){
+      if (interpolator_container[iZone] != NULL) {
+        for (unsigned short jZone = 0; jZone < nZone; jZone++)
+          if (interpolator_container[iZone][jZone] != NULL)
+            delete interpolator_container[iZone][jZone];
         delete [] interpolator_container[iZone];
       }
     }
@@ -728,6 +734,11 @@ void CDriver::Postprocessing() {
     }
     delete [] output;
   }
+  
+  if(driver_output != NULL){
+    delete driver_output;
+  }
+  
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
@@ -798,7 +809,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, VERB_NONE);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -810,12 +821,12 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (driver_config->GetKind_Solver() == MULTIZONE){
+    if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
     }
 
     /*--- Set the MPI communicator ---*/
@@ -825,7 +836,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
@@ -859,15 +870,17 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
       CGeometry *geometry_aux = NULL;
 
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      nDim = geometry_aux->GetnDim();
+      
       /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
 
       CSolver *solver_aux = NULL;
-      if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
-
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);      
 
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
@@ -1148,7 +1161,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
       DGMesh->CoordinatesSolDOFs();
 
       /*--- Initialize the static mesh movement, if necessary. ---*/
-      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
       const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
                                       (Kind_Grid_Movement == MOVING_WALL    ||
                                        Kind_Grid_Movement == ROTATING_FRAME ||
@@ -3579,26 +3592,9 @@ void CDriver::InitStaticMeshMovement(){
   unsigned short Kind_Grid_Movement;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
 
     switch (Kind_Grid_Movement) {
-
-    case MOVING_WALL:
-
-      /*--- Fixed wall velocities: set the grid velocities only one time
-         before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
-        cout << endl << " Setting the moving wall velocities." << endl;
-
-      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
-          config_container[iZone], iZone, 0);
-
-      /*--- Update the grid velocities on the coarser multigrid levels after
-           setting the moving wall velocities for the finest mesh. ---*/
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
-      break;
-
 
     case ROTATING_FRAME:
 
@@ -3638,6 +3634,23 @@ void CDriver::InitStaticMeshMovement(){
 
       break;
     }
+
+    if (config_container[iZone]->GetnMarker_Moving() > 0){
+      
+      /*--- Fixed wall velocities: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
+      if (rank == MASTER_NODE)
+        cout << endl << " Setting the moving wall velocities." << endl;
+      
+      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
+                                            config_container[iZone], iZone, 0);
+      
+      /*--- Update the grid velocities on the coarser multigrid levels after
+         setting the moving wall velocities for the finest mesh. ---*/
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
+      
+    }
   }
 }
 
@@ -3651,7 +3664,7 @@ void CDriver::Output_Preprocessing(){
 
     /*--- Initial print to console for this zone. ---*/
 
-    if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
+    if (rank == MASTER_NODE) cout << "Zone " << iZone;
 
     /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
@@ -3725,7 +3738,7 @@ void CDriver::Output_Preprocessing(){
 
   }
 
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     driver_output = new CDriverOutput(config_container);
     driver_output->SetHistoryOutputFields(output, solver_container, config_container);
   }
@@ -4135,11 +4148,9 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
-CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
-                               unsigned short val_nDim, bool val_periodic,
+CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone, bool val_periodic,
                                SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                    val_nZone,
-                                                                   val_nDim,
                                                                    val_periodic,
                                                                    MPICommunicator) { }
 
@@ -4194,7 +4205,7 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   }
 }
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -4298,10 +4309,8 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 }
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
-    unsigned short val_nZone,
-    unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+    unsigned short val_nZone, bool val_periodic, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
         val_nZone,
-        val_nDim,
         val_periodic,
         MPICommunicator) { }
 
@@ -4444,10 +4453,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
-        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
+        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          config_container[iZone]->GetRotation_Rate()[2] = rot_z;
           if(rank == MASTER_NODE && print && ExtIter > 0) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
@@ -4524,11 +4533,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 }
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
-                                                 unsigned short val_nZone,
-                                                 unsigned short val_nDim, bool val_periodic,
+                                                 unsigned short val_nZone, bool val_periodic,
                                          SU2_Comm MPICommunicator) : CFluidDriver(confFile,
 																										 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	val_nZone,
-                                                                                    val_nDim,
                                                                                     val_periodic,
                                                                                     MPICommunicator) {
 
@@ -4904,9 +4911,8 @@ void CDiscAdjFluidDriver::DirectRun(){
 
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nZone,
-                                                           unsigned short val_nDim,
                                                            bool val_periodic,
-                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator){ }
+                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_periodic, MPICommunicator){ }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }
@@ -5011,11 +5017,9 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
 
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
-    unsigned short val_nDim,
     bool val_periodic,
     SU2_Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
-        val_nDim,
         val_periodic,
         MPICommunicator) {
   unsigned short kInst;
@@ -5565,11 +5569,9 @@ void CHBDriver::ComputeHB_Operator() {
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                            val_nZone,
-                                                           val_nDim,
                                                            val_periodic,
                                                            MPICommunicator) {
   unsigned short iVar;
@@ -6061,11 +6063,9 @@ void CFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     unsigned short val_nDim,
                                      bool val_periodic,
                                      SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                             val_nZone,
-                                                                            val_nDim,
                                                                             val_periodic,
                                                                             MPICommunicator) {
 
@@ -7615,11 +7615,9 @@ void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned sh
 
 CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   unsigned short val_nDim,
                                                    bool val_periodic,
                                                    SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                                        val_nZone,
-                                                                                       val_nDim,
                                                                                        val_periodic,
                                                                                        MPICommunicator) { }
 

@@ -148,7 +148,8 @@ public:
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve  System;       /*!< \brief Linear solver/smoother. */
   
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
@@ -12916,7 +12917,7 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+//  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
 };
 
