@@ -514,16 +514,16 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << " (flow) - log10[Solution 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
           break;
         case DISC_ADJ_RANS:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << ": (flow) - log10[Solution 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
           if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-            cout <<"       log10[RMS k]: " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+            cout <<"       (turb): log10[RMS k] - " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
           }
           break;
         case DISC_ADJ_HEAT:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << " (heat) - log10[Solution 0]: " << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
           break;
       }
     }
