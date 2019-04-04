@@ -144,16 +144,17 @@ class TestCase:
                     if line.find('Begin Solver') > -1:
                         start_solver=True
                 else:   # Found the --Begin solver --- line; parse the input
-                    if self.new_output:
+                    if self.new_output or self.multizone:
                         raw_data = line.strip() # Strip removes whitespaces head-tail
-                        raw_data = raw_data[1:-1].split('|') # Remove heat-tail bars before splitting 
+                        raw_data = raw_data[1:-1].split('|') # Remove heat-tail bars before splitting
                     else:
                         raw_data = line.split()
                     try:
                         iter_number = int(raw_data[0])
-                        if self.unsteady:
+                        if self.unsteady and not self.multizone:
                             iter_number = int(raw_data[1])
                         data = raw_data[len(raw_data) - len(self.test_vals):]
+                        print( iter_number)
                     except ValueError:
                         continue
                     except IndexError:
@@ -683,12 +684,13 @@ class TestCase:
             adjust_string = "TIME_ITER"
         elif self.multizone:
             adjust_string = "OUTER_ITER"
-	elif self.new_output:
-	    adjust_string = "ITER"
+        elif self.new_output:
+            adjust_string = "ITER"
         else:
             adjust_string = "EXT_ITER"
+        print(adjust_string)
         for line in lines:
-            if not line.strip().split("=")[0] == adjust_string:
+            if not line.strip().split("=")[0].strip() == adjust_string:
                 file_out.write(line)
             else:
                 file_out.write(adjust_string+"=%d\n"%(self.test_iter+1))
