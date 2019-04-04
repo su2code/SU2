@@ -8431,33 +8431,10 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
   vector<vector<unsigned long> > SendTransfLocal;	/*!< \brief Vector to store the type of transformation for this send point. */
   vector<vector<unsigned long> > ReceivedTransfLocal;	/*!< \brief Vector to store the type of transformation for this received point. */
-	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
-	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
+  vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
+  vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
 
   map<unsigned long, unsigned long>::const_iterator MI;
-
-  /*--- Correct the orientation of the elements and flip the negative ones. ---*/
-  Check_IntElem_Orientation(config);
-  
-  /*--- Calculate Normals for the wall model preprocessing ---*/
-  //Check_BoundElem_Orientation(config);
-  SetEdges();
-  SetVertex(config);
-  SetCoord_CG();
-  //SetControlVolume(config, ALLOCATE);
-  //SetBoundControlVolume(config, ALLOCATE);
-  
-  if (config->GetWall_Functions()){
-    
-    /*--- Perform the preprocessing tasks when wall functions are used.
-     We need to do this before the SetSendReceive where we will make
-     sure to communicate all exchange and boundary elements that aren't in
-     the same partition.---*/
-    
-    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
-    WallModelPreprocessing(config);
-    
-  }
 
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
@@ -8506,11 +8483,30 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     }
   }
 
-  /*--- Add the entries coming from the possible wall treatment of
-   viscous wall boundaries. ---*/
+  /*--- Check for a wall treatment of the viscous boundaries. If present, some
+    additional entries may be needed in the communication pattern. ---*/
 
+  if (config->GetWall_Functions()){
 
+    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
 
+    /*--- Correct the orientation of the elements and flip the negative ones. ---*/
+    Check_IntElem_Orientation(config);
+
+    /*--- Calculate Normals for the wall model preprocessing ---*/
+    //Check_BoundElem_Orientation(config);
+    SetEdges();
+    SetVertex(config);
+    SetCoord_CG();
+    //SetControlVolume(config, ALLOCATE);
+    //SetBoundControlVolume(config, ALLOCATE);
+
+    /*--- Perform the preprocessing tasks when wall functions are used.
+     Additional entries may be added to the vectors SendDomainLocal and
+     ReceivedDomainLocal to account for additional halo data needed to
+     compute the exchange location. ---*/
+    WallModelPreprocessing(config, SendDomainLocal, ReceivedDomainLocal);
+  }
 
   /*--- Sort the points that must be sent and delete repeated points, note
    that the sorting should be done with the global index (not the local). ---*/
@@ -13082,10 +13078,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
+void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *config,
+                                               vector<vector<unsigned long> > &SendDomainLocal,
+                                               vector<vector<unsigned long> > &ReceivedDomainLocal) {
  
   /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Check whether wall model are used at all.                  ---*/
+  /*--- Step 1: Check whether wall models are used at all.                 ---*/
   /*--------------------------------------------------------------------------*/
   
   bool wallFunctions = false;
@@ -13112,47 +13110,44 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Build the local ADT of the volume elements. The halo       ---*/
   /*---         elements are included such that also direct neighbors are  ---*/
-  /*---         guaranteed to be found as donor element. Note that the ADT ---*/
-  /*---         is built with the linear subelements. This is done to      ---*/
-  /*---         avoid relatively many expensive Newton solves for high     ---*/
-  /*---         order elements.                                            ---*/
+  /*---         guaranteed to be found as donor element.                   ---*/
   /*--------------------------------------------------------------------------*/
-  
-  /* Define the vectors, which store the mapping from the subelement to the
-   parent element, subelement ID within the parent element, the element
-   type and the connectivity of the subelements. */
-  vector<unsigned long>  parentElement;
-  vector<unsigned short> subElementIDInParent;
-  vector<unsigned short> VTK_TypeElem;
+
+  /* Define the vectors needed to build the ADT. */
   vector<unsigned long>  elemConn;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned short> markerIDElem;
+  vector<unsigned long>  elemID;
   
   /*--- Loop over all elements ---*/
   for (unsigned long iElem = 0; iElem < nElem; iElem++){
-    
-    unsigned short VTK_Type[] = {elem[iElem]->GetVTK_Type(), 0};
-    unsigned short nSubElems[] = {1, 0};
-    //unsigned short nDOFsPerSubElem[] = {elem[iElem]->GetnNodes(), 0};
-    
-//    /* Loop over the number of subelements and store the required data. */
-    unsigned short jj = 0;
-    for(unsigned short i=0; i<2; ++i) {
-      //unsigned short kk = 0;
-      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
-        parentElement.push_back(iElem);
-        subElementIDInParent.push_back(jj);
-        VTK_TypeElem.push_back(VTK_Type[i]);
-      }
-    }
-    
-//    for (unsigned short j=0; j < nNeighbor_Elements; ++j){
-//      parentElement.push_back(iElem);
-//      subElementIDInParent.push_back(j);
-//      VTK_TypeElem.push_back(VTK_Type);
-//    }
 
-    /*--- Loop over all the nodes of an element ---*/
-    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      elemConn.push_back(elem[iElem]->GetNode(iNode));
+    /*--- Easier storage of the element type, store the element ID and set
+          a summy for the marker ID, as this is only relevant for a surface
+          search. ---*/
+    unsigned short VTK_Type = elem[iElem]->GetVTK_Type();
+
+    VTK_TypeElem.push_back(VTK_Type);
+    elemID.push_back(iElem);
+    markerIDElem.push_back(0);
+
+    /*--- Store the starting index for the storage of this connectivity.
+          This is needed later on if the connectivity for a prism
+          must be swapped. ---*/
+    const unsigned long startInd = elemConn.size();
+
+    /*--- Loop over the nodes of the element and store them in elemConn. ---*/
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++)
+      elemConn.push_back(elem[iElem]->GetNode(iNode)); 
+
+    /*--- Check for a prism. ---*/
+    if(VTK_Type == PRISM) {
+
+      /*--- The VTK convention for a PRISM differs from the connectivity
+            convention used in the ADT. There renumber the connectivity,
+            such that it corresponds to the ADT convention. ---*/
+      swap(elemConn[startInd+1], elemConn[startInd+2]);
+      swap(elemConn[startInd+4], elemConn[startInd+5]);
     }
   }
   
@@ -13167,13 +13162,13 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
   /* Build the local ADT. */
   CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                               subElementIDInParent, parentElement, false);
+                               markerIDElem, elemID, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
    that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(subElementIDInParent);
+  vector<unsigned short>().swap(markerIDElem);
   vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(parentElement);
+  vector<unsigned long>().swap(elemID);
   vector<unsigned long>().swap(elemConn);
   vector<su2double>().swap(volCoor);
   
@@ -13181,7 +13176,14 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
   /*---         the local elements.                                        ---*/
   /*--------------------------------------------------------------------------*/
-  
+
+  /* Define the vectors, which store the boundary marker, boundary node ID
+     and the corresponding exchange coordinates for which no donor element was
+     found in the locally stored volume elements. */
+  vector<unsigned short> markerIDGlobalSearch;
+  vector<unsigned long>  boundaryNodeIDGlobalSearch;
+  vector<su2double>      coorExGlobalSearch;
+
   /* Loop over the markers and select the ones for which a wall function
    treatment must be carried out. */
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -13216,12 +13218,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             }
           }
           
-          /* Retrieve the integer and floating point information for this
-           boundary marker. The exchange location is the first element of
-           the floating point array. */
-          const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
-          const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
-          
+          /* Retrieve the floating point information for this boundary marker. The
+             exchange location is the first element of the floating point array. */
+          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+ 
+          /*--- Loop over the vertices of the boundary marker. ---*/
           for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
             const unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
             
@@ -13239,31 +13240,63 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               coorExchange[iDim] = Coord[iDim] - doubleInfo[0]*normals[iDim];
             
             /* Search for the element, which contains the exchange location. */
-            unsigned short subElem;
-            unsigned long  parElem;
+            unsigned short dummy;
+            unsigned long  donorElem;
             int            rank;
             su2double      parCoor[3], weightsInterpol[8];
-            if( localVolumeADT.DetermineContainingElement(coorExchange, subElem,
-                                                          parElem, rank, parCoor,
-                                                          weightsInterpol) ){
-              cout << subElem << " " << parElem << " " << rank << " " << parCoor[0] << " " << parCoor[1] << " "  << node[parElem]->GetCoord(0) << " " << node[parElem]->GetCoord(1) << endl;
-              // Is the parCoor
-              cout << coorExchange[0] << " " << coorExchange[1] << " " << weightsInterpol[0] << " " << weightsInterpol[1] << " " << weightsInterpol[2] << endl;
+            if( localVolumeADT.DetermineContainingElement(coorExchange, dummy,
+                                                          donorElem, rank, parCoor,
+                                                          weightsInterpol) ) {
+
+              /*--- Donor element found. Store the interpolation information. ---*/
+              /* TO BE DONE. DEFINE A DATA STRUCTURE TO STORE THIS INFORMATION. */
+              unsigned short nDonors = elem[donorElem]->GetnNodes();
+              unsigned long donors[8];
+
+              for (unsigned short iNode = 0; iNode < nDonors; iNode++)
+                donors[iNode] = elem[donorElem]->GetNode(iNode);
+
+              /* Take the swapping of the connectivity between ADT and
+                 VTK storage into account. */
+              if(elem[donorElem]->GetVTK_Type() == PRISM) {
+                swap(donors[1], donors[2]);
+                swap(donors[4], donors[5]);
+              }
+
             }
             else {
-              
-              /* No subelement found that contains the exchange location.
-               The partitioning is done such that this should not happen.
-               Print an error message and exit. */
-              SU2_MPI::Error("Exchange location not found in ADT",
-                             CURRENT_FUNCTION);
+
+              /* Donor element not found in the local ADT. Store the exchange
+                 coordinates, boundary marker and boundary node ID. */
+              markerIDGlobalSearch.push_back(iMarker);
+              boundaryNodeIDGlobalSearch.push_back(iVertex);
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                coorExGlobalSearch.push_back(coorExchange[iDim]);
             }
           }
         }
       }
     }
   }
-  
+
+#ifndef HAVE_MPI
+  /* In sequential mode it should not be possible that there are points for which
+     no donor elements are found. Check this. */
+  if( markerIDGlobalSearch.size() ) {
+    ostringstream message;
+    message << markerIDGlobalSearch.size() << " boundary points for which "
+            << "no donor elements for the wall functions were found." << endl
+            << "Something is seriously wrong";
+    SU2_MPI::Error("message.str()", CURRENT_FUNCTION);
+  }
+#endif
+
+  /* The remaining part of this function only needs to be carried out in parallel mode. */
+#ifdef HAVE_MPI
+
+  SU2_MPI::Error("Global search not implemented yet", CURRENT_FUNCTION);
+
+#endif
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {

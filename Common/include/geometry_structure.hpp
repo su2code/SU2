@@ -599,9 +599,15 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in]     config              - Definition of the particular problem.
+   * \param[in,out] SendDomainLocal     - Vector of vectors, which contains the nodes to
+                                          be sent to other ranks.
+   * \param[in,out] ReceivedDomainLocal - Vector of vectors, which contains the nodes to
+                                          be received from other ranks.
    */
-  virtual void WallModelPreprocessing(CConfig *config);
+  virtual void WallModelPreprocessing(CConfig                        *config,
+                                      vector<vector<unsigned long> > &SendDomainLocal,
+                                      vector<vector<unsigned long> > &ReceivedDomainLocal);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1892,9 +1898,15 @@ public:
   
   /*!
    * \brief Function that carries out the necessary tasks when wall models are used.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in]     config              - Definition of the particular problem.
+   * \param[in,out] SendDomainLocal     - Vector of vectors, which contains the nodes to
+                                          be sent to other ranks.
+   * \param[in,out] ReceivedDomainLocal - Vector of vectors, which contains the nodes to
+                                          be received from other ranks.
    */
-  void WallModelPreprocessing(CConfig *config);
+  void WallModelPreprocessing(CConfig                        *config,
+                              vector<vector<unsigned long> > &SendDomainLocal, 
+                              vector<vector<unsigned long> > &ReceivedDomainLocal);
 
 	/*! 
 	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
