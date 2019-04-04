@@ -4031,16 +4031,6 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
-CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
-                               unsigned short val_nDim, bool val_periodic,
-                               SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                                   val_nZone,
-                                                                   val_nDim,
-                                                                   val_periodic,
-                                                                   MPICommunicator) { }
-
-CGeneralDriver::~CGeneralDriver(void) { }
-
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
