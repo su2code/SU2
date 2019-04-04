@@ -2632,7 +2632,6 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
   
   unsigned short iVar, iInst;
   unsigned long iPoint;
-  bool compressible = true;
   
   unsigned short nInst = config[iZone]->GetnTimeInstances();
 
@@ -2655,7 +2654,6 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
       bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-      bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
 
 #ifdef HAVE_MPI
       /*--- Do not merge the connectivity or write the visualization files
@@ -2668,11 +2666,6 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         Wrt_Srf = false;
       }
 #endif
-
-    /*--- Check for compressible/incompressible flow problems. ---*/
-
-    compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
-    
 
 //    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
     
@@ -2804,7 +2797,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
        SortOutputData_Surface_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
        
      } else {
-       SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
+       if (FileFormat == TECPLOT_BINARY)
+         SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, false);
+       else
+         SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, true);
        
        /*--- Sort the surface data and renumber if for writing. ---*/
  
@@ -2839,13 +2835,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
           case TECPLOT_BINARY:
 
-            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+          /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
 
-            if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
+          if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
+          WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                      iZone, val_nZone, false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -2895,13 +2889,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
           case TECPLOT_BINARY:
 
-            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+            /*--- Write a Tecplot binary file ---*/
 
-            if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
+            WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                iZone, val_nZone, true);
             break;
 
           case PARAVIEW:
@@ -2948,7 +2940,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 }
 
-void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort) {
 
   /*--- Flags identifying the types of files to be written. ---*/
   
@@ -2966,12 +2958,12 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
     
-    SortVolumetricConnectivity(config, geometry, TRIANGLE     );
-    SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON  );
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
-    SortVolumetricConnectivity(config, geometry, PRISM        );
-    SortVolumetricConnectivity(config, geometry, PYRAMID      );
+    SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
+    SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
+    SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
+    SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
+    SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
+    SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
     
   }
   
@@ -3002,7 +2994,10 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   
 }
 
-void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void COutput::SortVolumetricConnectivity(CConfig *config,
+                                         CGeometry *geometry,
+                                         unsigned short Elem_Type,
+                                         bool val_sort) {
   
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT = 0;
@@ -3269,15 +3264,23 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           if (newID < Global_Index) Global_Index = newID;
         }
         
-        /*--- Search for the processor that owns this point ---*/
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
+        
         
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
@@ -3362,16 +3365,24 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
           if (newID < Global_Index) Global_Index = newID;
         }
+       
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        /*--- Search for the processor that owns this point ---*/
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
         
         /*--- Load connectivity into the buffer for sending ---*/
         
@@ -9620,13 +9631,10 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
     
-  unsigned long iPoint, iVertex;
-  bool Wrt_Halo, isPeriodic;
+  unsigned long iPoint;
   
-  unsigned short iMarker, iField;
-  
-  Wrt_Halo = config->GetWrt_Halo();
-  
+  unsigned short iField;
+    
   Local_Data = new su2double*[nLocalPoint_Sort];
   for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
     Local_Data[iPoint] = new su2double[GlobalField_Counter];
@@ -9732,3 +9740,45 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     }
   }
 }
+
+bool COutput::WriteScreen_Header(CConfig *config) {  
+  bool write_header = false;
+  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
+  } else {
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+  }
+
+  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
+  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
+
+  return write_header;
+}
+
+bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  bool write_output = false;
+  
+  write_output = config->GetnInner_Iter() - 1 == config->GetInnerIter();
+  
+  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) )){
+    write_output = write_output || PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq_DualTime());
+  }
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
+    write_output = write_output ||  PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq()) ;    
+  } 
+
+  /*--- For multizone problems, print the body only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
+  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
+
+  return write_output;
+}
+
+bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+ if (!write_dualtime){
+   return true;
+ }
+ else {
+   return false;
+ }
+}
+

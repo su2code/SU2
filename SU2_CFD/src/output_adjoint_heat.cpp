@@ -52,7 +52,7 @@ CDiscAdjHeatOutput::CDiscAdjHeatOutput(CConfig *config, CGeometry *geometry, uns
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
-    RequestedHistoryFields.push_back("SENSITIVITIES");
+    RequestedHistoryFields.push_back("SENSITIVITY");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
@@ -67,7 +67,7 @@ CDiscAdjHeatOutput::CDiscAdjHeatOutput(CConfig *config, CGeometry *geometry, uns
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
     RequestedVolumeFields.push_back("SOLUTION");
-    RequestedVolumeFields.push_back("SENSITIVITIES");
+    RequestedVolumeFields.push_back("SENSITIVITY");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
@@ -106,9 +106,9 @@ void CDiscAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
 
   
-  /// BEGIN_GROUP: SENSITIVITIES, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
+  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
   
   /// DESCRIPTION: Currently used wall-clock time.
@@ -202,37 +202,6 @@ void CDiscAdjHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
   
 }
 
-bool CDiscAdjHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-   return true;
- }
- else {
-   return false;
- }
-}
-
-bool CDiscAdjHeatOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
-  } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
-  }
-  return write_header;
-}
-
-bool CDiscAdjHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  bool write_output = false;
-  
-  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-      && write_dualtime ){
-    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
-  }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
-  } 
-  return write_output;
-}
 
 bool CDiscAdjHeatOutput::SetInit_Residuals(CConfig *config){
   

@@ -53,16 +53,6 @@ CAdjFlowOutput::~CAdjFlowOutput(void) {
 
 }
 
-
-inline bool CAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
-  return true;
-}
-
-inline bool CAdjFlowOutput::WriteScreen_Header(CConfig *config) {return true;  }
-
-inline bool CAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {return true;  }
-
-
 void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
   // Iteration numbers

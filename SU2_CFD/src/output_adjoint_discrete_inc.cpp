@@ -52,7 +52,7 @@ CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometr
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
-    RequestedHistoryFields.push_back("SENSITIVITIES");
+    RequestedHistoryFields.push_back("SENSITIVITY");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
@@ -151,17 +151,17 @@ void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   
-  /// BEGIN_GROUP: SENSITIVITIES, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
+  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
-  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
-  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
-  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
   
   /// DESCRIPTION: Currently used wall-clock time.
@@ -412,38 +412,6 @@ void CDiscAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry
   
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
   
-}
-
-bool CDiscAdjFlowIncOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-   return true;
- }
- else {
-   return false;
- }
-}
-
-bool CDiscAdjFlowIncOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
-  } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
-  }
-  return write_header;
-}
-
-bool CDiscAdjFlowIncOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  bool write_output = false;
-  
-  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-      && write_dualtime ){
-    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
-  }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
-  } 
-  return write_output;
 }
 
 bool CDiscAdjFlowIncOutput::SetInit_Residuals(CConfig *config){

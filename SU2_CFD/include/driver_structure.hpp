@@ -121,7 +121,6 @@ public:
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          unsigned short val_nDim,
           bool val_periodic,
           SU2_Comm MPICommunicator);
 
@@ -708,7 +707,6 @@ public:
    */
   CGeneralDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim,
                  bool val_periodic,
                  SU2_Comm MPICommunicator);
 
@@ -772,7 +770,6 @@ public:
    */
   CFluidDriver(char* confFile,
                unsigned short val_nZone,
-               unsigned short val_nDim,
                bool val_periodic,
                SU2_Comm MPICommunicator);
 
@@ -876,7 +873,6 @@ public:
    */
   CTurbomachineryDriver(char* confFile,
                         unsigned short val_nZone,
-                        unsigned short val_nDim,
                         bool val_periodic,
                         SU2_Comm MPICommunicator);
 
@@ -935,7 +931,6 @@ public:
     */
   CDiscAdjFluidDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim,
                    bool val_periodic,
                    SU2_Comm MPICommunicator);
 
@@ -992,7 +987,6 @@ public:
 	   */
   CDiscAdjTurbomachineryDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim,
                    bool val_periodic,
                    SU2_Comm MPICommunicator);
 
@@ -1047,7 +1041,6 @@ public:
    */
   CHBDriver(char* confFile,
             unsigned short val_nZone,
-            unsigned short val_nDim,
             bool val_periodic,
             SU2_Comm MPICommunicator);
 
@@ -1122,7 +1115,6 @@ public:
    */
   CFSIDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
@@ -1247,7 +1239,6 @@ public:
    */
   CDiscAdjFSIDriver(char* confFile,
                     unsigned short val_nZone,
-                    unsigned short val_nDim,
                     bool val_periodic,
                     SU2_Comm MPICommunicator);
 
@@ -1491,7 +1482,6 @@ public:
    */
   CMultiphysicsZonalDriver(char* confFile,
                            unsigned short val_nZone,
-                           unsigned short val_nDim,
                            bool val_periodic,
                            SU2_Comm MPICommunicator);
 
@@ -1543,7 +1533,6 @@ public:
    */
   CSinglezoneDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
@@ -1626,7 +1615,6 @@ public:
    */
   CMultizoneDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
@@ -1702,28 +1690,10 @@ public:
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 protected:
 
-  bool fsi;
-  bool cht;
-
-  unsigned long TimeIter;
-
-  unsigned short *nVarZone;
-  su2double **init_res,      /*!< \brief Stores the initial residual. */
-            **residual,      /*!< \brief Stores the current residual. */
-            **residual_rel;  /*!< \brief Stores the residual relative to the initial. */
-
-  su2double flow_criteria,
-            flow_criteria_rel,
-            structure_criteria,
-            structure_criteria_rel;
-
-  bool *prefixed_motion;     /*!< \brief Determines if a fixed motion is imposed in the config file. */
-
   unsigned short RecordingState;    /*!< \brief The kind of recording the tape currently holds.*/
   su2double ObjFunc;                /*!< \brief The value of the objective function.*/
   int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
   CIteration*** direct_iteration;   /*!< \brief A pointer to the direct iteration.*/
-  unsigned short *nInst;            /*!< \brief Number of instances per zone for the primal solve.*/
 
 public:
 
@@ -1735,7 +1705,6 @@ public:
    */
   CDiscAdjMultizoneDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim,
              bool val_periodic,
              SU2_Comm MPICommunicator);
 
