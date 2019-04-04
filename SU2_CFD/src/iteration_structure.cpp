@@ -773,7 +773,7 @@ void CFluidIteration::Solve(COutput *output,
 
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
-  bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool unsteady = !steady;
 
   unsigned long Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
