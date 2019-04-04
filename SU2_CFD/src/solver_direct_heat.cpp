@@ -186,14 +186,8 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   config->SetTemperature_Ref(Temperature_Ref);
 
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
-  if (rank == MASTER_NODE) {
-    cout << "Weakly coupled heat solver's freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
-  }
 
   su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
-  if (heat_equation && (rank == MASTER_NODE)) {
-    cout << "Heat solver freestream temperature in case for solids: " << Temperature_Solid_Freestream_ND << endl;
-  }
 
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for IO with a donor cell ---*/
