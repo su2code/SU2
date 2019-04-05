@@ -97,8 +97,6 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
-  //geometry->Set_MPI_Coord(config);
-
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);
   
@@ -9297,8 +9295,6 @@ void CElasticityMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
-
-  //geometry->Set_MPI_Coord(config);
 
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);

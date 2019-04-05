@@ -265,9 +265,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   
   /*--- MPI solution ---*/
-  
-  //Set_MPI_Solution(geometry, config);
-  
+    
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
