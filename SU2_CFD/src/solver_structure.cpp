@@ -3469,6 +3469,8 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CTGVSolution(nDim, nVar, config); break;
     case MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, config); break;
+    case MMS_NS_TWO_HALF_SPHERES:
+      VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, config); break;
     case MMS_INC_EULER:
       VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, config); break;
     case MMS_INC_NS:

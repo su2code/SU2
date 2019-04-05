@@ -1989,8 +1989,9 @@ enum ENUM_VERIFICATION_SOLUTIONS {
   NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
   TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
   MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
-  MMS_INC_EULER            = 62,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
-  MMS_INC_NS               = 63,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  MMS_NS_TWO_HALF_SPHERES  = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER            = 63,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS               = 64,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
   USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
 };
 static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
@@ -2000,6 +2001,7 @@ static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map 
 ("NS_UNIT_QUAD",             NS_UNIT_QUAD)
 ("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
 ("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
+("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
 ("MMS_INC_EULER",            MMS_INC_EULER)
 ("MMS_INC_NS",               MMS_INC_NS)
 ("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION);
