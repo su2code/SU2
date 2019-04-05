@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool fem_solver = false;
-  bool periodic = false;
   bool multizone = false;
 
   /*--- MPI initialization ---*/
@@ -83,7 +82,6 @@ int main(int argc, char *argv[]) {
 
   if (config->GetKind_Solver() == MULTIZONE) nZone  = config->GetnConfigFiles();
   else nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
 
@@ -184,9 +182,7 @@ int main(int argc, char *argv[]) {
 
       geometry_container[iZone][iInst] = NULL;
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines 
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -197,11 +193,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
