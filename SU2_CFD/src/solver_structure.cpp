@@ -2596,8 +2596,6 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  //Set_MPI_AuxVar_Gradient(geometry, config);
-  
   InitiateComms(geometry, config, AUXVAR_GRADIENT);
   CompleteComms(geometry, config, AUXVAR_GRADIENT);
 
@@ -2724,8 +2722,6 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  //Set_MPI_AuxVar_Gradient(geometry, config);
-  
   InitiateComms(geometry, config, AUXVAR_GRADIENT);
   CompleteComms(geometry, config, AUXVAR_GRADIENT);
   
@@ -2805,7 +2801,6 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- Gradient MPI ---*/
-  //Set_MPI_Solution_Gradient(geometry, config);
   
   InitiateComms(geometry, config, SOLUTION_GRADIENT);
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
@@ -3006,8 +3001,6 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   delete [] Cvector;
   
   /*--- Gradient MPI ---*/
-  
-  //Set_MPI_Solution_Gradient(geometry, config);
   
   InitiateComms(geometry, config, SOLUTION_GRADIENT);
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
@@ -3657,8 +3650,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Limiter MPI ---*/
   
-  //Set_MPI_Solution_Limiter(geometry, config);
-  
   InitiateComms(geometry, config, SOLUTION_LIMITER);
   CompleteComms(geometry, config, SOLUTION_LIMITER);
 
@@ -4232,8 +4223,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- It's necessary to communicate this information ---*/
-
-  //geometry->Set_MPI_OldCoord(config);
   
   geometry->InitiateComms(geometry, config, COORDINATES_OLD);
   geometry->CompleteComms(geometry, config, COORDINATES_OLD);
@@ -6110,8 +6099,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
   
-  //Set_MPI_Solution(geometry[iInst], config);
-  
   InitiateComms(geometry[iInst], config, SOLUTION);
   CompleteComms(geometry[iInst], config, SOLUTION);
 
@@ -6121,13 +6108,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
-    //geometry[iInst]->Set_MPI_Coord(config);
-    
     geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
     geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
-    
-    //geometry[iInst]->Set_MPI_GridVel(config);
-    
+        
     geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
     geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
 

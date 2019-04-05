@@ -241,7 +241,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
         node[iPoint] = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
   /*--- MPI solution ---*/
-  //Set_MPI_Solution(geometry, config);
   
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -403,8 +402,6 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-
-  //solver[MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   
   solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
@@ -427,11 +424,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       }
       solver[iMesh][HEAT_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    //solver[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    
     solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
 
@@ -491,8 +485,6 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
   }
 
   /*--- MPI parallelization ---*/
-
-  //Set_MPI_Undivided_Laplacian(geometry, config);
   
   InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
   CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
@@ -1670,8 +1662,6 @@ void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- MPI solution ---*/
 
-  //Set_MPI_Solution(geometry, config);
-
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
@@ -1766,8 +1756,6 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
 
   /*--- MPI solution ---*/
-
-  //Set_MPI_Solution(geometry, config);
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -2073,9 +2061,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
           }
         }
         solver_container[iMesh][HEAT_SOL]->node[iPoint]->SetSolution(Solution);
-      }
-      //solver_container[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      
+      }      
       solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }

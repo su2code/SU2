@@ -595,8 +595,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Perform the MPI communication of the solution ---*/
 
-  //Set_MPI_Solution(geometry, config);
-
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
@@ -2404,11 +2402,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
         }
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
       }
-      //solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      
       solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-      
     }
     delete [] Solution;
     
@@ -2432,11 +2427,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
           }
           solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
         }
-        //solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-        
         solver_container[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
         solver_container[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
-        
         solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
       }
       delete [] Solution;
@@ -3309,8 +3301,6 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI parallelization ---*/
   
-  //Set_MPI_MaxEigenvalue(geometry, config);
-  
   InitiateComms(geometry, config, MAX_EIGENVALUE);
   CompleteComms(geometry, config, MAX_EIGENVALUE);
   
@@ -3368,8 +3358,6 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   }
   
   /*--- MPI parallelization ---*/
-  
-  //Set_MPI_Undivided_Laplacian(geometry, config);
   
   InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
   CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
@@ -3453,8 +3441,6 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
     node[iPoint]->SetSensor(fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   
   /*--- MPI parallelization ---*/
-  
-  //Set_MPI_Sensor(geometry, config);
   
   InitiateComms(geometry, config, SENSOR);
   CompleteComms(geometry, config, SENSOR);
@@ -4270,8 +4256,6 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- MPI solution ---*/
   
-  //Set_MPI_Solution(geometry, config);
-  
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
@@ -4319,8 +4303,6 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   }
   
   /*--- MPI solution ---*/
-  
-  //Set_MPI_Solution(geometry, config);
   
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -4426,8 +4408,6 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
   /*--- MPI solution ---*/
   
-  //Set_MPI_Solution(geometry, config);
-  
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
@@ -4522,8 +4502,6 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   }
   
   /*--- Communicate the gradient values via MPI. ---*/
-
-  //Set_MPI_Primitive_Gradient(geometry, config);
   
   InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
   CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
@@ -4713,8 +4691,6 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   }
   
   /*--- Communicate the gradient values via MPI. ---*/
-  
-  //Set_MPI_Primitive_Gradient(geometry, config);
   
   InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
   CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
@@ -4994,8 +4970,6 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   }
   
   /*--- Limiter MPI ---*/
-  
-  //Set_MPI_Primitive_Limiter(geometry, config);
   
   InitiateComms(geometry, config, PRIMITIVE_LIMITER);
   CompleteComms(geometry, config, PRIMITIVE_LIMITER);
@@ -7428,8 +7402,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
   
-  //solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   
@@ -7451,12 +7423,9 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       }
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    //solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-
   }
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
@@ -7464,9 +7433,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (grid_movement && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
-    //geometry[MESH_0]->Set_MPI_Coord(config);
-    //geometry[MESH_0]->Set_MPI_GridVel(config);
     
     geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
     geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
@@ -7498,8 +7464,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (static_fsi && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
-    //geometry[MESH_0]->Set_MPI_Coord(config);
     
     geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
     geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
@@ -8136,8 +8100,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Perform the MPI communication of the solution ---*/
-
-  //Set_MPI_Solution(geometry, config);
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
