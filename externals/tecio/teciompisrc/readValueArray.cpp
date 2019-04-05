@@ -2,7 +2,6 @@
 #include "ThirdPartyHeadersBegin.h"
 #include <utility>
 #include <boost/algorithm/string.hpp>
-#include <boost/static_assert.hpp>
 #include "ThirdPartyHeadersEnd.h"
 #include "fileStuff.h"
 #include "MinMax.h"
