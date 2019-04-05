@@ -3749,7 +3749,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
   
   /*--- Initialize several class data members for later. ---*/
   
@@ -6707,8 +6707,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
-                                     CConfig *config,
-                                     bool val_flag) {
+                                     CConfig *config) {
 
   /*--- Get rank and size. ---*/
 

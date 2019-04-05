@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank, size;
   string str;
-  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
@@ -82,7 +81,6 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_DEF);
 
   nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
   
@@ -123,15 +121,9 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines
-     will be entirely removed eventually in favor of the new methods. ---*/
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    if (periodic) {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    } else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-    }
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
