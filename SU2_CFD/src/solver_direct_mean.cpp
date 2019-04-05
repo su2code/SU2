@@ -4196,63 +4196,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
     
   }
-
-  if ((ExtIter == 0) && config->GetTaylorGreen()) {
-
-    /* Write a message that the solution is initialized for the Taylor-Green vortex
-     test case. */
-    if(rank == MASTER_NODE) {
-      cout << endl;
-      cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
-      cout << endl << flush;
-    }
-    
-    /* The initial conditions are set for the Taylor-Green vortex case, which
-     is a DNS case that features vortex breakdown into turbulence. These
-     particular settings are for the typical Re = 1600 case (M = 0.08) with
-     an initial temperature of 300 K. Note that this condition works in both
-     2D and 3D. */
-    
-    const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
-    const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
-    const su2double tgvDensity  = 1.0;     // Taylor-Green density.
-    const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
-    
-    /* Useful coefficient in which Gamma is present. */
-    const su2double ovGm1    = 1.0/Gamma_Minus_One;
-    
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-        /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
-        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
-        
-        su2double coorZ = 0.0;
-        if (nDim == 3) coorZ = coor[2];
-        
-        /* Compute the primitive variables. */
-        su2double rho = tgvDensity;
-        su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
-                                        cos(coor[1]/tgvLength)*
-                                        cos(coorZ  /tgvLength));
-        su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
-                                        sin(coor[1]/tgvLength)*
-                                        cos(coorZ  /tgvLength));
-        su2double factorA = cos(2.0*coorZ/tgvLength) + 2.0;
-        su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
-        su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
-        
-        /* Compute the conservative variables. Note that both 2D and 3D
-         cases are treated correctly. */
-        solDOF[0]      = rho;
-        solDOF[1]      = rho*u;
-        solDOF[2]      = rho*v;
-        solDOF[3]      = 0.0;
-        solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
-      }
-    }
-  }
   
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
@@ -13670,33 +13613,10 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *numerics, CConfig *config) {
   
-  unsigned short iMarker, iVar;
-  unsigned long  iVertex, iPoint;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- For the first pass through the periodic BC, make all nodes on
-   the periodic surfaces act as point implicit so that we maintain a
-   consistent implicit solution on both sides of the periodic boundary. ---*/
-  
-//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//          if (implicit) {
-//            for (iVar = 0; iVar < nVar; iVar++) {
-//              unsigned long total_index = iPoint*nVar+iVar;
-//              Jacobian.SetPointImplicit(total_index);
-//            }
-//          }
-//        }
-//      }
-//    }
-  
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. For implicit calculations
+   accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
   
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {

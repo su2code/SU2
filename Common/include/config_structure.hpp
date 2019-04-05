@@ -144,7 +144,6 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  TaylorGreen,
   Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
   su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
@@ -5986,9 +5985,7 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void);
-  
-    bool GetTaylorGreen(void);
-  
+    
   /*!
    * \brief Get information about the axisymmetric frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
