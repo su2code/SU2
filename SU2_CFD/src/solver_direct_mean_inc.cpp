@@ -2922,11 +2922,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->SetSecondary(S_i, S_j);
       
     }
-    /*cout<<"iEdge: "<<iEdge<<endl;
-    cout<<"iPoint: "<<iPoint<<", Coord i: "<<geometry->node[iPoint]->GetCoord(0)<<", "<<geometry->node[iPoint]->GetCoord(1)<<endl;
-    cout<<"jPoint: "<<jPoint<<", Coord j: "<<geometry->node[jPoint]->GetCoord(0)<<", "<<geometry->node[jPoint]->GetCoord(1)<<endl;
-    Normal = geometry->edge[iEdge]->GetNormal();
-    cout<<"Normal: "<<Normal[0]<<", "<<Normal[1]<<endl;*/
     
     /*--- Compute the residual ---*/
     
@@ -5487,8 +5482,6 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   unsigned long iVertex, iPoint, Point_Normal;
   
   su2double *V_infty, *V_domain,*Coord_i,*Ref_Coord;
-  su2double Circulation,polar_dist,polar_angle,Cl,Mach,Vortex_Corr[2];
-  su2double Pi,AoA,Gam,Gam_m1,ModVel_InftyCorr;
   
   bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement = config->GetGrid_Movement();
@@ -5496,9 +5489,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   
   su2double *Normal = new su2double[nDim];
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  //cout<<"Pressure: "<<GetPressure_Inf()<<endl;
-  
+  /*--- Loop over all the vertices on this boundary marker ---*/ 
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5562,6 +5553,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Update residual value ---*/
 
       LinSysRes.AddBlock(iPoint, Residual);
+      
+      cout<<"Farfield flux: "<<Residual[1]-V_domain[0]*Normal[0]<<", "<<Residual[2]-V_domain[0]*Normal[1]<<" Coords: "<<geometry->node[iPoint]->GetCoord(0)<<", "<<geometry->node[iPoint]->GetCoord(1)<<", "<<iPoint<<endl;
       
       /*--- Convective Jacobian contribution for implicit integration ---*/
       

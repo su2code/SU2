@@ -114,7 +114,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   for (iDim = 0; iDim < nDim; iDim++) {
 	val_residual[iDim] += MeanPressure*Normal[iDim];
   }
-	
+  	
   if (implicit) {
 	  
 	  for (iVar = 0; iVar < nVar; iVar++)

@@ -3864,7 +3864,7 @@ public:
 class CPBIncEulerVariable : public CVariable {
 protected:
   su2double Velocity2;      /*!< \brief Square of the velocity vector. */
-  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double *VelocityOld;  /*!< \brief Velocity at prev time step. */
   su2double *WindGust;           /*! < \brief Wind gust value */
   su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
   
@@ -4024,7 +4024,7 @@ public:
    * \brief Set the value of the square of velocity for the incompressible flows.
    */
   void SetVelocity(void);
-  
+    
   /*!
    * \brief Get the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.

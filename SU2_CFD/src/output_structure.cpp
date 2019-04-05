@@ -5058,6 +5058,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Mass flux residual (for pressure-based problem) ---*/
         if (pressure_based)
            residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
+           //residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][POISSON_SOL]->GetRes_RMS(0);
         
         /*--- Turbulent residual ---*/
         
@@ -5669,6 +5670,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible && !weakly_coupled_heat) {
               if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Mass]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
+              //else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Press]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
@@ -13446,14 +13448,19 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Density");
     }
     
-    if (wrt_cp) {
+    if (!pressure_based && wrt_cp) {
       nVar_Par += 1;
       Variable_Names.push_back("Specific_Heat");
     }
     
-    if (wrt_kt) {
+    if (!pressure_based && wrt_kt) {
       nVar_Par += 1;
       Variable_Names.push_back("Thermal_Conductivity");
+    }
+    
+    if (pressure_based) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Pressure_Correction");
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13693,16 +13700,20 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         }
         
         /*--- Load Cp and conductivity if they are temperature-dependent. ---*/
-        if (wrt_cp) {
+        if (!pressure_based && wrt_cp) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCp(); iVar++;
         }
         
-        if (wrt_kt) {
+        if (!pressure_based && wrt_kt) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
+         
+        if (pressure_based) {
+          Local_Data[jPoint][iVar] = solver[POISSON_SOL]->node[iPoint]->GetSolution(0); iVar++;
+        }
 
       }
 
