@@ -61,7 +61,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
   CConfig* config      = NULL;
   d->getData(config);
   
-  CSysSolve<ScalarType>* solver;
+  CSysSolve<ScalarType>* solver = NULL;
   d->getData(solver);
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
