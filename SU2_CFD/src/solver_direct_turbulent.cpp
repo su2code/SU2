@@ -1271,7 +1271,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
     : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
   bool multizone = config->GetMultizone_Problem();
@@ -3610,7 +3610,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint;
   ifstream restart_file;
   string text_line;
 

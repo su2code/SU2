@@ -14943,7 +14943,6 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
   short PeriodicBoundary;
-  bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
   
 #ifdef HAVE_MPI
