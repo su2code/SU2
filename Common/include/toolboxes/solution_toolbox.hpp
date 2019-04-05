@@ -428,6 +428,75 @@ public:
 };
 
 /*!
+ * \class CIncTGVSolution
+ * \brief Class to define the required data for the incompressible Taylor Green Vortex.
+ * \author T. Economon, E. van der Weide
+ */
+class CIncTGVSolution: public CVerificationSolution {
+  
+protected:
+  
+  /*--- TGV specific conditions. ---*/
+  
+  su2double tgvLength;    /*!< \brief Taylor-Green length scale. */
+  su2double tgvVelocity;  /*!< \brief Taylor-Green velocity. */
+  su2double tgvDensity;   /*!< \brief Taylor-Green density. */
+  su2double tgvViscosity; /*!< \brief Taylor-Green viscosity. */
+  
+  su2double Temperature;  /*!< \brief Temperature, just to be safe. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncTGVSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config   - Configuration of the particular problem.
+   */
+  CIncTGVSolution(unsigned short val_nDim,
+                  unsigned short val_nvar,
+                  CConfig*       config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CIncTGVSolution(void);
+  
+  /*!
+   * \brief Get the exact solution at the current position and time.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetSolution(const unsigned short val_nParams,
+                   const su2double      *val_params,
+                   const su2double      *val_coords,
+                   const su2double      val_t,
+                   su2double            *val_solution);
+  
+  /*!
+   * \brief Get the boundary conditions state for an exact solution.
+   * \param[in] val_nParams  - Number of additional input parameters.
+   * \param[in] val_params   - Array of additional input parameters.
+   * \param[in] val_coords   - Cartesian coordinates of the current position.
+   * \param[in] val_t        - Current physical time.
+   * \param[in] val_solution - Array where the exact solution is stored.
+   */
+  void GetBCState(const unsigned short val_nParams,
+                  const su2double      *val_params,
+                  const su2double      *val_coords,
+                  const su2double      val_t,
+                  su2double            *val_solution);
+};
+
+/*!
  * \class CMMSNSUnitQuadSolution
  * \brief Class to define the required data for the manufactured solution of the
           laminar Navier-Stokes equations on a unit quad.
