@@ -13302,7 +13302,91 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
   /* The remaining part of this function only needs to be carried out in parallel mode. */
 #ifdef HAVE_MPI
 
-  SU2_MPI::Error("Global search not implemented yet", CURRENT_FUNCTION);
+  /* Determine the number of search points for which a global search must be
+     carried out for each rank and store them in such a way that the info can
+     be used directly in Allgatherv. */
+  vector<int> recvCounts(size), displs(size);
+  int nLocalSearchPoints = (int) markerIDGlobalSearch.size();
+
+  SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1,
+                     MPI_INT, MPI_COMM_WORLD);
+  displs[0] = 0;
+  for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+
+  int nGlobalSearchPoints = displs.back() + recvCounts.back();
+
+  /* Check if there actually are global searches to be carried out. */
+  if(nGlobalSearchPoints > 0) {
+
+    /* Create a cumulative storage version of recvCounts. */
+    vector<int> nSearchPerRank(size+1);
+    nSearchPerRank[0] = 0;
+
+    for(int i=0; i<size; ++i)
+      nSearchPerRank[i+1] = nSearchPerRank[i] + recvCounts[i];
+
+    /* Gather the data of the search points for which a global search must
+       be carried out on all ranks. */
+    vector<unsigned short> bufMarkerIDGlobalSearch(nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(markerIDGlobalSearch.data(), nLocalSearchPoints,
+                        MPI_UNSIGNED_SHORT, bufMarkerIDGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT,
+                        MPI_COMM_WORLD);
+
+
+    vector<unsigned long> bufBoundaryNodeIDGlobalSearch(nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(boundaryNodeIDGlobalSearch.data(), nLocalSearchPoints,
+                        MPI_UNSIGNED_LONG, bufBoundaryNodeIDGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
+                        MPI_COMM_WORLD);
+
+    for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
+    vector<su2double> bufCoorExGlobalSearch(nDim*nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(coorExGlobalSearch.data(), nDim*nLocalSearchPoints,
+                        MPI_DOUBLE, bufCoorExGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_DOUBLE,
+                        MPI_COMM_WORLD);
+ 
+    /* Buffers to store the return information. */
+    vector<unsigned short> markerIDReturn;
+    vector<unsigned long>  boundaryNodeIDReturn;
+    vector<unsigned long>  volElemIDDonorReturn;
+
+    /* Loop over the number of global search points to check if these points
+       are contained in the volume elements of this rank. The loop is carried
+       out as a double loop, such that the rank where the point resides is
+       known as well. Furthermore, it is not necessary to search the points
+       that were not found earlier on this rank. The vector recvCounts is used
+       as storage for the number of search items that must be returned to the
+       other ranks. */
+    for(int rankID=0; rankID<size; ++rankID) {
+      recvCounts[rankID] = 0;
+      if(rankID != rank) {
+        for(int i=nSearchPerRank[rankID]; i<nSearchPerRank[rankID+1]; ++i) {
+
+          /* Search the local ADT for the coordinate of the exchange point
+             and check if it is found. */
+          unsigned short dummy;
+          unsigned long  donorElem;
+          int            rankDonor;
+          su2double      parCoor[3], weightsInterpol[8];
+          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                        dummy, donorElem, rankDonor, parCoor,
+                                                        weightsInterpol) ) {
+
+            /* Store the required data in the return buffers. */
+            /* MORE INFORMATION MUST BE CREATED HERE. */
+            ++recvCounts[rankID];
+            markerIDReturn.push_back(bufMarkerIDGlobalSearch[i]);
+            boundaryNodeIDReturn.push_back(bufBoundaryNodeIDGlobalSearch[i]);
+            volElemIDDonorReturn.push_back(donorElem);
+          }
+        }
+      }
+    }
+    
+    SU2_MPI::Error("Global search not ready yet", CURRENT_FUNCTION);
+  }
 
 #endif
 }
