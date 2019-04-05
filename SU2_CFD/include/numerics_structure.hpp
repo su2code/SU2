@@ -785,6 +785,12 @@ public:
    * \param[in] val_Mom_Coeff_j - Value of the cross coefficient at point j.
    */
   virtual void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) {/* empty */};
+  
+  /*!
+   * \brief Set the value of the velocity at a given edge.
+   * \param[in] val_FaceVel - Velocity at the face.
+   */
+  virtual void SetFaceVel(su2double val_FaceVel);
    
   
   /*!
@@ -2476,7 +2482,7 @@ private:
   su2double **P_Tensor, **invP_Tensor;
   su2double Proj_ModJac_Tensor_ij, Pressure_i,
   Pressure_j, MeanDensity, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
-  ProjVelocity;
+  ProjVelocity, FaceVel;
   unsigned short iDim, iVar, jVar, kVar;
   
 public:
@@ -2502,6 +2508,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief Set the value of face velocity. This is used as a proxy for massflux at a face.
+   * \param[in] val_FaceVel.
+   */
+  void SetFaceVel(su2double val_FaceVel);
 };
 
 /*!

@@ -86,7 +86,7 @@ CUpwPB_Flow::~CUpwPB_Flow(void) {
 void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	
 	
-   su2double MeanDensity, Flux0, Flux1, MeanPressure;
+  su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF;
    
    
   /*--- Primitive variables at point i and j ---*/
@@ -95,6 +95,9 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
   MeanPressure = 0.5*(Pressure_i + Pressure_j);
   
+  Area = 0.0;
+  for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
   
   Face_Flux = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {

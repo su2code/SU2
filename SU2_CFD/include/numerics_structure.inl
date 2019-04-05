@@ -493,6 +493,8 @@ inline su2double CNumerics::GetDissipation(){
 
 inline void CNumerics::SetSourcePoisson(su2double val_Source_Term) { Source_Term = val_Source_Term; }
 
+inline void CNumerics::SetFaceVel(su2double val_FaceVel) { }
+
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 
   F1_j = val_F1_j;
@@ -609,6 +611,7 @@ inline void CPressure_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2dou
   Mom_Coeff_j = val_Mom_Coeff_j;
 }
 
+inline void CUpwPB_Flow::SetFaceVel(su2double val_FaceVel) { FaceVel = val_FaceVel; }
 
 inline void CAvgGradCorrected_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { 
   Mom_Coeff_i = val_Mom_Coeff_i;

@@ -4329,26 +4329,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   }
   
   /*--- Solve or smooth the linear system ---*/
-  
-  /*cout<<"Jacobian matrix"<<endl;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-		total_index = iPoint*nVar + iVar;
-      for (jPoint = 0; jPoint < nPoint; jPoint++) 
-         for (jVar = 0; jVar < nVar; jVar++) {
-			 total_index = jPoint*nVar + jVar;
-           jac_matrix[iPoint*nVar + iVar][jPoint*nVar + jVar] = Jacobian.GetBlock(iPoint,iVar,jPoint,jVar);
-              cout<<Jacobian.GetBlock(iPoint,iVar,jPoint,jVar)<<", "<<iPoint<<", "<<iVar<<", "<<jPoint<<", "<<jVar<<", "<<iPoint*nVar + iVar<<", "<<jPoint*nVar + jVar<<endl;
-		  }
-    }
-  }
-  
-  for (total_index_i = 0;total_index_i < 75; total_index_i++) {
-    for (total_index_j = 0;total_index_j < 75; total_index_j++)
-       cout<<jac_matrix[total_index_i][total_index_j]<<"\t";
-    cout<<"\n";
-    if (((total_index_i+1) % nVar) == 0) cout<<"\n";
-  }*/
+
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   

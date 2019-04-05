@@ -1,5 +1,5 @@
 /*!
- * \file solution_direct_poisson.cpp
+ * \file solution_direct_mean_PBinc.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
  * \version 6.0.0 "Falcon"
@@ -2204,7 +2204,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   bool grid_movement    = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
-   
+  //cout<<"Upw start"<<endl; 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -2264,6 +2264,8 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
       numerics->SetSecondary(S_i, S_j);
       
     }
+    //cout<<iEdge<<", "<<FaceVelocity[iEdge]<<", ";
+    numerics->SetFaceVel(FaceVelocity[iEdge]);
     
     /*--- Compute the residual ---*/
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
@@ -3807,6 +3809,10 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   string Marker_Tag;
   unsigned short Kind_Outlet;
   Normal = new su2double [nDim];
+  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+  *V_i, *V_j;
+  
+  
   /*--- Initialize mass flux to zero ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  node[iPoint]->SetMassFluxZero();
@@ -3844,7 +3850,29 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     /*--- V = V^n + \Delta V^*, \Delta V^* is the solution obtained in this iteration/time step. 
      *--- V^n is the velocity from the solution at the previous time step.
      *--- Both the velocities at averaged at the face as V_f = 0.5*(V_P + V_F). ---*/
-	
+   /*if (muscl) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      
+      Gradient_i = node[iPoint]->GetGradient_Primitive();
+      Gradient_j = node[jPoint]->GetGradient_Primitive();
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+        }
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+      }  
+    }*/
+    
+    
 	MassFlux_Part = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) 
       MassFlux_Part += MeanDensity*(0.5*(node[iPoint]->GetVelocity(iDim)+node[jPoint]->GetVelocity(iDim)))*Normal[iDim];
@@ -3898,6 +3926,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     for (iDim = 0; iDim < nDim; iDim++) {
 		MassFlux_Part -= 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
 	}
+	
+	FaceVelocity[iEdge] = MassFlux_Part/(MeanDensity*Area);
 	
 	if (geometry->node[iPoint]->GetDomain())
 	  node[iPoint]->AddMassFlux(MassFlux_Part);
@@ -4265,6 +4295,10 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		Current_Pressure += alpha_p*(Pressure_Correc[iPoint] - PCorr_Ref);
 		node[iPoint]->SetPressure_val(Current_Pressure);
    }
+   
+   
+   
+   
 
    for (iPoint = 0; iPoint < nPoint; iPoint++)
 	  delete [] vel_corr[iPoint];
@@ -5035,6 +5069,8 @@ void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_conta
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
       conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+      
+      conv_numerics->SetFaceVel(ProjVelocity_i);
 
       /*--- Compute the residual using an upwind scheme. ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);

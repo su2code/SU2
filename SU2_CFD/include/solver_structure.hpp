@@ -4398,17 +4398,15 @@ public:
   
   /*!
    * \brief A virtual member
-   * Correct velocity
+   * Correct velocity and pressure.
    */
   virtual void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
   
     /*!
    * \brief A virtual member
-   * Set source term for pressure correction
+   * Set source term for pressure correction.
    */
   virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
-
-
 };
 
 /*!
@@ -8975,9 +8973,7 @@ public:
    * \return Value of the residual for the variable in the position <i>val_var</i>.
    */
   su2double GetResMassFlux();
-
-/*---------------------- Force coefficients New needs trimming ------------------------------*/  
-
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
