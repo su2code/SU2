@@ -3467,6 +3467,8 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, config); break;
     case TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CTGVSolution(nDim, nVar, config); break;
+    case INC_TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CIncTGVSolution(nDim, nVar, config); break;
     case MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, config); break;
     case MMS_NS_TWO_HALF_SPHERES:

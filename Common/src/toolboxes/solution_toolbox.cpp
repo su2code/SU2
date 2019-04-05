@@ -595,6 +595,112 @@ void CTGVSolution::GetSolution(const unsigned short val_nParams,
 
 bool CTGVSolution::ExactSolutionKnown(void) {return false;}
 
+CIncTGVSolution::CIncTGVSolution(void) : CVerificationSolution() { }
+
+CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 CConfig*       config)
+: CVerificationSolution(val_nDim, val_nVar, config) {
+  
+  /*--- Write a message that the solution is initialized for the
+   Taylor-Green vortex test case. ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Fluid properties and solution are being " << endl;
+    cout << "         initialized for the incompressible Taylor-Green vortex case!!!" << endl;
+    cout << endl << flush;
+  }
+  
+  /*--- Store TGV specific parameters here. ---*/
+  
+  tgvLength    = 1.0;
+  tgvVelocity  = 1.0;
+  tgvDensity   = config->GetDensity_FreeStreamND();
+  tgvViscosity = config->GetViscosity_FreeStreamND();
+  
+  /*--- We keep a copy of the freestream temperature just to be safe
+   when we set the solution, even though this is an isothermal case. ---*/
+  
+  Temperature = config->GetTemperature_FreeStreamND();
+  
+  /*--- Perform some sanity and error checks for this solution here. ---*/
+  
+  if((config->GetUnsteady_Simulation() != TIME_STEPPING) &&
+     (config->GetUnsteady_Simulation() != DT_STEPPING_1ST) &&
+     (config->GetUnsteady_Simulation() != DT_STEPPING_2ND))
+    SU2_MPI::Error("Unsteady mode must be selected for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_Regime() != INCOMPRESSIBLE)
+    SU2_MPI::Error("Incompressible flow equations must be selected for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_Solver() != NAVIER_STOKES)
+    SU2_MPI::Error("Navier Stokes equations must be selected for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_FluidModel() != CONSTANT_DENSITY)
+    SU2_MPI::Error("Constant density fluid model must be selected for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+    SU2_MPI::Error("Constant viscosity must be selected for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(config->GetEnergy_Equation())
+    SU2_MPI::Error("Energy equation must be disabled (isothermal) for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+  
+  if(nDim != 2)
+    SU2_MPI::Error("2D calculation required for the incompressible Taylor Green Vortex",
+                   CURRENT_FUNCTION);
+}
+
+CIncTGVSolution::~CIncTGVSolution(void) { }
+
+void CIncTGVSolution::GetBCState(const unsigned short val_nParams,
+                                 const su2double      *val_params,
+                                 const su2double      *val_coords,
+                                 const su2double      val_t,
+                                 su2double            *val_solution) {
+  
+  /*--- The exact solution is prescribed on the boundaries. ---*/
+  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+}
+
+void CIncTGVSolution::GetSolution(const unsigned short val_nParams,
+                                  const su2double      *val_params,
+                                  const su2double      *val_coords,
+                                  const su2double      val_t,
+                                  su2double            *val_solution) {
+  
+  /* The exact solution is set for the incompressible Taylor-Green
+   vortex case. This is the classic solution from the original work
+   of Taylor and Green for the specific 2D situation where the
+   exact solution can be derived for an incompressible flow. */
+  
+  /* Store the termporal term more easily (Taylor expansion). */
+  su2double F = 1.0 - 2.0*(tgvViscosity/tgvDensity)*val_t;
+  
+  /* Compute the primitive variables. */
+  su2double u =  tgvVelocity * F * (sin(val_coords[0]/tgvLength)*
+                                    cos(val_coords[1]/tgvLength));
+  su2double v = -tgvVelocity * F * (cos(val_coords[0]/tgvLength)*
+                                    sin(val_coords[1]/tgvLength));
+  
+  su2double B = (cos(2.0*val_coords[0]/tgvLength) +
+                 cos(2.0*val_coords[1]/tgvLength));
+  su2double p = -(tgvDensity/4.0)*B*F*F;
+  
+  /* Compute the conservative variables. Note that both 2D and 3D
+   cases are treated correctly. */
+  val_solution[0]      = p;
+  val_solution[1]      = u;
+  val_solution[2]      = v;
+  val_solution[nVar-1] = Temperature;
+}
+
 CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(void) : CVerificationSolution() { }
 
 CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
@@ -2637,8 +2743,8 @@ void CMMSIncNSSolution::GetMMSSourceTerm(const unsigned short val_nParams,
   /*--- The expressions for the source terms are generated
    automatically by the sympy package in python.---*/
   val_source[0] = 2*Density*(u_0*x*cos(pow(x, 2) + pow(y, 2)) - v_0*y*sin(pow(x, 2) + pow(y, 2)));
-  val_source[1] = 4*Density*pow(u_0, 2)*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 2*Density*u_0*v_0*y*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) + 2*P_0*x*cos(pow(x, 2) + pow(y, 2)) - 0.666666666666667*Viscosity*(-8.0*u_0*pow(x, 2)*sin(pow(x, 2) + pow(y, 2)) + 4.0*u_0*cos(pow(x, 2) + pow(y, 2)) + 4*v_0*x*y*cos(pow(x, 2) + pow(y, 2))) + 4*u_0*pow(y, 2)*sin(pow(x, 2) + pow(y, 2)) - 2*u_0*cos(pow(x, 2) + pow(y, 2)) + 4*v_0*x*y*cos(pow(x, 2) + pow(y, 2));
-  val_source[2] = -2*Density*u_0*v_0*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*x*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 4*Density*pow(v_0, 2)*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*P_0*y*cos(pow(x, 2) + pow(y, 2)) + 0.666666666666667*Viscosity*(-4*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 8.0*v_0*pow(y, 2)*cos(pow(x, 2) + pow(y, 2)) + 4.0*v_0*sin(pow(x, 2) + pow(y, 2))) + 4*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 4*v_0*pow(x, 2)*cos(pow(x, 2) + pow(y, 2)) + 2*v_0*sin(pow(x, 2) + pow(y, 2));
+  val_source[1] = 4*Density*pow(u_0, 2)*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 2*Density*u_0*v_0*y*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) + 2*P_0*x*cos(pow(x, 2) + pow(y, 2)) - 0.666666666666667*Viscosity*(-8.0*u_0*pow(x, 2)*sin(pow(x, 2) + pow(y, 2)) + 4.0*u_0*cos(pow(x, 2) + pow(y, 2)) + 4*v_0*x*y*cos(pow(x, 2) + pow(y, 2))) + 2*Viscosity*(2*u_0*pow(y, 2)*sin(pow(x, 2) + pow(y, 2)) - u_0*cos(pow(x, 2) + pow(y, 2)) + 2*v_0*x*y*cos(pow(x, 2) + pow(y, 2)));
+  val_source[2] = -2*Density*u_0*v_0*x*(epsilon + sin(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*Density*u_0*v_0*x*(epsilon + cos(pow(x, 2) + pow(y, 2)))*cos(pow(x, 2) + pow(y, 2)) - 4*Density*pow(v_0, 2)*y*(epsilon + cos(pow(x, 2) + pow(y, 2)))*sin(pow(x, 2) + pow(y, 2)) + 2*P_0*y*cos(pow(x, 2) + pow(y, 2)) + 0.666666666666667*Viscosity*(-4*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 8.0*v_0*pow(y, 2)*cos(pow(x, 2) + pow(y, 2)) + 4.0*v_0*sin(pow(x, 2) + pow(y, 2))) + 2*Viscosity*(2*u_0*x*y*sin(pow(x, 2) + pow(y, 2)) + 2*v_0*pow(x, 2)*cos(pow(x, 2) + pow(y, 2)) + v_0*sin(pow(x, 2) + pow(y, 2)));
   val_source[3]      = 0.0;
   val_source[nVar-1] = 0.0;
   
