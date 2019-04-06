@@ -420,18 +420,13 @@ void CConfig::SetPointersNull(void) {
   Engine_Power = NULL;    Engine_NetThrust    = NULL;    Engine_GrossThrust = NULL;
   Engine_Area  = NULL;    EngineInflow_Target = NULL;
   
-  Periodic_Translate   = NULL;   Periodic_Rotation  = NULL;   Periodic_Center    = NULL;
-  Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
-
   Dirichlet_Value           = NULL;     Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
   Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
   Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
   Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
-  FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
-  Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;
+  FlowLoad_Value            = NULL;
 
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
@@ -523,11 +518,14 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X     = NULL;    Plunging_Ampl_Y     = NULL;    Plunging_Ampl_Z     = NULL;
   RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
   MoveMotion_Origin   = NULL;
+
+  /*--- Periodic BC pointers. ---*/
+  
   Periodic_Translate  = NULL;    Periodic_Rotation   = NULL;    Periodic_Center     = NULL;
   Periodic_Translation= NULL;    Periodic_RotAngles  = NULL;    Periodic_RotCenter  = NULL;
 
-
   /* Harmonic Balance Frequency pointer */
+  
   Omega_HB = NULL;
     
   /*--- Initialize some default arrays to NULL. ---*/
@@ -4282,6 +4280,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Delay the output until exit for minimal communication mode. ---*/
   
   if (Comm_Level != COMM_FULL) {
+    
+    /*--- Disable the use of Comm_Level = NONE until we have properly
+     implemented it. ---*/
+    
+    if (Comm_Level == COMM_NONE)
+      SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
+
     Wrt_Sol_Freq          = nExtIter+1;
     Wrt_Sol_Freq_DualTime = nExtIter+1;
     

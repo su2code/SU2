@@ -2012,9 +2012,9 @@ enum COMM_LEVEL {
   COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
 };
 static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
-("NONE", COMM_NONE)
+("NONE",    COMM_NONE)
 ("MINIMAL", COMM_MINIMAL)
-("FULL", COMM_FULL);
+("FULL",    COMM_FULL);
 
 /*
  * \brief types of filter kernels, initially intended for structural topology optimization applications

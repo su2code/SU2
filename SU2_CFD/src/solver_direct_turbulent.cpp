@@ -1471,6 +1471,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       }
   }
       
+  /*--- The turbulence models are always solved implicitly, so set the
+   implicit flag in case we have periodic BCs. ---*/
+
+  SetImplicitPeriodic(true);
+
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -3805,6 +3810,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
         }
       }
 
+  /*--- The turbulence models are always solved implicitly, so set the
+  implicit flag in case we have periodic BCs. ---*/
+
+  SetImplicitPeriodic(true);
+      
 }
 
 CTurbSSTSolver::~CTurbSSTSolver(void) {
