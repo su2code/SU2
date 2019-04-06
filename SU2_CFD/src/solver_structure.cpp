@@ -92,9 +92,13 @@ CSolver::CSolver(void) {
   Inlet_Data        = NULL;
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
+  
   IterLinSolver = 0;
   
-  MGLevel = 0;
+  /*--- Flags for the periodic BC communications. ---*/
+  
+  rotate_periodic   = false;
+  implicit_periodic = false;
   
 }
 
@@ -230,32 +234,26 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   unsigned short iNeighbor, nNeighbor = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
-  
-  unsigned long iPoint, jPoint, offset, buf_offset, iPeriodic, Neighbor_Point;
+  unsigned short ICOUNT          = nVar;
+  unsigned short JCOUNT          = nVar;
   
   int iMessage, iSend, nSend;
-  
-  su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
-  
-  su2double *Diff     = new su2double[nVar];
-  su2double *Und_Lapl = new su2double[nVar];
-  
-  su2double *Sol_Min = new su2double[nPrimVarGrad];
-  su2double *Sol_Max = new su2double[nPrimVarGrad];
 
+  unsigned long iPoint, jPoint, offset, buf_offset, iPeriodic, Neighbor_Point;
+  
+  su2double *Diff      = new su2double[nVar];
+  su2double *Und_Lapl  = new su2double[nVar];
+  su2double *Sol_Min   = new su2double[nPrimVarGrad];
+  su2double *Sol_Max   = new su2double[nPrimVarGrad];
   su2double *rotPrim_i = new su2double[nPrimVar];
   su2double *rotPrim_j = new su2double[nPrimVar];
   
+  su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   su2double *Coord_i, *Coord_j, r11, r12, r13, r22, r23_a, r23_b, r33, weight;
-  
-  su2double *center, *angles, rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}},
-  translation[3], *trans, Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
-  su2double dx, dy, dz, rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
-  su2double jacMatrix[10][10], rotJacob[10][10];
-  
-  bool rotate         = (nVar > 2) && (MGLevel == 0);
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
   
   string Marker_Tag;
   
@@ -297,6 +295,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     case PERIODIC_PRIM_GG:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nPrimVarGrad;
       break;
     case PERIODIC_SOL_LS:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
@@ -326,6 +325,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
       break;
+  }
+  
+  su2double **jacBlock = new su2double*[ICOUNT];
+  su2double **rotBlock = new su2double*[ICOUNT];
+  for (iVar = 0; iVar < ICOUNT; iVar++) {
+    jacBlock[iVar] = new su2double[JCOUNT];
+    rotBlock[iVar] = new su2double[JCOUNT];
   }
   
   /*--- Check to make sure we have created a large enough buffer
@@ -437,7 +443,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                not, increment the count of neighbors for the donor. ---*/
               
               if (!geometry->node[Neighbor_Point]->GetPeriodicBoundary())
-                nNeighbor++;
+              nNeighbor++;
               
             }
             
@@ -458,7 +464,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             /*--- Rotate the momentum components of the residual array. ---*/
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
                                           rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
@@ -487,43 +493,43 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              contributions to the Jacobian block diagonal, i.e., the
              impact of the point upon itself, J_ii. ---*/
             
-            if (implicit) {
+            if (implicit_periodic) {
               
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  jacMatrix[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
                 }
               }
               
               /*--- Rotate the momentum columns of the Jacobian. ---*/
-
-              if (rotate) {
+              
+              if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacMatrix[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                          rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacMatrix[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                          rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
                   } else {
                     
-                    jacMatrix[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                          rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                          rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacMatrix[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                          rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                          rotMatrix[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacMatrix[3][iVar] = (rotMatrix[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                          rotMatrix[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                          rotMatrix[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[3][iVar] = (rotMatrix[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
+                                         rotMatrix[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
+                                         rotMatrix[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
                   }
                 }
               }
-
+              
               /*--- Load the Jacobian terms into the buffer for sending. ---*/
               
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  bufDSend[buf_offset] = jacMatrix[iVar][jVar];
+                  bufDSend[buf_offset] = jacBlock[iVar][jVar];
                   buf_offset++;
                 }
               }
@@ -545,7 +551,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             /*--- Rotate the momentum components of the solution array. ---*/
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetSolution(1) +
                                           rotMatrix[0][1]*node[iPoint]->GetSolution(2));
@@ -573,7 +579,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              from both sides of the periodic face. ---*/
             
             for (iVar = 0; iVar< nVar; iVar++)
-              Und_Lapl[iVar] = 0.0;
+            Und_Lapl[iVar] = 0.0;
             
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
@@ -586,12 +592,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Solution differences ---*/
                 
                 for (iVar = 0; iVar < nVar; iVar++)
-                  Diff[iVar] = (node[iPoint]->GetSolution(iVar) -
-                                node[jPoint]->GetSolution(iVar));
+                Diff[iVar] = (node[iPoint]->GetSolution(iVar) -
+                              node[jPoint]->GetSolution(iVar));
                 
                 /*--- Correction for compressible flows (use enthalpy) ---*/
                 
-                if (!incompressible) {
+                if (!(config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i   = node[iPoint]->GetPressure();
                   Pressure_j   = node[jPoint]->GetPressure();
                   Diff[nVar-1] = ((node[iPoint]->GetSolution(nVar-1) + Pressure_i) -
@@ -607,17 +613,17 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     ( boundary_i &&  boundary_j)) {
                   if (geometry->node[iPoint]->GetDomain()) {
                     for (iVar = 0; iVar< nVar; iVar++)
-                      Und_Lapl[iVar] -= Diff[iVar];
+                    Und_Lapl[iVar] -= Diff[iVar];
                   }
                 }
                 
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
                 
                 if (!boundary_i && boundary_j)
-                  if (geometry->node[iPoint]->GetDomain()){
-                    for (iVar = 0; iVar< nVar; iVar++)
-                      Und_Lapl[iVar] -= Diff[iVar];
-                  }
+                if (geometry->node[iPoint]->GetDomain()){
+                  for (iVar = 0; iVar< nVar; iVar++)
+                  Und_Lapl[iVar] -= Diff[iVar];
+                }
                 
               }
             }
@@ -625,11 +631,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Store the components to be communicated in the buffer. ---*/
             
             for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
+            bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
             
             /*--- Rotate the momentum components of the Laplacian. ---*/
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
                                           rotMatrix[0][1]*Und_Lapl[2]);
@@ -676,14 +682,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 /*--- Use density instead of pressure for incomp. flows. ---*/
                 
-                if (incompressible) {
+                if ((config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i = node[iPoint]->GetDensity();
                   Pressure_j = node[jPoint]->GetDensity();
                 } else {
                   Pressure_i = node[iPoint]->GetPressure();
                   Pressure_j = node[jPoint]->GetPressure();
                 }
-                                
+                
                 boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                 boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
                 
@@ -727,8 +733,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                jacMatrix[iVar][iDim] = node[iPoint]->GetGradient(iVar, iDim);
-                rotJacob[iVar][iDim]  = node[iPoint]->GetGradient(iVar, iDim);
+                jacBlock[iVar][iDim] = node[iPoint]->GetGradient(iVar, iDim);
+                rotBlock[iVar][iDim] = node[iPoint]->GetGradient(iVar, iDim);
               }
             }
             
@@ -736,21 +742,21 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nVar; iVar++) {
               if (nDim == 2) {
-                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[0][1]*jacMatrix[iVar][1]);
-                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[1][1]*jacMatrix[iVar][1]);
+                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
+                                     rotMatrix[0][1]*jacBlock[iVar][1]);
+                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
+                                     rotMatrix[1][1]*jacBlock[iVar][1]);
               } else {
                 
-                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[0][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[0][2]*jacMatrix[iVar][2]);
-                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[1][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[1][2]*jacMatrix[iVar][2]);
-                rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[2][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[2][2]*jacMatrix[iVar][2]);
+                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
+                                     rotMatrix[0][1]*jacBlock[iVar][1] +
+                                     rotMatrix[0][2]*jacBlock[iVar][2]);
+                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
+                                     rotMatrix[1][1]*jacBlock[iVar][1] +
+                                     rotMatrix[1][2]*jacBlock[iVar][2]);
+                rotBlock[iVar][2] = (rotMatrix[2][0]*jacBlock[iVar][0] +
+                                     rotMatrix[2][1]*jacBlock[iVar][1] +
+                                     rotMatrix[2][2]*jacBlock[iVar][2]);
               }
             }
             
@@ -758,7 +764,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset+iVar*nDim+iDim] = rotJacob[iVar][iDim];
+                bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
             }
             
@@ -772,8 +778,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++){
-                jacMatrix[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-                rotJacob[iVar][iDim]  = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+                jacBlock[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+                rotBlock[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
               }
             }
             
@@ -781,20 +787,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               if (nDim == 2) {
-                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[0][1]*jacMatrix[iVar][1]);
-                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[1][1]*jacMatrix[iVar][1]);
+                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
+                                     rotMatrix[0][1]*jacBlock[iVar][1]);
+                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
+                                     rotMatrix[1][1]*jacBlock[iVar][1]);
               } else {
-                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[0][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[0][2]*jacMatrix[iVar][2]);
-                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[1][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[1][2]*jacMatrix[iVar][2]);
-                rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
-                                     rotMatrix[2][1]*jacMatrix[iVar][1] +
-                                     rotMatrix[2][2]*jacMatrix[iVar][2]);
+                rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
+                                     rotMatrix[0][1]*jacBlock[iVar][1] +
+                                     rotMatrix[0][2]*jacBlock[iVar][2]);
+                rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
+                                     rotMatrix[1][1]*jacBlock[iVar][1] +
+                                     rotMatrix[1][2]*jacBlock[iVar][2]);
+                rotBlock[iVar][2] = (rotMatrix[2][0]*jacBlock[iVar][0] +
+                                     rotMatrix[2][1]*jacBlock[iVar][1] +
+                                     rotMatrix[2][2]*jacBlock[iVar][2]);
               }
             }
             
@@ -802,7 +808,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset+iVar*nDim+iDim] = rotJacob[iVar][iDim];
+                bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
             }
             
@@ -844,9 +850,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Get conservative solution and rotate if necessary. ---*/
             
             for (iVar = 0; iVar < nVar; iVar++)
-              rotPrim_i[iVar] = node[iPoint]->GetSolution(iVar);
+            rotPrim_i[iVar] = node[iPoint]->GetSolution(iVar);
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 rotPrim_i[1] = (rotMatrix[0][0]*node[iPoint]->GetSolution(1) +
                                 rotMatrix[0][1]*node[iPoint]->GetSolution(2));
@@ -869,8 +875,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Inizialization of variables ---*/
             
             for (iVar = 0; iVar < nVar; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                Cvector[iVar][iDim] = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+            Cvector[iVar][iDim] = 0.0;
             
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -911,9 +917,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Get conservative solution and rotte if necessary. ---*/
                 
                 for (iVar = 0; iVar < nVar; iVar++)
-                  rotPrim_j[iVar] = node[jPoint]->GetSolution(iVar);
+                rotPrim_j[iVar] = node[jPoint]->GetSolution(iVar);
                 
-                if (rotate) {
+                if (rotate_periodic) {
                   if (nDim == 2) {
                     rotPrim_j[1] = (rotMatrix[0][0]*node[jPoint]->GetSolution(1) +
                                     rotMatrix[0][1]*node[jPoint]->GetSolution(2));
@@ -964,9 +970,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   /*--- Entries of c:= transpose(A)*b ---*/
                   
                   for (iVar = 0; iVar < nVar; iVar++)
-                    for (iDim = 0; iDim < nDim; iDim++)
-                      Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                                              (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
+                  for (iDim = 0; iDim < nDim; iDim++)
+                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                                          (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
                   
                 }
               }
@@ -1042,9 +1048,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Get primitives and rotate if necessary. ---*/
             
             for (iVar = 0; iVar < nPrimVar; iVar++)
-              rotPrim_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+            rotPrim_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 rotPrim_i[1] = (rotMatrix[0][0]*node[iPoint]->GetPrimitive(1) +
                                 rotMatrix[0][1]*node[iPoint]->GetPrimitive(2));
@@ -1067,8 +1073,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Inizialization of variables ---*/
             
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                Cvector[iVar][iDim] = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+            Cvector[iVar][iDim] = 0.0;
             
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -1107,11 +1113,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                  rotMatrix[2][2]*dz + translation[2]);
                 
                 /*--- Get primitives from CVariable ---*/
-                                
-                for (iVar = 0; iVar < nPrimVar; iVar++)
-                  rotPrim_j[iVar] = node[jPoint]->GetPrimitive(iVar);
                 
-                if (rotate) {
+                for (iVar = 0; iVar < nPrimVar; iVar++)
+                rotPrim_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+                
+                if (rotate_periodic) {
                   if (nDim == 2) {
                     rotPrim_j[1] = (rotMatrix[0][0]*node[jPoint]->GetPrimitive(1) +
                                     rotMatrix[0][1]*node[jPoint]->GetPrimitive(2));
@@ -1133,8 +1139,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 weight = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++)
-                  weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                             (rotCoord_j[iDim]-rotCoord_i[iDim]));
+                weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                           (rotCoord_j[iDim]-rotCoord_i[iDim]));
                 
                 /*--- Sumations for entries of upper triangular matrix R ---*/
                 
@@ -1161,9 +1167,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   /*--- Entries of c:= transpose(A)*b ---*/
                   
                   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-                    for (iDim = 0; iDim < nDim; iDim++)
-                      Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                                              (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
+                  for (iDim = 0; iDim < nDim; iDim++)
+                  Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
+                                          (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
                   
                 }
               }
@@ -1219,7 +1225,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             /*--- Rotate the momentum components of the min/max. ---*/
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
                                           rotMatrix[0][1]*Sol_Min[2]);
@@ -1266,7 +1272,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
             }
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter_Primitive(1) +
                                           rotMatrix[0][1]*node[iPoint]->GetLimiter_Primitive(2));
@@ -1305,7 +1311,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             /*--- Rotate the momentum components of the min/max. ---*/
             
-            if (rotate) {
+            if (rotate_periodic) {
               
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
@@ -1355,7 +1361,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter(iVar);
             }
             
-            if (rotate) {
+            if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter(1) +
                                           rotMatrix[0][1]*node[iPoint]->GetLimiter(2));
@@ -1398,6 +1404,13 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   delete [] Sol_Max;
   delete [] rotPrim_i;
   delete [] rotPrim_j;
+  
+  for (iVar = 0; iVar < ICOUNT; iVar++) {
+    delete [] jacBlock[iVar];
+    delete [] rotBlock[iVar];
+  }
+  delete [] jacBlock;
+  delete [] rotBlock;
   
 }
 

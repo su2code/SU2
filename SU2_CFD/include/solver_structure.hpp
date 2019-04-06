@@ -91,7 +91,6 @@ protected:
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
-  unsigned short MGLevel;   /*!< \brief Grid level index for the current solver within the multigrid strategy. */
   su2double Max_Delta_Time,  /*!< \brief Maximum value of the delta time for all the control volumes. */
   Min_Delta_Time;          /*!< \brief Minimum value of the delta time for all the control volumes. */
   su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
@@ -142,6 +141,9 @@ protected:
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
+  bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
+  bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4424,6 +4426,18 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
+   * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
+   */
+  void SetImplicitPeriodic(bool val_implicit_periodic);
+  
+  /*!
+   * \brief Routine that sets the flag controlling solution rotation for periodic BCs.
+   * \param[in] val_implicit_periodic - Flag controlling solution rotation for periodic BCs.
+   */
+  void SetRotatePeriodic(bool val_rotate_periodic);
+  
 };
 
 /*!

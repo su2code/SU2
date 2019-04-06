@@ -226,8 +226,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
-  MGLevel = iMesh;
-
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];
@@ -592,6 +590,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
   
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -7629,8 +7629,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
-  MGLevel = iMesh;
-
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];
@@ -8098,6 +8096,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
   
   /*--- Perform the MPI communication of the solution ---*/
 

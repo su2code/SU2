@@ -13512,16 +13512,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Density");
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      nVar_Par += 2;
-      Variable_Names.push_back("Vorticity_x");
-      Variable_Names.push_back("Vorticity_y");
-        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
-      
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
-    }
-    
     if (wrt_cp) {
       nVar_Par += 1;
       Variable_Names.push_back("Specific_Heat");
@@ -13530,6 +13520,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     if (wrt_kt) {
       nVar_Par += 1;
       Variable_Names.push_back("Thermal_Conductivity");
+    }
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Vorticity_x");
+      Variable_Names.push_back("Vorticity_y");
+        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Q_Criterion");
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13772,9 +13772,10 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
          assuming they were registered above correctly. ---*/
 
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
           
           su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
           su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};

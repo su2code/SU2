@@ -359,8 +359,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nVar = nDim+2;
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
-
-  MGLevel = iMesh;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -871,6 +869,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
   
   /*--- Perform the MPI communication of the solution ---*/
   
@@ -15398,8 +15398,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
- 
-  MGLevel = iMesh;
   
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
@@ -16018,6 +16016,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
   
   /*--- Perform the MPI communication of the solution ---*/
   

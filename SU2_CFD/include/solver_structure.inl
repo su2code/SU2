@@ -1188,6 +1188,10 @@ inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigne
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
 
+inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
+
+inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
