@@ -79,57 +79,41 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetSolution(const unsigned short val_nParams,
-                           const su2double      *val_params,
-                           const su2double      *val_coords,
-                           const su2double      val_t,
-                           su2double            *val_solution);
+  virtual void GetSolution(const su2double *val_coords,
+                           const su2double val_t,
+                           su2double       *val_solution);
   
   /*!
    * \brief Get the exact solution at the current position and t = 0.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetInitialCondition(const unsigned short val_nParams,
-                           const su2double      *val_params,
-                           const su2double      *val_coords,
-                           su2double            *val_solution);
+  void GetInitialCondition(const su2double *val_coords,
+                           su2double       *val_solution);
   
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetBCState(const unsigned short val_nParams,
-                          const su2double      *val_params,
-                          const su2double      *val_coords,
-                          const su2double      val_t,
-                          su2double            *val_solution);
+  virtual void GetBCState(const su2double *val_coords,
+                          const su2double val_t,
+                          su2double       *val_solution);
   
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetMMSSourceTerm(const unsigned short val_nParams,
-                                const su2double      *val_params,
-                                const su2double      *val_coords,
-                                const su2double      val_t,
-                                su2double            *val_source);
+  virtual void GetMMSSourceTerm(const su2double *val_coords,
+                                const su2double val_t,
+                                su2double       *val_source);
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -147,18 +131,14 @@ public:
   
   /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
-   * \param[in]  val_nParams  - Number of additional input parameters.
-   * \param[in]  val_params   - Array of additional input parameters.
    * \param[in]  val_coords   - Cartesian coordinates of the current position.
    * \param[in]  val_solution - Array where the exact solution is stored.
    * \param[out] val_error    - Array where the local error is stored.
    */
-  void GetLocalError(const unsigned short val_nParams,
-                     const su2double      *val_params,
-                     const su2double      *val_coords,
-                     const su2double      val_t,
-                     const su2double      *GetLocalErrorval_solution,
-                     su2double            *val_error);
+  void GetLocalError(const su2double *val_coords,
+                     const su2double val_t,
+                     const su2double *GetLocalErrorval_solution,
+                     su2double       *val_error);
 };
 
 /*!
@@ -208,31 +188,23 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 };
 
 /*!
@@ -274,31 +246,23 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 };
 
 /*!
@@ -340,31 +304,23 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
   
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 };
 
 /*!
@@ -408,17 +364,13 @@ public:
   
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
   
   /*!
    * \brief Whether or not the exact solution is known for this verification solution.
@@ -469,31 +421,23 @@ public:
   
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
   
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 };
 
 /*!
@@ -571,45 +515,33 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const unsigned short val_nParams,
-                        const su2double      *val_params,
-                        const su2double      *val_coords,
-                        const su2double      val_t,
-                        su2double            *val_source);
+  void GetMMSSourceTerm(const su2double *val_coords,
+                        const su2double val_t,
+                        su2double       *val_source);
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -674,45 +606,33 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const unsigned short val_nParams,
-                        const su2double      *val_params,
-                        const su2double      *val_coords,
-                        const su2double      val_t,
-                        su2double            *val_source);
+  void GetMMSSourceTerm(const su2double *val_coords,
+                        const su2double val_t,
+                        su2double       *val_source);
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -770,45 +690,33 @@ public:
   
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
   
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
   
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const unsigned short val_nParams,
-                        const su2double      *val_params,
-                        const su2double      *val_coords,
-                        const su2double      val_t,
-                        su2double            *val_source);
+  void GetMMSSourceTerm(const su2double *val_coords,
+                        const su2double val_t,
+                        su2double       *val_source);
   
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -867,45 +775,33 @@ public:
   
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
   
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
   
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const unsigned short val_nParams,
-                        const su2double      *val_params,
-                        const su2double      *val_coords,
-                        const su2double      val_t,
-                        su2double            *val_source);
+  void GetMMSSourceTerm(const su2double *val_coords,
+                        const su2double val_t,
+                        su2double       *val_source);
   
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -945,45 +841,33 @@ public:
 
   /*!
    * \brief Get the exact solution at the current position and time.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const unsigned short val_nParams,
-                   const su2double      *val_params,
-                   const su2double      *val_coords,
-                   const su2double      val_t,
-                   su2double            *val_solution);
+  void GetSolution(const su2double *val_coords,
+                   const su2double val_t,
+                   su2double       *val_solution);
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const unsigned short val_nParams,
-                  const su2double      *val_params,
-                  const su2double      *val_coords,
-                  const su2double      val_t,
-                  su2double            *val_solution);
+  void GetBCState(const su2double *val_coords,
+                  const su2double val_t,
+                  su2double       *val_solution);
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
-   * \param[in] val_nParams  - Number of additional input parameters.
-   * \param[in] val_params   - Array of additional input parameters.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const unsigned short val_nParams,
-                        const su2double      *val_params,
-                        const su2double      *val_coords,
-                        const su2double      val_t,
-                        su2double            *val_source);
+  void GetMMSSourceTerm(const su2double *val_coords,
+                        const su2double val_t,
+                        su2double       *val_source);
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.

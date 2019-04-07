@@ -2393,7 +2393,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
         su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
         
         /* Get initial condition from the verification solution class. */
-        VerificationSolution->GetInitialCondition(0, NULL, coor, solDOF);
+        VerificationSolution->GetInitialCondition(coor, solDOF);
         
       }
     }
@@ -3209,8 +3209,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         
         /*--- Get the MMS source term. ---*/
         vector<su2double> sourceMan(nVar,0.0);
-        VerificationSolution->GetMMSSourceTerm(0, NULL, coor,
-                                               time, sourceMan.data());
+        VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
         
         /*--- Compute the residual for this control volume. ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -6565,7 +6564,7 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
         
         /*--- Get the conservative state from the verification solution. ---*/
         
-        VerificationSolution->GetBCState(0, NULL, coor, time, Solution);
+        VerificationSolution->GetBCState(coor, time, Solution);
         
         /*--- For verification cases, we will apply a strong Dirichlet
          condition by setting the solution values at the boundary nodes
@@ -7197,8 +7196,7 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
       
         /* Get local error from the verification solution class. */
         vector<su2double> error(nVar,0.0);
-        VerificationSolution->GetLocalError(0, NULL, coor, time,
-                                            solDOF, error.data());
+        VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
       
         /* Increment the global error measures */
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
