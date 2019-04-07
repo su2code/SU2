@@ -13136,14 +13136,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
           
             /* Get the verification solution. */
-            solver[FLOW_SOL]->VerificationSolution->GetSolution(0, NULL, coor, time, mmsSol);
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = mmsSol[jVar];
               iVar++;
             }
           
             /* Get local error from the verification solution class. */
-            solver[FLOW_SOL]->VerificationSolution->GetLocalError(0, NULL, coor, time, solDOF, error);
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = error[jVar];
               iVar++;
@@ -13709,14 +13709,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
             su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
           
             /* Get the verification solution. */
-            solver[FLOW_SOL]->VerificationSolution->GetSolution(0, NULL, coor, time, mmsSol);
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = mmsSol[jVar];
               iVar++;
             }
           
             /* Get local error from the verification solution class. */
-            solver[FLOW_SOL]->VerificationSolution->GetLocalError(0, NULL, coor, time, solDOF, error);
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = error[jVar];
               iVar++;
@@ -21038,7 +21038,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
             /* Get the verification solution. */
             su2double mmsSol[5];
-            solver[FLOW_SOL]->VerificationSolution->GetSolution(0, NULL, coor, time, mmsSol);
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = mmsSol[jVar];
               iVar++;
@@ -21046,7 +21046,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
             /* Get local error from the verification solution class. */
             su2double error[5];
-            solver[FLOW_SOL]->VerificationSolution->GetLocalError(0, NULL, coor, time, U, error);
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, U, error);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = error[jVar];
               iVar++;

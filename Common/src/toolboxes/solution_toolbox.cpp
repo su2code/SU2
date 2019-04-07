@@ -57,38 +57,30 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
 
 CVerificationSolution::~CVerificationSolution(void) { }
 
-void CVerificationSolution::GetSolution(const unsigned short val_nParams,
-                                        const su2double      *val_params,
-                                        const su2double      *val_coords,
-                                        const su2double      val_t,
-                                        su2double            *val_solution) {
+void CVerificationSolution::GetSolution(const su2double *val_coords,
+                                        const su2double val_t,
+                                        su2double       *val_solution) {
 
   SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
 }
 
-void CVerificationSolution::GetInitialCondition(const unsigned short val_nParams,
-                                                const su2double      *val_params,
-                                                const su2double      *val_coords,
-                                                su2double            *val_solution) {
+void CVerificationSolution::GetInitialCondition(const su2double *val_coords,
+                                                su2double       *val_solution) {
   
   /*--- Initial conditions call the GetSolution() method at t = 0. ---*/
-  GetSolution(val_nParams, val_params, val_coords, 0.0, val_solution);
+  GetSolution(val_coords, 0.0, val_solution);
 }
 
-void CVerificationSolution::GetBCState(const unsigned short val_nParams,
-                                       const su2double      *val_params,
-                                       const su2double      *val_coords,
-                                       const su2double      val_t,
-                                       su2double            *val_solution) {
+void CVerificationSolution::GetBCState(const su2double *val_coords,
+                                       const su2double val_t,
+                                       su2double       *val_solution) {
 
   SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
 }
 
-void CVerificationSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                             const su2double      *val_params,
-                                             const su2double      *val_coords,
-                                             const su2double      val_t,
-                                             su2double            *val_source) {
+void CVerificationSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                             const su2double val_t,
+                                             su2double       *val_source) {
 
   /* Default implementation of the source terms for the method of manufactured
      solutions. Simply set them to zero. */
@@ -100,17 +92,15 @@ bool CVerificationSolution::IsManufacturedSolution(void) {return false;}
 
 bool CVerificationSolution::ExactSolutionKnown(void) {return true;}
 
-void CVerificationSolution::GetLocalError(const unsigned short val_nParams,
-                                          const su2double      *val_params,
-                                          const su2double      *val_coords,
-                                          const su2double      val_t,
-                                          const su2double      *val_solution,
-                                          su2double            *val_error) {
+void CVerificationSolution::GetLocalError(const su2double *val_coords,
+                                          const su2double val_t,
+                                          const su2double *val_solution,
+                                          su2double       *val_error) {
   
   /*--- Get the value of the verification solution first.
         Use val_error to store this solution. ---*/
   
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_error);
+  GetSolution(val_coords, val_t, val_error);
   
   /*--- Compute the local error as the difference between the current
    numerical solution and the verification solution. ---*/
@@ -184,23 +174,19 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
 
 CInviscidVortexSolution::~CInviscidVortexSolution(void) { }
 
-void CInviscidVortexSolution::GetBCState(const unsigned short val_nParams,
-                                         const su2double      *val_params,
-                                         const su2double      *val_coords,
-                                         const su2double      val_t,
-                                         su2double            *val_solution) {
+void CInviscidVortexSolution::GetBCState(const su2double *val_coords,
+                                         const su2double val_t,
+                                         su2double       *val_solution) {
 
   /*--- For the case that the inviscid vortex is run with boundary
         conditions (other possibility is with periodic conditions),
         the exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CInviscidVortexSolution::GetSolution(const unsigned short val_nParams,
-                                          const su2double      *val_params,
-                                          const su2double      *val_coords,
-                                          const su2double      val_t,
-                                          su2double            *val_solution) {
+void CInviscidVortexSolution::GetSolution(const su2double *val_coords,
+                                          const su2double val_t,
+                                          su2double       *val_solution) {
 
   /* Compute the free stream velocities in x- and y-direction. */
   const su2double VelInf = MachVortex*sqrt(Gamma);
@@ -279,24 +265,20 @@ CRinglebSolution::CRinglebSolution(unsigned short val_nDim,
 
 CRinglebSolution::~CRinglebSolution(void) { }
 
-void CRinglebSolution::GetBCState(const unsigned short val_nParams,
-                                  const su2double      *val_params,
-                                  const su2double      *val_coords,
-                                  const su2double      val_t,
-                                  su2double            *val_solution) {
+void CRinglebSolution::GetBCState(const su2double *val_coords,
+                                  const su2double val_t,
+                                  su2double       *val_solution) {
 
   /*--- The exact solution is prescribed on the boundaries for the
         Ringleb flow. Note that a (much) more difficult test case is to
         use inviscid wall boundary conditions for the inner and outer
         walls of the channel. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CRinglebSolution::GetSolution(const unsigned short val_nParams,
-                                   const su2double      *val_params,
-                                   const su2double      *val_coords,
-                                   const su2double      val_t,
-                                   su2double            *val_solution) {
+void CRinglebSolution::GetSolution(const su2double *val_coords,
+                                   const su2double val_t,
+                                   su2double       *val_solution) {
 
   /* Easier storage of the coordinates and abbreviate y*y. */
   const su2double x  = val_coords[0], y = val_coords[1];
@@ -456,21 +438,17 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
 
 CNSUnitQuadSolution::~CNSUnitQuadSolution(void) { }
 
-void CNSUnitQuadSolution::GetBCState(const unsigned short val_nParams,
-                                     const su2double      *val_params,
-                                     const su2double      *val_coords,
-                                     const su2double      val_t,
-                                     su2double            *val_solution) {
+void CNSUnitQuadSolution::GetBCState(const su2double *val_coords,
+                                     const su2double val_t,
+                                     su2double       *val_solution) {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CNSUnitQuadSolution::GetSolution(const unsigned short val_nParams,
-                                      const su2double      *val_params,
-                                      const su2double      *val_coords,
-                                      const su2double      val_t,
-                                      su2double            *val_solution) {
+void CNSUnitQuadSolution::GetSolution(const su2double *val_coords,
+                                      const su2double val_t,
+                                      su2double       *val_solution) {
 
   /*--- Compute the flow direction and the coordinates in
         the rotated frame. ---*/
@@ -551,11 +529,9 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim,
 
 CTGVSolution::~CTGVSolution(void) { }
 
-void CTGVSolution::GetSolution(const unsigned short val_nParams,
-                               const su2double      *val_params,
-                               const su2double      *val_coords,
-                               const su2double      val_t,
-                               su2double            *val_solution) {
+void CTGVSolution::GetSolution(const su2double *val_coords,
+                               const su2double val_t,
+                               su2double       *val_solution) {
   
   /* The initial conditions are set for the Taylor-Green vortex case, which
    is a DNS case that features vortex breakdown into turbulence. These
@@ -659,21 +635,17 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
 
 CIncTGVSolution::~CIncTGVSolution(void) { }
 
-void CIncTGVSolution::GetBCState(const unsigned short val_nParams,
-                                 const su2double      *val_params,
-                                 const su2double      *val_coords,
-                                 const su2double      val_t,
-                                 su2double            *val_solution) {
+void CIncTGVSolution::GetBCState(const su2double *val_coords,
+                                 const su2double val_t,
+                                 su2double       *val_solution) {
   
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CIncTGVSolution::GetSolution(const unsigned short val_nParams,
-                                  const su2double      *val_params,
-                                  const su2double      *val_coords,
-                                  const su2double      val_t,
-                                  su2double            *val_solution) {
+void CIncTGVSolution::GetSolution(const su2double *val_coords,
+                                  const su2double val_t,
+                                  su2double       *val_solution) {
   
   /* The exact solution is set for the incompressible Taylor-Green
    vortex case. This is the classic solution from the original work
@@ -790,21 +762,17 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
 
 CMMSNSUnitQuadSolution::~CMMSNSUnitQuadSolution(void) { }
 
-void CMMSNSUnitQuadSolution::GetBCState(const unsigned short val_nParams,
-                                        const su2double      *val_params,
-                                        const su2double      *val_coords,
-                                        const su2double      val_t,
-                                        su2double            *val_solution) {
+void CMMSNSUnitQuadSolution::GetBCState(const su2double *val_coords,
+                                        const su2double val_t,
+                                        su2double       *val_solution) {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSNSUnitQuadSolution::GetSolution(const unsigned short val_nParams,
-                                         const su2double      *val_params,
-                                         const su2double      *val_coords,
-                                         const su2double      val_t,
-                                         su2double            *val_solution) {
+void CMMSNSUnitQuadSolution::GetSolution(const su2double *val_coords,
+                                         const su2double val_t,
+                                         su2double       *val_solution) {
 
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
@@ -841,11 +809,9 @@ void CMMSNSUnitQuadSolution::GetSolution(const unsigned short val_nParams,
   val_solution[nDim+1] = p/(Gamma-1.0) + 0.5*rho*(u*u + v*v);
 }
 
-void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                              const su2double      *val_params,
-                                              const su2double      *val_coords,
-                                              const su2double      val_t,
-                                              su2double            *val_source) {
+void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                              const su2double val_t,
+                                              su2double       *val_source) {
 
   /*--- The source code for the source terms is generated in Maple. ---*/
   const su2double Pi = PI_NUMBER;
@@ -1142,21 +1108,17 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
 
 CMMSNSTwoHalfSpheresSolution::~CMMSNSTwoHalfSpheresSolution(void) { }
 
-void CMMSNSTwoHalfSpheresSolution::GetBCState(const unsigned short val_nParams,
-                                              const su2double      *val_params,
-                                              const su2double      *val_coords,
-                                              const su2double      val_t,
-                                              su2double            *val_solution) {
+void CMMSNSTwoHalfSpheresSolution::GetBCState(const su2double *val_coords,
+                                              const su2double val_t,
+                                              su2double       *val_solution) {
 
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSNSTwoHalfSpheresSolution::GetSolution(const unsigned short val_nParams,
-                                               const su2double      *val_params,
-                                               const su2double      *val_coords,
-                                               const su2double      val_t,
-                                               su2double            *val_solution) {
+void CMMSNSTwoHalfSpheresSolution::GetSolution(const su2double *val_coords,
+                                               const su2double val_t,
+                                               su2double       *val_solution) {
 
   /* Easier storage of the x-, y- and z-coordinates. */
   const su2double x = val_coords[0];
@@ -1195,11 +1157,9 @@ void CMMSNSTwoHalfSpheresSolution::GetSolution(const unsigned short val_nParams,
   val_solution[4] = p/(Gamma-1.0) + 0.5*rho*(u*u + v*v + w*w);
 }
 
-void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                                    const su2double      *val_params,
-                                                    const su2double      *val_coords,
-                                                    const su2double      val_t,
-                                                    su2double            *val_source) {
+void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                                    const su2double val_t,
+                                                    su2double       *val_source) {
 
   /*--- Abbreviate Pi and the coordinates. ---*/
   const su2double Pi = PI_NUMBER;
@@ -1482,21 +1442,17 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
 
 CMMSIncEulerSolution::~CMMSIncEulerSolution(void) { }
 
-void CMMSIncEulerSolution::GetBCState(const unsigned short val_nParams,
-                                      const su2double      *val_params,
-                                      const su2double      *val_coords,
-                                      const su2double      val_t,
-                                      su2double            *val_solution) {
+void CMMSIncEulerSolution::GetBCState(const su2double *val_coords,
+                                      const su2double val_t,
+                                      su2double       *val_solution) {
   
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSIncEulerSolution::GetSolution(const unsigned short val_nParams,
-                                       const su2double      *val_params,
-                                       const su2double      *val_coords,
-                                       const su2double      val_t,
-                                       su2double            *val_solution) {
+void CMMSIncEulerSolution::GetSolution(const su2double *val_coords,
+                                       const su2double val_t,
+                                       su2double       *val_solution) {
   
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
@@ -1518,11 +1474,9 @@ void CMMSIncEulerSolution::GetSolution(const unsigned short val_nParams,
   
 }
 
-void CMMSIncEulerSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                            const su2double      *val_params,
-                                            const su2double      *val_coords,
-                                            const su2double      val_t,
-                                            su2double            *val_source) {
+void CMMSIncEulerSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                            const su2double val_t,
+                                            su2double       *val_source) {
   
   /*--- Easier storage of the x- and y-coordinates. ---*/
   const su2double x = val_coords[0];
@@ -1603,21 +1557,17 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
 
 CMMSIncNSSolution::~CMMSIncNSSolution(void) { }
 
-void CMMSIncNSSolution::GetBCState(const unsigned short val_nParams,
-                                   const su2double      *val_params,
-                                   const su2double      *val_coords,
-                                   const su2double      val_t,
-                                   su2double            *val_solution) {
+void CMMSIncNSSolution::GetBCState(const su2double *val_coords,
+                                   const su2double val_t,
+                                   su2double       *val_solution) {
   
   /*--- The exact solution is prescribed on the boundaries. ---*/
-  GetSolution(val_nParams, val_params, val_coords, val_t, val_solution);
+  GetSolution(val_coords, val_t, val_solution);
 }
 
-void CMMSIncNSSolution::GetSolution(const unsigned short val_nParams,
-                                    const su2double      *val_params,
-                                    const su2double      *val_coords,
-                                    const su2double      val_t,
-                                    su2double            *val_solution) {
+void CMMSIncNSSolution::GetSolution(const su2double *val_coords,
+                                    const su2double val_t,
+                                    su2double       *val_solution) {
   
   /* Easier storage of the x- and y-coordinates. */
   const su2double x = val_coords[0];
@@ -1639,11 +1589,9 @@ void CMMSIncNSSolution::GetSolution(const unsigned short val_nParams,
   
 }
 
-void CMMSIncNSSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                         const su2double      *val_params,
-                                         const su2double      *val_coords,
-                                         const su2double      val_t,
-                                         su2double            *val_source) {
+void CMMSIncNSSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                         const su2double val_t,
+                                         su2double       *val_source) {
   
   /*--- Easier storage of the x- and y-coordinates. ---*/
   const su2double x = val_coords[0];
@@ -1685,29 +1633,23 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim,
 
 CUserDefinedSolution::~CUserDefinedSolution(void) { }
 
-void CUserDefinedSolution::GetBCState(const unsigned short val_nParams,
-                                      const su2double      *val_params,
-                                      const su2double      *val_coords,
-                                      const su2double      val_t,
-                                      su2double            *val_solution) {
+void CUserDefinedSolution::GetBCState(const su2double *val_coords,
+                                      const su2double val_t,
+                                      su2double       *val_solution) {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
-void CUserDefinedSolution::GetSolution(const unsigned short val_nParams,
-                                       const su2double      *val_params,
-                                       const su2double      *val_coords,
-                                       const su2double      val_t,
-                                       su2double            *val_solution) {
+void CUserDefinedSolution::GetSolution(const su2double *val_coords,
+                                       const su2double val_t,
+                                       su2double       *val_solution) {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }
 
-void CUserDefinedSolution::GetMMSSourceTerm(const unsigned short val_nParams,
-                                            const su2double      *val_params,
-                                            const su2double      *val_coords,
-                                            const su2double      val_t,
-                                            su2double            *val_source) {
+void CUserDefinedSolution::GetMMSSourceTerm(const su2double *val_coords,
+                                            const su2double val_t,
+                                            su2double       *val_source) {
 
   SU2_MPI::Error("User must implement this function", CURRENT_FUNCTION);
 }

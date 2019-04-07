@@ -3160,7 +3160,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
         const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
         su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
       
-        VerificationSolution->GetInitialCondition(0, NULL, coor, solDOF);
+        VerificationSolution->GetInitialCondition(coor, solDOF);
       }
     }
   }
@@ -4936,7 +4936,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[4];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -5216,7 +5216,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[5];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -5426,7 +5426,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[4];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -5661,7 +5661,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[5];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -6110,7 +6110,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       
             su2double sourceMan[5];
         
-            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
+            VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan);
         
             /*--- Subtract the source term of the manufactured solution, multiplied
                   by the appropriate weight, from the possibly earlier computed
@@ -7386,8 +7386,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
           /* Get local error from the verification solution class. */
           vector<su2double> error(nVar,0.0);
-          VerificationSolution->GetLocalError(0, NULL, coor, time,
-                                              solDOF, error.data());
+          VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
 
           /* Increment the global error measures */
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -8742,7 +8741,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
           const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
           su2double *UR   = solIntR + NPad*i + ll*nVar;
         
-          VerificationSolution->GetBCState(0, NULL, coor, time, UR);
+          VerificationSolution->GetBCState(coor, time, UR);
         }
       }
     }
@@ -11003,7 +11002,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[4];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -11390,7 +11389,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[5];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -11783,7 +11782,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[4];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -12345,7 +12344,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
              THIS IS A TEMPORARY IMPLEMENTATION. FOR AN ACTUAL TIME ACCURATE
              SIMULATION THE CORRECT TIME MUST BE GIVEN TO THIS FUNCTION. */
           su2double sourceMan[5];
-          VerificationSolution->GetMMSSourceTerm(0, NULL, coor, 0.0, sourceMan);
+          VerificationSolution->GetMMSSourceTerm(coor, 0.0, sourceMan);
 
           /* Add the source terms to the flux divergence. Note that the source
              terms are multiplied with minus the integration weight in order
@@ -13066,7 +13065,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
             su2double sourceMan[5];
 
-            VerificationSolution->GetMMSSourceTerm(0, NULL, coor, time, sourceMan);
+            VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan);
 
             /*--- Subtract the source term of the manufactured solution, multiplied
                   by the appropriate weight, from the possibly earlier computed
@@ -15518,7 +15517,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
           const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
           su2double *UR   = solIntR + NPad*i + ll*nVar;
 
-          VerificationSolution->GetBCState(0, NULL, coor, time, UR);
+          VerificationSolution->GetBCState(coor, time, UR);
         }
       }
     }
