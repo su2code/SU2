@@ -630,10 +630,8 @@ protected:
   /*--- Variables that define the solution and MMS source term. ---*/
   su2double Gamma;              /*!< \brief Specific heat ratio. */
   su2double RGas;               /*!< \brief Gas constant. */
-  su2double muRef;              /*!< \brief Reference viscosity for Sutherland model. */
-  su2double TRef;               /*!< \brief Reference temperature for Sutherland model.  */
-  su2double S;                  /*!< \brief Reference S for Sutherland model.  */
-  su2double Prandtl;            /*!< \brief Laminar Prandtl number. */
+  su2double Viscosity;          /*!< \brief Constant viscosity. */
+  su2double Conductivity;       /*!< \brief Constant thermal conductivity. */
   su2double TWall;              /*!< \brief Prescribed wall temperature at the outer wall. */
 
   su2double Pressure_Ref;       /*!< \brief Reference pressure for non-dimensionalization. */
@@ -641,70 +639,16 @@ protected:
   su2double Velocity_Ref;       /*!< \brief Reference velocity for non-dimensionalization. */
 
   /*--- Constants, which describe this manufactured solution. The primitive variables
-        p, T, u, v and w are described by analytical functions in such a way that the
+        rho, T, u, v and w are described by analytical functions in such a way that the
         inner wall is an adiabatic no-slip wall and the outer wall is an isothermal
-        no-slip wall. The temperature varies radially through the domain, the other
-        variables in a more complicated way. ---*/
-  su2double a_Px;     /*!< \brief Parameter for the pressure solution. */
-  su2double a_Py;     /*!< \brief Parameter for the pressure solution. */
-  su2double a_Pz;     /*!< \brief Parameter for the pressure solution. */
-  su2double a_Pxy;    /*!< \brief Parameter for the pressure solution. */
-  su2double a_Pxz;    /*!< \brief Parameter for the pressure solution. */
-  su2double a_Pyz;    /*!< \brief Parameter for the pressure solution. */
-  su2double P_0;      /*!< \brief Parameter for the pressure solution. */
-  su2double P_x;      /*!< \brief Parameter for the pressure solution. */
-  su2double P_y;      /*!< \brief Parameter for the pressure solution. */
-  su2double P_z;      /*!< \brief Parameter for the pressure solution. */
-  su2double P_xy;     /*!< \brief Parameter for the pressure solution. */
-  su2double P_xz;     /*!< \brief Parameter for the pressure solution. */
-  su2double P_yz;     /*!< \brief Parameter for the pressure solution. */
+        no-slip wall. ---*/
+  su2double rho_0;    /*!< \brief Constant density. */
+  su2double u_0;      /*!< \brief Maximum x-velocity in the domain. */
+  su2double v_0;      /*!< \brief Maximum y-velocity in the domain. */
+  su2double w_0;      /*!< \brief Maximum z-velocity in the domain. */
 
   su2double a_T1;     /*!< \brief Parameter for the temperature solution. */
   su2double a_T2;     /*!< \brief Parameter for the temperature solution. */
-  su2double a_T3;     /*!< \brief Parameter for the temperature solution. */
-  su2double a_T4;     /*!< \brief Parameter for the temperature solution. */
-
-  su2double a_ux;     /*!< \brief Parameter for the x-velocity solution. */
-  su2double a_uy;     /*!< \brief Parameter for the x-velocity solution. */
-  su2double a_uz;     /*!< \brief Parameter for the x-velocity solution. */
-  su2double a_uxy;    /*!< \brief Parameter for the x-velocity solution. */
-  su2double a_uxz;    /*!< \brief Parameter for the x-velocity solution. */
-  su2double a_uyz;    /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_0;      /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_x;      /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_y;      /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_z;      /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_xy;     /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_xz;     /*!< \brief Parameter for the x-velocity solution. */
-  su2double u_yz;     /*!< \brief Parameter for the x-velocity solution. */
-
-  su2double a_vx;     /*!< \brief Parameter for the y-velocity solution. */
-  su2double a_vy;     /*!< \brief Parameter for the y-velocity solution. */
-  su2double a_vz;     /*!< \brief Parameter for the y-velocity solution. */
-  su2double a_vxy;    /*!< \brief Parameter for the y-velocity solution. */
-  su2double a_vxz;    /*!< \brief Parameter for the y-velocity solution. */
-  su2double a_vyz;    /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_0;      /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_x;      /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_y;      /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_z;      /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_xy;     /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_xz;     /*!< \brief Parameter for the y-velocity solution. */
-  su2double v_yz;     /*!< \brief Parameter for the y-velocity solution. */
-
-  su2double a_wx;     /*!< \brief Parameter for the z-velocity solution. */
-  su2double a_wy;     /*!< \brief Parameter for the z-velocity solution. */
-  su2double a_wz;     /*!< \brief Parameter for the z-velocity solution. */
-  su2double a_wxy;    /*!< \brief Parameter for the z-velocity solution. */
-  su2double a_wxz;    /*!< \brief Parameter for the z-velocity solution. */
-  su2double a_wyz;    /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_0;      /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_x;      /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_y;      /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_z;      /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_xy;     /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_xz;     /*!< \brief Parameter for the z-velocity solution. */
-  su2double w_yz;     /*!< \brief Parameter for the z-velocity solution. */
 
 public:
   
