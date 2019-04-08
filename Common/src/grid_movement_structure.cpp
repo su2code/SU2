@@ -192,9 +192,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
-
-    //StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    //StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
     
     StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
     StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
@@ -9245,8 +9242,11 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
       AD::StopRecording();
     }
 #endif
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    
+    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
 #ifdef CODI_REVERSE_TYPE
     if (TapeActive) AD::StartRecording();
 #endif
@@ -9369,7 +9369,8 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
       }
     }
   }
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
 
   /*--- Apply displacement boundary conditions to the FSI interfaces. ---*/
 

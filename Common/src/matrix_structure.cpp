@@ -1504,7 +1504,6 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   }
   
   /*--- MPI Parallelization ---*/
-  //SendReceive_Solution(prod, geometry, config);
   
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
@@ -1538,7 +1537,6 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
   }
 
   /*--- MPI Parallelization ---*/
-  //SendReceive_SolutionTransposed(prod, geometry, config);
 
   InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
@@ -1742,8 +1740,6 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  //SendReceive_Solution(prod, geometry, config);
-  
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
@@ -1819,8 +1815,6 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     }
     
     /*--- MPI Parallelization ---*/
-    
-    //SendReceive_Solution(x, geometry, config);
     
     InitiateComms(x, geometry, config, SOLUTION_MATRIX);
     CompleteComms(x, geometry, config, SOLUTION_MATRIX);
@@ -1999,8 +1993,6 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- MPI Parallelization ---*/
   
-  //SendReceive_Solution(prod, geometry, config);
-  
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
@@ -2131,8 +2123,6 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
     
     /*--- MPI Parallelization ---*/
     
-    //SendReceive_Solution(x, geometry, config);
-    
     InitiateComms(x, geometry, config, SOLUTION_MATRIX);
     CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
@@ -2183,8 +2173,6 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  //SendReceive_Solution(prod, geometry, config);
-  
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
@@ -2203,8 +2191,6 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   }
   
   /*--- MPI Parallelization ---*/
-  
-  //SendReceive_Solution(prod, geometry, config);
   
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
@@ -2283,8 +2269,6 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    //SendReceive_Solution(xStar, geometry, config);
-    
     InitiateComms(xStar, geometry, config, SOLUTION_MATRIX);
     CompleteComms(xStar, geometry, config, SOLUTION_MATRIX);
     
@@ -2309,8 +2293,6 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     x.Plus_AX(omega, xStar);
     
     /*--- MPI Parallelization ---*/
-    
-    //SendReceive_Solution(x, geometry, config);
     
     InitiateComms(x, geometry, config, SOLUTION_MATRIX);
     CompleteComms(x, geometry, config, SOLUTION_MATRIX);
@@ -2563,8 +2545,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
     /*--- MPI Parallelization ---*/
     
-    //SendReceive_Solution(prod, geometry, config);
-    
     InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
     CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     
@@ -2635,9 +2615,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     }
     
     /*--- MPI Parallelization ---*/
-    
-    //SendReceive_Solution(prod, geometry, config);
-    
+        
     InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
     CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     

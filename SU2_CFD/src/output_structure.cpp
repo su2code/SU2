@@ -12887,34 +12887,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
       nVar_Par +=1;
       Variable_Names.push_back("Q_Criterion");
-      
-      nVar_Par += 2;
-      Variable_Names.push_back("Grad_XVelocity_x");
-      Variable_Names.push_back("Grad_XVelocity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Grad_XVelocity_z");
-      }
-      
-      nVar_Par += 2;
-      Variable_Names.push_back("Grad_YVelocity_x");
-      Variable_Names.push_back("Grad_YVelocity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Grad_YVelocity_z");
-      }
-      
-      nVar_Par += 2;
-      Variable_Names.push_back("Grad_ZVelocity_x");
-      Variable_Names.push_back("Grad_ZVelocity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Grad_ZVelocity_z");
-      }
-      
-      nVar_Par +=1;
-      Variable_Names.push_back("Volume");
-      
-      nVar_Par +=1;
-      Variable_Names.push_back("Time_Step");
-      
     }
     
     if (rotating_frame) {
@@ -12923,13 +12895,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Relative_Velocity_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
-      }
-      
-      nVar_Par += 2;
-      Variable_Names.push_back("XVelocity_x");
-      Variable_Names.push_back("XVelocity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("XVelocity_z");
       }
     }
     
@@ -13192,24 +13157,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
               OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
             }
           }
-          StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-          
+          StrainMag   = sqrt(StrainMag);
+          OmegaMag    = sqrt(OmegaMag);
           su2double Q = 0.5*(OmegaMag - StrainMag);
           Local_Data[jPoint][iVar] = Q; iVar++;
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              Local_Data[jPoint][iVar] = Grad_Vel[iDim][jDim]; iVar++;
-            }
-          }
-         
-         Local_Data[jPoint][iVar] =  (geometry->node[iPoint]->GetVolume() +
-           geometry->node[iPoint]->GetPeriodicVolume());  iVar++;
-          
-          
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDelta_Time();  iVar++;
-          
-          
         }
         
         /*--- For rotating frame problems, compute the relative velocity. ---*/
@@ -13221,15 +13172,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = Solution[2]/Solution[0] - Grid_Vel[1]; iVar++;
           if (geometry->GetnDim() == 3) {
             Local_Data[jPoint][iVar] = Solution[3]/Solution[0] - Grid_Vel[2];
-            iVar++;
-          }
-          
-          //Grid_Vel = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 1);
-          //su2double *Solution = solver[FLOW_SOL]->node[iPoint]->GetSolution();
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 0); iVar++;
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 1); iVar++;
-          if (geometry->GetnDim() == 3) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 2);
             iVar++;
           }
         }
