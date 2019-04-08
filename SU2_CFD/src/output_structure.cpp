@@ -9540,6 +9540,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     SetHistoryFile_Header(config);    
     
     string RequestedField;
+    vector<string> FieldsToRemove;
   
     /*--- Set screen convergence output header ---*/
     
@@ -9548,13 +9549,35 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
       RequestedField = RequestedScreenFields[iReqField];  
       if (HistoryOutput_Map.count(RequestedField) > 0){ 
         ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
-      } else {
-        SU2_MPI::Error(string("Requested screen output field ") + RequestedField + string(" not defined in current solver.") , CURRENT_FUNCTION);
       }
-      if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+      else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
         ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
+      }else {
+        FieldsToRemove.push_back(RequestedField);
       }
     }
+    
+    /*--- Remove fields which are not defined --- */
+    if (FieldsToRemove.size() > 0){
+      if (rank == MASTER_NODE){ 
+      
+      }
+    }
+    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+      if (rank == MASTER_NODE) {
+        if (iReqField == 0) cout << "Info: Ignoring the following screen output fields:" << endl;
+        cout << FieldsToRemove[iReqField];
+        if (iReqField != FieldsToRemove.size()-1){
+          cout << ", ";
+        } else {
+          cout << endl;
+        }
+      }
+      RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
+
+    }
+    
+    nRequestedScreenFields = RequestedScreenFields.size();
     
     if (config->GetMultizone_Problem()){
       MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      

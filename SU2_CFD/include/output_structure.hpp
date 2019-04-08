@@ -1366,24 +1366,6 @@ public:
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
   void SetHistoryOutputFields(CConfig *config);
-
-  /*!
-   * \brief Determines if the history file output.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
-
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Header(CConfig *config);
-
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
     
   void SetVolumeOutputFields(CConfig *config);
   
