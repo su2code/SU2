@@ -3190,6 +3190,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
   }
+  
+  if (SinglezoneDriver && !Time_Domain){
+    nExtIter = nIter;
+  }
   /*--- Fluid-Structure Interaction problems ---*/
 
   if (FSI_Problem) {
