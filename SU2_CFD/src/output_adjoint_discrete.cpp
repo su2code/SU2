@@ -48,7 +48,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
-    RequestedHistoryFields.push_back("SENSITIVITIES");
+    RequestedHistoryFields.push_back("SENSITIVITY");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
 
@@ -105,18 +105,20 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
-    AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);      
-    break;  
-  case SST:
-    /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
-    AddHistoryOutput("RMS_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
-    /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
-    AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);   
-    break;
-  default: break;
+  if (!config->GetFrozen_Visc_Disc()){
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
+      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);      
+      break;  
+    case SST:
+      /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
+      AddHistoryOutput("RMS_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+      /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
+      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);   
+      break;
+    default: break;
+    }
   }
   /// END_GROUP
   
@@ -131,32 +133,34 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint energy.
   AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
-    AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);      
-    break;  
-  case SST:
-    /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
-    AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);   
-    /// DESCRIPTION: Maximum residual of the adjoint dissipation.
-    AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-    break;
-  default: break;
+  if (!config->GetFrozen_Visc_Disc()){  
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
+      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);      
+      break;  
+    case SST:
+      /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
+      AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);   
+      /// DESCRIPTION: Maximum residual of the adjoint dissipation.
+      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+      break;
+    default: break;
+    }
   }
   /// END_GROUP
   
-  /// BEGIN_GROUP: SENSITIVITIES, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
+  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
-  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
-  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
-  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
   
   /// DESCRIPTION: Currently used wall-clock time.
@@ -170,8 +174,9 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
   CSolver* adjflow_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL];
   CSolver* adjturb_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL];  
 
-  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
   
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -182,15 +187,17 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
   } else {
     SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjflow_solver->GetRes_RMS(3)));    
   }
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
-    break;  
-  case SST:
-    SetHistoryOutputValue("RMS_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
-    break;
-  default: break;
+  if (!config[val_iZone]->GetFrozen_Visc_Disc()){  
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
+      break;  
+    case SST:
+      SetHistoryOutputValue("RMS_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
+      break;
+    default: break;
+    }
   }
   SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_Max(1)));
@@ -201,15 +208,17 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
   } else {
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));    
   }
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
-    break;  
-  case SST:
-    SetHistoryOutputValue("MAX_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
-    break;
-  default: break;
+  if (!config[val_iZone]->GetFrozen_Visc_Disc()){  
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
+      break;  
+    case SST:
+      SetHistoryOutputValue("MAX_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
+      break;
+    default: break;
+    }
   }
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
   SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA());
@@ -244,18 +253,20 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION"); 
   /// DESCRIPTION: Adjoint energy.
   AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION");           
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Adjoint nu tilde.
-    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION"); 
-    break;  
-  case SST:
-    /// DESCRIPTION: Adjoint kinetic energy.
-    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "SOLUTION"); 
-    /// DESCRIPTION: Adjoint dissipation.
-    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION");  
-    break;
-  default: break;
+  if (!config->GetFrozen_Visc_Disc()){    
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      /// DESCRIPTION: Adjoint nu tilde.
+      AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION"); 
+      break;  
+    case SST:
+      /// DESCRIPTION: Adjoint kinetic energy.
+      AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "SOLUTION"); 
+      /// DESCRIPTION: Adjoint dissipation.
+      AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION");  
+      break;
+    default: break;
+    }
   }
   /// END_GROUP
   
@@ -283,18 +294,20 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("RES_ADJ_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL"); 
   /// DESCRIPTION: Residual of the adjoint energy. 
   AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL");            
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Residual of the nu tilde. 
-    AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL"); 
-    break;  
-  case SST:
-    /// DESCRIPTION: Residual of the adjoint kinetic energy. 
-    AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL");    
-    /// DESCRIPTION: Residual of the adjoint dissipation.
-    AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Omega", "RESIDUAL");    
-    break;
-  default: break;
+  if (!config->GetFrozen_Visc_Disc()){      
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      /// DESCRIPTION: Residual of the nu tilde. 
+      AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL"); 
+      break;  
+    case SST:
+      /// DESCRIPTION: Residual of the adjoint kinetic energy. 
+      AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL");    
+      /// DESCRIPTION: Residual of the adjoint dissipation.
+      AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Omega", "RESIDUAL");    
+      break;
+    default: break;
+    }
   }
   /// END_GROUP
   
@@ -318,7 +331,7 @@ void CDiscAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   CVariable* Node_AdjTurb = NULL;
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
-  if (config->GetKind_Turb_Model() != NONE){
+  if (config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()){
     Node_AdjTurb = solver[ADJTURB_SOL]->node[iPoint]; 
   }
   
