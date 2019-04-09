@@ -288,6 +288,16 @@ void CDiscAdjMultizoneDriver::Run() {
       iteration_container[iZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+
+      // This should be moved to Iterate, during development we put it here to keep things clear.
+      if (fsi &&
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
+          config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+          config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+
+//        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      }
     }
 
     Add_IterAdjoints();
@@ -300,9 +310,19 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (jZone = 0; jZone < nZone; jZone++) {
 
-          iteration_container[jZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container,
+          iteration_container[jZone][INST_0]->Iterate(output[jZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, jZone, INST_0);
+
+
+          // This should be moved to Iterate, during development we put it here to keep things clear.
+          if (fsi &&
+              (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
+              config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+              config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+
+//            solver_container[jZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+          }
       }
 
       Add_IterAdjoints();
@@ -693,6 +713,16 @@ void CDiscAdjMultizoneDriver::ComputeZonewiseAdjoints(unsigned short iZone) {
 
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, INST_0);
 
+  // This should be moved to Iterate, during development we put it here to keep things clear.
+
+  if (fsi &&
+      (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
+      config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+      config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+
+//    solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+  }
+
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
@@ -710,6 +740,10 @@ void CDiscAdjMultizoneDriver::Set_OldAdjoints(void) {
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
           solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
+
+          if (fsi) {
+            solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution_Geometry(geometry_container[iZone][INST_0][MESH_0]);
+          }
         }
       }
     }
@@ -726,6 +760,10 @@ void CDiscAdjMultizoneDriver::SetIter_Zero(void) {
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
           solver_container[iZone][INST_0][MESH_0][iSol]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
+
+          if (fsi) {
+            solver_container[iZone][INST_0][MESH_0][iSol]->Set_IterSolutionGeometry_Zero(geometry_container[iZone][INST_0][MESH_0]);
+          }
         }
       }
     }
@@ -742,6 +780,10 @@ void CDiscAdjMultizoneDriver::Add_IterAdjoints(void) {
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
           solver_container[iZone][INST_0][MESH_0][iSol]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
+
+          if (fsi) {
+            solver_container[iZone][INST_0][MESH_0][iSol]->Add_IterSolutionGeometry(geometry_container[iZone][INST_0][MESH_0]);
+          }
         }
       }
     }
@@ -758,6 +800,10 @@ void CDiscAdjMultizoneDriver::SetAdjoints_Iter(void) {
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
           solver_container[iZone][INST_0][MESH_0][iSol]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
+
+          if (fsi) {
+            solver_container[iZone][INST_0][MESH_0][iSol]->SetSolutionGeometry_Iter(geometry_container[iZone][INST_0][MESH_0]);
+          }
         }
       }
     }
