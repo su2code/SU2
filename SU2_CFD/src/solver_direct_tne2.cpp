@@ -2673,8 +2673,8 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
-  bool axisymmetric         = config->GetAxisymmetric();
-  bool grid_movement        = config->GetGrid_Movement();
+  bool axisymmetric  = config->GetAxisymmetric();
+  bool grid_movement = config->GetGrid_Movement();
 
   /*--- Evaluate reference values for non-dimensionalization. ---*/
   RefVel2     = node_infty->GetVelocity2();
@@ -2682,33 +2682,32 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   RefPressure = node_infty->GetPressure();
   factor      = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
-
   /*-- Initialization ---*/
-  Total_CD = 0.0;           Total_CL = 0.0;    Total_CSF = 0.0;     Total_CEff = 0.0;
-  Total_CMx = 0.0;          Total_CMy = 0.0;   Total_CMz = 0.0;
-  Total_CoPx = 0.0;         Total_CoPy = 0.0;  Total_CoPz = 0.0;
-  Total_CFx = 0.0;          Total_CFy = 0.0;   Total_CFz = 0.0;
-  Total_CT = 0.0;           Total_CQ = 0.0;    Total_CMerit = 0.0;
-  Total_CNearFieldOF = 0.0; Total_Heat = 0.0;  Total_MaxHeat = 0.0;
+  Total_CD           = 0.0; Total_CL   = 0.0; Total_CSF     = 0.0; Total_CEff = 0.0;
+  Total_CMx          = 0.0; Total_CMy  = 0.0; Total_CMz     = 0.0;
+  Total_CoPx         = 0.0; Total_CoPy = 0.0; Total_CoPz    = 0.0;
+  Total_CFx          = 0.0; Total_CFy  = 0.0; Total_CFz     = 0.0;
+  Total_CT           = 0.0; Total_CQ   = 0.0; Total_CMerit  = 0.0;
+  Total_CNearFieldOF = 0.0; Total_Heat = 0.0; Total_MaxHeat = 0.0;
 
-  AllBound_CD_Inv = 0.0;           AllBound_CL_Inv = 0.0; AllBound_CSF_Inv = 0.0;
-  AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
-  AllBound_CoPx_Inv = 0.0;         AllBound_CoPy_Inv = 0.0;  AllBound_CoPz_Inv = 0.0;
-  AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;   AllBound_CFz_Inv = 0.0;
-  AllBound_CT_Inv = 0.0;           AllBound_CQ_Inv = 0.0;    AllBound_CMerit_Inv = 0.0;
+  AllBound_CD_Inv           = 0.0; AllBound_CL_Inv   = 0.0; AllBound_CSF_Inv    = 0.0;
+  AllBound_CMx_Inv          = 0.0; AllBound_CMy_Inv  = 0.0; AllBound_CMz_Inv    = 0.0;
+  AllBound_CoPx_Inv         = 0.0; AllBound_CoPy_Inv = 0.0; AllBound_CoPz_Inv   = 0.0;
+  AllBound_CFx_Inv          = 0.0; AllBound_CFy_Inv  = 0.0; AllBound_CFz_Inv    = 0.0;
+  AllBound_CT_Inv           = 0.0; AllBound_CQ_Inv   = 0.0; AllBound_CMerit_Inv = 0.0;
   AllBound_CNearFieldOF_Inv = 0.0; AllBound_CEff_Inv = 0.0;
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CL_Inv[iMarker_Monitoring]      = 0.0; Surface_CD_Inv[iMarker_Monitoring]      = 0.0;
-    Surface_CSF_Inv[iMarker_Monitoring] = 0.0; Surface_CEff_Inv[iMarker_Monitoring]       = 0.0;
-    Surface_CFx_Inv[iMarker_Monitoring]        = 0.0; Surface_CFy_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CFz_Inv[iMarker_Monitoring]        = 0.0; Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CMy_Inv[iMarker_Monitoring]        = 0.0; Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CL[iMarker_Monitoring]          = 0.0; Surface_CD[iMarker_Monitoring]          = 0.0;
-    Surface_CSF[iMarker_Monitoring]     = 0.0; Surface_CEff[iMarker_Monitoring]           = 0.0;
-    Surface_CFx[iMarker_Monitoring]            = 0.0; Surface_CFy[iMarker_Monitoring]            = 0.0;
-    Surface_CFz[iMarker_Monitoring]            = 0.0; Surface_CMx[iMarker_Monitoring]            = 0.0;
-    Surface_CMy[iMarker_Monitoring]            = 0.0; Surface_CMz[iMarker_Monitoring]            = 0.0;
+    Surface_CL_Inv[iMarker_Monitoring]  = 0.0; Surface_CD_Inv[iMarker_Monitoring]   = 0.0;
+    Surface_CSF_Inv[iMarker_Monitoring] = 0.0; Surface_CEff_Inv[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Inv[iMarker_Monitoring] = 0.0; Surface_CFy_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CFz_Inv[iMarker_Monitoring] = 0.0; Surface_CMx_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CMy_Inv[iMarker_Monitoring] = 0.0; Surface_CMz_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CL[iMarker_Monitoring]      = 0.0; Surface_CD[iMarker_Monitoring]       = 0.0;
+    Surface_CSF[iMarker_Monitoring]     = 0.0; Surface_CEff[iMarker_Monitoring]     = 0.0;
+    Surface_CFx[iMarker_Monitoring]     = 0.0; Surface_CFy[iMarker_Monitoring]      = 0.0;
+    Surface_CFz[iMarker_Monitoring]     = 0.0; Surface_CMx[iMarker_Monitoring]      = 0.0;
+    Surface_CMy[iMarker_Monitoring]     = 0.0; Surface_CMz[iMarker_Monitoring]      = 0.0;
   }
 
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
@@ -2778,7 +2777,7 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Compute force, note minus sign due to outward orientation of
            the normal vector ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor;
+            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor*AxiFactor;
             ForceInviscid[iDim] += Force[iDim];
           }
 
@@ -2833,45 +2832,45 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
             CMerit_Inv[iMarker]  = CT_Inv[iMarker] / (CQ_Inv[iMarker] + EPS);
           }
 
-          AllBound_CD_Inv           += CD_Inv[iMarker];
-          AllBound_CL_Inv           += CL_Inv[iMarker];
-          AllBound_CSF_Inv          += CSF_Inv[iMarker];
-          AllBound_CEff_Inv          = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
-          AllBound_CMx_Inv          += CMx_Inv[iMarker];
-          AllBound_CMy_Inv          += CMy_Inv[iMarker];
-          AllBound_CMz_Inv          += CMz_Inv[iMarker];
-          AllBound_CoPx_Inv         += CoPx_Inv[iMarker];
-          AllBound_CoPy_Inv         += CoPy_Inv[iMarker];
-          AllBound_CoPz_Inv         += CoPz_Inv[iMarker];
-          AllBound_CFx_Inv          += CFx_Inv[iMarker];
-          AllBound_CFy_Inv          += CFy_Inv[iMarker];
-          AllBound_CFz_Inv          += CFz_Inv[iMarker];
-          AllBound_CT_Inv           += CT_Inv[iMarker];
-          AllBound_CQ_Inv           += CQ_Inv[iMarker];
-          AllBound_CMerit_Inv        = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+          AllBound_CD_Inv     += CD_Inv[iMarker];
+          AllBound_CL_Inv     += CL_Inv[iMarker];
+          AllBound_CSF_Inv    += CSF_Inv[iMarker];
+          AllBound_CEff_Inv    = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
+          AllBound_CMx_Inv    += CMx_Inv[iMarker];
+          AllBound_CMy_Inv    += CMy_Inv[iMarker];
+          AllBound_CMz_Inv    += CMz_Inv[iMarker];
+          AllBound_CoPx_Inv   += CoPx_Inv[iMarker];
+          AllBound_CoPy_Inv   += CoPy_Inv[iMarker];
+          AllBound_CoPz_Inv   += CoPz_Inv[iMarker];
+          AllBound_CFx_Inv    += CFx_Inv[iMarker];
+          AllBound_CFy_Inv    += CFy_Inv[iMarker];
+          AllBound_CFz_Inv    += CFz_Inv[iMarker];
+          AllBound_CT_Inv     += CT_Inv[iMarker];
+          AllBound_CQ_Inv     += CQ_Inv[iMarker];
+          AllBound_CMerit_Inv  = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
 
           /*--- Compute the coefficients per surface ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
             Marker_Tag = config->GetMarker_All_TagBound(iMarker);
             if (Marker_Tag == Monitoring_Tag) {
-              Surface_CL_Inv[iMarker_Monitoring]      += CL_Inv[iMarker];
-              Surface_CD_Inv[iMarker_Monitoring]      += CD_Inv[iMarker];
-              Surface_CSF_Inv[iMarker_Monitoring]     += CSF_Inv[iMarker];
-              Surface_CEff_Inv[iMarker_Monitoring]     = CL_Inv[iMarker] / (CD_Inv[iMarker] + EPS);
-              Surface_CFx_Inv[iMarker_Monitoring]     += CFx_Inv[iMarker];
-              Surface_CFy_Inv[iMarker_Monitoring]     += CFy_Inv[iMarker];
-              Surface_CFz_Inv[iMarker_Monitoring]     += CFz_Inv[iMarker];
-              Surface_CMx_Inv[iMarker_Monitoring]     += CMx_Inv[iMarker];
-              Surface_CMy_Inv[iMarker_Monitoring]     += CMy_Inv[iMarker];
-              Surface_CMz_Inv[iMarker_Monitoring]     += CMz_Inv[iMarker];
+              Surface_CL_Inv[iMarker_Monitoring]    += CL_Inv[iMarker];
+              Surface_CD_Inv[iMarker_Monitoring]    += CD_Inv[iMarker];
+              Surface_CSF_Inv[iMarker_Monitoring]   += CSF_Inv[iMarker];
+              Surface_CEff_Inv[iMarker_Monitoring]   = CL_Inv[iMarker] / (CD_Inv[iMarker] + EPS);
+              Surface_CFx_Inv[iMarker_Monitoring]   += CFx_Inv[iMarker];
+              Surface_CFy_Inv[iMarker_Monitoring]   += CFy_Inv[iMarker];
+              Surface_CFz_Inv[iMarker_Monitoring]   += CFz_Inv[iMarker];
+              Surface_CMx_Inv[iMarker_Monitoring]   += CMx_Inv[iMarker];
+              Surface_CMy_Inv[iMarker_Monitoring]   += CMy_Inv[iMarker];
+              Surface_CMz_Inv[iMarker_Monitoring]   += CMz_Inv[iMarker];
             }
           }
         }
 
         /*--- At the Nearfield SU2 only cares about the pressure coeffient ---*/
         else {
-          CNearFieldOF_Inv[iMarker] = NFPressOF;
+          CNearFieldOF_Inv[iMarker]  = NFPressOF;
           AllBound_CNearFieldOF_Inv += CNearFieldOF_Inv[iMarker];
         }
       }
@@ -2881,22 +2880,22 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
 
   /*--- Add AllBound information using all the nodes ---*/
-  MyAllBound_CD_Inv        = AllBound_CD_Inv;        AllBound_CD_Inv = 0.0;
-  MyAllBound_CL_Inv        = AllBound_CL_Inv;        AllBound_CL_Inv = 0.0;
-  MyAllBound_CSF_Inv   = AllBound_CSF_Inv;   AllBound_CSF_Inv = 0.0;
-  AllBound_CEff_Inv = 0.0;
-  MyAllBound_CMx_Inv          = AllBound_CMx_Inv;          AllBound_CMx_Inv = 0.0;
-  MyAllBound_CMy_Inv          = AllBound_CMy_Inv;          AllBound_CMy_Inv = 0.0;
-  MyAllBound_CMz_Inv          = AllBound_CMz_Inv;          AllBound_CMz_Inv = 0.0;
-  MyAllBound_CoPx_Inv          = AllBound_CoPx_Inv;          AllBound_CoPx_Inv = 0.0;
-  MyAllBound_CoPy_Inv          = AllBound_CoPy_Inv;          AllBound_CoPy_Inv = 0.0;
-  MyAllBound_CoPz_Inv          = AllBound_CoPz_Inv;          AllBound_CoPz_Inv = 0.0;
-  MyAllBound_CFx_Inv          = AllBound_CFx_Inv;          AllBound_CFx_Inv = 0.0;
-  MyAllBound_CFy_Inv          = AllBound_CFy_Inv;          AllBound_CFy_Inv = 0.0;
-  MyAllBound_CFz_Inv          = AllBound_CFz_Inv;          AllBound_CFz_Inv = 0.0;
-  MyAllBound_CT_Inv           = AllBound_CT_Inv;           AllBound_CT_Inv = 0.0;
-  MyAllBound_CQ_Inv           = AllBound_CQ_Inv;           AllBound_CQ_Inv = 0.0;
-  AllBound_CMerit_Inv = 0.0;
+  MyAllBound_CD_Inv        = AllBound_CD_Inv;    AllBound_CD_Inv = 0.0;
+  MyAllBound_CL_Inv        = AllBound_CL_Inv;    AllBound_CL_Inv = 0.0;
+  MyAllBound_CSF_Inv       = AllBound_CSF_Inv;   AllBound_CSF_Inv = 0.0;
+  AllBound_CEff_Inv        = 0.0;
+  MyAllBound_CMx_Inv       = AllBound_CMx_Inv;   AllBound_CMx_Inv = 0.0;
+  MyAllBound_CMy_Inv       = AllBound_CMy_Inv;   AllBound_CMy_Inv = 0.0;
+  MyAllBound_CMz_Inv       = AllBound_CMz_Inv;   AllBound_CMz_Inv = 0.0;
+  MyAllBound_CoPx_Inv      = AllBound_CoPx_Inv;  AllBound_CoPx_Inv = 0.0;
+  MyAllBound_CoPy_Inv      = AllBound_CoPy_Inv;  AllBound_CoPy_Inv = 0.0;
+  MyAllBound_CoPz_Inv      = AllBound_CoPz_Inv;  AllBound_CoPz_Inv = 0.0;
+  MyAllBound_CFx_Inv       = AllBound_CFx_Inv;   AllBound_CFx_Inv = 0.0;
+  MyAllBound_CFy_Inv       = AllBound_CFy_Inv;   AllBound_CFy_Inv = 0.0;
+  MyAllBound_CFz_Inv       = AllBound_CFz_Inv;   AllBound_CFz_Inv = 0.0;
+  MyAllBound_CT_Inv        = AllBound_CT_Inv;    AllBound_CT_Inv = 0.0;
+  MyAllBound_CQ_Inv        = AllBound_CQ_Inv;    AllBound_CQ_Inv = 0.0;
+  AllBound_CMerit_Inv      = 0.0;
   MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
 
   SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -2918,39 +2917,39 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
-  MySurface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CSF_Inv = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CEff_Inv       = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFx_Inv        = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFy_Inv        = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CFz_Inv        = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
-  MySurface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CL_Inv   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CD_Inv   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CSF_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CEff_Inv = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFx_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFy_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFz_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMx_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMy_Inv  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMz_Inv  = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_CL_Inv[iMarker_Monitoring]      = Surface_CL_Inv[iMarker_Monitoring];
-    MySurface_CD_Inv[iMarker_Monitoring]      = Surface_CD_Inv[iMarker_Monitoring];
-    MySurface_CSF_Inv[iMarker_Monitoring] = Surface_CSF_Inv[iMarker_Monitoring];
-    MySurface_CEff_Inv[iMarker_Monitoring]       = Surface_CEff_Inv[iMarker_Monitoring];
-    MySurface_CFx_Inv[iMarker_Monitoring]        = Surface_CFx_Inv[iMarker_Monitoring];
-    MySurface_CFy_Inv[iMarker_Monitoring]        = Surface_CFy_Inv[iMarker_Monitoring];
-    MySurface_CFz_Inv[iMarker_Monitoring]        = Surface_CFz_Inv[iMarker_Monitoring];
-    MySurface_CMx_Inv[iMarker_Monitoring]        = Surface_CMx_Inv[iMarker_Monitoring];
-    MySurface_CMy_Inv[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
-    MySurface_CMz_Inv[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
+    MySurface_CL_Inv[iMarker_Monitoring]   = Surface_CL_Inv[iMarker_Monitoring];
+    MySurface_CD_Inv[iMarker_Monitoring]   = Surface_CD_Inv[iMarker_Monitoring];
+    MySurface_CSF_Inv[iMarker_Monitoring]  = Surface_CSF_Inv[iMarker_Monitoring];
+    MySurface_CEff_Inv[iMarker_Monitoring] = Surface_CEff_Inv[iMarker_Monitoring];
+    MySurface_CFx_Inv[iMarker_Monitoring]  = Surface_CFx_Inv[iMarker_Monitoring];
+    MySurface_CFy_Inv[iMarker_Monitoring]  = Surface_CFy_Inv[iMarker_Monitoring];
+    MySurface_CFz_Inv[iMarker_Monitoring]  = Surface_CFz_Inv[iMarker_Monitoring];
+    MySurface_CMx_Inv[iMarker_Monitoring]  = Surface_CMx_Inv[iMarker_Monitoring];
+    MySurface_CMy_Inv[iMarker_Monitoring]  = Surface_CMy_Inv[iMarker_Monitoring];
+    MySurface_CMz_Inv[iMarker_Monitoring]  = Surface_CMz_Inv[iMarker_Monitoring];
 
-    Surface_CL_Inv[iMarker_Monitoring]         = 0.0;
-    Surface_CD_Inv[iMarker_Monitoring]         = 0.0;
-    Surface_CSF_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CEff_Inv[iMarker_Monitoring]       = 0.0;
-    Surface_CFx_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CFy_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CFz_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CMy_Inv[iMarker_Monitoring]        = 0.0;
-    Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CL_Inv[iMarker_Monitoring]   = 0.0;
+    Surface_CD_Inv[iMarker_Monitoring]   = 0.0;
+    Surface_CSF_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CEff_Inv[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CFy_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CFz_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CMx_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CMy_Inv[iMarker_Monitoring]  = 0.0;
+    Surface_CMz_Inv[iMarker_Monitoring]  = 0.0;
   }
 
   SU2_MPI::Allreduce(MySurface_CL_Inv, Surface_CL_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -2973,23 +2972,23 @@ void CTNE2EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 #endif
 
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
-  Total_CD            = AllBound_CD_Inv;
-  Total_CL            = AllBound_CL_Inv;
-  Total_CSF           = AllBound_CSF_Inv;
-  Total_CEff          = Total_CL / (Total_CD + EPS);
-  Total_CFx           = AllBound_CFx_Inv;
-  Total_CFy           = AllBound_CFy_Inv;
-  Total_CFz           = AllBound_CFz_Inv;
-  Total_CMx           = AllBound_CMx_Inv;
-  Total_CMy           = AllBound_CMy_Inv;
-  Total_CMz           = AllBound_CMz_Inv;
-  Total_CoPx          = AllBound_CoPx_Inv;
-  Total_CoPy          = AllBound_CoPy_Inv;
-  Total_CoPz          = AllBound_CoPz_Inv;
-  Total_CT            = AllBound_CT_Inv;
-  Total_CQ            = AllBound_CQ_Inv;
-  Total_CMerit        = Total_CT / (Total_CQ + EPS);
-  Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
+  Total_CD           = AllBound_CD_Inv;
+  Total_CL           = AllBound_CL_Inv;
+  Total_CSF          = AllBound_CSF_Inv;
+  Total_CEff         = Total_CL / (Total_CD + EPS);
+  Total_CFx          = AllBound_CFx_Inv;
+  Total_CFy          = AllBound_CFy_Inv;
+  Total_CFz          = AllBound_CFz_Inv;
+  Total_CMx          = AllBound_CMx_Inv;
+  Total_CMy          = AllBound_CMy_Inv;
+  Total_CMz          = AllBound_CMz_Inv;
+  Total_CoPx         = AllBound_CoPx_Inv;
+  Total_CoPy         = AllBound_CoPy_Inv;
+  Total_CoPz         = AllBound_CoPz_Inv;
+  Total_CT           = AllBound_CT_Inv;
+  Total_CQ           = AllBound_CQ_Inv;
+  Total_CMerit       = Total_CT / (Total_CQ + EPS);
+  Total_CNearFieldOF = AllBound_CNearFieldOF_Inv;
 
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {

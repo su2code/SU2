@@ -4590,8 +4590,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\t\"x\"\t\"y\"\t\"z\"";
   }
   
-  cout << "HELP ME" << endl;
-  cout << nVar_Consv << endl;
+
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
   if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == DISC_ADJ_FEM))
       restart_file << "\t\"Displacement_" << iVar+1<<"\"";
@@ -5455,7 +5454,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
 
         if (direct_diff != NO_DERIVATIVE) {
-          cout << "this gets called.....5458" << endl;
           D_Total_CL             = SU2_TYPE::GetDerivative(Total_CL);
           D_Total_CD             = SU2_TYPE::GetDerivative(Total_CD);
           D_Total_CSF            = SU2_TYPE::GetDerivative(Total_CSF);
@@ -6865,7 +6863,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
-                    cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                    cout << "  Sens_Press" << "      Sens_AoA" << endl;
                   }
                   if (incompressible) {
                     if (energy) {
@@ -15632,7 +15630,13 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   if (config->GetKind_GasModel() == N2){
       Variable_Names.push_back("Density[N2]");
       Variable_Names.push_back("Density[N]");
-  }
+  } else if (config->GetKind_GasModel() ==  AIR5) {
+      Variable_Names.push_back("D[N2]");
+      Variable_Names.push_back("D[02]");
+      Variable_Names.push_back("D[N0]");
+      Variable_Names.push_back("D[N]");
+      Variable_Names.push_back("D[0]");
+}
 
 
   Variable_Names.push_back("Momentum_x");
@@ -16142,6 +16146,13 @@ void COutput::LoadLocalData_AdjTNE2(CConfig *config, CGeometry *geometry, CSolve
   if (config->GetKind_GasModel() == N2){
     Variable_Names.push_back("Adjoint_Density[N2]");
     Variable_Names.push_back("Adjoint_Density[N]");
+  }
+  if (config->GetKind_GasModel() == AIR5){
+    Variable_Names.push_back("AD[N2]");
+    Variable_Names.push_back("AD[O2]");
+    Variable_Names.push_back("AD[N0]");
+    Variable_Names.push_back("AD[N]");
+    Variable_Names.push_back("AD[O]");
   }
 
   Variable_Names.push_back("Adjoint_Momentum_x");
@@ -19787,6 +19798,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
+  bool tne2      = ((config->GetKind_Solver() == TNE2_EULER) ||
+                   (config->GetKind_Solver() == TNE2_NAVIER_STOKES));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -19864,7 +19877,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (tne2 && adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJTNE2_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (adjoint) Restart_Metadata[4]         = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
 
   /*--- Set a timer for the binary file writing. ---*/
   

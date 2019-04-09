@@ -378,6 +378,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 
   /*--- Here we can add new (scalar) objective functions ---*/
+
   if (config->GetnObj()==1) {
     switch (config->GetKind_ObjFunc()) {
     case DRAG_COEFFICIENT:
@@ -800,7 +801,6 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
 
       /*--- Set the index manually to zero. ---*/
-
       AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
