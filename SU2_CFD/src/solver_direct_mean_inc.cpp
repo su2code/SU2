@@ -117,6 +117,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned short direct_diff = config->GetDirectDiff();
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -2380,7 +2383,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution) && (ExtIter == 0)) {
+  if ((VerificationSolution) && (ExtIter == 0) && (!restart)) {
     
     /*--- Loop over the multigrid levels. ---*/
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -7163,6 +7166,9 @@ void CIncEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
 void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                CConfig   *config) {
+
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
   
   /*--- If this is a verification case, we can compute the global
    error metrics by using the difference between the local error
@@ -7173,7 +7179,10 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
   bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
+  if( !write_heads ) return;
   
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
   if (VerificationSolution) {
     if (VerificationSolution->ExactSolutionKnown()) {
     
@@ -7218,7 +7227,7 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
         cout.precision(5);
         cout.setf(ios::scientific, ios::floatfield);
       
-        if (write_heads && !config->GetDiscrete_Adjoint()) {
+        if (!config->GetDiscrete_Adjoint()) {
         
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
         
@@ -7568,6 +7577,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
+
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/

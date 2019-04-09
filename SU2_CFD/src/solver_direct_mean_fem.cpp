@@ -90,6 +90,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   Cauchy_Serie = NULL;
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
 
@@ -132,6 +135,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
 
   Cauchy_Serie = NULL;
+
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
 
   /*--- Allocate the memory for blasFunctions. ---*/
   blasFunctions = new CBlasStructure;
@@ -7346,17 +7352,22 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                    CConfig   *config) {
 
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
+
   /*--- If this is a verification case, we can compute the global
    error metrics by using the difference between the local error
    and the known solution at each DOF. This is then collected into
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetExtIter() %
-                         (config->GetWrt_Con_Freq()*40)) == 0) &&
-                       (config->GetExtIter()!= 0))
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
-
+  if( !write_heads ) return;
+  
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
   if (VerificationSolution) {
     if (VerificationSolution->ExactSolutionKnown()) {
 
@@ -7407,7 +7418,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
         cout.precision(5);
         cout.setf(ios::scientific, ios::floatfield);
 
-        if (write_heads && !config->GetDiscrete_Adjoint()) {
+        if (!config->GetDiscrete_Adjoint()) {
 
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
 
