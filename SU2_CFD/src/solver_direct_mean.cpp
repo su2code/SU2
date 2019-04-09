@@ -4069,7 +4069,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool SubsonicEngine = config->GetSubsonicEngine();
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution)  && (ExtIter == 0) && (!restart)) {
+  if ((VerificationSolution)  && (ExtIter == 0) && !restart) {
 
     /*--- Loop over the multigrid levels. ---*/
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -13894,8 +13894,8 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
       /*--- Screen output of the error metrics. This can be improved
        once the new output classes are in place. ---*/
     
-      if (rank == MASTER_NODE) {
-      
+      if ((rank == MASTER_NODE) && (geometry->GetMGLevel() == MESH_0)) {
+
         cout.precision(5);
         cout.setf(ios::scientific, ios::floatfield);
       
@@ -13903,26 +13903,26 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
         
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
         
-          cout << setw(20) << "RMS Error  [Rho]: " << setw(15) << GetError_RMS(0);
-          cout << setw(20) << "Max Error  [Rho]: " << setw(15) << GetError_Max(0);
+          cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << GetError_RMS(0) << "     | ";
+          cout << setw(20) << "Max Error  [Rho]: " << setw(12) << GetError_Max(0);
           cout << endl;
         
-          cout << setw(20) << "RMS Error [RhoU]: " << setw(15) << GetError_RMS(1);
-          cout << setw(20) << "Max Error [RhoU]: " << setw(15) << GetError_Max(1);
+          cout << setw(20) << "RMS Error [RhoU]: " << setw(12) << GetError_RMS(1) << "     | ";
+          cout << setw(20) << "Max Error [RhoU]: " << setw(12) << GetError_Max(1);
           cout << endl;
         
-          cout << setw(20) << "RMS Error [RhoV]: " << setw(15) << GetError_RMS(2);
-          cout << setw(20) << "Max Error [RhoV]: " << setw(15) << GetError_Max(2);
+          cout << setw(20) << "RMS Error [RhoV]: " << setw(12) << GetError_RMS(2) << "     | ";
+          cout << setw(20) << "Max Error [RhoV]: " << setw(12) << GetError_Max(2);
           cout << endl;
         
           if (nDim == 3) {
-            cout << setw(20) << "RMS Error [RhoW]: " << setw(15) << GetError_RMS(3);
-            cout << setw(20) << "Max Error [RhoW]: " << setw(15) << GetError_Max(3);
+            cout << setw(20) << "RMS Error [RhoW]: " << setw(12) << GetError_RMS(3) << "     | ";
+            cout << setw(20) << "Max Error [RhoW]: " << setw(12) << GetError_Max(3);
             cout << endl;
           }
         
-          cout << setw(20) << "RMS Error [RhoE]: " << setw(15) << GetError_RMS(nDim+1);
-          cout << setw(20) << "Max Error [RhoE]: " << setw(15) << GetError_Max(nDim+1);
+          cout << setw(20) << "RMS Error [RhoE]: " << setw(12) << GetError_RMS(nDim+1) << "     | ";
+          cout << setw(20) << "Max Error [RhoE]: " << setw(12) << GetError_Max(nDim+1);
           cout << endl;
         
           cout << "-------------------------------------------------------------------------" << endl << endl;
