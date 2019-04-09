@@ -658,11 +658,18 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     /*--- Set the old solution ---*/
 
-    node[iPoint]->Set_OldSolution_Geometry();
+    if(!config->GetMultizone_Problem()) {
+      node[iPoint]->Set_OldSolution_Geometry();
+    }
 
     /*--- Extract the adjoint solution ---*/
 
-    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    if(config->GetMultizone_Problem()) {
+      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(Solution_Geometry);
+    }
+    else {
+      geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+    }
 
     /*--- Store the adjoint solution ---*/
 
@@ -816,7 +823,12 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
     for (iDim = 0; iDim < nDim; iDim++){
       Solution_Geometry[iDim] = 0.0;
     }
-    if (fsi){
+    if (config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] = node[iPoint]->GetSolution_Geometry(iDim);
+      }
+    }
+    else if (fsi){
       for (iDim = 0; iDim < nDim; iDim++){
         Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
       }
@@ -824,6 +836,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
         Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative_Flow(iDim);
       }
     }
+    else { }
 //    if (dual_time){
 //      for (iDim = 0; iDim < nVar; iDim++){
 //        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
@@ -832,9 +845,14 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
     for (iDim = 0; iDim < nDim; iDim++){
       node[iPoint]->SetSensitivity(iDim, Solution_Geometry[iDim]);
     }
-    geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
-  }
 
+    if(config->GetMultizone_Problem()) {
+      geometry->node[iPoint]->SetAdjointCoord_intIndexBased(Solution_Geometry);
+    }
+    else {
+      geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
+    }
+  }
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
@@ -850,7 +868,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      geometry->node[iPoint]->GetAdjointSolution(&Sensitivity, iDim);
+      geometry->node[iPoint]->GetAdjointCoord_intIndexBased(&Sensitivity, iDim);
 
       /*--- Set the index manually to zero. ---*/
 

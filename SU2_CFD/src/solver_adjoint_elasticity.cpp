@@ -559,7 +559,14 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->RegisterSolution(input);
+
+    if(config->GetMultizone_Problem()) {
+      direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
+      direct_solver->node[iPoint]->Set_AdjIndices(input);
+    }
+    else {
+      direct_solver->node[iPoint]->RegisterSolution(input);
+    }
   }
 
   if (dynamic){

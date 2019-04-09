@@ -2529,6 +2529,11 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver_container, CGeom
     solver_container[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
                                                                  config_container[iZone]);
   }
+
+  /*--- Register node coordinates as output ---*/
+
+  geometry_container[iZone][iInst][MESH_0]->RegisterOutput_Coordinates(config_container[iZone]);
+
 }
 
 void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst){
