@@ -2448,7 +2448,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
       solver_container[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
   }
-  if (kind_recording == MESH_COORDS){
+  if (kind_recording == MESH_COORDS || kind_recording == COMBINED){
     
     /*--- Register node coordinates as input ---*/
     
@@ -2657,6 +2657,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   unsigned long IntIter = 0, iPoint;
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
+  bool multizone = config_container[val_iZone]->GetMultizone_Problem();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
   bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
 
@@ -2722,7 +2723,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
 
   solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
 
-  if (CurrentRecording != FEA_DISP_VARS || dynamic){
+  if ((CurrentRecording != FEA_DISP_VARS || dynamic) && !multizone){
 
     if (rank == MASTER_NODE){
       cout << "Direct iteration to store computational graph." << endl;

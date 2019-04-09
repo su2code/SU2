@@ -9187,9 +9187,10 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       fluid_zone = true;
       break;
-    case FEM_ELASTICITY:
+    case FEM_ELASTICITY: case DISC_ADJ_FEM:
       structural_zone = true;
       Relaxation = true;
       break;

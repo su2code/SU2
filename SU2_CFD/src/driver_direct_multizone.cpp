@@ -89,12 +89,13 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       fluid_zone = true;
       break;
-    case FEM_ELASTICITY:
+    case FEM_ELASTICITY: case DISC_ADJ_FEM:
       structural_zone = true;
       break;
-    case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
       heat_zone = true;
       break;
     }
@@ -686,7 +687,8 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
+  else if ((transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) ||
+           (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_DISC_ADJ)) {
     transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);

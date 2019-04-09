@@ -568,7 +568,7 @@ public:
   void SetSolution_Zero(CGeometry *geometry);
 
   /*!
-   * \brief Add the current solution vector to Solution_Iter.
+   * \brief Add the Solution_Iter vector.
    * \param[in] geometry - The geometrical definition of the problem.
    */
   void Add_IterSolution(CGeometry *geometry);

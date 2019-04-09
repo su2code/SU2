@@ -1682,7 +1682,7 @@ public:
 };
 
 /*!
- * \class CMultizoneDriver
+ * \class CDiscAdjMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author O. Burghardt, T. Albring, R. Sanchez
  * \version 6.0.1 "Falcon"

@@ -71,7 +71,9 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
         case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
           direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
           break;
-
+        case FEM_ELASTICITY: case DISC_ADJ_FEM:
+          direct_iteration[iZone][iInst] = new CFEAIteration(config_container[iZone]);
+          break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.", CURRENT_FUNCTION);
       }
@@ -449,7 +451,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
     AD::Push_TapePosition();
 
-    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+    if (rank == MASTER_NODE && (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED)) {
       cout << endl << "-------------------------------------------------------------------------" << endl;
       cout << "Direct iterations to store computational graph." << endl;
     }
@@ -512,7 +514,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
     /*--- Print residuals in the first iteration ---*/
 
-    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+    if (rank == MASTER_NODE && (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED)) {
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
@@ -536,7 +538,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
     AD::Push_TapePosition();
   }
 
-  if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+  if (rank == MASTER_NODE && (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED)) {
 
     //  AD::PrintStatistics();
     cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -645,7 +647,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
     AD::Set_AdjIndex(ObjFunc_Index, ObjFunc);
-    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+    if (rank == MASTER_NODE && (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED)) {
       cout << " Objective function value:            : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
     }
   }
