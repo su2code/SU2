@@ -290,24 +290,6 @@ public:
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
   void SetCoord(unsigned short val_dim, su2double val_coord);
-
-  /*!
-   * \brief Set the adjoint vector indices of Coord vector.
-   * \param[in] input - Save them to the input or output indices vector.
-   */
-  void Set_AdjIndices(bool input);
-
-  /*!
-   * \brief Set the adjoint values of the (geometric) coordinates.
-   * \param[in] adj_sol - Adjoint values of the Coord variables.
-   */
-  void SetAdjointSolution(su2double *adj_sol);
-
-  /*!
-   * \brief Get the adjoint values of the (geometric) coordinates.
-   * \param[in] adj_sol - Adjoint values of the Coord variables.
-   */
-  void GetAdjointSolution(su2double *adj_sol, unsigned short iDim);
   
   /*!
 	 * \brief Get the coordinates of the control volume.
@@ -773,16 +755,40 @@ public:
 	void AddNormal(su2double *val_face_normal);
 
   /*!
+   * \brief Set the adjoint vector indices of Coord vector.
+   * \param[in] input - Save them to the input or output indices vector.
+   */
+  void Set_AdjIndices(bool input);
+
+  /*!
    * \brief Set the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
   void SetAdjointCoord(su2double *adj_coor);
 
   /*!
+   * \brief Set the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void SetAdjointCoord_intIndexBased(su2double *adj_coor);
+
+  /*!
    * \brief Get the adjoint values of the coordinates.
    * \param[in] adj_sol - The adjoint values of the coordinates.
    */
   void GetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void GetAdjointCoord_intIndexBased(su2double *adj_coor, unsigned short iDim);
+
+  /*!
+   * \brief Get the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void GetAdjointCoord_intIndexBased(su2double *adj_coor);
 
 };
 

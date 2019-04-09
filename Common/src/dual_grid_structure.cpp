@@ -411,14 +411,20 @@ void CPoint::Set_AdjIndices(bool input) {
   }
 }
 
-void CPoint::SetAdjointSolution(su2double *adj_sol) {
+void CPoint::SetAdjointCoord_intIndexBased(su2double *adj_coor) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    AD::SetDerivative(Output_AdjIndices[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
+    AD::SetDerivative(Output_AdjIndices[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
   }
 }
 
-void CPoint::GetAdjointSolution(su2double *adj_sol, unsigned short iDim) {
-  *adj_sol = AD::GetDerivative(Input_AdjIndices[iDim]);
+void CPoint::GetAdjointCoord_intIndexBased(su2double *adj_coor, unsigned short iDim) {
+  *adj_coor = AD::GetDerivative(Input_AdjIndices[iDim]);
+}
+
+void CPoint::GetAdjointCoord_intIndexBased(su2double *adj_coor) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    adj_coor[iDim] = AD::GetDerivative(Input_AdjIndices[iDim]);
+  }
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
