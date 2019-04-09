@@ -1693,6 +1693,7 @@ protected:
   unsigned short RecordingState;    /*!< \brief The kind of recording the tape currently holds.*/
   su2double ObjFunc;                /*!< \brief The value of the objective function.*/
   int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
+  unsigned short* direct_nInst;     /*!< \brief Total number of instances in the direct problem (per zone). */
   CIteration*** direct_iteration;   /*!< \brief A pointer to the direct iteration.*/
 
 public:

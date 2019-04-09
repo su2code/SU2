@@ -48,16 +48,19 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
   RecordingState = NONE;
 
-  nInst = new unsigned short[nZone];
+  direct_nInst = new unsigned short[nZone];
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    direct_nInst[iZone] = 1;
+  }
 
   direct_iteration = new CIteration**[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    nInst[iZone]            = 1;
-    direct_iteration[iZone] = new CIteration*[nInst[iZone]];
+    direct_iteration[iZone] = new CIteration*[direct_nInst[iZone]];
 
-    for(iInst = 0; iInst < nInst[iZone]; iInst++) {
+    for(iInst = 0; iInst < direct_nInst[iZone]; iInst++) {
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
@@ -79,13 +82,15 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 
   for (iZone = 0; iZone < nZone; iZone++){
-    for (iInst = 0; iInst < nInst[iInst]; iInst++){
+    for (iInst = 0; iInst < direct_nInst[iZone]; iInst++){
       delete direct_iteration[iZone][iInst];
     }
-    delete direct_iteration[iZone];
+    delete [] direct_iteration[iZone];
   }
 
-  delete [] direct_iteration;
+  delete[] direct_iteration;
+  delete[] direct_nInst;
+
 }
 
 void CDiscAdjMultizoneDriver::StartSolver() {
