@@ -580,6 +580,31 @@ public:
   void Set_IterSolution_Zero(CGeometry *geometry);
 
   /*!
+   * \brief Set the geometry solution vector to iterated (summed-up) geometry solution.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  void SetSolutionGeometry_Iter(CGeometry *geometry);
+
+  /*!
+   * \brief Set the geometry solution vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void SetSolutionGeometry_Zero(CGeometry *geometry);
+
+  /*!
+   * \brief Add to the Solution_Geometry_Iter vector.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_IterSolutionGeometry(CGeometry *geometry);
+
+  /*!
+   * \brief Set the Solution_Geometry_Iter vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Set_IterSolutionGeometry_Zero(CGeometry *geometry);
+
+  /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    */
@@ -633,6 +658,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   virtual void Set_OldSolution(CGeometry *geometry);
+
+  /*!
+   * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
+            It is a virtual function, because for the DG-FEM solver a different version is needed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void Set_OldSolution_Geometry(CGeometry *geometry);
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.

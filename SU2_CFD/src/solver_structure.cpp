@@ -1038,6 +1038,30 @@ void CSolver::Add_IterSolution(CGeometry *geometry) {
   }
 }
 
+void CSolver::SetSolutionGeometry_Iter(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolution_Geometry(node[iPoint]->Get_IterSolutionGeometry());
+  }
+}
+
+void CSolver::SetSolutionGeometry_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolutionGeometryZero();
+  }
+}
+
+void CSolver::Set_IterSolutionGeometry_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Set_IterSolutionGeometry_Zero();
+  }
+}
+
+void CSolver::Add_IterSolutionGeometry(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_IterSolutionGeometry(node[iPoint]->GetSolution_Geometry());
+  }
+}
+
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, jDim, iVar, iNeigh;
   unsigned long iPoint, jPoint;

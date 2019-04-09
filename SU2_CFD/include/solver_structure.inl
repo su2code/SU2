@@ -977,6 +977,13 @@ inline void CSolver::Set_OldSolution(CGeometry *geometry) {
                                      //  well updated
 }
 
+inline void CSolver::Set_OldSolution_Geometry(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->Set_OldSolution_Geometry(); // The loop should be over nPoints
+                                     //  to guarantee that the boundaries are
+                                     //  well updated
+}
+
 inline void CSolver::Set_NewSolution(CGeometry *geometry) { }
 
 inline unsigned short CSolver::GetnVar(void) { return nVar; }
