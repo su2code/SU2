@@ -95,7 +95,10 @@ protected:
 
   su2double *Solution_Geometry;       /*!< \brief (Adjoint) Solution for the underlying mesh coordinates, e.g. used for FSI. */
   su2double *Solution_Geometry_Iter;  /*!< \brief (Adjoint) Intermediate solution for the underlying mesh coordinates, e.g. used for FSI. */
-  
+
+  int *Input_AdjIndices,              /*!< \brief Indices of Solution variables in the adjoint vector. */
+  *Output_AdjIndices;                 /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   /*--- Old solution container for BGS iterations ---*/
   
   su2double* Solution_BGS_k;
