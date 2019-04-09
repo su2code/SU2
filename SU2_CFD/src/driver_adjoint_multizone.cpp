@@ -267,12 +267,16 @@ void CDiscAdjMultizoneDriver::Run() {
      *    By default, all (state and mesh coordinate variables) will be declared as output,
      *    since it does not change the computational effort. ---*/
 
-    if (RecordingState != FLOW_CONS_VARS) {
+    if (RecordingState != (FLOW_CONS_VARS || COMBINED)) {
 
       SetRecording(NONE);
 
-      SetRecording(FLOW_CONS_VARS);
-
+      if(fsi) {
+        SetRecording(COMBINED);
+      }
+      else {
+        SetRecording(FLOW_CONS_VARS);
+      }
     }
 
     Set_OldAdjoints(); SetIter_Zero();
@@ -296,7 +300,7 @@ void CDiscAdjMultizoneDriver::Run() {
           config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
           config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
 
-//        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
 
@@ -321,7 +325,7 @@ void CDiscAdjMultizoneDriver::Run() {
               config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
               config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
 
-//            solver_container[jZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+            solver_container[jZone][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
           }
       }
 
@@ -714,13 +718,12 @@ void CDiscAdjMultizoneDriver::ComputeZonewiseAdjoints(unsigned short iZone) {
   iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone, INST_0);
 
   // This should be moved to Iterate, during development we put it here to keep things clear.
-
   if (fsi &&
       (config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
       config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
       config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
 
-//    solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
