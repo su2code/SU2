@@ -2380,7 +2380,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution) && (ExtIter == 0)) {
+  if ((VerificationSolution) && (ExtIter == 0) && !restart) {
     
     /*--- Loop over the multigrid levels. ---*/
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -7213,36 +7213,36 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
       /*--- Screen output of the error metrics. This can be improved
        once the new output classes are in place. ---*/
     
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && (geometry->GetMGLevel() == MESH_0)) {
       
-        cout.precision(5);
+        cout.precision(6);
         cout.setf(ios::scientific, ios::floatfield);
       
         if (write_heads && !config->GetDiscrete_Adjoint()) {
         
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
         
-          cout << setw(20) << "RMS Error [P]: " << setw(15) << GetError_RMS(0);
-          cout << setw(20) << "Max Error [P]: " << setw(15) << GetError_Max(0);
+          cout << setw(20) << "RMS Error [P]: " << setw(12) << GetError_RMS(0) << "     | ";
+          cout << setw(20) << "Max Error [P]: " << setw(12) << GetError_Max(0);
           cout << endl;
         
-          cout << setw(20) << "RMS Error [U]: " << setw(15) << GetError_RMS(1);
-          cout << setw(20) << "Max Error [U]: " << setw(15) << GetError_Max(1);
+          cout << setw(20) << "RMS Error [U]: " << setw(12) << GetError_RMS(1) << "     | ";
+          cout << setw(20) << "Max Error [U]: " << setw(12) << GetError_Max(1);
           cout << endl;
         
-          cout << setw(20) << "RMS Error [V]: " << setw(15) << GetError_RMS(2);
-          cout << setw(20) << "Max Error [V]: " << setw(15) << GetError_Max(2);
+          cout << setw(20) << "RMS Error [V]: " << setw(12) << GetError_RMS(2) << "     | ";
+          cout << setw(20) << "Max Error [V]: " << setw(12) << GetError_Max(2);
           cout << endl;
         
           if (nDim == 3) {
-            cout << setw(20) << "RMS Error [W]: " << setw(15) << GetError_RMS(3);
-            cout << setw(20) << "Max Error [W]: " << setw(15) << GetError_Max(3);
+            cout << setw(20) << "RMS Error [W]: " << setw(12) << GetError_RMS(3) << "     | ";
+            cout << setw(20) << "Max Error [W]: " << setw(12) << GetError_Max(3);
             cout << endl;
           }
         
           if (config->GetEnergy_Equation()) {
-            cout << setw(20) << "RMS Error [T]: " << setw(15) << GetError_RMS(nDim+1);
-            cout << setw(20) << "Max Error [T]: " << setw(15) << GetError_Max(nDim+1);
+            cout << setw(20) << "RMS Error [T]: " << setw(12) << GetError_RMS(nDim+1) << "     | ";
+            cout << setw(20) << "Max Error [T]: " << setw(12) << GetError_Max(nDim+1);
             cout << endl;
           }
         
