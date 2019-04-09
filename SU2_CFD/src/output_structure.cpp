@@ -9390,13 +9390,6 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     }
   }
   
-  
-  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-    if (!found_field[iReqField]){
-      SU2_MPI::Error("Requested history field " + RequestedHistoryFields[iReqField] + " not defined in the current solver.", CURRENT_FUNCTION);
-    }
-  }
-  
   /*--- Print the string to file and remove the last character (a separator) ---*/
   HistFile << out.str().substr(0, out.str().size() - 1);
   HistFile << endl;
@@ -9490,7 +9483,6 @@ void COutput::SetScreen_Output(CConfig *config) {
   }
 }
 
-
 void COutput::PreprocessHistoryOutput(CConfig *config){
   
   if (rank == MASTER_NODE){
@@ -9531,33 +9523,20 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
     
-//    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
-//      RequestedHistoryFields.push_back("EXT_ITER");
-//      nRequestedHistoryFields++;
-//    }
-    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
+    
+    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
     Postprocess_HistoryFields(config);
     
-    /*--- Open the history file ---*/
-    
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    
-    /*--- Add the header to the history file. ---*/
-    
-    SetHistoryFile_Header(config);    
+    /*--- Set screen convergence output header and remove unavailable fields ---*/
     
     string RequestedField;
     vector<string> FieldsToRemove;
-  
-    /*--- Set screen convergence output header ---*/
+    vector<bool> FoundField(nRequestedHistoryFields, false);
     
-    // Evaluate the requested output
     for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
       RequestedField = RequestedScreenFields[iReqField];  
       if (HistoryOutput_Map.count(RequestedField) > 0){ 
@@ -9571,15 +9550,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     }
     
     /*--- Remove fields which are not defined --- */
-    if (FieldsToRemove.size() > 0){
-      if (rank == MASTER_NODE){ 
-      
-      }
-    }
+    
     for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
       if (rank == MASTER_NODE) {
-        if (iReqField == 0) cout << "Info: Ignoring the following screen output fields:" << endl;
-        cout << FieldsToRemove[iReqField];
+        if (iReqField == 0){
+          cout << "  Info: Ignoring the following screen output fields:" << endl;
+          cout << "  ";
+        }        cout << FieldsToRemove[iReqField];
         if (iReqField != FieldsToRemove.size()-1){
           cout << ", ";
         } else {
@@ -9587,11 +9564,73 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
         }
       }
       RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
-
     }
     
     nRequestedScreenFields = RequestedScreenFields.size();
     
+    /*--- Remove unavailable fields from the history file output ---*/
+    
+    FieldsToRemove.clear();
+    
+    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup){
+          FoundField[iReqField] = true;
+        }
+      }
+    }
+    
+    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
+        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+        for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+          RequestedField = RequestedHistoryFields[iReqField];   
+          if (RequestedField == Field.OutputGroup){
+            FoundField[iReqField] = true;
+          }
+        }
+      }
+    }
+    
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      if (!FoundField[iReqField]){
+        FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
+      }
+    }
+    
+    /*--- Remove fields which are not defined --- */    
+    
+    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+      if (rank == MASTER_NODE) {
+        if (iReqField == 0){
+          cout << "  Info: Ignoring the following history output fields/groups:" << endl;
+          cout << "  ";
+        }        cout << FieldsToRemove[iReqField];
+        if (iReqField != FieldsToRemove.size()-1){
+          cout << ", ";
+        } else {
+          cout << endl;
+        }
+      }
+      RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
+    }
+    
+    nRequestedHistoryFields = RequestedHistoryFields.size();
+        
+    /*--- Open the history file ---*/
+    
+    cout << "History filename: " << char_histfile << endl;
+    HistFile.open(char_histfile, ios::out);
+    HistFile.precision(15);
+    
+    /*--- Add the header to the history file. ---*/
+    
+    SetHistoryFile_Header(config);    
+    
+    /*--- Set the multizone screen header ---*/
+
     if (config->GetMultizone_Problem()){
       MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
       MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -9623,7 +9662,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   GlobalField_Counter = 0;
   
   string RequestedField;
-  std::vector<bool> found_field(nRequestedVolumeFields, false);
+  std::vector<bool> FoundField(nRequestedVolumeFields, false);
+  vector<string> FieldsToRemove;
   
   
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields(). 
@@ -9646,17 +9686,33 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
         Variable_Names.push_back(Field.FieldName);
         GlobalField_Counter++;
         
-        found_field[iReqField] = true;
+        FoundField[iReqField] = true;
       }
     }    
   }
   
-  /*--- Check if all requested fields were found ---*/
-  
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
-    if (!found_field[iReqField]){
-      SU2_MPI::Error(string("There is no volume output field/group with name ") + RequestedVolumeFields[iReqField] + string(" defined in the current solver."), CURRENT_FUNCTION);
+    if (!FoundField[iReqField]){
+      FieldsToRemove.push_back(RequestedVolumeFields[iReqField]);
     }
+  }
+  
+  /*--- Remove fields which are not defined --- */    
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following volume output fields/groups:" << endl;
+        cout << "  ";
+      }
+      cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedVolumeFields.erase(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), FieldsToRemove[iReqField]));
   }
   
   
