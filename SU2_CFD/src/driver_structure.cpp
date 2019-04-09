@@ -1384,6 +1384,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
 
     if (disc_adj) {
+
       solver_container[val_iInst][iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJFLOW_SOL]->GetnVar();
       if (disc_adj_turb) {
@@ -1397,6 +1398,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
 
     if (disc_adj_tne2) {
+
       solver_container[val_iInst][iMGlevel][ADJTNE2_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][TNE2_SOL], RUNTIME_TNE2_SYS, iMGlevel);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJTNE2_SOL]->GetnVar();
       if (disc_adj_turb) {

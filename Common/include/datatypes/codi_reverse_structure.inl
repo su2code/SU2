@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file codi_reverse_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
@@ -35,6 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+
 
 namespace SU2_TYPE{
   inline void SetValue(su2double& data, const double &val) {data.setValue(val);}
