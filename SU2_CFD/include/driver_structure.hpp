@@ -1743,7 +1743,7 @@ public:
   /*!
    * \brief Set the objective function. It is virtual because it depends on the kind of physics.
    */
-  void SetObjFunction();
+  void SetObjFunction(unsigned short kind_recording);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
