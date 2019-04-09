@@ -501,6 +501,12 @@ inline void CVariable::Set_IterSolution_Zero(void) { }
 
 inline void CVariable::Add_IterSolution(su2double* val_sol) { }
 
+inline su2double *CVariable::Get_IterSolutionGeometry(void) { return NULL; }
+
+inline void CVariable::Set_IterSolutionGeometry_Zero(void) { }
+
+inline void CVariable::Add_IterSolutionGeometry(su2double* val_sol) { }
+
 inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
@@ -512,6 +518,8 @@ inline su2double CVariable::GetGeometry_Direct(unsigned short val_dim) { return 
 inline void CVariable::SetGeometry_Direct(su2double *val_geometry_direct) { }
 
 inline su2double CVariable::GetSolution_Geometry(unsigned short val_var) { return 0.0;}
+
+inline su2double* CVariable::GetSolution_Geometry(void) { return NULL;}
 
 inline void CVariable::SetSolution_Geometry(su2double *val_solution_geometry) { }
 
@@ -1392,7 +1400,9 @@ inline void CDiscAdjVariable::SetGeometry_Direct(su2double *val_geometry_direct)
   }
 }
 
-inline su2double CDiscAdjVariable::GetSolution_Geometry(unsigned short val_var) { return Solution_Geometry[val_var];}
+inline su2double CDiscAdjVariable::GetSolution_Geometry(unsigned short val_var) { return Solution_Geometry[val_var]; }
+
+inline su2double* CDiscAdjVariable::GetSolution_Geometry(void) { return Solution_Geometry; }
 
 inline void CDiscAdjVariable::SetSolution_Geometry(su2double *val_solution_geometry) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
@@ -1598,6 +1608,20 @@ inline void CDiscAdjVariable::Add_IterSolution(su2double* val_sol) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Iter[iVar] += val_sol[iVar];
 	  }
+}
+
+inline su2double *CDiscAdjVariable::Get_IterSolutionGeometry(void) { return Solution_Geometry_Iter; }
+
+inline void CDiscAdjVariable::Set_IterSolutionGeometry_Zero(void) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution_Geometry_Iter[iVar] = 0.0;
+  }
+}
+
+inline void CDiscAdjVariable::Add_IterSolutionGeometry(su2double* val_sol) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution_Geometry_Iter[iVar] += val_sol[iVar];
+  }
 }
 
 inline su2double CDiscAdjVariable::GetCross_Term_Derivative(unsigned short iVar) { return Cross_Term_Derivative[iVar]; }

@@ -59,6 +59,8 @@ CVariable::CVariable(void) {
   Input_AdjIndices = NULL;
   Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
+  Solution_Geometry = NULL;
+  Solution_Geometry_Iter = NULL;
   
 }
 
@@ -82,6 +84,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Input_AdjIndices = NULL;
   Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
+  Solution_Geometry = NULL;
+  Solution_Geometry_Iter = NULL;
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -119,7 +123,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Input_AdjIndices = NULL;
   Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
-  
+
+  Solution_Geometry = NULL;
+  Solution_Geometry_Iter = NULL;
+
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
   nVar = val_nvar;
@@ -404,6 +411,13 @@ void CVariable::SetSolutionZero(unsigned short val_var) {
   
     Solution[val_var] = 0.0;
   
+}
+
+void CVariable::SetSolutionGeometryZero(void) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_Geometry[iVar] = 0.0;
+
 }
 
 void CVariable::SetResidualSumZero(void) {

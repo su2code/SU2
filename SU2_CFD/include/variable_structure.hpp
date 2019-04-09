@@ -91,10 +91,10 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
-  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
-  
-  int *Input_AdjIndices,          /*!< \brief Indices of Solution variables in the adjoint vector. */
-  *Output_AdjIndices;             /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2double *Solution_Adj_Old;        /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+
+  su2double *Solution_Geometry;       /*!< \brief (Adjoint) Solution for the underlying mesh coordinates, e.g. used for FSI. */
+  su2double *Solution_Geometry_Iter;  /*!< \brief (Adjoint) Intermediate solution for the underlying mesh coordinates, e.g. used for FSI. */
   
   /*--- Old solution container for BGS iterations ---*/
   
@@ -254,6 +254,11 @@ public:
    * \brief Set to zero the solution.
    */
   void SetSolutionZero(void);
+
+  /*!
+   * \brief Set to zero the (adjoint) geometry solution.
+   */
+  void SetSolutionGeometryZero(void);
   
   /*!
    * \brief Set to zero a particular solution.
@@ -319,6 +324,11 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void Set_IterSolutionGeometry_Zero(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_var - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
@@ -328,6 +338,11 @@ public:
    * \brief A virtual member.
    */
   virtual void Add_IterSolution(su2double* val_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Add_IterSolutionGeometry(su2double* val_sol);
 
   /*!
    * \brief Add a value to the solution, clipping the values.
@@ -627,6 +642,11 @@ public:
    * \brief A virtual member.
    */
   virtual su2double *Get_IterSolution(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *Get_IterSolutionGeometry(void);
   
   /*!
    * \brief Get the value of the preconditioner Beta.
@@ -1840,6 +1860,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   virtual su2double GetSolution_Geometry(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return (Adjoint) Geometry solution.
+   */
+  virtual su2double *GetSolution_Geometry(void);
   
   /*!
    * \brief A virtual member. Set the value of the mesh solution (adjoint).
@@ -4662,6 +4689,22 @@ public:
    * \brief Add the values in val_sol to the intermediate solution.
    */
   void Add_IterSolution(su2double* val_sol);
+
+  /*!
+   * \brief Get the intermediate geometry solution.
+   * \return Pointer to the intermediate solution vector.
+   */
+  su2double *Get_IterSolutionGeometry(void);
+
+  /*!
+   * \brief Set to zero the intermediate geometry solution.
+   */
+  void Set_IterSolutionGeometry_Zero(void);
+
+  /*!
+   * \brief Add the values in val_sol to the intermediate geometry solution.
+   */
+  void Add_IterSolutionGeometry(su2double* val_sol);
   
   /*!
    * \brief Set the restart geometry (coordinate of the converged solution)
@@ -4687,6 +4730,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   su2double GetSolution_Geometry(unsigned short val_var);
+
+  /*!
+   * \brief Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return (Adjoint) Geometry solution.
+   */
+  su2double *GetSolution_Geometry(void);
   
   /*!
    * \brief Set the value of the mesh solution (adjoint).
