@@ -396,7 +396,7 @@ void CSolver::SetResidual_Solution(CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, *Solution_Old;
+  su2double residual, *Solution_Old, *Solution;
 
   for (iVar = 0; iVar < nVar; iVar++) {
       SetRes_RMS(iVar,0.0);
