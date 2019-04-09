@@ -64,12 +64,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Definition of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Definition of the particular problem.
    */
   CVerificationSolution(unsigned short val_nDim,
                         unsigned short val_nvar,
+                        unsigned short val_iMesh,
                         CConfig *config);
   
   /*!
@@ -173,12 +175,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CInviscidVortexSolution(unsigned short val_nDim,
                           unsigned short val_nvar,
+                          unsigned short val_iMesh,
                           CConfig*       config);
   
   /*!
@@ -231,12 +235,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CRinglebSolution(unsigned short val_nDim,
                    unsigned short val_nvar,
+                   unsigned short val_iMesh,
                    CConfig*       config);
   
   /*!
@@ -289,12 +295,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CNSUnitQuadSolution(unsigned short val_nDim,
                       unsigned short val_nvar,
+                      unsigned short val_iMesh,
                       CConfig*       config);
   
   /*!
@@ -349,12 +357,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CTGVSolution(unsigned short val_nDim,
                unsigned short val_nvar,
+               unsigned short val_iMesh,
                CConfig*       config);
   
   /*!
@@ -406,12 +416,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CIncTGVSolution(unsigned short val_nDim,
                   unsigned short val_nvar,
+                  unsigned short val_iMesh,
                   CConfig*       config);
   
   /*!
@@ -500,12 +512,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CMMSNSUnitQuadSolution(unsigned short val_nDim,
                          unsigned short val_nvar,
+                         unsigned short val_iMesh,
                          CConfig*       config);
   
   /*!
@@ -591,12 +605,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CMMSNSTwoHalfSpheresSolution(unsigned short val_nDim,
                               unsigned short val_nvar,
+                              unsigned short val_iMesh,
                               CConfig*       config);
   
   /*!
@@ -675,12 +691,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CMMSIncEulerSolution(unsigned short val_nDim,
                        unsigned short val_nvar,
+                       unsigned short val_iMesh,
                        CConfig*       config);
   
   /*!
@@ -760,12 +778,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CMMSIncNSSolution(unsigned short val_nDim,
                     unsigned short val_nvar,
+                    unsigned short val_iMesh,
                     CConfig*       config);
   
   /*!
@@ -826,12 +846,14 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config   - Configuration of the particular problem.
+   * \param[in] val_nDim  - Number of dimensions of the problem.
+   * \param[in] val_nvar  - Number of variables of the problem.
+   * \param[in] val_iMesh - Multigrid level of the solver.
+   * \param[in] config    - Configuration of the particular problem.
    */
   CUserDefinedSolution(unsigned short val_nDim,
                        unsigned short val_nvar,
+                       unsigned short val_iMesh,
                        CConfig*       config);
   
   /*!

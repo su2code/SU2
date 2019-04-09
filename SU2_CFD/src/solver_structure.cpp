@@ -41,6 +41,10 @@ CSolver::CSolver(void) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  /*--- Set the multigrid level to the finest grid. This can be
+        overwritten in the constructors of the derived classes. ---*/
+  MGLevel = MESH_0;
   
   /*--- Array initialization ---*/
   
@@ -3460,25 +3464,25 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
     case NO_VERIFICATION_SOLUTION:
       VerificationSolution = NULL; break;
     case INVISCID_VORTEX:
-      VerificationSolution = new CInviscidVortexSolution(nDim, nVar, config); break;
+      VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
     case RINGLEB:
-      VerificationSolution = new CRinglebSolution(nDim, nVar, config); break;
+      VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
     case NS_UNIT_QUAD:
-      VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, config); break;
+      VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
     case TAYLOR_GREEN_VORTEX:
-      VerificationSolution = new CTGVSolution(nDim, nVar, config); break;
+      VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
     case INC_TAYLOR_GREEN_VORTEX:
-      VerificationSolution = new CIncTGVSolution(nDim, nVar, config); break;
+      VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_UNIT_QUAD:
-      VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, config); break;
+      VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_TWO_HALF_SPHERES:
-      VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, config); break;
+      VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
     case MMS_INC_EULER:
-      VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, config); break;
+      VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, MGLevel, config); break;
     case MMS_INC_NS:
-      VerificationSolution = new CMMSIncNSSolution(nDim, nVar, config); break;
+      VerificationSolution = new CMMSIncNSSolution(nDim, nVar, MGLevel, config); break;
     case USER_DEFINED_SOLUTION:
-      VerificationSolution = new CUserDefinedSolution(nDim, nVar, config); break;
+      VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
   }
   
   /*--- Allocate space for global error metrics for verification. ---*/

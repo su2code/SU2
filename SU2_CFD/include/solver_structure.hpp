@@ -82,6 +82,7 @@ class CSolver {
 protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
+  unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   unsigned short nVar,          /*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */

@@ -41,6 +41,7 @@ CVerificationSolution::CVerificationSolution(void) { }
 
 CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
                                              unsigned short val_nVar,
+                                             unsigned short val_iMesh,
                                              CConfig*       config) {
   
   /*--- Store the rank and size for the calculation. ---*/
@@ -114,12 +115,13 @@ CInviscidVortexSolution::CInviscidVortexSolution(void) : CVerificationSolution()
 
 CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
                                                  unsigned short val_nVar,
+                                                 unsigned short val_iMesh,
                                                  CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
 
   /*--- Write a message that the solution is initialized for the
    inviscid vortex test case. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the inviscid vortex case!!!" << endl;
@@ -225,12 +227,13 @@ CRinglebSolution::CRinglebSolution(void) : CVerificationSolution() { }
 
 CRinglebSolution::CRinglebSolution(unsigned short val_nDim,
                                    unsigned short val_nVar,
+                                   unsigned short val_iMesh,
                                    CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
 
   /*--- Write a message that the solution is initialized for the
    Ringleb test case. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the Ringleb case!!!" << endl;
@@ -380,14 +383,15 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(void) : CVerificationSolution() { }
 
 CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
                                          unsigned short val_nVar,
+                                         unsigned short val_iMesh,
                                          CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
 
   /*--- Write a message that the solution is initialized for the
    Navier-Stokes case on a unit quad. Note that heat conduction
    is neglected for this case. ---*/
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the Navier Stokes equations " << endl;
@@ -472,13 +476,14 @@ CTGVSolution::CTGVSolution(void) : CVerificationSolution() { }
 
 CTGVSolution::CTGVSolution(unsigned short val_nDim,
                            unsigned short val_nVar,
+                           unsigned short val_iMesh,
                            CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the
    Taylor-Green vortex test case. ---*/
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the Taylor-Green vortex case!!!" << endl;
@@ -575,13 +580,14 @@ CIncTGVSolution::CIncTGVSolution(void) : CVerificationSolution() { }
 
 CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
                                  unsigned short val_nVar,
+                                 unsigned short val_iMesh,
                                  CConfig*       config)
-: CVerificationSolution(val_nDim, val_nVar, config) {
+: CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the
    Taylor-Green vortex test case. ---*/
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the incompressible Taylor-Green vortex case!!!" << endl;
@@ -677,12 +683,13 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(void) : CVerificationSolution() {
 
 CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
                                                unsigned short val_nVar,
+                                               unsigned short val_iMesh,
                                                CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations on a unit quad. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the manufactured solution " << endl;
@@ -1027,12 +1034,13 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(void) : CVerification
 
 CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nDim,
                                                            unsigned short val_nVar,
+                                                           unsigned short val_iMesh,
                                                            CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the Navier-Stokes equations between two half spheres. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the manufactured solution " << endl;
@@ -1390,12 +1398,13 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(void) : CVerificationSolution() { }
 
 CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
                                            unsigned short val_nVar,
+                                           unsigned short val_iMesh,
                                            CConfig*       config)
-: CVerificationSolution(val_nDim, val_nVar, config) {
+: CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the incompressible Navier-Stokes equations. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the manufactured solution " << endl;
@@ -1500,12 +1509,13 @@ CMMSIncNSSolution::CMMSIncNSSolution(void) : CVerificationSolution() { }
 
 CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
                                      unsigned short val_nVar,
+                                     unsigned short val_iMesh,
                                      CConfig*       config)
-: CVerificationSolution(val_nDim, val_nVar, config) {
+: CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for the manufactured
    solution for the incompressible Navier-Stokes equations. ---*/
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for the manufactured solution " << endl;
@@ -1615,13 +1625,14 @@ CUserDefinedSolution::CUserDefinedSolution(void) : CVerificationSolution() { }
 
 CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim,
                                            unsigned short val_nVar,
+                                           unsigned short val_iMesh,
                                            CConfig*       config)
-  : CVerificationSolution(val_nDim, val_nVar, config) {
+  : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
   /*--- Write a message that the solution is initialized for a
    user-defined verification case. ---*/
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (val_iMesh == MESH_0)) {
     cout << endl;
     cout << "Warning: Fluid properties and solution are being " << endl;
     cout << "         initialized for a user-defined verification case!!!" << endl;

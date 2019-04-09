@@ -192,6 +192,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -3840,7 +3843,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   
   /*--- Write output to the console if this is the master node and first domain ---*/
   
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+  if ((rank == MASTER_NODE) && (MGLevel == MESH_0)) {
     
     cout.precision(6);
     
@@ -4066,7 +4069,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool SubsonicEngine = config->GetSubsonicEngine();
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution)  && (ExtIter == 0)) {
+  if ((VerificationSolution)  && (ExtIter == 0) && (!restart)) {
 
     /*--- Loop over the multigrid levels. ---*/
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -13835,18 +13838,23 @@ void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
 void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
                                             CConfig   *config) {
-  
+
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
+
   /*--- If this is a verification case, we can compute the global
    error metrics by using the difference between the local error
    and the known solution at each DOF. This is then collected into
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
   
-  bool write_heads = ((((config->GetExtIter() %
-                         (config->GetWrt_Con_Freq()*40)) == 0) &&
-                       (config->GetExtIter()!= 0))
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
-  
+  if( !write_heads ) return;  
+
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
   if (VerificationSolution) {
     if (VerificationSolution->ExactSolutionKnown()) {
 
@@ -13891,7 +13899,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
         cout.precision(5);
         cout.setf(ios::scientific, ios::floatfield);
       
-        if (write_heads && !config->GetDiscrete_Adjoint()) {
+        if (!config->GetDiscrete_Adjoint()) {
         
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
         
@@ -15354,6 +15362,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
