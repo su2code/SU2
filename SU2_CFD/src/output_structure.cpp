@@ -2661,16 +2661,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
        Force the use of SU2_SOL to merge and write the viz. files in this
        case to save overhead. ---*/
 
-      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY) && (FileFormat != TECPLOT_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
 #endif
 
 //    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
-    
+
 //    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
-    
+
 //    switch (config[iZone]->GetKind_Solver()) {
 //      case EULER : case NAVIER_STOKES : case RANS :
 //        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
@@ -2807,8 +2807,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
        SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
        
      }
-
-
+     
+     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
+     
+     if (config[iZone]->GetWrt_Csv_Sol()){
+     
+       if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+     
+       WriteSurface_CSV(config[iZone], geometry[iZone][iInst][MESH_0]);
+     
+     }
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
       if (Wrt_Vol) {
@@ -5543,6 +5551,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   map<unsigned long,unsigned long> Global2Renumber;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     Global2Renumber[globalRecv[ii]] = renumbRecv[ii] + 1;
+    Renumber2Global[renumbRecv[ii] + 1] = globalRecv[ii];
   }
   
   
@@ -5904,6 +5913,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (int ii = 0; ii < nElem_Send[size]; ii++) {
     Global2Renumber[outliers[ii]] = idSend[ii] + 1;
+    Renumber2Global[idSend[ii] + 1] = outliers[ii];
   }
   
   /*--- We can now overwrite the local connectivity for our surface elems
@@ -6677,6 +6687,9 @@ void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
 void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry) {
   
   if (Parallel_Surf_Data != NULL) {
+    
+    Global2Renumber.clear();
+    Renumber2Global.clear();
     /*--- Deallocate memory for surface solution data ---*/
     
     for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
