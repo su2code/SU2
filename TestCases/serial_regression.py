@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -194,7 +194,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.287490, -14.278189, 0.000050, 0.007986] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.029756, -14.278066, 0.000053, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -478,7 +478,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714721, -5.883008, -0.214968, 0.023783] #last 4 columns
+    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783] #last 4 columns
     ddes_flatplate.su2_exec  = "SU2_CFD"
     ddes_flatplate.timeout   = 1600
     ddes_flatplate.tol       = 0.00001
@@ -592,14 +592,15 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 50
-    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.test_vals = [-0.368877, 5.156053, 0.000000, 0.000000] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
+    uniform_flow.multizone = True
     test_list.append(uniform_flow) 
 
-    # Channel_2D
+   # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
@@ -609,6 +610,7 @@ def main():
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
     channel_2D.unsteady  = True
+    channel_2D.multizone = True
     test_list.append(channel_2D)
 
     # Channel_3D
@@ -621,6 +623,7 @@ def main():
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
     channel_3D.unsteady  = True
+    channel_3D.multizone = True
     test_list.append(channel_3D)
 
     # Pipe
@@ -633,6 +636,7 @@ def main():
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
     pipe.unsteady  = True
+    pipe.multizone = True
     test_list.append(pipe)
 
     # Rotating cylinders
@@ -640,11 +644,12 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [-1.253498, 4.531302, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.test_vals = [-1.254672, 4.530738, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
     rotating_cylinders.unsteady  = True
+    rotating_cylinders.multizone = True
     test_list.append(rotating_cylinders)
 
     # Supersonic vortex shedding
@@ -652,11 +657,12 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.128085, 4.600597, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-1.130591, 4.595041, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
     supersonic_vortex_shedding.unsteady  = True
+    supersonic_vortex_shedding.multizone = True
     test_list.append(supersonic_vortex_shedding)
 
     # Bars_SST_2D
@@ -668,6 +674,7 @@ def main():
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
+    bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
     
     # Sliding mesh with incompressible flows (steady)
@@ -679,6 +686,7 @@ def main():
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00001
+    slinc_steady.multizone = True
     test_list.append(slinc_steady)
     
     # Sliding mesh with incompressible flows (unsteady)
@@ -752,10 +760,10 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.685301, -12947.783696] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -8.530925, -3091.634678] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
-    cht_incompressible.tol       = 0.00001
+    cht_incompressible.tol       = 0.0001
     test_list.append(cht_incompressible)
 
     ######################################

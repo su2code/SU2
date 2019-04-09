@@ -40,26 +40,27 @@
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                       unsigned short val_nZone,
-                                      unsigned short val_nDim,
                                       bool val_periodic,
                                       SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
                                                                                   val_nZone,
-                                                                                  val_nDim,
                                                                                   val_periodic,
                                                                                   MPICommunicator) {
 
   RecordingState = NONE;
 
-  nInst = new unsigned short[nZone];
+  direct_nInst = new unsigned short[nZone];
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    direct_nInst[iZone] = 1;
+  }
 
   direct_iteration = new CIteration**[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    nInst[iZone]            = 1;
-    direct_iteration[iZone] = new CIteration*[nInst[iZone]];
+    direct_iteration[iZone] = new CIteration*[direct_nInst[iZone]];
 
-    for(iInst = 0; iInst < nInst[iZone]; iInst++) {
+    for(iInst = 0; iInst < direct_nInst[iZone]; iInst++) {
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
@@ -81,13 +82,15 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 
   for (iZone = 0; iZone < nZone; iZone++){
-    for (iInst = 0; iInst < nInst[iInst]; iInst++){
+    for (iInst = 0; iInst < direct_nInst[iZone]; iInst++){
       delete direct_iteration[iZone][iInst];
     }
-    delete direct_iteration[iZone];
+    delete [] direct_iteration[iZone];
   }
 
-  delete [] direct_iteration;
+  delete[] direct_iteration;
+  delete[] direct_nInst;
+
 }
 
 void CDiscAdjMultizoneDriver::StartSolver() {
@@ -243,7 +246,7 @@ void CDiscAdjMultizoneDriver::Run() {
   for (iOuter_Iter = 0; iOuter_Iter < OuterIter; iOuter_Iter++){
 
     for (iZone = 0; iZone < nZone; iZone++) {
-
+      driver_config->SetOuterIter(iOuter_Iter);
       config_container[iZone]->SetOuterIter(iOuter_Iter);
     }
 
@@ -310,7 +313,9 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
       output[iZone]->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, iZone, INST_0);
     }    
-
+    
+    OuterConvergence(iOuter_Iter);
+    
     /*--- Check convergence in each zone --*/
 
     checkConvergence = 0;
@@ -430,7 +435,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
     for (iSol=0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
         if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
-          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
       }
     }
@@ -446,9 +451,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
       cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iteration to store computational graph." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl;
-      cout << "-------------------------------------------------------------------------" << endl << endl;
+      cout << "Direct iterations to store computational graph." << endl;
     }
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -468,7 +471,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
   /*--- Extract the objective function and store it --- */
 
-  SetObjFunction();
+  SetObjFunction(kind_recording);
 
   AD::Push_TapePosition();
 
@@ -514,16 +517,16 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
           break;
         case DISC_ADJ_RANS:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << " (flow) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
           if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-            cout <<"       log10[RMS k]: " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+            cout << " Zone " << iZone << " (turb) - log10[RMS k]         : " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
           }
           break;
         case DISC_ADJ_HEAT:
-          cout << " Zone " << iZone << ": log10[Conservative 0]: " << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
+          cout << " Zone " << iZone << " (heat) - log10[RMS Solution_0]: " << log10(solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetRes_RMS(0)) << endl;
           break;
       }
     }
@@ -533,14 +536,18 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
     AD::Push_TapePosition();
   }
 
-  AD::StopRecording();
+  if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
 
-//  AD::PrintStatistics();
+    //  AD::PrintStatistics();
+    cout << "-------------------------------------------------------------------------" << endl << endl;
+  }
+
+  AD::StopRecording();
 
   RecordingState = kind_recording;
 }
 
-void CDiscAdjMultizoneDriver::SetObjFunction() {
+void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   bool heat = false;
 
@@ -638,7 +645,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction() {
   if (rank == MASTER_NODE){
     AD::RegisterOutput(ObjFunc);
     AD::Set_AdjIndex(ObjFunc_Index, ObjFunc);
-    cout << "Setting objective function value (in recording): " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
+    if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
+      cout << " Objective function value:            : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
+    }
   }
 }
 

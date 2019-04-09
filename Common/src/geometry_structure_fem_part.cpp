@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.
@@ -4113,7 +4113,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             const unsigned long *low;
             low = lower_bound(starting_node, starting_node+size, donors[i]);
 
-            rankDonor = low - starting_node;
+            rankDonor = (int)(low - starting_node);
             if(*low > donors[i]) --rankDonor;
           }
 

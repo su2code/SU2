@@ -2,7 +2,7 @@
  * \file solution_direct_mean_fem.cpp
  * \brief Main subroutines for solving finite element flow problems (Euler, Navier-Stokes, etc.).
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1683,7 +1683,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
   map<int,int> rankCommToInd;
   for(unsigned long i=0; i<ranksSend.size(); ++i) {
     if(ranksSend[i] != rank) {
-      const int ind = rankCommToInd.size();
+      const int ind = (int)rankCommToInd.size();
       rankCommToInd[ranksSend[i]] = ind;
     }
   }
@@ -1691,7 +1691,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
     map<int,int>::const_iterator MI = rankCommToInd.find(ranksRecv[i]);
     if((MI == rankCommToInd.end()) &&(ranksRecv[i] != rank)) {
-      const int ind = rankCommToInd.size();
+      const int ind = (int)rankCommToInd.size();
       rankCommToInd[ranksRecv[i]] = ind;
     }
   }
@@ -1717,7 +1717,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
         /* Determine the rank where this DOF is stored. */
         vector<unsigned long>::iterator low;
         low = lower_bound(nDOFsPerRank.begin(), nDOFsPerRank.end(), jj);
-        int rankDOF = low - nDOFsPerRank.begin();
+        int rankDOF = (int)(low - nDOFsPerRank.begin());
         if(*low > jj) --rankDOF;
 
         /* If rankDOF is the current rank, create the entry in
@@ -1943,7 +1943,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       unsigned long elemEnd = nVolElemOwnedPerTimeLevel[1];
       if(elemEnd > elemBeg) {
         prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
-        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0] = tasksList.size();
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][0] = (int)tasksList.size();
         tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, 0, prevInd[0]));
       }
 
@@ -1979,7 +1979,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
         if(elemEnd > elemBeg) {
           prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
-          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL] = tasksList.size();
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS][nL] = (int)tasksList.size();
           tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS, nL, prevInd[0]));
         }
 
@@ -2010,7 +2010,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
       if(elemEnd > elemBeg) {
         prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][0];
-        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0] = tasksList.size();
+        indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][0] = (int)tasksList.size();
         tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, 0, prevInd[0]));
       }
 
@@ -2033,7 +2033,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       /* Complete the communication of time level 0, if there is something
          to be completed. */
       if(prevInd[0] > -1) {
-        indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0] = tasksList.size();
+        indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0] = (int)tasksList.size();
         tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, 0,
                                             prevInd[0], prevInd[1], prevInd[2]));
       }
@@ -2052,7 +2052,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
         if(elemEnd > elemBeg) {
           prevInd[0] = indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][nL];
-          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL] = tasksList.size();
+          indexInList[CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS][nL] = (int)tasksList.size();
           tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS, nL, prevInd[0]));
         }
 
@@ -2075,7 +2075,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
         /* Complete the communication of time level nL, if there is something
            to be completed. */
         if(prevInd[0] > -1) {
-          indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL] = tasksList.size();
+          indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL] = (int)tasksList.size();
           tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION, nL,
                                               prevInd[0], prevInd[1], prevInd[2]));
         }
@@ -2142,7 +2142,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             }
 
             /* Create the task. */
-            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS,
                                                 level, prevInd[0], prevInd[1], prevInd[2], prevInd[3], prevInd[4]));
 
@@ -2156,7 +2156,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                terms, these terms must be computed for the owned elements,
                including the adjacent ones. */
             prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level];
-            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,
                                                 level, prevInd[0]));
           }
@@ -2202,7 +2202,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             }
 
             /* Create the task. */
-            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS,
                                                 level, prevInd[0], prevInd[1]));
 
@@ -2216,7 +2216,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                terms, these terms must be computed for the halo elements,
                including the adjacent ones. */
             prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][level];
-            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,
                                                 level, prevInd[0]));
           }
@@ -2229,7 +2229,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             prevInd[1] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level];
 
             /* Create the task for the boundary conditions that involve halo elements. */
-            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level] = tasksList.size();
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO,
                                                 level, prevInd[0], prevInd[1]));
           }
@@ -2253,14 +2253,14 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               prevInd[2] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level];
 
             /* Create the task for the surface residual. */
-            indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,
                                                 level, prevInd[0], prevInd[1], prevInd[2]));
 
             /* Create the task to accumulate the surface residuals of the halo
                elements. Make sure to set the integration point for this task. */
             prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
-            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS,
                                                 level, prevInd[0]));
             tasksList.back().intPointADER = intPoint;
@@ -2293,7 +2293,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               prevInd[2] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level];
 
               /* Create the task. */
-              indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = (int)tasksList.size();
               tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,
                                                   level, prevInd[0], prevInd[1], prevInd[2]));
             }
@@ -2315,17 +2315,17 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               prevInd[1] = indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level];
 
             /* Create the tasks. */
-            indexInList[CTaskDefinition::VOLUME_RESIDUAL][level] = tasksList.size();
+            indexInList[CTaskDefinition::VOLUME_RESIDUAL][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL, level,
                                                 prevInd[0], prevInd[1]));
 
-            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED][level] = tasksList.size();
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED, level,
                                                 prevInd[0], prevInd[1]));
 
             if(nMatchingInternalFacesLocalElem[level+1] >
                nMatchingInternalFacesLocalElem[level]) {
-              indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+              indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level] = (int)tasksList.size();
               tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,
                                                   level, prevInd[0], prevInd[1]));
             }
@@ -2343,7 +2343,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             prevInd[4] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
 
             /* Create the task. */
-            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
+            indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level] = (int)tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS,
                                                 level, prevInd[0], prevInd[1], prevInd[2], prevInd[3], prevInd[4]));
             tasksList.back().intPointADER = intPoint;
@@ -2371,7 +2371,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                 prevInd[2] = -1;
 
               /* Create the task. */
-              indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
+              indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level] = (int)tasksList.size();
               tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,
                                                   level, prevInd[0], prevInd[1], prevInd[2]));
             }
@@ -2399,13 +2399,13 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
           else
             prevInd[2] = -1;
 
-          indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level] = tasksList.size();
+          indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level] = (int)tasksList.size();
           tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,
                                                level, prevInd[0], prevInd[1], prevInd[2]));
 
           /* Compute the new state vector for this time level. */
           prevInd[0] = indexInList[CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX][level];
-          indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][level] = tasksList.size();
+          indexInList[CTaskDefinition::ADER_UPDATE_SOLUTION][level] = (int)tasksList.size();
           tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_UPDATE_SOLUTION,
                                                level, prevInd[0]));
         }
@@ -3458,9 +3458,8 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   if(config->GetGrid_Movement() && !harmonic_balance) {
 
     /*--- Determine the type of grid motion. ---*/
-    switch( config->GetKind_GridMovement(0) ) {
+    switch( config->GetKind_GridMovement() ) {
 
-      case MOVING_WALL:
       case ROTATING_FRAME:
       case STEADY_TRANSLATION: {
 
@@ -9791,7 +9790,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         values, which is the standard convention. ---*/
   const su2double RefTemp     = Temperature_Inf;
   const su2double RefDensity  = Density_Inf;
-
+  const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
+  
   su2double RefVel2;
   if (grid_movement) {
     const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
@@ -10028,7 +10028,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                   MomentViscous[2] += (Fy*dx - Fx*dy)/RefLength;
 
                   /* Update the heat flux and maximum heat flux for this marker. */
-                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
+                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim]*RefHeatFlux;
                   MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
                 }
               }
@@ -10175,7 +10175,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                   MomentViscous[2] += (Fy*dx - Fx*dy)/RefLength;
 
                   /* Update the heat flux and maximum heat flux for this marker. */
-                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
+                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim]*RefHeatFlux;
                   MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
                 }
               }

@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -367,14 +367,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   map<int,int> rankToIndCommBuf;
   for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /*--- Definition of the communication buffers, used to send the element data
         to the correct ranks.                ---*/
-  int nRankSend = rankToIndCommBuf.size();
+  int nRankSend = (int)rankToIndCommBuf.size();
   vector<vector<short> >     shortSendBuf(nRankSend,  vector<short>(0));
   vector<vector<long>  >     longSendBuf(nRankSend,   vector<long>(0));
   vector<vector<su2double> > doubleSendBuf(nRankSend, vector<su2double>(0));
@@ -395,7 +395,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
   for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
-    int ind = geometry->elem[i]->GetColor();
+    int ind = (int)geometry->elem[i]->GetColor();
     map<int,int>::const_iterator MI = rankToIndCommBuf.find(ind);
     ind = MI->second;
 
@@ -492,7 +492,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
          Update the corresponding index in longSendBuf. */
-      int ind = geometry->elem[elemID]->GetColor();
+      int ind = (int)geometry->elem[elemID]->GetColor();
       map<int,int>::const_iterator MI = rankToIndCommBuf.find(ind);
       ind = MI->second;
 
@@ -819,14 +819,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   rankToIndCommBuf.clear();
   for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /* Resize the first index of the long send buffers for the communication of
      the halo data.        */
-  nRankSend = rankToIndCommBuf.size();
+  nRankSend = (int)rankToIndCommBuf.size();
   longSendBuf.resize(nRankSend);
 
   /* Determine the number of ranks, from which this rank will receive elements. */
@@ -848,7 +848,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     if(*low > haloElements[i].long0) --ind;
 
     /* Convert this rank to the index in the send buffer. */
-    MI = rankToIndCommBuf.find(ind);
+    MI = rankToIndCommBuf.find((int)ind);
     ind = MI->second;
 
     /* Store the global element ID and the periodic index in the long buffer.
@@ -1056,12 +1056,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<size; ++i) {
     if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
-  nRankSend = rankToIndCommBuf.size();
+  nRankSend = (int)rankToIndCommBuf.size();
 
   /* Store the value of nRankSend for later use. */
   const int nRankSendHaloInfo = nRankSend;
@@ -3523,7 +3523,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   map<int,int> rankToIndRecvBuf;
   for(int i=0; i<size; ++i) {
     if( recvFromRank[i] ) {
-      int ind = rankToIndRecvBuf.size();
+      int ind = (int)rankToIndRecvBuf.size();
       rankToIndRecvBuf[i] = ind;
     }
   }
@@ -5259,7 +5259,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
         is outside the MPI part. First determine if self communication
         takes place at all. ---*/
   bool selfComm = false;
-  unsigned long selfRecvInd, selfSendInd;
+  unsigned long selfRecvInd, selfSendInd = 0;
   for(selfRecvInd=0; selfRecvInd<ranksRecv.size(); ++selfRecvInd) {
     if(ranksRecv[selfRecvInd] == rank) {
       selfComm = true;
@@ -6662,83 +6662,17 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
   /*--- Make a distinction between the possibilities. ---*/
   switch( Kind_Grid_Movement ) {
 
-    case MOVING_WALL: {
-
-      /*--- Loop over the physical boundaries. Skip the periodic boundaries. ---*/
-      for(unsigned short i=0; i<boundaries.size(); ++i) {
-        if( !boundaries[i].periodicBoundary ) {
-
-          /* Check if for this boundary a motion has been specified. */
-          if (config->GetMarker_All_Moving(i) == YES) {
-
-            /* Determine the prescribed translation velocity, rotation rate
-               and rotation center. */
-            const unsigned short jMarker = config->GetMarker_Moving(boundaries[i].markerTag);
-            const su2double Center[] = {config->GetMotion_Origin_X(jMarker),
-                                        config->GetMotion_Origin_Y(jMarker),
-                                        config->GetMotion_Origin_Z(jMarker)};
-            const su2double Omega[]  = {config->GetRotation_Rate_X(jMarker)/Omega_Ref,
-                                        config->GetRotation_Rate_Y(jMarker)/Omega_Ref,
-                                        config->GetRotation_Rate_Z(jMarker)/Omega_Ref};
-            const su2double vTrans[] = {config->GetTranslation_Rate_X(jMarker)/Vel_Ref,
-                                        config->GetTranslation_Rate_Y(jMarker)/Vel_Ref,
-                                        config->GetTranslation_Rate_Z(jMarker)/Vel_Ref};
-
-            /* Easier storage of the surface elements and loop over them. */
-            vector<CSurfaceElementFEM> &surfElem = boundaries[i].surfElem;
-
-            for(unsigned long l=0; l<surfElem.size(); ++l) {
-
-              /* Determine the corresponding standard face element and get the
-                 relevant information from it. Note that the standard element
-                 of the solution must be taken and not of the grid. */
-              const unsigned short ind  = surfElem[l].indStandardElement;
-              const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-
-              /* Loop over the number of integration points. */
-              for(unsigned short j=0; j<nInt; ++j) {
-
-                /* Set the pointers for the coordinates and grid velocities
-                   for this integration points. */
-                const su2double *Coord = surfElem[l].coorIntegrationPoints.data() + j*nDim;
-                su2double *gridVel     = surfElem[l].gridVelocities.data() + j*nDim;
-
-                /* Calculate non-dim. position from rotation center. */
-                su2double r[] = {0.0, 0.0, 0.0};
-                for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                  r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
-
-                /* Cross Product of angular velocity and distance from center to
-                   get the rotational velocity. Note that we are adding on the
-                   velocity due to pure translation as well. Note that for the
-                   2D case only Omega[2] can be non-zero. */
-                su2double velGrid[] = {vTrans[0] + Omega[1]*r[2] - Omega[2]*r[1],
-                                       vTrans[1] + Omega[2]*r[0] - Omega[0]*r[2],
-                                       vTrans[2] + Omega[0]*r[1] - Omega[1]*r[0]};
-
-                /* Store the grid velocities. */
-                for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                  gridVel[iDim] = velGrid[iDim];
-              }
-            }
-          }
-        }
-      }
-
-      break;
-    }
-
     /*-------------------------------------------------------------------------------------*/
 
     case ROTATING_FRAME: {
 
       /* Get the rotation rate and rotation center from config. */
-      const su2double Center[] = {config->GetMotion_Origin_X(iZone),
-                                  config->GetMotion_Origin_Y(iZone),
-                                  config->GetMotion_Origin_Z(iZone)};
-      const su2double Omega[]  = {config->GetRotation_Rate_X(iZone)/Omega_Ref,
-                                  config->GetRotation_Rate_Y(iZone)/Omega_Ref,
-                                  config->GetRotation_Rate_Z(iZone)/Omega_Ref};
+    const su2double Center[] = {config->GetMotion_Origin()[0],
+                                config->GetMotion_Origin()[1],
+                                config->GetMotion_Origin()[2]};
+    const su2double Omega[]  = {config->GetRotation_Rate()[0]/Omega_Ref,
+                                config->GetRotation_Rate()[1]/Omega_Ref,
+                                config->GetRotation_Rate()[2]/Omega_Ref};
 
       /* Array used to store the distance to the rotation center. */ 
       su2double dist[] = {0.0, 0.0, 0.0};
@@ -6854,9 +6788,9 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
     case STEADY_TRANSLATION: {
 
       /* Get the translation velocity from config. */
-      su2double vTrans[] = {config->GetTranslation_Rate_X(iZone)/Vel_Ref,
-                            config->GetTranslation_Rate_Y(iZone)/Vel_Ref,
-                            config->GetTranslation_Rate_Z(iZone)/Vel_Ref};
+    const su2double vTrans[] = {config->GetTranslation_Rate()[0]/Vel_Ref,
+                                config->GetTranslation_Rate()[1]/Vel_Ref,
+                                config->GetTranslation_Rate()[2]/Vel_Ref};
 
       /* Loop over the owned volume elements. */
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -6927,5 +6861,68 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 
     default:  /* Just to avoid a compiler warning. */
       break;
+  }
+  
+  if (config->GetSurface_Movement(MOVING_WALL)){
+    /*--- Loop over the physical boundaries. Skip the periodic boundaries. ---*/
+    for(unsigned short i=0; i<boundaries.size(); ++i) {
+      if( !boundaries[i].periodicBoundary ) {
+        
+        /* Check if for this boundary a motion has been specified. */
+        if (config->GetMarker_All_Moving(i) == YES) {
+          
+          /* Determine the prescribed translation velocity, rotation rate
+               and rotation center. */
+          const unsigned short jMarker = config->GetMarker_Moving(boundaries[i].markerTag);
+          const su2double Center[] = {config->GetMotion_Origin()[0],
+                                      config->GetMotion_Origin()[1],
+                                      config->GetMotion_Origin()[2]};
+          const su2double Omega[]  = {config->GetRotation_Rate()[0]/Omega_Ref,
+                                      config->GetRotation_Rate()[1]/Omega_Ref,
+                                      config->GetRotation_Rate()[2]/Omega_Ref};
+          const su2double vTrans[] = {config->GetTranslation_Rate()[0]/Vel_Ref,
+                                      config->GetTranslation_Rate()[1]/Vel_Ref,
+                                      config->GetTranslation_Rate()[2]/Vel_Ref};
+          
+          /* Easier storage of the surface elements and loop over them. */
+          vector<CSurfaceElementFEM> &surfElem = boundaries[i].surfElem;
+          
+          for(unsigned long l=0; l<surfElem.size(); ++l) {
+            
+            /* Determine the corresponding standard face element and get the
+                 relevant information from it. Note that the standard element
+                 of the solution must be taken and not of the grid. */
+            const unsigned short ind  = surfElem[l].indStandardElement;
+            const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+            
+            /* Loop over the number of integration points. */
+            for(unsigned short j=0; j<nInt; ++j) {
+              
+              /* Set the pointers for the coordinates and grid velocities
+                   for this integration points. */
+              const su2double *Coord = surfElem[l].coorIntegrationPoints.data() + j*nDim;
+              su2double *gridVel     = surfElem[l].gridVelocities.data() + j*nDim;
+              
+              /* Calculate non-dim. position from rotation center. */
+              su2double r[] = {0.0, 0.0, 0.0};
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
+              
+              /* Cross Product of angular velocity and distance from center to
+                   get the rotational velocity. Note that we are adding on the
+                   velocity due to pure translation as well. Note that for the
+                   2D case only Omega[2] can be non-zero. */
+              su2double velGrid[] = {vTrans[0] + Omega[1]*r[2] - Omega[2]*r[1],
+                                     vTrans[1] + Omega[2]*r[0] - Omega[0]*r[2],
+                                     vTrans[2] + Omega[0]*r[1] - Omega[1]*r[0]};
+              
+              /* Store the grid velocities. */
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                gridVel[iDim] = velGrid[iDim];
+            }
+          }
+        }
+      }
+    }
   }
 }

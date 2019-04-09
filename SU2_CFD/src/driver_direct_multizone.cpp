@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -41,11 +41,9 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
                                                           val_periodic,
                                                           MPICommunicator) {
 
@@ -114,15 +112,19 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case DEFORMING:
-      case EXTERNAL: case EXTERNAL_ROTATION:
-      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case RIGID_MOTION: 
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
-      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
-      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
+    }
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+        config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
+        config_container[iZone]->GetSurface_Movement(DEFORMING) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
+      prefixed_motion[iZone] = true;
     }
   }
 
@@ -135,7 +137,8 @@ CMultizoneDriver::~CMultizoneDriver(void) {
     delete [] residual[iZone];
     delete [] residual_rel[iZone];
   }
-
+  
+  delete [] nVarZone;
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
@@ -362,7 +365,7 @@ void CMultizoneDriver::Run_Jacobi() {
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/

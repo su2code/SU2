@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -235,10 +235,18 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
 
   /*--- Initialize from zero everywhere. ---*/
+  long iVertex;
+  bool isVertex;
 
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
+    isVertex = false;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1){isVertex = true; break;}
+    }
+    if (isVertex) node[iPoint] = new CFEABoundVariable(SolRest, nDim, nVar, config);
+    else          node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
   }
   
   bool reference_geometry = config->GetRefGeom();
@@ -517,7 +525,12 @@ CFEASolver::~CFEASolver(void) {
   delete [] normalVertex;
   delete [] stressTensor;
   
+  if (solutionPredictor != NULL) delete [] solutionPredictor;
+  
   if (iElem_iDe != NULL) delete [] iElem_iDe;
+  
+  delete [] elProperties;
+  
 }
 
 void CFEASolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -2515,6 +2528,12 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
         
       }
       
+    } else {
+      
+      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
+      
+      for (iVar = 0; iVar < nPoint; iVar++) Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+      
     }
     
   }
@@ -2649,52 +2668,46 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
+        if (iNode != jPoint) {
+          Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
+        }
+        else{
+          Jacobian.SetBlock(iNode,jPoint,mId_Aux);
         }
       }
 
-      /*--- Delete the columns for a particular node ---*/
+    }
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
+    /*--- Always delete the iNode column, even for halos ---*/
 
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
 
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-            }
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
+
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
           }
+        }
 
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
-            }
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
           }
+        }
 
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-          }
-
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
         }
 
       }
@@ -2702,7 +2715,6 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
     }
 
   }
-
 
 }
 
@@ -3683,7 +3695,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3785,7 +3796,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3799,7 +3809,9 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           }
         }
         else {
-          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = node[iPoint]->Get_FlowTraction(iVar);
+          }
         }
         LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
@@ -3997,7 +4009,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4084,7 +4095,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4235,8 +4245,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
-  CSysSolve femSystem;
-  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- The the number of iterations of the linear solver ---*/
   

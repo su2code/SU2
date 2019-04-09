@@ -2,7 +2,7 @@
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -223,16 +223,18 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
   
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if (this == &u) return *this;
-  
-  delete [] vec_val; // in case the size is different
+
+  /*--- determine if (re-)allocation is needed ---*/
+  if (nElm != u.nElm && vec_val != NULL) {delete [] vec_val; vec_val = NULL;}
+  if (vec_val == NULL) vec_val = new su2double[u.nElm];
+
+  /*--- copy ---*/
   nElm = u.nElm;
   nElmDomain = u.nElmDomain;
-  
   nBlk = u.nBlk;
 	nBlkDomain = u.nBlkDomain;
-  
   nVar = u.nVar;
-  vec_val = new su2double[nElm];
+
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   

@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2003,7 +2003,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
                              neighbour_start, neighbour_idx, cg_elem, neighbours);
     
       /*--- Apply the kernel ---*/
-      su2double weight, numerator = 0.0, denominator = 0.0;
+      su2double weight = 0.0, numerator = 0.0, denominator = 0.0;
     
       switch ( kernel_type ) {
         /*--- distance-based kernels (weighted averages) ---*/
@@ -2265,6 +2265,7 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
 }
 
@@ -2306,6 +2307,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -2332,7 +2334,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
+    cout << endl <<"---------------- Read Grid File Information ( ZONE "  << config->GetiZone() << " ) ------------------" << endl;
 
   if( fem_solver ) {
     switch (val_format) {
@@ -10658,7 +10660,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         iMarker=0;
         PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
         BoundaryTable.AddColumn("Index", 6);
-        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Marker", 35);
         BoundaryTable.AddColumn("Elements", 14);
         if (rank == MASTER_NODE){
           BoundaryTable.PrintHeader();
@@ -15456,6 +15458,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     node[iPoint]->SetMaxLength(max_delta);
   }
 
+  /*--- Distribute information twice for periodic boundaries ---*/
+  Set_MPI_MaxLength(config);
   Set_MPI_MaxLength(config);
 }
 
@@ -17130,15 +17134,15 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin()[iDim];
+    Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+  }
+  
   L_Ref     = config->GetLength_Ref();
   
   /*--- Print some information to the console ---*/
@@ -17212,11 +17216,9 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   su2double xDot[3] = {0.0,0.0,0.0};
   
   /*--- Get the translational velocity vector from config ---*/
-  
-  xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1] = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2] = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
-  
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate()[iDim]/config->GetVelocity_Ref();
+  }
   /*--- Print some information to the console ---*/
   
   if (rank == MASTER_NODE && print) {
@@ -21916,15 +21918,14 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
   RotVel = new su2double [3];
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config. ---*/
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin()[iDim];
+    Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+  }
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
   /*--- Loop over all nodes and set the rotational velocity. ---*/
@@ -21988,9 +21989,9 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned shor
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate()[iDim]/config->GetVelocity_Ref();
+  }
   
   /*--- Loop over all nodes and set the translational velocity ---*/
   

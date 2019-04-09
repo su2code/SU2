@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -396,7 +396,7 @@ void CSolver::SetResidual_Solution(CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, *Solution_Old;
+  su2double residual, *Solution_Old, *Solution;
 
   for (iVar = 0; iVar < nVar; iVar++) {
       SetRes_RMS(iVar,0.0);
@@ -1825,10 +1825,10 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           /*--- Note that the calculation of the forces and the subsequent displacements ...
            is only correct for the airfoil that starts at the 0 degree position ---*/
           
-          if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
+          if (config->GetKind_GridMovement() == AEROELASTIC_RIGID_MOTION) {
             su2double Omega, dt, psi;
             dt = config->GetDelta_UnstTimeND();
-            Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
+            Omega  = (config->GetRotation_Rate()[3]/config->GetOmega_Ref());
             psi = Omega*(dt*ExtIter);
             
             /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/

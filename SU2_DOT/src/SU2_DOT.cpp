@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config_container            = NULL;
+  CConfig *driver_config                = NULL;
   CGeometry ***geometry_container       = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   COutput *output                       = NULL;
-  CConfig *driver_config                = NULL;  
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -86,9 +86,9 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_DEF);
+  config = new CConfig(config_file_name, SU2_DOT);
 
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = config->GetnZone();
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
   grid_movement       = new CVolumetricMovement*[nZone];
   
   nInst               = new unsigned short[nZone];
+  driver_config       = NULL;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -109,13 +110,13 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DOT, nZone, VERB_NONE);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
 
   /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+  multizone = (driver_config->GetMultizone_Problem());
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -129,17 +130,17 @@ int main(int argc, char *argv[]) {
 
     if (multizone){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
   
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);

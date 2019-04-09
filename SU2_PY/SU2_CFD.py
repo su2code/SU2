@@ -3,7 +3,7 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -93,13 +93,13 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.periodic, comm);
     elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.periodic, comm);
     elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.periodic, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.periodic, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

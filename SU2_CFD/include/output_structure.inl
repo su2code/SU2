@@ -2,7 +2,7 @@
  * \file output_structure.inl
  * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
  * \author J. Smith
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -49,12 +49,6 @@ inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { ret
 inline void COutput::SetHistoryOutputFields(CConfig *config){}
 
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
- 
-inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
-
-inline bool COutput::WriteScreen_Header(CConfig *config) { return true; }
-
-inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
 
 inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
@@ -79,7 +73,7 @@ inline void COutput::PrintScreenInteger(stringstream& stream, unsigned long val)
 }
 
 inline void COutput::PrintScreenHeaderString(stringstream& stream, string header) {
-  if (header.size() > field_width-1) header.resize(field_width-1);
+  if ((unsigned short)header.size() > field_width-1) header.resize(field_width-1);
   stream << std::right << std::setw(field_width) << header; 
 }
 

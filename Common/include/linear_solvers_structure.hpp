@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -70,7 +70,25 @@ using namespace std;
 class CSysSolve {
   
 private:
-  
+
+  bool mesh_deform;  /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  su2double Residual;/*!< \brief Residual at the end of a call to Solve. */
+
+  bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
+  bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
+  bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
+
+  CSysVector r;      /*!< \brief Residual in CG and BCGSTAB. */
+  CSysVector A_x;    /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
+  CSysVector p;      /*!< \brief Direction in CG and BCGSTAB. */
+  CSysVector z;      /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
+
+  CSysVector r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  CSysVector v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+
+  vector<CSysVector> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  vector<CSysVector> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+
   /*!
    * \brief sign transfer function
    * \param[in] x - value having sign prescribed
@@ -159,6 +177,12 @@ private:
   
 public:
   
+  /*!
+   * \brief default constructor of the class.
+   * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
+   */
+  CSysSolve(const bool mesh_deform_mode = false);
+  
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
    * \param[in, out] x - on entry the intial guess, on exit the solution
@@ -212,27 +236,21 @@ public:
    */
   unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   
-
   /*!
-   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
+   * \brief Solve the adjoint linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system
    * \param[in] LinSysRes - Linear system residual
    * \param[in] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+  unsigned long Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
-   * \param[in] Jacobian - Jacobian Matrix for the linear system
-   * \param[in] LinSysRes - Linear system residual
-   * \param[in] LinSysSol - Linear system solution
-   * \param[in] geometry -  Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Get the final residual.
+   * \return The residual at the end of Solve
    */
-  void SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
-
+  su2double GetResidual(void) const;
 
 };
 
