@@ -3810,20 +3810,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions: Check the Wall functions with Finite Volume code.---*/
   
-  bool Steady_RANS_FV = ((Unsteady_Simulation == STEADY) && (Kind_Solver == RANS));
-  bool ILES_FV = ((Unsteady_Simulation == DT_STEPPING_2ND) && (Kind_Solver == NAVIER_STOKES) && (Kind_Turb_Model == NONE));
+  bool FV_SteadyRANS = ((Unsteady_Simulation == STEADY) && (Kind_Solver == RANS));
+  bool FV_LES = ((Unsteady_Simulation == DT_STEPPING_2ND) && (Kind_Solver == NAVIER_STOKES) && (Kind_Turb_Model == NONE));
   Wall_Functions = false;
   if (nMarker_WallFunctions > 0) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
       if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
         Wall_Functions = true;
       
-      if (Steady_RANS_FV){
+      if (FV_SteadyRANS){
         if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL) ||
           (Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL)  || (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL))
           SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION.\n"), CURRENT_FUNCTION);
       }
-      else if (ILES_FV || (Kind_Solver == FEM_LES)){
+      else if (FV_LES || (Kind_Solver == FEM_LES)){
        if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker]==NONEQUILIBRIUM_WALL_MODEL) ||
                 (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION))
           SU2_MPI::Error(string("For ILES problems, use EQUILIBRIUM_WALL_MODEL or LOGARITHMIC_WALL_MODEL.\n"), CURRENT_FUNCTION);
@@ -5027,7 +5027,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
-        break;
+        
+        switch (Kind_SGS_Model) {
+          case NO_SGS_MODEL: cout << "No Subgrid Scale model." << endl; break;
+          case IMPLICIT_LES: cout << "Subgrid Scale model: Implicit LES" << endl; break;
+          case SMAGORINSKY:  cout << "Subgrid Scale model: Smagorinsky " << endl; break;
+          case WALE:         cout << "Subgrid Scale model: WALE"         << endl; break;
+          case VREMAN:       cout << "Subgrid Scale model: VREMAN"       << endl; break;
+          default:
+            SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
+        }
+        
       case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;

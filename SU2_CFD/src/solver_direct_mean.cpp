@@ -15223,6 +15223,10 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   SlidingStateNodes = NULL;
   
   HeatConjugateVar = NULL;
+  
+  /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
+  SGSModel     = NULL;
+  SGSModelUsed = false;
 
 }
 
@@ -15975,7 +15979,44 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
+  
+  /*--- Set the SGS model in case an LES simulation is carried out ---*/
+  
+  /* Make a distinction between the SGS models used and set SGSModel and
+   SGSModelUsed accordingly. */
+  switch( config->GetKind_SGS_Model() ) {
+    
+    case NO_SGS_MODEL:
+      /* No LES, so no SGS model needed.
+       Set the pointer to NULL and the boolean to false. */
+      SGSModel     = NULL;
+      SGSModelUsed = false;
+      break;
 
+    case IMPLICIT_LES:
+      SGSModel     = NULL;
+      SGSModelUsed = false;
+      break;
+      
+    case SMAGORINSKY:
+      SGSModel     = new CSmagorinskyModel;
+      SGSModelUsed = true;
+      break;
+      
+    case WALE:
+      SGSModel     = new CWALEModel;
+      SGSModelUsed = true;
+      break;
+      
+    case VREMAN:
+      SGSModel     = new CVremanModel;
+      SGSModelUsed = true;
+      break;
+      
+    default:
+      SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
+  }
+  
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -16050,6 +16091,8 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] Buffet_Sensor;
   }
+  
+  if( SGSModel ) delete SGSModel;
   
 }
 
@@ -16163,6 +16206,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
 
+  if (SGSModelUsed){
+    Setmut_LES(geometry, solver_container, config);
+  }
+  
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
@@ -18223,5 +18270,49 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
+}
+
+void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint;
+  su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
+  su2double lenScale, muTurb, rho;
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    
+    /* Get Density */
+    rho = node[iPoint]->GetSolution(0);
+    
+    /* Velocity Gradients */
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+    
+    /* Distance to the wall. */
+    su2double dist = geometry->node[iPoint]->GetWall_Distance(); // Is the distance to the wall used in any SGS calculation?
+    
+    if (nDim == 2){
+      /* Just for testing in 2D */
+      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./2.);
+      muTurb = SGSModel->ComputeEddyViscosity_2D(rho, Grad_Vel[0][0], Grad_Vel[1][0],
+                                                 Grad_Vel[0][1], Grad_Vel[1][1],
+                                                 lenScale, dist);
+    }
+    else{
+
+      /* Length Scale can be precompute from DES LengthScale.
+       I would like to test the Shear Layer Adapted one*/
+      //lenScale    = node[iPoint]->GetDES_LengthScale();
+      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
+      
+      /* Compute the eddy viscosity. */
+      muTurb = SGSModel->ComputeEddyViscosity_3D(rho, Grad_Vel[0][0], Grad_Vel[1][0], Grad_Vel[2][0],
+                                               Grad_Vel[0][1], Grad_Vel[1][1], Grad_Vel[2][1],
+                                               Grad_Vel[0][2], Grad_Vel[1][2], Grad_Vel[2][2],
+                                               lenScale, dist);
+    }
+    /* Set eddy viscosity. */
+    node[iPoint]->SetmuT(muTurb);
+  }
 }
 

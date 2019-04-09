@@ -12653,6 +12653,21 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   stringstream varname;
   
+  /*--- Set the use of SGS model. ---*/
+  bool SGSModelUsed = false;
+  switch( config->GetKind_SGS_Model() ) {
+    case NO_SGS_MODEL:
+    case IMPLICIT_LES:
+      SGSModelUsed = false;
+      break;
+      
+    case SMAGORINSKY:
+    case WALE:
+    case VREMAN:
+      SGSModelUsed = true;
+      break;
+  }
+
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -12833,7 +12848,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add Eddy Viscosity. ---*/
     
-    if (Kind_Solver == RANS) {
+    if (Kind_Solver == RANS || SGSModelUsed) {
       nVar_Par += 2;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
@@ -13143,7 +13158,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load data for the Eddy viscosity for RANS. ---*/
         
-        if (Kind_Solver == RANS) {
+        if (Kind_Solver == RANS || SGSModelUsed) {
           Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }

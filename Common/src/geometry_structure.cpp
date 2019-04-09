@@ -13189,6 +13189,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
   vector<unsigned short> markerIDGlobalSearch;
   vector<unsigned long>  boundaryNodeIDGlobalSearch;
   vector<su2double>      coorExGlobalSearch;
+  
+  //vector<CWallModel1DEQ> WallModel1EQ_;
+  //vector<CWallModelLogLaw> WallModelLog_;
 
   /* Loop over the markers and select the ones for which a wall function
    treatment must be carried out. */
@@ -13207,16 +13210,13 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
               
-              /*--- Here we need to find a better solution for the data structure!!!! ---*/
-              
-              //bound[iMarker].wallModel = new CWallModel1DEQ;
               break;
             }
             case LOGARITHMIC_WALL_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
               
-              //bound[iMarker] = new CWallModelLogLaw;
+              //WallModelLog_.emplace_back(config,iMarker);
               break;
             }
             default: {
