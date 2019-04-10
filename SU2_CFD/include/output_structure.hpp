@@ -128,7 +128,9 @@ protected:
   int *Conn_Hexa_Par;
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
-
+  map<unsigned long,unsigned long> Global2Renumber, 
+                                   Renumber2Global;
+  
   unsigned long nGlobalPoint_Sort;
   unsigned long nLocalPoint_Sort;
   unsigned long nPoint_Restart;
@@ -599,6 +601,13 @@ public:
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
   void WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  
+  /*!
+   * \brief Write the solution data and connectivity to a CSV file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void WriteSurface_CSV(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.

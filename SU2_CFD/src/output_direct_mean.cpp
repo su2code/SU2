@@ -229,6 +229,13 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// END_GROUP 
   
+  /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
+  /// DESCRIPTION: Aeroelastic plunge
+  AddHistoryOutputPerSurface("PLUNGE", "plunge", FORMAT_FIXED, "AEROELASTIC", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Aeroelastic pitch
+  AddHistoryOutputPerSurface("PITCH",  "pitch",  FORMAT_FIXED, "AEROELASTIC", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// END_GROUP
+   
   /// DESCRIPTION: Angle of attack  
   AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC, "AOA");
   /// DESCRIPTION: Linear solver iterations   
@@ -638,6 +645,10 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
       SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);   
     
     SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
+    if (config[val_iZone]->GetAeroelastic_Simulation()){
+      SetHistoryOutputPerSurfaceValue("PITCH", config[val_iZone]->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("PLUNGE", config[val_iZone]->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
+    }
   }
   
   SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
