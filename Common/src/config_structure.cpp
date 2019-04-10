@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -94,7 +94,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
   /*--- Store MPI rank and size ---*/ 
-  
+
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
@@ -2947,6 +2947,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Check for Boundary condition option agreement ---*/
+
+  if ((Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
+    SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
+  }
+
   /*--- Force number of span-wise section to 1 if 2D case ---*/
   if(val_nDim ==2){
     nSpanWiseSections_User=1;
