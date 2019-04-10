@@ -18312,7 +18312,7 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
                                                lenScale, dist);
     }
     /* Set eddy viscosity. */
-    node[iPoint]->SetmuT(muTurb);
+    node[iPoint]->SetEddyViscosity(muTurb);
   }
 }
 
