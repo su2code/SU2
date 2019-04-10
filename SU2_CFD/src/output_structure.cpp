@@ -2661,16 +2661,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
        Force the use of SU2_SOL to merge and write the viz. files in this
        case to save overhead. ---*/
 
-      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY) && (FileFormat != TECPLOT_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
 #endif
 
 //    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
-    
+
 //    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
-    
+
 //    switch (config[iZone]->GetKind_Solver()) {
 //      case EULER : case NAVIER_STOKES : case RANS :
 //        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
@@ -2807,8 +2807,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
        SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
        
      }
-
-
+     
+     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
+     
+     if (config[iZone]->GetWrt_Csv_Sol()){
+     
+       if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+     
+       WriteSurface_CSV(config[iZone], geometry[iZone][iInst][MESH_0]);
+     
+     }
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
       if (Wrt_Vol) {
@@ -5543,6 +5551,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   map<unsigned long,unsigned long> Global2Renumber;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     Global2Renumber[globalRecv[ii]] = renumbRecv[ii] + 1;
+    Renumber2Global[renumbRecv[ii] + 1] = globalRecv[ii];
   }
   
   
@@ -5904,6 +5913,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (int ii = 0; ii < nElem_Send[size]; ii++) {
     Global2Renumber[outliers[ii]] = idSend[ii] + 1;
+    Renumber2Global[idSend[ii] + 1] = outliers[ii];
   }
   
   /*--- We can now overwrite the local connectivity for our surface elems
@@ -6677,6 +6687,9 @@ void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
 void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry) {
   
   if (Parallel_Surf_Data != NULL) {
+    
+    Global2Renumber.clear();
+    Renumber2Global.clear();
     /*--- Deallocate memory for surface solution data ---*/
     
     for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
@@ -9377,13 +9390,6 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     }
   }
   
-  
-  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-    if (!found_field[iReqField]){
-      SU2_MPI::Error("Requested history field " + RequestedHistoryFields[iReqField] + " not defined in the current solver.", CURRENT_FUNCTION);
-    }
-  }
-  
   /*--- Print the string to file and remove the last character (a separator) ---*/
   HistFile << out.str().substr(0, out.str().size() - 1);
   HistFile << endl;
@@ -9477,7 +9483,6 @@ void COutput::SetScreen_Output(CConfig *config) {
   }
 }
 
-
 void COutput::PreprocessHistoryOutput(CConfig *config){
   
   if (rank == MASTER_NODE){
@@ -9518,17 +9523,102 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
     
-//    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
-//      RequestedHistoryFields.push_back("EXT_ITER");
-//      nRequestedHistoryFields++;
-//    }
-    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
+    
+    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
     Postprocess_HistoryFields(config);
     
+    /*--- Set screen convergence output header and remove unavailable fields ---*/
+    
+    string RequestedField;
+    vector<string> FieldsToRemove;
+    vector<bool> FoundField(nRequestedHistoryFields, false);
+    
+    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
+      RequestedField = RequestedScreenFields[iReqField];  
+      if (HistoryOutput_Map.count(RequestedField) > 0){ 
+        ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
+      }
+      else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
+      }else {
+        FieldsToRemove.push_back(RequestedField);
+      }
+    }
+    
+    /*--- Remove fields which are not defined --- */
+    
+    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+      if (rank == MASTER_NODE) {
+        if (iReqField == 0){
+          cout << "  Info: Ignoring the following screen output fields:" << endl;
+          cout << "  ";
+        }        cout << FieldsToRemove[iReqField];
+        if (iReqField != FieldsToRemove.size()-1){
+          cout << ", ";
+        } else {
+          cout << endl;
+        }
+      }
+      RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
+    }
+    
+    nRequestedScreenFields = RequestedScreenFields.size();
+    
+    /*--- Remove unavailable fields from the history file output ---*/
+    
+    FieldsToRemove.clear();
+    
+    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup){
+          FoundField[iReqField] = true;
+        }
+      }
+    }
+    
+    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
+        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+        for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+          RequestedField = RequestedHistoryFields[iReqField];   
+          if (RequestedField == Field.OutputGroup){
+            FoundField[iReqField] = true;
+          }
+        }
+      }
+    }
+    
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      if (!FoundField[iReqField]){
+        FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
+      }
+    }
+    
+    /*--- Remove fields which are not defined --- */    
+    
+    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+      if (rank == MASTER_NODE) {
+        if (iReqField == 0){
+          cout << "  Info: Ignoring the following history output fields/groups:" << endl;
+          cout << "  ";
+        }        cout << FieldsToRemove[iReqField];
+        if (iReqField != FieldsToRemove.size()-1){
+          cout << ", ";
+        } else {
+          cout << endl;
+        }
+      }
+      RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
+    }
+    
+    nRequestedHistoryFields = RequestedHistoryFields.size();
+        
     /*--- Open the history file ---*/
     
     cout << "History filename: " << char_histfile << endl;
@@ -9539,23 +9629,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     SetHistoryFile_Header(config);    
     
-    string RequestedField;
-  
-    /*--- Set screen convergence output header ---*/
-    
-    // Evaluate the requested output
-    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
-      RequestedField = RequestedScreenFields[iReqField];  
-      if (HistoryOutput_Map.count(RequestedField) > 0){ 
-        ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
-      } else {
-        SU2_MPI::Error(string("Requested screen output field ") + RequestedField + string(" not defined in current solver.") , CURRENT_FUNCTION);
-      }
-      if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
-        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
-      }
-    }
-    
+    /*--- Set the multizone screen header ---*/
+
     if (config->GetMultizone_Problem()){
       MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
       MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -9587,7 +9662,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   GlobalField_Counter = 0;
   
   string RequestedField;
-  std::vector<bool> found_field(nRequestedVolumeFields, false);
+  std::vector<bool> FoundField(nRequestedVolumeFields, false);
+  vector<string> FieldsToRemove;
   
   
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields(). 
@@ -9610,17 +9686,33 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
         Variable_Names.push_back(Field.FieldName);
         GlobalField_Counter++;
         
-        found_field[iReqField] = true;
+        FoundField[iReqField] = true;
       }
     }    
   }
   
-  /*--- Check if all requested fields were found ---*/
-  
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
-    if (!found_field[iReqField]){
-      SU2_MPI::Error(string("There is no volume output field/group with name ") + RequestedVolumeFields[iReqField] + string(" defined in the current solver."), CURRENT_FUNCTION);
+    if (!FoundField[iReqField]){
+      FieldsToRemove.push_back(RequestedVolumeFields[iReqField]);
     }
+  }
+  
+  /*--- Remove fields which are not defined --- */    
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following volume output fields/groups:" << endl;
+        cout << "  ";
+      }
+      cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedVolumeFields.erase(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), FieldsToRemove[iReqField]));
   }
   
   
@@ -9744,7 +9836,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
+    write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }

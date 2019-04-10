@@ -984,7 +984,7 @@ public:
  * \brief Class for driving an iteration of the adjoint fluid system.
  * \author T. Economon
  */
-class CAdjFluidIteration : public CIteration {
+class CAdjFluidIteration : public CFluidIteration {
 public:
   
   /*!
@@ -1054,38 +1054,6 @@ public:
               unsigned short val_iZone,
               unsigned short val_iInst);
   
-  /*!
-   * \brief Monitors the convergence and other metrics for the adjoint fluid system.
-   */
-  bool Monitor(COutput *output,
-      CIntegration ****integration_container,
-      CGeometry ****geometry_container,
-      CSolver *****solver_container,
-      CNumerics ******numerics_container,
-      CConfig **config_container,
-      CSurfaceMovement **surface_movement,
-      CVolumetricMovement ***grid_movement,
-      CFreeFormDefBox*** FFDBox,
-      unsigned short val_iZone,
-      unsigned short val_iInst);
-  
-  /*!
-   * \brief Postprocess ???.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] config_container - Definition of the particular problem.
-   */
-  void Postprocess(COutput *output,
-                   CIntegration ****integration_container,
-                   CGeometry ****geometry_container,
-                   CSolver *****solver_container,
-                   CNumerics ******numerics_container,
-                   CConfig **config_container,
-                   CSurfaceMovement **surface_movement,
-                   CVolumetricMovement ***grid_movement,
-                   CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone,
-                   unsigned short val_iInst);
 
   
 };

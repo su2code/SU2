@@ -742,6 +742,11 @@ bool CFluidIteration::Monitor(COutput *output,
   if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
     output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);    
   }
+  
+  if (config_container[val_iZone]->GetCFL_Adapt() == YES) {
+      if (!(config_container[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
+        output->SetCFL_Number(solver_container, config_container, val_iZone);
+  }
 
   return StopCalc;
 
@@ -773,7 +778,7 @@ void CFluidIteration::Solve(COutput *output,
 
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
-  bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool unsteady = !steady;
 
   unsigned long Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
@@ -789,7 +794,7 @@ void CFluidIteration::Solve(COutput *output,
 
   /*--- If the problem is multizone, the block iterates on the number of internal iterations ---*/
   /*--- If the problem is single zone, the block iterates on the number of iterations (pseudo-time)---*/
-  if (multizone)
+  if (multizone || unsteady)
     nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
   else
     nInner_Iter = config_container[val_iZone]->GetnIter();
@@ -1869,7 +1874,7 @@ void CFEAIteration::Solve(COutput *output,
 
 }
 
-CAdjFluidIteration::CAdjFluidIteration(CConfig *config) : CIteration(config) { }
+CAdjFluidIteration::CAdjFluidIteration(CConfig *config) : CFluidIteration(config) { }
 CAdjFluidIteration::~CAdjFluidIteration(void) { }
 void CAdjFluidIteration::Preprocess(COutput *output,
                                        CIntegration ****integration_container,
@@ -2074,28 +2079,6 @@ void CAdjFluidIteration::Update(COutput *output,
   }
 }
 
-bool CAdjFluidIteration::Monitor(COutput *output,
-    CIntegration ****integration_container,
-    CGeometry ****geometry_container,
-    CSolver *****solver_container,
-    CNumerics ******numerics_container,
-    CConfig **config_container,
-    CSurfaceMovement **surface_movement,
-    CVolumetricMovement ***grid_movement,
-    CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
-void CAdjFluidIteration::Postprocess(COutput *output,
-                                     CIntegration ****integration_container,
-                                     CGeometry ****geometry_container,
-                                     CSolver *****solver_container,
-                                     CNumerics ******numerics_container,
-                                     CConfig **config_container,
-                                     CSurfaceMovement **surface_movement,
-                                     CVolumetricMovement ***grid_movement,
-                                     CFreeFormDefBox*** FFDBox,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) { }
 
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   

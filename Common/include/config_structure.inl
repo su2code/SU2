@@ -2036,13 +2036,13 @@ inline string CConfig::GetMarkerTag_ZoneInterface(unsigned short val_iMarker) { 
 
 inline bool CConfig::GetTime_Domain(void) { return Time_Domain; }
 
-inline unsigned long CConfig::GetnInner_Iter(void) { return Inner_Iter; }
+inline unsigned long CConfig::GetnInner_Iter(void) { return nInnerIter; }
 
-inline unsigned long CConfig::GetnOuter_Iter(void) { return Outer_Iter; }
+inline unsigned long CConfig::GetnOuter_Iter(void) { return nOuterIter; }
 
-inline unsigned long CConfig::GetnTime_Iter(void) { return Time_Iter; }
+inline unsigned long CConfig::GetnTime_Iter(void) { return nTimeIter; }
 
-inline unsigned long CConfig::GetnIter(void) { return Iter; }
+inline unsigned long CConfig::GetnIter(void) { return nIter; }
 
 inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
 
