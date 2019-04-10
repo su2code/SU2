@@ -3475,6 +3475,10 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_UNIT_QUAD_WALL_BC:
+      VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_TWO_HALF_CIRCLES:
+      VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_TWO_HALF_SPHERES:
       VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
     case MMS_INC_EULER:
