@@ -81,7 +81,10 @@ protected:
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual,        /*!< \brief nVar vector for storing residual. */
   *Residual_Sum,    /*!< \brief Auxiliar structure for residual smoothing. */
-  AdapParam;        /*!< \brief Parameter used to drive mesh adaptation. */
+  AdapParam,        /*!< \brief Parameter used to drive cell volume in mesh adaptation. */
+  AnisoSens,        /*!< \brief Sensor used for anisotropy in mesh adaptation. */
+  *AnisoGrad,       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  *AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
@@ -399,6 +402,73 @@ public:
    * \brief Get the value of the adaptation parameter.
    */
   su2double GetAdapParam(void);
+
+  /*!
+   * \brief Set the value of the sensor.
+   * \param[in] val_sens - Sensor value.
+   */
+  void SetAnisoSens(su2double val_sens);
+
+  /*!
+   * \brief Add the value of the sensor.
+   * \param[in] val_sens - Sensor value.
+   */
+  void AddAnisoSens(su2double val_sens);
+
+  /*!
+   * \brief Get the value of the sensor.
+   */
+  su2double GetAnisoSens(void);
+
+  /*!
+   * \brief Set the value of the sensor gradient.
+   * \param[in] val_var  - Index value.
+   * \param[in] val_sens - Sensor gradient value.
+   */
+  void SetAnisoGrad(unsigned short val_var, su2double val_sens_grad);
+
+  /*!
+   * \brief Add the value of the sensor gradient.
+   * \param[in] val_var  - Index value.
+   * \param[in] val_sens - Sensor gradient value.
+   */
+  void AddAnisoGrad(unsigned short val_var, su2double val_sens_grad);
+
+  /*!
+   * \brief Get the value of the sensor gradient.
+   */
+  su2double *GetAnisoGrad(void);
+
+  /*!
+   * \brief Get the value of the sensor gradient.
+   * \param[in] val_var  - Index value.
+   */
+  su2double GetAnisoGrad(unsigned short val_var);
+
+  /*!
+   * \brief Set the value of the sensor Hessian.
+   * \param[in] val_var  - Index value.
+   * \param[in] val_sens - Sensor Hessian value.
+   */
+  void SetAnisoHess(unsigned short val_var, su2double val_sens_hess);
+
+  /*!
+   * \brief Add the value of the sensor Hessian.
+   * \param[in] val_var  - Index value.
+   * \param[in] val_sens - Sensor Hessian value.
+   */
+  void AddAnisoHess(unsigned short val_var, su2double val_sens_hess);
+
+  /*!
+   * \brief Get the value of the sensor Hessian.
+   */
+  su2double *GetAnisoHess(void);
+
+  /*!
+   * \brief Get the value of the sensor Hessian.
+   * \param[in] val_var  - Index value.
+   */
+  su2double GetAnisoHess(unsigned short val_var);
   
   /*!
    * \brief Set the velocity of the truncation error to zero.

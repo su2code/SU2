@@ -1696,7 +1696,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-
+  /*!\brief WRT_INRIA_MESH
+   *  \n DESCRIPTION: Output Inria mesh file  \ingroup Config*/
+  addBoolOption("WRT_INRIA_MESH", Wrt_InriaMesh, false);
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
@@ -2410,6 +2412,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Compute an error estimate */
   addBoolOption("ERROR_ESTIMATE", error_estimate, false);
+
+  /* DESCRIPTION: Compute an error estimate */
+  addEnumOption("ANISO_SENSOR", Kind_Aniso_Sensor, Aniso_Sensor_Map, ANISO_MACH);
 
   /* END_CONFIG_OPTIONS */
 

@@ -763,6 +763,7 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_InriaMesh,              /*!< \brief Write mesh in the Inria format */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
@@ -1113,6 +1114,7 @@ private:
          ECC_Solution_FileName,      /*!< \brief File name of higher order interpolated solution that is input */
          ECC_Restart_Adj_FileName,   /*!< \brief File name of higher order interpolated adjoint solution that is output */
          ECC_Solution_Adj_FileName;  /*!< \brief File name of higher order interpolated adjoint solution that is input */
+  unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -3252,6 +3254,17 @@ public:
    * \return <code>TRUE</code> means that rind layers will be written to the solution file.
    */
   bool GetWrt_Halo(void);
+
+  /*!
+   * \brief Get information about writing an Inria format mesh.
+   * \return <code>TRUE</code> means that an Inria mesh will be written.
+   */
+  bool GetWrt_InriaMesh(void);
+
+  /*!
+   * \brief Set information about writing an Inria format mesh.
+   */
+  void SetWrt_InriaMesh(bool val_wrt_inriamesh);
 
   /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
@@ -9302,6 +9315,12 @@ public:
    * \return <code>TRUE<\code> if error estimation is taking place
   */
   bool GetError_Estimate(void);
+
+  /*!
+   * \brief Get type of sensor used for anisotropy
+   * \return Flag for field variable to be used as sensor
+   */
+  unsigned short GetKind_Aniso_Sensor(void);
 };
 
 #include "config_structure.inl"

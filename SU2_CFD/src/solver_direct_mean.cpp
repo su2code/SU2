@@ -6599,6 +6599,10 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   
 }
 
+void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
+
+}
+
 void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;

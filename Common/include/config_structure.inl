@@ -1718,6 +1718,10 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
+inline bool CConfig::GetWrt_InriaMesh(void) { return Wrt_InriaMesh; }
+
+inline void CConfig::SetWrt_InriaMesh(bool val_wrt_inriamesh) { Wrt_InriaMesh = val_wrt_inriamesh; }
+
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
@@ -2120,3 +2124,5 @@ inline string CConfig::GetECC_Solution_Adj_FileName(void) { return ECC_Solution_
 inline bool CConfig::GetUsing_Target_Mesh(void) { return use_target_mesh; }
 
 inline void CConfig::SetUsing_Target_Mesh(bool val_using_target_mesh) { use_target_mesh = val_using_target_mesh; }
+
+inline unsigned short CConfig::GetKind_Aniso_Sensor(void) { return Kind_Aniso_Sensor; }

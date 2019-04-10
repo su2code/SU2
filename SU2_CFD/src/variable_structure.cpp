@@ -56,6 +56,8 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  AnisoGrad = NULL;
+  AnisoHess = NULL;
   
 }
 
@@ -76,6 +78,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  AnisoGrad = NULL;
+  AnisoHess = NULL;
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -110,6 +114,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  AnisoGrad = NULL;
+  AnisoHess = NULL;
   
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
@@ -141,6 +147,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
 	}
+
+  if ((config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC) || config->GetWrt_InriaMesh()){
+    AnisoGrad = new su2double[nDim];
+    AnisoHess = new su2double[3*(nDim-1)];
+  }
   
 }
 
@@ -160,6 +171,8 @@ CVariable::~CVariable(void) {
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
+  if (AnisoGrad           != NULL) delete [] AnisoGrad;
+  if (AnisoHess           != NULL) delete [] AnisoHess;
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)

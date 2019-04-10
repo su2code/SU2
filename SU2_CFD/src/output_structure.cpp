@@ -12435,6 +12435,15 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       
     }
 
+    /*--- Write an Inria format mesh file.
+          Note: currently only for serial. ---*/
+    if (rank == MASTER_NODE) {
+      if ( config[iZone]->GetWrt_InriaMesh() ) {
+        if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
+        SetInriaMesh(config[iZone], geometry[iZone][iInst][MESH_0]);
+      }
+    }
+
     /*--- Write an Inria format restart file.
           Note: currently only for serial, and uses Local_Data so must be
           performed before SortOutputData. ---*/
