@@ -5089,7 +5089,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic + nMarker_IsothermalNonCatalytic +
+  nMarker_HeatFlux + nMarker_HeatFluxCatalytic + nMarker_HeatFluxNonCatalytic +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
@@ -7353,6 +7354,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   } 
  
+  if (nMarker_IsothermalCatalytic != 0) {
+    BoundaryTable << "Catalytic Isothermal wall";
+    for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
+      BoundaryTable << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+      if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_IsothermalNonCatalytic != 0) {
+    BoundaryTable << "Non-Catalytic Isothermal wall";
+    for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
+      BoundaryTable << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+      if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_HeatFlux != 0) {  
     BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
@@ -7362,6 +7381,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
+  if (nMarker_HeatFluxCatalytic != 0) {
+    BoundaryTable << "Catalytic Heat flux wall";
+    for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
+      BoundaryTable << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+      if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_HeatFluxNonCatalytic  != 0) {
+    BoundaryTable << "Non-Catalytic Heat flux wall";
+    for (iMarker_HeatFluxNonCatalytic  = 0; iMarker_HeatFluxNonCatalytic  < nMarker_HeatFluxNonCatalytic ; iMarker_HeatFluxNonCatalytic ++) {
+      BoundaryTable << Marker_HeatFluxNonCatalytic [iMarker_HeatFluxNonCatalytic ];
+      if (iMarker_HeatFluxNonCatalytic  < nMarker_HeatFluxNonCatalytic -1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_Clamped != 0) {  
     BoundaryTable << "Clamped boundary";
     for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
