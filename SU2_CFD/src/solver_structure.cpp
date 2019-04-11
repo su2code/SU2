@@ -3499,14 +3499,16 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   
 }
 
-CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names) {
 
   unsigned long iPoint;
   unsigned short iVar;
   
+  nVar = val_nvar;
+  
   nPoint = geometry->GetnPoint();
 
-  config->fields = field_names;
+  fields = field_names;
 
   Solution = new su2double[nVar];
 
