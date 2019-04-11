@@ -479,6 +479,34 @@ public:
   void WriteSurface_CSV(CConfig *config, CGeometry *geometry);
   
   /*!
+   * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.
+   * 
+   * After calling this method the data is distributed to all processors based on a linear partition 
+   * and is ready to be written in parallel to file using the SetVolume_Output or SetSurface_Output routines.
+   * 
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
+    
+  /*!
+   * \brief Write the linear partitioned volume data in parallel to file. Load_Data has to be called before!
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The data format of the output files.
+   */
+  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+  
+  /*!
+   * \brief Write the linear partitioned surface data in parallel to file. Load_Data has to be called before!
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The data format of the output files.
+   */
+  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+  
+  /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
    * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.

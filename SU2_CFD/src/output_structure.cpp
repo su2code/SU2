@@ -1062,6 +1062,245 @@ string COutput::GetFilename(CConfig *config, string filename, string ext){
   return filename;
 }
 
+
+void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
+  
+  /*--- Collect that data defined in the subclasses from the different processors ---*/
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Loading solution output data locally on each rank." << endl;
+  
+  CollectVolumeData(config, geometry, solver_container);
+  
+  /*--- Sort the data, needed for volume and surface output ---*/
+  
+  if (rank == MASTER_NODE) 
+    cout << "Sorting output data across all ranks." << endl;
+  
+  if (fem_output){
+    SortOutputData_FEM(config, geometry);
+  }
+  else {
+    SortOutputData(config, geometry);
+  }
+}
+
+void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+  
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  /*--- Write files depending on the format --- */
+  
+  switch (format) {
+  
+  case CSV:
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    if (rank == MASTER_NODE) {
+        cout << "Writing surface CSV file." << endl;
+    }
+    
+    WriteSurface_CSV(config, geometry);
+  
+    break;  
+    
+  case TECPLOT_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, false);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot binary file surface solution file." << endl;  
+    }
+    
+    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), true);
+      
+    break;
+    
+  case TECPLOT:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot ASCII file surface solution file." << endl;
+    }
+    
+    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), true);
+
+    break;
+    
+  case PARAVIEW_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write paraview binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview binary file surface solution file." << endl;
+    }
+    
+    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, true);
+    
+    break;
+    
+  case PARAVIEW:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write paraview binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview ASCII file surface solution file." << endl;
+    }
+
+    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, true);
+
+    break;
+  default:
+    SU2_MPI::Error("Requested surface output format not available.", CURRENT_FUNCTION);
+    break;
+  } 
+
+  /*--- Clean up the surface data that was only needed for output. ---*/
+ 
+  DeallocateConnectivity_Parallel(config, geometry, true);
+  
+}
+
+void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  /*--- Write files depending on the format --- */
+  
+  switch (format) {
+    
+  case SU2_RESTART_ASCII:
+    
+    if (rank == MASTER_NODE) {
+        cout << "Writing SU2 ASCII restart file." << endl;     
+    }
+   
+    WriteRestart_Parallel_ASCII(config, geometry);
+    
+    break;
+    
+  case SU2_RESTART_BINARY:
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing SU2 binary restart file." << endl;   
+    }
+
+    WriteRestart_Parallel_Binary(config, geometry);
+    
+    break;
+  
+  case SU2_MESH:
+    
+    /*--- Load and sort the output data and connectivity.
+     *  Note that the solver container is not need in this case. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Set the mesh ASCII format ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing SU2 mesh file." << endl;
+    }
+    
+    SetSU2_MeshASCII(config, geometry);
+    
+    break;    
+    
+  case TECPLOT_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, false);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot binary file volume solution file." << endl;
+    }
+    
+    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), false);
+      
+    break;
+    
+  case TECPLOT:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot ASCII file volume solution file." << endl;
+    }
+    
+    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), false);
+
+    break;
+    
+  case PARAVIEW_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write paraview binary ---*/
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview binary file volume solution file." << endl;
+    }
+    
+    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, false);
+    
+    break;
+    
+  case PARAVIEW:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write paraview binary ---*/
+    if (rank == MASTER_NODE) {
+        cout << "Writing Paraview ASCII file volume solution file." << endl;      
+    }
+    
+    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, false);
+
+    break;
+    
+  default:
+    SU2_MPI::Error("Requested volume output format not available.", CURRENT_FUNCTION);
+    break;
+  } 
+
+  /*--- Clean up the surface data that was only needed for output. ---*/
+  
+  if (format != SU2_RESTART_ASCII && format != SU2_RESTART_BINARY)
+    DeallocateConnectivity_Parallel(config, geometry, false);
+  
+}
+
+
 void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
