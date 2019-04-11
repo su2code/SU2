@@ -4414,7 +4414,7 @@ public:
    * \param[in] nVar - Number of variables.
    * \param[in] field_names - Vector of variable names.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
+  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names);
 
   /*!
    * \brief Destructor of the class.
