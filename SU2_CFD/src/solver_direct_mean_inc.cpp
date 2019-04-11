@@ -124,7 +124,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -133,7 +133,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -141,7 +141,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Read and store the restart metadata. ---*/
@@ -7041,12 +7041,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-  restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+  restart_filename = config->GetMultizone_FileName(restart_filename, iZone, ".dat");
 
   /*--- Modify file name for an unsteady restart ---*/
   
   if (dual_time || time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter, ".dat");
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -7301,7 +7301,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -7310,7 +7310,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -7318,7 +7318,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
 
     /*--- Read and store the restart metadata. ---*/

@@ -2764,7 +2764,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
       filename = config->GetFEA_FileName();
       if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone);
+        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
       properties_file.open(filename.data(), ios::in);
 

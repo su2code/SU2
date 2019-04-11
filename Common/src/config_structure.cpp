@@ -7279,7 +7279,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
+string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
 
   string UnstExt, UnstFilename = val_filename;
   char buffer[50];
@@ -7295,19 +7295,20 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
-    if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
-    if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d.dat",  val_iter);
-    if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d.dat",   val_iter);
-    if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d.dat",    val_iter);
-    if (val_iter >= 10000) SPRINTF (buffer, "_%d.dat", val_iter);
+    if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
+    if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
+    if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
+    if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
+    if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
     string UnstExt = string(buffer);
+    UnstExt += ext;
     UnstFilename.append(UnstExt);
   }
 
   return UnstFilename;
 }
 
-string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
+string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, string ext) {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -7315,8 +7316,8 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     if (GetnZone() > 1 ) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
-        SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
+        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer)+ext);
     }
     return multizone_filename;
 }
@@ -7335,16 +7336,16 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
     return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) {
 
     string multizone_filename = val_filename;
     char buffer[50];
 
     unsigned short lastindex = multizone_filename.find_last_of(".");
     multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
     multizone_filename.append(string(buffer));
-
+    multizone_filename += ext;
     return multizone_filename;
 }
 

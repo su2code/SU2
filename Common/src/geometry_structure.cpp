@@ -2376,7 +2376,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
     string str = "boundary.dat";
 
-    str = config->GetMultizone_FileName(str, val_iZone);
+    str = config->GetMultizone_FileName(str, val_iZone, ".dat");
 
     /*--- Open .su2 grid file ---*/
     
@@ -18548,11 +18548,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   filename = config->GetObjFunc_Extension(filename);
 
   if (config->GetUnsteady_Simulation()) {
-    filename = config->GetUnsteady_FileName(filename, nExtIter-1);
+    filename = config->GetUnsteady_FileName(filename, nExtIter-1, ".dat");
   }
 
 	if (config->GetnZone() > 1){
-		filename = config->GetMultizone_FileName(filename, config->GetiZone());
+		filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
 	}
 
   if (config->GetRead_Binary_Restart()) {
