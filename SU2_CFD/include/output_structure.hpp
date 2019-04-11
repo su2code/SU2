@@ -301,6 +301,8 @@ protected:
   
   bool multizone, grid_movement, fem_output;
   
+  string VolumeFilename, SurfaceFilename, RestartFilename;
+  
 public:
 
   /*! 
