@@ -199,7 +199,8 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 
-  int rank = SU2_MPI::GetRank();
+  int rank        = SU2_MPI::GetRank();
+  bool TapeActive = AD::IsRecording();
 
   /*--- Check the subspace size ---*/
   
@@ -223,7 +224,10 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   r = b; r -= A_x;
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+
+  /*--- Skip solver when residual is small, but not when called during recording ---*/
+
+  if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
     if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
   }
@@ -319,7 +323,8 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 	
-  int rank = SU2_MPI::GetRank();
+  int rank        = SU2_MPI::GetRank();
+  bool TapeActive = AD::IsRecording();
   
   /*---  Check the subspace size ---*/
   
@@ -367,13 +372,15 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   su2double beta = W[0].norm();
   
-//  if ( (beta < tol*norm0) || (beta < eps) ) {
+  /*--- Skip solver when residual is small, but not when called during recording ---*/
+
+  if ( ((beta < tol*norm0) || (beta < eps)) && !TapeActive ) {
     
-//    /*---  System is already solved ---*/
+    /*---  System is already solved ---*/
     
-//    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
-//    return 0;
-//  }
+    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    return 0;
+  }
   
   /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
 	 holds the negative residual, as mentioned above) ---*/
@@ -472,8 +479,9 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
   
-  int rank = SU2_MPI::GetRank();
-  
+  int rank        = SU2_MPI::GetRank();
+  bool TapeActive = AD::IsRecording();
+
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
@@ -498,7 +506,10 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   r = b; r -= A_x;
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+
+  /*--- Skip solver when residual is small, but not when called during recording ---*/
+
+  if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
     if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
@@ -642,9 +653,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()) {
+
 #ifdef CODI_REVERSE_TYPE
-    
-    TapeActive = AD::globalTape.isActive();
 
     AD::StartExtFunc(false, false);
 
@@ -653,7 +663,10 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     /*--- Stop the recording for the linear solver ---*/
 
     AD::StopRecording();
+
 #endif
+
+    TapeActive = AD::IsRecording();
   }
 
   /*--- Solve the linear system using a Krylov subspace method ---*/
