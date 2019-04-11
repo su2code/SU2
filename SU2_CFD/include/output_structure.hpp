@@ -706,18 +706,6 @@ public:
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone);
-
-  /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for DG-FEM flow problems.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
