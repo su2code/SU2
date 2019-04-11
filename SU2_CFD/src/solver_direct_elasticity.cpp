@@ -1004,7 +1004,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
@@ -1142,7 +1142,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
   
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
   
@@ -1317,7 +1317,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   reference_file.open(filename.data(), ios::in);
 
@@ -4943,10 +4943,10 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   /*--- If multizone, append zone name ---*/
 
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (dynamic) {
-    filename = config->GetUnsteady_FileName(filename, val_iter);
+    filename = config->GetUnsteady_FileName(filename, val_iter, ".dat");
   }
 
   /*--- Read all lines in the restart file ---*/
