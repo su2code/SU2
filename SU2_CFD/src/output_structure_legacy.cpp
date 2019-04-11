@@ -4058,15 +4058,15 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
+    filename= config->GetMultizone_FileName(filename, val_iZone, ".dat");
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   }
   
   /*--- Open the restart file and write the solution. ---*/
@@ -17585,19 +17585,19 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
+    filename= config->GetMultizone_FileName(filename, val_iZone, ".dat");
   
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, val_iInst, ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   }
   
   /*--- Only the master node writes the header. ---*/
@@ -17713,19 +17713,19 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
+    filename= config->GetMultizone_FileName(filename, val_iZone, ".dat");
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, val_iInst, ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   }
 
   strcpy(fname, filename.c_str());
