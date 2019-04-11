@@ -10,7 +10,7 @@ void COutput::WriteSurface_CSV(CConfig *config, CGeometry *geometry){
   
   string filename;
   
-  filename = GetFilename(config, SurfaceFilename, ".csv");
+  filename = config->GetFilename(SurfaceFilename, ".csv");
   
   Surf_file.precision(15);
   

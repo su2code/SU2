@@ -807,8 +807,8 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, u
   
   string filename;
   
-  if (surf_sol) filename = GetFilename(config, SurfaceFilename, ".dat");
-  else filename          = GetFilename(config, VolumeFilename, ".dat");
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".dat");
+  else filename          = config->GetFilename(VolumeFilename, ".dat");
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
   
@@ -1064,8 +1064,8 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   
   string filename;
   
-  if (surf_sol) filename = GetFilename(config, SurfaceFilename, ".szplt");
-  else filename          = GetFilename(config, VolumeFilename, ".szplt");
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".szplt");
+  else filename          = config->GetFilename(VolumeFilename, ".szplt");
 
   
   string data_set_title = surf_sol

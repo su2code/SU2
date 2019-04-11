@@ -1971,8 +1971,8 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   int iProcessor;
   
-  if (surf_sol) filename = GetFilename(config, SurfaceFilename, ".vtk");
-  else filename          = GetFilename(config, VolumeFilename, ".vtk");
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".vtk");
+  else filename          = config->GetFilename(VolumeFilename, ".vtk");
 
 
   /*--- Open Paraview ASCII file and write the header. ---*/
@@ -2351,8 +2351,8 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   const int NCOORDS = 3;
   
-  if (surf_sol) filename = GetFilename(config, SurfaceFilename, ".vtk");
-  else filename          = GetFilename(config, VolumeFilename, ".vtk");
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".vtk");
+  else filename          = config->GetFilename(VolumeFilename, ".vtk");
 
   strcpy(fname, filename.c_str());
   
