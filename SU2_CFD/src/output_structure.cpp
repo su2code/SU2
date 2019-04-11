@@ -6171,12 +6171,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
 
-  /*--- Make sure that coordinates are always in the volume output --- */
+//  /*--- Make sure that coordinates are always in the volume output --- */
   
-  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
-    RequestedVolumeFields.push_back("COORDINATES");
-    nRequestedVolumeFields++;
-  }
+//  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
+//    RequestedVolumeFields.push_back("COORDINATES");
+//    nRequestedVolumeFields++;
+//  }
+  
   
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   

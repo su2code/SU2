@@ -1487,7 +1487,7 @@ public:
 };
 
 /*! \class CMeshOutput
- *  \brief Output class for elasticity discrete adjoint problems.
+ *  \brief Output class for mesh solution.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
@@ -1512,5 +1512,31 @@ public:
 
 };
 
+
+/*! \class CBaselineOutput
+ *  \brief Output class for baseline solver output.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CBaselineOutput : public COutput {
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBaselineOutput(void);
+
+  void SetVolumeOutputFields(CConfig *config);
+
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
+};
 
 #include "output_structure.inl"
