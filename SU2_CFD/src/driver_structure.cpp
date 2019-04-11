@@ -4026,6 +4026,16 @@ void CDriver::Output(unsigned long ExtIter) {
   unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
   
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
+  
+  bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
+  bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
+  bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
+  
+  if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
+    RestartFormat = SU2_RESTART_BINARY;
+  }
   /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
   
@@ -4109,11 +4119,31 @@ void CDriver::Output(unsigned long ExtIter) {
 
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
+    
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-    for (iZone = 0; iZone < nZone; iZone++)
-      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, iZone, nZone);
-    
+    for (unsigned short iInst = 0; iInst < nInst[ZONE_0]; iInst++){
+      
+      config_container[ZONE_0]->SetiInst(iInst);
+      
+      output[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
+      
+      /*--- Write restart files ---*/
+      
+      output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
+      
+      /*--- Write visualization files ---*/
+      
+      if (Wrt_Vol)
+        output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+      if (Wrt_Surf)
+        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+      if (Wrt_CSV)
+        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+      
+      output[ZONE_0]->DeallocateData_Parallel(config_container[ZONE_0], geometry_container[ZONE_0][iInst][MESH_0]);
+      
+    }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
     /*--- Store output time and restart the timer for the compute phase. ---*/
