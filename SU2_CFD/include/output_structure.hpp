@@ -471,7 +471,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
+  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write a native SU2 restart file (binary) in parallel.
@@ -480,7 +480,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
+  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -532,7 +532,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
 
   /*!
    * \brief Write a Paraview binary solution file with parallel output.
@@ -542,7 +542,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nInst, bool surf_sol);
+  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write a Tecplot ASCII solution file.
@@ -592,7 +592,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
 
   /*!
    * \brief Write a Tecplot binary solution file with parallel output.
@@ -625,7 +625,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream &output_file);
+  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -842,18 +842,18 @@ public:
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
+   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort);
+  void SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort);
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
+   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
-  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, bool surf);
 
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
