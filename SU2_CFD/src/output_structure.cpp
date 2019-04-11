@@ -1178,6 +1178,8 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
  
   DeallocateConnectivity_Parallel(config, geometry, true);
   
+  DeallocateSurfaceData_Parallel(config, geometry);
+  
 }
 
 void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
@@ -4647,7 +4649,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry) {
   
   /*--- Local variables ---*/
   
@@ -4656,43 +4658,29 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  bool adjoint   = (config->GetContinuous_Adjoint() ||
-                    config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
   ofstream restart_file;
   string filename;
   
   int iProcessor;
-
-  /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else if (disc_adj_fem){
-    filename = config->GetRestart_AdjFEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
+  filename = RestartFilename;
   
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
+    filename= config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
   
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   }
   
   /*--- Only the master node writes the header. ---*/
@@ -4783,15 +4771,13 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
 }
 
-void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry) {
 
   /*--- Local variables ---*/
 
   unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool adjoint   = (config->GetContinuous_Adjoint() ||
-                    config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -4799,33 +4785,24 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
   su2double file_size = 0.0, StartTime, StopTime, UsedTime, Bandwidth;
-
-  /*--- Retrieve filename from config ---*/
-
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
+  
+  filename = RestartFilename;
 
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
+    filename= config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
   } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   }
 
   strcpy(fname, filename.c_str());
