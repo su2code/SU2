@@ -18290,22 +18290,20 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     
     /* Distance to the wall. */
     su2double dist = geometry->node[iPoint]->GetWall_Distance(); // Is the distance to the wall used in any SGS calculation?
-    
+
+    /* Length Scale can be precompute from DES LengthScale.
+     I would like to test the Shear Layer Adapted one*/
+    //lenScale    = node[iPoint]->GetDES_LengthScale();
+    //lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
+    lenScale = geometry->node[iPoint]->GetMaxLength();
+
+    /* Compute the eddy viscosity. */
     if (nDim == 2){
-      /* Just for testing in 2D */
-      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./2.);
       muTurb = SGSModel->ComputeEddyViscosity_2D(rho, Grad_Vel[0][0], Grad_Vel[1][0],
                                                  Grad_Vel[0][1], Grad_Vel[1][1],
                                                  lenScale, dist);
     }
     else{
-
-      /* Length Scale can be precompute from DES LengthScale.
-       I would like to test the Shear Layer Adapted one*/
-      //lenScale    = node[iPoint]->GetDES_LengthScale();
-      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
-      
-      /* Compute the eddy viscosity. */
       muTurb = SGSModel->ComputeEddyViscosity_3D(rho, Grad_Vel[0][0], Grad_Vel[1][0], Grad_Vel[2][0],
                                                Grad_Vel[0][1], Grad_Vel[1][1], Grad_Vel[2][1],
                                                Grad_Vel[0][2], Grad_Vel[1][2], Grad_Vel[2][2],
