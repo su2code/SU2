@@ -102,7 +102,6 @@ COutput::COutput(CConfig *config) {
   Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
-  Local_Data         = NULL;
   Local_Data_Copy    = NULL;
   Parallel_Data      = NULL;
   Parallel_Surf_Data = NULL;
@@ -475,12 +474,6 @@ COutput::~COutput(void) {
     delete [] Turb2LamViscRatioOut;
     delete [] NuFactorIn;
     delete [] NuFactorOut;
-  }
-  
-  if (Local_Data != NULL){
-    for (unsigned long iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++)
-      if (Local_Data[iPoint] != NULL) delete [] Local_Data[iPoint];
-    delete [] Local_Data;
   }
   
   /*--- Deallocate the structures holding the linear partitioning ---*/
@@ -6410,18 +6403,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
-    
-  unsigned long iPoint;
+   
+  Local_Data.resize(nLocalPoint_Sort, std::vector<su2double>(GlobalField_Counter, 0.0));
   
-  unsigned short iField;
-    
-  Local_Data = new su2double*[nLocalPoint_Sort];
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
-    Local_Data[iPoint] = new su2double[GlobalField_Counter];
-    for (iField = 0; iField < GlobalField_Counter; iField++){
-      Local_Data[iPoint][iField] = 0.0;
-    }
-  }
 }
 
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){

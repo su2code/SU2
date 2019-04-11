@@ -142,7 +142,7 @@ protected:
   unsigned long *nPoint_Lin;
   unsigned long *nPoint_Cum;
   
-  su2double **Local_Data;
+  std::vector< std::vector<su2double>> Local_Data;
   su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
