@@ -51,6 +51,12 @@ COutput::COutput(CConfig *config) {
   
   ConvergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   MultiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
+  
+  /*--- Set default filenames ---*/
+  
+  SurfaceFilename = "surface";
+  VolumeFilename  = "volume";
+  RestartFilename = "restart";
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
