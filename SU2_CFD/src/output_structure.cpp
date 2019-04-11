@@ -1041,6 +1041,27 @@ void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsi
 }
 
 
+string COutput::GetFilename(CConfig *config, string filename, string ext){
+  
+  /*--- Add the extension --- */
+  
+  filename = filename + string(ext);
+  
+  /*--- Append the zone number if multizone problems ---*/
+  if (config->GetnZone() > 1)
+    filename = config->GetMultizone_FileName(filename, config->GetiZone(), ext);
+
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (config->GetnTimeInstances() > 1)
+    filename = config->GetMultiInstance_FileName(filename, config->GetiInst(), ext);
+
+  if (config->GetTime_Domain()){
+    filename = config->GetUnsteady_FileName(filename, config->GetExtIter(), ext);
+  }
+  
+  return filename;
+}
+
 void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
