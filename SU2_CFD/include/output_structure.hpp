@@ -971,6 +971,19 @@ public:
   void Postprocess_HistoryFields(CConfig *config);
   
   COutputLegacy* GetLegacyOutput();
+  
+  void SetVolume_Filename(string filename);
+  
+  void SetSurface_Filename(string filename);
+  
+  string GetVolume_Filename();
+  
+  string GetSurface_Filename(); 
+  
+  void SetRestart_Filename(string filename);
+    
+  string GetRestart_Filename();
+  
 };
 
 /*! \class CFlowOutput
