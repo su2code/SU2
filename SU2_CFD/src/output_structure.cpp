@@ -632,28 +632,6 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
   
 }
 
-string COutput::GetFilename(CConfig *config, string filename, string ext){
-  
-  /*--- Add the extension --- */
-  
-  filename = filename + string(ext);
-  
-  /*--- Append the zone number if multizone problems ---*/
-  if (config->GetnZone() > 1)
-    filename = config->GetMultizone_FileName(filename, config->GetiZone(), ext);
-
-  /*--- Append the zone number if multiple instance problems ---*/
-  if (config->GetnTimeInstances() > 1)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst(), ext);
-
-  if (config->GetTime_Domain()){
-    filename = config->GetUnsteady_FileName(filename, config->GetExtIter(), ext);
-  }
-  
-  return filename;
-}
-
-
 void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
   
   /*--- Collect that data defined in the subclasses from the different processors ---*/
@@ -4255,24 +4233,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry) 
   
   int iProcessor;
   
-  filename = RestartFilename;
-  
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
-  
-  /*--- Append the zone number if multiple instance problems ---*/
-  if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
-  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
-  }
+  filename = config->GetFilename(RestartFilename, ".dat");
   
   /*--- Only the master node writes the header. ---*/
   
@@ -4377,24 +4338,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry)
   char str_buf[CGNS_STRING_SIZE], fname[100];
   su2double file_size = 0.0, StartTime, StopTime, UsedTime, Bandwidth;
   
-  filename = RestartFilename;
-
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
-
-  /*--- Append the zone number if multiple instance problems ---*/
-  if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
-  }
+  filename = config->GetFilename(RestartFilename, ".dat");
 
   strcpy(fname, filename.c_str());
 
