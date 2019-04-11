@@ -532,8 +532,20 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
+  
+
   
   for (iZone = 0; iZone < nZone; iZone++){
+    
+    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
+    
+    if (config_container[iZone]->GetWrt_Binary_Restart()){
+      RestartFormat = SU2_RESTART_BINARY;
+    }
     
     bool output_files = false;
     
@@ -600,14 +612,30 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
       
       /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
-      
-      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, iZone, nZone);
-      
-      
-      /*--- Execute the routine for writing special output. ---*/
-      // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-      
+       surface solution, and surface comma-separated value files. ---*/
+      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        
+        /*--- Write restart files ---*/
+        
+        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        
+        /*--- Write visualization files ---*/
+        
+        if (Wrt_Vol)
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        
+        if (Wrt_Surf)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        if (Wrt_CSV)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+        
+        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][iInst][MESH_0]);
+        
+      }
       
       if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
       
