@@ -505,16 +505,7 @@ public:
    * \param[in] format - The data format of the output files.
    */
   void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format);
-  
-  /*!
-   * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] filename - the base filename.
-   * \param[in] ext - the extension to be added.
-   * \return The new filename
-   */
-  string GetFilename(CConfig *config, string filename, string ext);
-  
+
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.

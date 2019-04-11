@@ -7279,6 +7279,32 @@ CConfig::~CConfig(void) {
 
 }
 
+string CConfig::GetFilename(string filename, string ext){
+  
+  /*--- Remove any extension --- */
+  
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
+  
+  /*--- Add the extension --- */
+  
+  filename = filename + string(ext);
+  
+  /*--- Append the zone number if multizone problems ---*/
+  if (GetnZone() > 1)
+    filename = GetMultizone_FileName(filename, GetiZone(), ext);
+
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (GetnTimeInstances() > 1)
+    filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
+
+  if (GetWrt_Unsteady()){
+    filename = GetUnsteady_FileName(filename, GetExtIter(), ext);
+  }
+  
+  return filename;
+}
+
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
 
   string UnstExt, UnstFilename = val_filename;
