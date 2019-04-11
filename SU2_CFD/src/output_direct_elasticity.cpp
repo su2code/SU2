@@ -86,6 +86,18 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Structure)";
   MultiZoneHeaderString = ss.str();
+  
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetStructure_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfStructure_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_FEMFileName();
 
 }
 

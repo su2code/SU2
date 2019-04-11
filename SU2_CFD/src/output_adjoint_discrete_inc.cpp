@@ -77,6 +77,21 @@ CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometr
   ss << "Zone " << config->GetiZone() << " (Adj. Incomp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetAdj_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_AdjFileName();
+  
+  /*--- Add the obj. function extension --- */
+  
+  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
 }
 
 CDiscAdjFlowIncOutput::~CDiscAdjFlowIncOutput(void) {

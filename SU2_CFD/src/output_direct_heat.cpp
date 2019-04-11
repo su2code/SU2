@@ -65,6 +65,19 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Solid Heat)";
   MultiZoneHeaderString = ss.str();
+  
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetHeat_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfHeat_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_HeatFileName();
+  
 }
 
 CHeatOutput::~CHeatOutput(void) {

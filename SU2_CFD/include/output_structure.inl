@@ -136,3 +136,16 @@ inline bool COutput::SetInit_Residuals(CConfig *config) {return false;}
 inline bool COutput::SetUpdate_Averages(CConfig *config, bool dualtime) {return false;}
 
 inline COutputLegacy* COutput::GetLegacyOutput() {return output_legacy;}
+
+inline void COutput::SetVolume_Filename(string filename){VolumeFilename = filename;}
+
+inline void COutput::SetSurface_Filename(string filename){SurfaceFilename = filename;}
+
+inline string COutput::GetVolume_Filename(){return VolumeFilename;}
+
+inline string COutput::GetSurface_Filename(){return SurfaceFilename;}
+
+inline void COutput::SetRestart_Filename(string filename){RestartFilename = filename;}
+
+inline string COutput::GetRestart_Filename(){return RestartFilename;}
+
