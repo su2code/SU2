@@ -4769,49 +4769,49 @@ void CTNE2EulerSolver::Evaluate_ObjFunc(CConfig *config) {
     Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
 
     switch(Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
-        break;
-      case LIFT_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
-        break;
-      case SIDEFORCE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
-        break;
-      case EFFICIENCY:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
-        break;
-      case FORCE_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
-        break;
-      case FORCE_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
-        break;
-      case FORCE_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
-        break;
-      case TOTAL_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
-        break;
-      case MAXIMUM_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
-        break;
-      default:
-        break;
+    case DRAG_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
+      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+      if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+      break;
+    case LIFT_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+      break;
+    case SIDEFORCE_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
+      break;
+    case EFFICIENCY:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
+      break;
+    case MOMENT_X_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
+      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
+      break;
+    case MOMENT_Y_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
+      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
+      break;
+    case MOMENT_Z_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
+      if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
+      break;
+    case FORCE_X_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
+      break;
+    case FORCE_Y_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
+      break;
+    case FORCE_Z_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
+      break;
+    case TOTAL_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Surface_HF_Visc[iMarker_Monitoring];
+      break;
+    case MAXIMUM_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
+      break;
+    default:
+      break;
     }
   }
 
@@ -4824,59 +4824,59 @@ void CTNE2EulerSolver::Evaluate_ObjFunc(CConfig *config) {
   Kind_ObjFunc   = config->GetKind_ObjFunc(0);
 
   switch(Kind_ObjFunc) {
-    case EQUIVALENT_AREA:
-      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-      break;
-    case NEARFIELD_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-      break;
-    case INVERSE_DESIGN_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-      break;
-    case INVERSE_DESIGN_HEATFLUX:
-      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-      break;
-    case THRUST_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CT;
-      break;
-    case TORQUE_COEFFICIENT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-      break;
-    case FIGURE_OF_MERIT:
-      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-      break;
-    case SURFACE_TOTAL_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-      break;
-    case SURFACE_STATIC_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-      break;
-    case SURFACE_MASSFLOW:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-      break;
-    case SURFACE_MACH:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-      break;
-    case SURFACE_UNIFORMITY:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-      break;
-    case SURFACE_SECONDARY:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-      break;
-    case SURFACE_MOM_DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-      break;
-    case SURFACE_SECOND_OVER_UNIFORM:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-      break;
-    case TOTAL_AVG_TEMPERATURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-      break;
-    case CUSTOM_OBJFUNC:
-      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-      break;
-    default:
-      break;
+  case EQUIVALENT_AREA:
+    Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+    break;
+  case NEARFIELD_PRESSURE:
+    Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
+    break;
+  case INVERSE_DESIGN_PRESSURE:
+    Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+    break;
+  case INVERSE_DESIGN_HEATFLUX:
+    Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+    break;
+  case THRUST_COEFFICIENT:
+    Total_ComboObj+=Weight_ObjFunc*Total_CT;
+    break;
+  case TORQUE_COEFFICIENT:
+    Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+    break;
+  case FIGURE_OF_MERIT:
+    Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+    break;
+  case SURFACE_TOTAL_PRESSURE:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+    break;
+  case SURFACE_STATIC_PRESSURE:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+    break;
+  case SURFACE_MASSFLOW:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+    break;
+  case SURFACE_MACH:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+    break;
+  case SURFACE_UNIFORMITY:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+    break;
+  case SURFACE_SECONDARY:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+    break;
+  case SURFACE_MOM_DISTORTION:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+    break;
+  case SURFACE_SECOND_OVER_UNIFORM:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+    break;
+  case TOTAL_AVG_TEMPERATURE:
+    Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+    break;
+  case CUSTOM_OBJFUNC:
+    Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+    break;
+  default:
+    break;
   }
 
 }
@@ -5442,22 +5442,56 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
 void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iVar, iDim;
+
+  unsigned short iVar, iDim, iSpecies,iEl, nHeavy, nEl, *nElStates;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure, P_Exit, Velocity[3],
+  su2double Pressure, P_Exit, Velocity[3], Temperature, Tve,
       Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
       Area, UnitaryNormal[3];
+  su2double *Ms, *xi, *thetav, **thetae, *Tref, **g, *hf, RuSI, Ru;
+  su2double Ef, Ev, Ee;
+  su2double thoTve, exptv, thsqr, Cvvs, Cves;
+  su2double num, num2, num3, denom;
 
-  bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  su2double Gas_Constant     = config->GetGas_ConstantND();
-  bool grid_movement      = config->GetGrid_Movement();
+  su2double Gas_Constant  = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-  bool viscous              = config->GetViscous();
-  bool gravity = (config->GetGravityForce());
+  bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool grid_movement      = config->GetGrid_Movement();
+  bool viscous            = config->GetViscous();
+  bool gravity            = config->GetGravityForce();
+  bool ionization         = config->GetIonization();
 
   su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
-  su2double *Normal = new su2double[nDim];
+  su2double *Normal   = new su2double[nDim];
+  su2double *Ys       = new su2double[nSpecies];
+
+  unsigned short T_INDEX       = node[0]->GetTIndex();
+  unsigned short TVE_INDEX     = node[0]->GetTveIndex();
+  unsigned short VEL_INDEX     = node[0]->GetVelIndex();
+  unsigned short PRESS_INDEX   = node[0]->GetPIndex();
+  unsigned short RHO_INDEX     = node[0]->GetRhoIndex();
+  unsigned short H_INDEX       = node[0]->GetHIndex();
+  unsigned short A_INDEX       = node[0]->GetAIndex();
+  unsigned short RHOCVTR_INDEX = node[0]->GetRhoCvtrIndex();
+  unsigned short RHOCVVE_INDEX = node[0]->GetRhoCvveIndex();
+
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    (config->GetKind_Turb_Model() == SST));
+
+  Ms   = config->GetMolar_Mass();
+  xi   = config->GetRotationModes();
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
+  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  thetae    = config->GetCharElTemp();
+  g         = config->GetElDegeneracy();
+  nElStates = config->GetnElStates();
+
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else { nHeavy = nSpecies; nEl = 0; }
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -5496,18 +5530,27 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Check whether the flow is supersonic at the exit. The type
        of boundary update depends on this. ---*/
-      Density = U_domain[0];
+      Density = V_domain[RHO_INDEX];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = U_domain[iDim+1]/Density;
+        Velocity[iDim] = V_domain[VEL_INDEX+1];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
         Vn += Velocity[iDim]*UnitaryNormal[iDim];
       }
-      Energy     = U_domain[nVar-1]/Density;
-      Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-      SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
+      Energy      = U_domain[nVar-2]/Density;
+      Temperature = V_domain[T_INDEX];
+      Tve         = V_domain[TVE_INDEX];
+      Pressure    = V_domain[PRESS_INDEX];
+      SoundSpeed  = V_domain[A_INDEX];
+      Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
 
+      /*--- Compute Species Concentrations ---*/
+      //Using partial pressures
+      for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+        Ys[iSpecies] = (V_domain[iSpecies]*Ru/Ms[iSpecies]*Temperature)/Pressure;
+      }
+
+      /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {
 
         /*--- Supersonic exit flow: there are no incoming characteristics,
@@ -5522,15 +5565,16 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          therefore one variable can be specified (back pressure) and is used
          to update the conservative variables. Compute the entropy and the
          acoustic Riemann variable. These invariants, as well as the
-         tangential velocity components, are extrapolated. Adapted from an
-         original implementation in the Stanford University multi-block
-         (SUmb) solver in the routine bcSubsonicOutflow.f90 by Edwin van
-         der Weide, last modified 09-10-2007. ---*/
+         tangential velocity components, are extrapolated. The Temperatures
+         (T and Tve) and species concentraition are also assumed to be extrapolated.
+         ---*/
 
         Entropy = Pressure*pow(1.0/Density,Gamma);
         Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
 
         /*--- Compute the new fictious state at the outlet ---*/
+        //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+        //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
         Density    = pow(P_Exit/Entropy,1.0/Gamma);
         Pressure   = P_Exit;
         SoundSpeed = sqrt(Gamma*P_Exit/Density);
@@ -5540,72 +5584,172 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
+        cout << "This energy needs to be checked, would affect enthalpy" << endl;
         Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        if (tkeNeeded) Energy += GetTke_Inf();
 
-        /*--- Conservative variables, using the derived quantities ---*/
-        U_outlet[0] = Density;
-        for (iDim = 0; iDim < nDim; iDim++)
-          U_outlet[iDim+1] = Velocity[iDim]*Density;
-        U_outlet[nDim+1] = Energy*Density;
+        /*--- Primitive variables, using the derived quantities ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+          V_outlet[iSpecies]= Ys[iSpecies]*Density;
+        }
 
-        /*--- Conservative variables, using the derived quantities ---*/
-        V_outlet[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = Velocity[iDim];
-        V_outlet[nDim+1] = Pressure;
-        V_outlet[nDim+2] = Density;
+        V_outlet[T_INDEX]     = V_domain[T_INDEX];
+        V_outlet[TVE_INDEX]   = V_domain[TVE_INDEX];
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
+        }
+
+        V_outlet[PRESS_INDEX] = Pressure;
+        V_outlet[RHO_INDEX]   = Density;
+        V_outlet[H_INDEX]     = Energy+Pressure/Density;
+        V_outlet[A_INDEX]     = Velocity2*Mach_Exit;
+
+        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+          V_outlet[RHOCVTR_INDEX ] += Density* Ys[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+        }
+
+        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
+          /*--- Vibrational energy ---*/
+          if (thetav[iSpecies] != 0.0) {
+
+            /*--- Rename for convenience ---*/
+            thoTve = thetav[iSpecies]/Tve;
+            exptv = exp(thetav[iSpecies]/Tve);
+            thsqr = thetav[iSpecies]*thetav[iSpecies];
+
+            /*--- Calculate species vibrational specific heats ---*/
+            Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+
+            /*--- Add contribution ---*/
+            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cvvs;
+          }
+
+          /*--- Electronic energy ---*/
+          if (nElStates[iSpecies] != 0) {
+            num = 0.0; num2 = 0.0;
+            denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
+            num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+            for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+              thoTve = thetae[iSpecies][iEl]/Tve;
+              exptv = exp(-thetae[iSpecies][iEl]/Tve);
+
+              num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+              denom += g[iSpecies][iEl] * exptv;
+              num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+              num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+            }
+            Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+            V_outlet[RHOCVVE_INDEX] += V_outlet[iSpecies] * Cves;
+          }
+
+        }
+
+        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+          cout << "THIS MAY BE WRONG" << endl;
+          Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+          V_outlet[RHOCVVE_INDEX] += V_outlet[nSpecies-1] * Cves;
+        }
 
       }
 
-      /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetConservative(U_domain, U_outlet);
+      /*--- Conservative variables, using the derived quantities ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+        U_outlet[iSpecies] = V_outlet[iSpecies];
+      }
 
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+      for (iDim = 0; iDim < nDim; iDim++)
+        U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
+      U_outlet[nVar-2] = Energy;
 
-      /*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
+      /*--- Set the total energy ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
+        // Species formation energy
+        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+
+        // Species vibrational energy
+        if (thetav[iSpecies] != 0.0)
+          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+        else
+          Ev = 0.0;
+
+        // Species electronic energy
+        num = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        }
+        Ee = Ru/Ms[iSpecies] * (num/denom);
+
+        // Mixture vibrational-electronic energy
+        U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
+
+      }
+
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+
+        // Species formation energy
+        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+
+        // Electron t-r mode contributes to mixture vib-el energy
+        U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+    }
+
+    }
+
+    /*--- Set various quantities in the solver class ---*/
+    conv_numerics->SetConservative(U_domain, U_outlet);
+
+    if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+    /*--- Compute the residual using an upwind scheme ---*/
+    conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+    LinSysRes.AddBlock(iPoint, Residual);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+    if (implicit)
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    /*--- Roe Turkel preconditioning, set the value of beta ---*/
+    if (config->GetKind_Upwind() == TURKEL)
+      node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+
+    /*--- Viscous contribution ---*/
+    if (viscous) {
+
+      /*--- Set the normal vector and the coordinates ---*/
+      visc_numerics->SetNormal(Normal);
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+      /*--- Primitive variables, and gradient ---*/
+      visc_numerics->SetPrimitive(V_domain, V_outlet);
+      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+      /*--- Laminar viscosity ---*/
+      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+
+      /*--- Compute and update residual ---*/
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.SubtractBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-      /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if (config->GetKind_Upwind() == TURKEL)
-        node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-
-      /*--- Viscous contribution ---*/
-      if (viscous) {
-
-        /*--- Set the normal vector and the coordinates ---*/
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-
-        /*--- Compute and update residual ---*/
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     }
   }
+}
 
-  /*--- Free locally allocated memory ---*/
-  delete [] U_domain;
-  delete [] U_outlet;
-  delete [] V_domain;
-  delete [] V_outlet;
-  delete [] Normal;
+/*--- Free locally allocated memory ---*/
+delete [] U_domain;
+delete [] U_outlet;
+delete [] V_domain;
+delete [] V_outlet;
+delete [] Normal;
+delete [] Ys;
 
 }
 
@@ -5633,7 +5777,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   g                       = config->GetElDegeneracy();
 
   su2double denom = 0.0, conc   = 0.0, rhoCvtr = 0.0, num = 0.0,
-            rhoE  = 0.0, rhoEve = 0.0;
+      rhoE  = 0.0, rhoEve = 0.0;
   su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
   su2double Ru = 1000.0*RuSI;
 
@@ -6181,7 +6325,7 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
       }
 
       if (static_fsi && val_update_geo) {
-       /*--- Rewind the index to retrieve the Coords. ---*/
+        /*--- Rewind the index to retrieve the Coords. ---*/
         index = counter*Restart_Vars[1];
         for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
 
@@ -6205,8 +6349,8 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -6260,8 +6404,8 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
       geometry[iMesh]->SetMaxLength(config);
-      }
     }
+  }
 
   /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
   if (static_fsi && val_update_geo) {
