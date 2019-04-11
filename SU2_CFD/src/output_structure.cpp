@@ -1605,59 +1605,78 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 }
 
-void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort) {
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort) {
 
-  /*--- Flags identifying the types of files to be written. ---*/
-  
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
-  
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
   
-  if (Wrt_Vol) {
+  if (!surf) {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
     
-    SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
-    SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
-    SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
-    SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
+    if (!fem_output){
+      SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
+      SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
+      SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
+      SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
+      SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
+      SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);  
+    } else {
+      SortVolumetricConnectivity_FEM(config, geometry, TRIANGLE     );
+      SortVolumetricConnectivity_FEM(config, geometry, QUADRILATERAL);
+      SortVolumetricConnectivity_FEM(config, geometry, TETRAHEDRON  );
+      SortVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON   );
+      SortVolumetricConnectivity_FEM(config, geometry, PRISM        );
+      SortVolumetricConnectivity_FEM(config, geometry, PYRAMID      );
+    }
     
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
+    
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+#ifndef HAVE_MPI
+  nGlobal_Elem_Par = nTotal_Elem;
+#else
+  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
   }
   
   /*--- Sort surface grid connectivity. ---*/
   
-  if (Wrt_Srf) {
+  else {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting surface grid connectivity." << endl;
     
-    SortSurfaceConnectivity(config, geometry, LINE         );
-    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+    if (!fem_output){
+      SortSurfaceConnectivity(config, geometry, LINE         );
+      SortSurfaceConnectivity(config, geometry, TRIANGLE     );
+      SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+    } else {
+      SortSurfaceConnectivity_FEM(config, geometry, LINE         );
+      SortSurfaceConnectivity_FEM(config, geometry, TRIANGLE     );
+      SortSurfaceConnectivity_FEM(config, geometry, QUADRILATERAL);   
+    }    
     
-  }
-  
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-  
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
+    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
 #ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-  nSurf_Elem_Par   = nTotal_Surf_Elem;
+    nSurf_Elem_Par   = nTotal_Surf_Elem;
 #else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+    
+    /*--- Sort the surface output data --- */
+    if (fem_output){
+      SortOutputData_Surface_FEM(config, geometry);
+    } else {
+      SortOutputData_Surface(config, geometry);
+    }
+  }
 }
+
 
 void COutput::SortVolumetricConnectivity(CConfig *config,
                                          CGeometry *geometry,
