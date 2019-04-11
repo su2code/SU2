@@ -2523,3 +2523,5 @@ inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+
+inline vector<string> CSolver::GetSolutionFields(){return fields;}

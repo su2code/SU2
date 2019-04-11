@@ -158,6 +158,8 @@ public:
   CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
+  vector<string> fields;
+  
   /*!
    * \brief Constructor of the class.
    */
@@ -4375,6 +4377,12 @@ public:
    * \param[out] val_solvername - Name of the solver.
    */
   string GetSolverName(void);
+  
+  /*!
+   * \brief Get the solution fields.
+   * \return A vector containing the solution fields.
+   */
+  vector<string> GetSolutionFields();
 
 };
 
@@ -4384,6 +4392,7 @@ public:
  * \author F. Palacios, T. Economon.
  */
 class CBaselineSolver : public CSolver {
+  
 public:
   
   /*!
@@ -4443,7 +4452,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetOutputVariables(CGeometry *geometry, CConfig *config);
-
+  
 };
 
 /*!
