@@ -37,151 +37,220 @@
 
 #include "../include/output_structure.hpp"
 
-void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream& output_file) {
+void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
-  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
+  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, offset, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
   short SendTo;
   su2double *center, *angles, *transl;
   ifstream input_file;
-  string Grid_Marker, text_line, Marker_Tag, str;
+  string filename, Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
+  int iProcessor;
+  
+  ofstream output_file;
+  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
+  
+  filename = VolumeFilename + string(".su2");
 
-  if (config->GetnZone() > 1){
-    output_file << "IZONE= " << val_iZone+1 << endl;
+  /*--- Special cases where a number needs to be appended to the file name. ---*/
+
+  filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".su2");
+
+  strcpy (out_file, filename.c_str());
+  strcpy (cstr, out_file); 
+  
+  if (rank == MASTER_NODE){
+    
+    
+    output_file.open(cstr, ios::out);
+    
+    if (config->GetnZone() > 1){
+      output_file << "IZONE= " << config->GetiZone()+1 << endl;
+    }
+    
+    /*--- Write dimensions data. ---*/
+    
+    output_file << "NDIME= " << nDim << endl;
+    
+    /*--- Write the angle of attack offset. ---*/
+    
+    output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
+    
+    /*--- Write the angle of attack offset. ---*/
+    
+    output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
+    
+    output_file << "NELEM= " << nGlobal_Elem_Par<< endl;
+    
+    output_file.close();
   }
-
-  /*--- Write dimensions data. ---*/
-
-  output_file << "NDIME= " << nDim << endl;
   
-  /*--- Write the angle of attack offset. ---*/
-  
-  output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
-  
-  /*--- Write the angle of attack offset. ---*/
-  
-  output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
-
-  /*--- Write connectivity data. ---*/
-  
-  nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Pris+nGlobal_Pyra;
-  
-  output_file << "NELEM= " << nElem<< endl;
-  
+  output_file.open(cstr, ios::out | ios::app);
+  output_file.precision(15);
   nElem = 0;
+  offset = 0;
   
-  for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
-    iNode = iElem*N_POINTS_TRIANGLE;
-    output_file << "5\t";
-    output_file << Conn_Tria[iNode+0]-1 << "\t"; output_file << Conn_Tria[iNode+1]-1 << "\t";
-    output_file << Conn_Tria[iNode+2]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+        iNode = iElem*N_POINTS_TRIANGLE;
+        output_file << "5\t";                
+        output_file << Conn_Tria_Par[iNode+0]-1 << "\t";
+        output_file << Conn_Tria_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Tria_Par[iNode+2]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }
+      for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+        iNode = iElem*N_POINTS_QUADRILATERAL;
+        output_file << "9\t";
+        output_file << Conn_Quad_Par[iNode+0]-1 << "\t"; output_file << Conn_Quad_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Quad_Par[iNode+2]-1 << "\t"; output_file << Conn_Quad_Par[iNode+3]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }
+      for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+        iNode = iElem*N_POINTS_TETRAHEDRON;
+        output_file << "10\t";
+        output_file << Conn_Tetr_Par[iNode+0]-1 << "\t" << Conn_Tetr_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Tetr_Par[iNode+2]-1 << "\t" << Conn_Tetr_Par[iNode+3]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }  
+      for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+        iNode = iElem*N_POINTS_HEXAHEDRON;
+        output_file << "12\t";
+        output_file << Conn_Hexa_Par[iNode+0]-1 << "\t" << Conn_Hexa_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Hexa_Par[iNode+2]-1 << "\t" << Conn_Hexa_Par[iNode+3]-1 << "\t";
+        output_file << Conn_Hexa_Par[iNode+4]-1 << "\t" << Conn_Hexa_Par[iNode+5]-1 << "\t";
+        output_file << Conn_Hexa_Par[iNode+6]-1 << "\t" << Conn_Hexa_Par[iNode+7]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }
+      for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+        iNode = iElem*N_POINTS_PRISM;
+        output_file << "13\t";
+        output_file << Conn_Pris_Par[iNode+0]-1 << "\t" << Conn_Pris_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Pris_Par[iNode+2]-1 << "\t" << Conn_Pris_Par[iNode+3]-1 << "\t";
+        output_file << Conn_Pris_Par[iNode+4]-1 << "\t" << Conn_Pris_Par[iNode+5]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }
+      
+      for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+        iNode = iElem*N_POINTS_PYRAMID;
+        output_file << "14\t";
+        output_file << Conn_Pyra_Par[iNode+0]-1 << "\t" << Conn_Pyra_Par[iNode+1]-1 << "\t";
+        output_file << Conn_Pyra_Par[iNode+2]-1 << "\t" << Conn_Pyra_Par[iNode+3]-1 << "\t";
+        output_file << Conn_Pyra_Par[iNode+4]-1 << "\t";
+        output_file << nElem + offset << "\n"; nElem++;
+      }
+    }
+    output_file.flush();
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);    
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
   }
   
-  for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
-    iNode = iElem*N_POINTS_QUADRILATERAL;
-    output_file << "9\t";
-    output_file << Conn_Quad[iNode+0]-1 << "\t"; output_file << Conn_Quad[iNode+1]-1 << "\t";
-    output_file << Conn_Quad[iNode+2]-1 << "\t"; output_file << Conn_Quad[iNode+3]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
-  }
-  
-  for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
-    iNode = iElem*N_POINTS_TETRAHEDRON;
-    output_file << "10\t";
-    output_file << Conn_Tetr[iNode+0]-1 << "\t" << Conn_Tetr[iNode+1]-1 << "\t";
-    output_file << Conn_Tetr[iNode+2]-1 << "\t" << Conn_Tetr[iNode+3]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
-  }
-  
-  for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
-    iNode = iElem*N_POINTS_HEXAHEDRON;
-    output_file << "12\t";
-    output_file << Conn_Hexa[iNode+0]-1 << "\t" << Conn_Hexa[iNode+1]-1 << "\t";
-    output_file << Conn_Hexa[iNode+2]-1 << "\t" << Conn_Hexa[iNode+3]-1 << "\t";
-    output_file << Conn_Hexa[iNode+4]-1 << "\t" << Conn_Hexa[iNode+5]-1 << "\t";
-    output_file << Conn_Hexa[iNode+6]-1 << "\t" << Conn_Hexa[iNode+7]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
-  }
-  
-  for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
-    iNode = iElem*N_POINTS_PRISM;
-    output_file << "13\t";
-    output_file << Conn_Pris[iNode+0]-1 << "\t" << Conn_Pris[iNode+1]-1 << "\t";
-    output_file << Conn_Pris[iNode+2]-1 << "\t" << Conn_Pris[iNode+3]-1 << "\t";
-    output_file << Conn_Pris[iNode+4]-1 << "\t" << Conn_Pris[iNode+5]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
-  }
-  
-  for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
-    iNode = iElem*N_POINTS_PYRAMID;
-    output_file << "14\t";
-    output_file << Conn_Pyra[iNode+0]-1 << "\t" << Conn_Pyra[iNode+1]-1 << "\t";
-    output_file << Conn_Pyra[iNode+2]-1 << "\t" << Conn_Pyra[iNode+3]-1 << "\t";
-    output_file << Conn_Pyra[iNode+4]-1 << "\t";
-    output_file << nElem << "\n"; nElem++;
-  }
   
   /*--- Write the node coordinates ---*/
-  
-  output_file << "NPOIN= " << nGlobal_Doma;
-  if (geometry->GetGlobal_nPointDomain() != nGlobal_Doma)
-    output_file << "\t" << geometry->GetGlobal_nPointDomain();
-  output_file << endl;
-
-  for (iPoint = 0; iPoint < nGlobal_Doma; iPoint++) {
-     for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << Coords[iDim][iPoint] << "\t";
-    output_file << iPoint << endl;
+  if (rank == MASTER_NODE){
+    output_file << "NPOIN= " << nGlobal_Poin_Par;
+    if (geometry->GetGlobal_nPointDomain() != nGlobal_Poin_Par)
+      output_file << "\t" << geometry->GetGlobal_nPointDomain();
+    output_file << endl;
+    output_file.flush();    
   }
   
-  /*--- Read the boundary information ---*/
-
-  str = "boundary.dat";
-
-  str = config->GetMultizone_FileName(str, val_iZone);
-
-  input_file.open(str.c_str(), ios::out);
   
-  /*--- Read grid file with format SU2 ---*/
+  unsigned long Global_Index, myPoint = 0;
+  offset = 0;
   
-  while (getline (input_file, text_line)) {
-
-    /*--- Write the physical boundaries ---*/
-    
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
-      
-      text_line.erase (0,6); nMarker_ = atoi(text_line.c_str());
-      output_file << "NMARK= " << nMarker_ << endl;
-      
-      for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
         
-        getline (input_file, text_line);
-        text_line.erase (0,11);
-        string::size_type position;
-        for (iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );
-          if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 );
-          if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 );
-          if (position != string::npos) text_line.erase (position,1);
+        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+        
+        Global_Index = iPoint + offset;
+        
+        /*--- Only write original domain points, i.e., exclude any periodic
+         or halo nodes, even if they are output in the viz. files. ---*/
+        
+        if (Global_Index < geometry->GetGlobal_nPointDomain()) {
+          
+          /*--- Loop over the variables and write the values to file ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            output_file << scientific << Parallel_Data[iDim][iPoint] << "\t";
+          }
+          
+          /*--- Write global index. (note outer loop over procs) ---*/
+          
+          output_file << Global_Index << "\t";
+          myPoint++;
+          
+          output_file << "\n";
         }
-        Marker_Tag = text_line.c_str();
+      }
+    }
+    /*--- Flush the file and wait for all processors to arrive. ---*/
+    output_file.flush();
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+  output_file.close();
+  
+  if (rank == MASTER_NODE){
+    
+    output_file.open(cstr, ios::out | ios::app);
+    
+    /*--- Read the boundary information ---*/
+    
+    str = "boundary.dat";
+    
+    str = config->GetMultizone_FileName(str, config->GetiZone(), ".dat");
+    
+    input_file.open(str.c_str(), ios::out);
+    
+    /*--- Read grid file with format SU2 ---*/
+    
+    while (getline (input_file, text_line)) {
+      
+      /*--- Write the physical boundaries ---*/
+      
+      position = text_line.find ("NMARK=",0);
+      if (position != string::npos) {
         
-        /*--- Standart physical boundary ---*/
+        text_line.erase (0,6); nMarker_ = atoi(text_line.c_str());
+        output_file << "NMARK= " << nMarker_ << endl;
         
+        for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
+          
+          getline (input_file, text_line);
+          text_line.erase (0,11);
+          string::size_type position;
+          for (iChar = 0; iChar < 20; iChar++) {
+            position = text_line.find( " ", 0 );
+            if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\r", 0 );
+            if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\n", 0 );
+            if (position != string::npos) text_line.erase (position,1);
+          }
+          Marker_Tag = text_line.c_str();
+          
+          /*--- Standart physical boundary ---*/
+          
           getline (input_file, text_line);
           
           text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
           getline (input_file, text_line);
-
+          
           text_line.erase (0,8); SendTo = atoi(text_line.c_str());
-
+          
           if (Marker_Tag == "SEND_RECEIVE"){
             output_file << "SEND_TO= " << SendTo << endl;
           }
@@ -194,53 +263,55 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
             output_file << VTK_Type;
             
             switch(VTK_Type) {
-              case LINE:
-                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                output_file << "\t" << vnodes_edge[0] << "\t" << vnodes_edge[1] << endl;
-                break;
-              case TRIANGLE:
-                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-                output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
-                break;
-              case QUADRILATERAL:
-                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-                output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
-                break;
-              case VERTEX:
-                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                output_file << "\t" << vnodes_edge[0] <<  "\t" << vnodes_edge[1] <<endl;
-                break;
+            case LINE:
+              bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+              output_file << "\t" << vnodes_edge[0] << "\t" << vnodes_edge[1] << endl;
+              break;
+            case TRIANGLE:
+              bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
+              output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
+              break;
+            case QUADRILATERAL:
+              bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
+              output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+              break;
+            case VERTEX:
+              bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+              output_file << "\t" << vnodes_edge[0] <<  "\t" << vnodes_edge[1] <<endl;
+              break;
             }
           }
+        }
       }
+      
     }
     
-  }
-  
-  input_file.close();
-
-  remove(str.c_str());
-
-  /*--- Get the total number of periodic transformations ---*/
-  
-  nPeriodic = config->GetnPeriodicIndex();
-  output_file << "NPERIODIC= " << nPeriodic << endl;
-  
-  /*--- From iPeriodic obtain the iMarker ---*/
-  
-  for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+    input_file.close();
     
-    /*--- Retrieve the supplied periodic information. ---*/
+//    remove(str.c_str());
     
-    center = config->GetPeriodicCenter(iPeriodic);
-    angles = config->GetPeriodicRotation(iPeriodic);
-    transl = config->GetPeriodicTranslate(iPeriodic);
+    /*--- Get the total number of periodic transformations ---*/
     
-    output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
-    output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
-    output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
-    output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
+    nPeriodic = config->GetnPeriodicIndex();
+    output_file << "NPERIODIC= " << nPeriodic << endl;
     
+    /*--- From iPeriodic obtain the iMarker ---*/
+    
+    for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+      
+      /*--- Retrieve the supplied periodic information. ---*/
+      
+      center = config->GetPeriodicCenter(iPeriodic);
+      angles = config->GetPeriodicRotation(iPeriodic);
+      transl = config->GetPeriodicTranslate(iPeriodic);
+      
+      output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
+      output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
+      output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
+      output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
+      
+    }
+    output_file.close();
   }
 
 }
