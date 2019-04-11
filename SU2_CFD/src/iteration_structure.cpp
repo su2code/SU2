@@ -454,7 +454,18 @@ void CIteration::Output(COutput *output,
 
   
   bool output_files = false;
-
+  
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[val_iZone]->GetOutput_FileFormat();
+  
+  bool Wrt_Surf = config_container[val_iZone]->GetWrt_Srf_Sol();
+  bool Wrt_Vol  = config_container[val_iZone]->GetWrt_Vol_Sol();
+  bool Wrt_CSV  = config_container[val_iZone]->GetWrt_Csv_Sol();
+  
+  if (config_container[val_iZone]->GetWrt_Binary_Restart()){
+    RestartFormat = SU2_RESTART_BINARY;
+  }
+  
   /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
 
@@ -499,11 +510,27 @@ void CIteration::Output(COutput *output,
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, val_iZone, nZone);
-
+      config_container[val_iZone]->SetiInst(val_iInst);
+      
+      output->Load_Data(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], solver_container[val_iZone][val_iInst][MESH_0]);
+      
+      /*--- Write restart files ---*/
+      
+      output->SetVolume_Output(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], RestartFormat);
+      
+      /*--- Write visualization files ---*/
+      
+      if (Wrt_Vol)
+        output->SetVolume_Output(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], OutputFormat);
+      if (Wrt_Surf)
+        output->SetSurface_Output(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], OutputFormat);
+      if (Wrt_CSV)
+        output->SetSurface_Output(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], CSV);    
+      
+      output->DeallocateData_Parallel(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);      
+    
     /*--- Execute the routine for writing special output. ---*/
     //output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
-
 
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
