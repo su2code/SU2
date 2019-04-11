@@ -5889,12 +5889,8 @@ void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, bool surf) {
 
-  /*--- Flags identifying the types of files to be written. ---*/
-
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
@@ -5902,7 +5898,7 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
 
   /*--- Sort volumetric grid connectivity. ---*/
 
-  if (Wrt_Vol) {
+  if (!surf) {
 
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
@@ -5913,12 +5909,20 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
     SortVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON   );
     SortVolumetricConnectivity_FEM(config, geometry, PRISM        );
     SortVolumetricConnectivity_FEM(config, geometry, PYRAMID      );
-
+    
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
+  
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+  #ifndef HAVE_MPI
+    nGlobal_Elem_Par = nTotal_Elem;
+  #else
+    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  #endif
   }
 
   /*--- Sort surface grid connectivity. ---*/
 
-  if (Wrt_Srf) {
+  else {
 
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting surface grid connectivity." << endl;
@@ -5926,21 +5930,16 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
     SortSurfaceConnectivity_FEM(config, geometry, LINE         );
     SortSurfaceConnectivity_FEM(config, geometry, TRIANGLE     );
     SortSurfaceConnectivity_FEM(config, geometry, QUADRILATERAL);
-
-  }
-
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-  nSurf_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+    
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
   
+    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
+  #ifndef HAVE_MPI
+    nSurf_Elem_Par   = nTotal_Surf_Elem;
+  #else
+    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  #endif
+  }
 }
 
 void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
