@@ -717,6 +717,7 @@ def main():
     harmonic_balance.test_iter = 25
     harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
     harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.new_output = False
     harmonic_balance.timeout   = 1600
     harmonic_balance.tol       = 0.00001
     test_list.append(harmonic_balance)
@@ -728,6 +729,7 @@ def main():
     hb_rans_preconditioning.test_iter = 25
     hb_rans_preconditioning.test_vals = [-1.900982, -5.880438, 0.007758, 0.125934] #last 4 columns
     hb_rans_preconditioning.su2_exec  = "SU2_CFD"
+    hb_rans_preconditioning.new_output= False
     hb_rans_preconditioning.timeout   = 1600
     hb_rans_preconditioning.tol       = 0.00001
     test_list.append(hb_rans_preconditioning)
@@ -868,6 +870,7 @@ def main():
     Jones_tc.test_iter = 5
     Jones_tc.test_vals = [-5.304569, 0.419188, 80.085850, 1.034777] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
+    Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
@@ -879,6 +882,7 @@ def main():
     Jones_tc_rst.test_iter = 5
     Jones_tc_rst.test_vals = [-4.423322, -1.618510, 82.250600, 2.791319] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
+    Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
     test_list.append(Jones_tc_rst)
@@ -890,6 +894,7 @@ def main():
     axial_stage2D.test_iter = 20
     axial_stage2D.test_vals = [-1.837052, 5.787185, 73.679900, 0.888919] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
+    axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
     test_list.append(axial_stage2D)
@@ -901,6 +906,7 @@ def main():
     transonic_stator.test_iter = 20
     transonic_stator.test_vals = [-1.114556, 6.120416, 67.101480, 0.070037] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
+    transonic_stator.new_output  = False
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
@@ -912,6 +918,7 @@ def main():
     transonic_stator_rst.test_iter = 20
     transonic_stator_rst.test_vals = [-0.486965, 4.460638, 6.455770, 0.004009] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
+    transonic_stator_rst.new_output  = False
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
     test_list.append(transonic_stator_rst)
