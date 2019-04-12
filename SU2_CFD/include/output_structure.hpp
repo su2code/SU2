@@ -142,7 +142,7 @@ protected:
   unsigned long *nPoint_Lin;
   unsigned long *nPoint_Cum;
   
-  su2double **Local_Data;
+  std::vector< std::vector<su2double>> Local_Data;
   su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
@@ -301,6 +301,8 @@ protected:
   
   bool multizone, grid_movement, fem_output;
   
+  string VolumeFilename, SurfaceFilename, RestartFilename;
+  
 public:
 
   /*! 
@@ -312,146 +314,13 @@ public:
    * \brief Destructor of the class. 
    */
   virtual ~COutput(void);
-
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations with the FEM solver.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
-                       unsigned long iExtIter, unsigned short val_nZone);
   
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                               unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for DG-FEM simulations (SU2_SOL).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                                   unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file);
-
   /*!
    * \brief Create and write the file with the FSI convergence history.
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
   bool PrintOutput(unsigned long iIter, unsigned long iFreq);
-
-  /*!
-   * \brief Merge the geometry into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-   * \brief Merge the FEM geometry into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-   * \brief Merge the node coordinates from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Merge the node coordinates from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeCoordinates_FEM(CConfig *config, CGeometry *geometry);
-  
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Merge the FEM solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing (DG-FEM).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
 
   /*!
    * \brief Write a native SU2 restart file.
@@ -469,7 +338,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
+  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write a native SU2 restart file (binary) in parallel.
@@ -478,7 +347,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
+  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -530,7 +399,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
 
   /*!
    * \brief Write a Paraview binary solution file with parallel output.
@@ -540,7 +409,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nInst, bool surf_sol);
+  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write a Tecplot ASCII solution file.
@@ -590,7 +459,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
 
   /*!
    * \brief Write a Tecplot binary solution file with parallel output.
@@ -610,6 +479,34 @@ public:
   void WriteSurface_CSV(CConfig *config, CGeometry *geometry);
   
   /*!
+   * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.
+   * 
+   * After calling this method the data is distributed to all processors based on a linear partition 
+   * and is ready to be written in parallel to file using the SetVolume_Output or SetSurface_Output routines.
+   * 
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
+    
+  /*!
+   * \brief Write the linear partitioned volume data in parallel to file. Load_Data has to be called before!
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The data format of the output files.
+   */
+  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+  
+  /*!
+   * \brief Write the linear partitioned surface data in parallel to file. Load_Data has to be called before!
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] format - The data format of the output files.
+   */
+  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+
+  /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -623,7 +520,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream &output_file);
+  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -840,18 +737,18 @@ public:
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
+   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort);
+  void SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort);
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
+   * \param[in] surf - boolean controlling whether surface <TRUE> or volume connectivity <FALSE> should be sorted.
    */
-  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, bool surf);
 
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
@@ -1065,6 +962,19 @@ public:
   void Postprocess_HistoryFields(CConfig *config);
   
   COutputLegacy* GetLegacyOutput();
+  
+  void SetVolume_Filename(string filename);
+  
+  void SetSurface_Filename(string filename);
+  
+  string GetVolume_Filename();
+  
+  string GetSurface_Filename(); 
+  
+  void SetRestart_Filename(string filename);
+    
+  string GetRestart_Filename();
+  
 };
 
 /*! \class CFlowOutput
@@ -1582,6 +1492,59 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  void SetVolumeOutputFields(CConfig *config);
+
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
+};
+
+/*! \class CMeshOutput
+ *  \brief Output class for mesh solution.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CMeshOutput : public COutput {
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CMeshOutput(void);
+
+  void SetVolumeOutputFields(CConfig *config);
+
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
+};
+
+
+/*! \class CBaselineOutput
+ *  \brief Output class for baseline solver output.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CBaselineOutput : public COutput {
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBaselineOutput(void);
 
   void SetVolumeOutputFields(CConfig *config);
 

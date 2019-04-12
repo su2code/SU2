@@ -51,6 +51,12 @@ COutput::COutput(CConfig *config) {
   
   ConvergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   MultiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
+  
+  /*--- Set default filenames ---*/
+  
+  SurfaceFilename = "surface";
+  VolumeFilename  = "volume";
+  RestartFilename = "restart";
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
@@ -102,7 +108,6 @@ COutput::COutput(CConfig *config) {
   Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
-  Local_Data         = NULL;
   Local_Data_Copy    = NULL;
   Parallel_Data      = NULL;
   Parallel_Surf_Data = NULL;
@@ -477,12 +482,6 @@ COutput::~COutput(void) {
     delete [] NuFactorOut;
   }
   
-  if (Local_Data != NULL){
-    for (unsigned long iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++)
-      if (Local_Data[iPoint] != NULL) delete [] Local_Data[iPoint];
-    delete [] Local_Data;
-  }
-  
   /*--- Deallocate the structures holding the linear partitioning ---*/
 
   if (Local_Halo_Sort != NULL) delete [] Local_Halo_Sort;
@@ -499,1587 +498,6 @@ COutput::~COutput(void) {
 }
 
 
-void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-  
-  /*--- Flags identifying the types of files to be written. ---*/
-  
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
-  
-  /*--- Merge connectivity for each type of element (excluding halos). Note
-   that we only need to merge the connectivity once, as it does not change
-   during computation. Check whether the base file has been written. ---*/
-  
-  /*--- Merge volumetric grid. ---*/
-  
-  if (Wrt_Vol) {
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
-      cout <<"Merging volumetric triangle grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-      cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, QUADRILATERAL   );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
-      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
-      cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pris != 0))
-      cout <<"Merging volumetric prism grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, PRISM       );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
-      cout <<"Merging volumetric pyramid grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, PYRAMID     );
-    
-  }
-  
-  /*--- Merge surface grid. ---*/
-  
-  if (Wrt_Srf) {
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
-      cout <<"Merging surface line grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, LINE);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
-      cout <<"Merging surface triangle grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, TRIANGLE);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-      cout <<"Merging surface quadrilateral grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, QUADRILATERAL);
-    
-  }
-  
-  /*--- Update total number of volume elements after merge. ---*/
-  
-  nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
-  nGlobal_Hexa + nGlobal_Pyra + nGlobal_Pris;
-  
-  /*--- Update total number of surface elements after merge. ---*/
-  
-  nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
-  
-}
-
-void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
-  
-  /*--- Local variables needed on all processors ---*/
-  
-  unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint;
-  
-  unsigned short kind_SU2 = config->GetKind_SU2();
-  
-#ifndef HAVE_MPI
-  
-  /*--- In serial, the single process has access to all geometry, so simply
-   load the coordinates into the data structure. ---*/
-  
-  unsigned short iMarker;
-  unsigned long iVertex, nTotalPoints = 0;
-  int SendRecv;
-  
-  bool isPeriodic;
-  
-  /*--- First, create a structure to locate any periodic halo nodes ---*/
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        /*--- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
-         * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
-         * is different in each case ---*/
-
-        if (kind_SU2 == SU2_DEF) {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
-        }else {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        }
-
-        if (isPeriodic && (SendRecv < 0)) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-      
-    }
-  }
-  
-  /*--- Total number of points in the mesh (this might include periodic points). ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (!Local_Halo[iPoint]) nTotalPoints++;
-  
-  nGlobal_Poin = nTotalPoints;
-  nGlobal_Doma = geometry->GetnPointDomain();
-  
-  /*--- Allocate the coordinates data structure. ---*/
-  
-  Coords = new su2double*[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Coords[iDim] = new su2double[nGlobal_Poin];
-  }
-  
-  /*--- Loop over the mesh to collect the coords of the local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Check if the node belongs to the domain (i.e, not a halo node).
-     Sort by the global index, even in serial there is a renumbering (e.g. RCM). ---*/
-    
-    if (!Local_Halo[iPoint]) {
-      
-      /*--- Retrieve the current coordinates at this node. ---*/
-      
-      unsigned long iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Coords[iDim][iGlobal_Index] = geometry->node[iPoint]->GetCoord(iDim);
-        
-        /*--- If US system, the output should be in inches ---*/
-        
-        if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
-          Coords[iDim][iGlobal_Index] *= 12.0;
-        }
-        
-      }
-      
-    }
-  }
-  
-  
-  delete [] Local_Halo;
-  
-#else
-  
-  /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor = size;
-  unsigned long jPoint;
-
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
-  
-  /*--- Local variables needed for merging the geometry with MPI. ---*/
-  
-  unsigned long iVertex, iMarker;
-  unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
-  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-  
-  if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-  
-  if (Wrt_Halo) {
-    nLocalPoint = geometry->GetnPoint();
-  } else {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        
-        /*--- Checking for less than or equal to the rank, because there may
-         be some periodic halo nodes that send info to the same rank. ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          /*--- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
-           * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
-           * is different in each case ---*/
-
-          if (kind_SU2 == SU2_DEF) {
-            isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
-          }else {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          }
-          if (isPeriodic) {
-            Local_Halo[iPoint] = false;
-          }
-        }
-      }
-    }
-    
-    /*--- Sum total number of nodes that belong to the domain ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      if (Local_Halo[iPoint] == false)
-        nLocalPoint++;
-  }
-  Buffer_Send_nPoin[0] = nLocalPoint;
-  
-  /*--- Communicate the total number of nodes on this domain. ---*/
-  
-  SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  
-  if (rank == MASTER_NODE) {
-    nGlobal_Doma = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      nGlobal_Doma += Buffer_Recv_nPoin[iProcessor];
-    }
-  }
-  nBuffer_Scalar = MaxLocalPoint;
-  
-  /*--- Send and Recv buffers. ---*/
-  
-  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_X = NULL;
-  
-  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Y = NULL;
-  
-  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
-  if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
-  
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
-  
-  /*--- Prepare the receive buffers in the master node only. ---*/
-  
-  if (rank == MASTER_NODE) {
-    
-    Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
-    if (nDim == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
-    
-    /*--- Sum total number of nodes to be written and allocate arrays ---*/
-    nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      nGlobal_Poin += Buffer_Recv_nPoin[iProcessor];
-    }
-    Coords = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Coords[iDim] = new su2double[nGlobal_Poin];
-    }
-  }
-  
-  /*--- Main communication routine. Loop over each coordinate and perform
-   the MPI comm. Temporary 1-D buffers are used to send the coordinates at
-   all nodes on each partition to the master node. These are then unpacked
-   by the master and sorted by global index in one large n-dim. array. ---*/
-  
-  /*--- Loop over this partition to collect the coords of the local points. ---*/
-  su2double *Coords_Local; jPoint = 0;
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Check for halos and write only if requested ---*/
-    if (!Local_Halo[iPoint] || Wrt_Halo) {
-      
-      /*--- Retrieve local coordinates at this node. ---*/
-      Coords_Local = geometry->node[iPoint]->GetCoord();
-      
-      /*--- Load local coords into the temporary send buffer. ---*/
-      Buffer_Send_X[jPoint] = Coords_Local[0];
-      Buffer_Send_Y[jPoint] = Coords_Local[1];
-      if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
-      
-      /*--- If US system, the output should be in inches ---*/
-      
-      if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
-        Buffer_Send_X[jPoint] *= 12.0;
-        Buffer_Send_Y[jPoint] *= 12.0;
-        if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
-      }
-      
-      /*--- Store the global index for this local node. ---*/
-      Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
-      
-      /*--- Increment jPoint as the counter. We need this because iPoint
-       may include halo nodes that we skip over during this loop. ---*/
-      jPoint++;
-    }
-  }
-  
-  /*--- Gather the coordinate data on the master node using MPI. ---*/
-  
-  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (nDim == 3) {
-    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  }
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  
-  /*--- The master node unpacks and sorts this variable by global index ---*/
-  
-  if (rank == MASTER_NODE) {
-    jPoint = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
-        /*--- Get global index, then loop over each variable and store ---*/
-        iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-        if (iGlobal_Index >= nGlobal_Poin) {
-          cout << iGlobal_Index << " " << nGlobal_Poin << endl;
-        }
-        Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
-        Coords[1][iGlobal_Index] = Buffer_Recv_Y[jPoint];
-        if (nDim == 3) Coords[2][iGlobal_Index] = Buffer_Recv_Z[jPoint];
-        jPoint++;
-      }
-      /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-      jPoint = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-  
-  /*--- Immediately release the temporary data buffers. ---*/
-  
-  delete [] Local_Halo;
-  delete [] Buffer_Send_X;
-  delete [] Buffer_Send_Y;
-  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
-  delete [] Buffer_Send_GlobalIndex;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_X;
-    delete [] Buffer_Recv_Y;
-    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
-    delete [] Buffer_Recv_GlobalIndex;
-    delete [] Buffer_Recv_nPoin;
-  }
-  
-#endif
-  
-}
-
-void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-  
-  int iProcessor;
-  unsigned short NODES_PER_ELEMENT;
-  unsigned long iPoint, iNode, jNode;
-  unsigned long iElem = 0;
-  unsigned long nLocalElem = 0, nElem_Total = 0;
-  
-  unsigned long iVertex, iMarker;
-  unsigned long jElem;
-  int SendRecv, RecvFrom;
-  
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0;
-  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
-  
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
-  
-  unsigned short kind_SU2 = config->GetKind_SU2();
-  
-  int *Conn_Elem = NULL;
-  
-  /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
-  
-  switch (Elem_Type) {
-    case TRIANGLE:
-      nLocalElem = geometry->GetnElemTria();
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      nLocalElem = geometry->GetnElemQuad();
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    case TETRAHEDRON:
-      nLocalElem = geometry->GetnElemTetr();
-      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      break;
-    case HEXAHEDRON:
-      nLocalElem = geometry->GetnElemHexa();
-      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      break;
-    case PRISM:
-      nLocalElem = geometry->GetnElemPris();
-      NODES_PER_ELEMENT = N_POINTS_PRISM;
-      break;
-    case PYRAMID:
-      nLocalElem = geometry->GetnElemPyra();
-      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-      nLocalElem = 0;
-      NODES_PER_ELEMENT = 0;
-      break;
-  }
-  
-  /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
-  
-  Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalElem = nLocalElem;
-  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
-#endif
-  
-  nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
-  
-  /*--- Send and Recv buffers ---*/
-  
-  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
-  
-  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
-  
-  /*--- Prepare the receive buffers on the master node only. ---*/
-  
-  if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-  }
-  
-  /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that we part of the original domain (we want these to be in the
-   output files). ---*/
-  
-  vector<unsigned long> Added_Periodic;
-  Added_Periodic.clear();
-  
-  if (kind_SU2 != SU2_DEF) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-              (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
-          }
-        }
-      }
-    }
-  }
-  
-  /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
-  
-  /*--- First communicate the number of points that each rank has found ---*/
-  unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
-  
-  nAddedPeriodic = Added_Periodic.size();
-  Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  maxAddedPeriodic = nAddedPeriodic;
-  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
-#endif
-  
-  /*--- Communicate the global index values of all added periodic nodes. ---*/
-  unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
-  
-  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
-    Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
-  }
-  
-  /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
-#endif
-  
-  /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- We need to keep one copy of overlapping halo cells. ---*/
-        notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
-                   (SendRecv < 0) && (rank > RecvFrom));
-        
-        /*--- We want to keep the periodic nodes that were part of the original domain.
-         For SU2_DEF we want to keep all periodic nodes. ---*/
-        
-        if (kind_SU2 == SU2_DEF) {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
-        }else {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        }
-        
-        notPeriodic = (isPeriodic && (SendRecv < 0));
-        
-        /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
-        addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-          for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
-            if (iGlobal_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
-              addedPeriodic = true;
-          }
-          /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-          kPoint = (iProcessor+1)*maxAddedPeriodic;
-        }
-        
-        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
-        if ((notHalo || notPeriodic) && !addedPeriodic) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-    }
-  }
-  
-  /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
-  
-  jNode = 0; jElem = 0;
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
-      
-      /*--- Loop over all nodes in this element and load the
-       connectivity into the send buffer. ---*/
-      
-      Buffer_Send_Halo[jElem] = false;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        
-        /*--- Store the global index values directly. ---*/
-        
-        iPoint = geometry->elem[iElem]->GetNode(iNode);
-        Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- Check if this is a halo node. If so, flag this element
-         as a halo cell. We will use this later to sort and remove
-         any duplicates from the connectivity list. ---*/
-        
-        if (Local_Halo[iPoint]) {
-          Buffer_Send_Halo[jElem] = true;
-        }
-        
-        /*--- Increment jNode as the counter. We need this because iElem
-         may include other elements that we skip over during this loop. ---*/
-        
-        jNode++;
-      }
-      jElem++;
-    }
-  }
-  
-  /*--- Gather the element connectivity information. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
-#endif
-  
-  /*--- The master node unpacks and sorts the connectivity. ---*/
-  
-  if (rank == MASTER_NODE) {
-    
-    /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
-    
-    Write_Elem = new bool[size*MaxLocalElem];
-    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
-      Write_Elem[iElem] = true;
-    }
-    
-    /*--- Remove the rind layer from the solution only if requested ---*/
-    
-    if (!Wrt_Halo) {
-      
-      /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
-      
-      kElem = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-          
-          /*--- Check if this element was marked as a halo. ---*/
-          if (Buffer_Recv_Halo[kElem+iElem])
-            Write_Elem[kElem+iElem] = false;
-          
-        }
-        kElem = (iProcessor+1)*MaxLocalElem;
-      }
-    }
-    
-    /*--- Store the unique connectivity list for this element type. ---*/
-    
-    jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-        
-        /*--- Only write the elements that were flagged for it. ---*/
-        if (Write_Elem[jElem+iElem]) {
-          
-          /*--- Increment total count for this element type ---*/
-          nElem_Total++;
-          
-          /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
-          
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-            kNode++;
-          }
-        }
-      }
-      /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-      jElem = (iProcessor+1)*MaxLocalElem;
-      jNode = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-  
-  /*--- Immediately release the temporary buffers. ---*/
-  delete [] Buffer_Send_Elem;
-  delete [] Buffer_Send_Halo;
-  delete [] Buffer_Recv_nAddedPeriodic;
-  delete [] Buffer_Send_AddedPeriodic;
-  delete [] Buffer_Recv_AddedPeriodic;
-  delete [] Local_Halo;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nElem;
-    delete [] Buffer_Recv_Elem;
-    delete [] Buffer_Recv_Halo;
-    delete [] Write_Elem;
-  }
-  
-  /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
-  
-  if (rank == MASTER_NODE) {
-    switch (Elem_Type) {
-      case TRIANGLE:
-        nGlobal_Tria = nElem_Total;
-        if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
-        break;
-      case QUADRILATERAL:
-        nGlobal_Quad = nElem_Total;
-        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
-        break;
-      case TETRAHEDRON:
-        nGlobal_Tetr = nElem_Total;
-        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
-        break;
-      case HEXAHEDRON:
-        nGlobal_Hexa = nElem_Total;
-        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
-        break;
-      case PRISM:
-        nGlobal_Pris = nElem_Total;
-        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
-        break;
-      case PYRAMID:
-        nGlobal_Pyra = nElem_Total;
-        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-        break;
-    }
-  }
-  
-}
-
-void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-  
-  unsigned short NODES_PER_ELEMENT;
-  
-  unsigned short iMarker;
-  unsigned long iPoint, iNode, jNode;
-  unsigned long iElem = 0;
-  unsigned long nLocalElem = 0, nElem_Total = 0;
-  
-  int iProcessor;
-  unsigned long jElem;
-  
-  unsigned long iVertex;
-  
-  int SendRecv, RecvFrom;
-  
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0;
-  unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
-  
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
-  
-  
-  int *Conn_Elem = NULL;
-  
-  /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
-  
-  nLocalElem = 0;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
-          nLocalElem++;
-        }
-      }
-    }
-  }
-  
-  switch (Elem_Type) {
-    case LINE:
-      NODES_PER_ELEMENT = N_POINTS_LINE;
-      break;
-    case TRIANGLE:
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-      NODES_PER_ELEMENT = 0;
-      break;
-  }
-  
-  /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
-  
-  Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalElem = nLocalElem;
-  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
-#endif
-  
-  nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
-  
-  /*--- Send and Recv buffers ---*/
-  
-  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
-  
-  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
-  
-  /*--- Prepare the receive buffers on the master node only. ---*/
-  
-  if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-  }
-  
-  /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that we part of the original domain (we want these to be in the
-   output files). ---*/
-  
-  vector<unsigned long> Added_Periodic;
-  Added_Periodic.clear();
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-            (SendRecv < 0)) {
-          Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
-        }
-      }
-    }
-  }
-  
-  /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
-  
-  /*--- First communicate the number of points that each rank has found ---*/
-  unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
-  
-  nAddedPeriodic = Added_Periodic.size();
-  Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  maxAddedPeriodic = nAddedPeriodic;
-  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
-#endif
-  
-  /*--- Communicate the global index values of all added periodic nodes. ---*/
-  unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
-  
-  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
-    Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
-  }
-  
-  /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
-#endif
-  
-  /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iGlobal_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- We need to keep one copy of overlapping halo cells. ---*/
-        notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
-                   (SendRecv < 0) && (rank > RecvFrom));
-        
-        /*--- We want to keep the periodic nodes that were part of the original domain ---*/
-        notPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                       (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-                       (SendRecv < 0));
-        
-        /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
-        addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-          for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
-            if (iGlobal_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
-              addedPeriodic = true;
-          }
-          /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-          kPoint = (iProcessor+1)*maxAddedPeriodic;
-        }
-        
-        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
-        if ((notHalo || notPeriodic) && !addedPeriodic) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-    }
-  }
-  
-  /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
-  jNode = 0; jElem = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES)
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        
-        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
-          
-          /*--- Loop over all nodes in this element and load the
-           connectivity into the send buffer. ---*/
-          
-          Buffer_Send_Halo[jElem] = false;
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            
-            /*--- Store the global index values directly. ---*/
-            
-            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-            Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
-            
-            /*--- Check if this is a halo node. If so, flag this element
-             as a halo cell. We will use this later to sort and remove
-             any duplicates from the connectivity list. ---*/
-            
-            if (Local_Halo[iPoint])
-              Buffer_Send_Halo[jElem] = true;
-            
-            /*--- Increment jNode as the counter. We need this because iElem
-             may include other elements that we skip over during this loop. ---*/
-            
-            jNode++;
-          }
-          jElem++;
-        }
-      }
-  
-  /*--- Gather the element connectivity information. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
-#endif
-  
-  /*--- The master node unpacks and sorts the connectivity. ---*/
-  
-  if (rank == MASTER_NODE) {
-    
-    /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
-    
-    Write_Elem = new bool[size*MaxLocalElem];
-    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
-      Write_Elem[iElem] = true;
-    }
-    
-    /*--- Remove the rind layer from the solution only if requested ---*/
-    
-    if (!Wrt_Halo) {
-      
-      /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
-      
-      kElem = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-          
-          /*--- Check if this element was marked as a halo. ---*/
-          if (Buffer_Recv_Halo[kElem+iElem])
-            Write_Elem[kElem+iElem] = false;
-          
-        }
-        kElem = (iProcessor+1)*MaxLocalElem;
-      }
-    }
-    
-    /*--- Store the unique connectivity list for this element type. ---*/
-    
-    jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-        
-        /*--- Only write the elements that were flagged for it. ---*/
-        if (Write_Elem[jElem+iElem]) {
-          
-          /*--- Increment total count for this element type ---*/
-          nElem_Total++;
-          
-          /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
-          
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-            kNode++;
-          }
-        }
-      }
-      /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-      jElem = (iProcessor+1)*MaxLocalElem;
-      jNode = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-  
-  /*--- Immediately release the temporary buffers. ---*/
-  delete [] Buffer_Send_Elem;
-  delete [] Buffer_Send_Halo;
-  delete [] Buffer_Recv_nAddedPeriodic;
-  delete [] Buffer_Send_AddedPeriodic;
-  delete [] Buffer_Recv_AddedPeriodic;
-  delete [] Local_Halo;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nElem;
-    delete [] Buffer_Recv_Elem;
-    delete [] Buffer_Recv_Halo;
-    delete [] Write_Elem;
-  }
-  
-  /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
-  
-  if (rank == MASTER_NODE) {
-    switch (Elem_Type) {
-      case LINE:
-        nGlobal_Line = nElem_Total;
-        if (nGlobal_Line > 0) Conn_Line = Conn_Elem;
-        break;
-      case TRIANGLE:
-        nGlobal_BoundTria = nElem_Total;
-        if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
-        break;
-      case QUADRILATERAL:
-        nGlobal_BoundQuad = nElem_Total;
-        if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-        break;
-    }
-  }
-  
-}
-
-void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone) {
-  
-  /*--- Local variables needed on all processors ---*/
-  unsigned short iVar;
-  unsigned long iPoint = 0, jPoint = 0;
-  
-  nVar_Total = config->fields.size() - 1;
-  
-  /*--- Merge the solution either in serial or parallel. ---*/
-  
-#ifndef HAVE_MPI
-  
-  /*--- In serial, the single process has access to all solution data,
-   so it is simple to retrieve and store inside Solution_Data. ---*/
-  
-  unsigned short iMarker;
-  unsigned long iVertex, nTotalPoints = 0;
-  int SendRecv;
-  
-  /*--- First, create a structure to locate any periodic halo nodes ---*/
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
-          Local_Halo[iPoint] = false;
-        }
-      }
-      
-    }
-  }
-  
-  /*--- Total number of points in the mesh (this might include periodic points). ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (!Local_Halo[iPoint]) nTotalPoints++;
-  
-  nGlobal_Poin = nTotalPoints;
-  Data = new su2double*[nVar_Total];
-  for (iVar = 0; iVar < nVar_Total; iVar++) {
-    Data[iVar] = new su2double[nGlobal_Poin];
-  }
-  
-  /*--- Loop over all points in the mesh, but only write data
-   for nodes in the domain (ignore periodic halo nodes). ---*/
-  
-  jPoint = 0;
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    if (!Local_Halo[iPoint]) {
-      
-      /*--- Solution (first, and second system of equations) ---*/
-      
-      unsigned short jVar = 0;
-      for (iVar = 0; iVar < nVar_Total; iVar++) {
-        Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-        jVar++;
-      }
-    }
-    
-    /*--- Increment jPoint as the counter. We need this because iPoint
-     may include halo nodes that we skip over during this loop. ---*/
-    
-    jPoint++;
-    
-  }
-  
-#else
-  
-  /*--- MPI preprocessing ---*/
-  
-  int nProcessor = size, iProcessor;
-  
-  /*--- Local variables needed for merging with MPI ---*/
-  
-  unsigned long iVertex, iMarker;
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
-  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
-  
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-  
-  if (Wrt_Halo) {
-    nLocalPoint = geometry->GetnPoint();
-  } else {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        
-        /*--- Checking for less than or equal to the rank, because there may
-         be some periodic halo nodes that send info to the same rank. ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
-        }
-      }
-    }
-    
-    /*--- Sum total number of nodes that belong to the domain ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      if (Local_Halo[iPoint] == false)
-        nLocalPoint++;
-    
-  }
-  Buffer_Send_nPoint[0] = nLocalPoint;
-  
-  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
-  
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  
-  nBuffer_Scalar = MaxLocalPoint;
-  
-  /*--- Send and Recv buffers. ---*/
-  
-  su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
-  
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
-  
-  /*--- Prepare the receive buffers in the master node only. ---*/
-  if (rank == MASTER_NODE) {
-    
-    Buffer_Recv_Var = new su2double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
-    
-    /*--- Sum total number of nodes to be written and allocate arrays ---*/
-    nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
-    }
-    Data = new su2double*[nVar_Total];
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-      Data[iVar] = new su2double[nGlobal_Poin];
-    }
-    
-  }
-  
-  /*--- Main communication routine. Loop over each variable that has
-   been requested by the user and perform the MPI comm. Temporary
-   1-D buffers are used to send the solution for each variable at all
-   nodes on each partition to the master node. These are then unpacked
-   by the master and sorted by global index in one large n-dim. array. ---*/
-  
-  for (iVar = 0; iVar < nVar_Total; iVar++) {
-    
-    /*--- Loop over this partition to collect the current variable ---*/
-    jPoint = 0;
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      
-      /*--- Check for halos and write only if requested ---*/
-      if (!Local_Halo[iPoint] || Wrt_Halo) {
-        
-        /*--- Get this variable into the temporary send buffer. ---*/
-        Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
-        
-        /*--- Only send/recv the volumes & global indices during the first loop ---*/
-        if (iVar == 0) {
-          Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
-        }
-        jPoint++;
-      }
-    }
-    
-    /*--- Gather the data on the master node. ---*/
-    
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    if (iVar == 0) {
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-    }
-    
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-    if (rank == MASTER_NODE) {
-      jPoint = 0;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-          
-          /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-          jPoint++;
-        }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
-      }
-    }
-  }
-  
-  /*--- Immediately release the temporary buffers. ---*/
-  
-  delete [] Buffer_Send_Var;
-  delete [] Buffer_Send_GlobalIndex;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_Var;
-    delete [] Buffer_Recv_GlobalIndex;
-  }
-  
-#endif
-  
-  delete [] Local_Halo;
-  
-}
-
-void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-  
-  /*--- Local variables ---*/
-  
-  unsigned short nZone = geometry->GetnZone();
-  unsigned short Kind_Solver  = config->GetKind_Solver();
-  unsigned short iVar, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool grid_movement = config->GetGrid_Movement();
-  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  ofstream restart_file;
-  ofstream meta_file;
-  string filename, meta_filename;
-  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  /*--- Retrieve filename from config ---*/
-  
-  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else if (disc_adj_fem){
-    filename = config->GetRestart_AdjFEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
-  
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
-  
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()));
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
-  
-  /*--- Open the restart file and write the solution. ---*/
-  
-  restart_file.open(filename.c_str(), ios::out);
-  restart_file.precision(15);
-  
-  /*--- Write the header line based on the particular solver ----*/
-  
-  restart_file << "\"PointID\"";
-  
-  /*--- Mesh coordinates are always written to the restart first ---*/
-  
-  if (nDim == 2) {
-    restart_file << "\t\"x\"\t\"y\"";
-  } else {
-    restart_file << "\t\"x\"\t\"y\"\t\"z\"";
-  }
-  
-  for (iVar = 0; iVar < nVar_Consv; iVar++) {
-  if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == DISC_ADJ_FEM))
-      restart_file << "\t\"Displacement_" << iVar+1<<"\"";
-    else
-      restart_file << "\t\"Conservative_" << iVar+1<<"\"";
-  }
-  
-  if (!config->GetLow_MemoryOutput()) {
-    
-    if (config->GetWrt_Limiters()) {
-      for (iVar = 0; iVar < nVar_Consv; iVar++) {
-        restart_file << "\t\"Limiter_" << iVar+1<<"\"";
-      }
-    }
-    if (config->GetWrt_Residuals()) {
-      for (iVar = 0; iVar < nVar_Consv; iVar++) {
-        restart_file << "\t\"Residual_" << iVar+1<<"\"";
-      }
-    }
-    
-    /*--- Mesh velocities for dynamic mesh cases ---*/
-    
-    if (grid_movement && !fem) {
-      if (nDim == 2) {
-        restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"";
-      } else {
-        restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"\t\"Grid_Velz\"";
-      }
-    }
-    
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-        restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
-      } else
-        restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
-    }
-    
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-        if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
-        if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
-      } else {
-        if (nDim == 2) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"h\"\t\"y<sup>+</sup>\"";
-        if (nDim == 3) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"C<sub>f</sub>_z\"\t\"h\"\t\"y<sup>+</sup>\"";
-      }
-    }
-    
-    if (Kind_Solver == RANS) {
-      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
-        restart_file << "\t\"Eddy_Viscosity\"";
-      } else
-        restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
-    }
-    
-    if (config->GetWrt_SharpEdges()) {
-      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        restart_file << "\t\"Sharp_Edge_Dist\"";
-      }
-    }
-    
-    if ((Kind_Solver == ADJ_EULER              ) ||
-        (Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        (Kind_Solver == ADJ_RANS               )   ) {
-      restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
-    }
-    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               )) {
-      restart_file << "\t\"Surface_Sensitivity\"\t\"Sensitivity_x\"\t\"Sensitivity_y\"";
-      if (geometry->GetnDim() == 3) {
-        restart_file << "\t\"Sensitivity_z\"";
-      }
-    }
-    
-    if (Kind_Solver == FEM_ELASTICITY) {
-      if (!dynamic_fem) {
-        if (geometry->GetnDim() == 2)
-          restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
-        if (geometry->GetnDim() == 3)
-          restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
-      }
-      else if (dynamic_fem) {
-        if (geometry->GetnDim() == 2) {
-          restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Acceleration_1\"\t\"Acceleration_2\"";
-          restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Von_Mises_Stress\"";
-        }
-        if (geometry->GetnDim() == 3) {
-          restart_file << "\t\"Velocity_1\"\t\"Velocity_2\"\t\"Velocity_3\"\t\"Acceleration_1\"\t\"Acceleration_2\"\t\"Acceleration_3\"";
-          restart_file << "\t\"Sxx\"\t\"Syy\"\t\"Sxy\"\t\"Szz\"\t\"Sxz\"\t\"Syz\"\t\"Von_Mises_Stress\"";
-        }
-      }
-    }
-    
-    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())){
-      if (geometry->GetnDim() == 2)
-        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"";
-      if (geometry->GetnDim() == 3)
-        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"\t\"CrossTerm_3\"";
-    }
-
-    
-    if (config->GetExtraOutput()) {
-      string *headings = NULL;
-      //if (Kind_Solver == RANS) {
-      headings = solver[TURB_SOL]->OutputHeadingNames;
-      //}
-      
-      for (iVar = 0; iVar < nVar_Extra; iVar++) {
-        if (headings == NULL) {
-          restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
-        } else {
-          restart_file << "\t\""<< headings[iVar] <<"\"";
-        }
-      }
-    }
-  }
-  
-  restart_file << "\n";
-  
-  /*--- Write the restart file ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-    
-    /*--- Index of the point ---*/
-    restart_file << iPoint << "\t";
-    
-    /*--- Write the grid coordinates first ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      restart_file << scientific << Coords[iDim][iPoint] << "\t";
-    }
-    
-    /*--- Loop over the variables and write the values to file ---*/
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-      restart_file << scientific << Data[iVar][iPoint] << "\t";
-    }
-    restart_file << "\n";
-  }
-
-  /*--- Write the general header and flow conditions ----*/
-
-  if (dual_time)
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-  else
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-  restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-  restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-  restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-  restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
-  restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
-  restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-  if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-
-  /*--- Close the data portion of the restart file. ---*/
-
-  restart_file.close();
-
-}
-
-void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
-  
-  unsigned short iDim, nDim = geometry->GetnDim();
-  
-  /*--- The master node alone owns all data found in this routine. ---*/
-  
-  if (rank == MASTER_NODE) {
-    
-    /*--- Deallocate memory for coordinate data ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      delete [] Coords[iDim];
-    }
-    delete [] Coords;
-  }
-}
-
-void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol) {
-
-  /*--- The master node alone owns all data found in this routine. ---*/
-  if (rank == MASTER_NODE) {
-    
-    /*--- Deallocate memory for connectivity data ---*/
-    if (surf_sol) {
-      if (nGlobal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
-      if (nGlobal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
-      if (nGlobal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
-    }
-    else {
-      if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
-      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
-      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
-      
-    }
-    
-  }
-}
-
-void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
-
-  /*--- The master node alone owns all data found in this routine. ---*/
-  if (rank == MASTER_NODE) {
-    
-    /*--- Deallocate memory for solution data ---*/
-    for (unsigned short iVar = 0; iVar < nVar_Total; iVar++) {
-      delete [] Data[iVar];
-    }
-    delete [] Data;
-    
-  }
-}
 
 void COutput::SetConvHistory_Body(CGeometry ****geometry,
                                      CSolver *****solver_container,
@@ -2214,412 +632,243 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
   
 }
 
-void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                                      unsigned long iExtIter, unsigned short val_nZone) {
+void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
   
-  unsigned short iZone, iInst, nInst;
+  /*--- Collect that data defined in the subclasses from the different processors ---*/
   
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-    
-    nInst = config[iZone]->GetnTimeInstances();
-
-    for (iInst = 0; iInst < nInst; iInst++) {
-
-      config[iZone]->SetiInst(iInst);
-
-      /*--- Flags identifying the types of files to be written. ---*/
-
-      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-      if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = false; }
-      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-
-      /*--- Get the file output format ---*/
-
-      unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-
-      /*--- Merge the node coordinates and connectivity if necessary. This
-     is only performed if a volume solution file is requested, and it
-     is active by default. ---*/
-
-      if ((Wrt_Vol || Wrt_Srf)) {
-        if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
-        MergeConnectivity(config[iZone], geometry[iZone][iInst], iZone);
-      }
-
-      /*--- Merge the solution data needed for volume solutions and restarts ---*/
-
-      if ((Wrt_Vol || Wrt_Srf)) {
-        if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-        MergeBaselineSolution(config[iZone], geometry[iZone][iInst], solver[iZone][iInst], iZone);
-      }
-
-      /*--- Write restart, Tecplot or Paraview files using the merged data.
-     This data lives only on the master, and these routines are currently
-     executed by the master proc alone (as if in serial). ---*/
-
-
-      if (rank == MASTER_NODE) {
-
-        if (Wrt_Vol) {
-
-          switch (FileFormat) {
-
-          case TECPLOT:
-
-            /*--- Write a Tecplot ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-            break;
-
-          case FIELDVIEW:
-
-            /*--- Write a FieldView ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-            SetFieldViewASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-            break;
-
-          case TECPLOT_BINARY:
-
-            /*--- Write a Tecplot binary solution file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-            SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][iInst], iZone);
-            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][iInst], iZone);
-            break;
-
-          case FIELDVIEW_BINARY:
-
-            /*--- Write a binary binary file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-            SetFieldViewBinary(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-            break;
-
-          case PARAVIEW:
-
-            /*--- Write a Paraview ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-            break;
-
-          default:
-            break;
-          }
-
-        }
-
-        if (Wrt_Srf) {
-
-          switch (FileFormat) {
-
-          case TECPLOT:
-
-            /*--- Write a Tecplot ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
-            break;
-
-          case TECPLOT_BINARY:
-
-            /*--- Write a Tecplot binary solution file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-            SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][iInst], iZone);
-            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][iInst], iZone);
-            break;
-
-          case PARAVIEW:
-
-            /*--- Write a Paraview ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
-            break;
-
-          default:
-            break;
-          }
-        }
-
-        if (config[iZone]->GetWrt_Projected_Sensitivity()) {
-          WriteProjectedSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
-        }
-
-        if (FileFormat == TECPLOT_BINARY) {
-          if (!wrote_base_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-          if (!wrote_surf_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], wrote_surf_file);
-        }
-
-        if (Wrt_Vol || Wrt_Srf)
-          DeallocateSolution(config[iZone], geometry[iZone][iInst]);
-      }
-
-
-
-      /*--- Final broadcast (informing other procs that the base output
-     file was written). ---*/
-
-#ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-    }
-
+  if (rank == MASTER_NODE)
+    cout << endl << "Loading solution output data locally on each rank." << endl;
+  
+  CollectVolumeData(config, geometry, solver_container);
+  
+  /*--- Sort the data, needed for volume and surface output ---*/
+  
+  if (rank == MASTER_NODE) 
+    cout << "Sorting output data across all ranks." << endl;
+  
+  if (fem_output){
+    SortOutputData_FEM(config, geometry);
+  }
+  else {
+    SortOutputData(config, geometry);
   }
 }
 
-void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file) {
+void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+  
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
 
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
-  unsigned short iZone;
-  ofstream output_file;
-  string str;
-
-  /*--- Read the name of the output and input file ---*/
-
-  if (su2_file) {
-  if (rank == MASTER_NODE) {
-      str = config[ZONE_0]->GetMesh_Out_FileName();
-      strcpy (out_file, str.c_str());
-      strcpy (cstr, out_file);
-      output_file.precision(15);
-      output_file.open(cstr, ios::out);
-      if (val_nZone > 1){
-        output_file << "NZONE= " << val_nZone << endl;
-      }
-    }
-  }
-
-  for (iZone = 0; iZone < val_nZone; iZone++) {
+  /*--- Write files depending on the format --- */
+  
+  switch (format) {
+  
+  case CSV:
     
-    /*--- Flags identifying the types of files to be written. ---*/
-    
-    bool Wrt_Vol = config[iZone]->GetVisualize_Volume_Def();
-    bool Wrt_Srf = config[iZone]->GetVisualize_Surface_Def();
-    bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
-    
-    /*--- Merge the node coordinates and connectivity if necessary. This
-     is only performed if a volume solution file is requested, and it
-     is active by default. ---*/
-    
-    if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
-    MergeConnectivity(config[iZone], geometry[iZone], iZone);
-    
-    /*--- Merge coordinates of all grid nodes (excluding ghost points).
-     The grid coordinates are always merged and included first in the
-     restart files. ---*/
-    
-    if (rank == MASTER_NODE) cout <<"Merging grid coordinates." << endl;
-    MergeCoordinates(config[iZone], geometry[iZone]);
-    
-    /*--- Write restart, Tecplot or Paraview files using the merged data.
-     This data lives only on the master, and these routines are currently
-     executed by the master proc alone (as if in serial). ---*/
+    SortConnectivity(config, geometry, true, true);
     
     if (rank == MASTER_NODE) {
+        cout << "Writing surface CSV file." << endl;
+    }
+    
+    WriteSurface_CSV(config, geometry);
+  
+    break;  
+    
+  case TECPLOT_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, false);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot binary file surface solution file." << endl;  
+    }
+    
+    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), true);
       
-      if (Wrt_Vol) {
-        
-        if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
-        
-        /*--- Write a Tecplot ASCII file ---*/
+    break;
+    
+  case TECPLOT:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot ASCII file surface solution file." << endl;
+    }
+    
+    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), true);
 
-        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
-          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview volume mesh file by default." << endl;
-          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
-        }
-        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
-        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
-          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot volume mesh file by default." << endl;
-          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
-        }
-        
-      }
-      
-      if (Wrt_Srf) {
-        
-        if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
-        
-        /*--- Write a Tecplot ASCII file ---*/
-        
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
-          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview surface mesh file by default." << endl;
-          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
-        }
-        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
-        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
-          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot surface mesh file by default." << endl;
-          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
-        }
-        
-      }
-      
-      /*--- Write a .su2 ASCII file ---*/
-
-      if (su2_file) {
-
-      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
-
-        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
-      
-      /*--- Write an stl surface file ---*/
-
-      if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
-      
-        SetSTL_MeshASCII(config[iZone], geometry[iZone]);
-        
-      }
-      
-      /*--- Write a binary file with the grid coordinates alone. ---*/
-      
-      if (Wrt_Crd) {
-        if (rank == MASTER_NODE) cout <<"Writing .dat binary coordinates file." << endl;
-        WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
-      }
-
-      
-      /*--- Deallocate connectivity ---*/
-      
-      DeallocateConnectivity(config[iZone], geometry[iZone], true);
-      DeallocateConnectivity(config[iZone], geometry[iZone], false);
-      DeallocateCoordinates(config[iZone], geometry[iZone]);
-      
+    break;
+    
+  case PARAVIEW_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write paraview binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview binary file surface solution file." << endl;
+    }
+    
+    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, true);
+    
+    break;
+    
+  case PARAVIEW:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, true, true);
+    
+    /*--- Write paraview binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview ASCII file surface solution file." << endl;
     }
 
-    /*--- Final broadcast (informing other procs that the base output
-     file was written). ---*/
-    
-#ifdef HAVE_MPI
-    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-    
-    /*--- Write an csv surface file, done in parallel ---*/
+    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, true);
 
-    if (rank == MASTER_NODE) cout <<"Writing .csv surface file." << endl;
+    break;
+  default:
+    SU2_MPI::Error("Requested surface output format not available.", CURRENT_FUNCTION);
+    break;
+  } 
 
-    if (su2_file) SetCSV_MeshASCII(config[iZone], geometry[iZone]);
-
-  }
-
-  if (rank == MASTER_NODE) {
-    if (su2_file){
-      output_file.close();
-    }
-  }
+  /*--- Clean up the surface data that was only needed for output. ---*/
+ 
+  DeallocateConnectivity_Parallel(config, geometry, true);
+  
+  DeallocateSurfaceData_Parallel(config, geometry);
+  
 }
 
-void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
+void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
 
-  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
-  unsigned long iVertex, iPoint, nPoint, nVertex;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-
-  unsigned short iZone;
-
-  CSolver ***solver = new CSolver**[val_nZone];
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-    solver[iZone] = new CSolver*[1];
-  }
-
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-
-    nPoint = geometry[iZone][INST_0]->GetnPoint();
-    nDim   = geometry[iZone][INST_0]->GetnDim();
-    nMarker = config[iZone]->GetnMarker_All();
-    nVar = nDim + 1;
-
-    /*--- We create a baseline solver to easily merge the sensitivity information ---*/
-
-    vector<string> fieldnames;
-    fieldnames.push_back("\"Point\"");
-    fieldnames.push_back("\"x\"");
-    fieldnames.push_back("\"y\"");
-    if (nDim == 3) {
-      fieldnames.push_back("\"z\"");
+  /*--- Write files depending on the format --- */
+  
+  switch (format) {
+    
+  case SU2_RESTART_ASCII:
+    
+    if (rank == MASTER_NODE) {
+        cout << "Writing SU2 ASCII restart file." << endl;     
     }
-    fieldnames.push_back("\"Sensitivity_x\"");
-    fieldnames.push_back("\"Sensitivity_y\"");
-    if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\"");
-    }
-    fieldnames.push_back("\"Surface_Sensitivity\"");
-
-    solver[iZone][INST_0] = new CBaselineSolver(geometry[iZone][INST_0], config[iZone], nVar+nDim, fieldnames);
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        solver[iZone][INST_0]->node[iPoint]->SetSolution(iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
-      }
-      for (iVar = 0; iVar < nDim; iVar++) {
-        solver[iZone][INST_0]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
-      }
+   
+    WriteRestart_Parallel_ASCII(config, geometry);
+    
+    break;
+    
+  case SU2_RESTART_BINARY:
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing SU2 binary restart file." << endl;   
     }
 
-    /*--- Compute the sensitivity in normal direction ---*/
-
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX )   ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL )  ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )  ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
-        
-        nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
-
-        for (iVertex = 0; iVertex < nVertex; iVertex++) {
-          iPoint = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNormal();
-          Prod = 0.0;
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-
-            /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
-
-            SensDim = geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim);
-
-            /*--- Calculate scalar product for projection onto the normal vector ---*/
-
-            Prod += Normal[iDim]*SensDim;
-
-            Area += Normal[iDim]*Normal[iDim];
-          }
-
-          Area = sqrt(Area);
-
-          /*--- Projection of the gradient onto the normal vector of the surface ---*/
-
-          Sens = Prod/Area;
-
-          solver[iZone][INST_0]->node[iPoint]->SetSolution(2*nDim, Sens);
-
-        }
-      }
+    WriteRestart_Parallel_Binary(config, geometry);
+    
+    break;
+  
+  case SU2_MESH:
+    
+    /*--- Load and sort the output data and connectivity.
+     *  Note that the solver container is not need in this case. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Set the mesh ASCII format ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing SU2 mesh file." << endl;
     }
-  }
+    
+    SetSU2_MeshASCII(config, geometry);
+    
+    break;    
+    
+  case TECPLOT_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, false);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot binary file volume solution file." << endl;
+    }
+    
+    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), false);
+      
+    break;
+    
+  case TECPLOT:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write tecplot binary ---*/
+    
+    if (rank == MASTER_NODE) {
+      cout << "Writing Tecplot ASCII file volume solution file." << endl;
+    }
+    
+    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), false);
 
-  /*--- Merge the information and write the output files ---*/
+    break;
+    
+  case PARAVIEW_BINARY:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write paraview binary ---*/
+    if (rank == MASTER_NODE) {
+      cout << "Writing Paraview binary file volume solution file." << endl;
+    }
+    
+    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, false);
+    
+    break;
+    
+  case PARAVIEW:
+    
+    /*--- Load and sort the output data and connectivity. ---*/
+    
+    SortConnectivity(config, geometry, false, true);
+    
+    /*--- Write paraview binary ---*/
+    if (rank == MASTER_NODE) {
+        cout << "Writing Paraview ASCII file volume solution file." << endl;      
+    }
+    
+    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, false);
 
-  SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
+    break;
+    
+  default:
+    SU2_MPI::Error("Requested volume output format not available.", CURRENT_FUNCTION);
+    break;
+  } 
 
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-    delete solver[iZone][0];
-    delete solver[iZone];
-  }
-  delete [] solver;
+  /*--- Clean up the surface data that was only needed for output. ---*/
+  
+  if (format != SU2_RESTART_ASCII && format != SU2_RESTART_BINARY)
+    DeallocateConnectivity_Parallel(config, geometry, false);
+  
 }
 
 
@@ -2667,23 +916,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       }
 #endif
 
-//    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
 
-//    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
-
-//    switch (config[iZone]->GetKind_Solver()) {
-//      case EULER : case NAVIER_STOKES : case RANS :
-//        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
-//            solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
-//        break;
-//      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
-//      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-//        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][iInst][MESH_0],
-//            solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL],
-//            solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
-//        break;
-//      default: break;
-//    }
 
     /*--- Write a template inlet profile file if requested. ---*/
 
@@ -2762,10 +995,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
     if (config[iZone]->GetWrt_Binary_Restart()) {
       if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
-      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
+      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0]);
     } else {
       if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
-      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
+      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0]);
     }
 
     /*--- Write a slice on a structured mesh if requested. ---*/
@@ -2828,8 +1061,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, false);
             break;
 
           case FIELDVIEW:
@@ -2847,8 +1079,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
           if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
           WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                      iZone, val_nZone, false);
-            break;
+              iZone, val_nZone, false);
+          break;
 
           case FIELDVIEW_BINARY:
 
@@ -2863,8 +1095,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, false);
             break;
             
           case PARAVIEW_BINARY:
@@ -2873,7 +1104,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             
             if (rank == MASTER_NODE) cout << "Writing Paraview binary volume solution file." << endl;
             WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, nInst, false);
+                                        iZone, val_nZone, false);
             break;
 
           default:
@@ -2891,8 +1122,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
             break;
 
           case TECPLOT_BINARY:
@@ -2909,8 +1139,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
             break;
 
           case PARAVIEW_BINARY:
@@ -2918,8 +1147,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Paraview binary file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Paraview binary surface solution file." << endl;
-            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                         solver_container[iZone][iInst][MESH_0], iZone, val_nZone, nInst, true);
+            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
             break;
             
 
@@ -2948,59 +1176,78 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 }
 
-void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort) {
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort) {
 
-  /*--- Flags identifying the types of files to be written. ---*/
-  
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
-  
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
    across all processors based on the global index of the grid nodes. ---*/
   
   /*--- Sort volumetric grid connectivity. ---*/
   
-  if (Wrt_Vol) {
+  if (!surf) {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
     
-    SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
-    SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
-    SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
-    SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
+    if (!fem_output){
+      SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
+      SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
+      SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
+      SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
+      SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
+      SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);  
+    } else {
+      SortVolumetricConnectivity_FEM(config, geometry, TRIANGLE     );
+      SortVolumetricConnectivity_FEM(config, geometry, QUADRILATERAL);
+      SortVolumetricConnectivity_FEM(config, geometry, TETRAHEDRON  );
+      SortVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON   );
+      SortVolumetricConnectivity_FEM(config, geometry, PRISM        );
+      SortVolumetricConnectivity_FEM(config, geometry, PYRAMID      );
+    }
     
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
+    
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+#ifndef HAVE_MPI
+  nGlobal_Elem_Par = nTotal_Elem;
+#else
+  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
   }
   
   /*--- Sort surface grid connectivity. ---*/
   
-  if (Wrt_Srf) {
+  else {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting surface grid connectivity." << endl;
     
-    SortSurfaceConnectivity(config, geometry, LINE         );
-    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
-    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+    if (!fem_output){
+      SortSurfaceConnectivity(config, geometry, LINE         );
+      SortSurfaceConnectivity(config, geometry, TRIANGLE     );
+      SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+    } else {
+      SortSurfaceConnectivity_FEM(config, geometry, LINE         );
+      SortSurfaceConnectivity_FEM(config, geometry, TRIANGLE     );
+      SortSurfaceConnectivity_FEM(config, geometry, QUADRILATERAL);   
+    }    
     
-  }
-  
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-  
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
+    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
 #ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-  nSurf_Elem_Par   = nTotal_Surf_Elem;
+    nSurf_Elem_Par   = nTotal_Surf_Elem;
 #else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+    
+    /*--- Sort the surface output data --- */
+    if (fem_output){
+      SortOutputData_Surface_FEM(config, geometry);
+    } else {
+      SortOutputData_Surface(config, geometry);
+    }
+  }
 }
+
 
 void COutput::SortVolumetricConnectivity(CConfig *config,
                                          CGeometry *geometry,
@@ -5971,7 +4218,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry) {
   
   /*--- Local variables ---*/
   
@@ -5980,44 +4227,13 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
-  bool adjoint   = (config->GetContinuous_Adjoint() ||
-                    config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
   ofstream restart_file;
   string filename;
   
   int iProcessor;
-
-  /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else if (disc_adj_fem){
-    filename = config->GetRestart_AdjFEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
-  
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
-  
-  /*--- Append the zone number if multiple instance problems ---*/
-  if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  filename = config->GetFilename(RestartFilename, ".dat");
   
   /*--- Only the master node writes the header. ---*/
   
@@ -6081,25 +4297,25 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
 
   /*--- Write the metadata (master rank alone) ----*/
 
-  if (rank == MASTER_NODE) {
-    if (dual_time)
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
-    restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
-    restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
+//  if (rank == MASTER_NODE) {
+//    if (dual_time)
+//      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+//    else
+//      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+//    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+//    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+//    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+//    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+//    restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
+//    restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
+//    restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
 
-    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
-          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
-      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    }
-  }
+//    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+//          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+//          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+//      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+//    }
+//  }
 
   /*--- All processors close the file. ---*/
 
@@ -6107,15 +4323,13 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
 }
 
-void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry) {
 
   /*--- Local variables ---*/
 
   unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool adjoint   = (config->GetContinuous_Adjoint() ||
-                    config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -6123,34 +4337,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
   su2double file_size = 0.0, StartTime, StopTime, UsedTime, Bandwidth;
-
-  /*--- Retrieve filename from config ---*/
-
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
-
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
-
-  /*--- Append the zone number if multiple instance problems ---*/
-  if (nInst > 1)
-    filename= config->GetMultiInstance_FileName(filename, val_iInst);
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
+  
+  filename = config->GetFilename(RestartFilename, ".dat");
 
   strcpy(fname, filename.c_str());
 
@@ -6193,11 +4381,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
-        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
-    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
-  }
+//  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+//        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+//        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+//    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+//  }
 
   /*--- Set a timer for the binary file writing. ---*/
   
@@ -7096,1721 +5284,6 @@ void COutput::DeallocateInletCoordinates(CConfig *config, CGeometry *geometry) {
 
 
 
-void COutput::MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-
-  /*--- Flags identifying the types of files to be written. ---*/
-
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
-
-  /*--- Merge connectivity for each type of element (excluding halos). Note
-   that we only need to merge the connectivity once, as it does not change
-   during computation. Check whether the base file has been written. ---*/
-
-  /*--- Merge volumetric grid. ---*/
-
-  if (Wrt_Vol) {
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
-      cout <<"Merging volumetric triangle grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, TRIANGLE    );
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-      cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, QUADRILATERAL   );
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
-      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, TETRAHEDRON );
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
-      cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON  );
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pris != 0))
-      cout <<"Merging volumetric prism grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, PRISM       );
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
-      cout <<"Merging volumetric pyramid grid connectivity." << endl;
-    MergeVolumetricConnectivity_FEM(config, geometry, PYRAMID     );
-
-  }
-
-  /*--- Merge surface grid. ---*/
-
-  if (Wrt_Srf) {
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
-      cout <<"Merging surface line grid connectivity." << endl;
-    MergeSurfaceConnectivity_FEM(config, geometry, LINE);
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
-      cout <<"Merging surface triangle grid connectivity." << endl;
-    MergeSurfaceConnectivity_FEM(config, geometry, TRIANGLE);
-
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-      cout <<"Merging surface quadrilateral grid connectivity." << endl;
-    MergeSurfaceConnectivity_FEM(config, geometry, QUADRILATERAL);
-
-  }
-
-  /*--- Update total number of volume elements after merge. ---*/
-
-  nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
-  nGlobal_Hexa + nGlobal_Pyra + nGlobal_Pris;
-
-  /*--- Update total number of surface elements after merge. ---*/
-
-  nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
-
-}
-
-void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
-
-  /*--- Local variables needed on all processors ---*/
-
-  unsigned short iDim;
-  unsigned long iPoint;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned short nDim = DGGeometry->GetnDim();
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-  vector<su2double> DOFsCoords;
-  vector<unsigned long> globalID;
-
-  /*--- Set the global ID and the coordinates of the local DOFs
-        by looping over the owned volume elements. ---*/
-  unsigned long nLocalPoint = 0;
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      globalID.push_back(globalIndex);
-
-      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
-      for(unsigned short k=0; k<nDim; ++k) DOFsCoords.push_back(coor[k]);
-
-      nLocalPoint++;
-    }
-  }
-
-#ifndef HAVE_MPI
-
-  /*--- In serial, the single process has access to all geometry, so simply
-   load the coordinates into the data structure. ---*/
-
-  // need to double check for halos in parallel
-
-  nGlobal_Poin = nLocalPoint;
-  nGlobal_Doma = nLocalPoint;
-
-  /*--- Allocate the coordinates data structure. ---*/
-
-  Coords = new su2double*[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Coords[iDim] = new su2double[nGlobal_Poin];
-  }
-
-  /*--- Loop over the mesh to collect the coords of the local points ---*/
-
-  for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node).
-     Sort by the global index, even in serial there is a renumbering (e.g. RCM). ---*/
-
-    /*--- Retrieve the current coordinates at this node. ---*/
-
-    unsigned long iGlobal_Index = globalID[iPoint];
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Coords[iDim][iGlobal_Index] = DOFsCoords[iPoint*nDim+iDim];
-
-      /*--- If US system, the output should be in inches ---*/
-
-      if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
-        Coords[iDim][iGlobal_Index] *= 12.0;
-      }
-    }
-  }
-
-#else
-
-  /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor = size;
-  unsigned long jPoint;
-
-  /*--- Local variables needed for merging the geometry with MPI. ---*/
-
-  unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
-  unsigned long MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-
-  if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
-
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-
-  // Need to double check halo layers
-
-  Buffer_Send_nPoin[0] = nLocalPoint;
-
-  /*--- Communicate the total number of nodes on this domain. ---*/
-
-  SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-
-  if (rank == MASTER_NODE) {
-    nGlobal_Doma = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      nGlobal_Doma += Buffer_Recv_nPoin[iProcessor];
-    }
-  }
-  nBuffer_Scalar = MaxLocalPoint;
-
-  /*--- Send and Recv buffers. ---*/
-
-  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_X = NULL;
-
-  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Y = NULL;
-
-  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
-  if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
-
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
-
-  /*--- Prepare the receive buffers in the master node only. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
-    if (nDim == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*MaxLocalPoint];
-
-    /*--- Sum total number of nodes to be written and allocate arrays ---*/
-    nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      nGlobal_Poin += Buffer_Recv_nPoin[iProcessor];
-    }
-    Coords = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Coords[iDim] = new su2double[nGlobal_Poin];
-    }
-  }
-
-  /*--- Main communication routine. Loop over each coordinate and perform
-   the MPI comm. Temporary 1-D buffers are used to send the coordinates at
-   all nodes on each partition to the master node. These are then unpacked
-   by the master and sorted by global index in one large n-dim. array. ---*/
-
-  /*--- Loop over this partition to collect the coords of the local points. ---*/
-  jPoint = 0;
-  for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
-
-    /*--- Check for halos and write only if requested ---*/
-    //    if (!Local_Halo[iPoint] || Wrt_Halo) {
-
-    /*--- Load local coords into the temporary send buffer. These were stored above ---*/
-    Buffer_Send_X[jPoint] = DOFsCoords[iPoint*nDim+0];
-    Buffer_Send_Y[jPoint] = DOFsCoords[iPoint*nDim+1];
-    if (nDim == 3) Buffer_Send_Z[jPoint] = DOFsCoords[iPoint*nDim+2];
-
-    /*--- If US system, the output should be in inches ---*/
-
-    if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
-      Buffer_Send_X[jPoint] *= 12.0;
-      Buffer_Send_Y[jPoint] *= 12.0;
-      if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
-    }
-
-    /*--- Store the global index for this local node. ---*/
-    Buffer_Send_GlobalIndex[jPoint] = globalID[iPoint];
-
-    /*--- Increment jPoint as the counter. We need this because iPoint
-     may include halo nodes that we skip over during this loop. ---*/
-    jPoint++;
-    //    }
-  }
-
-  /*--- Gather the coordinate data on the master node using MPI. ---*/
-
-  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (nDim == 3) {
-    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  }
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-  /*--- The master node unpacks and sorts this variable by global index ---*/
-
-  if (rank == MASTER_NODE) {
-    jPoint = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
-        /*--- Get global index, then loop over each variable and store ---*/
-        iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-        if (iGlobal_Index >= nGlobal_Poin){
-          cout << iGlobal_Index << " " << nGlobal_Poin << endl;
-        }
-        Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
-        Coords[1][iGlobal_Index] = Buffer_Recv_Y[jPoint];
-        if (nDim == 3) Coords[2][iGlobal_Index] = Buffer_Recv_Z[jPoint];
-        jPoint++;
-      }
-      /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-      jPoint = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-
-  /*--- Immediately release the temporary data buffers. ---*/
-
-  //  delete [] Local_Halo;
-  delete [] Buffer_Send_X;
-  delete [] Buffer_Send_Y;
-  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
-  delete [] Buffer_Send_GlobalIndex;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_X;
-    delete [] Buffer_Recv_Y;
-    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
-    delete [] Buffer_Recv_GlobalIndex;
-    delete [] Buffer_Recv_nPoin;
-  }
-
-#endif
-
-}
-
-void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-
-  int iProcessor;
-  unsigned short NODES_PER_ELEMENT = 0;
-  unsigned long iNode, jNode;
-  unsigned long iElem = 0;
-  unsigned long nLocalElem = 0, nElem_Total = 0;
-
-  unsigned long jElem;
-
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0;
-  unsigned long MaxLocalElem = 0;
-
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL;
-
-  int *Conn_Elem = NULL;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-
-  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
-
-  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
-
-  /* Define the vectors for the connectivity of the local linear subelements. */
-  vector<unsigned long> volumeConn;
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-  map<unsigned long, unsigned long> mapLocal2Global;
-  unsigned long ii = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
-      mapLocal2Global[ii] = volElem[i].offsetDOFsSolGlobal+j;
-    }
-  }
-
-  /*--- Counter for keeping track of the number of this element locally. ---*/
-  nLocalElem = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Determine the necessary data from the corresponding standard elem,
-     such as the number of linear sub elements, the number of DOFs per
-     linear sub element and the corresponding local connectivity. */
-    const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
-
-    /*--- Only store the linear sub elements if they are of
-     the current type that we are merging. ---*/
-    if (Elem_Type == VTK_Type1) {
-
-      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType1();
-      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type1);
-      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType1();
-
-      /* Loop over the number of subfaces and store the required data. */
-      unsigned short kk = 0;
-      for(unsigned short j=0; j<nSubElems; ++j) {
-
-        /*--- Store the global index for the surface conn ---*/
-        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
-          volumeConn.push_back(mapLocal2Global[volElem[i].offsetDOFsSolLocal+connSubElems[kk]]);
-
-        nLocalElem++;
-      }
-
-    } else if (Elem_Type == VTK_Type2) {
-
-      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType2();
-      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type2);
-      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType2();
-
-      /* Loop over the number of subfaces and store the required data. */
-      unsigned short kk = 0;
-      for(unsigned short j=0; j<nSubElems; ++j) {
-
-        /*--- Store the global index for the surface conn ---*/
-        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
-          volumeConn.push_back(mapLocal2Global[volElem[i].offsetDOFsSolLocal+connSubElems[kk]]);
-
-        nLocalElem++;
-      }
-    }
-  }
-
-  /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
-
-  switch (Elem_Type) {
-    case TRIANGLE:
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    case TETRAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      break;
-    case HEXAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      break;
-    case PRISM:
-      NODES_PER_ELEMENT = N_POINTS_PRISM;
-      break;
-    case PYRAMID:
-      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-  }
-
-  /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
-
-  Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalElem = nLocalElem;
-  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
-#endif
-
-  nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
-
-  /*--- Send and Recv buffers ---*/
-
-  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
-
-  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
-
-  /*--- Prepare the receive buffers on the master node only. ---*/
-
-  if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-  }
-
-  /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
-
-  jNode = 0;
-  for (iElem = 0; iElem < nLocalElem; iElem++) {
-
-    /*--- Loop over all nodes in this element and load the
-     connectivity into the send buffer. ---*/
-    Buffer_Send_Halo[iElem] = false;
-    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-
-      /*--- Store the global index values directly. ---*/
-
-      Buffer_Send_Elem[jNode] = volumeConn[iElem*NODES_PER_ELEMENT+iNode];
-
-      /*--- Increment jNode as the counter. We need this because iElem
-       may include other elements that we skip over during this loop. ---*/
-
-      jNode++;
-    }
-  }
-
-  /*--- Gather the element connectivity information. ---*/
-
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
-#endif
-
-  /*--- The master node unpacks and sorts the connectivity. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
-
-    Write_Elem = new bool[size*MaxLocalElem];
-    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
-      Write_Elem[iElem] = true;
-    }
-
-    /*--- Remove the rind layer from the solution only if requested ---*/
-
-    if (!Wrt_Halo) {
-
-      /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
-
-      kElem = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-
-          /*--- Check if this element was marked as a halo. ---*/
-          if (Buffer_Recv_Halo[kElem+iElem])
-            Write_Elem[kElem+iElem] = false;
-
-        }
-        kElem = (iProcessor+1)*MaxLocalElem;
-      }
-    }
-
-    /*--- Store the unique connectivity list for this element type. ---*/
-
-    jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-
-        /*--- Only write the elements that were flagged for it. ---*/
-        if (Write_Elem[jElem+iElem]) {
-
-          /*--- Increment total count for this element type ---*/
-          nElem_Total++;
-
-          /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
-
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-            kNode++;
-          }
-        }
-      }
-      /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-      jElem = (iProcessor+1)*MaxLocalElem;
-      jNode = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-
-  /*--- Immediately release the temporary buffers. ---*/
-  delete [] Buffer_Send_Elem;
-  delete [] Buffer_Send_Halo;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nElem;
-    delete [] Buffer_Recv_Elem;
-    delete [] Buffer_Recv_Halo;
-    delete [] Write_Elem;
-  }
-
-  /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
-
-  if (rank == MASTER_NODE) {
-    switch (Elem_Type) {
-      case TRIANGLE:
-        nGlobal_Tria = nElem_Total;
-        if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
-        break;
-      case QUADRILATERAL:
-        nGlobal_Quad = nElem_Total;
-        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
-        break;
-      case TETRAHEDRON:
-        nGlobal_Tetr = nElem_Total;
-        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
-        break;
-      case HEXAHEDRON:
-        nGlobal_Hexa = nElem_Total;
-        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
-        break;
-      case PRISM:
-        nGlobal_Pris = nElem_Total;
-        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
-        break;
-      case PYRAMID:
-        nGlobal_Pyra = nElem_Total;
-        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-    }
-  }
-  
-}
-
-void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-
-  unsigned short NODES_PER_ELEMENT = 0;
-
-  unsigned long iNode, jNode;
-  unsigned long iElem = 0;
-  unsigned long nLocalElem = 0, nElem_Total = 0;
-
-  int iProcessor;
-  unsigned long jElem;
-
-  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
-  unsigned long nBuffer_Scalar = 0;
-  unsigned long kNode = 0, kElem = 0;
-  unsigned long MaxLocalElem = 0;
-
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL;
-
-  int *Conn_Elem = NULL;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-
-  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
-
-  const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
-
-  const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-  map<unsigned long, unsigned long> mapLocal2Global;
-  unsigned long ii = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
-      mapLocal2Global[ii] = volElem[i].offsetDOFsSolGlobal+j;
-    }
-  }
-
-  /* Define the vectors for the connectivity of the local linear subelements. */
-  vector<unsigned long>  surfaceConn;
-
-  /*--- Counter for keeping track of the number of this element locally. ---*/
-  nLocalElem = 0;
-
-  /* Loop over the boundary markers. */
-  for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
-    if( !boundaries[iMarker].periodicBoundary ) {
-
-      /* Check for markers to be plotted. */
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-
-        /* Loop over the surface elements of this marker. */
-        const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-        for(unsigned long i=0; i<surfElem.size(); ++i) {
-
-          /* Determine the necessary data from the corresponding standard face,
-           such as the number of linear subfaces, the number of DOFs per
-           linear subface and the corresponding local connectivity. */
-          const unsigned short ind           = surfElem[i].indStandardElement;
-          const unsigned short VTK_Type      = standardBoundaryFacesSol[ind].GetVTK_Type();
-
-          /*--- Only store the linear sub-elements if they are of
-           the current type that we are merging. ---*/
-          if (VTK_Type == Elem_Type) {
-
-            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
-            const unsigned short nDOFsPerFace  = standardBoundaryFacesSol[ind].GetNDOFsPerSubFace();
-            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
-
-            /* Loop over the number of subfaces and store the required data. */
-            unsigned short ii = 0;
-            for(unsigned short j=0; j<nSubFaces; ++j) {
-
-              /*--- Store the global index for the surface conn ---*/
-              for(unsigned short k=0; k<nDOFsPerFace; ++k, ++ii)
-                surfaceConn.push_back(mapLocal2Global[surfElem[i].DOFsSolFace[connSubFaces[ii]]]);
-
-              nLocalElem++;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  switch (Elem_Type) {
-    case LINE:
-      NODES_PER_ELEMENT = N_POINTS_LINE;
-      break;
-    case TRIANGLE:
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-  }
-
-  /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
-
-  Buffer_Send_nElem[0] = nLocalElem;
-  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalElem = nLocalElem;
-  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
-#endif
-
-  nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
-
-  /*--- Send and Recv buffers ---*/
-
-  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
-  unsigned long *Buffer_Recv_Elem = NULL;
-
-  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
-  unsigned short *Buffer_Recv_Halo = NULL;
-
-  /*--- Prepare the receive buffers on the master node only. ---*/
-
-  if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
-    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-  }
-
-  /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
-  jNode = 0;
-  for (iElem = 0; iElem < nLocalElem; iElem++) {
-
-    /*--- Loop over all nodes in this element and load the
-     connectivity into the send buffer. ---*/
-    Buffer_Send_Halo[iElem] = false;
-    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-
-      /*--- Store the global index values directly. ---*/
-      Buffer_Send_Elem[jNode] = surfaceConn[iElem*NODES_PER_ELEMENT+iNode];
-
-      /*--- Increment jNode as the counter for the buffer array. ---*/
-      jNode++;
-    }
-  }
-
-  /*--- Gather the element connectivity information. ---*/
-
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
-#endif
-
-  /*--- The master node unpacks and sorts the connectivity. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
-
-    Write_Elem = new bool[size*MaxLocalElem];
-    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
-      Write_Elem[iElem] = true;
-    }
-
-    /*--- Remove the rind layer from the solution only if requested ---*/
-
-    if (!Wrt_Halo) {
-
-      /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
-
-      kElem = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-
-          /*--- Check if this element was marked as a halo. ---*/
-          if (Buffer_Recv_Halo[kElem+iElem])
-            Write_Elem[kElem+iElem] = false;
-
-        }
-        kElem = (iProcessor+1)*MaxLocalElem;
-      }
-    }
-
-    /*--- Store the unique connectivity list for this element type. ---*/
-
-    jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-
-        /*--- Only write the elements that were flagged for it. ---*/
-        if (Write_Elem[jElem+iElem]) {
-
-          /*--- Increment total count for this element type ---*/
-          nElem_Total++;
-
-          /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
-
-          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-            kNode++;
-          }
-        }
-      }
-      /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-      jElem = (iProcessor+1)*MaxLocalElem;
-      jNode = (iProcessor+1)*nBuffer_Scalar;
-    }
-  }
-
-  /*--- Immediately release the temporary buffers. ---*/
-  delete [] Buffer_Send_Elem;
-  delete [] Buffer_Send_Halo;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nElem;
-    delete [] Buffer_Recv_Elem;
-    delete [] Buffer_Recv_Halo;
-    delete [] Write_Elem;
-  }
-
-  /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
-
-  if (rank == MASTER_NODE) {
-    switch (Elem_Type) {
-      case LINE:
-        nGlobal_Line = nElem_Total;
-        if (nGlobal_Line > 0) Conn_Line = Conn_Elem;
-        break;
-      case TRIANGLE:
-        nGlobal_BoundTria = nElem_Total;
-        if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
-        break;
-      case QUADRILATERAL:
-        nGlobal_BoundQuad = nElem_Total;
-        if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-    }
-  }
-}
-
-void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-
-  unsigned short Kind_Solver  = config->GetKind_Solver();
-  unsigned short iVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
-  unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
-
-  unsigned long iPoint = 0, jPoint = 0;
-
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
-  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-
-  int iProcessor;
-
-  /*--- Prepare send buffers for the conservative variables. Need to
-   find the total number of conservative variables and also the
-   index for their particular solution container. ---*/
-
-  switch (Kind_Solver) {
-    case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
-    default: SecondIndex = NONE; ThirdIndex = NONE; break;
-  }
-
-  nVar_First = solver[FirstIndex]->GetnVar();
-  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
-  nVar_Consv = nVar_First + nVar_Second + nVar_Third;
-  nVar_Total = nVar_Consv;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-  map<unsigned long, unsigned long> mapLocal2Global;
-  vector<su2double> DOFsSol;
-  vector<unsigned long> globalID;
-
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Set the pointers for the residual and solution for this element. */
-    const unsigned long offset  = nVar_Consv*volElem[l].offsetDOFsSolLocal;
-    su2double *solDOFs          = solver[FirstIndex]->GetVecSolDOFs() + offset;
-
-    /* Loop over the DOFs for this element and store the solution. */
-
-    unsigned int i = 0;
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-      nLocalPoint++;
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      globalID.push_back(globalIndex);
-
-      for(unsigned short iVar=0; iVar<nVar_Consv; ++iVar, ++i) {
-        DOFsSol.push_back(solDOFs[i]);
-      }
-    }
-  }
-  Buffer_Send_nPoint[0] = nLocalPoint;
-
-  /*--- Each processor sends its local number of nodes to the master. ---*/
-
-  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalPoint = nLocalPoint;
-  Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
-#endif
-
-  nBuffer_Scalar = MaxLocalPoint;
-
-  /*--- Send and Recv buffers. ---*/
-
-  su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
-
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
-
-  /*--- Prepare the receive buffers in the master node only. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    Buffer_Recv_Var = new su2double[size*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[size*MaxLocalPoint];
-
-    /*--- Sum total number of nodes to be written and allocate arrays ---*/
-    nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
-    }
-    Data = new su2double*[nVar_Total];
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-      Data[iVar] = new su2double[nGlobal_Poin];
-    }
-  }
-
-  /*--- Main communication routine. Loop over each variable that has
-   been requested by the user and perform the MPI comm. Temporary
-   1-D buffers are used to send the solution for each variable at all
-   nodes on each partition to the master node. These are then unpacked
-   by the master and sorted by global index in one large n-dim. array. ---*/
-
-  for (iVar = 0; iVar < nVar_Consv; iVar++) {
-
-    /*--- Loop over this partition to collect the current variable ---*/
-
-    jPoint = 0;
-    for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
-
-      /*--- Get this variable into the temporary send buffer. ---*/
-
-      Buffer_Send_Var[jPoint] = DOFsSol[iPoint*nVar_Consv+iVar];
-
-      /*--- Only send/recv the volumes & global indices during the first loop ---*/
-
-      if (iVar == 0) {
-        Buffer_Send_GlobalIndex[jPoint] = globalID[iPoint];
-      }
-
-      jPoint++;
-
-    }
-
-    /*--- Gather the data on the master node. ---*/
-
-#ifdef HAVE_MPI
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-#endif
-
-    if (iVar == 0) {
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
-#endif
-    }
-
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-
-    if (rank == MASTER_NODE) {
-      jPoint = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
-          /*--- Get global index, then loop over each variable and store ---*/
-
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-
-          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-
-          jPoint++;
-
-        }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
-      }
-    }
-
-  }
-
-  /*--- Immediately release the temporary buffers. ---*/
-
-  delete [] Buffer_Send_Var;
-  delete [] Buffer_Send_GlobalIndex;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nPoint;
-    delete [] Buffer_Recv_Var;
-    delete [] Buffer_Recv_GlobalIndex;
-  }
-
-}
-
-void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone) {
-
-  /*--- Local variables needed on all processors ---*/
-  unsigned short iVar;
-  unsigned long iPoint = 0, jPoint = 0;
-
-  unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
-  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-  unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
-
-  int iProcessor;
-
-  /*--- We know the number of fields from reading the restart. ---*/
-
-  nVar_Total = config->fields.size() - 1;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-  vector<su2double> DOFsSol;
-  vector<unsigned long> globalID;
-
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Set the pointers for the residual and solution for this element. */
-    const unsigned long offset  = nVar_Total*volElem[l].offsetDOFsSolLocal;
-    su2double *solDOFs          = solver->GetVecSolDOFs() + offset;
-
-    /* Loop over the DOFs for this element and store the solution. */
-
-    unsigned int i = 0;
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-      nLocalPoint++;
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      globalID.push_back(globalIndex);
-
-      for(unsigned short iVar=0; iVar<nVar_Total; ++iVar, ++i) {
-        DOFsSol.push_back(solDOFs[i]);
-      }
-    }
-  }
-  Buffer_Send_nPoint[0] = nLocalPoint;
-
-  /*--- Each processor sends its local number of nodes to the master. ---*/
-
-  if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MaxLocalPoint = nLocalPoint;
-  Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
-#endif
-
-  nBuffer_Scalar = MaxLocalPoint;
-
-  /*--- Send and Recv buffers. ---*/
-
-  su2double *Buffer_Send_Var = new su2double[MaxLocalPoint];
-  su2double *Buffer_Recv_Var = NULL;
-
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
-
-  /*--- Prepare the receive buffers in the master node only. ---*/
-
-  if (rank == MASTER_NODE) {
-
-    Buffer_Recv_Var = new su2double[size*MaxLocalPoint];
-    Buffer_Recv_GlobalIndex = new unsigned long[size*MaxLocalPoint];
-
-    /*--- Sum total number of nodes to be written and allocate arrays ---*/
-    nGlobal_Poin = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      nGlobal_Poin += Buffer_Recv_nPoint[iProcessor];
-    }
-    Data = new su2double*[nVar_Total];
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-      Data[iVar] = new su2double[nGlobal_Poin];
-    }
-  }
-
-  /*--- Main communication routine. Loop over each variable that has
-   been requested by the user and perform the MPI comm. Temporary
-   1-D buffers are used to send the solution for each variable at all
-   nodes on each partition to the master node. These are then unpacked
-   by the master and sorted by global index in one large n-dim. array. ---*/
-
-  for (iVar = 0; iVar < nVar_Total; iVar++) {
-
-    /*--- Loop over this partition to collect the current variable ---*/
-
-    jPoint = 0;
-    for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
-
-      /*--- Get this variable into the temporary send buffer. ---*/
-
-      Buffer_Send_Var[jPoint] = DOFsSol[iPoint*nVar_Total+iVar];
-
-      /*--- Only send/recv the volumes & global indices during the first loop ---*/
-
-      if (iVar == 0) {
-        Buffer_Send_GlobalIndex[jPoint] = globalID[iPoint];
-      }
-
-      jPoint++;
-
-    }
-
-    /*--- Gather the data on the master node. ---*/
-
-#ifdef HAVE_MPI
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-#endif
-
-    if (iVar == 0) {
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
-#endif
-    }
-
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-
-    if (rank == MASTER_NODE) {
-      jPoint = 0;
-      for (iProcessor = 0; iProcessor < size; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
-          /*--- Get global index, then loop over each variable and store ---*/
-
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-
-          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-
-          jPoint++;
-
-        }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
-      }
-    }
-
-  }
-
-  /*--- Immediately release the temporary buffers. ---*/
-
-  delete [] Buffer_Send_Var;
-  delete [] Buffer_Send_GlobalIndex;
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Recv_nPoint;
-    delete [] Buffer_Recv_Var;
-    delete [] Buffer_Recv_GlobalIndex;
-  }
-  
-}
-
-void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
-                                  unsigned long iExtIter, unsigned short val_nZone) {
-
-  unsigned short iZone;
-
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-
-    /*--- Check whether we are writing any output at all. We can
-     disable all output to avoid serial bottleneck at scale. ---*/
-    if (config[iZone]->GetWrt_Output()) {
-
-      /*--- Flags identifying the types of files to be written. ---*/
-
-      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-
-      /*--- Get the file output format ---*/
-
-      unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-
-      /*--- Merge the node coordinates and connectivity, if necessary. This
-       is only performed if a volume solution file is requested, and it
-       is active by default. ---*/
-
-      if (Wrt_Vol || Wrt_Srf) {
-        if (rank == MASTER_NODE) cout << endl << "Merging connectivities in the Master node." << endl;
-        MergeConnectivity_FEM(config[iZone], geometry[iZone][MESH_0], iZone);
-      }
-
-      /*--- Merge coordinates of all grid nodes (excluding ghost points).
-       The grid coordinates are always merged and included first in the
-       restart files. ---*/
-
-      if (rank == MASTER_NODE) cout << "Merging coordinates in the Master node." << endl;
-      MergeCoordinates_FEM(config[iZone], geometry[iZone][MESH_0]);
-
-      if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
-        if (FileFormat == TECPLOT_BINARY) {
-          if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
-          SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-          SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-        }
-      }
-
-      /*--- Merge the solution data needed for volume solutions and restarts ---*/
-
-      if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-      MergeSolution_FEM(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-
-      /*--- Write restart, or Tecplot files using the merged data.
-       This data lives only on the master, and these routines are currently
-       executed by the master proc alone (as if in serial). ---*/
-
-      if (rank == MASTER_NODE) {
-
-        /*--- Write a native restart file ---*/
-
-        if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-        SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-
-        if (Wrt_Vol) {
-
-          switch (FileFormat) {
-
-            case TECPLOT:
-
-              /*--- Write a Tecplot ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-              break;
-
-            case FIELDVIEW:
-
-              /*--- Write a FieldView ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
-              SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-              break;
-
-            case TECPLOT_BINARY:
-
-              /*--- Write a Tecplot binary solution file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-              SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-              break;
-
-            case FIELDVIEW_BINARY:
-
-              /*--- Write a FieldView binary file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing FieldView binary file volume solution file." << endl;
-              SetFieldViewBinary(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-              break;
-
-            case PARAVIEW:
-
-              /*--- Write a Paraview ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-              break;
-
-            default:
-              break;
-          }
-
-        }
-
-        if (Wrt_Srf) {
-
-          switch (FileFormat) {
-
-            case TECPLOT:
-
-              /*--- Write a Tecplot ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-              break;
-
-            case TECPLOT_BINARY:
-
-              /*--- Write a Tecplot binary solution file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-              SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-              break;
-
-            case PARAVIEW:
-
-              /*--- Write a Paraview ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-              break;
-
-            default:
-              break;
-          }
-
-        }
-
-        /*--- Release memory needed for merging the solution data. ---*/
-
-        DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-        DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
-
-      }
-
-      /*--- Final broadcast (informing other procs that the base output
-       file was written). ---*/
-
-#ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-    } else {
-      if (rank == MASTER_NODE) cout << endl << "Restart and solution output disabled." << endl;
-    }
-  }
-}
-
-void COutput::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                                          unsigned long iExtIter, unsigned short val_nZone) {
-
-  unsigned short iZone, iInst, nInst;
-
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-
-    nInst = config[iZone]->GetnTimeInstances();
-
-    for (iInst = 0; iInst < nInst; iInst++) {
-
-      config[iZone]->SetiInst(iInst);
-
-      /*--- Flags identifying the types of files to be written. ---*/
-
-      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-
-      /*--- Get the file output format ---*/
-
-      unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-
-      /*--- Merge the node coordinates and connectivity if necessary. This
-       is only performed if a volume solution file is requested, and it
-       is active by default. ---*/
-
-      if ((Wrt_Vol || Wrt_Srf)) {
-        if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
-        MergeConnectivity_FEM(config[iZone], geometry[iZone][iInst], iZone);
-      }
-
-      /*--- Merge the solution data needed for volume solutions and restarts ---*/
-
-      if ((Wrt_Vol || Wrt_Srf)) {
-        if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-        MergeBaselineSolution_FEM(config[iZone], geometry[iZone][iInst], solver[iZone][iInst], iZone);
-      }
-
-      /*--- Write restart, Tecplot or Paraview files using the merged data.
-       This data lives only on the master, and these routines are currently
-       executed by the master proc alone (as if in serial). ---*/
-
-      if (rank == MASTER_NODE) {
-
-        if (Wrt_Vol) {
-
-          switch (FileFormat) {
-
-            case TECPLOT:
-
-              /*--- Write a Tecplot ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-              break;
-
-            case FIELDVIEW:
-
-              /*--- Write a FieldView ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-              SetFieldViewASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-              break;
-
-            case TECPLOT_BINARY:
-
-              /*--- Write a Tecplot binary solution file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-              SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][iInst], iZone);
-              SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][iInst], iZone);
-              break;
-
-            case FIELDVIEW_BINARY:
-
-              /*--- Write a binary binary file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-              SetFieldViewBinary(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-              break;
-
-            case PARAVIEW:
-
-              /*--- Write a Paraview ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-              break;
-
-            default:
-              break;
-          }
-
-        }
-
-        if (Wrt_Srf) {
-
-          switch (FileFormat) {
-
-            case TECPLOT:
-
-              /*--- Write a Tecplot ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-              SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
-              break;
-
-            case TECPLOT_BINARY:
-
-              /*--- Write a Tecplot binary solution file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-              SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][iInst], iZone);
-              SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][iInst], iZone);
-              break;
-
-            case PARAVIEW:
-
-              /*--- Write a Paraview ASCII file ---*/
-
-              if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
-              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
-              break;
-
-            default:
-              break;
-          }
-        }
-
-        if (FileFormat == TECPLOT_BINARY) {
-          if (!wrote_base_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
-          if (!wrote_surf_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], wrote_surf_file);
-        }
-
-        if (Wrt_Vol || Wrt_Srf)
-          DeallocateSolution(config[iZone], geometry[iZone][iInst]);
-      }
-    
-      /*--- Final broadcast (informing other procs that the base output
-       file was written). ---*/
-    
-#ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-    }
-  }
-}
-
-void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-
-  unsigned short iDim;
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  unsigned short nDim = geometry->GetnDim();
-
-  unsigned long iVar, jVar;
-  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
-
-  stringstream varname;
-
-  /*--- Use a switch statement to decide how many solver containers we have
-   in this zone for output. ---*/
-
-  switch (Kind_Solver) {
-    case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case FEM_RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
-    default: SecondIndex = NONE; break;
-  }
-
-  nVar_First = solver[FirstIndex]->GetnVar();
-  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Register the variables that will be output. To register a  ---*/
-  /*---         variable, two things are required. First, increment the    ---*/
-  /*---         counter for the number of variables (nVar_Par), which      ---*/
-  /*---         controls the size of the data structure allocation, i.e.,  ---*/
-  /*---         the number of columns in an nPoint x nVar structure.       ---*/
-  /*---         Second, add a name for the variable to the vector that     ---*/
-  /*---         holds the string names.                                    ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- All output files first need the grid coordinates. ---*/
-
-  GlobalField_Counter  = 1; Variable_Names.push_back("x");
-  GlobalField_Counter += 1; Variable_Names.push_back("y");
-  if (geometry->GetnDim() == 3) {
-    GlobalField_Counter += 1; Variable_Names.push_back("z");
-  }
-
-  /*--- At a mininum, the restarts and visualization files need the
-   conservative variables, so these follow next. ---*/
-
-  GlobalField_Counter += nVar_Consv_Par;
-
-  Variable_Names.push_back("Density");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-  Variable_Names.push_back("Energy");
-
-  /*--- Eventually, turbulence model from second container goes here. ---*/
-
-  if (!config->GetLow_MemoryOutput()) {
-
-    /*--- Add Pressure, Temperature, Cp, Mach. ---*/
-
-    GlobalField_Counter += 1;
-    Variable_Names.push_back("Pressure");
-
-    GlobalField_Counter += 3;
-    Variable_Names.push_back("Temperature");
-    if (config->GetOutput_FileFormat() == PARAVIEW){
-      Variable_Names.push_back("Pressure_Coefficient");
-    } else {
-      Variable_Names.push_back("C<sub>p</sub>");
-    }
-    Variable_Names.push_back("Mach");
-
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
-    if (Kind_Solver == FEM_NAVIER_STOKES){
-      GlobalField_Counter += 1;
-      Variable_Names.push_back("Laminar_Viscosity");
-    }
-    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-      GlobalField_Counter += 1;
-      Variable_Names.push_back("Eddy_Viscosity");
-    }
-  }
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  /*--- Get a pointer to the fluid model class from the DG-FEM solver
-   so that we can access the states below. ---*/
-
-  CFluidModel *DGFluidModel = solver[FLOW_SOL]->GetFluidModel();
-
-  /*--- Allocate the local data structure now that we know how many
-   variables are in the output. ---*/
-
-  Local_Data = new su2double*[nLocalPoint_Sort];
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
-    Local_Data[iPoint] = new su2double[GlobalField_Counter];
-  }
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
-  /*---         the restart and vizualization files. Note that we need to  ---*/
-  /*---         increment the iVar variable after each variable load.      ---*/
-  /*---         The idea is that we're filling up the columns of field     ---*/
-  /*---         data for each iPoint (row) of the data structure.          ---*/
-  /*---         This data will then be sorted, communicated, and written   ---*/
-  /*---         to files automatically after this routine. Note that the   ---*/
-  /*---         ordering of the data loading MUST match the order of the   ---*/
-  /*---         variable registration above for the files to be correct.   ---*/
-  /*--------------------------------------------------------------------------*/
-
-  jPoint = 0;
-
-  /*--- Access the solution by looping over the owned volume elements. ---*/
-
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Set the pointers for the solution for this element. */
-
-    const unsigned long offset = nVar_First*volElem[l].offsetDOFsSolLocal;
-    su2double *solDOFs         = solver[FirstIndex]->GetVecSolDOFs() + offset;
-
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-      /*--- Restart the column index with each new point. ---*/
-
-      iVar = 0;
-
-      /*--- Get the conservative variables for this particular DOF. ---*/
-
-      const su2double *U = solDOFs + j*nVar_First;
-
-      /*--- Load the coordinate values of the solution DOFs. ---*/
-
-      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
-      for(unsigned short k=0; k<nDim; ++k) {
-        Local_Data[jPoint][iVar] = coor[k];
-        iVar++;
-      }
-
-      /* Load the conservative variables. */
-
-      for(jVar=0; jVar < nVar_First; ++jVar) {
-        Local_Data[jPoint][iVar] = U[jVar];
-        iVar++;
-      }
-
-      /*--- Prepare the primitive states. ---*/
-
-      const su2double DensityInv = 1.0/U[0];
-      su2double vel[3], Velocity2 = 0.0;
-      for(iDim=0; iDim<nDim; ++iDim) {
-        vel[iDim] = U[iDim+1]*DensityInv;
-        Velocity2 += vel[iDim]*vel[iDim];
-      }
-      su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
-      DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
-
-      /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
-
-      Local_Data[jPoint][iVar] = DGFluidModel->GetPressure(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetTemperature(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
-      Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
-
-      /*--- New variables can be loaded to the Local_Data structure here,
-       assuming they were registered above correctly. ---*/
-
-      if (Kind_Solver == FEM_NAVIER_STOKES){
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-        // todo: Export Eddy instead of Laminar viscosity
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-
-      /*--- Increment the point counter. ---*/
-
-      jPoint++;
-    }
-  }
-
-}
 
 void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
@@ -8951,12 +5424,8 @@ void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, bool surf) {
 
-  /*--- Flags identifying the types of files to be written. ---*/
-
-  bool Wrt_Vol = config->GetWrt_Vol_Sol();
-  bool Wrt_Srf = config->GetWrt_Srf_Sol();
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
    In these routines, we sort the connectivity into a linear partitioning
@@ -8964,7 +5433,7 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
 
   /*--- Sort volumetric grid connectivity. ---*/
 
-  if (Wrt_Vol) {
+  if (!surf) {
 
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
@@ -8975,12 +5444,20 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
     SortVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON   );
     SortVolumetricConnectivity_FEM(config, geometry, PRISM        );
     SortVolumetricConnectivity_FEM(config, geometry, PYRAMID      );
-
+    
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
+  
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+  #ifndef HAVE_MPI
+    nGlobal_Elem_Par = nTotal_Elem;
+  #else
+    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  #endif
   }
 
   /*--- Sort surface grid connectivity. ---*/
 
-  if (Wrt_Srf) {
+  else {
 
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting surface grid connectivity." << endl;
@@ -8988,21 +5465,16 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
     SortSurfaceConnectivity_FEM(config, geometry, LINE         );
     SortSurfaceConnectivity_FEM(config, geometry, TRIANGLE     );
     SortSurfaceConnectivity_FEM(config, geometry, QUADRILATERAL);
-
-  }
-
-  /*--- Reduce the total number of cells we will be writing in the output files. ---*/
-
-  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-  unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
-#ifndef HAVE_MPI
-  nGlobal_Elem_Par = nTotal_Elem;
-  nSurf_Elem_Par   = nTotal_Surf_Elem;
-#else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+    
+    /*--- Reduce the total number of cells we will be writing in the output files. ---*/
   
+    unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_BoundTria + nParallel_BoundQuad;
+  #ifndef HAVE_MPI
+    nSurf_Elem_Par   = nTotal_Surf_Elem;
+  #else
+    SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  #endif
+  }
 }
 
 void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
@@ -9643,17 +6115,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
 
-  /*--- Make sure that coordinates and conservative variables are always in the volume output --- */
+//  /*--- Make sure that coordinates are always in the volume output --- */
   
-  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
-    RequestedVolumeFields.push_back("COORDINATES");
-    nRequestedVolumeFields++;
-  }
+//  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
+//    RequestedVolumeFields.push_back("COORDINATES");
+//    nRequestedVolumeFields++;
+//  }
   
-  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "SOLUTION") != RequestedVolumeFields.end())) {
-    RequestedVolumeFields.push_back("SOLUTION");
-    nRequestedVolumeFields++;
-  }
   
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
@@ -9722,18 +6190,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
-    
-  unsigned long iPoint;
+   
+  Local_Data.resize(nLocalPoint_Sort, std::vector<su2double>(GlobalField_Counter, 0.0));
   
-  unsigned short iField;
-    
-  Local_Data = new su2double*[nLocalPoint_Sort];
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
-    Local_Data[iPoint] = new su2double[GlobalField_Counter];
-    for (iField = 0; iField < GlobalField_Counter; iField++){
-      Local_Data[iPoint][iField] = 0.0;
-    }
-  }
 }
 
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){

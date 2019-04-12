@@ -790,66 +790,25 @@ void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
 
 }
 
-namespace
-{
-
-  std::string GetTecplotFilename(CConfig *config, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, const char *extension) {
-
-    const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-    const unsigned short Kind_Solver = config->GetKind_Solver();
-    string filename;
-
-    if (config->GetKind_SU2() == SU2_DOT) {
-      if (surf_sol) filename = config->GetSurfSens_FileName();
-      else filename = config->GetVolSens_FileName();
-    }
-    else if (Kind_Solver == FEM_ELASTICITY) {
-      if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-      else filename = config->GetStructure_FileName().c_str();
-    }
-    else if (surf_sol) {
-      if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
-      else filename = config->GetSurfFlowCoeff_FileName();
-    }
-    else {
-      if (adjoint)
-        filename = config->GetAdj_FileName();
-      else filename = config->GetFlow_FileName();
-    }
-    
-    ostringstream string_stream;
-    string_stream << filename;
-    
-    /*--- Special cases where a number needs to be appended to the file name. ---*/
-    if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
-         Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
-         Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
-        (val_nZone > 1) ) {
-      string_stream << '_' << val_iZone;
-    }
-    
-    const unsigned long iExtIter = config->GetExtIter();
-    if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
-      string_stream << '_' << setfill('0') << setw(5) << iExtIter;
-    }
-
-    string_stream << extension;
-    return string_stream.str();
-  }
-
-} /* namespace */
-
-void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol) {
+void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
   unsigned short iVar, nDim = geometry->GetnDim();
   
   unsigned long iPoint, iElem, iNode;
   unsigned long iExtIter = config->GetExtIter();
   
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+    iExtIter = config->GetiInst();
+  }
+  
   int iProcessor;
 
-  string filename = GetTecplotFilename(config, val_iZone, val_nZone, surf_sol, ".dat");
   ofstream Tecplot_File;
+  
+  string filename;
+  
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".dat");
+  else filename          = config->GetFilename(VolumeFilename, ".dat");
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
   
@@ -1103,7 +1062,11 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   
   /*--- Open Tecplot binary file. ---*/
   
-  string filename = GetTecplotFilename(config, val_iZone, val_nZone, surf_sol, ".szplt");
+  string filename;
+  
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".szplt");
+  else filename          = config->GetFilename(VolumeFilename, ".szplt");
+
   
   string data_set_title = surf_sol
     ? "Visualization of the surface solution"

@@ -99,6 +99,18 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   ss << "Zone " << config->GetiZone() << " (Incomp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetFlow_FileName(); 
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfFlowCoeff_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_FlowFileName();
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {

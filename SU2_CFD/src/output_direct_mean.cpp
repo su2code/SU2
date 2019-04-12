@@ -97,6 +97,18 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
   ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetFlow_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfFlowCoeff_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_FlowFileName();
+  
 }
 
 CFlowOutput::~CFlowOutput(void) {

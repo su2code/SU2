@@ -1554,8 +1554,12 @@ enum ENUM_OUTPUT {
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
   CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
   PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8    /*!< \brief Paraview binary format for the solution output. */
+  PARAVIEW_BINARY = 8,    /*!< \brief Paraview binary format for the solution output. */
+  SU2_MESH      = 9,      /*!< \brief SU2 mesh format (only used internally). */
+  SU2_RESTART_BINARY = 10,/*!< \brief SU2 binary restart format (only used internally). */
+  SU2_RESTART_ASCII = 11  /*!< \brief SU2 ASCII restart format (only used internally). */
 };
+
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
