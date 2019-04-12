@@ -1062,6 +1062,7 @@ def main():
     pywrapper_naca0012.test_iter = 20
     pywrapper_naca0012.test_vals = [-4.047448, -3.538057, 0.338691, 0.023131] #last 4 columns
     pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_naca0012.new_output  = True
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
@@ -1074,6 +1075,7 @@ def main():
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-12.445710, -6.918658, 1.059622, 0.019138] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -1099,6 +1101,7 @@ def main():
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
     pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_aeroelastic.new_output  = True
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
@@ -1112,6 +1115,7 @@ def main():
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
@@ -1125,6 +1129,7 @@ def main():
     pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263309, 0.001077, 0.145818] #last 4 columns
     pywrapper_unsteadyCHT.su2_exec      = "python launch_unsteady_CHT_FlatPlate.py -f"
     pywrapper_unsteadyCHT.timeout       = 1600
+    pywrapper_unsteadyCHT.new_output    = True
     pywrapper_unsteadyCHT.tol           = 0.00001
     pywrapper_unsteadyCHT.unsteady      = True
     test_list.append(pywrapper_unsteadyCHT)
@@ -1137,6 +1142,7 @@ def main():
     pywrapper_rigidMotion.test_iter     = 5
     pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259671, -0.040621, 0.144134] #last 4 columns
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
+    pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001
     pywrapper_rigidMotion.unsteady      = True
