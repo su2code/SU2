@@ -2048,7 +2048,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
   filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -2119,7 +2119,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+    Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
     filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter, ".dat");
 
     /*--- Open the restart file, throw an error if this fails. ---*/

@@ -157,6 +157,9 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   base_config = true;
   
+  nZone = 1;
+  iZone = 0;
+  
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();

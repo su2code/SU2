@@ -332,15 +332,11 @@ inline unsigned long CConfig::GetUnst_nIntIter(void) { return Unst_nIntIter; }
 
 inline unsigned long CConfig::GetDyn_nIntIter(void) { return Dyn_nIntIter; }
 
-inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
-
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
-
-inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
 
