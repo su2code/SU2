@@ -8996,7 +8996,10 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 
 
 CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement(), System(true) {
-
+  
+    size = SU2_MPI::GetSize();
+    rank = SU2_MPI::GetRank();
+  
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
