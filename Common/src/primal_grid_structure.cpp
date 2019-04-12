@@ -50,7 +50,9 @@ CPrimalGrid::CPrimalGrid(void) {
   Coord_FaceElems_CG = NULL;
   JacobianFaceIsConstant = NULL;
   GlobalIndex = 0;
-  elemIsInterpolDonor = false;
+
+  nProcElemIsInterpolDonor = 0;
+  ProcElemIsInterpolDonor  = NULL;
 }
 
 CPrimalGrid::~CPrimalGrid() {
@@ -61,6 +63,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
  if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
+ if (ProcElemIsInterpolDonor != NULL) delete[] ProcElemIsInterpolDonor;
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -106,6 +109,45 @@ void CPrimalGrid::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
   JacobianFaceIsConstant = new bool[val_nFaces];
   for(unsigned short i=0; i<val_nFaces; ++i)
     JacobianFaceIsConstant[i] = false;
+}
+
+void CPrimalGrid::AddProcElemIsInterpolDonor(unsigned long procInterpol) {
+
+  /*--- First check if the processor is not stored already. ---*/
+  bool alreadyStored = false;
+  for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
+    if(ProcElemIsInterpolDonor[iProc] == procInterpol) alreadyStored = true;
+
+  if( !alreadyStored ) {
+
+    /*--- Check for any previously stored processors. In that case
+          a reallocation must be carried out. ---*/
+    if( nProcElemIsInterpolDonor ) {
+
+      /* Copy the old ones. */
+      unsigned long *tmpProc = new unsigned long[nProcElemIsInterpolDonor];
+      for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
+        tmpProc[iProc] = ProcElemIsInterpolDonor[iProc];
+
+      /* Reallocate the memory for ProcElemIsInterpolDonor. */
+      delete[] ProcElemIsInterpolDonor;
+      ProcElemIsInterpolDonor = new unsigned long[nProcElemIsInterpolDonor+1];
+
+      /* Copy the data back and release tmpProc again. */
+      for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
+         ProcElemIsInterpolDonor[iProc] = tmpProc[iProc];
+      delete[] tmpProc;
+    }
+    else {
+
+       /* No previously stored processors. Just allocate the memory. */
+       ProcElemIsInterpolDonor = new unsigned long[1];
+    }
+
+    /*--- Store the new processor. ---*/
+    ProcElemIsInterpolDonor[nProcElemIsInterpolDonor] = procInterpol;
+    ++nProcElemIsInterpolDonor;
+  }
 }
 
 void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {

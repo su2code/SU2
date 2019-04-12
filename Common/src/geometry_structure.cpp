@@ -13246,31 +13246,41 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             /* Search for the element, which contains the exchange location. */
             unsigned short dummy;
             unsigned long  donorElem;
-            int            rank;
+            int            rankElem;
             su2double      parCoor[3], weightsInterpol[8];
             if( localVolumeADT.DetermineContainingElement(coorExchange, dummy,
-                                                          donorElem, rank, parCoor,
+                                                          donorElem, rankElem, parCoor,
                                                           weightsInterpol) ) {
 
-              /*--- Donor element found. Flag the element as interpolation donor. ---*/
-              elem[donorElem]->SetElemIsInterpolDonor(true);
+              /*--- Donor element found. Indicate that this element is an
+                    interpolation donor on this rank. ---*/
+              elem[donorElem]->AddProcElemIsInterpolDonor(rank);
 
-              /*--- Store the interpolation information. ---*/
-              /* TO BE DONE. DEFINE A DATA STRUCTURE TO STORE THIS INFORMATION.
-                 ALSO FLAG THE ELEMENT TO BE AN INTERPOLATION DONOR. */
+              /*--- Temporarily store the donors. This is done, because for a prism
+                    the swapping of the connectivity between the ADT and VTK storage
+                    must be taken into account. ---*/
               unsigned short nDonors = elem[donorElem]->GetnNodes();
               unsigned long donors[8];
 
               for (unsigned short iNode = 0; iNode < nDonors; iNode++)
                 donors[iNode] = elem[donorElem]->GetNode(iNode);
 
-              /* Take the swapping of the connectivity between ADT and
-                 VTK storage into account. */
               if(elem[donorElem]->GetVTK_Type() == PRISM) {
                 swap(donors[1], donors[2]);
                 swap(donors[4], donors[5]);
               }
 
+              /*--- Store the interpolation information for this vertex. ---*/
+              vertex[iMarker][iVertex]->SetDonorElem(donorElem);
+
+              vertex[iMarker][iVertex]->SetnDonorPoints(nDonors);
+              vertex[iMarker][iVertex]->Allocate_DonorInfo();
+
+              for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+                vertex[iMarker][iVertex]->SetInterpDonorPoint(iNode, donors[iNode]);
+                vertex[iMarker][iVertex]->SetInterpDonorProcessor(iNode, node[donors[iNode]]->GetColor());
+                vertex[iMarker][iVertex]->SetDonorCoeff(iNode, weightsInterpol[iNode]);
+              }
             }
             else {
 

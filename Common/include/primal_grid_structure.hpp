@@ -70,13 +70,17 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
-  bool elemIsInterpolDonor;     /*!< \brief Whether or not the element is a donor for interpolation. */
   su2double Volume;             /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
                                             constant in the transformation to the standard element. */
   bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
+
+  unsigned short nProcElemIsInterpolDonor;  /*!< \brief Number of processors on which this element is
+                                                        an interpolation donor. */
+  unsigned long  *ProcElemIsInterpolDonor;  /*!< \brief The processors on which this element is
+                                                        an interpolation donor. */
 public:
 	
 	/*!
@@ -192,11 +196,7 @@ public:
 	 */
 	su2double GetCG(unsigned short val_dim);
 		
-  /*!
-   * \brief Set elemIsInterpolDonor to the given value.
-   * \param[in] val_elemIsDonor - Value to which elemIsInterpolDonor is to be set.
-   */
-  void SetElemIsInterpolDonor(bool val_elemIsDonor);
+  void AddProcElemIsInterpolDonor(unsigned long procInterpol);
 
   /*!
    * \brief Set the center of gravity of an element (including edges).
