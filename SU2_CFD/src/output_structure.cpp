@@ -40,7 +40,7 @@
 COutput::COutput(CConfig *config) {
   
   
-  if(!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()){
+  if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) || config->GetBoolTurbomachinery()){
     output_legacy = new COutputLegacy(config);
   }
   
@@ -3919,11 +3919,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry) 
   
   /*--- Local variables ---*/
   
-  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  unsigned long iPoint;
 
   ofstream restart_file;
   string filename;
@@ -4024,9 +4021,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry)
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  unsigned short iVar;
+  unsigned long iPoint;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -4602,7 +4598,6 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
 
   char str_buf[MAX_STRING_SIZE];
   vector<string> Marker_Tags;
-  vector<string>::iterator it;
 
   unsigned long *nRowCum_Counter = NULL;
 

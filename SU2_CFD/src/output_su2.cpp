@@ -51,7 +51,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   ofstream output_file;
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   
-  filename = VolumeFilename + string(".su2");
+  filename = VolumeFilename;
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
+  filename += string(".su2");
+  
+
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 

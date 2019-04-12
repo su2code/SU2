@@ -481,7 +481,8 @@ CDriver::CDriver(char* confFile,
 
 //  output = new COutput(config_container[ZONE_0]);
 
-  if  (!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()){
+  if  ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()) || 
+       config_container[ZONE_0]->GetBoolTurbomachinery() || config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
     /*--- Open the convergence history file ---*/
     ConvHist_file = NULL;
     ConvHist_file = new ofstream*[nZone];
@@ -4122,27 +4123,31 @@ void CDriver::Output(unsigned long ExtIter) {
     
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-    for (unsigned short iInst = 0; iInst < nInst[ZONE_0]; iInst++){
-      
-      config_container[ZONE_0]->SetiInst(iInst);
-      
-      output[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
-      
-      /*--- Write restart files ---*/
-      
-      output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
-      
-      /*--- Write visualization files ---*/
-      
-      if (Wrt_Vol)
-        output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
-      if (Wrt_Surf)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
-      if (Wrt_CSV)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
-      
-      output[ZONE_0]->DeallocateData_Parallel(config_container[ZONE_0], geometry_container[ZONE_0][iInst][MESH_0]);
-      
+    
+    for (iZone = 0; iZone < nZone; iZone++){
+      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        
+        /*--- Write restart files ---*/
+        
+        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        
+        /*--- Write visualization files ---*/
+        
+        if (Wrt_Vol)
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        
+        if (Wrt_Surf)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        if (Wrt_CSV)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+        
+        output[iZone]->DeallocateData_Parallel();
+        
+      }
     }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
@@ -4442,8 +4447,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))      
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)    
       output[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
