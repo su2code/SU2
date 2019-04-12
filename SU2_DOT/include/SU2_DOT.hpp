@@ -81,3 +81,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
  */
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file);
+
+/*!
+ * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
+ *  on the surface and in the volume to a file.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] val_nZone - Number of Zones.
+ */
+
+void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);

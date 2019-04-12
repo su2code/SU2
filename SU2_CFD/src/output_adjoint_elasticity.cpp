@@ -77,7 +77,18 @@ CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsig
   ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
   MultiZoneHeaderString = ss.str();
 
-
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetAdj_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfStructure_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_AdjFEMFileName();
+  
 }
 
 CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {

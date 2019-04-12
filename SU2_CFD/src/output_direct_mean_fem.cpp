@@ -102,6 +102,19 @@ CFlowFEMOutput::CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Use FEM merging routines --- */
   
   fem_output = true;
+    
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetFlow_FileName();
+  
+  /*--- Set the surface filename --- */
+  
+  SurfaceFilename = config->GetSurfFlowCoeff_FileName();
+  
+  /*--- Set the restart filename --- */
+  
+  RestartFilename = config->GetRestart_FlowFileName();
+  
 }
 
 CFlowFEMOutput::~CFlowFEMOutput(void) {

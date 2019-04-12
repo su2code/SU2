@@ -1957,103 +1957,28 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 }
 
-void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol) {
+void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
 
   unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned short Kind_Solver = config->GetKind_Solver();
 
   unsigned long iPoint, iElem, iNode;
-  unsigned long iExtIter = config->GetExtIter();
 
   unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
 
-  bool adjoint = config->GetContinuous_Adjoint();
-  bool disc_adj = config->GetDiscrete_Adjoint();
-
-  char cstr[200], buffer[50];
   string filename, fieldname;
   ofstream Paraview_File;
 
   int iProcessor;
-
-  /*--- Write file name with extension ---*/
-  if (surf_sol) {
-    if (adjoint || disc_adj)
-      filename = config->GetSurfAdjCoeff_FileName();
-    else
-      filename = config->GetSurfFlowCoeff_FileName();
-  }
-  else {
-    if (adjoint || disc_adj)
-      filename = config->GetAdj_FileName();
-    else
-      filename = config->GetFlow_FileName();
-  }
-
-  if (Kind_Solver == FEM_ELASTICITY) {
-    if (surf_sol)
-      filename = config->GetSurfStructure_FileName().c_str();
-    else
-      filename = config->GetStructure_FileName().c_str();
-  }
   
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
-  }
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".vtk");
+  else filename          = config->GetFilename(VolumeFilename, ".vtk");
 
-  if (config->GetKind_SU2() == SU2_DOT) {
-    if (surf_sol)
-      filename = config->GetSurfSens_FileName();
-    else
-      filename = config->GetVolSens_FileName();
-  }
-
-  strcpy (cstr, filename.c_str());
-
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
-       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
-       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
-       Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
-      (val_nZone > 1) &&
-      (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-    strcat(cstr, buffer);
-  }
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (SU2_TYPE::Int(val_iInst) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iInst));
-    if ((SU2_TYPE::Int(val_iInst) >= 10) && (SU2_TYPE::Int(val_iInst) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iInst));
-    if ((SU2_TYPE::Int(val_iInst) >= 100) && (SU2_TYPE::Int(val_iInst) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iInst));
-    if ((SU2_TYPE::Int(val_iInst) >= 1000) && (SU2_TYPE::Int(val_iInst) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iInst));
-    if (SU2_TYPE::Int(val_iInst) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iInst));
-
-  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
-
-  } else if (config->GetDynamic_Analysis() && config->GetWrt_Dynamic()) {
-    if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
-  } else {
-    SPRINTF (buffer, ".vtk");
-  }
-
-  strcat(cstr, buffer);
 
   /*--- Open Paraview ASCII file and write the header. ---*/
 
     if (rank == MASTER_NODE) {
-  Paraview_File.open(cstr, ios::out);
+  Paraview_File.open(filename.c_str(), ios::out);
   Paraview_File.precision(6);
   Paraview_File << "# vtk DataFile Version 3.0\n";
   Paraview_File << "vtk output\n";
@@ -2074,7 +1999,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   /*--- Each processor opens the file. ---*/
 
-  Paraview_File.open(cstr, ios::out | ios::app);
+  Paraview_File.open(filename.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric point coordinates. ---*/
 
@@ -2410,10 +2335,8 @@ found = Variable_Names[iField].find("_z");
 
 void COutput::WriteParaViewBinary_Parallel(CConfig *config,
                                            CGeometry *geometry,
-                                           CSolver **solver,
                                            unsigned short val_iZone,
                                            unsigned short val_nZone,
-                                           unsigned short val_nInst,
                                            bool surf_sol) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -2422,14 +2345,15 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   string filename, fieldname;
   ofstream Paraview_File;
-  
-  filename = GetVTKFilename(config, val_iZone, val_nZone, surf_sol);
-  
+    
   int MAX_STRING_LENGTH = 255;
   char str_buf[MAX_STRING_LENGTH], fname[100];
   
   const int NCOORDS = 3;
   
+  if (surf_sol) filename = config->GetFilename(SurfaceFilename, ".vtk");
+  else filename          = config->GetFilename(VolumeFilename, ".vtk");
+
   strcpy(fname, filename.c_str());
   
   /*--- Check for big endian. We have to swap bytes otherwise. ---*/
