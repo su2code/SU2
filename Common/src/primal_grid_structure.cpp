@@ -50,7 +50,7 @@ CPrimalGrid::CPrimalGrid(void) {
   Coord_FaceElems_CG = NULL;
   JacobianFaceIsConstant = NULL;
   GlobalIndex = 0;
-  
+  elemIsInterpolDonor = false;
 }
 
 CPrimalGrid::~CPrimalGrid() {

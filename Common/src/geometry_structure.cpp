@@ -8436,6 +8436,35 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
+  /*--- Check for a wall treatment of the viscous boundaries. If present, some
+    additional elements (and nodes) may be needed in the communication pattern. ---*/
+  if (config->GetWall_Functions()){
+
+    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
+
+    SetPoint_Connectivity();
+    SetRCM_Ordering(config);
+    SetPoint_Connectivity();
+    SetElement_Connectivity();
+    SetBoundVolume();
+    /*--- Correct the orientation of the elements and flip the negative ones. ---*/
+    Check_IntElem_Orientation(config);
+    Check_BoundElem_Orientation(config);
+
+    /*--- Calculate Normals for the wall model preprocessing ---*/
+    SetEdges();
+    SetVertex(config);
+    SetCoord_CG();
+    SetControlVolume(config, ALLOCATE);
+    SetBoundControlVolume(config, ALLOCATE);
+
+    /*--- Perform the preprocessing tasks when wall functions are used. ---*/
+    WallModelPreprocessing(config);
+  }
+
+  /*--- Allocate the first dimension of the double vectors to
+    store the external nodes. ---*/
+
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
 
@@ -8481,37 +8510,6 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
         }
       }
     }
-  }
-
-  /*--- Check for a wall treatment of the viscous boundaries. If present, some
-    additional entries may be needed in the communication pattern. ---*/
-
-  if (config->GetWall_Functions()){
-
-    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
-
-    SetPoint_Connectivity();
-    SetRCM_Ordering(config);
-    SetPoint_Connectivity();
-    SetElement_Connectivity();
-    SetBoundVolume();
-    /*--- Correct the orientation of the elements and flip the negative ones. ---*/
-    Check_IntElem_Orientation(config);
-    Check_BoundElem_Orientation(config);
-    
-    /*--- Calculate Normals for the wall model preprocessing ---*/
-    
-    SetEdges();
-    SetVertex(config);
-    SetCoord_CG();
-    SetControlVolume(config, ALLOCATE);
-    SetBoundControlVolume(config, ALLOCATE);
-
-    /*--- Perform the preprocessing tasks when wall functions are used.
-     Additional entries may be added to the vectors SendDomainLocal and
-     ReceivedDomainLocal to account for additional halo data needed to
-     compute the exchange location. ---*/
-    WallModelPreprocessing(config, SendDomainLocal, ReceivedDomainLocal);
   }
 
   /*--- Sort the points that must be sent and delete repeated points, note
@@ -13084,9 +13082,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *config,
-                                               vector<vector<unsigned long> > &SendDomainLocal,
-                                               vector<vector<unsigned long> > &ReceivedDomainLocal) {
+void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
  
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Check whether wall models are used at all.                 ---*/
@@ -13114,9 +13110,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
   if( !wallFunctions ) return;
   
   /*--------------------------------------------------------------------------*/
-  /*--- Step 2. Build the local ADT of the volume elements. The halo       ---*/
-  /*---         elements are included such that also direct neighbors are  ---*/
-  /*---         guaranteed to be found as donor element.                   ---*/
+  /*--- Step 2. Build the local ADT of the volume elements. The currently  ---*/
+  /*---         stored halo elements are included, because this info will  ---*/
+  /*---         be available.                                              ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Define the vectors needed to build the ADT. */
@@ -13256,8 +13252,12 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig                        *c
                                                           donorElem, rank, parCoor,
                                                           weightsInterpol) ) {
 
-              /*--- Donor element found. Store the interpolation information. ---*/
-              /* TO BE DONE. DEFINE A DATA STRUCTURE TO STORE THIS INFORMATION. */
+              /*--- Donor element found. Flag the element as interpolation donor. ---*/
+              elem[donorElem]->SetElemIsInterpolDonor(true);
+
+              /*--- Store the interpolation information. ---*/
+              /* TO BE DONE. DEFINE A DATA STRUCTURE TO STORE THIS INFORMATION.
+                 ALSO FLAG THE ELEMENT TO BE AN INTERPOLATION DONOR. */
               unsigned short nDonors = elem[donorElem]->GetnNodes();
               unsigned long donors[8];
 

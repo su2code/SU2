@@ -70,7 +70,8 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
-  su2double Volume;    /*!< \brief Volume of the element. */
+  bool elemIsInterpolDonor;     /*!< \brief Whether or not the element is a donor for interpolation. */
+  su2double Volume;             /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
                                             constant in the transformation to the standard element. */
   bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
@@ -191,6 +192,12 @@ public:
 	 */
 	su2double GetCG(unsigned short val_dim);
 		
+  /*!
+   * \brief Set elemIsInterpolDonor to the given value.
+   * \param[in] val_elemIsDonor - Value to which elemIsInterpolDonor is to be set.
+   */
+  void SetElemIsInterpolDonor(bool val_elemIsDonor);
+
   /*!
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.

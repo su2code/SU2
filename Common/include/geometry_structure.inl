@@ -157,9 +157,7 @@ inline void CGeometry::SetBoundaries(CConfig *config) { }
 
 inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
-inline void CGeometry::WallModelPreprocessing(CConfig                        *config,
-                                              vector<vector<unsigned long> > &SendDomainLocal,
-                                              vector<vector<unsigned long> > &ReceivedDomainLocal) { }
+inline void CGeometry::WallModelPreprocessing(CConfig *config) { }
 
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
