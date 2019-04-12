@@ -2194,7 +2194,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
   addDoubleOption("MAX_TIME", Max_Time, 1.0);
   /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
-  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
+  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, true);
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
 
