@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
         
       }
       
-      output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone]);
+      output[iZone]->DeallocateData_Parallel();
       
     }
   }
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
       
     }
     
-    output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone]);
+    output[iZone]->DeallocateData_Parallel();
     
   }
 

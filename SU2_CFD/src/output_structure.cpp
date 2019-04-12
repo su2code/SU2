@@ -745,9 +745,9 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
 
   /*--- Clean up the surface data that was only needed for output. ---*/
  
-  DeallocateConnectivity_Parallel(config, geometry, true);
+  DeallocateConnectivity_Parallel(true);
   
-  DeallocateSurfaceData_Parallel(config, geometry);
+  DeallocateSurfaceData_Parallel();
   
 }
 
@@ -867,7 +867,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Clean up the surface data that was only needed for output. ---*/
   
   if (format != SU2_RESTART_ASCII && format != SU2_RESTART_BINARY)
-    DeallocateConnectivity_Parallel(config, geometry, false);
+    DeallocateConnectivity_Parallel(false);
   
 }
 
@@ -4535,7 +4535,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   
 }
 
-void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
+void COutput::DeallocateConnectivity_Parallel(bool surf_sol) {
   
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
@@ -4558,7 +4558,7 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   
 }
 
-void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
+void COutput::DeallocateData_Parallel() {
   
   /*--- Deallocate memory for solution data ---*/
   
@@ -4569,7 +4569,7 @@ void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
 
 }
 
-void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry) {
+void COutput::DeallocateSurfaceData_Parallel() {
   
   if (Parallel_Surf_Data != NULL) {
     

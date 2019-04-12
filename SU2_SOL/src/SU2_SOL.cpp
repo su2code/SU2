@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
     
             /*--- Deallocate data --- */
             
-            output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+            output[iZone]->DeallocateData_Parallel();
           
           }
         }
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
 
         /*--- Deallocate data --- */
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
     }
@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
   
           /*--- Deallocate data --- */
           
-          output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+          output[iZone]->DeallocateData_Parallel();
           
         }
       }
@@ -632,7 +632,7 @@ int main(int argc, char *argv[]) {
         
                 /*--- Deallocate data --- */
                 
-                output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+                output[iZone]->DeallocateData_Parallel();
                 
               }
         }
@@ -674,7 +674,7 @@ int main(int argc, char *argv[]) {
           
           /*--- Deallocate data --- */
           
-          output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][iInst]);
+          output[iZone]->DeallocateData_Parallel();
           
           
         }
@@ -751,7 +751,7 @@ int main(int argc, char *argv[]) {
         
                 /*--- Deallocate data --- */
                 
-                output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+                output[iZone]->DeallocateData_Parallel();
                 
               }        
         }
@@ -788,7 +788,7 @@ int main(int argc, char *argv[]) {
         
         /*--- Deallocate data --- */
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
     }

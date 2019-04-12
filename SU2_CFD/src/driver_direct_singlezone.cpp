@@ -280,7 +280,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       if (Wrt_CSV)
         output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
       
-      output[ZONE_0]->DeallocateData_Parallel(config_container[ZONE_0], geometry_container[ZONE_0][iInst][MESH_0]);
+      output[ZONE_0]->DeallocateData_Parallel();
       
     }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
