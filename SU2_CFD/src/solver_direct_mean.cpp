@@ -6599,7 +6599,139 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   
 }
 
+void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
+  su2double vnx[3], vny[3], vnz[3];
+  su2double graTri[2];
+  su2double Crd[3][2], Sens[3];
+  su2double Area, rap;
+
+  //--- note: currently only implemented for Tri
+
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    //--- store sensor
+    if (Kind_Aniso_Sensor == ANISO_MACH) {
+      const su2double local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
+      node[iPoint]->SetAnisoSens(local_Mach);
+    }
+    else if (Kind_Aniso_Sensor == ANISO_PRES) {
+      const su2double local_Pres = node[iPoint]->GetPrimitive(nDim+1);
+      node[iPoint]->SetAnisoSens(local_Pres);
+    }
+
+    //--- initialize sensor gradient
+    node[iPoint]->SetAnisoGrad(0, 0.0);
+    node[iPoint]->SetAnisoGrad(1, 0.0);
+
+  }
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<3; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (unsigned short iDim = 0; iDim<2; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store sensor
+      Sens[iNode] = node[kNode]->GetAnisoSens();
+    }
+
+    //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
+    vnx[0] = Crd[1][1]-Crd[2][1]; 
+    vny[0] = Crd[2][0]-Crd[1][0];  
+    vnx[1] = Crd[2][1]-Crd[0][1]; 
+    vny[1] = Crd[0][0]-Crd[2][0];  
+    vnx[2] = Crd[0][1]-Crd[1][1]; 
+    vny[2] = Crd[1][0]-Crd[0][0];  
+
+    //--- gradient at the element ( graTri = 2*|T|*gradT ) 
+    graTri[0] = Sens[0]*vnx[0] + Sens[1]*vnx[1] + Sens[2]*vnx[2];
+    graTri[1] = Sens[0]*vny[0] + Sens[1]*vny[1] + Sens[2]*vny[2];
+    
+    //--- assembling
+    for (unsigned short iNode=0; iNode<3; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      Area = 0.0;
+      for (unsigned short iDim = 0; iDim < 2; ++iDim)
+        Area += geometry->node[kNode]->GetVolume()*geometry->node[kNode]->GetVolume();
+
+      rap = sqrt(Area)/6.0;
+      node[kNode]->AddAnisoGrad(0, graTri[0] * rap);
+      node[kNode]->AddAnisoGrad(1, graTri[1] * rap);
+    }
+  }
+
+}
+
+void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
+  su2double vnx[3], vny[3], vnz[3];
+  su2double hesTri[3];
+  su2double Crd[3][2], Grad[3][2];
+  su2double Area, rap;
+
+  //--- note: currently only implemented for Tri
+
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    //--- initialize sensor Hessian
+    node[iPoint]->SetAnisoHess(0, 0.0);
+    node[iPoint]->SetAnisoHess(1, 0.0);
+    node[iPoint]->SetAnisoHess(2, 0.0);
+
+  }
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<3; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (unsigned short iDim = 0; iDim<2; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store gradient
+      Grad[iNode][0] = node[kNode]->GetAnisoGrad(0);
+      Grad[iNode][1] = node[kNode]->GetAnisoGrad(1);
+    }
+
+    //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
+    vnx[0] = Crd[1][1]-Crd[2][1]; 
+    vny[0] = Crd[2][0]-Crd[1][0];  
+    vnx[1] = Crd[2][1]-Crd[0][1]; 
+    vny[1] = Crd[0][0]-Crd[2][0];  
+    vnx[2] = Crd[0][1]-Crd[1][1]; 
+    vny[2] = Crd[1][0]-Crd[0][0];  
+
+    //--- hessian at the element ( hesTri = 2*|T|*hessienT ) 
+    hesTri[0] =         Grad[0][0]*vnx[0] + Grad[0][0]*vnx[1] + Grad[2][0]*vnx[2];
+    hesTri[1] = 0.5 * ( Grad[0][0]*vny[0] + Grad[0][0]*vny[1] + Grad[2][0]*vny[2]
+                      + Grad[0][1]*vnx[0] + Grad[0][1]*vnx[1] + Grad[2][1]*vnx[2] );
+    hesTri[2] =         Grad[0][1]*vny[0] + Grad[0][1]*vny[1] + Grad[2][1]*vny[2];
+    
+    //--- assembling
+    for (unsigned short iNode=0; iNode<3; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      Area = 0.0;
+      for (unsigned short iDim = 0; iDim < 2; ++iDim)
+        Area += geometry->node[kNode]->GetVolume()*geometry->node[kNode]->GetVolume();
+
+      rap = sqrt(Area)/6.0;
+      node[kNode]->AddAnisoHess(0, hesTri[0] * rap);
+      node[kNode]->AddAnisoHess(1, hesTri[1] * rap);
+      node[kNode]->AddAnisoHess(2, hesTri[2] * rap);
+    }
+  }
+
+}
+
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
+
+}
+
+void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
 }
 
