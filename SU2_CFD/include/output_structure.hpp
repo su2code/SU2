@@ -801,24 +801,19 @@ public:
 
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] surf_sol - if <TRUE>, surface connectivity is deallocated, otherwise the volume connectivity.
    */
-  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
+  void DeallocateConnectivity_Parallel(bool surf_sol);
   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  void DeallocateData_Parallel(CConfig *config, CGeometry *geometry);
+  void DeallocateData_Parallel();
   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
-  void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
+  void DeallocateSurfaceData_Parallel();
 
   /*!
    * \brief Merge the node coordinates of all inlet boundaries from all processors.

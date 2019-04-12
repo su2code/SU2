@@ -1011,7 +1011,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     /*--- Deallocate ---*/
     
-    output->DeallocateData_Parallel(config[iZone], geometry[iZone][INST_0]);
+    output->DeallocateData_Parallel();
     
     /*--- Free memory ---*/
     

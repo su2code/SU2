@@ -527,7 +527,7 @@ void CIteration::Output(COutput *output,
       if (Wrt_CSV)
         output->SetSurface_Output(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], CSV);    
       
-      output->DeallocateData_Parallel(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);      
+      output->DeallocateData_Parallel();      
     
     /*--- Execute the routine for writing special output. ---*/
     //output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);

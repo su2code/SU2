@@ -633,7 +633,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         if (Wrt_CSV)
           output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][iInst][MESH_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
       
