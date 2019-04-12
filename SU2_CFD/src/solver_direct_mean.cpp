@@ -16197,6 +16197,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (wall_functions)
     SetTauWall_WF(geometry, solver_container, config);
   
+  //if (wall_model)
+  // SetTauWallHeatFlux_WMLES(geometry, solver_container, config);
+  
   /*--- Roe Low Dissipation Sensor ---*/
   
   if (roe_low_dissipation){
@@ -18257,11 +18260,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             
           }
           
-          
           /*--- Store this value for the wall shear stress at the node.  ---*/
           
           node[iPoint]->SetTauWall(Tau_Wall);
-          
           
         }
         
@@ -18290,22 +18291,20 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     
     /* Distance to the wall. */
     su2double dist = geometry->node[iPoint]->GetWall_Distance(); // Is the distance to the wall used in any SGS calculation?
-    
+
+    /* Length Scale can be precompute from DES LengthScale.
+     I would like to test the Shear Layer Adapted one*/
+    //lenScale    = node[iPoint]->GetDES_LengthScale();
+    //lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
+    lenScale = geometry->node[iPoint]->GetMaxLength();
+
+    /* Compute the eddy viscosity. */
     if (nDim == 2){
-      /* Just for testing in 2D */
-      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./2.);
       muTurb = SGSModel->ComputeEddyViscosity_2D(rho, Grad_Vel[0][0], Grad_Vel[1][0],
                                                  Grad_Vel[0][1], Grad_Vel[1][1],
                                                  lenScale, dist);
     }
     else{
-
-      /* Length Scale can be precompute from DES LengthScale.
-       I would like to test the Shear Layer Adapted one*/
-      //lenScale    = node[iPoint]->GetDES_LengthScale();
-      lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
-      
-      /* Compute the eddy viscosity. */
       muTurb = SGSModel->ComputeEddyViscosity_3D(rho, Grad_Vel[0][0], Grad_Vel[1][0], Grad_Vel[2][0],
                                                Grad_Vel[0][1], Grad_Vel[1][1], Grad_Vel[2][1],
                                                Grad_Vel[0][2], Grad_Vel[1][2], Grad_Vel[2][2],
@@ -18314,5 +18313,43 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     /* Set eddy viscosity. */
     node[iPoint]->SetEddyViscosity(muTurb);
   }
+}
+
+void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  /*---
+   List TODO here:
+   - For each vertex (point):
+    - Load the interpolation coefficients.
+    - Extract the LES quantities at the exchange points.
+    - Call the Wall Model: Calculate Tau_Wall and Heat_Flux.
+    - Set Tau_Wall and Heat_Flux in the node structure for future use.
+   
+   ---*/
+  
+  unsigned short iDim, jDim, iMarker;
+  unsigned long iVertex, iPoint, Point_Normal, counter;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      
+      /*--- Identify the boundary by string name ---*/
+      
+      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      
+      /*--- Get the specified wall heat flux from config ---*/
+      
+      // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+      
+      /*--- Loop over all of the vertices on this boundary marker ---*/
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      }
+    }
+  }
+
+  
 }
 
