@@ -4048,6 +4048,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -8900,14 +8908,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
-  
   /*!
-   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \brief Computes the Sub-grid Scale (SGS) model for LES simulations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   void Setmut_LES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) and heat flux on the surface using a wall models.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
  
 };
 
