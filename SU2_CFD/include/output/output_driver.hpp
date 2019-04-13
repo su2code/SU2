@@ -50,7 +50,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "output_structure.hpp"
+#include "output.hpp"
 #include "../../Common/include/config_structure.hpp"
 
 using namespace std;
@@ -175,11 +175,22 @@ public:
     }
   }
 
+  /*! TODO
+   * \brief SetScreen_Header
+   * \param driver_config
+   * \param config
+   */
   void SetScreen_Header(CConfig *driver_config, CConfig **config);
 
+  /*! TODO
+   * \brief SetScreen_Output
+   * \param output
+   * \param driver_config
+   * \param config
+   */
   void SetScreen_Output(COutput **output, CConfig *driver_config, CConfig **config);
 
-  /*!
+  /*! 
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
