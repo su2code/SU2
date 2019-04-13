@@ -169,4 +169,18 @@ inline std::vector<std::string> split(const std::string& s, char delimiter)
   return tokens;
 }
 
+inline int stoi(const std::string s){
+  std::istringstream ss(s);
+  int number;
+  ss >> number;
+  return number;
+}
+
+inline double stod(const std::string s){
+  std::istringstream ss(s);
+  double number;
+  ss >> number;
+  return number;
+}
+
 }
