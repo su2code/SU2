@@ -157,59 +157,6 @@ protected:
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
-  bool turbo;
-  unsigned short   nSpanWiseSections,
-		   nMarkerTurboPerf;
-
-  su2double **TotalStaticEfficiency,
-        **TotalTotalEfficiency,
-        **KineticEnergyLoss,
-        **TRadius,
-        **TotalPressureLoss,
-        **MassFlowIn,
-        **MassFlowOut,
-        **FlowAngleIn,
-        **FlowAngleIn_BC,
-        **FlowAngleOut,
-        **EulerianWork,
-        **TotalEnthalpyIn,
-        **TotalEnthalpyIn_BC,
-        **EntropyIn,
-        **EntropyOut,
-        **EntropyIn_BC,
-        **PressureRatio,
-        **TotalTemperatureIn,
-        **EnthalpyOut,
-        ***MachIn,
-        ***MachOut,
-        **VelocityOutIs,
-        **DensityIn,
-        **PressureIn,
-        ***TurboVelocityIn,
-        **DensityOut,
-        **PressureOut,
-        ***TurboVelocityOut,
-        **EnthalpyOutIs,
-        **EntropyGen,
-        **AbsFlowAngleIn,
-        **TotalEnthalpyOut,
-        **RothalpyIn,
-        **RothalpyOut,
-        **TotalEnthalpyOutIs,
-        **AbsFlowAngleOut,
-        **PressureOut_BC,
-        **TemperatureIn,
-        **TemperatureOut,
-        **TotalPressureIn,
-        **TotalPressureOut,
-        **TotalTemperatureOut,
-        **EnthalpyIn,
-        **TurbIntensityIn,
-        **Turb2LamViscRatioIn,
-        **TurbIntensityOut,
-        **Turb2LamViscRatioOut,
-        **NuFactorIn,
-        **NuFactorOut;
 
   unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
   vector<string> Marker_Tags_InletFile;   /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
@@ -683,27 +630,6 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    */
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
-   * \param[in] iMarkerTP - Marker turbo-performance.
-   * \param[in] iSpan - span section.
-   */
-  su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
-
-  /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
-   * \param[in] iMarkerTP - Marker turbo-performance.
-   * \param[in] iSpan - span section.
-   */
-  su2double GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan);
-
-  /*!
-   * \brief Give the Entropy Generation performance parameters for turbomachinery.
-   * \param[in] iMarkerTP - Marker turbo-performance.
-   * \param[in] iSpan - span section.
-   */
-  su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for DG-FEM flow problems.
