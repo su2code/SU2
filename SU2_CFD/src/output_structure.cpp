@@ -5330,26 +5330,26 @@ void COutput::SetScreen_Output(CConfig *config) {
     if (HistoryOutput_Map.count(RequestedField) > 0){  
       switch (HistoryOutput_Map[RequestedField].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value));
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value), field_width);
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;      
       }
     }
     if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
       switch (HistoryOutputPerSurface_Map[RequestedField][0].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[RequestedField][0].Value));
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[RequestedField][0].Value), field_width);
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
+          PrintingToolbox::PrintScreenFixed(out, HistoryOutputPerSurface_Map[RequestedField][0].Value, field_width);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
+          PrintingToolbox::PrintScreenScientific(out, HistoryOutputPerSurface_Map[RequestedField][0].Value, field_width);
           break;   
       }
     }      

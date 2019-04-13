@@ -252,13 +252,13 @@ void CDriverOutput::SetScreen_Output(COutput **output, CConfig *driver_config, C
     if (HistoryOutput_Map.count(RequestedField) > 0){
       switch (HistoryOutput_Map[RequestedField].ScreenFormat) {
         case FORMAT_INTEGER:
-          output[ZONE_0]->PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value));
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value), field_width);
           break;
         case FORMAT_FIXED:
-          output[ZONE_0]->PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;
         case FORMAT_SCIENTIFIC:
-          output[ZONE_0]->PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;
       }
     }
