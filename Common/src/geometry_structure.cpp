@@ -18349,7 +18349,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
-  unsigned short iMarker, icommas;
+  unsigned short iMarker;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double Sensitivity;
   bool *PointInDomain;
@@ -18466,9 +18466,9 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
      
       vector<string> FieldValues = PrintingToolbox::split(text_line, ',');
       
-      iPoint = std::stoi(FieldValues[0]);
+      iPoint = PrintingToolbox::stoi(FieldValues[0]);
       
-      Sensitivity = std::stod(FieldValues[iField]);
+      Sensitivity = PrintingToolbox::stod(FieldValues[iField]);
       
       if (PointInDomain[iPoint]) {
         
