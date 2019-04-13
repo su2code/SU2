@@ -137,7 +137,7 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
         }
 
         /*--- Get the unique name for the averaged history data per solver ---*/
-        name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + to_string(iSol);
+        name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + PrintingToolbox::to_string(iSol);
 
         /*--- Compute the average and set the value for the solver iSol, zone iZone---*/
         avgsol = avgsol / nVar;
