@@ -8477,7 +8477,10 @@ private:
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
   CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
+  CWallModel *WallModel;   /*!< \brief Choice of the Wall Model LES. */
   bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
+  bool WallModelUsed;      /*!< \brief Whether or not a Wall Model LES is used. */
+  bool WallFunctionUsed;   /*!< \brief Whether or not a Wall Function RANS is used. */
 
 public:
   

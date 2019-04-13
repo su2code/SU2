@@ -3807,6 +3807,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- Check for the correct use of SGS Models---*/
+  
+  if ((Kind_Turb_Model != NONE) && (Kind_SGS_Model != NO_SGS_MODEL)){
+    if (Kind_Solver!=NAVIER_STOKES)
+      SU2_MPI::Error("SGS models are only available in the NAVIER STOKES solver.", CURRENT_FUNCTION);
+  }
+  
   /*--- Set the boolean Wall_Functions equal to true if there is a
    definition for the wall founctions: Check the Wall functions with Finite Volume code.---*/
   

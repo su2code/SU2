@@ -13186,9 +13186,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   vector<unsigned long>  boundaryNodeIDGlobalSearch;
   vector<su2double>      coorExGlobalSearch;
   
-  //vector<CWallModel1DEQ> WallModel1EQ_;
-  //vector<CWallModelLogLaw> WallModelLog_;
-
   /* Loop over the markers and select the ones for which a wall function
    treatment must be carried out. */
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -13198,28 +13195,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
-          
-          /* An LES wall model is used for this boundary marker. Determine
-           which wall model and allocate the memory for the member variable. */
-          switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-            case EQUILIBRIUM_WALL_MODEL: {
-              if(rank == MASTER_NODE)
-                cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
-              
-              break;
-            }
-            case LOGARITHMIC_WALL_MODEL: {
-              if(rank == MASTER_NODE)
-                cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
-              
-              //WallModelLog_.emplace_back(config,iMarker);
-              break;
-            }
-            default: {
-              SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
-            }
-          }
-          
+                    
           /* Retrieve the floating point information for this boundary marker. The
              exchange location is the first element of the floating point array. */
           const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
@@ -13272,7 +13248,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
               /*--- Store the interpolation information for this vertex. ---*/
               vertex[iMarker][iVertex]->SetDonorElem(donorElem);
-
               vertex[iMarker][iVertex]->SetnDonorPoints(nDonors);
               vertex[iMarker][iVertex]->Allocate_DonorInfo();
 

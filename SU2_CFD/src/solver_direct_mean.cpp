@@ -15227,6 +15227,11 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
   SGSModel     = NULL;
   SGSModelUsed = false;
+  
+  /*--- Set the WMLES model to NULL and indicate that either Wall Model for LES and Wall Function for RANS are used. ---*/
+  WallModel        = NULL;
+  WallModelUsed    = false;
+  WallFunctionUsed = false;
 
 }
 
@@ -16017,6 +16022,60 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
   }
   
+  /*--- Set the Wall Model in case of a LES  ---*/
+  
+  vector<unsigned short> WallFunctions_;
+  vector<string> WallFunctionsMarker_;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION){
+          WallFunctions_.push_back(config->GetWallFunction_Treatment(Marker_Tag));
+          WallFunctionsMarker_.push_back(Marker_Tag);
+        }
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+  
+  /*--- Check if the Wall models or Wall functions are the same (unique). ---*/
+  /*--- TODO: Need to change this for future simulations with different wall models
+        in different wall BCs. ---*/
+  
+  if (!WallFunctions_.empty()){
+    sort(WallFunctions_.begin(), WallFunctions_.end());
+    auto it = std::unique( WallFunctions_.begin(), WallFunctions_.end() );
+    bool wasUnique = (it == WallFunctions_.end() );
+    
+    if(wasUnique){
+      switch (config->GetWallFunction_Treatment(WallFunctionsMarker_[0])) {
+        case EQUILIBRIUM_WALL_MODEL:
+          WallModel = new CWallModel1DEQ(config,WallFunctionsMarker_[0]);
+          WallModelUsed = true;
+          WallFunctionUsed = false;
+        case LOGARITHMIC_WALL_MODEL:
+          WallModel = new CWallModelLogLaw(config,WallFunctionsMarker_[0]);
+          WallModelUsed = true;
+          WallFunctionUsed = false;
+          break;
+        case NO_WALL_FUNCTION:
+          WallModel = NULL;
+          WallModelUsed = false;
+          WallFunctionUsed= false;
+        case ADAPTIVE_WALL_FUNCTION:
+        case STANDARD_WALL_FUNCTION:
+          WallModel = NULL;
+          WallModelUsed = false;
+          WallFunctionUsed= true;
+        default:
+          break;
+      }
+    }
+  }
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -16194,11 +16253,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Compute the TauWall from the wall functions ---*/
   
-  if (wall_functions)
+  if (WallFunctionUsed)
     SetTauWall_WF(geometry, solver_container, config);
   
-  //if (wall_model)
-  // SetTauWallHeatFlux_WMLES(geometry, solver_container, config);
+  if (WallModelUsed)
+    SetTauWallHeatFlux_WMLES(geometry, solver_container, config);
   
   /*--- Roe Low Dissipation Sensor ---*/
   
@@ -18295,7 +18354,6 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     /* Length Scale can be precompute from DES LengthScale.
      I would like to test the Shear Layer Adapted one*/
     //lenScale    = node[iPoint]->GetDES_LengthScale();
-    //lenScale = pow(geometry->node[iPoint]->GetVolume(), 1./3.);
     lenScale = geometry->node[iPoint]->GetMaxLength();
 
     /* Compute the eddy viscosity. */
@@ -18324,11 +18382,11 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
     - Extract the LES quantities at the exchange points.
     - Call the Wall Model: Calculate Tau_Wall and Heat_Flux.
     - Set Tau_Wall and Heat_Flux in the node structure for future use.
-   
    ---*/
   
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
+  bool CalculateWallModel = false;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -18336,16 +18394,40 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       
       /*--- Identify the boundary by string name ---*/
-      
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       
-      /*--- Get the specified wall heat flux from config ---*/
+      /*--- Identify if this marker is a wall model one---*/
+      switch (config->GetWallFunction_Treatment(Marker_Tag)) {
+        case EQUILIBRIUM_WALL_MODEL:
+        case LOGARITHMIC_WALL_MODEL:
+          CalculateWallModel = true;
+          break;
+        
+        case NO_WALL_FUNCTION:
+        case ADAPTIVE_WALL_FUNCTION:
+        case STANDARD_WALL_FUNCTION:
+          CalculateWallModel = false;
+        default:
+          break;
+      }
       
-      // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+      /*--- If not just continue to the next---*/
+      if (!CalculateWallModel) continue;
       
       /*--- Loop over all of the vertices on this boundary marker ---*/
-      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        unsigned long donorElem = geometry->vertex[iMarker][iVertex]->GetDonorElem();
+        unsigned short nDonors  = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+        
+        for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+          unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
+          su2double donnorCoeff    = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
+        }
+        
+        /*--- Interpolate to have the velocity and pressure at the exchange location---*/
+        
+        
       }
     }
   }
