@@ -69,11 +69,21 @@ libSU2Core_sources = \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
-  ../include/output_structure.hpp \
-  ../include/output_structure.inl \
-  ../include/output_driver.hpp \
-  ../include/output_structure_legacy.hpp \
-  ../include/output_structure_legacy.inl \
+  ../include/output/output.hpp \
+  ../include/output/output_driver.hpp \
+  ../include/output/output_structure_legacy.hpp \
+  ../include/output/output_structure_legacy.inl \
+  ../include/output/output_baseline.hpp \
+  ../include/output/output_fea.hpp \
+  ../include/output/output_fea_discadj.hpp \
+  ../include/output/output_flow.hpp \
+  ../include/output/output_flow_adj.hpp \
+  ../include/output/output_flow_discadj.hpp \
+  ../include/output/output_flow_fem.hpp \
+  ../include/output/output_flow_inc.hpp \
+  ../include/output/output_flow_inc_discadj.hpp \
+  ../include/output/output_heat.hpp \
+  ../include/output/output_mesh.hpp \
   ../include/sgs_model.hpp \
   ../include/sgs_model.inl \
   ../include/solver_structure.hpp \

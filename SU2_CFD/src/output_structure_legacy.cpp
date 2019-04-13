@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure_legacy.hpp"
+#include "../include/output/output_structure_legacy.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
