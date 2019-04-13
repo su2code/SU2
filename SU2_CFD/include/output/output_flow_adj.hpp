@@ -1,0 +1,4 @@
+#ifndef OUTPUT_FLOW_ADJ_HPP
+#define OUTPUT_FLOW_ADJ_HPP
+
+#endif // OUTPUT_FLOW_ADJ_HPP
