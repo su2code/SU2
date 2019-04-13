@@ -573,16 +573,15 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   }
 }
 
-void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+void CFlowOutput::LoadHistoryDataa(CConfig *config, CGeometry *geometry, CSolver **solver)  {
   
-  CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
-  CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
+  CSolver* flow_solver = solver[FLOW_SOL];
+  CSolver* turb_solver = solver[TURB_SOL];
   
-  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
-  SetHistoryOutputValue("PHYS_TIME", timeused);
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
@@ -641,7 +640,7 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
   
-  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
     if (nDim == 3)
@@ -657,30 +656,30 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
       SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);   
     
     SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
-    if (config[val_iZone]->GetAeroelastic_Simulation()){
-      SetHistoryOutputPerSurfaceValue("PITCH", config[val_iZone]->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
-      SetHistoryOutputPerSurfaceValue("PLUNGE", config[val_iZone]->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
+    if (config->GetAeroelastic_Simulation()){
+      SetHistoryOutputPerSurfaceValue("PITCH", config->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("PLUNGE", config->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
     }
   }
   
-  SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
+  SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   
-  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[val_iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {  
-    SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW",               config[val_iZone]->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_MACH",                   config[val_iZone]->GetSurface_Mach(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TEMP",                   config[val_iZone]->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_PRESS",                  config[val_iZone]->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_DENSITY",                config[val_iZone]->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY",               config[val_iZone]->GetSurface_Enthalpy(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL",              config[val_iZone]->GetSurface_NormalVelocity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("UNIFORMITY",                 config[val_iZone]->GetSurface_Uniformity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH",         config[val_iZone]->GetSurface_SecondaryStrength(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION",        config[val_iZone]->GetSurface_MomentumDistortion(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY",  config[val_iZone]->GetSurface_SecondOverUniform(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP",              config[val_iZone]->GetSurface_TotalTemperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS",             config[val_iZone]->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",              config[val_iZone]->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
+  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++) {  
+    SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW",               config->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_MACH",                   config->GetSurface_Mach(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_TEMP",                   config->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_PRESS",                  config->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_DENSITY",                config->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY",               config->GetSurface_Enthalpy(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL",              config->GetSurface_NormalVelocity(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("UNIFORMITY",                 config->GetSurface_Uniformity(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH",         config->GetSurface_SecondaryStrength(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION",        config->GetSurface_MomentumDistortion(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY",  config->GetSurface_SecondOverUniform(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP",              config->GetSurface_TotalTemperature(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS",             config->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",              config->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
   }
 }
 
@@ -720,9 +719,10 @@ bool CFlowOutput::SetInit_Residuals(CConfig *config){
   
 }
 
-bool CFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CFlowOutput::SetUpdate_Averages(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return false;
+//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       
 }
 

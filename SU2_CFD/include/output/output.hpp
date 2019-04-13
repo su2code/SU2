@@ -250,7 +250,7 @@ protected:
   
   string VolumeFilename, SurfaceFilename, RestartFilename;
   
-  
+  unsigned long curr_TimeIter, curr_OuterIter, curr_InnerIter;
   
   
 public:
@@ -323,8 +323,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-                              CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);  
+  void SetHistoryFile_Body(CGeometry *geometry, CSolver **solver_container, CConfig *config,unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIte);  
   
   /*! 
    * \brief Returns a pointer to the legacy output class needed for some old driver implementations.
@@ -939,7 +938,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] dualtime - TODO: REMOVE PARAMETER
    */
-  void Postprocess_HistoryData(CConfig *config, bool dualtime);
+  void Postprocess_HistoryData(CConfig *config);
 
   /*!
    * \brief Postprocess_HistoryFields
@@ -960,7 +959,7 @@ protected:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  virtual bool WriteHistoryFile_Output(CConfig *config);
   
   /*!
    * \brief Determines if the screen header should be written.
@@ -972,7 +971,7 @@ protected:
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  virtual bool WriteScreen_Output(CConfig *config);
 
   /*!
    * \brief LoadVolumeData
@@ -1007,7 +1006,7 @@ protected:
    * \param dualtime
    * \return 
    */
-  inline virtual bool SetUpdate_Averages(CConfig *config, bool dualtime){return false;}
+  inline virtual bool SetUpdate_Averages(CConfig *config){return false;}
   
   /*!
    * \brief LoadSurfaceData
@@ -1031,8 +1030,7 @@ protected:
    * \brief Load the output data to the containers in each subclass
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-                                      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {}
+  inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 
   /*!
    * \brief SetHistoryOutputFields

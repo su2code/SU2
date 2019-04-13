@@ -209,15 +209,16 @@ COutput::~COutput(void) {
 
 
 
-void COutput::SetConvHistory_Body(CGeometry ****geometry,
-                                     CSolver *****solver_container,
-                                     CConfig **config,
-                                     CIntegration ****integration,
-                                     bool DualTime_Iteration,
-                                     su2double timeused,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) {
+void COutput::SetHistoryFile_Body(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CConfig *config,
+                                  unsigned long TimeIter,
+                                  unsigned long OuterIter,
+                                  unsigned long InnerIter) {
 
+  curr_TimeIter  = TimeIter;
+  curr_OuterIter = OuterIter;
+  curr_InnerIter = InnerIter;
 
   /*--- Output using only the master node ---*/
 
@@ -227,22 +228,21 @@ void COutput::SetConvHistory_Body(CGeometry ****geometry,
 
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
-    LoadHistoryData(geometry, solver_container, config, integration, DualTime_Iteration,
-                    timeused, val_iZone, val_iInst);
+    LoadHistoryData(config, geometry, solver_container);
     
-    Postprocess_HistoryData(config[val_iZone], DualTime_Iteration);
+    Postprocess_HistoryData(config);
         
     /*--- Write the history file ---------------------------------------------------------------------------*/
-    write_history = WriteHistoryFile_Output(config[val_iZone], DualTime_Iteration);
-    if (write_history) SetHistoryFile_Output(config[val_iZone]);
+    write_history = WriteHistoryFile_Output(config);
+    if (write_history) SetHistoryFile_Output(config);
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = WriteScreen_Header(config[val_iZone]);
-    if (write_header) SetScreen_Header(config[val_iZone]);
+    write_header = WriteScreen_Header(config);
+    if (write_header) SetScreen_Header(config);
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = WriteScreen_Output(config[val_iZone], DualTime_Iteration);
-    if (write_screen) SetScreen_Output(config[val_iZone]);
+    write_screen = WriteScreen_Output(config);
+    if (write_screen) SetScreen_Output(config);
 
   }
 
@@ -5657,7 +5657,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   }
 }
 
-void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
+void COutput::Postprocess_HistoryData(CConfig *config){
   
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
@@ -5668,7 +5668,7 @@ void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
       SetHistoryOutputValue("REL_" + HistoryOutput_List[iField], currentField.Value - Init_Residuals[HistoryOutput_List[iField]]);
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
-      if(SetUpdate_Averages(config, dualtime)){
+      if(SetUpdate_Averages(config)){
         SetHistoryOutputValue("TAVG_" + HistoryOutput_List[iField], RunningAverages[HistoryOutput_List[iField]].Update(currentField.Value));
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){
@@ -5697,7 +5697,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
+    write_header = ((curr_InnerIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -5708,7 +5708,7 @@ bool COutput::WriteScreen_Header(CConfig *config) {
   return write_header;
 }
 
-bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+bool COutput::WriteScreen_Output(CConfig *config) {
   bool write_output = false;
   
   write_output = config->GetnInner_Iter() - 1 == config->GetInnerIter();
@@ -5726,12 +5726,12 @@ bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   return write_output;
 }
 
-bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-   return true;
- }
- else {
-   return false;
- }
+bool COutput::WriteHistoryFile_Output(CConfig *config) { 
+// if (!write_dualtime){
+//   return true;
+// }
+// else {
+//   return false;
+// }
 }
 
