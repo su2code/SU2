@@ -2761,6 +2761,8 @@ void CConfig::SetnZone(){
   
   if (Multizone_Problem == YES){
     
+    SinglezoneDriver  = NO;
+    
     if (Multizone_Mesh){
       
       /*--- Get the number of zones from the mesh file --- */
