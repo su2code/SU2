@@ -124,7 +124,7 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
         for (iVar = 0; iVar < nVar; iVar++){
 
           /*--- Get the unique name for the history data ---*/
-          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
+          name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + PrintingToolbox::to_string(iSol) + "_VAL" + PrintingToolbox::to_string(iVar);
 
           /*--- Set the value of the BGS residual for the variable iVar, solver iSol, zone iZone ---*/
           val = log10(solver[iZone][INST_0][MESH_0][iSol]->GetRes_BGS(iVar));
@@ -137,7 +137,7 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
         }
 
         /*--- Get the unique name for the averaged history data per solver ---*/
-        name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
+        name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + to_string(iSol);
 
         /*--- Compute the average and set the value for the solver iSol, zone iZone---*/
         avgsol = avgsol / nVar;
@@ -148,7 +148,7 @@ void CDriverOutput::LoadHistoryData(COutput **output, CSolver *****solver, CConf
     }
 
     /*--- Get an unique name for the averaged history data per zone ---*/
-    name = "ZONE" + to_string(iZone);
+    name = "ZONE" + PrintingToolbox::to_string(iZone);
 
     /*--- Compute the average and set the value for the zone iZone---*/
     avgzone = avgzone / nVar_Zone;
@@ -183,9 +183,9 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
         for (iVar = 0; iVar < solver[iZone][INST_0][MESH_0][iSol]->GetnVar(); iVar++){
 
           /*--- Set an unique name for the history data ---*/
-          name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol) + "_VAL" + to_string(iVar);
+          name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + PrintingToolbox::to_string(iSol) + "_VAL" + PrintingToolbox::to_string(iVar);
           /*--- Set an unique name for the history headers ---*/
-          header = "res[" + to_string(iZone) + "][" + to_string(iSol) + "][" + to_string(iVar) + "]";
+          header = "res[" + PrintingToolbox::to_string(iZone) + "][" + PrintingToolbox::to_string(iSol) + "][" + PrintingToolbox::to_string(iVar) + "]";
 
           AddHistoryOutput(name, header, FORMAT_FIXED,  "VAR_RES", TYPE_RESIDUAL);
 
@@ -194,10 +194,10 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
         }
 
         /*--- Set an unique name for the averaged history data per solver ---*/
-        name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
+        name = "ZONE" + PrintingToolbox::to_string(iZone) + "_SOL" + PrintingToolbox::to_string(iSol);
         /*--- Set an unique name for the history headers of the averaged data per solver ---*/
         header = solver[iZone][INST_0][MESH_0][iSol]->GetSolverName();
-        header += "[" + to_string(iZone) + "]";
+        header += "[" + PrintingToolbox::to_string(iZone) + "]";
 
         /*--- Add the average residual of the current solver to output ---*/
         AddHistoryOutput(name, header, FORMAT_FIXED,  "SOL_AVGRES", TYPE_RESIDUAL);
@@ -209,9 +209,9 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
     }
 
     /*--- Set an unique name for the averaged history data ---*/
-    name = "ZONE" + to_string(iZone);
+    name = "ZONE" + PrintingToolbox::to_string(iZone);
     /*--- Set an unique name for the history headers of the averaged data ---*/
-    header = "avgres[" + to_string(iZone) + "]";
+    header = "avgres[" + PrintingToolbox::to_string(iZone) + "]";
 
     AddHistoryOutput(name, header, FORMAT_FIXED,  "ZONE_AVGRES", TYPE_RESIDUAL);
   }

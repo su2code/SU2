@@ -183,4 +183,14 @@ inline double stod(const std::string s){
   return number;
 }
 
+inline std::string to_string(const double number){
+  
+  std::stringstream ss;
+  
+  ss << number;
+  
+  return ss.str();
+  
+}
+
 }
