@@ -36,7 +36,7 @@
  */
 
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_flow_inc.hpp"
 
 CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
 

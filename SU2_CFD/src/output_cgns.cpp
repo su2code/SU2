@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output.hpp"
 
 void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   

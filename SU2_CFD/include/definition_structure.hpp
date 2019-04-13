@@ -38,23 +38,13 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #include <ctime>
 
-#include "../../Common/include/gauss_structure.hpp"
-#include "../../Common/include/element_structure.hpp"
-#include "driver_structure.hpp"
-#include "iteration_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "transfer_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
+#include "../../../Common/include/config_structure.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/fem_geometry_structure.hpp"
 
 
 

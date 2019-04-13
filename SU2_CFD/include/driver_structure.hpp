@@ -42,14 +42,24 @@
 #include "iteration_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "output_driver.hpp"
+#include "output/output.hpp"
+#include "output/output_driver.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"
+
+#include "output/output_fea.hpp"
+#include "output/output_fea_discadj.hpp"
+#include "output/output_flow.hpp"
+#include "output/output_flow_adj.hpp"
+#include "output/output_flow_discadj.hpp"
+#include "output/output_flow_fem.hpp"
+#include "output/output_flow_inc.hpp"
+#include "output/output_flow_inc_discadj.hpp"
+#include "output/output_heat.hpp"
 
 using namespace std;
 
