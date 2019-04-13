@@ -1,6 +1,6 @@
 /*!
  * \file output_structure.inl
- * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
+ * \brief In-Line subroutines of the <i>output.hpp</i> file.
  * \author J. Smith
  * \version 6.1.0 "Falcon"
  *
