@@ -573,7 +573,7 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   }
 }
 
-void CFlowOutput::LoadHistoryDataa(CConfig *config, CGeometry *geometry, CSolver **solver)  {
+void CFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
   
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];

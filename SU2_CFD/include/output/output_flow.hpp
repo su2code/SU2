@@ -73,7 +73,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryDataa(CConfig *config, CGeometry *geometry, CSolver **solver);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
   
   /*!
    * \brief LoadSurfaceData
