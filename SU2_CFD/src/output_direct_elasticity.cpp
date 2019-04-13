@@ -110,23 +110,14 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
-                                     CSolver *****solver_container,
-                                     CConfig **config,
-                                     CIntegration ****integration,
-                                     bool DualTime_Iteration,
-                                     su2double timeused,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) {
+void CFEAOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
-  CSolver* fea_solver = solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  CSolver* fea_solver = solver[FEA_SOL];
   
-  SetHistoryOutputValue("TIME_ITER",  config[val_iZone]->GetTimeIter());    
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  
-  SetHistoryOutputValue("PHYS_TIME", timeused);
-  
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
   /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
@@ -259,7 +250,7 @@ void CFEAOutput::SetVolumeOutputFields(CConfig *config){
   
 }
 
-inline bool CFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
+inline bool CFEAOutput::WriteHistoryFile_Output(CConfig *config) { return true;}
 
 inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {  
   
@@ -273,7 +264,7 @@ inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {
   return write_header;
   
 }
-inline bool CFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+inline bool CFEAOutput::WriteScreen_Output(CConfig *config) {
 
   bool write_output = true;
 

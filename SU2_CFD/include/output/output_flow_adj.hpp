@@ -69,8 +69,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
   
   /*!
    * \brief SetHistoryOutputFields
@@ -117,6 +116,6 @@ public:
    * \param dualtime
    * \return 
    */
-  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  bool SetUpdate_Averages(CConfig *config);
   
 };

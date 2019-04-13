@@ -100,11 +100,11 @@ CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {
 
 }
 
-inline bool CDiscAdjFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
+inline bool CDiscAdjFEAOutput::WriteHistoryFile_Output(CConfig *config) { return true; }
 
 inline bool CDiscAdjFEAOutput::WriteScreen_Header(CConfig *config) { return true; }
 
-inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
+inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config) { return true; }
 
 void CDiscAdjFEAOutput::SetHistoryOutputFields(CConfig *config){
   
@@ -128,35 +128,32 @@ void CDiscAdjFEAOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-inline void CDiscAdjFEAOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+inline void CDiscAdjFEAOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
-  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("INT_ITER", config->GetIntIter());
+  SetHistoryOutputValue("EXT_ITER", config->GetExtIter());
 
-  SetHistoryOutputValue("TIME_ITER",  config[val_iZone]->GetTimeIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  
-  SetHistoryOutputValue("PHYS_TIME", timeused);
-  
-  SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)));
-  SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1)));
+  SetHistoryOutputValue("TIME_ITER",  config->GetTimeIter());
+  SetHistoryOutputValue("OUTER_ITER", config->GetOuterIter());
+  SetHistoryOutputValue("INNER_ITER", config->GetInnerIter());
+    
+  SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_RMS(0)));
+  SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_RMS(1)));
   if (nVar_FEM == 3){
-    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(2)));    
+    SetHistoryOutputValue("ADJOINT_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_RMS(2)));    
   }
   su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;  
-  if (config[val_iZone]->GetnElasticityMod() == 1){
-    Total_SensE = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-    Total_SensNu = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+  if (config->GetnElasticityMod() == 1){
+    Total_SensE = solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
+    Total_SensNu = solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
   }
   else{
     // TODO: Update this and change tests
-    for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
-      Total_SensE += solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
-                    *solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-      Total_SensNu += solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-                     *solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+    for (unsigned short iVar = 0; iVar < config->GetnElasticityMod(); iVar++){
+      Total_SensE += solver[ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver[ADJFEA_SOL]->GetGlobal_Sens_E(0);
+      Total_SensNu += solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                     *solver[ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
     }
   Total_SensE = sqrt(Total_SensE);
   Total_SensNu = sqrt(Total_SensNu);
