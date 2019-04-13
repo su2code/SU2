@@ -1,0 +1,4 @@
+#ifndef OUTPUT_MESH_HPP
+#define OUTPUT_MESH_HPP
+
+#endif // OUTPUT_MESH_HPP
