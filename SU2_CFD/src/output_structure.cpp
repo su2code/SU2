@@ -57,8 +57,20 @@ COutput::COutput(CConfig *config) {
   SurfaceFilename = "surface";
   VolumeFilename  = "volume";
   RestartFilename = "restart";
-
-  unsigned short iDim, iZone, iSpan, iMarker;
+  
+  /*--- Retrieve the history filename ---*/
+ 
+  HistoryFilename = config->GetConv_FileName();
+  
+  /*--- Append the zone ID ---*/
+ 
+ if(config->GetnZone() > 1){
+   HistoryFilename = config->GetMultizone_HistoryFileName(HistoryFilename, config->GetiZone());
+ }
+ 
+  HistorySep = ","; 
+  
+  unsigned short iZone;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -209,7 +221,7 @@ COutput::~COutput(void) {
 
 
 
-void COutput::SetHistoryFile_Body(CGeometry *geometry,
+void COutput::SetHistory_Output(CGeometry *geometry,
                                   CSolver **solver_container,
                                   CConfig *config,
                                   unsigned long TimeIter,
@@ -247,7 +259,36 @@ void COutput::SetHistoryFile_Body(CGeometry *geometry,
   }
 
 }
+void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter){
+  
+  curr_TimeIter  = TimeIter;
+  curr_OuterIter = OuterIter;
+  
+  /*--- Output using only the master node ---*/
 
+  if (rank == MASTER_NODE) {
+
+    bool write_header, write_screen, write_history;
+
+    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+
+    LoadMultizoneHistoryData(output, config);
+
+    /*--- Write the history file ---------------------------------------------------------------------------*/
+    write_history = WriteHistoryFile_Output(config[ZONE_0]);
+    if (write_history) SetHistoryFile_Output(config[ZONE_0]);
+
+    /*--- Write the screen header---------------------------------------------------------------------------*/
+    write_header = WriteScreen_Header(config[ZONE_0]);
+    if (write_header) SetScreen_Header(config[ZONE_0]);
+
+    /*--- Write the screen output---------------------------------------------------------------------------*/
+    write_screen = WriteScreen_Output(config[ZONE_0]);
+    if (write_screen) SetScreen_Output(config[ZONE_0]);
+
+  }
+  
+}
 void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone) {
   
   su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
@@ -5361,42 +5402,6 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
   
   if (rank == MASTER_NODE){
    
-    HistorySep = ",";
-      
-    char buffer[50];
-    
-     /*--- Retrieve the history filename ---*/
-    
-    string history_filename = config->GetConv_FileName();
-    
-     /*--- Append the zone ID ---*/
-    
-    if(config->GetnZone() > 1){
-      history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
-    }
-    strcpy (char_histfile, history_filename.data());
-    
-     /*--- Append the restart iteration: if dynamic problem and restart ---*/
-    
-    if (config->GetTime_Domain() && config->GetRestart()) {
-      long iExtIter = config->GetRestart_Iter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(char_histfile, buffer);
-    }
-    
-    /*--- Add the correct file extension depending on the file format ---*/
-    
-    if ((config->GetOutput_FileFormat() == TECPLOT) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
-    strcat(char_histfile, buffer);
-    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
@@ -5405,103 +5410,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
    
     Postprocess_HistoryFields(config);
     
-    /*--- Set screen convergence output header and remove unavailable fields ---*/
+    /*--- Check for consistency and remove fields that are requested but not available --- */
     
-    string RequestedField;
-    vector<string> FieldsToRemove;
-    vector<bool> FoundField(nRequestedHistoryFields, false);
+    CheckHistoryOutput();
     
-    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
-      RequestedField = RequestedScreenFields[iReqField];  
-      if (HistoryOutput_Map.count(RequestedField) > 0){ 
-        ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
-      }
-      else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
-        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
-      }else {
-        FieldsToRemove.push_back(RequestedField);
-      }
-    }
+    /*--- Open history file and print the header ---*/
     
-    /*--- Remove fields which are not defined --- */
-    
-    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
-      if (rank == MASTER_NODE) {
-        if (iReqField == 0){
-          cout << "  Info: Ignoring the following screen output fields:" << endl;
-          cout << "  ";
-        }        cout << FieldsToRemove[iReqField];
-        if (iReqField != FieldsToRemove.size()-1){
-          cout << ", ";
-        } else {
-          cout << endl;
-        }
-      }
-      RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
-    }
-    
-    nRequestedScreenFields = RequestedScreenFields.size();
-    
-    /*--- Remove unavailable fields from the history file output ---*/
-    
-    FieldsToRemove.clear();
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
-      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
-      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        RequestedField = RequestedHistoryFields[iReqField];   
-        if (RequestedField == Field.OutputGroup){
-          FoundField[iReqField] = true;
-        }
-      }
-    }
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
-      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
-        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
-        for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-          RequestedField = RequestedHistoryFields[iReqField];   
-          if (RequestedField == Field.OutputGroup){
-            FoundField[iReqField] = true;
-          }
-        }
-      }
-    }
-    
-    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      if (!FoundField[iReqField]){
-        FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
-      }
-    }
-    
-    /*--- Remove fields which are not defined --- */    
-    
-    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
-      if (rank == MASTER_NODE) {
-        if (iReqField == 0){
-          cout << "  Info: Ignoring the following history output fields/groups:" << endl;
-          cout << "  ";
-        }        cout << FieldsToRemove[iReqField];
-        if (iReqField != FieldsToRemove.size()-1){
-          cout << ", ";
-        } else {
-          cout << endl;
-        }
-      }
-      RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
-    }
-    
-    nRequestedHistoryFields = RequestedHistoryFields.size();
-        
-    /*--- Open the history file ---*/
-    
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    
-    /*--- Add the header to the history file. ---*/
-    
-    SetHistoryFile_Header(config);    
+    PrepareHistoryFile(config);
     
     /*--- Set the multizone screen header ---*/
 
@@ -5512,6 +5427,173 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     }
     
   }
+  
+}
+
+void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config){
+  
+  if (rank == MASTER_NODE){
+   
+    /*--- Set the History output fields using a virtual function call to the child implementation ---*/
+    
+    SetMultizoneHistoryOutputFields(output, config);
+    
+    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
+   
+    Postprocess_HistoryFields(config[ZONE_0]);
+    
+    /*--- Check for consistency and remove fields that are requested but not available --- */
+    
+    CheckHistoryOutput();
+    
+    /*--- Open history file and print the header ---*/
+    
+    PrepareHistoryFile(config[ZONE_0]);
+    
+    /*--- Set the multizone screen header ---*/
+
+    if (config[ZONE_0]->GetMultizone_Problem()){
+      MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
+      MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+      MultiZoneHeaderTable->SetPrintHeaderBottomLine(false);
+    }
+    
+  }
+  
+}
+
+void COutput::PrepareHistoryFile(CConfig *config){
+
+  char buffer[50];
+  
+  string history_filename;
+  
+  strcpy (char_histfile, HistoryFilename.data());
+  
+   /*--- Append the restart iteration: if dynamic problem and restart ---*/
+  
+  if (config->GetTime_Domain() && config->GetRestart()) {
+    long iExtIter = config->GetRestart_Iter();
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+    strcat(char_histfile, buffer);
+  }
+  
+  /*--- Add the correct file extension depending on the file format ---*/
+  
+  if ((config->GetOutput_FileFormat() == TECPLOT) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+  else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
+  strcat(char_histfile, buffer);
+  
+  /*--- Open the history file ---*/
+  
+  cout << "History filename: " << char_histfile << endl;
+  HistFile.open(char_histfile, ios::out);
+  HistFile.precision(15);
+  
+  /*--- Add the header to the history file. ---*/
+  
+  SetHistoryFile_Header(config);    
+  
+}
+
+void COutput::CheckHistoryOutput(){
+  
+  
+  /*--- Set screen convergence output header and remove unavailable fields ---*/
+  
+  string RequestedField;
+  vector<string> FieldsToRemove;
+  vector<bool> FoundField(nRequestedHistoryFields, false);
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
+    RequestedField = RequestedScreenFields[iReqField];  
+    if (HistoryOutput_Map.count(RequestedField) > 0){ 
+      ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
+    }
+    else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+      ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
+    }else {
+      FieldsToRemove.push_back(RequestedField);
+    }
+  }
+  
+  /*--- Remove fields which are not defined --- */
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following screen output fields:" << endl;
+        cout << "  ";
+      }        cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
+  }
+  
+  nRequestedScreenFields = RequestedScreenFields.size();
+  
+  /*--- Remove unavailable fields from the history file output ---*/
+  
+  FieldsToRemove.clear();
+  FoundField = vector<bool>(nRequestedHistoryFields, false);
+  
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+    HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      RequestedField = RequestedHistoryFields[iReqField];   
+      if (RequestedField == Field.OutputGroup){
+        FoundField[iReqField] = true;
+      }
+    }
+  }
+  
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+    for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
+      HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup){
+          FoundField[iReqField] = true;
+        }
+      }
+    }
+  }
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (!FoundField[iReqField]){
+      FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
+    }
+  }
+  
+  /*--- Remove fields which are not defined --- */    
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following history output fields/groups:" << endl;
+        cout << "  ";
+      }        cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
+  }
+  
+  nRequestedHistoryFields = RequestedHistoryFields.size();
   
 }
 
@@ -5711,7 +5793,7 @@ bool COutput::WriteScreen_Header(CConfig *config) {
 bool COutput::WriteScreen_Output(CConfig *config) {
   bool write_output = false;
   
-  write_output = config->GetnInner_Iter() - 1 == config->GetInnerIter();
+  write_output = config->GetnInner_Iter() - 1 == curr_InnerIter;
   
   if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) )){
     write_output = write_output || PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq_DualTime());
@@ -5733,5 +5815,6 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 // else {
 //   return false;
 // }
+  return true;
 }
 

@@ -3734,8 +3734,8 @@ void CDriver::Output_Preprocessing(){
   }
 
   if (driver_config->GetMultizone_Problem()){
-    driver_output = new CDriverOutput(config_container);
-    driver_output->SetHistoryOutputFields(output, solver_container, config_container);
+    driver_output = new CDriverOutput(driver_config, config_container);
+    driver_output->PreprocessMultizoneHistoryOutput(output, config_container);
   }
   
 }
