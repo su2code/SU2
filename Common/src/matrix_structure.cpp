@@ -675,7 +675,9 @@ void CSysMatrix::CompleteComms(CSysVector & x,
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
     
+#ifdef HAVE_MPI
     SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+#endif
     
   }
   

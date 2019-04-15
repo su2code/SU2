@@ -17400,6 +17400,10 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
   
   if (nPeriodic != 0) {
     
+    /*--- Send an initial message to the console. ---*/
+    if (rank == MASTER_NODE)
+    cout << "Matching the periodic boundary markers." << endl;
+    
     unsigned short iMarker, iDim, jMarker, pMarker = 0;
     unsigned long iVertex, iPoint, pVertex = 0, pPoint = 0, jVertex, jPoint, iPointGlobal, jPointGlobal, jVertex_, pPointGlobal = 0;
     su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
