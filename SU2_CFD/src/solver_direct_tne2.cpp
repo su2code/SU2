@@ -5533,7 +5533,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       Density = V_domain[RHO_INDEX];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = V_domain[VEL_INDEX+1];
+        Velocity[iDim] = V_domain[VEL_INDEX+iDim];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
         Vn += Velocity[iDim]*UnitaryNormal[iDim];
       }
@@ -5584,7 +5584,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
-        cout << "This energy needs to be checked, would affect enthalpy" << endl;
         Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
         if (tkeNeeded) Energy += GetTke_Inf();
 
@@ -5696,60 +5695,90 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
         // Electron t-r mode contributes to mixture vib-el energy
         U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-    }
+      }
 
-    }
+      /*--- Set various quantities in the solver class ---*/
+      conv_numerics->SetConservative(U_domain, U_outlet);
+      conv_numerics->SetPrimitive(V_domain,V_outlet);
 
-    /*--- Set various quantities in the solver class ---*/
-    conv_numerics->SetConservative(U_domain, U_outlet);
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-    if (grid_movement)
-      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+      /*--- Passing supplementary information to CNumerics ---*/
+      conv_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+      conv_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+      conv_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
 
-    /*--- Compute the residual using an upwind scheme ---*/
-    conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    LinSysRes.AddBlock(iPoint, Residual);
-
-    /*--- Jacobian contribution for implicit integration ---*/
-    if (implicit)
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-    /*--- Roe Turkel preconditioning, set the value of beta ---*/
-    if (config->GetKind_Upwind() == TURKEL)
-      node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-
-    /*--- Viscous contribution ---*/
-    if (viscous) {
-
-      /*--- Set the normal vector and the coordinates ---*/
-      visc_numerics->SetNormal(Normal);
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-      /*--- Primitive variables, and gradient ---*/
-      visc_numerics->SetPrimitive(V_domain, V_outlet);
-      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-
-      /*--- Laminar viscosity ---*/
-      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-
-      /*--- Compute and update residual ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.SubtractBlock(iPoint, Residual);
+      /*--- Compute the residual using an upwind scheme ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Roe Turkel preconditioning, set the value of beta ---*/
+      if (config->GetKind_Upwind() == TURKEL)
+        node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+
+      /*--- Viscous contribution ---*/
+      if (viscous) {
+
+        /*--- Set the normal vector and the coordinates ---*/
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+        /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetPrimitive(V_domain, V_outlet);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+        /*--- Conservative variables, and gradient ---*/
+        visc_numerics->SetConservative(U_domain, U_outlet);
+        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(), node_infty->GetGradient() );
+
+
+        /*--- Pass supplementary information to CNumerics ---*/
+        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+
+        /*--- Species diffusion coefficients ---*/
+        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+                                         node_infty->GetDiffusionCoeff() );
+
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+                                           node_infty->GetLaminarViscosity() );
+
+        /*--- Thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+                                              node_infty->GetThermalConductivity());
+
+        /*--- Vib-el. thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+                                                 node_infty->GetThermalConductivity_ve() );
+
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+
+        /*--- Compute and update residual ---*/
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
     }
   }
-}
 
-/*--- Free locally allocated memory ---*/
-delete [] U_domain;
-delete [] U_outlet;
-delete [] V_domain;
-delete [] V_outlet;
-delete [] Normal;
-delete [] Ys;
+  /*--- Free locally allocated memory ---*/
+  delete [] U_domain;
+  delete [] U_outlet;
+  delete [] V_domain;
+  delete [] V_outlet;
+  delete [] Normal;
+  delete [] Ys;
 
 }
 
