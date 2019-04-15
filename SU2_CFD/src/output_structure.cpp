@@ -18020,7 +18020,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
     for (iVar = 0; iVar < nVar_Par; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
-      strcpy(str_buf, Variable_Names[iVar].c_str());
+      strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
       file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
     }
