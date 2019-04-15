@@ -767,7 +767,7 @@ bool CFluidIteration::Monitor(COutput *output,
   StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
 
   if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), config_container[val_iZone]->GetInnerIter());
+    output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), config_container[val_iZone]->GetInnerIter());
   }
   
   if (config_container[val_iZone]->GetCFL_Adapt() == YES) {
@@ -1403,7 +1403,7 @@ void CHeatIteration::Solve(COutput *output,
         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
     if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
-      output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), Inner_Iter);
+      output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), Inner_Iter);
     }
     
     /*--- Output files at intermediate time positions if the problem is single zone ---*/
@@ -1520,7 +1520,7 @@ void CFEAIteration::Iterate(COutput *output,
 
         /*--- Write the convergence history (first, compute Von Mises stress) ---*/
         solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-        output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+        output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
         config_container[val_iZone]->SetInnerIter(IntIter);
         config_container[val_iZone]->SetIntIter(IntIter);
@@ -1555,7 +1555,7 @@ void CFEAIteration::Iterate(COutput *output,
 
       /*--- Write the convergence history headers ---*/
 
-      if (!disc_adj_fem) output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+      if (!disc_adj_fem) output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
 
       /*--- Run the first iteration ---*/
@@ -1566,7 +1566,7 @@ void CFEAIteration::Iterate(COutput *output,
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
       solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-      output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+      output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
       /*--- Run the second iteration ---*/
 
@@ -1579,7 +1579,7 @@ void CFEAIteration::Iterate(COutput *output,
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
       solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-      output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+      output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
 
       bool meetCriteria;
@@ -1605,7 +1605,7 @@ void CFEAIteration::Iterate(COutput *output,
 
           /*--- Write the convergence history (first, compute Von Mises stress) ---*/
           solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-          output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+          output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
           config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1670,7 +1670,7 @@ void CFEAIteration::Iterate(COutput *output,
 
             /*--- Write the convergence history (first, compute Von Mises stress) ---*/
             solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-            output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+            output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
             config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1685,7 +1685,7 @@ void CFEAIteration::Iterate(COutput *output,
           if (iIncrement < nIncrements - 1){
             /*--- Write the convergence history (first, compute Von Mises stress) ---*/
             solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
-            output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+            output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
           }
 
         }
@@ -1851,7 +1851,7 @@ bool CFEAIteration::Monitor(COutput *output,
   solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
 
   if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), config_container[val_iZone]->GetInnerIter());
+    output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), config_container[val_iZone]->GetInnerIter());
   }
 
   return StopCalc;
@@ -2864,7 +2864,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
     /*--- Write the convergence history (only screen output) ---*/
 
    if(IntIter != nIntIter-1)
-     output->SetHistoryFile_Body(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
+     output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
   }
 

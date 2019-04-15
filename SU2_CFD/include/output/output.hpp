@@ -248,7 +248,7 @@ protected:
   
   bool multizone, grid_movement, fem_output;
   
-  string VolumeFilename, SurfaceFilename, RestartFilename;
+  string VolumeFilename, SurfaceFilename, RestartFilename, HistoryFilename;
   
   unsigned long curr_TimeIter, curr_OuterIter, curr_InnerIter;
   
@@ -313,17 +313,26 @@ public:
    */
   void PreprocessHistoryOutput(CConfig *config);  
   
-  /*! 
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+  /*!
+   * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
    */
-  void SetHistoryFile_Body(CGeometry *geometry, CSolver **solver_container, CConfig *config,unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIte);  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config);  
+  
+  
+  /*!
+   * \brief SetHistory_Output
+   * \param geometry
+   * \param solver_container
+   * \param config
+   * \param TimeIter
+   * \param OuterIter
+   * \param InnerIter
+   */
+  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);  
+  
+  
+  void SetMultizoneHistory_Output(COutput** output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter);
   
   /*! 
    * \brief Returns a pointer to the legacy output class needed for some old driver implementations.
@@ -381,18 +390,43 @@ public:
    */
   void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);  
   
+  /*!
+   * \brief Set the current iteration indices
+   * \param[in] TimeIter  - Timer iteration index
+   * \param[in] OuterIter - Outer iteration index
+   * \param[in] InnerIter - Inner iteration index
+   */
+  inline void SetIteration(unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter){
+    curr_TimeIter  = TimeIter;
+    curr_OuterIter = OuterIter;
+    curr_InnerIter = InnerIter;
+  }
+  
+  su2double GetHistoryFieldValue(string field){
+    return HistoryOutput_Map[field].Value;
+  }
+  
+  vector<HistoryOutputField> GetHistoryGroup(string groupname){
+    vector<HistoryOutputField> HistoryGroup;  
+    for (unsigned short iField = 0; iField < HistoryOutput_Map.size(); iField++){   
+      if (HistoryOutput_Map[HistoryOutput_List[iField]].OutputGroup == groupname){
+        HistoryGroup.push_back((HistoryOutput_Map[HistoryOutput_List[iField]]));
+      }
+    }
+    return HistoryGroup;
+  }
+  
+  vector<string> GetHistoryOutput_List(){
+    return HistoryOutput_List;
+  }
+  
+  map<string, HistoryOutputField> GetHistoryFields(){
+    return HistoryOutput_Map;
+  }
+  
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
-
-  /*!
-   * \brief Write a native SU2 restart file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.
@@ -924,6 +958,12 @@ protected:
     }
   }
   
+  /*!
+   * \brief CheckHistoryOutput
+   */
+  void CheckHistoryOutput();
+  
+  void PrepareHistoryFile(CConfig *config);
 
   /*!
    * \brief Load up the values of the requested volume fields into ::Local_Data array. 
@@ -1033,10 +1073,25 @@ protected:
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 
   /*!
+   * \brief Load the output data to the containers in each subclass
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void LoadMultizoneHistoryData(COutput **output, CConfig **config) {}  
+  
+  /*!
    * \brief SetHistoryOutputFields
    * \param config
    */
   inline virtual void SetHistoryOutputFields(CConfig *config) {}
+  
+  /*!
+   * \brief SetMultizoneHistoryOutputFields
+   * \param output
+   * \param solver
+   * \param config
+   */
+  inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
+
   
 };
 

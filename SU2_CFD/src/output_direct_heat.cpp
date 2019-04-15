@@ -110,6 +110,7 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
 
 void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
+  AddHistoryOutput("TIME_ITER",   "Time_Iter",  FORMAT_INTEGER, "ITER");
   AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
   AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
   
