@@ -5440,7 +5440,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
-    Postprocess_HistoryFields(config[ZONE_0]);
+    //Postprocess_HistoryFields(config[ZONE_0]);
     
     /*--- Check for consistency and remove fields that are requested but not available --- */
     
@@ -5740,6 +5740,9 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
 }
 
 void COutput::Postprocess_HistoryData(CConfig *config){
+   
+  map<string, su2double> Average;
+  map<string, int> Count;
   
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
@@ -5748,6 +5751,10 @@ void COutput::Postprocess_HistoryData(CConfig *config){
         Init_Residuals[HistoryOutput_List[iField]] = currentField.Value;
       }
       SetHistoryOutputValue("REL_" + HistoryOutput_List[iField], currentField.Value - Init_Residuals[HistoryOutput_List[iField]]);
+      
+      Average[currentField.OutputGroup] += currentField.Value;
+      Count[currentField.OutputGroup]++;
+           
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
       if(SetUpdate_Averages(config)){
@@ -5760,13 +5767,24 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       }
     }
   }
+  
+  map<string, su2double>::iterator it = Average.begin();
+  for (it = Average.begin(); it != Average.end(); it++){
+    SetHistoryOutputValue("AVG_" + it->first, it->second/Count[it->first]);
+  }
+  
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
+  
+  map<string, bool> Average;
+  map<string, string> AverageGroupName =  CCreateMap<string, string>("BGS_RES", "bgs")("RMS_RES","rms")("MAX_RES", "max");
+  
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
       AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup);
+      Average[currentField.OutputGroup] = true;
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
       AddHistoryOutput("TAVG_"   + HistoryOutput_List[iField], "tavg["  + currentField.FieldName + "]", currentField.ScreenFormat, "TAVG_"   + currentField.OutputGroup);
@@ -5774,6 +5792,14 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
       AddHistoryOutput("D_TAVG_" + HistoryOutput_List[iField], "dtavg[" + currentField.FieldName + "]", currentField.ScreenFormat, "D_TAVG_" + currentField.OutputGroup);  
     }
   }
+  
+  
+   map<string, bool>::iterator it = Average.begin();
+   for (it = Average.begin(); it != Average.end(); it++){
+     cout << "AVG_" + it->first << endl;
+     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES");
+   }
+  
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
