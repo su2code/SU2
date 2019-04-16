@@ -71,7 +71,7 @@ void CSinglezoneDriver::StartSolver() {
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
   if (config_container[ZONE_0]->GetRestart() && driver_config->GetTime_Domain())
-    TimeIter = config_container[ZONE_0]->GetUnst_RestartIter();
+    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
   
   /*--- Run the problem until the number of time iterations required is reached. ---*/
   while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
@@ -280,7 +280,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       if (Wrt_CSV)
         output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
       
-      output[ZONE_0]->DeallocateData_Parallel(config_container[ZONE_0], geometry_container[ZONE_0][iInst][MESH_0]);
+      output[ZONE_0]->DeallocateData_Parallel();
       
     }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;

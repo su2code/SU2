@@ -481,7 +481,8 @@ CDriver::CDriver(char* confFile,
 
 //  output = new COutput(config_container[ZONE_0]);
 
-  if  (!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()){
+  if  ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()) || 
+       config_container[ZONE_0]->GetBoolTurbomachinery() || config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
     /*--- Open the convergence history file ---*/
     ConvHist_file = NULL;
     ConvHist_file = new ofstream*[nZone];
@@ -498,12 +499,12 @@ CDriver::CDriver(char* confFile,
   }
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-    ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+    ExtIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-    ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
+    ExtIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Open the FSI convergence history file ---*/
 
@@ -1452,13 +1453,13 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
     else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
   }
 
   if (time_stepping) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
   }
 
   /*--- Assign booleans ---*/
@@ -1584,13 +1585,13 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
     else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
   }
 
   if (time_stepping) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
   }
 
   /*--- Assign booleans ---*/
@@ -1637,7 +1638,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (fem) {
-      if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+      if (dynamic) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       solver_container[val_iInst][MESH_0][FEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (fem_euler || fem_ns) {
@@ -1670,7 +1671,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
         solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
-        if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+        if (dynamic) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
         solver_container[val_iInst][MESH_0][ADJFEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_heat) {
@@ -3739,8 +3740,8 @@ void CDriver::Output_Preprocessing(){
   }
 
   if (driver_config->GetMultizone_Problem()){
-    driver_output = new CDriverOutput(config_container);
-    driver_output->SetHistoryOutputFields(output, solver_container, config_container);
+    driver_output = new CDriverOutput(driver_config, config_container);
+    driver_output->PreprocessMultizoneHistoryOutput(output, config_container);
   }
   
 }
@@ -4128,27 +4129,31 @@ void CDriver::Output(unsigned long ExtIter) {
     
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-    for (unsigned short iInst = 0; iInst < nInst[ZONE_0]; iInst++){
-      
-      config_container[ZONE_0]->SetiInst(iInst);
-      
-      output[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
-      
-      /*--- Write restart files ---*/
-      
-      output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
-      
-      /*--- Write visualization files ---*/
-      
-      if (Wrt_Vol)
-        output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
-      if (Wrt_Surf)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
-      if (Wrt_CSV)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
-      
-      output[ZONE_0]->DeallocateData_Parallel(config_container[ZONE_0], geometry_container[ZONE_0][iInst][MESH_0]);
-      
+    
+    for (iZone = 0; iZone < nZone; iZone++){
+      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        
+        /*--- Write restart files ---*/
+        
+        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        
+        /*--- Write visualization files ---*/
+        
+        if (Wrt_Vol)
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        
+        if (Wrt_Surf)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        if (Wrt_CSV)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+        
+        output[iZone]->DeallocateData_Parallel();
+        
+      }
     }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
@@ -4448,8 +4453,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))      
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)    
       output[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
@@ -4993,13 +4997,13 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetLegacyOutput()->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
     break;
   case FLOW_ANGLE_OUT:
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetLegacyOutput()->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
       break;
   case MASS_FLOW_IN:
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output[ZONE_0]->GetLegacyOutput()->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
     break;
   default:
     break;

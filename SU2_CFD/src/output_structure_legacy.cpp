@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure_legacy.hpp"
+#include "../include/output/output_structure_legacy.hpp"
 
 COutputLegacy::COutputLegacy(CConfig *config) {
 
@@ -4360,7 +4360,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   strcpy (cstr, filename.data());
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {
-    long iExtIter = config->GetUnst_RestartIter();
+    long iExtIter = config->GetRestart_Iter();
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
@@ -11274,7 +11274,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
     strcpy (cstr, filename.data());
 
     if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
-      long iExtIter = config[ZONE_FLOW]->GetUnst_RestartIter();
+      long iExtIter = config[ZONE_FLOW]->GetRestart_Iter();
       if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));

@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_heat_discadj.hpp"
 
 CDiscAdjHeatOutput::CDiscAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
@@ -111,19 +111,15 @@ void CDiscAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
   
-  /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
-  
 }
 
-void CDiscAdjHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { 
+void CDiscAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  { 
   
-  CSolver* adjheat_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL];
+  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
   
-  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter()); 
+  SetHistoryOutputValue("TIME_ITER", config->GetTimeIter());  
+  SetHistoryOutputValue("INNER_ITER", config->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config->GetOuterIter()); 
   
   SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
  
@@ -131,8 +127,6 @@ void CDiscAdjHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
  
   
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
- 
-  SetHistoryOutputValue("PHYS_TIME", timeused);
 
 }
 
@@ -202,17 +196,4 @@ void CDiscAdjHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
   
 }
 
-
-bool CDiscAdjHeatOutput::SetInit_Residuals(CConfig *config){
-  
-  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
-        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
-  
-}
-
-bool CDiscAdjHeatOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
-  
-  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
-      
-}
 

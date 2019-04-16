@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_flow_adj.hpp"
 
 CAdjFlowOutput::CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
@@ -181,26 +181,25 @@ void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
 }
 
-inline void CAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { 
+inline void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) { 
 
-  CSolver* adjflow_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL];
-  CSolver* adjturb_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL];  
+  CSolver* adjflow_solver = solver[ADJFLOW_SOL];
+  CSolver* adjturb_solver = solver[ADJTURB_SOL];  
 
-  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
-  
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_RMS(2)));
-  if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
+  if (geometry->GetnDim() == 3) {
     SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_RMS(3)));
     SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjflow_solver->GetRes_RMS(4)));
   } else {
     SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjflow_solver->GetRes_RMS(3)));    
   }
-  if (!config[val_iZone]->GetFrozen_Visc_Cont()){  
+  if (!config->GetFrozen_Visc_Cont()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
@@ -215,13 +214,13 @@ inline void CAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_Max(2)));
-  if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
+  if (geometry->GetnDim() == 3) {
     SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(4)));
   } else {
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));    
   }
-  if (!config[val_iZone]->GetFrozen_Visc_Cont()){  
+  if (!config->GetFrozen_Visc_Cont()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
@@ -238,7 +237,6 @@ inline void CAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
-  SetHistoryOutputValue("PHYS_TIME", timeused);
 }
 
 void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
@@ -410,9 +408,10 @@ bool CAdjFlowOutput::SetInit_Residuals(CConfig *config){
   
 }
 
-bool CAdjFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CAdjFlowOutput::SetUpdate_Averages(CConfig *config){
+  return false;
   
-  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       
 }
 

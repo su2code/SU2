@@ -35,12 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output.hpp"
 
 COutput::COutput(CConfig *config) {
   
   
-  if(!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()){
+  if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) || config->GetBoolTurbomachinery()){
     output_legacy = new COutputLegacy(config);
   }
   
@@ -57,8 +57,20 @@ COutput::COutput(CConfig *config) {
   SurfaceFilename = "surface";
   VolumeFilename  = "volume";
   RestartFilename = "restart";
-
-  unsigned short iDim, iZone, iSpan, iMarker;
+  
+  /*--- Retrieve the history filename ---*/
+ 
+  HistoryFilename = config->GetConv_FileName();
+  
+  /*--- Append the zone ID ---*/
+ 
+ if(config->GetnZone() > 1){
+   HistoryFilename = config->GetMultizone_HistoryFileName(HistoryFilename, config->GetiZone());
+ }
+ 
+  HistorySep = ","; 
+  
+  unsigned short iZone;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -158,182 +170,6 @@ COutput::COutput(CConfig *config) {
   
   wrote_Paraview_base = false;
 
-  /*--- Initialize turbo flag ---*/
-  turbo = config->GetBoolTurbomachinery();
-
-  if(turbo){
-    /*--- Initializate quantities for turboperformace ---*/
-    nSpanWiseSections = config->GetnSpanMaxAllZones();
-    nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
-
-
-    TotalStaticEfficiency         = new su2double*[nMarkerTurboPerf];
-    TotalTotalEfficiency          = new su2double*[nMarkerTurboPerf];
-    KineticEnergyLoss             = new su2double*[nMarkerTurboPerf];
-    TRadius                       = new su2double*[nMarkerTurboPerf];
-    TotalPressureLoss             = new su2double*[nMarkerTurboPerf];
-    MassFlowIn                    = new su2double*[nMarkerTurboPerf];
-    MassFlowOut                   = new su2double*[nMarkerTurboPerf];
-    FlowAngleIn                   = new su2double*[nMarkerTurboPerf];
-    FlowAngleIn_BC                = new su2double*[nMarkerTurboPerf];
-    FlowAngleOut                  = new su2double*[nMarkerTurboPerf];
-    EulerianWork                  = new su2double*[nMarkerTurboPerf];
-    TotalEnthalpyIn               = new su2double*[nMarkerTurboPerf];
-    TotalEnthalpyIn_BC            = new su2double*[nMarkerTurboPerf];
-    EntropyIn                     = new su2double*[nMarkerTurboPerf];
-    EntropyOut                    = new su2double*[nMarkerTurboPerf];
-    EntropyIn_BC                  = new su2double*[nMarkerTurboPerf];
-    PressureRatio                 = new su2double*[nMarkerTurboPerf];
-    TotalTemperatureIn            = new su2double*[nMarkerTurboPerf];
-    EnthalpyOut                   = new su2double*[nMarkerTurboPerf];
-    MachIn                        = new su2double**[nMarkerTurboPerf];
-    MachOut                       = new su2double**[nMarkerTurboPerf];
-    VelocityOutIs                 = new su2double*[nMarkerTurboPerf];
-    DensityIn                     = new su2double*[nMarkerTurboPerf];
-    PressureIn                    = new su2double*[nMarkerTurboPerf];
-    TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-    DensityOut                    = new su2double*[nMarkerTurboPerf];
-    PressureOut                   = new su2double*[nMarkerTurboPerf];
-    TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
-    EnthalpyOutIs                 = new su2double*[nMarkerTurboPerf];
-    EntropyGen                    = new su2double*[nMarkerTurboPerf];
-    AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
-    TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
-    TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
-    RothalpyIn                    = new su2double*[nMarkerTurboPerf];
-    RothalpyOut                   = new su2double*[nMarkerTurboPerf];
-    AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf];
-    PressureOut_BC                = new su2double*[nMarkerTurboPerf];
-    TemperatureIn                 = new su2double*[nMarkerTurboPerf];
-    TemperatureOut                = new su2double*[nMarkerTurboPerf];
-    TotalPressureIn               = new su2double*[nMarkerTurboPerf];
-    TotalPressureOut              = new su2double*[nMarkerTurboPerf];
-    TotalTemperatureOut           = new su2double*[nMarkerTurboPerf];
-    EnthalpyIn                    = new su2double*[nMarkerTurboPerf];
-    TurbIntensityIn               = new su2double*[nMarkerTurboPerf];
-    Turb2LamViscRatioIn           = new su2double*[nMarkerTurboPerf];
-    TurbIntensityOut              = new su2double*[nMarkerTurboPerf];
-    Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf];
-    NuFactorIn                    = new su2double*[nMarkerTurboPerf];
-    NuFactorOut                   = new su2double*[nMarkerTurboPerf];
-
-    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-      TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalTotalEfficiency    [iMarker] = new su2double [nSpanWiseSections + 1];
-      KineticEnergyLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
-      TRadius                 [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalPressureLoss       [iMarker] = new su2double [nSpanWiseSections + 1];
-      MassFlowIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-      MassFlowOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-      FlowAngleIn             [iMarker] = new su2double [nSpanWiseSections + 1];
-      FlowAngleIn_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
-      FlowAngleOut            [iMarker] = new su2double [nSpanWiseSections + 1];
-      EulerianWork            [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalEnthalpyIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalEnthalpyIn_BC      [iMarker] = new su2double [nSpanWiseSections + 1];
-      EntropyIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-      EntropyOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-      EntropyIn_BC            [iMarker] = new su2double [nSpanWiseSections + 1];
-      PressureRatio           [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalTemperatureIn      [iMarker] = new su2double [nSpanWiseSections + 1];
-      EnthalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-      MachIn                  [iMarker] = new su2double*[nSpanWiseSections + 1];
-      MachOut                 [iMarker] = new su2double*[nSpanWiseSections + 1];
-      VelocityOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
-      DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-      PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-      TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
-      DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-      PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-      TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
-      EnthalpyOutIs           [iMarker] = new su2double [nSpanWiseSections + 1];
-      EntropyGen              [iMarker] = new su2double [nSpanWiseSections + 1];
-      AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
-      RothalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-      RothalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-      AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
-      PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
-      TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
-      TemperatureOut          [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalPressureIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalPressureOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-      TotalTemperatureOut     [iMarker] = new su2double [nSpanWiseSections + 1];
-      EnthalpyIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-      TurbIntensityIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-      Turb2LamViscRatioIn     [iMarker] = new su2double [nSpanWiseSections + 1];
-      TurbIntensityOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-      Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
-      NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-      NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-
-
-      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-        TotalStaticEfficiency   [iMarker][iSpan] = 0.0;
-        TotalTotalEfficiency    [iMarker][iSpan] = 0.0;
-        KineticEnergyLoss       [iMarker][iSpan] = 0.0;
-        TRadius                 [iMarker][iSpan] = 0.0;
-        TotalPressureLoss       [iMarker][iSpan] = 0.0;
-        MassFlowIn              [iMarker][iSpan] = 0.0;
-        MassFlowOut             [iMarker][iSpan] = 0.0;
-        FlowAngleIn             [iMarker][iSpan] = 0.0;
-        FlowAngleIn_BC          [iMarker][iSpan] = config->GetFlowAngleIn_BC();
-        FlowAngleOut            [iMarker][iSpan] = 0.0;
-        EulerianWork            [iMarker][iSpan] = 0.0;
-        TotalEnthalpyIn         [iMarker][iSpan] = 0.0;
-        TotalEnthalpyIn_BC      [iMarker][iSpan] = 0.0;
-        EntropyIn               [iMarker][iSpan] = 0.0;
-        EntropyOut              [iMarker][iSpan] = 0.0;
-        EntropyIn_BC            [iMarker][iSpan] = 0.0;
-        PressureRatio           [iMarker][iSpan] = 0.0;
-        TotalTemperatureIn      [iMarker][iSpan] = 0.0;
-        EnthalpyOut             [iMarker][iSpan] = 0.0;
-
-
-        VelocityOutIs           [iMarker][iSpan] = 0.0;
-        DensityIn               [iMarker][iSpan] = 0.0;
-        PressureIn              [iMarker][iSpan] = 0.0;
-
-        DensityOut              [iMarker][iSpan] = 0.0;
-        PressureOut             [iMarker][iSpan] = 0.0;
-
-        EnthalpyOutIs           [iMarker][iSpan] = 0.0;
-        EntropyGen              [iMarker][iSpan] = 0.0;
-        AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
-        TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
-        TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
-        RothalpyIn              [iMarker][iSpan] = 0.0;
-        RothalpyOut             [iMarker][iSpan] = 0.0;
-        AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
-        PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
-
-        TemperatureIn           [iMarker][iSpan] = 0.0;
-        TemperatureOut          [iMarker][iSpan] = 0.0;
-        TotalPressureIn         [iMarker][iSpan] = 0.0;
-        TotalPressureOut        [iMarker][iSpan] = 0.0;
-        TotalTemperatureOut     [iMarker][iSpan] = 0.0;
-        EnthalpyIn              [iMarker][iSpan] = 0.0;
-        TurbIntensityIn         [iMarker][iSpan] = 0.0;
-        Turb2LamViscRatioIn     [iMarker][iSpan] = 0.0;
-        TurbIntensityOut        [iMarker][iSpan] = 0.0;
-        Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
-        NuFactorIn              [iMarker][iSpan] = 0.0;
-        NuFactorOut             [iMarker][iSpan] = 0.0;
-        MachIn                  [iMarker][iSpan] = new su2double[4];
-        MachOut                 [iMarker][iSpan] = new su2double[4];
-        TurboVelocityIn         [iMarker][iSpan] = new su2double[4];
-        TurboVelocityOut        [iMarker][iSpan] = new su2double[4];
-
-        for (iDim = 0; iDim < 4; iDim++){
-          MachIn           [iMarker][iSpan][iDim]   = 0.0;
-          MachOut          [iMarker][iSpan][iDim]   = 0.0;
-          TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-          TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-        }
-      }
-    }
-  }
   
   nRequestedHistoryFields = config->GetnHistoryOutput();
   for (unsigned short iField = 0; iField < nRequestedHistoryFields; iField++){
@@ -367,120 +203,6 @@ COutput::~COutput(void) {
 
   if (RhoRes_Old != NULL) delete [] RhoRes_Old;
 
-  /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
-  unsigned short iMarker, iSpan;
-  if(turbo){
-    for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
-      for(iSpan=0; iSpan<nSpanWiseSections+1; iSpan++){
-        delete [] MachIn          [iMarker][iSpan];
-        delete [] MachOut         [iMarker][iSpan];
-        delete [] TurboVelocityIn [iMarker][iSpan];
-        delete [] TurboVelocityOut[iMarker][iSpan];
-      }
-    }
-    for(iMarker = 0; iMarker< nMarkerTurboPerf; iMarker++){
-      delete [] TotalStaticEfficiency[iMarker];
-      delete [] TotalTotalEfficiency [iMarker];
-      delete [] KineticEnergyLoss    [iMarker];
-      delete [] TRadius              [iMarker];
-      delete [] TotalPressureLoss    [iMarker];
-      delete [] MassFlowIn           [iMarker];
-      delete [] MassFlowOut          [iMarker];
-      delete [] FlowAngleIn          [iMarker];
-      delete [] FlowAngleOut         [iMarker];
-      delete [] EulerianWork         [iMarker];
-      delete [] TotalEnthalpyIn      [iMarker];
-      delete [] TotalEnthalpyOut     [iMarker];
-      delete [] TotalEnthalpyOutIs   [iMarker];
-      delete [] PressureRatio        [iMarker];
-      delete [] EnthalpyOut          [iMarker];
-      delete [] VelocityOutIs        [iMarker];
-      delete [] TotalTemperatureIn   [iMarker];
-      delete [] FlowAngleIn_BC       [iMarker];
-      delete [] EntropyIn            [iMarker];
-      delete [] EntropyIn_BC         [iMarker];
-      delete [] EntropyOut           [iMarker];
-      delete [] TotalEnthalpyIn_BC   [iMarker];
-      delete [] DensityIn            [iMarker];
-      delete [] PressureIn           [iMarker];
-      delete [] DensityOut           [iMarker];
-      delete [] PressureOut          [iMarker];
-      delete [] EnthalpyOutIs        [iMarker];
-      delete [] EntropyGen           [iMarker];
-      delete [] AbsFlowAngleIn       [iMarker];
-      delete [] RothalpyIn           [iMarker];
-      delete [] RothalpyOut          [iMarker];
-      delete [] AbsFlowAngleOut      [iMarker];
-      delete [] PressureOut_BC       [iMarker];
-      delete [] MachIn               [iMarker];
-      delete [] MachOut              [iMarker];
-      delete [] TurboVelocityIn      [iMarker];
-      delete [] TurboVelocityOut     [iMarker];
-      delete [] TemperatureIn        [iMarker];
-      delete [] TemperatureOut       [iMarker];
-      delete [] TotalPressureIn      [iMarker];
-      delete [] TotalPressureOut     [iMarker];
-      delete [] TotalTemperatureOut  [iMarker];
-      delete [] EnthalpyIn           [iMarker];
-      delete [] TurbIntensityIn      [iMarker];
-      delete [] Turb2LamViscRatioIn  [iMarker];
-      delete [] TurbIntensityOut     [iMarker];
-      delete [] Turb2LamViscRatioOut [iMarker];
-      delete [] NuFactorIn           [iMarker];
-      delete [] NuFactorOut          [iMarker];
-
-
-    }
-    delete [] TotalStaticEfficiency;
-    delete [] TotalTotalEfficiency;
-    delete [] KineticEnergyLoss;
-    delete [] TRadius;
-    delete [] TotalPressureLoss;
-    delete [] MassFlowIn;
-    delete [] MassFlowOut;
-    delete [] FlowAngleIn;
-    delete [] FlowAngleOut;
-    delete [] EulerianWork;
-    delete [] TotalEnthalpyIn;
-    delete [] TotalEnthalpyOut;
-    delete [] TotalEnthalpyOutIs;
-    delete [] PressureRatio;
-    delete [] EnthalpyOut;
-    delete [] VelocityOutIs;
-    delete [] TotalTemperatureIn;
-    delete [] FlowAngleIn_BC;
-    delete [] EntropyIn;
-    delete [] EntropyIn_BC;
-    delete [] EntropyOut;
-    delete [] TotalEnthalpyIn_BC;
-    delete [] DensityIn;
-    delete [] PressureIn;
-    delete [] DensityOut;
-    delete [] PressureOut;
-    delete [] EnthalpyOutIs;
-    delete [] EntropyGen;
-    delete [] AbsFlowAngleIn;
-    delete [] RothalpyIn;
-    delete [] RothalpyOut;
-    delete [] AbsFlowAngleOut;
-    delete [] PressureOut_BC;
-    delete [] MachIn;
-    delete [] MachOut;
-    delete [] TurboVelocityIn;
-    delete [] TurboVelocityOut;
-    delete [] TemperatureIn;
-    delete [] TemperatureOut;
-    delete [] TotalPressureIn;
-    delete [] TotalPressureOut;
-    delete [] TotalTemperatureOut;
-    delete [] EnthalpyIn;
-    delete [] TurbIntensityIn;
-    delete [] Turb2LamViscRatioIn;
-    delete [] TurbIntensityOut;
-    delete [] Turb2LamViscRatioOut;
-    delete [] NuFactorIn;
-    delete [] NuFactorOut;
-  }
   
   /*--- Deallocate the structures holding the linear partitioning ---*/
 
@@ -499,15 +221,16 @@ COutput::~COutput(void) {
 
 
 
-void COutput::SetConvHistory_Body(CGeometry ****geometry,
-                                     CSolver *****solver_container,
-                                     CConfig **config,
-                                     CIntegration ****integration,
-                                     bool DualTime_Iteration,
-                                     su2double timeused,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) {
+void COutput::SetHistory_Output(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CConfig *config,
+                                  unsigned long TimeIter,
+                                  unsigned long OuterIter,
+                                  unsigned long InnerIter) {
 
+  curr_TimeIter  = TimeIter;
+  curr_OuterIter = OuterIter;
+  curr_InnerIter = InnerIter;
 
   /*--- Output using only the master node ---*/
 
@@ -517,27 +240,55 @@ void COutput::SetConvHistory_Body(CGeometry ****geometry,
 
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
-    LoadHistoryData(geometry, solver_container, config, integration, DualTime_Iteration,
-                    timeused, val_iZone, val_iInst);
+    LoadHistoryData(config, geometry, solver_container);
     
-    Postprocess_HistoryData(config[val_iZone], DualTime_Iteration);
+    Postprocess_HistoryData(config);
         
     /*--- Write the history file ---------------------------------------------------------------------------*/
-    write_history = WriteHistoryFile_Output(config[val_iZone], DualTime_Iteration);
-    if (write_history) SetHistoryFile_Output(config[val_iZone]);
+    write_history = WriteHistoryFile_Output(config);
+    if (write_history) SetHistoryFile_Output(config);
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = WriteScreen_Header(config[val_iZone]);
-    if (write_header) SetScreen_Header(config[val_iZone]);
+    write_header = WriteScreen_Header(config);
+    if (write_header) SetScreen_Header(config);
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = WriteScreen_Output(config[val_iZone], DualTime_Iteration);
-    if (write_screen) SetScreen_Output(config[val_iZone]);
+    write_screen = WriteScreen_Output(config);
+    if (write_screen) SetScreen_Output(config);
 
   }
 
 }
+void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter){
+  
+  curr_TimeIter  = TimeIter;
+  curr_OuterIter = OuterIter;
+  
+  /*--- Output using only the master node ---*/
 
+  if (rank == MASTER_NODE) {
+
+    bool write_header, write_screen, write_history;
+
+    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+
+    LoadMultizoneHistoryData(output, config);
+
+    /*--- Write the history file ---------------------------------------------------------------------------*/
+    write_history = WriteHistoryFile_Output(config[ZONE_0]);
+    if (write_history) SetHistoryFile_Output(config[ZONE_0]);
+
+    /*--- Write the screen header---------------------------------------------------------------------------*/
+    write_header = WriteScreen_Header(config[ZONE_0]);
+    if (write_header) SetScreen_Header(config[ZONE_0]);
+
+    /*--- Write the screen output---------------------------------------------------------------------------*/
+    write_screen = WriteScreen_Output(config[ZONE_0]);
+    if (write_screen) SetScreen_Output(config[ZONE_0]);
+
+  }
+  
+}
 void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone) {
   
   su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
@@ -745,9 +496,9 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
 
   /*--- Clean up the surface data that was only needed for output. ---*/
  
-  DeallocateConnectivity_Parallel(config, geometry, true);
+  DeallocateConnectivity_Parallel(true);
   
-  DeallocateSurfaceData_Parallel(config, geometry);
+  DeallocateSurfaceData_Parallel();
   
 }
 
@@ -867,314 +618,11 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Clean up the surface data that was only needed for output. ---*/
   
   if (format != SU2_RESTART_ASCII && format != SU2_RESTART_BINARY)
-    DeallocateConnectivity_Parallel(config, geometry, false);
+    DeallocateConnectivity_Parallel(false);
   
 }
 
 
-void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
-                                       CGeometry ****geometry,
-                                       CConfig **config,
-                                       unsigned long iExtIter,
-                                       unsigned short iZone,
-                                       unsigned short val_nZone) {
-  
-  unsigned short iVar, iInst;
-  unsigned long iPoint;
-  
-  unsigned short nInst = config[iZone]->GetnTimeInstances();
-
-    /*--- Get the file output format ---*/
-    
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    for (iInst = 0; iInst < nInst; iInst++){
-
-      config[iZone]->SetiInst(iInst);
-      
-      bool cont_adj = config[iZone]->GetContinuous_Adjoint();
-      bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
-
-      /*--- Flags identifying the types of files to be written. ---*/
-      /*--- For now, we are disabling the parallel writers for Tecplot
-          ASCII until we have parallel versions of all file formats
-          available. SU2_SOL will remain intact for writing files
-          until this capability is completed. ---*/
-
-      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-
-#ifdef HAVE_MPI
-      /*--- Do not merge the connectivity or write the visualization files
-     if we are running in parallel, unless we are using ParaView binary.
-       Force the use of SU2_SOL to merge and write the viz. files in this
-       case to save overhead. ---*/
-
-      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY) && (FileFormat != TECPLOT_BINARY)) {
-        Wrt_Vol = false;
-        Wrt_Srf = false;
-      }
-#endif
-
-
-
-    /*--- Write a template inlet profile file if requested. ---*/
-
-    if (config[iZone]->GetWrt_InletFile()) {
-      MergeInletCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
-
-      if (rank == MASTER_NODE) {
-        Write_InletFile_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
-        DeallocateInletCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
-      }
-      config[iZone]->SetWrt_InletFile(false);
-    }
-
-    /*--- This switch statement will become a call to a virtual function
-     defined within each of the "physics" output child classes that loads
-     the local data for that particular problem alone. ---*/
-
-      if (rank == MASTER_NODE)
-        cout << endl << "Loading solution output data locally on each rank." << endl;
-
-      CollectVolumeData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
-         
-    /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
-
-    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
-
-      if (rank == MASTER_NODE)
-        cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
-      
-      Local_Data_Copy = new su2double*[geometry[iZone][iInst][MESH_0]->GetnPoint()];
-      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        Local_Data_Copy[iPoint] = new su2double[GlobalField_Counter];
-      }
-      
-      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
-          Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
-        }
-      }
-      
-    }
-    
-    /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
-
-    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
-
-      if (rank == MASTER_NODE)
-        cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
-      
-      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
-          Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
-        }
-      }
-      
-      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++)
-        delete [] Local_Data_Copy[iPoint];
-      delete [] Local_Data_Copy;
-      
-    }
-    
-    /*--- After loading the data local to a processor, we perform a sorting,
-     i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
-    
-    if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
-    if (fem_output){
-      SortOutputData_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
-    }
-    else {
-      SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
-    }
-    
-    /*--- Write either a binary or ASCII restart file in parallel. ---*/
-
-    if (config[iZone]->GetWrt_Binary_Restart()) {
-      if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
-      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0]);
-    } else {
-      if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
-      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0]);
-    }
-
-    /*--- Write a slice on a structured mesh if requested. ---*/
-
-    if (config[iZone]->GetWrt_Slice()) {
-      WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
-                     solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 0);
-      WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
-                     solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
-    }
-
-    /*--- Write the solution files if they are requested and we are executing
-     with a single rank (all data on one proc and no comm. overhead). Once we
-     have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
-     can allow the write of the viz. files as well. ---*/
-
-    if ((Wrt_Vol || Wrt_Srf) && !fem_output) {
-      
-      /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
-
-      if (rank == MASTER_NODE)
-        cout << "Preparing element connectivity across all ranks." << endl;
-     if (fem_output){
-       
-       SortConnectivity_FEM(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
-       
-       /*--- Sort the surface data and renumber if for writing. ---*/
- 
-       SortOutputData_Surface_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
-       
-     } else {
-       if (FileFormat == TECPLOT_BINARY)
-         SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, false);
-       else
-         SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, true);
-       
-       /*--- Sort the surface data and renumber if for writing. ---*/
- 
-       SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
-       
-     }
-     
-     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
-     
-     if (config[iZone]->GetWrt_Csv_Sol()){
-     
-       if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
-     
-       WriteSurface_CSV(config[iZone], geometry[iZone][iInst][MESH_0]);
-     
-     }
-      /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
-
-      if (Wrt_Vol) {
-
-        switch (FileFormat) {
-
-          case TECPLOT:
-
-            /*--- Write a Tecplot ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, false);
-            break;
-
-          case FIELDVIEW:
-
-            /*--- We do not yet have a version of FieldView ASCII for new parallel output. ---*/
-
-            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
-
-            break;
-
-          case TECPLOT_BINARY:
-
-          /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
-
-          if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-          WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-              iZone, val_nZone, false);
-          break;
-
-          case FIELDVIEW_BINARY:
-
-            /*--- FieldView binary files not yet available for parallel output. ---*/
-
-            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
-            break;
-
-          case PARAVIEW:
-
-            /*--- Write a Paraview ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, false);
-            break;
-            
-          case PARAVIEW_BINARY:
-            
-            /*--- Write a Paraview binary file ---*/
-            
-            if (rank == MASTER_NODE) cout << "Writing Paraview binary volume solution file." << endl;
-            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                        iZone, val_nZone, false);
-            break;
-
-          default:
-            break;
-          }
-
-        }
-
-        if (Wrt_Srf) {
-
-          switch (FileFormat) {
-
-          case TECPLOT:
-
-            /*--- Write a Tecplot ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
-            break;
-
-          case TECPLOT_BINARY:
-
-            /*--- Write a Tecplot binary file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-            WriteTecplotBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                iZone, val_nZone, true);
-            break;
-
-          case PARAVIEW:
-
-            /*--- Write a Paraview ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
-            break;
-
-          case PARAVIEW_BINARY:
-            
-            /*--- Write a Paraview binary file ---*/
-            
-            if (rank == MASTER_NODE) cout << "Writing Paraview binary surface solution file." << endl;
-            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], iZone, val_nZone, true);
-            break;
-            
-
-          default:
-            break;
-          }
-
-        }
-
-        /*--- Clean up the connectivity data that was allocated for output. ---*/
-
-        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], false);
-        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
-
-        /*--- Clean up the surface data that was only needed for output. ---*/
-
-        DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
-
-      }
-
-      /*--- Deallocate the nodal data needed for writing restarts. ---*/
-
-      DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
-
-    }
-
-}
 
 void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort) {
 
@@ -4222,11 +3670,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry) 
   
   /*--- Local variables ---*/
   
-  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  unsigned long iPoint;
 
   ofstream restart_file;
   string filename;
@@ -4327,9 +3772,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry)
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  unsigned short iVar;
+  unsigned long iPoint;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -4838,7 +4282,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   
 }
 
-void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
+void COutput::DeallocateConnectivity_Parallel(bool surf_sol) {
   
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
@@ -4861,7 +4305,7 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   
 }
 
-void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
+void COutput::DeallocateData_Parallel() {
   
   /*--- Deallocate memory for solution data ---*/
   
@@ -4872,7 +4316,7 @@ void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
 
 }
 
-void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry) {
+void COutput::DeallocateSurfaceData_Parallel() {
   
   if (Parallel_Surf_Data != NULL) {
     
@@ -4905,7 +4349,6 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
 
   char str_buf[MAX_STRING_SIZE];
   vector<string> Marker_Tags;
-  vector<string>::iterator it;
 
   unsigned long *nRowCum_Counter = NULL;
 
@@ -5928,26 +5371,26 @@ void COutput::SetScreen_Output(CConfig *config) {
     if (HistoryOutput_Map.count(RequestedField) > 0){  
       switch (HistoryOutput_Map[RequestedField].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value));
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value), field_width);
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value);
+          PrintingToolbox::PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value, field_width);
           break;      
       }
     }
     if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
       switch (HistoryOutputPerSurface_Map[RequestedField][0].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[RequestedField][0].Value));
+          PrintingToolbox::PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[RequestedField][0].Value), field_width);
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
+          PrintingToolbox::PrintScreenFixed(out, HistoryOutputPerSurface_Map[RequestedField][0].Value, field_width);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
+          PrintingToolbox::PrintScreenScientific(out, HistoryOutputPerSurface_Map[RequestedField][0].Value, field_width);
           break;   
       }
     }      
@@ -5959,42 +5402,6 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
   
   if (rank == MASTER_NODE){
    
-    HistorySep = ",";
-      
-    char buffer[50];
-    
-     /*--- Retrieve the history filename ---*/
-    
-    string history_filename = config->GetConv_FileName();
-    
-     /*--- Append the zone ID ---*/
-    
-    if(config->GetnZone() > 1){
-      history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
-    }
-    strcpy (char_histfile, history_filename.data());
-    
-     /*--- Append the restart iteration: if dynamic problem and restart ---*/
-    
-    if (config->GetTime_Domain() && config->GetRestart()) {
-      long iExtIter = config->GetRestart_Iter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(char_histfile, buffer);
-    }
-    
-    /*--- Add the correct file extension depending on the file format ---*/
-    
-    if ((config->GetOutput_FileFormat() == TECPLOT) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
-    strcat(char_histfile, buffer);
-    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
@@ -6003,103 +5410,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
    
     Postprocess_HistoryFields(config);
     
-    /*--- Set screen convergence output header and remove unavailable fields ---*/
+    /*--- Check for consistency and remove fields that are requested but not available --- */
     
-    string RequestedField;
-    vector<string> FieldsToRemove;
-    vector<bool> FoundField(nRequestedHistoryFields, false);
+    CheckHistoryOutput();
     
-    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
-      RequestedField = RequestedScreenFields[iReqField];  
-      if (HistoryOutput_Map.count(RequestedField) > 0){ 
-        ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
-      }
-      else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
-        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
-      }else {
-        FieldsToRemove.push_back(RequestedField);
-      }
-    }
+    /*--- Open history file and print the header ---*/
     
-    /*--- Remove fields which are not defined --- */
-    
-    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
-      if (rank == MASTER_NODE) {
-        if (iReqField == 0){
-          cout << "  Info: Ignoring the following screen output fields:" << endl;
-          cout << "  ";
-        }        cout << FieldsToRemove[iReqField];
-        if (iReqField != FieldsToRemove.size()-1){
-          cout << ", ";
-        } else {
-          cout << endl;
-        }
-      }
-      RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
-    }
-    
-    nRequestedScreenFields = RequestedScreenFields.size();
-    
-    /*--- Remove unavailable fields from the history file output ---*/
-    
-    FieldsToRemove.clear();
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
-      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
-      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        RequestedField = RequestedHistoryFields[iReqField];   
-        if (RequestedField == Field.OutputGroup){
-          FoundField[iReqField] = true;
-        }
-      }
-    }
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
-      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
-        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
-        for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-          RequestedField = RequestedHistoryFields[iReqField];   
-          if (RequestedField == Field.OutputGroup){
-            FoundField[iReqField] = true;
-          }
-        }
-      }
-    }
-    
-    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      if (!FoundField[iReqField]){
-        FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
-      }
-    }
-    
-    /*--- Remove fields which are not defined --- */    
-    
-    for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
-      if (rank == MASTER_NODE) {
-        if (iReqField == 0){
-          cout << "  Info: Ignoring the following history output fields/groups:" << endl;
-          cout << "  ";
-        }        cout << FieldsToRemove[iReqField];
-        if (iReqField != FieldsToRemove.size()-1){
-          cout << ", ";
-        } else {
-          cout << endl;
-        }
-      }
-      RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
-    }
-    
-    nRequestedHistoryFields = RequestedHistoryFields.size();
-        
-    /*--- Open the history file ---*/
-    
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    
-    /*--- Add the header to the history file. ---*/
-    
-    SetHistoryFile_Header(config);    
+    PrepareHistoryFile(config);
     
     /*--- Set the multizone screen header ---*/
 
@@ -6110,6 +5427,173 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     }
     
   }
+  
+}
+
+void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config){
+  
+  if (rank == MASTER_NODE){
+   
+    /*--- Set the History output fields using a virtual function call to the child implementation ---*/
+    
+    SetMultizoneHistoryOutputFields(output, config);
+    
+    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
+   
+    Postprocess_HistoryFields(config[ZONE_0]);
+    
+    /*--- Check for consistency and remove fields that are requested but not available --- */
+    
+    CheckHistoryOutput();
+    
+    /*--- Open history file and print the header ---*/
+    
+    PrepareHistoryFile(config[ZONE_0]);
+    
+    /*--- Set the multizone screen header ---*/
+
+    if (config[ZONE_0]->GetMultizone_Problem()){
+      MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
+      MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+      MultiZoneHeaderTable->SetPrintHeaderBottomLine(false);
+    }
+    
+  }
+  
+}
+
+void COutput::PrepareHistoryFile(CConfig *config){
+
+  char buffer[50];
+  
+  string history_filename;
+  
+  strcpy (char_histfile, HistoryFilename.data());
+  
+   /*--- Append the restart iteration: if dynamic problem and restart ---*/
+  
+  if (config->GetTime_Domain() && config->GetRestart()) {
+    long iExtIter = config->GetRestart_Iter();
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+    strcat(char_histfile, buffer);
+  }
+  
+  /*--- Add the correct file extension depending on the file format ---*/
+  
+  if ((config->GetOutput_FileFormat() == TECPLOT) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+  else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
+  strcat(char_histfile, buffer);
+  
+  /*--- Open the history file ---*/
+  
+  cout << "History filename: " << char_histfile << endl;
+  HistFile.open(char_histfile, ios::out);
+  HistFile.precision(15);
+  
+  /*--- Add the header to the history file. ---*/
+  
+  SetHistoryFile_Header(config);    
+  
+}
+
+void COutput::CheckHistoryOutput(){
+  
+  
+  /*--- Set screen convergence output header and remove unavailable fields ---*/
+  
+  string RequestedField;
+  vector<string> FieldsToRemove;
+  vector<bool> FoundField(nRequestedHistoryFields, false);
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
+    RequestedField = RequestedScreenFields[iReqField];  
+    if (HistoryOutput_Map.count(RequestedField) > 0){ 
+      ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
+    }
+    else if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+      ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
+    }else {
+      FieldsToRemove.push_back(RequestedField);
+    }
+  }
+  
+  /*--- Remove fields which are not defined --- */
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following screen output fields:" << endl;
+        cout << "  ";
+      }        cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedScreenFields.erase(std::find(RequestedScreenFields.begin(), RequestedScreenFields.end(), FieldsToRemove[iReqField]));
+  }
+  
+  nRequestedScreenFields = RequestedScreenFields.size();
+  
+  /*--- Remove unavailable fields from the history file output ---*/
+  
+  FieldsToRemove.clear();
+  FoundField = vector<bool>(nRequestedHistoryFields, false);
+  
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+    HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      RequestedField = RequestedHistoryFields[iReqField];   
+      if (RequestedField == Field.OutputGroup){
+        FoundField[iReqField] = true;
+      }
+    }
+  }
+  
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+    for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
+      HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup){
+          FoundField[iReqField] = true;
+        }
+      }
+    }
+  }
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (!FoundField[iReqField]){
+      FieldsToRemove.push_back(RequestedHistoryFields[iReqField]);
+    }
+  }
+  
+  /*--- Remove fields which are not defined --- */    
+  
+  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+    if (rank == MASTER_NODE) {
+      if (iReqField == 0){
+        cout << "  Info: Ignoring the following history output fields/groups:" << endl;
+        cout << "  ";
+      }        cout << FieldsToRemove[iReqField];
+      if (iReqField != FieldsToRemove.size()-1){
+        cout << ", ";
+      } else {
+        cout << endl;
+      }
+    }
+    RequestedHistoryFields.erase(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), FieldsToRemove[iReqField]));
+  }
+  
+  nRequestedHistoryFields = RequestedHistoryFields.size();
   
 }
 
@@ -6255,7 +5739,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   }
 }
 
-void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
+void COutput::Postprocess_HistoryData(CConfig *config){
   
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
@@ -6266,7 +5750,7 @@ void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
       SetHistoryOutputValue("REL_" + HistoryOutput_List[iField], currentField.Value - Init_Residuals[HistoryOutput_List[iField]]);
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
-      if(SetUpdate_Averages(config, dualtime)){
+      if(SetUpdate_Averages(config)){
         SetHistoryOutputValue("TAVG_" + HistoryOutput_List[iField], RunningAverages[HistoryOutput_List[iField]].Update(currentField.Value));
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){
@@ -6295,7 +5779,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
+    write_header = ((curr_InnerIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -6306,10 +5790,10 @@ bool COutput::WriteScreen_Header(CConfig *config) {
   return write_header;
 }
 
-bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+bool COutput::WriteScreen_Output(CConfig *config) {
   bool write_output = false;
   
-  write_output = config->GetnInner_Iter() - 1 == config->GetInnerIter();
+  write_output = config->GetnInner_Iter() - 1 == curr_InnerIter;
   
   if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) )){
     write_output = write_output || PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq_DualTime());
@@ -6324,12 +5808,13 @@ bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   return write_output;
 }
 
-bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-   return true;
- }
- else {
-   return false;
- }
+bool COutput::WriteHistoryFile_Output(CConfig *config) { 
+// if (!write_dualtime){
+//   return true;
+// }
+// else {
+//   return false;
+// }
+  return true;
 }
 

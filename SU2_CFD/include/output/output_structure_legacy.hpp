@@ -1,5 +1,5 @@
 /*!
- * \file output_structure.hpp
+ * \file output.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -51,12 +51,12 @@
 #include <time.h>
 #include <fstream>
 
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/fem_standard_element.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../solver_structure.hpp"
+#include "../integration_structure.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../Common/include/fem_standard_element.hpp"
+#include "../../../Common/include/config_structure.hpp"
 
 using namespace std;
 

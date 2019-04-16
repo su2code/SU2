@@ -472,7 +472,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- Print out the convergence data to screen and history file ---*/
-  driver_output->SetBody(output, solver_container, driver_config, config_container);
+  driver_output->SetMultizoneHistory_Output(output, config_container, driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 
@@ -633,7 +633,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         if (Wrt_CSV)
           output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][iInst][MESH_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
       

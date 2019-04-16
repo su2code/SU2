@@ -36,7 +36,7 @@
  */
 
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_flow_fem.hpp"
 
 CFlowFEMOutput::CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
 
@@ -380,16 +380,14 @@ void CFlowFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 
 }
 
-void CFlowFEMOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+void CFlowFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
-  CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
+  CSolver* flow_solver = solver[FLOW_SOL];
   
-  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
-  SetHistoryOutputValue("PHYS_TIME", timeused);
-  
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
@@ -426,7 +424,7 @@ void CFlowFEMOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
   
-  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
     if (nDim == 3)
@@ -444,7 +442,7 @@ void CFlowFEMOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver
     SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
   }
   
-  SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
+  SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   
 }
@@ -485,9 +483,10 @@ bool CFlowFEMOutput::SetInit_Residuals(CConfig *config){
   
 }
 
-bool CFlowFEMOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CFlowFEMOutput::SetUpdate_Averages(CConfig *config){
+  return false;
   
-  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       
 }
 

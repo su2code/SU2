@@ -2057,7 +2057,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
 
-  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))) {
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetRestart_Iter()))) {
 
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -2069,12 +2069,12 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
       }
     }
 
-    if ((restart && (long)ExtIter == config->GetUnst_RestartIter()) &&
+    if ((restart && (long)ExtIter == config->GetRestart_Iter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
 
-      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
+      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
 
       /*--- Push back this new solution to time level N. ---*/
 

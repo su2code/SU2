@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_heat.hpp"
 
 CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
@@ -88,55 +88,14 @@ CHeatOutput::~CHeatOutput(void) {
 
 }
 
-
-bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
-  return true;
- }
- else {
-   return false;
- }
-}
-
-bool CHeatOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
-  } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
-  }
-
-  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
-
-  return write_header;
-}
-
-bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  bool write_output = false;
+void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
-  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-      && write_dualtime ){
-    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
-  }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
-  } 
-
-  /*--- For multizone problems, print the body only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
-
-  return write_output;
-}
-
-void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+  CSolver* heat_solver = solver[HEAT_SOL];  
   
-  CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];  
-  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
-  
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+
   SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("AVG_TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
@@ -144,7 +103,6 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
   SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
   
-  SetHistoryOutputValue("PHYS_TIME", timeused);
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
   
 }
@@ -152,6 +110,7 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
 
 void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
+  AddHistoryOutput("TIME_ITER",   "Time_Iter",  FORMAT_INTEGER, "ITER");
   AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
   AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
   

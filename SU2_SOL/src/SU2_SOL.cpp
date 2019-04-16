@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
     
             /*--- Deallocate data --- */
             
-            output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+            output[iZone]->DeallocateData_Parallel();
           
           }
         }
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
 
         /*--- Deallocate data --- */
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
     }
@@ -385,8 +385,8 @@ int main(int argc, char *argv[]) {
 
     /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
     if (config_container[ZONE_0]->GetRestart()){
-      iExtIterFlow = config_container[ZONE_0]->GetUnst_RestartIter();
-      iExtIterFEM = config_container[ZONE_1]->GetDyn_RestartIter();
+      iExtIterFlow = config_container[ZONE_0]->GetRestart_Iter();
+      iExtIterFEM = config_container[ZONE_1]->GetRestart_Iter();
       if (iExtIterFlow != iExtIterFEM) {
         SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
       }
@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
         /*--- For the fluid zone (ZONE_0) ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
         if (SolutionInstantiatedFlow == false &&
-            (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetUnst_RestartIter())) ||
+            (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetRestart_Iter())) ||
                                iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
           solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
@@ -449,7 +449,7 @@ int main(int argc, char *argv[]) {
         /*--- Either instantiate the solution class or load a restart file. ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
         if (SolutionInstantiatedFEM == false &&
-            (iExtIter == 0 || ((config_container[ZONE_1]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_1]->GetDyn_RestartIter())) ||
+            (iExtIter == 0 || ((config_container[ZONE_1]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_1]->GetRestart_Iter())) ||
                                iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_1]->GetnExtIter()))) {
           solver_container[ZONE_1][INST_0] = new CBaselineSolver(geometry_container[ZONE_1][INST_0], config_container[ZONE_1]);
@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
   
           /*--- Deallocate data --- */
           
-          output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+          output[iZone]->DeallocateData_Parallel();
           
         }
       }
@@ -498,7 +498,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
       if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+        iExtIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
@@ -524,7 +524,7 @@ int main(int argc, char *argv[]) {
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated[iZone] == false &&
                     (iExtIter == 0 ||
-                     (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
+                     (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetRestart_Iter() ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
 
@@ -576,7 +576,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
       if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+        iExtIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
@@ -605,7 +605,7 @@ int main(int argc, char *argv[]) {
 
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated[iZone] == false &&
-                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
+                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetRestart_Iter() ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
@@ -632,7 +632,7 @@ int main(int argc, char *argv[]) {
         
                 /*--- Deallocate data --- */
                 
-                output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+                output[iZone]->DeallocateData_Parallel();
                 
               }
         }
@@ -674,7 +674,7 @@ int main(int argc, char *argv[]) {
           
           /*--- Deallocate data --- */
           
-          output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][iInst]);
+          output[iZone]->DeallocateData_Parallel();
           
           
         }
@@ -699,7 +699,7 @@ int main(int argc, char *argv[]) {
       /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
       if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY &&
           config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
+        iExtIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
@@ -724,7 +724,7 @@ int main(int argc, char *argv[]) {
 
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated == false &&
-                    (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetDyn_RestartIter())) ||
+                    (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetRestart_Iter())) ||
                                        iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                        iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
@@ -751,7 +751,7 @@ int main(int argc, char *argv[]) {
         
                 /*--- Deallocate data --- */
                 
-                output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+                output[iZone]->DeallocateData_Parallel();
                 
               }        
         }
@@ -788,7 +788,7 @@ int main(int argc, char *argv[]) {
         
         /*--- Deallocate data --- */
         
-        output[iZone]->DeallocateData_Parallel(config_container[iZone], geometry_container[iZone][INST_0]);
+        output[iZone]->DeallocateData_Parallel();
         
       }
     }

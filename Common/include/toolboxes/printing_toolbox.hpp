@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include "../datatype_structure.hpp"
 
 namespace PrintingToolbox { 
 
@@ -156,5 +157,61 @@ private:
   bool print_header_top_line_,  /*< \brief Printing the header top line. */
   print_header_bottom_line_;   /*< \brief Printing the header bottom line. */
 };
+
+
+
+inline void PrintScreenFixed(std::stringstream &stream, su2double val, unsigned short field_width) {
+  stream.precision(6); stream.setf(std::ios::fixed, std::ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(std::ios::fixed);
+}
+
+inline void PrintScreenScientific(std::stringstream &stream, su2double val, unsigned short field_width) {
+  stream.precision(4); stream.setf(std::ios::scientific, std::ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(std::ios::scientific);  
+}
+
+inline void PrintScreenInteger(std::stringstream &stream, unsigned long val, unsigned short field_width){
+  stream.width(field_width);
+  stream << std::right << val;
+}
+
+
+inline std::vector<std::string> split(const std::string& s, char delimiter)
+{
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream tokenStream(s);
+  while (std::getline(tokenStream, token, delimiter))
+  {
+    tokens.push_back(token);
+  }
+  return tokens;
+}
+
+inline int stoi(const std::string s){
+  std::istringstream ss(s);
+  int number;
+  ss >> number;
+  return number;
+}
+
+inline su2double stod(const std::string s){
+  std::istringstream ss(s);
+  su2double number;
+  ss >> number;
+  return number;
+}
+
+inline std::string to_string(const su2double number){
+  
+  std::stringstream ss;
+  
+  ss << number;
+  
+  return ss.str();
+  
+}
 
 }

@@ -1312,6 +1312,7 @@ def main():
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
+    contadj_euler_py.new_output = True
     pass_list.append(contadj_euler_py.run_filediff())
     test_list.append(contadj_euler_py)
 
@@ -1323,6 +1324,7 @@ def main():
     shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
     shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
+    shape_opt_euler_py.new_output = True
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
@@ -1334,6 +1336,7 @@ def main():
     contadj_multi_py.test_iter  = 10
     contadj_multi_py.su2_exec   = "continuous_adjoint.py"
     contadj_multi_py.timeout    = 1600
+    contadj_multi_py.new_output = True
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
     contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
