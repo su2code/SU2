@@ -103,8 +103,13 @@ void CDiscAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// END_GROUP	
 
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// DESCRIPTION: Maximum residual of the adjoint Pressure.
+  AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+  /// END_GROUP	
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
@@ -124,7 +129,9 @@ void CDiscAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
  
   SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
- 
+
+  if (multizone)
+    SetHistoryOutputValue("BGS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
   
   SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
 
