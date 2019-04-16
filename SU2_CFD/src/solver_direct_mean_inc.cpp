@@ -4546,21 +4546,13 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
      and stored for static meshes, as well as the prim gradient. ---*/
     
     node[iPoint]->SetRmatrixZero();
-    
     node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
-    
-    //    AD::StartPreacc();
-    //    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-    //    AD::SetPreaccIn(Coord_i, nDim);
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       PrimVar_j = node[jPoint]->GetPrimitive();
-      
-      //      AD::SetPreaccIn(Coord_j, nDim);
-      //      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
       
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4686,8 +4678,6 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       }
     }
     
-    //    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
-    //    AD::EndPreacc();
   }
   
   /*--- Communicate the gradient values via MPI. ---*/
@@ -6705,7 +6695,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         
         unsigned short iDim, jDim;
         
-        su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+        su2double  BetaInc2, Density, dRhodT, Temperature, Cp;
         su2double  Velocity[3] = {0.0,0.0,0.0};
         
         /*--- Access the primitive variables at this node. ---*/
@@ -6713,7 +6703,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Density     = node[iPoint]->GetDensity();
         BetaInc2    = node[iPoint]->GetBetaInc2();
         Cp          = node[iPoint]->GetSpecificHeatCp();
-        oneOverCp   = 1.0/Cp;
         Temperature = node[iPoint]->GetTemperature();
         
         for (iDim = 0; iDim < nDim; iDim++)

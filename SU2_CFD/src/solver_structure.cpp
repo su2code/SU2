@@ -2176,7 +2176,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   int nProcessor = size, iProcessor;
 
   su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
-  unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned long *sbuf_point, *rbuf_point, Global_nPointDomain;
   unsigned short iDim;
   
   /*--- Set the L2 Norm residual in all the processors ---*/
@@ -2185,7 +2185,6 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
   
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
-  Local_nPointDomain = geometry->GetnPointDomain();
   
   if (config->GetComm_Level() == COMM_FULL) {
     
@@ -2861,22 +2860,12 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     node[iPoint]->SetRmatrixZero();
     node[iPoint]->SetGradientZero();
-    
-    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-
-//    AD::StartPreacc();
-//    AD::SetPreaccIn(Solution_i, nVar);
-//    AD::SetPreaccIn(Coord_i, nDim);
 
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       Solution_j = node[jPoint]->GetSolution();
-
-//      AD::SetPreaccIn(Coord_j, nDim);
-//      AD::SetPreaccIn(Solution_j, nVar);
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -3004,9 +2993,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetGradient(iVar, iDim, Cvector[iVar][iDim]);
       }
     }
-
-//    AD::SetPreaccOut(node[iPoint]->GetGradient(), nVar, nDim);
-//    AD::EndPreacc();
+    
   }
   
   /*--- Deallocate memory ---*/

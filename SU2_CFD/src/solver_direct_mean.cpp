@@ -6579,18 +6579,11 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     node[iPoint]->SetRmatrixZero();
     node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
     
-//    AD::StartPreacc();
-//    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-//    AD::SetPreaccIn(Coord_i, nDim);
-    
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       PrimVar_j = node[jPoint]->GetPrimitive();
-      
-//      AD::SetPreaccIn(Coord_j, nDim);
-//      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -6716,8 +6709,6 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
       }
     }
     
-//    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
-//    AD::EndPreacc();
   }
   
   /*--- Communicate the gradient values via MPI. ---*/

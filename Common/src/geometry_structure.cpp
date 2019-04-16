@@ -343,7 +343,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
        number of elements that must be sent to a particular proc. ---*/
       
       if ((nPoint_Flag[iRank] != (int)iMarker)) {
-        nPoint_Flag[iRank]    = (int)iMarker;
+        nPoint_Flag[iRank]        = (int)iMarker;
         nPoint_Send_All[iRank+1] += nVertexS;
       }
       
@@ -396,6 +396,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
       nPoint_P2PRecv[iRecv+1] = nPoint_Recv_All[iRank+1];
       iRecv++;
     }
+    
   }
   
   /*--- Create a reverse mapping of the message to the rank so that we
@@ -471,6 +472,8 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
     }
   }
   
+  /*--- Build lists of local index values for receive. ---*/
+
   count = 0;
   for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -978,7 +981,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
     
+#ifdef HAVE_MPI
     SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
+#endif
     
   }
   
@@ -3826,6 +3831,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   unsigned long *Buffer_Send_nBoundQuadrilateral = new unsigned long[nMarker_Max];
   
   short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
+  for (iMarker = 0; iMarker < nMarker_Max; iMarker++)
+    Buffer_Send_Marker_All_SendRecv[iMarker] = 0;
   
   char *Marker_All_TagBound             = new char[nMarker_Max*MAX_STRING_SIZE];
   char *Buffer_Send_Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
@@ -12202,23 +12209,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         }
       }
     }
-    
-    /*--- If no periodic transormations were found, store default zeros ---*/
-    
-    if (!found_transform) {
-      unsigned short nPeriodic = 1, iPeriodic = 0;
-      config->SetnPeriodicIndex(nPeriodic);
-      su2double* center    = new su2double[3];
-      su2double* rotation  = new su2double[3];
-      su2double* translate = new su2double[3];
-      for (unsigned short iDim = 0; iDim < 3; iDim++) {
-        center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-      }
-      config->SetPeriodicCenter(iPeriodic,    center);
-      config->SetPeriodicRotation(iPeriodic,  rotation);
-      config->SetPeriodicTranslate(iPeriodic, translate);
-      delete [] center; delete [] rotation; delete [] translate;
-    }
   
   /*--- Close the input file ---*/
   
@@ -13723,22 +13713,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     
   }
 
-  /*--- Periodic transformations are not implemented yet for CGNS.
-   Store default zeros. ---*/
-  
-  unsigned short nPeriodic = 1, iPeriodic = 0;
-  config->SetnPeriodicIndex(nPeriodic);
-  su2double* center    = new su2double[3];
-  su2double* rotation  = new su2double[3];
-  su2double* translate = new su2double[3];
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-  }
-  config->SetPeriodicCenter(iPeriodic, center);
-  config->SetPeriodicRotation(iPeriodic, rotation);
-  config->SetPeriodicTranslate(iPeriodic, translate);
-  delete [] center; delete [] rotation; delete [] translate;
-  
   /*--- Deallocate temporary memory. ---*/
   
   delete[] vertices;
@@ -17383,168 +17357,204 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) {
+void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
+                                      unsigned short val_periodic) {
   
-  su2double epsilon = 1e-1;
-  
-  su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
-  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
-  dx, dy, dz, rotCoord[3] = {0.0,0.0,0.0};
-  
+  unsigned short iMarker, iDim, jMarker, pMarker = 0, index;
   unsigned short iPeriodic, nPeriodic;
+
+  unsigned long iVertex, iPoint, iPointGlobal;
+  unsigned long jVertex, jVertex_, jPoint, jPointGlobal;
+  unsigned long pVertex = 0, pPoint = 0, pPointGlobal = 0;
+  unsigned long nLocalVertex_Periodic = 0, MaxLocalVertex_Periodic = 0;
   unsigned long nPointMatch = 0;
+
+  int iProcessor, pProcessor = 0, nProcessor = size;
+
+  bool isBadMatch = false;
+  
+  string Marker_Tag;
+  
+  su2double *Coord_i, Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
+  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  
+  /*--- Tolerance for distance-based match to report warning. ---*/
+  
+  su2double epsilon = 1e-6;
   
   /*--- Evaluate the number of periodic boundary conditions ---*/
   
   nPeriodic = config->GetnMarker_Periodic();
   
-  if (nPeriodic != 0) {
-    
-    /*--- Send an initial message to the console. ---*/
-    if (rank == MASTER_NODE)
-    cout << "Matching the periodic boundary markers." << endl;
-    
-    unsigned short iMarker, iDim, jMarker, pMarker = 0;
-    unsigned long iVertex, iPoint, pVertex = 0, pPoint = 0, jVertex, jPoint, iPointGlobal, jPointGlobal, jVertex_, pPointGlobal = 0;
-    su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
-    int iProcessor, pProcessor = 0;
-    unsigned long nLocalVertex_Periodic = 0, MaxLocalVertex_Periodic = 0;
-    int nProcessor = size;
-    
-    unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-    unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-    
-    /*--- Compute the number of vertex that have interfase boundary condition
-     without including the ghost nodes ---*/
-    
-    nLocalVertex_Periodic = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        if ((iPeriodic == val_periodic) ||
-            (iPeriodic == val_periodic + nPeriodic/2)) {
-          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-            iPoint = vertex[iMarker][iVertex]->GetNode();
-            if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+  /*--- Send an initial message to the console. ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << "Matching the periodic boundary points for marker pair ";
+    cout << val_periodic << "." << endl;
+  }
+  
+  /*--- Compute the total number of vertices that sit on a periodic
+   boundary on our local rank. We only include our "owned" nodes. ---*/
+  
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+        }
+      }
+    }
+  }
+  
+  /*--- Communicate our local periodic point count globally
+   and receive the counts of periodic points from all other ranks.---*/
+  
+  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+  unsigned long *Buffer_Recv_nVertex = new unsigned long [nProcessor];
+  
+  Buffer_Send_nVertex[0] = nLocalVertex_Periodic;
+  
+  /*--- Copy our own count in serial or use collective comms with MPI. ---*/
+  
+#ifndef HAVE_MPI
+  MaxLocalVertex_Periodic = nLocalVertex_Periodic;
+  Buffer_Recv_nVertex[0] = Buffer_Send_nVertex[0];
+#else
+  SU2_MPI::Allreduce(&nLocalVertex_Periodic, &MaxLocalVertex_Periodic, 1,
+                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Prepare buffers to send the information for each
+   periodic point to all ranks so that we can match pairs. ---*/
+  
+  su2double *Buffer_Send_Coord           = new su2double [MaxLocalVertex_Periodic*nDim];
+  unsigned long *Buffer_Send_Point       = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_Vertex      = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_Marker      = new unsigned long [MaxLocalVertex_Periodic];
+  
+  su2double *Buffer_Recv_Coord           = new su2double [nProcessor*MaxLocalVertex_Periodic*nDim];
+  unsigned long *Buffer_Recv_Point       = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_Vertex      = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_Marker      = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  
+  unsigned long nBuffer_Coord       = MaxLocalVertex_Periodic*nDim;
+  unsigned long nBuffer_Point       = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_GlobalIndex = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Vertex      = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Marker      = MaxLocalVertex_Periodic;
+  
+  for (iVertex = 0; iVertex < MaxLocalVertex_Periodic; iVertex++) {
+    Buffer_Send_Point[iVertex]       = 0;
+    Buffer_Send_GlobalIndex[iVertex] = 0;
+    Buffer_Send_Vertex[iVertex]      = 0;
+    Buffer_Send_Marker[iVertex]      = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+  }
+  
+  /*--- Store the local index, global index, local boundary index,
+   marker index, and point coordinates in the buffers for sending.
+   Note again that this is only for the current pair of periodic
+   markers and for only the "owned" points on each rank. ---*/
+  
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          iPointGlobal = node[iPoint]->GetGlobalIndex();
+          if (node[iPoint]->GetDomain()) {
+            Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
+            Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
+            Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
+            Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
+            for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+            nLocalVertex_Periodic++;
           }
         }
       }
     }
-    
-    Buffer_Send_nVertex[0] = nLocalVertex_Periodic;
-    
-    /*--- Send Interface vertex information --*/
-    
+  }
+  
+  /*--- Copy our own data in serial or use collective comms to gather
+   the data for all points on each rank with MPI. Note that, since the
+   periodic point count should be small relative to the volume grid
+   and we are only storing one periodic marker pair at a time,
+   repeating the data for each pair on all ranks should be manageable. ---*/
+  
 #ifndef HAVE_MPI
-    MaxLocalVertex_Periodic = nLocalVertex_Periodic;
-    Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+  for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
+  Buffer_Recv_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
+  for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
+  Buffer_Recv_Point[iBuffer_Point] = Buffer_Send_Point[iBuffer_Point];
+  for (unsigned long iBuffer_GlobalIndex = 0; iBuffer_GlobalIndex < nBuffer_GlobalIndex; iBuffer_GlobalIndex++)
+  Buffer_Recv_GlobalIndex[iBuffer_GlobalIndex] = Buffer_Send_GlobalIndex[iBuffer_GlobalIndex];
+  for (unsigned long iBuffer_Vertex = 0; iBuffer_Vertex < nBuffer_Vertex; iBuffer_Vertex++)
+  Buffer_Recv_Vertex[iBuffer_Vertex] = Buffer_Send_Vertex[iBuffer_Vertex];
+  for (unsigned long iBuffer_Marker = 0; iBuffer_Marker < nBuffer_Marker; iBuffer_Marker++)
+  Buffer_Recv_Marker[iBuffer_Marker] = Buffer_Send_Marker[iBuffer_Marker];
 #else
-    SU2_MPI::Allreduce(&nLocalVertex_Periodic, &MaxLocalVertex_Periodic, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE,
+                     Buffer_Recv_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #endif
-    
-    su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Periodic*nDim];
-    unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Send_GlobalIndex  = new unsigned long [MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Send_Vertex  = new unsigned long [MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Send_Marker  = new unsigned long [MaxLocalVertex_Periodic];
-    
-    su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Periodic*nDim];
-    unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Receive_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Receive_Vertex = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
-    unsigned long *Buffer_Receive_Marker = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
-    
-    unsigned long nBuffer_Coord = MaxLocalVertex_Periodic*nDim;
-    unsigned long nBuffer_Point = MaxLocalVertex_Periodic;
-    unsigned long nBuffer_GlobalIndex = MaxLocalVertex_Periodic;
-    unsigned long nBuffer_Vertex = MaxLocalVertex_Periodic;
-    unsigned long nBuffer_Marker = MaxLocalVertex_Periodic;
-    
-    for (iVertex = 0; iVertex < MaxLocalVertex_Periodic; iVertex++) {
-      Buffer_Send_Point[iVertex] = 0;
-      Buffer_Send_GlobalIndex[iVertex] = 0;
-      Buffer_Send_Vertex[iVertex] = 0;
-      Buffer_Send_Marker[iVertex] = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-    }
-    
-    /*--- Copy coordinates and point to the auxiliar vector --*/
-    
-    nLocalVertex_Periodic = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        if ((iPeriodic == val_periodic) ||
-            (iPeriodic == val_periodic + nPeriodic/2)) {
-          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-            iPoint = vertex[iMarker][iVertex]->GetNode();
-            iPointGlobal = node[iPoint]->GetGlobalIndex();
-            if (node[iPoint]->GetDomain()) {
-              Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
-              Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
-              Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
-              Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
-              for (iDim = 0; iDim < nDim; iDim++)
-                Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-              nLocalVertex_Periodic++;
-            }
-          }
-        }
-      }
-    }
-    
-#ifndef HAVE_MPI
-    for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
-      Buffer_Receive_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
-    for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
-      Buffer_Receive_Point[iBuffer_Point] = Buffer_Send_Point[iBuffer_Point];
-    for (unsigned long iBuffer_GlobalIndex = 0; iBuffer_GlobalIndex < nBuffer_GlobalIndex; iBuffer_GlobalIndex++)
-      Buffer_Receive_GlobalIndex[iBuffer_GlobalIndex] = Buffer_Send_GlobalIndex[iBuffer_GlobalIndex];
-    for (unsigned long iBuffer_Vertex = 0; iBuffer_Vertex < nBuffer_Vertex; iBuffer_Vertex++)
-      Buffer_Receive_Vertex[iBuffer_Vertex] = Buffer_Send_Vertex[iBuffer_Vertex];
-    for (unsigned long iBuffer_Marker = 0; iBuffer_Marker < nBuffer_Marker; iBuffer_Marker++)
-      Buffer_Receive_Marker[iBuffer_Marker] = Buffer_Send_Marker[iBuffer_Marker];
-#else
-    SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#endif
-    
-    
-    /*--- Compute the closest point to a matching periodic boundary point ---*/
-    
-    maxdist_local = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+  
+  /*--- Now that all ranks have the data for all periodic points for
+   this pair of periodic markers, we match the individual points
+   based on the translation / rotation specified for the marker pair. ---*/
+  
+  maxdist_local = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
         
-        iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        if ((iPeriodic == val_periodic) ||
-            (iPeriodic == val_periodic + nPeriodic/2)) {
-          
         /*--- Retrieve the supplied periodic information. ---*/
-        center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
-        angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-        trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
         
-        /*--- Store (center+trans) as it is constant and will be added on. ---*/
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        center     = config->GetPeriodicRotCenter(Marker_Tag);
+        angles     = config->GetPeriodicRotAngles(Marker_Tag);
+        trans      = config->GetPeriodicTranslation(Marker_Tag);
+
+        /*--- Store (center+trans) as it is constant and will be added. ---*/
+        
         translation[0] = center[0] + trans[0];
         translation[1] = center[1] + trans[1];
         translation[2] = center[2] + trans[2];
         
         /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-        theta = angles[0];
-        phi   = angles[1];
-        psi   = angles[2];
         
-        cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+        Theta    = angles[0];      Phi = angles[1];     Psi = angles[2];
+        cosTheta = cos(Theta);  cosPhi = cos(Phi);   cosPsi = cos(Psi);
+        sinTheta = sin(Theta);  sinPhi = sin(Phi);   sinPsi = sin(Psi);
         
         /*--- Compute the rotation matrix. Note that the implicit
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+        
         rotMatrix[0][0] = cosPhi*cosPsi;
         rotMatrix[1][0] = cosPhi*sinPsi;
         rotMatrix[2][0] = -sinPhi;
@@ -17557,116 +17567,184 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
         rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
         rotMatrix[2][2] = cosTheta*cosPhi;
         
+        /*--- Loop over each point on the periodic marker that this rank
+         holds locally and find the matching point from the donor marker. ---*/
         
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
+          
+          /*--- Local and global index for the owned periodic point. ---*/
+          
+          iPoint       = vertex[iMarker][iVertex]->GetNode();
           iPointGlobal = node[iPoint]->GetGlobalIndex();
+          
+          /*--- If this is not a ghost, find the periodic match. ---*/
           
           if (node[iPoint]->GetDomain()) {
             
-            /*--- Coordinates of the boundary point ---*/
+            /*--- Coordinates of the current boundary point ---*/
             
-            Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+            Coord_i = node[iPoint]->GetCoord();
             
-            /*--- Loop over all the boundaries to find the pair ---*/
+            /*--- Get the position vector from rotation center to point. ---*/
+            
+            dx = Coord_i[0] - center[0];
+            dy = Coord_i[1] - center[1];
+            if (nDim == 3) dz = Coord_i[2] - center[2];
+            else           dz = 0.0;
+            
+            /*--- Compute transformed point coordinates. ---*/
+            
+            rotCoord[0] = (rotMatrix[0][0]*dx +
+                           rotMatrix[0][1]*dy +
+                           rotMatrix[0][2]*dz + translation[0]);
+            
+            rotCoord[1] = (rotMatrix[1][0]*dx +
+                           rotMatrix[1][1]*dy +
+                           rotMatrix[1][2]*dz + translation[1]);
+            
+            rotCoord[2] = (rotMatrix[2][0]*dx +
+                           rotMatrix[2][1]*dy +
+                           rotMatrix[2][2]*dz + translation[2]);
+            
+            /*--- Our search is based on the minimum distance, so we
+             initialize the distance to a large value. ---*/
+            
+            mindist = 1E6; pProcessor = 0; pPoint = 0;
+            
+            /*--- Loop over all of the periodic data that was gathered from
+             all ranks in order to find the matching periodic point. ---*/
+            
             for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-              for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Periodic+jVertex];
-                jPointGlobal = Buffer_Receive_GlobalIndex[iProcessor*MaxLocalVertex_Periodic+jVertex];
-                jVertex_ = Buffer_Receive_Vertex[iProcessor*MaxLocalVertex_Periodic+jVertex];
-                jMarker = Buffer_Receive_Marker[iProcessor*MaxLocalVertex_Periodic+jVertex];
+            for (jVertex = 0; jVertex < Buffer_Recv_nVertex[iProcessor]; jVertex++) {
+              
+              /*--- Store the loop index more easily. ---*/
+              
+              index = iProcessor*MaxLocalVertex_Periodic + jVertex;
+              
+              /*--- For each candidate, we have the local and global index,
+               along with the boundary vertex and marker index. ---*/
+              
+              jPoint       = Buffer_Recv_Point[index];
+              jPointGlobal = Buffer_Recv_GlobalIndex[index];
+              jVertex_     = Buffer_Recv_Vertex[index];
+              jMarker      = Buffer_Recv_Marker[index];
+              
+              /*--- The gathered data will also include the current
+               "owned" periodic point that we are matching, so first make
+               sure that we avoid the original point by checking that the
+               global index values are not the same. ---*/
+              
+              if ((jPointGlobal != iPointGlobal)) {
                 
-                /*--- Get marker index of the periodic donor boundary. ---*/
-                if ((jPointGlobal != iPointGlobal) ) {
+                /*--- Compute the distance between the candidate periodic
+                 point and the transformed coordinates of the owned point. ---*/
+                
+                dist = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Coord_j[iDim] = Buffer_Recv_Coord[index*nDim + iDim];
+                  dist         += pow(Coord_j[iDim]-rotCoord[iDim],2.0);
+                }
+                dist = sqrt(dist);
+                
+                /*--- Compare the distance against the existing minimum
+                 and also perform checks just to be sure that this is an
+                 independent periodic point (even if on the same rank). ---*/
+                
+                if (((dist < mindist) && (iProcessor != rank)) ||
+                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
                   
-                  /*--- Get the position vector from rot center to point. ---*/
-                  dx = Coord_i[0] - center[0];
-                  dy = Coord_i[1] - center[1];
-                  if (nDim == 3) {
-                    dz = Coord_i[2] - center[2];
-                  } else {
-                    dz = 0.0;
-                  }
+                  /*--- We have found an intermediate match. Store the
+                   data for this point before continuing the search. ---*/
                   
-                  /*--- Compute transformed point coordinates. ---*/
-                  rotCoord[0] = rotMatrix[0][0]*dx
-                  + rotMatrix[0][1]*dy
-                  + rotMatrix[0][2]*dz + translation[0];
+                  mindist      = dist;
+                  pProcessor   = iProcessor;
+                  pPoint       = jPoint;
+                  pPointGlobal = jPointGlobal;
+                  pVertex      = jVertex_;
+                  pMarker      = jMarker;
                   
-                  rotCoord[1] = rotMatrix[1][0]*dx
-                  + rotMatrix[1][1]*dy
-                  + rotMatrix[1][2]*dz + translation[1];
-                  
-                  rotCoord[2] = rotMatrix[2][0]*dx
-                  + rotMatrix[2][1]*dy
-                  + rotMatrix[2][2]*dz + translation[2];
-                  
-                  
-                  /*--- Compute the distance ---*/
-                  
-                  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Periodic+jVertex)*nDim+iDim];
-                    dist += pow(Coord_j[iDim]-rotCoord[iDim],2.0);
-                  } dist = sqrt(dist);
-                  
-                  if (((dist < mindist) && (iProcessor != rank)) ||
-                      ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; pPointGlobal = jPointGlobal;
-                    pVertex = jVertex_; pMarker = jMarker;
-                    if (dist == 0.0) break;
-                  }
                 }
               }
+              
+            }
             
-            /*--- Store the value of the pair ---*/
+            /*--- Store the data for the best match found for the
+             owned periodic point. ---*/
             
-            maxdist_local = max(maxdist_local, mindist);
             vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
+            maxdist_local = max(maxdist_local, mindist);
             nPointMatch++;
+            
+            /*--- If the distance to the closest point is larger than our
+             tolerance, then throw a warning for this point. ---*/
             
             if (mindist > epsilon) {
               cout.precision(10);
               cout << endl;
-              cout << "   Bad match for point " << iPoint << ".\tNearest";
+              cout << "   Bad match for point " << iPointGlobal << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iPointGlobal, pVertex, pMarker, pProcessor);
               maxdist_local = min(maxdist_local, 0.0);
+              isBadMatch = true;
             }
-                
+            
           }
         }
       }
     }
+  }
+  
+  /*--- Communicate the final count of number of matched points
+   for the periodic boundary pair and the max distance for all
+   pairs of points. ---*/
+  
+#ifndef HAVE_MPI
+  maxdist_global = maxdist_local;
+#else
+  unsigned long nPointMatch_Local = nPointMatch;
+  SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG,
+                  MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE,
+                  MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Output some information about the matching process. ---*/
+  
+  if (rank == MASTER_NODE) {
+    if (nPointMatch > 0) {
+      cout <<" Matched " << nPointMatch << " points with a max distance of: ";
+      cout << maxdist_global <<"."<< endl;
+    } else {
+      cout <<" No matching points for periodic marker pair ";
+      cout << val_periodic << " in current zone." << endl;
     }
     
-#ifndef HAVE_MPI
-    maxdist_global = maxdist_local;
-#else
-    unsigned long nPointMatch_Local = nPointMatch;
-    SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-#endif
+    /*--- Print final warning when finding bad matches. ---*/
     
-    if (rank == MASTER_NODE) cout <<" Matched " << nPointMatch << " points with a max distance of: " << maxdist_global <<"."<< endl;
-    
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_Point;
-    
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_Point;
-    
-    delete[] Buffer_Send_nVertex;
-    delete[] Buffer_Receive_nVertex;
-    
-    delete [] Buffer_Send_GlobalIndex;
-    delete [] Buffer_Send_Vertex;
-    delete [] Buffer_Send_Marker;
-    
-    delete [] Buffer_Receive_GlobalIndex;
-    delete [] Buffer_Receive_Vertex;
-    delete [] Buffer_Receive_Marker;
-    
+    if (isBadMatch) {
+      cout << endl;
+      cout << "\n !!! Warning !!!" << endl;
+      cout << "Bad matches found. Computation will continue, but be cautious.\n";
+    }
   }
+  
+  /*--- Free local memory for communications. ---*/
+  
+  delete[] Buffer_Send_Coord;
+  delete[] Buffer_Send_Point;
+  
+  delete[] Buffer_Recv_Coord;
+  delete[] Buffer_Recv_Point;
+  
+  delete[] Buffer_Send_nVertex;
+  delete[] Buffer_Recv_nVertex;
+  
+  delete [] Buffer_Send_GlobalIndex;
+  delete [] Buffer_Send_Vertex;
+  delete [] Buffer_Send_Marker;
+  
+  delete [] Buffer_Recv_GlobalIndex;
+  delete [] Buffer_Recv_Vertex;
+  delete [] Buffer_Recv_Marker;
   
 }
 
