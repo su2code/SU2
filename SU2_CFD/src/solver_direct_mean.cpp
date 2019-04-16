@@ -18414,19 +18414,96 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
       /*--- If not just continue to the next---*/
       if (!CalculateWallModel) continue;
       
+      /*--- Determine the prescribed heat flux or prescribed temperature. ---*/
+      bool HeatFlux_Prescribed = false, Temperature_Prescribed = false;
+      su2double Wall_HeatFlux = 0.0, Wall_Temperature = 0.0;
+      
+      if(config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+        HeatFlux_Prescribed = true;
+        Wall_HeatFlux       = config->GetWall_HeatFlux(Marker_Tag);
+      }
+      else {
+        Temperature_Prescribed = true;
+        Wall_Temperature       = config->GetIsothermal_Temperature(Marker_Tag)
+        / config->GetTemperature_Ref();
+      }
+      
       /*--- Loop over all of the vertices on this boundary marker ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (!geometry->node[iPoint]->GetDomain()) continue;
+        
+        /*--- Main task 1: Interpolate to have the velocity and pressure at the exchange location---*/
+        su2double *normals = geometry->vertex[iMarker][iVertex]->GetNormal();
         unsigned long donorElem = geometry->vertex[iMarker][iVertex]->GetDonorElem();
         unsigned short nDonors  = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+        su2double vel_LES[3] = {0.0, 0.0, 0.0}, rho_LES = 0.0, e_LES   = 0.0,Area = 0.0;
         
+        for (iDim = 0; iDim < nDim; iDim++) Area += normals[iDim]*normals[iDim]; Area = sqrt(Area);
+        for (iDim = 0; iDim < nDim; iDim++) normals[iDim]/=Area;
+        
+        /*--- Load the coefficients and interpolate---*/
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
           unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
           su2double donnorCoeff    = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
+          
+          rho_LES += donnorCoeff*node[donorPoint]->GetSolution(0);
+          e_LES   += donnorCoeff*node[donorPoint]->GetSolution(nVar-1)/node[donorPoint]->GetSolution(0);
+          
+          for (iDim = 0; iDim < nDim; iDim++ ){
+            vel_LES[iDim+1] += donnorCoeff*node[donorPoint]->GetSolution(iDim+1)/node[donorPoint]->GetSolution(0);
+          }
         }
         
-        /*--- Interpolate to have the velocity and pressure at the exchange location---*/
+        su2double vel2Mag = vel_LES[0]*vel_LES[0] + vel_LES[1]*vel_LES[1] + vel_LES[2]*vel_LES[2];
+        e_LES    = e_LES - 0.5*vel2Mag;
         
+        /*--- Load the fluid model to have pressure and temperature at exchange location---*/
+        FluidModel->SetTDState_rhoe(rho_LES, e_LES);
+        const su2double Pressure = FluidModel->GetPressure();
+        const su2double Temperature = FluidModel->GetTemperature();
+        const su2double LaminarViscosity= FluidModel->GetLaminarViscosity();
+        
+        /* TODO: Subtract the prescribed wall velocity, i.e. grid velocity
+         from the velocity in the exchange point. */
+        //for(unsigned short k=0; k<nDim; ++k) vel[k] -= gridVel[k];
+        
+        /* Determine the tangential velocity by subtracting the normal
+         velocity component. */
+        su2double velNorm = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++) velNorm += normals[iDim]*vel_LES[iDim];
+        for(iDim = 0; iDim < nDim; iDim++) vel_LES[iDim] -= normals[iDim]*velNorm;
+        
+        /* Determine the magnitude of the tangential velocity as well
+         as its direction (unit vector). */
+        su2double velTan = sqrt(vel_LES[0]*vel_LES[0] + vel_LES[1]*vel_LES[1] + vel_LES[2]*vel_LES[2]);
+        velTan = max(velTan,1.e-25);
+        
+        su2double dirTan[3] = {0.0, 0.0, 0.0};
+        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
+        
+        /* Compute the wall shear stress and heat flux vector using
+         the wall model. */
+        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+        WallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
+                                              Wall_HeatFlux, HeatFlux_Prescribed,
+                                              Wall_Temperature, Temperature_Prescribed,
+                                              FluidModel, tauWall, qWall, ViscosityWall,
+                                              kOverCvWall);
+        
+        /* Compute the wall velocity in tangential direction. */
+        const su2double *solWall = node[iPoint]->GetSolution();
+        su2double velWallTan = 0.0;
+        for( iDim = 0; iDim < nDim; iDim++)
+          velWallTan += solWall[iDim+1]*dirTan[iDim];
+        velWallTan /= solWall[0];
+        
+        /*--- Set tau wall and heat flux at the node. ---*/
+        node[iPoint]->SetTauWall(tauWall);
+        node[iPoint]->SetHeatFlux(qWall);
         
       }
     }
