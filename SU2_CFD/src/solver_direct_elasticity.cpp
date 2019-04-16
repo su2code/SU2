@@ -1416,7 +1416,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
   bool restart = config->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetRestart_Iter()); // Initial calculation for restart
   
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
   
@@ -3585,7 +3585,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   bool offset = (restart && fsi && (!stat_fsi));
   su2double DeltaT = config->GetDelta_DynTime();
   su2double OffsetTime = 0.0;
-  OffsetTime = DeltaT * (config->GetDyn_RestartIter()-1);
+  OffsetTime = DeltaT * (config->GetRestart_Iter()-1);
 
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
 

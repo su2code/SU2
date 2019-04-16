@@ -18370,7 +18370,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
-  unsigned short iMarker, icommas;
+  unsigned short iMarker;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double Sensitivity;
   bool *PointInDomain;
@@ -18455,29 +18455,41 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcat (cstr, buffer);
     
     /*--- Read the sensitivity file ---*/
-    
-    string::size_type position;
-    
+        
     Surface_file.open(cstr, ios::in);
     
     /*--- Read extra inofmration ---*/
     
-    getline(Surface_file, text_line);
-    text_line.erase (0,9);
-    su2double AoASens = atof(text_line.c_str());
-    config->SetAoA_Sens(AoASens);
+//    getline(Surface_file, text_line);
+//    text_line.erase (0,9);
+//    su2double AoASens = atof(text_line.c_str());
+//    config->SetAoA_Sens(AoASens);
     
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
     
+    vector<string> Fields;
+    string SensField = "Surface_Sensitivity";
+    
+    Fields = PrintingToolbox::split(text_line,',');
+    
+    unsigned short iField = 0;
+    for (iField = 0; iField < Fields.size(); iField++){
+      if (Fields[iField].substr(1,Fields[iField].size()-2) == SensField) break;
+    }
+    
+    if (iField == Fields.size()) {
+      SU2_MPI::Error("Surface sensitivity not found in file " + string(cstr), CURRENT_FUNCTION);
+    }
+    
     while (getline(Surface_file, text_line)) {
-      for (icommas = 0; icommas < 50; icommas++) {
-        position = text_line.find( ",", 0 );
-        if (position!=string::npos) text_line.erase (position,1);
-      }
-      stringstream  point_line(text_line);
-      point_line >> iPoint >> Sensitivity;
+     
+      vector<string> FieldValues = PrintingToolbox::split(text_line, ',');
+      
+      iPoint = PrintingToolbox::stoi(FieldValues[0]);
+      
+      Sensitivity = PrintingToolbox::stod(FieldValues[iField]);
       
       if (PointInDomain[iPoint]) {
         

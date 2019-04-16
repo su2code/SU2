@@ -65,7 +65,7 @@ class TestCase:
         self.no_restart = False
 
         # Indicate whether the new output is used
-        self.new_output = False   
+        self.new_output = True   
 
         # multizone problem
         self.multizone = False

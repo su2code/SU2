@@ -1,8 +1,9 @@
 /*!
- * \file output_structure.inl
- * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
- * \author J. Smith
- * \version 6.1.0 "Falcon"
+ * \file output_heat.hpp
+ * \brief Headers of the main subroutines for generating the file outputs.
+ *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ * \author F. Palacios, T. Economon, M. Colonno
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -37,10 +38,59 @@
 
 #pragma once
 
-inline su2double COutputLegacy::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
+#include "output.hpp"
 
-inline su2double COutputLegacy::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 
-inline su2double COutputLegacy::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
+/*! \class CHeatOutput
+ *  \brief Output class for heat problems.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CHeatOutput : public COutput {
+private:
+  bool multizone;
 
-inline bool COutputLegacy::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
+  char char_histfile[200];
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHeatOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+  
+  /*!
+   * \brief SetHistoryOutputFields
+   * \param config
+   */
+  void SetHistoryOutputFields(CConfig *config);
+   
+  /*!
+   * \brief SetVolumeOutputFields
+   * \param config
+   */
+  void SetVolumeOutputFields(CConfig *config);
+  
+  /*!
+   * \brief LoadVolumeData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   */
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+ 
+};

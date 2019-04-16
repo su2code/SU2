@@ -1,9 +1,8 @@
 /*!
- * \file SU2_SOL.hpp
- * \brief Headers of the main subroutines of the code SU2_SOL.
- *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
- * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \file output_structure.inl
+ * \brief In-Line subroutines of the <i>output.hpp</i> file.
+ * \author J. Smith
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -38,13 +37,10 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+inline su2double COutputLegacy::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-#include <ctime>
+inline su2double COutputLegacy::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output/output_baseline.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
+inline su2double COutputLegacy::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
 
-using namespace std;
+inline bool COutputLegacy::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }

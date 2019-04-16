@@ -157,6 +157,9 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   base_config = true;
   
+  nZone = 1;
+  iZone = 0;
+  
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
@@ -2191,7 +2194,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
   addDoubleOption("MAX_TIME", Max_Time, 1.0);
   /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
-  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
+  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, true);
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
 
@@ -2757,6 +2760,8 @@ void CConfig::SetnZone(){
   }
   
   if (Multizone_Problem == YES){
+    
+    SinglezoneDriver  = NO;
     
     if (Multizone_Mesh){
       
@@ -6556,7 +6561,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 bool CConfig::TokenizeString(string & str, string & option_name,
                              vector<string> & option_value) {
-  const string delimiters(" ()[]{}:,\t\n\v\f\r");
+  const string delimiters(" (){}:,\t\n\v\f\r");
   // check for comments or empty string
   string::size_type pos, last_pos;
   pos = str.find_first_of("%");

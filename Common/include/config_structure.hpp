@@ -3056,12 +3056,6 @@ public:
   unsigned long GetDyn_nIntIter(void);
   
   /*!
-   * \brief Get the restart iteration number for unsteady simulations.
-   * \return Restart iteration number for unsteady simulations.
-   */
-  long GetUnst_RestartIter(void);
-  
-  /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
    * \return Starting direct iteration number for the unsteady adjoint.
    */
@@ -3073,12 +3067,6 @@ public:
    */
   unsigned long GetIter_Avg_Objective(void);
   
-  /*!
-   * \brief Get the restart iteration number for dynamic structural simulations.
-   * \return Restart iteration number for dynamic structural simulations.
-   */
-  long GetDyn_RestartIter(void);
-
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
    * \return: Number of periodic time instances for Harmonic Balance.

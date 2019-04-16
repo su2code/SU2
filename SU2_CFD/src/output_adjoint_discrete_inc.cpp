@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output/output_flow_inc_discadj.hpp"
 
 CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
@@ -188,16 +188,15 @@ void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { 
+void CDiscAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) { 
   
-  CSolver* adjflow_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL];
-  CSolver* adjturb_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL];  
-  CSolver* adjheat_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL];
+  CSolver* adjflow_solver = solver[ADJFLOW_SOL];
+  CSolver* adjturb_solver = solver[ADJTURB_SOL];  
+  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
   
-  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter()); 
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
   
   SetHistoryOutputValue("RMS_ADJ_PRESSURE", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_VELOCITY-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -212,7 +211,7 @@ void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
     if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(4)));
     else           SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(3)));
   }
-  if (!config[val_iZone]->GetFrozen_Visc_Disc()){  
+  if (!config->GetFrozen_Visc_Disc()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
@@ -237,7 +236,7 @@ void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
     if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(3)));
   }
-  if (!config[val_iZone]->GetFrozen_Visc_Disc()){  
+  if (!config->GetFrozen_Visc_Disc()){  
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
@@ -254,7 +253,6 @@ void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
-  SetHistoryOutputValue("PHYS_TIME", timeused);
 
 }
 
@@ -444,6 +442,7 @@ void CDiscAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry
   
 }
 
+
 bool CDiscAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
@@ -451,9 +450,10 @@ bool CDiscAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
   
 }
 
-bool CDiscAdjFlowIncOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CDiscAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
+  return false;
   
-  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       
 }
 

@@ -1,8 +1,8 @@
 /*!
- * \file SU2_SOL.hpp
- * \brief Headers of the main subroutines of the code SU2_SOL.
- *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file output_mesh.hpp
+ * \brief Headers of the main subroutines for generating the file outputs.
+ *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ * \author F. Palacios, T. Economon, M. Colonno
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -38,13 +38,41 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "output.hpp"
 
-#include <ctime>
+/*! \class CMeshOutput
+ *  \brief Output class for mesh solution.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CMeshOutput : public COutput {
 
-#include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/output/output_baseline.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
+public:
 
-using namespace std;
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CMeshOutput(void);
+
+  /*!
+   * \brief SetVolumeOutputFields
+   * \param config
+   */
+  void SetVolumeOutputFields(CConfig *config);
+
+  /*!
+   * \brief LoadVolumeData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   */
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
+};

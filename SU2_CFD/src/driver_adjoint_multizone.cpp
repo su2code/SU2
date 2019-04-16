@@ -125,8 +125,18 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
 
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
   
   for (iZone = 0; iZone < nZone; iZone++){
+
+    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
+    
+    if (config_container[iZone]->GetWrt_Binary_Restart()){
+      RestartFormat = SU2_RESTART_BINARY;
+    }
     
     bool output_files = false;
     
@@ -192,12 +202,32 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
 #endif
       
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-      
-      /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
-      
-      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, iZone, nZone);
-      
+
+     /*--- Execute the routine for writing restart, volume solution,
+       surface solution, and surface comma-separated value files. ---*/
+      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        
+        /*--- Write restart files ---*/
+        
+        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        
+        /*--- Write visualization files ---*/
+        
+        if (Wrt_Vol)
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        
+        if (Wrt_Surf)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        if (Wrt_CSV)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+        
+        output[iZone]->DeallocateData_Parallel();
+        
+      }
       
       /*--- Execute the routine for writing special output. ---*/
       // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
@@ -311,7 +341,8 @@ void CDiscAdjMultizoneDriver::Run() {
     SetResidual_RMS();
     
     for (iZone = 0; iZone < nZone; iZone++) {
-      output[iZone]->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, iZone, INST_0);
+    	output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone], 
+				  config_container[iZone]->GetTimeIter(), config_container[iZone]->GetOuterIter(), config_container[iZone]->GetInnerIter());
     }    
     
     OuterConvergence(iOuter_Iter);
