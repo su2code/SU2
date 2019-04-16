@@ -683,10 +683,8 @@ class TestCase:
             adjust_string = "TIME_ITER"
         elif self.multizone:
             adjust_string = "OUTER_ITER"
-        elif self.new_output:
-            adjust_string = "ITER"
         else:
-            adjust_string = "EXT_ITER"
+            adjust_string = "ITER"
         for line in lines:
             if not line.strip().split("=")[0].strip() == adjust_string:
                 file_out.write(line)
