@@ -918,6 +918,7 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
+  bool wall_functions = config_container[ZONE_0]->GetWall_Functions();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -926,52 +927,59 @@ void CDriver::Geometrical_Preprocessing() {
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-      /*--- Compute elements surrounding points, points surrounding points ---*/
+      /*--- If we are using Wall Model/Functions the following part was already called
+       in send/receive function CPhysicalGeometry::SetSendReceive(CConfig *config) and
+       we can skip.---*/
+      
+      if (wall_functions){
+      
+        /*--- Compute elements surrounding points, points surrounding points ---*/
 
-      if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
+        if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
 
-      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+        /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
 
-      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
+        if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
 
-      /*--- recompute elements surrounding points, points surrounding points ---*/
+        /*--- recompute elements surrounding points, points surrounding points ---*/
 
-      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
+        if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
 
-      /*--- Compute elements surrounding elements ---*/
+        /*--- Compute elements surrounding elements ---*/
 
-      if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetElement_Connectivity();
+        if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetElement_Connectivity();
 
-      /*--- Check the orientation before computing geometrical quantities ---*/
+        /*--- Check the orientation before computing geometrical quantities ---*/
 
-      geometry_container[iZone][iInst][MESH_0]->SetBoundVolume();
-      if (config_container[iZone]->GetReorientElements()) {
-        if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
-        geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
-        geometry_container[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundVolume();
+        if (config_container[iZone]->GetReorientElements()) {
+          if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+          geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
+          geometry_container[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+        }
+
+        /*--- Create the edge structure ---*/
+
+        if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetEdges();
+        geometry_container[iZone][iInst][MESH_0]->SetVertex(config_container[iZone]);
+
+        /*--- Compute cell center of gravity ---*/
+
+        if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
+
+        /*--- Create the control volume structures ---*/
+
+        if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
       }
-
-      /*--- Create the edge structure ---*/
-
-      if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetEdges();
-      geometry_container[iZone][iInst][MESH_0]->SetVertex(config_container[iZone]);
-
-      /*--- Compute cell center of gravity ---*/
-
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
-
-      /*--- Create the control volume structures ---*/
-
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
-      geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
-
       /*--- Compute the max length. ---*/
 
       if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
