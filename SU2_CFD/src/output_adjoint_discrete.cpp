@@ -165,6 +165,36 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
     }
   }
   /// END_GROUP
+ 
+  
+  ///  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The Block Gauss Seidel residuals of the SOLUTION variables. 
+  /// DESCRIPTION: BGSimum residual of the adjoint density.
+  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGSimum residual of the adjoint momentum x-component
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGSimum residual of the adjoint momentum y-component
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-Y", "bgs[A_RhoV]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGSimum residual of the adjoint momentum z-component
+  AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGSimum residual of the adjoint energy.
+  AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+  if (!config->GetFrozen_Visc_Disc()){  
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      /// DESCRIPTION: BGSimum residual of the adjoint nu tilde.
+      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);      
+      break;  
+    case SST:
+      /// DESCRIPTION: BGSimum residual of the adjoint kinetic energy.
+      AddHistoryOutput("BGS_ADJ_KINETIC_ENERGY", "bgs[A_k]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);   
+      /// DESCRIPTION: BGSimum residual of the adjoint dissipation.
+      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+      break;
+    default: break;
+    }
+  }
+  
+  /// END_GROUP
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
@@ -235,6 +265,31 @@ void CDiscAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     default: break;
     }
   }
+  
+  if (multizone){
+    SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
+    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
+    if (geometry->GetnDim() == 3) {
+      SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(3)));
+      SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
+    } else {
+      SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));    
+    }
+    if (!config->GetFrozen_Visc_Disc()){  
+      switch(turb_model){
+      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+        SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
+        break;  
+      case SST:
+        SetHistoryOutputValue("MAX_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_BGS(0)));
+        SetHistoryOutputValue("MAX_ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
+        break;
+      default: break;
+      }
+    }
+  }
+  
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
   SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA());
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
