@@ -2576,11 +2576,15 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetDefaultFromConfig(CConfig *config){
   
+  map<string, bool> noInheritance = CCreateMap<string, bool>
+      ("SCREEN_OUTPUT", true)
+      ("HISTORY_OUTPUT", true);
+  
   map<string, bool>::iterator iter = all_options.begin(), curr_iter;
   
   while (iter != all_options.end()){
     curr_iter = iter++;   
-    if (config->option_map[curr_iter->first]->GetValue().size() > 0){
+    if (config->option_map[curr_iter->first]->GetValue().size() > 0 && !noInheritance[curr_iter->first]){
       option_map[curr_iter->first]->SetValue(config->option_map[curr_iter->first]->GetValue());
       all_options.erase(curr_iter);      
     }

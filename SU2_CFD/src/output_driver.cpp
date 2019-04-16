@@ -59,14 +59,21 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config) : COutput
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("ITER");
     for (iZone = 0; iZone < nZone; iZone++){
-      RequestedHistoryFields.push_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");
+      RequestedHistoryFields.push_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");      
+      RequestedHistoryFields.push_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
     }
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
+  if (nRequestedScreenFields == 0){
+    if (config[ZONE_0]->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");    
+    RequestedScreenFields.push_back("OUTER_ITER");
+    for (iZone = 0; iZone < nZone; iZone++){
+      RequestedScreenFields.push_back("AVG_" + bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]"); 
+    }
+    nRequestedScreenFields = RequestedScreenFields.size();
+  }
   
-
- 
   MultiZoneHeaderString = "Multizone Summary";
   
   HistoryFilename = "multizone_history";
@@ -111,96 +118,13 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
       }
     }
   }
-
-//  for (iZone = 0; iZone < nZone; iZone++){
-
-//    /*--- Initialize values per zone ---*/
-//    nVar_Zone = 0;
-//    avgzone = 0.0;
-    
-//    InnerIter = output[iZone]->GetHistoryFieldValue("INNER_ITER");
-    
-//    name = string("INNER_ITER") + "_" + PrintingToolbox::to_string(iZone);
-    
-//    SetHistoryOutputValue(name, InnerIter);
-    
-//    vector<HistoryOutputField> BGSGroup = output[iZone]->GetHistoryGroup("BGS_RES");   
-    
-        
-//    nField = BGSGroup.size();
-    
-//    for (iField = 0; iField < nField; iField++){
-      
-//      name = BGSGroup[iField].FieldName + "_" + PrintingToolbox::to_string(iZone);
-      
-//      val = BGSGroup[iField].Value;
-      
-//      SetHistoryOutputValue(name, val);
-      
-//      /*--- Add values to averages ---*/
-//      avgzone += val;
-//      nVar_Zone++;
-      
-//    }
-
-//    /*--- Get an unique name for the averaged history data per zone ---*/
-//    name = "ZONE" + PrintingToolbox::to_string(iZone);
-
-//    /*--- Compute the average and set the value for the zone iZone---*/
-//    avgzone = avgzone / nVar_Zone;
-//    SetHistoryOutputValue(name, avgzone);
-    
-//    vector<HistoryOutputField> RMSGroup = output[iZone]->GetHistoryGroup("RMS_RES");        
-        
-//    nField = RMSGroup.size();
-    
-//    for (iField = 0; iField < nField; iField++){
-      
-//      name = RMSGroup[iField].FieldName + "_" + PrintingToolbox::to_string(iZone);
-      
-//      val = RMSGroup[iField].Value;
-      
-//      SetHistoryOutputValue(name, val);
-      
-//    }
-
-//  }
-
-
 }
 
 void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {
   
   unsigned short iZone, iField, nField;
   string name, header, group;
-  
-  if (nRequestedScreenFields == 0){
-    if (config[ZONE_0]->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");
-    RequestedScreenFields.push_back("OUTER_ITER");
-    
-    for (iZone = 0; iZone < nZone; iZone++){
-      
-      map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
-      vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
-      nField = ZoneHistoryFields.size();
-      
-      for (iField = 0; iField < nField; iField++){
-        
-        if (ZoneHistoryFields[ZoneHistoryNames[iField]].OutputGroup == bgs_res_name){
-          
-          name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
-          
-          RequestedScreenFields.push_back(name);
-          
-          break;
-          
-        }
-      }
-    }
-    
-    nRequestedScreenFields = RequestedScreenFields.size();
-  }
-  
+
   if (config[ZONE_0]->GetTime_Domain()){
     AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
   }
@@ -229,74 +153,6 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
       }
     }
   }
-
-//  /*--- Set the fields ---*/
-//  for (iZone = 0; iZone < nZone; iZone++){
-    
-//    InnerIter = output[iZone]->GetHistoryFieldValue("INNER_ITER");
-    
-//    name   = string("INNER_ITER") + "_" + PrintingToolbox::to_string(iZone);
-//    header = string("Inner_Iter") + "[" + PrintingToolbox::to_string(iZone) + "]";
-    
-//    AddHistoryOutput(name, header, FORMAT_INTEGER, "ITER");
-    
-////    RequestedScreenFields.push_back(name);
-    
-//    vector<HistoryOutputField> BGSGroup = output[iZone]->GetHistoryGroup("BGS_RES");        
-    
-//    nField = BGSGroup.size();
- 
-//    /*-- For all the variables per solver --*/
-//    for (iField = 0; iField < nField; iField++){
-      
-//      /*--- Set an unique name for the history data ---*/
-//      name   = BGSGroup[iField].FieldName + "_" + PrintingToolbox::to_string(iZone);
-      
-//      header = BGSGroup[iField].FieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
-
-//      AddHistoryOutput(name, header, FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-      
-//      /*--- Request the variable residual for history output ---*/
-//      RequestedScreenFields.push_back(name);
-//    }
-
-//    vector<HistoryOutputField> RMSGroup = output[iZone]->GetHistoryGroup("RMS_RES");
-//    nField = RMSGroup.size();
-    
-//    /*-- For all the variables per solver --*/
-//    for (iField = 0; iField < nField; iField++){
-      
-//      /*--- Set an unique name for the history data ---*/
-//      name   = RMSGroup[iField].FieldName + "_" + PrintingToolbox::to_string(iZone);
-      
-//      header = RMSGroup[iField].FieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
-
-//      AddHistoryOutput(name, header, FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-      
-//      /*--- Request the variable residual for history output ---*/
-////      RequestedScreenFields.push_back(name);
-//    }
-    
-
-    
- 
-//    /*--- Set an unique name for the averaged history data ---*/
-//    name = "ZONE" + PrintingToolbox::to_string(iZone);
-//    /*--- Set an unique name for the history headers of the averaged data ---*/
-//    header = "avgres[" + PrintingToolbox::to_string(iZone) + "]";
-
-//    AddHistoryOutput(name, header, FORMAT_FIXED,  "ZONE_AVGRES", TYPE_RESIDUAL);
-//  }
-  
-//  RequestedHistoryFields.push_back("BGS_RES");
-//  RequestedHistoryFields.push_back("RMS_RES");
-//  RequestedHistoryFields.push_back("ZONE_AVGRES");
-  
-//  /*--- Retrieve number of requested fields ---*/
-//  nRequestedScreenFields = RequestedScreenFields.size();
-//  nRequestedHistoryFields = RequestedHistoryFields.size();
-
-
 }
 
 inline bool CDriverOutput::WriteScreen_Header(CConfig *config) {
