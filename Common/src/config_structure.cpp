@@ -1323,7 +1323,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
-  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("EXT_ITER", nExtIter, 0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -3182,6 +3182,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
   
+  if (nExtIter != 0){
+    SU2_MPI::Error("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
+                   "to specify the number of time iterations, outer multizone iterations or iterations, respectively.", CURRENT_FUNCTION);
+  }
+  
   if (Unsteady_Simulation == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
@@ -3196,8 +3201,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Delta_DynTime  = Time_Step;
   }
   
-  if (SinglezoneDriver && !Time_Domain){
+  if (!Time_Domain){
     nExtIter = nIter;
+  } else {
+    nExtIter = nTimeIter;
   }
   /*--- Fluid-Structure Interaction problems ---*/
 
