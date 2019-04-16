@@ -187,17 +187,29 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][iInst][iMesh]->MatchActuator_Disk(config_container[iZone]);
       }
       
-      /*--- Match the periodic interfaces and store donor-receiver pairs.
-       Note that we loop over pairs so that repeated nodes of adjacent
-       periodic faces are properly accounted for in multiple places. ---*/
+      /*--- If we have any periodic markers in this calculation, we must
+       match the periodic points found on both sides of the periodic BC.
+       Note that the current implementation requires a 1-to-1 matching of
+       periodic points on the pair of periodic faces after the translation
+       or rotation is taken into account. ---*/
       
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-        for (unsigned short iPeriodic = 1; iPeriodic <= config_container[ZONE_0]->GetnMarker_Periodic()/2; iPeriodic++) {
-          geometry_container[iZone][iInst][iMesh]->MatchPeriodic(config_container[iZone], iPeriodic);
+      if (config_container[iZone]->GetnMarker_Periodic() != 0) {
+        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+          
+          /*--- Note that we loop over pairs of periodic markers individually
+           so that repeated nodes on adjacent periodic faces are properly
+           accounted for in multiple places. ---*/
+          
+          for (unsigned short iPeriodic = 1; iPeriodic <= config_container[iZone]->GetnMarker_Periodic()/2; iPeriodic++) {
+            geometry_container[iZone][iInst][iMesh]->MatchPeriodic(config_container[iZone], iPeriodic);
+          }
+          
+          /*--- Initialize the communication framework for the periodic BCs. ---*/
+          geometry_container[iZone][iInst][iMesh]->PreprocessPeriodicComms(geometry_container[iZone][iInst][iMesh], config_container[iZone]);
+          
         }
-        geometry_container[iZone][iInst][iMesh]->PreprocessPeriodicComms(geometry_container[iZone][iInst][iMesh], config_container[iZone]);
       }
-
+      
     }
 
   }
@@ -587,9 +599,9 @@ void CDriver::Postprocessing() {
       }
       delete [] ConvHist_file[iZone];
     }
-    delete [] ConvHist_file;
 
   }
+  delete [] ConvHist_file;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
@@ -635,10 +647,13 @@ void CDriver::Postprocessing() {
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
-  
+
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (interpolator_container[iZone] != NULL){
+      if (interpolator_container[iZone] != NULL) {
+        for (unsigned short jZone = 0; jZone < nZone; jZone++)
+        if (interpolator_container[iZone][jZone] != NULL)
+        delete interpolator_container[iZone][jZone];
         delete [] interpolator_container[iZone];
       }
     }

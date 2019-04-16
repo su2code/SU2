@@ -783,7 +783,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
     AD::StartRecording();
     
-    AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+    AD::SetExtFuncOut(&LinSysSol[0], (int)LinSysSol.GetLocSize());
    
 #ifdef CODI_REVERSE_TYPE
     AD::FuncHelper->addUserData(&LinSysRes);
