@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-  if (config->GetSinglezone_Driver()) {
+  if (config->GetSinglezone_Driver() && config->GetUnsteady_Simulation() != HARMONIC_BALANCE && !turbo) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 

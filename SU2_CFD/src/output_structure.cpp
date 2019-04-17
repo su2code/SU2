@@ -40,7 +40,8 @@
 COutput::COutput(CConfig *config) {
   
   
-  if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) || config->GetBoolTurbomachinery()){
+  if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) 
+     || config->GetBoolTurbomachinery() || config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
     output_legacy = new COutputLegacy(config);
   }
   

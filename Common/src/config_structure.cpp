@@ -3056,7 +3056,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC) nExtIter = 1;
+    if (Dynamic_Analysis == STATIC) nIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
