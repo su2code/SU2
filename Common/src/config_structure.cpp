@@ -1323,7 +1323,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
-  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("EXT_ITER", nExtIter, 0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -2576,11 +2576,15 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetDefaultFromConfig(CConfig *config){
   
+  map<string, bool> noInheritance = CCreateMap<string, bool>
+      ("SCREEN_OUTPUT", true)
+      ("HISTORY_OUTPUT", true);
+  
   map<string, bool>::iterator iter = all_options.begin(), curr_iter;
   
   while (iter != all_options.end()){
     curr_iter = iter++;   
-    if (config->option_map[curr_iter->first]->GetValue().size() > 0){
+    if (config->option_map[curr_iter->first]->GetValue().size() > 0 && !noInheritance[curr_iter->first]){
       option_map[curr_iter->first]->SetValue(config->option_map[curr_iter->first]->GetValue());
       all_options.erase(curr_iter);      
     }
@@ -3052,7 +3056,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC) nExtIter = 1;
+    if (Dynamic_Analysis == STATIC) nIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -3182,6 +3186,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
   
+  if (nExtIter != 0){
+    SU2_MPI::Error("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
+                   "to specify the number of time iterations, outer multizone iterations or iterations, respectively.", CURRENT_FUNCTION);
+  }
+  
   if (Unsteady_Simulation == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
@@ -3196,8 +3205,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Delta_DynTime  = Time_Step;
   }
   
-  if (SinglezoneDriver && !Time_Domain){
+  if (!Time_Domain){
     nExtIter = nIter;
+  } else {
+    nExtIter = nTimeIter;
   }
   /*--- Fluid-Structure Interaction problems ---*/
 
