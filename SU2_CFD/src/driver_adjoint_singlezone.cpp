@@ -179,6 +179,13 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     AD::ClearAdjoints();
 
+    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (Adjoint_Iter != 0)){
+      /*--- Postprocess computes secondary sensitivities ---*/
+      Postprocess();
+      /*--- Preprocess recomputes the main graph ---*/
+      Preprocess(config->GetExtIter());
+    }
+
     if (config->GetTime_Domain())
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0, INST_0);
 
