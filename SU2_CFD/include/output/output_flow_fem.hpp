@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "output_flow_common.hpp"
 
 
 /*! \class CFlowFEMOutput
@@ -46,7 +46,7 @@
  *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
-class CFlowFEMOutput : public COutput {
+class CFlowFEMOutput : public CFlowCommonOutput {
 private:
   
   unsigned short nVar;

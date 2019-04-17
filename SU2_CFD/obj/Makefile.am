@@ -76,6 +76,7 @@ libSU2Core_sources = \
   ../include/output/output_baseline.hpp \
   ../include/output/output_fea.hpp \
   ../include/output/output_fea_discadj.hpp \
+  ../include/output/output_flow_common.hpp \
   ../include/output/output_flow.hpp \
   ../include/output/output_flow_adj.hpp \
   ../include/output/output_flow_discadj.hpp \
@@ -132,6 +133,7 @@ libSU2Core_sources = \
   ../src/output_csv.cpp \
   ../src/output_mesh.cpp \
   ../src/output_direct_elasticity.cpp \
+  ../src/output_flow_common.cpp \
   ../src/output_direct_mean.cpp \
   ../src/output_direct_mean_fem.cpp \
   ../src/output_direct_mean_inc.cpp \
