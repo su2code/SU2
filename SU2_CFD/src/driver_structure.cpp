@@ -4173,6 +4173,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
