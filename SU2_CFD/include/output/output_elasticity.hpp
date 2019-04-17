@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_inc.hpp
+ * \file output_fea.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -40,27 +40,77 @@
 
 #include "output.hpp"
 
-class CFlowCommonOutput : public COutput{
-  
-  
+/*! \class CFEAOutput
+ *  \brief Output class for FEA problems.
+ *  \author R. Sanchez, T. Albring.
+ *  \date May 24, 2018.
+ */
+class CElasticityOutput : public COutput {
+private:
+
+protected:
+
+  unsigned short nVar_FEM;
+  bool linear_analysis,
+       nonlinear_analysis,
+       dynamic;
+
 public:
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowCommonOutput(CConfig *config);
+  CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowCommonOutput(void);
+  virtual ~CElasticityOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
+
+  /*!
+   * \brief SetHistoryOutputFields
+   * \param config
+   */
+  void SetHistoryOutputFields(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config);
   
-  void AddAnalyzeSurfaceOutput(CConfig *config);
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
   
-  void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config);
   
-  void AddAerodynamicCoefficients(CConfig *config);
+  /*!
+   * \brief SetVolumeOutputFields
+   * \param config
+   */
+  void SetVolumeOutputFields(CConfig *config);
   
-  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
-  
+  /*!
+   * \brief LoadVolumeData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   */
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
 };

@@ -1,15 +1,15 @@
 
 
-#include "../../include/output/output_flow_common.hpp"
+#include "../../include/output/output_flow.hpp"
 
-CFlowCommonOutput::CFlowCommonOutput(CConfig *config) : COutput (config){
+CFlowOutput::CFlowOutput(CConfig *config) : COutput (config){
   
 }
 
 
-CFlowCommonOutput::~CFlowCommonOutput(void){}
+CFlowOutput::~CFlowOutput(void){}
 
-void CFlowCommonOutput::AddAnalyzeSurfaceOutput(CConfig *config){
+void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
   vector<string> Marker_Analyze;
@@ -49,7 +49,7 @@ void CFlowCommonOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   
 }
 
-void CFlowCommonOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output){
+void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output){
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
@@ -561,7 +561,7 @@ void CFlowCommonOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, 
   delete [] Surface_MassFlow_Abs;
 }
 
-void CFlowCommonOutput::AddAerodynamicCoefficients(CConfig *config){
+void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient 
@@ -617,7 +617,7 @@ void CFlowCommonOutput::AddAerodynamicCoefficients(CConfig *config){
   AddHistoryOutput("AOA", "AoA", FORMAT_SCIENTIFIC, "AOA");
 }
 
-void CFlowCommonOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
+void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
   
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());

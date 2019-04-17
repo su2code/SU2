@@ -132,17 +132,17 @@ libSU2Core_sources = \
   ../src/output/output_paraview.cpp \
   ../src/output/output_csv.cpp \
   ../src/output/output_mesh.cpp \
-  ../src/output/output_direct_elasticity.cpp \
-  ../src/output/output_flow_common.cpp \
-  ../src/output/output_direct_mean.cpp \
-  ../src/output/output_direct_mean_fem.cpp \
-  ../src/output/output_direct_mean_inc.cpp \
-  ../src/output/output_direct_heat.cpp \
+  ../src/output/output_elasticity.cpp \
+  ../src/output/output_flow.cpp \
+  ../src/output/output_flow_comp.cpp \
+  ../src/output/output_flow_comp_fem.cpp \
+  ../src/output/output_flow_inc.cpp \
+  ../src/output/output_heat.cpp \
   ../src/output/output_baseline.cpp \
-  ../src/output/output_adjoint_elasticity.cpp \
-  ../src/output/output_adjoint_discrete.cpp \
-  ../src/output/output_adjoint_discrete_inc.cpp \
-  ../src/output/output_adjoint_mean.cpp \
+  ../src/output/output_elasticity_discadj.cpp \
+  ../src/output/output_flow_comp_discadj.cpp \
+  ../src/output/output_flow_inc_discadj.cpp \
+  ../src/output/output_flow_comp_adj.cpp \
   ../src/output/output_driver.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \

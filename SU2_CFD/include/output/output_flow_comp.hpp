@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_fem.hpp
+ * \file output_flow.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,15 +38,14 @@
 
 #pragma once
 
-#include "output_flow_common.hpp"
+#include "output_flow.hpp"
 
-
-/*! \class CFlowFEMOutput
+/*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
-class CFlowFEMOutput : public CFlowCommonOutput {
+class CFlowCompOutput : public CFlowOutput {
 private:
   
   unsigned short nVar;
@@ -63,12 +62,12 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+  CFlowCompOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowFEMOutput(void);
+  virtual ~CFlowCompOutput(void);
 
   /*!
    * \brief Set the history file header
@@ -94,22 +93,20 @@ public:
   void SetVolumeOutputFields(CConfig *config);
   
   /*!
-   * \brief LoadVolumeDataFEM
+   * \brief LoadVolumeData
    * \param config
    * \param geometry
    * \param solver
-   * \param iElem
-   * \param index
-   * \param dof
+   * \param iPoint
    */
-  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint); 
   
   /*!
    * \brief SetHistoryOutputFields
    * \param config
    */
   void SetHistoryOutputFields(CConfig *config);
-
+  
   /*!
    * \brief GetQ_Criterion
    * \param config

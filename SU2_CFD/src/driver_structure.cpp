@@ -3675,9 +3675,9 @@ void CDriver::Output_Preprocessing(){
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE)
-        output[iZone] = new CFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CFlowCompOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
       else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE)
-        output[iZone] = new CIncFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CFlowIncOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case HEAT_EQUATION_FVM:
@@ -3689,7 +3689,7 @@ void CDriver::Output_Preprocessing(){
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      output[iZone] = new CFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -3711,13 +3711,13 @@ void CDriver::Output_Preprocessing(){
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
-      output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CDiscAdjElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
       
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      output[iZone] = new CFlowFEMOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CFlowCompFEMOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
       break;
       
     default:
