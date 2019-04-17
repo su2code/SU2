@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_elasticity_discadj.hpp"
+#include "../../include/output/output_adj_elasticity.hpp"
 
-CDiscAdjElasticityOutput::CDiscAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
  
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -91,7 +91,7 @@ CDiscAdjElasticityOutput::CDiscAdjElasticityOutput(CConfig *config, CGeometry *g
   
 }
 
-CDiscAdjElasticityOutput::~CDiscAdjElasticityOutput(void) {
+CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -100,13 +100,13 @@ CDiscAdjElasticityOutput::~CDiscAdjElasticityOutput(void) {
 
 }
 
-inline bool CDiscAdjElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true; }
+inline bool CAdjElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true; }
 
-inline bool CDiscAdjElasticityOutput::WriteScreen_Header(CConfig *config) { return true; }
+inline bool CAdjElasticityOutput::WriteScreen_Header(CConfig *config) { return true; }
 
-inline bool CDiscAdjElasticityOutput::WriteScreen_Output(CConfig *config) { return true; }
+inline bool CAdjElasticityOutput::WriteScreen_Output(CConfig *config) { return true; }
 
-void CDiscAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
+void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER");
@@ -128,7 +128,7 @@ void CDiscAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-inline void CDiscAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
+inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
   SetHistoryOutputValue("INT_ITER", config->GetIntIter());
   SetHistoryOutputValue("EXT_ITER", config->GetExtIter());
@@ -163,7 +163,7 @@ inline void CDiscAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry
   
 }
 
-void CDiscAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint];
   CPoint*    Node_Geo  = geometry->node[iPoint];
@@ -179,7 +179,7 @@ void CDiscAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geomet
 
 }
 
-void CDiscAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
+void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES");

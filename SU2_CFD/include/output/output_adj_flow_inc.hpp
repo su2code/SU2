@@ -45,7 +45,7 @@
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CDiscAdjFlowIncOutput : public COutput {
+class CAdjFlowIncOutput : public COutput {
 private:
 
   unsigned short nDim, turb_model;
@@ -58,12 +58,12 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDiscAdjFlowIncOutput(void);
+  virtual ~CAdjFlowIncOutput(void);
 
   /*!
    * \brief Set the history file header

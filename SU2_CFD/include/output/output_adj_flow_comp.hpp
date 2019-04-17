@@ -1,5 +1,5 @@
 /*!
- * \file output_fea_discadj.hpp
+ * \file output_flow_discadj.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -40,32 +40,29 @@
 
 #include "output.hpp"
 
-/*! \class CDiscAdjFEAOutput
- *  \brief Output class for elasticity discrete adjoint problems.
+/*! \class CDiscAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CDiscAdjElasticityOutput : public COutput {
+class CAdjFlowOutput : public COutput {
 private:
-  unsigned short nVar_FEM, nDim;
-  char char_histfile[200];
 
+  unsigned short nDim, turb_model;
+  
 public:
 
-  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDiscAdjElasticityOutput(void);
-
-  void SetHistoryOutputFields(CConfig *config);
+  virtual ~CAdjFlowOutput(void);
 
   /*!
    * \brief Set the history file header
@@ -73,30 +70,15 @@ public:
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
 
-  /*!
-   * \brief Determines if the history file output.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteHistoryFile_Output(CConfig *config);
 
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Header(CConfig *config);
-
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Output(CConfig *config);
-
+  void SetHistoryOutputFields(CConfig *config);
+  
   /*!
    * \brief SetVolumeOutputFields
-   * \param[in] config - Definition of the particular problem.
+   * \param config
    */
   void SetVolumeOutputFields(CConfig *config);
-
+  
   /*!
    * \brief LoadVolumeData
    * \param config
@@ -105,5 +87,31 @@ public:
    * \param iPoint
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  /*!
+   * \brief LoadSurfaceData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   * \param iMarker
+   * \param iVertex
+   */
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  /*!
+   * \brief SetInit_Residuals
+   * \param config
+   * \return 
+   */
+  bool SetInit_Residuals(CConfig *config);
+  
+  /*!
+   * \brief SetUpdate_Averages
+   * \param config
+   * \param dualtime
+   * \return 
+   */
+  bool SetUpdate_Averages(CConfig *config);
 
 };

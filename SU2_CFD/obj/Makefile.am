@@ -74,15 +74,14 @@ libSU2Core_sources = \
   ../include/output/output_structure_legacy.hpp \
   ../include/output/output_structure_legacy.inl \
   ../include/output/output_baseline.hpp \
-  ../include/output/output_fea.hpp \
-  ../include/output/output_fea_discadj.hpp \
-  ../include/output/output_flow_common.hpp \
+  ../include/output/output_elasticity.hpp \
+  ../include/output/output_adj_elasticity.hpp \
   ../include/output/output_flow.hpp \
-  ../include/output/output_flow_adj.hpp \
-  ../include/output/output_flow_discadj.hpp \
-  ../include/output/output_flow_fem.hpp \
+  ../include/output/output_flow_comp.hpp \
+  ../include/output/output_adj_flow.hpp \
+  ../include/output/output_flow_comp_fem.hpp \
   ../include/output/output_flow_inc.hpp \
-  ../include/output/output_flow_inc_discadj.hpp \
+  ../include/output/output_adj_flow_inc.hpp \
   ../include/output/output_heat.hpp \
   ../include/output/output_mesh.hpp \
   ../include/sgs_model.hpp \
@@ -139,10 +138,9 @@ libSU2Core_sources = \
   ../src/output/output_flow_inc.cpp \
   ../src/output/output_heat.cpp \
   ../src/output/output_baseline.cpp \
-  ../src/output/output_elasticity_discadj.cpp \
-  ../src/output/output_flow_comp_discadj.cpp \
-  ../src/output/output_flow_inc_discadj.cpp \
-  ../src/output/output_flow_comp_adj.cpp \
+  ../src/output/output_adj_elasticity.cpp \
+  ../src/output/output_adj_flow_comp.cpp \
+  ../src/output/output_adj_flow_inc.cpp \
   ../src/output/output_driver.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
