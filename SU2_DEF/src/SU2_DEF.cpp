@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
   COutput **output                     = NULL;
+  CConfig *driver_config                = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used) ---*/
@@ -91,6 +92,8 @@ int main(int argc, char *argv[]) {
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
   output             = new COutput*[nZone];
+  
+  driver_config       = NULL;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -100,6 +103,12 @@ int main(int argc, char *argv[]) {
     output[iZone]                 = NULL;
   }
   
+  /*--- Initialize the configuration of the driver ---*/
+  driver_config = new CConfig(config_file_name, SU2_DOT, nZone, VERB_NONE);
+
+  /*--- Initialize a char to store the zone filename ---*/
+  char zone_file_name[MAX_STRING_SIZE];
+
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
@@ -110,8 +119,25 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DEF, iZone, VERB_HIGH);
+    if (driver_config->GetnConfigFiles() > 0){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
+    }
+    else{
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
+    }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
+  }
+  
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetMultizone_Problem()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
