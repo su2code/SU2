@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
   ofstream Gradient_file;
   bool fem_solver = false;
   bool periodic   = false;
-  bool multizone = false;
   
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -114,9 +113,6 @@ int main(int argc, char *argv[]) {
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
 
-  /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetMultizone_Problem());
-
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
@@ -127,7 +123,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (multizone){
+    if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
     }

@@ -251,8 +251,7 @@ protected:
   string VolumeFilename, SurfaceFilename, RestartFilename, HistoryFilename;
   
   unsigned long curr_TimeIter, curr_OuterIter, curr_InnerIter;
-  
-  
+    
 public:
   
   /*----------------------------- Public member functions ----------------------------*/
