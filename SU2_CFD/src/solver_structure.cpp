@@ -1430,8 +1430,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   
   SU2_MPI::Status status;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
   su2double *Diff = new su2double[nVar];
   
   su2double Time_Step, Volume, Solution_Min, Solution_Max, Limiter_Min;
@@ -1540,7 +1538,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               
               /*--- Access the Jacobian from the donor if implicit. ---*/
               
-              if (implicit) {
+              if (implicit_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   for (jVar = 0; jVar < nVar; jVar++) {
                     Jacobian_i[iVar][jVar] = bufDRecv[buf_offset];
@@ -1561,7 +1559,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                the passive face such that it does not participate in
                the linear solve. ---*/
               
-              if (implicit) {
+              if (implicit_periodic) {
                 
                 Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
                 
@@ -1586,7 +1584,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                we are updating the solution at the passive nodes
                using the new solution from the master. ---*/
               
-              if ((implicit) &&
+              if ((implicit_periodic) &&
                   (iPeriodic == val_periodic_index + nPeriodic/2)) {
                 
                 /*--- Access the solution from the donor. ---*/
@@ -2188,8 +2186,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   if (config->GetComm_Level() == COMM_FULL) {
     
+    unsigned long Local_nPointDomain = geometry->GetnPointDomain();
     SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    Global_nPointDomain = geometry->GetGlobal_nPointDomain();
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     
   } else {
     
