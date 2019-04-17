@@ -68,7 +68,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.719372, -4.038178, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.719306, -4.038129, 0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.206772, 1.666681, 47258.000000, 0.000000] #last 4 columns
+    discadj_arina2k.test_vals    = [2.228982, 1.717042, 4.7258e+04, 0.0000e+00] #last 4 columns
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -94,7 +94,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751966, 0.485697, 0.183154, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751966, 0.485717, 0.183154, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -105,7 +105,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.654042, -0.500944, 0.154703, -0.000022] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.654042, -0.500718, 0.154704, -0.000022] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -120,7 +120,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [-3.595605, -2.549774, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [-3.595580, -2.549720, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -135,7 +135,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.710861, -2.881929, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.104640, -2.004547, 0.0000e+00, 0.0000e+00] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -161,7 +161,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845805, -2.415680, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845805, -2.416675, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
@@ -223,7 +223,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-4.846296, -4.765216, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-4.751576, -4.692029, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -238,7 +238,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [3.185211, 0.924243, -222.045509, -2054.181704] #last 4 columns
+    discadj_heat.test_vals = [3.183713, 0.923840, -223.197830, -2059.808372] #last 4 columns
     discadj_heat.su2_exec  = "parallel_computation.py -f"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
