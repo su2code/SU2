@@ -52,13 +52,12 @@
 #include "../../Common/include/interpolation_structure.hpp"
 
 #include "output/output_elasticity.hpp"
-#include "output/output_elasticity_discadj.hpp"
+#include "output/output_adj_elasticity.hpp"
 #include "output/output_flow_comp.hpp"
-#include "output/output_flow_comp_adj.hpp"
-#include "output/output_flow_comp_discadj.hpp"
+#include "output/output_adj_flow_comp.hpp"
 #include "output/output_flow_comp_fem.hpp"
 #include "output/output_flow_inc.hpp"
-#include "output/output_flow_inc_discadj.hpp"
+#include "output/output_adj_flow_inc.hpp"
 #include "output/output_heat.hpp"
 
 using namespace std;

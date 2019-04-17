@@ -3691,27 +3691,22 @@ void CDriver::Output_Preprocessing(){
         cout << ": FEM output structure." << endl;
       output[iZone] = new CElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
-
+      
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS output structure.." << endl;
-      output[iZone] = new CAdjFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
-      break;
-
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      if (rank == MASTER_NODE)
-        cout << ": discrete adjoint Euler/Navier-Stokes/RANS output structure." << endl;
+        cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE){      
-        output[iZone] = new CDiscAdjFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CAdjFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       } else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE){
-        output[iZone] = new CDiscAdjFlowIncOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CAdjFlowIncOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       }
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
-      output[iZone] = new CDiscAdjElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CAdjElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
       
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
