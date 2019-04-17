@@ -1,6 +1,6 @@
 
 
-#include "../include/output/output_mesh.hpp"
+#include "../../include/output/output_mesh.hpp"
 
 CMeshOutput::CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 

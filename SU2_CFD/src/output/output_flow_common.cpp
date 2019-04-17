@@ -1,6 +1,6 @@
 
 
-#include "../include/output/output_flow_common.hpp"
+#include "../../include/output/output_flow_common.hpp"
 
 CFlowCommonOutput::CFlowCommonOutput(CConfig *config) : COutput (config){
   

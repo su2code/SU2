@@ -1,4 +1,4 @@
-#include "../include/output/output_baseline.hpp"
+#include "../../include/output/output_baseline.hpp"
 
 CBaselineOutput::CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone) : COutput(config) {
 

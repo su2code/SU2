@@ -123,28 +123,28 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
-  ../src/output_cgns.cpp \
-  ../src/output_structure.cpp \
-  ../src/output_physics.cpp \
-  ../src/output_tecplot.cpp \
-  ../src/output_fieldview.cpp \
-  ../src/output_su2.cpp \
-  ../src/output_paraview.cpp \
-  ../src/output_csv.cpp \
-  ../src/output_mesh.cpp \
-  ../src/output_direct_elasticity.cpp \
-  ../src/output_flow_common.cpp \
-  ../src/output_direct_mean.cpp \
-  ../src/output_direct_mean_fem.cpp \
-  ../src/output_direct_mean_inc.cpp \
-  ../src/output_direct_heat.cpp \
-  ../src/output_baseline.cpp \
-  ../src/output_adjoint_elasticity.cpp \
-  ../src/output_adjoint_discrete.cpp \
-  ../src/output_adjoint_discrete_inc.cpp \
-  ../src/output_adjoint_mean.cpp \
-  ../src/output_driver.cpp \
-  ../src/output_structure_legacy.cpp \
+  ../src/output/output_cgns.cpp \
+  ../src/output/output_structure.cpp \
+  ../src/output/output_physics.cpp \
+  ../src/output/output_tecplot.cpp \
+  ../src/output/output_fieldview.cpp \
+  ../src/output/output_su2.cpp \
+  ../src/output/output_paraview.cpp \
+  ../src/output/output_csv.cpp \
+  ../src/output/output_mesh.cpp \
+  ../src/output/output_direct_elasticity.cpp \
+  ../src/output/output_flow_common.cpp \
+  ../src/output/output_direct_mean.cpp \
+  ../src/output/output_direct_mean_fem.cpp \
+  ../src/output/output_direct_mean_inc.cpp \
+  ../src/output/output_direct_heat.cpp \
+  ../src/output/output_baseline.cpp \
+  ../src/output/output_adjoint_elasticity.cpp \
+  ../src/output/output_adjoint_discrete.cpp \
+  ../src/output/output_adjoint_discrete_inc.cpp \
+  ../src/output/output_adjoint_mean.cpp \
+  ../src/output/output_driver.cpp \
+  ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \
