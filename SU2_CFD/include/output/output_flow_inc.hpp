@@ -38,14 +38,14 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "output_flow_common.hpp"
 
 /*! \class CIncFlowOutput
  *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
-class CIncFlowOutput : public COutput {
+class CIncFlowOutput : public CFlowCommonOutput {
 private:
 
   unsigned short turb_model;
