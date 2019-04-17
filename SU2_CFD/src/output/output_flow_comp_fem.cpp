@@ -36,9 +36,9 @@
  */
 
 
-#include "../../include/output/output_flow_fem.hpp"
+#include "../../include/output/output_flow_comp_fem.hpp"
 
-CFlowFEMOutput::CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowCommonOutput(config) {
+CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
 
   nDim = geometry->GetnDim();  
   
@@ -117,7 +117,7 @@ CFlowFEMOutput::CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
 }
 
-CFlowFEMOutput::~CFlowFEMOutput(void) {
+CFlowCompFEMOutput::~CFlowCompFEMOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -129,7 +129,7 @@ CFlowFEMOutput::~CFlowFEMOutput(void) {
 
 
 
-void CFlowFEMOutput::SetHistoryOutputFields(CConfig *config){
+void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
@@ -179,7 +179,7 @@ void CFlowFEMOutput::SetHistoryOutputFields(CConfig *config){
 
 }
 
-void CFlowFEMOutput::SetVolumeOutputFields(CConfig *config){
+void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES");
@@ -224,7 +224,7 @@ void CFlowFEMOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-void CFlowFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
+void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
   
   unsigned short iDim;
   
@@ -293,12 +293,12 @@ void CFlowFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSo
   }
 }
 
-void CFlowFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+void CFlowCompFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
   
 
 }
 
-void CFlowFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
+void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
   CSolver* flow_solver = solver[FLOW_SOL];
   
@@ -373,7 +373,7 @@ void CFlowFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   
 }
 
-su2double CFlowFEMOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
+su2double CFlowCompFEMOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
   unsigned short iDim, jDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
@@ -402,14 +402,14 @@ su2double CFlowFEMOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
 }
 
 
-bool CFlowFEMOutput::SetInit_Residuals(CConfig *config){
+bool CFlowCompFEMOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
         (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
   
 }
 
-bool CFlowFEMOutput::SetUpdate_Averages(CConfig *config){
+bool CFlowCompFEMOutput::SetUpdate_Averages(CConfig *config){
   return false;
   
 //  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);

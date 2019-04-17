@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_fea.hpp"
+#include "../../include/output/output_elasticity.hpp"
 
-CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -101,7 +101,7 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
 
 }
 
-CFEAOutput::~CFEAOutput(void) {
+CElasticityOutput::~CElasticityOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -110,7 +110,7 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
+void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* fea_solver = solver[FEA_SOL];
   
@@ -149,7 +149,7 @@ void CFEAOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver *
   
 } 
 
-void CFEAOutput::SetHistoryOutputFields(CConfig *config){
+void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
@@ -180,7 +180,7 @@ void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-void CFEAOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
  
   CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint]; 
   CPoint*    Node_Geo  = geometry->node[iPoint];
@@ -216,7 +216,7 @@ void CFEAOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **
   
 }
 
-void CFEAOutput::SetVolumeOutputFields(CConfig *config){
+void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES");
@@ -250,9 +250,9 @@ void CFEAOutput::SetVolumeOutputFields(CConfig *config){
   
 }
 
-inline bool CFEAOutput::WriteHistoryFile_Output(CConfig *config) { return true;}
+inline bool CElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true;}
 
-inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {  
+inline bool CElasticityOutput::WriteScreen_Header(CConfig *config) {  
   
   bool write_header;
   if (nonlinear_analysis) write_header = (config->GetIntIter() == 0);
@@ -264,7 +264,7 @@ inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {
   return write_header;
   
 }
-inline bool CFEAOutput::WriteScreen_Output(CConfig *config) {
+inline bool CElasticityOutput::WriteScreen_Output(CConfig *config) {
 
   bool write_output = true;
 

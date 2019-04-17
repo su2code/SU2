@@ -38,14 +38,14 @@
 
 #pragma once
 
-#include "output_flow_common.hpp"
+#include "output_flow.hpp"
 
 /*! \class CIncFlowOutput
  *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
-class CIncFlowOutput : public CFlowCommonOutput {
+class CFlowIncOutput : public CFlowOutput {
 private:
 
   unsigned short turb_model;
@@ -59,12 +59,12 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
+  CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncFlowOutput(void);
+  virtual ~CFlowIncOutput(void);
   
   /*!
    * \brief Set the history file header
