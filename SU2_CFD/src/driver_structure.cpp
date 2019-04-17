@@ -3988,7 +3988,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver()))
+        if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver())
+            || config_container[iZone]->GetBoolTurbomachinery() || config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
         output[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
             config_container, integration_container, false, UsedTime, iZone, iInst);
     }

@@ -164,7 +164,7 @@ def main():
     # prepare config
     config.NUMBER_PART = options.partitions
     if options.iterations > 0:
-        config.EXT_ITER = options.iterations
+        config.ITER = options.iterations
     config.NZONES = 1
 
     # find solution files if they exist
