@@ -3709,6 +3709,12 @@ void CDriver::Output_Preprocessing(){
       output[iZone] = new CAdjElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
       
+    case DISC_ADJ_HEAT:
+      if (rank == MASTER_NODE)
+        cout << ": discrete adjoint heat output structure." << endl;
+      output[iZone] = new CAdjHeatOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      break;
+      
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;

@@ -79,6 +79,7 @@ libSU2Core_sources = \
   ../include/output/output_flow.hpp \
   ../include/output/output_flow_comp.hpp \
   ../include/output/output_adj_flow.hpp \
+  ../include/output/output_adj_heat.hpp \
   ../include/output/output_flow_comp_fem.hpp \
   ../include/output/output_flow_inc.hpp \
   ../include/output/output_adj_flow_inc.hpp \
@@ -140,6 +141,7 @@ libSU2Core_sources = \
   ../src/output/output_heat.cpp \
   ../src/output/output_baseline.cpp \
   ../src/output/output_adj_elasticity.cpp \
+  ../src/output/output_adj_heat.cpp \
   ../src/output/output_adj_flow_comp.cpp \
   ../src/output/output_adj_flow_inc.cpp \
   ../src/output/output_driver.cpp \
