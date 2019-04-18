@@ -228,7 +228,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
     bool restart = config->GetRestart();                                  // Restart solution
-    bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetRestart_Iter());  // Restart iteration
+    bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) ==  SU2_TYPE::Int(config->GetRestart_Iter()));  // Restart iteration
 
     /*--- Compute Mass Matrix ---*/
     /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/

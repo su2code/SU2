@@ -2806,7 +2806,7 @@ void CConfig::SetnZone(){
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iMarker;
+  unsigned short iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||

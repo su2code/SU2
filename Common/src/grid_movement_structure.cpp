@@ -1907,11 +1907,6 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	dt   = config->GetDelta_UnstTimeND();
 	Lref = config->GetLength_Ref();
 
-  /*--- For harmonic balance, motion is the same in each zone (at each instance).
-   *    This is used for calls to the config container ---*/
-  if (harmonic_balance)
-	  iZone = ZONE_0;
-  
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
     /*--- Set the first adjoint mesh position to the final direct one ---*/
@@ -2073,11 +2068,6 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
-
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-	  iZone = ZONE_0;
-  }
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/	
   
@@ -2213,8 +2203,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
-  su2double *GridVel, newGridVel[3], xDot[3];
+  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3];
+  su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
@@ -2224,13 +2214,6 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
-  Lref   = config->GetLength_Ref();
-  
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-	  iZone = ZONE_0;
-  }
-  
   
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin()[iDim];
@@ -2362,10 +2345,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-	  iZone = ZONE_0;
-  }
   /*--- Get motion center and translation rates from config ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
@@ -5686,7 +5665,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
-  unsigned short nDim = geometry->GetnDim(), iDim;
+  unsigned short iDim;
 	
   /*--- Initialize the delta variation in coordinates ---*/
   VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
@@ -5789,7 +5768,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
                                            unsigned long iter, unsigned short iZone) {
   
 	su2double deltaT, time_new, time_old, Lref;
-  su2double Center[3], VarCoord[3], Omega[3], Ampl[3];
+  su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;

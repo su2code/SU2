@@ -1416,7 +1416,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
   bool restart = config->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetRestart_Iter()); // Initial calculation for restart
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) ==SU2_TYPE::Int(config->GetRestart_Iter())); // Initial calculation for restart
   
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
   
