@@ -1490,8 +1490,6 @@ void CFEAIteration::Iterate(COutput *output,
   bool disc_adj_fem = false;
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
 
-  bool write_output = true;
-
   bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
 
   ofstream ConvHist_file;
@@ -1913,14 +1911,12 @@ void CFEAIteration::Solve(COutput *output,
                                 unsigned short val_iInst
                                 ) {
 
-  bool Convergence = false;
-
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-  Convergence = Monitor(output, integration_container, geometry_container,
+  Monitor(output, integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
@@ -2770,7 +2766,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
-  bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
 
   int Direct_Iter;
 

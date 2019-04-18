@@ -65,8 +65,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
                        (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  bool fsi          = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -183,8 +181,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  bool fsi = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   

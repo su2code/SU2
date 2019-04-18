@@ -476,21 +476,6 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 
-  /*-----------------------------------------------------------------*/
-  /*-------------------- Output FSI history -------------------------*/
-  /*-----------------------------------------------------------------*/
-  if (fsi){
-    bool ZONE_FLOW=0, ZONE_FEA=1;
-    /*--- This is a hack to test it works. ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
-      if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
-    }
- //   output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
- //       config_container, integration_container, 0,
- //       ZONE_FLOW, ZONE_FEA, false);
-  }
-
   return Convergence;
 
 }

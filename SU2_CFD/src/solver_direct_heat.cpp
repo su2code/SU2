@@ -2063,7 +2063,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
 
-  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetRestart_Iter()))) {
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == (long)config->GetRestart_Iter()))) {
 
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -2075,7 +2075,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
       }
     }
 
-    if ((restart && (long)ExtIter == config->GetRestart_Iter()) &&
+    if ((restart && (long)ExtIter == (long)config->GetRestart_Iter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/

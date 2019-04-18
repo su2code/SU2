@@ -4188,7 +4188,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
   
-  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetRestart_Iter()))) {
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == (long)config->GetRestart_Iter()))) {
     
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -4204,7 +4204,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
     
-    if ((restart && (long)ExtIter == config->GetRestart_Iter()) &&
+    if ((restart && (long)ExtIter == (long)config->GetRestart_Iter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/

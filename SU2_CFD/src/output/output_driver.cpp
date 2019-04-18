@@ -90,7 +90,6 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
 
   unsigned short iZone, iField, nField;
   string name, header;
-  su2double val, avgzone;
 
   if (config[ZONE_0]->GetTime_Domain()){
     SetHistoryOutputValue("TIME_ITER", curr_TimeIter);

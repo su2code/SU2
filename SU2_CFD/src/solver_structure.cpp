@@ -3975,11 +3975,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
   unsigned short iDim, iVar;
-  unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
   unsigned short iInst = config->GetiInst();
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();

@@ -75,8 +75,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
-  bool fsi = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -240,8 +238,6 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
-  bool fsi = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
