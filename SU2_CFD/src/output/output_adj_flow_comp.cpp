@@ -291,7 +291,7 @@ void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
   
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
-  SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA());
+  SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
   SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
