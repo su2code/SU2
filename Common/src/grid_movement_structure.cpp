@@ -9171,7 +9171,7 @@ CElasticityMovement::~CElasticityMovement(void) {
 }
 
 
-void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
+void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative){
 
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
@@ -9190,10 +9190,13 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
+    
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output)
+      cout << "Computing volumes of the grid elements." << endl;
 
     /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output) {
       if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
       else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
     }
@@ -9233,7 +9236,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
 
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output) {
       cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
@@ -9519,9 +9522,6 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
   bool RightVol = true;
 
   su2double ElemVolume;
-
-  if ((rank == MASTER_NODE) && (!discrete_adjoint))
-    cout << "Computing volumes of the grid elements." << endl;
 
   MaxVolume = -1E22; MinVolume = 1E22;
 
