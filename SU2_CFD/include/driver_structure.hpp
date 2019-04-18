@@ -59,6 +59,7 @@
 #include "output/output_flow_inc.hpp"
 #include "output/output_adj_flow_inc.hpp"
 #include "output/output_heat.hpp"
+#include "output/output_adj_heat.hpp"
 
 using namespace std;
 

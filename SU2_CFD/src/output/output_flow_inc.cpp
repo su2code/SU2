@@ -190,7 +190,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  // BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables. 
+  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the pressure.
   AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.   
