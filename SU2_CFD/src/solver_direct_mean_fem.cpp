@@ -7387,7 +7387,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
         /* Set the pointer for the solution for this element. */ 
         const unsigned long offset = nVar*volElem[l].offsetDOFsSolLocal;
-        const double *solDOFs      = VecSolDOFs.data() + offset;
+        const su2double *solDOFs      = VecSolDOFs.data() + offset;
 
         /* Loop over the DOFs for this element. */
         for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
