@@ -8440,7 +8440,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     additional elements (and nodes) may be needed in the communication pattern. ---*/
   if (config->GetWall_Functions()){
 
-    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
+    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. " << endl;
 
     SetPoint_Connectivity();
     SetRCM_Ordering(config);
@@ -8491,8 +8491,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
           jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
           
-          /*--- If one of the neighbors is a different color and connected 
-           by an edge, then we add them to the list. ---*/
+          /*--- If one of the neighbors is a different color, then we add
+           them to the list. Note that all neighbors are added and not only
+           the ones that are connected via an edge. ---*/
 
           if (iDomain != jDomain) {
             
@@ -13228,32 +13229,26 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                                                           donorElem, rankElem, parCoor,
                                                           weightsInterpol) ) {
 
-              /*--- Donor element found. Indicate that this element is an
-                    interpolation donor on this rank. ---*/
-              elem[donorElem]->AddProcElemIsInterpolDonor(rank);
-
-              /*--- Temporarily store the donors. This is done, because for a prism
-                    the swapping of the connectivity between the ADT and VTK storage
-                    must be taken into account. ---*/
-              unsigned short nDonors = elem[donorElem]->GetnNodes();
-              unsigned long donors[8];
-
-              for (unsigned short iNode = 0; iNode < nDonors; iNode++)
-                donors[iNode] = elem[donorElem]->GetNode(iNode);
-
+              /*--- Donor element found. No need to flag it as an interpolation
+                    donor, because this element is already stored on this rank. 
+                    If this element is a prism, swap some of the weights. This is
+                    due to difference in connectivity between ADT and VTK storage. ---*/
               if(elem[donorElem]->GetVTK_Type() == PRISM) {
-                swap(donors[1], donors[2]);
-                swap(donors[4], donors[5]);
+                swap(weightsInterpol[1], weightsInterpol[2]);
+                swap(weightsInterpol[4], weightsInterpol[5]);
               }
 
               /*--- Store the interpolation information for this vertex. ---*/
+              unsigned short nDonors = elem[donorElem]->GetnNodes();
+
               vertex[iMarker][iVertex]->SetDonorElem(donorElem);
               vertex[iMarker][iVertex]->SetnDonorPoints(nDonors);
               vertex[iMarker][iVertex]->Allocate_DonorInfo();
 
               for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
-                vertex[iMarker][iVertex]->SetInterpDonorPoint(iNode, donors[iNode]);
-                vertex[iMarker][iVertex]->SetInterpDonorProcessor(iNode, node[donors[iNode]]->GetColor());
+                const unsigned long donor = elem[donorElem]->GetNode(iNode);
+                vertex[iMarker][iVertex]->SetInterpDonorPoint(iNode, donor);
+                vertex[iMarker][iVertex]->SetInterpDonorProcessor(iNode, node[donor]->GetColor());
                 vertex[iMarker][iVertex]->SetDonorCoeff(iNode, weightsInterpol[iNode]);
               }
             }
@@ -13318,7 +13313,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT,
                         MPI_COMM_WORLD);
 
-
     vector<unsigned long> bufBoundaryNodeIDGlobalSearch(nGlobalSearchPoints);
     SU2_MPI::Allgatherv(boundaryNodeIDGlobalSearch.data(), nLocalSearchPoints,
                         MPI_UNSIGNED_LONG, bufBoundaryNodeIDGlobalSearch.data(),
@@ -13332,24 +13326,31 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                         recvCounts.data(), displs.data(), MPI_DOUBLE,
                         MPI_COMM_WORLD);
  
-    /* Buffers to store the return information. */
-    vector<unsigned short> markerIDReturn;
-    vector<unsigned long>  boundaryNodeIDReturn;
-    vector<unsigned long>  volElemIDDonorReturn;
+    /* Buffers to store the return information. The first element of intReturnBuf
+       is the number of search items that must be returned to this rank. */
+    vector<vector<unsigned short> > shortReturnBuf(size, vector<unsigned short>(0));
+    vector<vector<int> >            intReturnBuf(size, vector<int>(0));
+    vector<vector<unsigned long> >  longReturnBuf(size, vector<unsigned long>(0));
+    vector<vector<su2double> >      doubleReturnBuf(size, vector<su2double>(0));
+
+    /* Allocate the memory for the vector flagElem. If the element is stored in
+       the return buffers for a rank, the value of flagElem is set to this rank.
+       In this way an element will be sent only once, even if it is a donor to
+       multiple boundary points. The initial value of flagElem is -1. */
+    vector<int> flagElem(nElem, -1);
 
     /* Loop over the number of global search points to check if these points
        are contained in the volume elements of this rank. The loop is carried
        out as a double loop, such that the rank where the point resides is
        known as well. Furthermore, it is not necessary to search the points
-       that were not found earlier on this rank. The vector recvCounts is used
-       as storage for the number of search items that must be returned to the
-       other ranks. */
+       that were not found earlier on this rank. */
     for(int rankID=0; rankID<size; ++rankID) {
-      recvCounts[rankID] = 0;
+
+      intReturnBuf[rankID].push_back(0);   // Initialization of the number of items to return.
       if(rankID != rank) {
         for(int i=nSearchPerRank[rankID]; i<nSearchPerRank[rankID+1]; ++i) {
 
-          /* Search the local ADT for the coordinate of the exchange point
+          /* Search the local ADT for the coordinates of the exchange point
              and check if it is found. */
           unsigned short dummy;
           unsigned long  donorElem;
@@ -13359,18 +13360,276 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                                                         dummy, donorElem, rankDonor, parCoor,
                                                         weightsInterpol) ) {
 
-            /* Store the required data in the return buffers. */
-            /* MORE INFORMATION MUST BE CREATED HERE. */
-            ++recvCounts[rankID];
-            markerIDReturn.push_back(bufMarkerIDGlobalSearch[i]);
-            boundaryNodeIDReturn.push_back(bufBoundaryNodeIDGlobalSearch[i]);
-            volElemIDDonorReturn.push_back(donorElem);
+            /*--- Indicate that this element is an interpolation donor element on rankID. ---*/
+            elem[donorElem]->AddProcElemIsInterpolDonor(rankID);
+
+            /*--- Check if the donor element is considered to be an owned element on
+                  this processor. An element is considered owned if the lowest rank
+                  of the nodes is equal to the rank of this processor. ---*/
+            unsigned short nDonors = elem[donorElem]->GetnNodes();
+            int lowestRank = size;
+
+            for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+              const unsigned long donor = elem[donorElem]->GetNode(iNode);
+              int rankNode = node[donor]->GetColor();
+              lowestRank = min(lowestRank, rankNode);
+            }
+
+            if(lowestRank == rank) {
+
+              /*--- Element is considered to be owned. If this element is a prism,
+                    swap some of the weights. This is due to difference in
+                    connectivity between ADT and VTK storage. ---*/
+              const unsigned short elemType = elem[donorElem]->GetVTK_Type();
+              if(elemType == PRISM) {
+                swap(weightsInterpol[1], weightsInterpol[2]);
+                swap(weightsInterpol[4], weightsInterpol[5]);
+              }
+
+              /*--- Determine whether or not this element has already been
+                    stored in the return buffers for rankID. ---*/
+              unsigned short firstTimeStorage = 1;
+              if(flagElem[donorElem] == rankID) firstTimeStorage = 0;
+
+              /*--- Store the information in the return buffers. ---*/
+              ++intReturnBuf[rankID][0];
+
+              shortReturnBuf[rankID].push_back(bufMarkerIDGlobalSearch[i]);
+              shortReturnBuf[rankID].push_back(firstTimeStorage);
+              shortReturnBuf[rankID].push_back(nDonors);
+              shortReturnBuf[rankID].push_back(elemType);
+
+              longReturnBuf[rankID].push_back(bufBoundaryNodeIDGlobalSearch[i]);
+              longReturnBuf[rankID].push_back(elem[donorElem]->GetGlobalIndex());
+
+              for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+                const unsigned long donor = elem[donorElem]->GetNode(iNode);
+
+                intReturnBuf[rankID].push_back(node[donor]->GetColor());
+                longReturnBuf[rankID].push_back(Local_to_Global_Point[donor]);
+                doubleReturnBuf[rankID].push_back(weightsInterpol[iNode]);
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  doubleReturnBuf[rankID].push_back(node[donor]->GetCoord(iDim));
+              }
+
+              /*--- Indicate that this element is stored in the return buffers
+                    for the rank rankID. ---*/
+              flagElem[donorElem] = rankID;
+            }
           }
         }
       }
     }
-    
-    SU2_MPI::Error("Global search not ready yet", CURRENT_FUNCTION);
+
+    /*--- Release the memory of the buffers used to gather the data for
+          the global searches on all ranks. ---*/
+    vector<unsigned short>().swap(markerIDGlobalSearch);
+    vector<unsigned short>().swap(bufMarkerIDGlobalSearch);
+    vector<unsigned long>().swap(boundaryNodeIDGlobalSearch);
+    vector<unsigned long>().swap(bufBoundaryNodeIDGlobalSearch);
+    vector<su2double>().swap(coorExGlobalSearch);
+    vector<su2double>().swap(bufCoorExGlobalSearch);
+    vector<int>().swap(flagElem);
+
+    /*--- Determine the number of ranks to which data must be sent and
+          from how many ranks data must be received. Reuse recvCounts and
+          displs, where recvCounts[i] = 1 if a message is sent to rank i
+          and 0 otherwise and all values of displs are 1 to indicate that
+          1 integer is sent in Reduce_scatter. ---*/
+    int nRankSendData = 0;
+    for(int i=0; i<size; ++i) {
+      recvCounts[i]  = intReturnBuf[i][0] ? 1 : 0;
+      displs[i]      = 1;
+      nRankSendData += recvCounts[i];
+    }
+
+    int nRankRecvData;
+    SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecvData, displs.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Send the return buffers to the appropriate ranks using
+          non-blocking sends. ---*/
+    vector<SU2_MPI::Request> sendReqs(4*nRankSendData);
+    int ii = 0;
+
+    for(int i=0; i<size; ++i) {
+      if( intReturnBuf[i][0] ) {
+
+        SU2_MPI::Isend(shortReturnBuf.data(), shortReturnBuf.size(), MPI_UNSIGNED_SHORT,
+                       i, i, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(intReturnBuf.data(), intReturnBuf.size(), MPI_INT,
+                       i, i+1, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(longReturnBuf.data(), longReturnBuf.size(), MPI_UNSIGNED_LONG,
+                       i, i+2, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(doubleReturnBuf.data(), doubleReturnBuf.size(), MPI_DOUBLE,
+                       i, i+3, MPI_COMM_WORLD, &sendReqs[ii++]);
+      }
+    }
+
+    /*--- Define the buffers to receive the data of my points for which
+          a global search was carried out. ---*/
+    vector<vector<unsigned short> > shortRecvBuf(nRankRecvData, vector<unsigned short>(0));
+    vector<vector<int> >            intRecvBuf(nRankRecvData, vector<int>(0));
+    vector<vector<unsigned long> >  longRecvBuf(nRankRecvData, vector<unsigned long>(0));
+    vector<vector<su2double> >      doubleRecvBuf(nRankRecvData, vector<su2double>(0));
+
+    /*--- Loop over the number of ranks from which I receive return data. ---*/
+    for(int i=0; i<nRankRecvData; ++i) {
+
+      /* Block until a message with unsigned shorts arrives from any rank.
+         Determine the source and the size of the message.   */
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+
+      int sizeMess;
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &sizeMess);
+
+      /* Allocate the memory for the unsigned short receive buffer and receive the message. */
+      shortRecvBuf[i].resize(sizeMess);
+      SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_UNSIGNED_SHORT,
+                    source, rank, MPI_COMM_WORLD, &status);
+      
+      /* Block until the corresponding message with ints arrives, determine
+         its size, allocate the memory and receive the message. */
+      SU2_MPI::Probe(source, rank+1, MPI_COMM_WORLD, &status);
+      SU2_MPI::Get_count(&status, MPI_INT, &sizeMess);
+      intRecvBuf[i].resize(sizeMess);
+
+      SU2_MPI::Recv(intRecvBuf[i].data(), sizeMess, MPI_INT,
+                    source, rank+1, MPI_COMM_WORLD, &status);
+
+      /* Block until the corresponding message with unsigned longs arrives, determine
+         its size, allocate the memory and receive the message. */
+      SU2_MPI::Probe(source, rank+2, MPI_COMM_WORLD, &status);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      longRecvBuf[i].resize(sizeMess);
+
+      SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+2, MPI_COMM_WORLD, &status);
+
+      /* Block until the corresponding message with doubles arrives, determine
+         its size, allocate the memory and receive the message. */
+      SU2_MPI::Probe(source, rank+3, MPI_COMM_WORLD, &status);
+      SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
+      doubleRecvBuf[i].resize(sizeMess);
+
+      SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+3, MPI_COMM_WORLD, &status);
+    }
+
+    /* Complete the non-blocking sends. */
+    SU2_MPI::Waitall(4*nRankSendData, sendReqs.data(), MPI_STATUSES_IGNORE);
+
+    /* Wild cards have been used in the communication,
+       so synchronize the ranks to avoid problems.    */
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+    /*--- Check whether the number of received data points is equal
+          to nLocalSearchPoints. ---*/
+    ii = 0;
+    for(int i=0; i<nRankRecvData; ++i)
+      ii += intRecvBuf[i][0];
+
+    if(ii != nLocalSearchPoints)
+      SU2_MPI::Error("Number of received global data points is not correct",
+                     CURRENT_FUNCTION);
+
+    /*--- Check if anything needs to be updated to the local data structures. ---*/
+    if(nLocalSearchPoints > 0) {
+
+      /*--- Loop over the receive buffers to determine the new nodes that
+            must be added for the interpolation of exchange points for the
+            wall treatment. ---*/
+      vector<unsigned long> newNodesGlobalID;
+      vector<int>           newNodesColor;
+      vector<su2double>     newNodesCoords;
+
+      for(int i=0; i<nRankRecvData; ++i) {
+
+        /* Initialize the indices in the four receive buffers. */
+        const int nBoundPoints = intRecvBuf[i][0];
+        unsigned long indS = 2, indI = 1, indL = 2, indD = 0;
+
+        /* Loop over the number of boundary points stored in these buffers. */
+        for(int j=0; j<nBoundPoints; ++j) {
+
+          /* Retrieve the number of donors from the short buffer. */
+          const unsigned short nDonors = shortRecvBuf[i][indS];
+
+          /* Loop over the number of donors for this boundary point. */
+          for(unsigned short k=0; k<nDonors; ++k) {
+
+            /* Retrieve the global index for this donor node from the long buffer. */
+            const unsigned globalNodeID = longRecvBuf[i][indL+k];
+
+            /* Check if the node must be added to the nodes stored on this processor. */
+            if(Global_to_Local_Point.find(globalNodeID) == Global_to_Local_Point.end()) {
+
+              /* Node must be added. Store it temporarily in the vectors newNodesGlobalID,
+                 newNodesColor and newNodesCoords. Also add it to Global_to_Local_Point,
+                 such that a node is only added once. */
+              const unsigned long localPointID = Global_to_Local_Point.size();
+              Global_to_Local_Point[globalNodeID] = localPointID;
+
+              newNodesGlobalID.push_back(globalNodeID);
+              newNodesColor.push_back(intRecvBuf[i][indI+k]);
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                newNodesCoords.push_back(doubleRecvBuf[i][indD+k*(nDim+1)+iDim+1]);
+            }
+          }
+
+          /* Update the indices for the next boundary point. */
+          indS += 4;
+          indI += nDonors;
+          indL += 2 + nDonors;
+          indD += (nDim+1)*nDonors;
+        }
+      }
+
+      /*--- Reallocate the array Local_to_Global_Point. ---*/
+      const unsigned long nPointNew  = nPoint+newNodesGlobalID.size();
+      long *tmpLocal_to_Global_Point = new long[nPointNew];
+      memcpy(tmpLocal_to_Global_Point, Local_to_Global_Point, nPoint*sizeof(long));
+
+      for(unsigned long i=nPoint; i<nPointNew; ++i)
+        tmpLocal_to_Global_Point[i] = newNodesGlobalID[i-nPoint];
+
+      delete [] Local_to_Global_Point;
+      Local_to_Global_Point = tmpLocal_to_Global_Point;
+
+      /*--- Reallocate the nodal information and add the new
+            entries at the end. ---*/
+      CPoint **tmpNode = new CPoint*[nPointNew];
+      for(unsigned long i=0; i<nPoint; ++i)
+        tmpNode[i] = node[i];
+
+      delete [] node;
+      node = tmpNode;
+
+      for(unsigned long i=nPoint; i<nPointNew; ++i) {
+        const unsigned long ind = i-nPoint;
+
+        if(nDim == 2) node[i] = new CPoint(newNodesCoords[ind*nDim],
+                                           newNodesCoords[ind*nDim+1],
+                                           newNodesGlobalID[ind], config);
+        if(nDim == 2) node[i] = new CPoint(newNodesCoords[ind*nDim],
+                                           newNodesCoords[ind*nDim+1],
+                                           newNodesCoords[ind*nDim+2],
+                                           newNodesGlobalID[ind], config);
+        node[i]->SetColor(newNodesColor[ind]);
+      }
+
+      /* Update the value of nPoint. */
+      nPoint     = nPointNew;
+      nPointNode = nPointNew;
+
+      /*--- Loop over the receive buffers to store the interpolation
+            information in the vertices of the wall boundaries. In the
+            same loop, store the information of the elements that must
+            be added. ---*/
+      SU2_MPI::Error("Global search not ready yet", CURRENT_FUNCTION);
+    }
   }
 
 #endif
