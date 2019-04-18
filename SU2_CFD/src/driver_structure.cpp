@@ -931,7 +931,7 @@ void CDriver::Geometrical_Preprocessing() {
        in send/receive function CPhysicalGeometry::SetSendReceive(CConfig *config) and
        we can skip.---*/
       
-      if (wall_functions){
+      if (!wall_functions){
       
         /*--- Compute elements surrounding points, points surrounding points ---*/
 
