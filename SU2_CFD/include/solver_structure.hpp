@@ -145,10 +145,11 @@ public:
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysMatrix TestBasis;    /*!< \brief vector to store test basis for Petrov-Galerkin projection in reduced modelling computations. */
+  vector<su2double> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  CSysMatrix TestBasis;    /*!< \brief vector to store test basis for Petrov-Galerkin projection in reduced modelling (rom) computations. */
   CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
-  CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+  CSysMatrix StiffMatrix;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
   CSysVector OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
