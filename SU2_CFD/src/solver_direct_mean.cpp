@@ -37,6 +37,10 @@
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
@@ -462,6 +466,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    
+    if ((rank == MASTER_NODE) and (config->GetReduced_Model())) cout << "Initialize Test Basis structure (ROM - Euler). MG level: " << iMesh <<"." << endl;
+    TestBasis.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
@@ -6359,23 +6366,85 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   SetIterLinSolver(IterLinSol);
   
   /*--- Update ROM-specific variables ---*/
-  rom = false;
+  std::vector<std::vector<double>> Phi;
   if (rom) {
+    // load Trial Basis (Phi)
+    string filename = config->GetRom_FileName();
+    ifstream in(filename);
+    int s = 0;
+    
+    if (in) {
+      std::string line;
+      
+      while (getline(in, line)) {
+        stringstream sep(line);
+        string field;
+        Phi.push_back({});
+        while (getline(sep, field, ',')) {
+          Phi[s].push_back(stod(field));
+          //std::cout << stod(field) << std::endl;
+        }
+        s++;
+      }
+    }
+    
+    std::cout << Phi.size() << std::endl;
+    std::cout << Phi[0].size() << std::endl;
     // compute W = J * Phi
     // QR decomp W
     // R*x = -Q*res, find x
     // line search to update y
     // solution = Phi*y
     //ComputeTestBasis(Jacobian);
+    su2double* prod = new su2double[nVar*nVar];
+    // Compute Test Basis W = J * Phi
+    bool testing = true;
+    if (testing) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned long kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
+        unsigned long kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
+        for (unsigned long jPoint = 0; jPoint < Phi.size(); jPoint++) {
+          //std::cout << "iPoint, kPoint and jPoint: " << iPoint << ", " << kPoint << " and " << jPoint << std::endl;
+          su2double* mat_i = Jacobian.GetBlock(iPoint, kPoint);
+          
+          // format phi matrix into su2double*
+          su2double phis[nVar];
+          for (unsigned long i = 0; i < nVar; i++){
+            phis[i] = Phi[jPoint][kPoint+i];
+          }
+          
+          Jacobian.MatrixVectorProduct(mat_i, &phis[0], prod);
     
+          TestBasis.AddBlock(iPoint, jPoint, prod);
     
+          // Jacobian is defined for (iPoint, iPoint) but won't be listed as a neighbor
+          if (kNeigh == 0) {
+            unsigned long k = iPoint;
+            su2double* mat = Jacobian.GetBlock(iPoint, k);
+            
+            for (unsigned long j = 0; j < nPointDomain; j++) {
+              
+              // format phi matrix into su2double*
+              su2double phis[nVar];
+              for (unsigned long i = 0; i < nVar; i++){
+                phis[i] = Phi[jPoint][k+i];
+              }
+              
+              Jacobian.MatrixMatrixProduct(mat, &phis[0], prod);
+              TestBasis.AddBlock(iPoint, j, prod);
+            }
+          }
+        }
+      }
+    }}
     
-    
+    delete [] prod;
   }
+    
   
+  rom = false;
   /*--- Update solution (system written in terms of increments) ---*/
   if (!adjoint) {
-    std::cout << nPointDomain << std::endl;
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
         if (rom) {
