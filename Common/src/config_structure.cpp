@@ -7314,7 +7314,7 @@ string CConfig::GetFilename(string filename, string ext){
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
-  if (GetWrt_Unsteady()){
+  if (GetWrt_Unsteady() || GetWrt_Dynamic()){
     filename = GetUnsteady_FileName(filename, GetExtIter(), ext);
   }
   

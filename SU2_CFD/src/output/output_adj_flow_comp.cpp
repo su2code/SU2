@@ -43,6 +43,8 @@ CAdjFlowOutput::CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned sh
  
   turb_model = config->GetKind_Turb_Model();
   
+  cont_adj = config->GetContinuous_Adjoint();
+  
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
@@ -121,7 +123,7 @@ void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
-  if (!config->GetFrozen_Visc_Disc()){
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
@@ -232,7 +234,7 @@ void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   } else {
     SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjflow_solver->GetRes_RMS(3)));    
   }
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
@@ -253,7 +255,7 @@ void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   } else {
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));    
   }
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
@@ -267,23 +269,23 @@ void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
   
   if (multizone){
-    SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
+    SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
     if (geometry->GetnDim() == 3) {
-      SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(3)));
-      SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
+      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(3)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
     } else {
-      SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));    
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));    
     }
-    if (!config->GetFrozen_Visc_Disc()){  
+    if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
       switch(turb_model){
       case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
         break;  
       case SST:
-        SetHistoryOutputValue("MAX_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_BGS(0)));
-        SetHistoryOutputValue("MAX_ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
+        SetHistoryOutputValue("BGS_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
         break;
       default: break;
       }

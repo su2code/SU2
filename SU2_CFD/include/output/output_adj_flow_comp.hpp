@@ -48,6 +48,7 @@
 class CAdjFlowOutput : public COutput {
 private:
 
+  bool cont_adj;
   unsigned short nDim, turb_model;
   
 public:

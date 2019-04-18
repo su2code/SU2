@@ -5797,7 +5797,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   
    map<string, bool>::iterator it = Average.begin();
    for (it = Average.begin(); it != Average.end(); it++){
-     cout << "AVG_" + it->first << endl;
      AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES");
    }
   
