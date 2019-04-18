@@ -2948,7 +2948,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Check for Boundary condition option agreement ---*/
-  if (Kind_InitOption == 0){
+  if (Kind_InitOption == REYNOLDS){
     if (Kind_Regime == COMPRESSIBLE && (Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
       SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
     }
