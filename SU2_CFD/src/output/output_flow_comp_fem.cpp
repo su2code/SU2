@@ -168,7 +168,10 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the energy.  
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
   /// END_GROUP
-  
+   
+  /// DESCRIPTION: Linear solver iterations   
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
+ 
   /*--- Add analyze surface history fields --- */
   
   AddAnalyzeSurfaceOutput(config);
