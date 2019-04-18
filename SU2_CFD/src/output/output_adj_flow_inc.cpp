@@ -39,6 +39,8 @@
 
 CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
+  cont_adj = config->GetContinuous_Adjoint();
+  
   nDim = geometry->GetnDim();
  
   turb_model = config->GetKind_Turb_Model();
@@ -124,7 +126,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("RMS_ADJ_HEAT", "rms[A_T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
@@ -152,7 +154,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("MAX_ADJ_HEAT", "max[A_T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
@@ -180,7 +182,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
   /// DESCRIPTION: BGSimum residual of the temperature.
   AddHistoryOutput("BGS_ADJ_HEAT", "bgs[A_T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: BGSimum residual of the adjoint nu tilde.
@@ -239,7 +241,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(4)));
     else           SetHistoryOutputValue("RMS_ADJ_HEAT",         log10(adjflow_solver->GetRes_RMS(3)));
   }
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
@@ -264,7 +266,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_ADJ_HEAT",         log10(adjflow_solver->GetRes_Max(3)));
   }
-  if (!config->GetFrozen_Visc_Disc()){  
+  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
@@ -291,7 +293,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       if (nDim == 3) SetHistoryOutputValue("BGS_ADJ_HEAT",         log10(adjflow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_ADJ_HEAT",         log10(adjflow_solver->GetRes_BGS(3)));
     }
-    if (!config->GetFrozen_Visc_Disc()){  
+    if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
       switch(turb_model){
       case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
         SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
