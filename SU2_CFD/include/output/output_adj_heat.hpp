@@ -1,5 +1,5 @@
 /*!
- * \file output_fea.hpp
+ * \file output_fea_discadj.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -40,33 +40,32 @@
 
 #include "output.hpp"
 
-/*! \class CFEAOutput
- *  \brief Output class for FEA problems.
+/*! \class CDiscAdjFEAOutput
+ *  \brief Output class for elasticity discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
- *  \date May 24, 2018.
+ *  \date June 5, 2018.
  */
-class CFEAOutput : public COutput {
+class CAdjHeatOutput : public COutput {
 private:
-
-protected:
-
-  unsigned short nVar_FEM;
-  bool linear_analysis,
-       nonlinear_analysis,
-       dynamic;
+  unsigned short nDim;
+  char char_histfile[200];
 
 public:
+
+  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAOutput(void);
+  virtual ~CAdjHeatOutput(void);
+
+  void SetHistoryOutputFields(CConfig *config);
 
   /*!
    * \brief Set the history file header
@@ -75,35 +74,23 @@ public:
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
 
   /*!
-   * \brief SetHistoryOutputFields
+   * \brief LoadSurfaceData
    * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   * \param iMarker
+   * \param iVertex
    */
-  void SetHistoryOutputFields(CConfig *config);
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);
+
 
   /*!
-   * \brief Determines if the history file output.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteHistoryFile_Output(CConfig *config);
-  
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Header(CConfig *config);
-  
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Output(CConfig *config);
-  
-  /*!
    * \brief SetVolumeOutputFields
-   * \param config
+   * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config);
-  
+
   /*!
    * \brief LoadVolumeData
    * \param config

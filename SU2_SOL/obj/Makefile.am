@@ -49,15 +49,15 @@ ___bin_SU2_SOL_SOURCES = \
 ___bin_SU2_SOL_CXXFLAGS =
 ___bin_SU2_SOL_LDADD = \
   ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_baseline.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_csv.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure_legacy.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_structure.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_baseline.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_csv.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_cgns.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_tecplot.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_fieldview.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_su2.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_paraview.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-output_structure_legacy.o \
   ../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
   ../../Common/lib/libSU2.a
 

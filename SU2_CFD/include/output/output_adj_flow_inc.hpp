@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_discadj.hpp
+ * \file output_flow_inc_discadj.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -45,10 +45,11 @@
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CDiscAdjFlowOutput : public COutput {
+class CAdjFlowIncOutput : public COutput {
 private:
 
   unsigned short nDim, turb_model;
+  bool heat, weakly_coupled_heat;
   
 public:
 
@@ -57,19 +58,18 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDiscAdjFlowOutput(void);
+  virtual ~CAdjFlowIncOutput(void);
 
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
-
 
   void SetHistoryOutputFields(CConfig *config);
   
