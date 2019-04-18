@@ -35,10 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/output/output_flow_inc.hpp"
 
-#include "../include/output/output_flow_inc.hpp"
-
-CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
+CFlowIncOutput::CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
 
   nDim = geometry->GetnDim();
   
@@ -113,7 +112,7 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
 }
 
-CIncFlowOutput::~CIncFlowOutput(void) {
+CFlowIncOutput::~CFlowIncOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -123,7 +122,7 @@ CIncFlowOutput::~CIncFlowOutput(void) {
 }
 
 
-void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
+void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
@@ -191,7 +190,7 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  // BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables. 
+  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the pressure.
   AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.   
@@ -218,29 +217,6 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
 
-  /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
-  /// DESCRIPTION: Drag coefficient 
-  AddHistoryOutput("DRAG",       "CD",   FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Lift coefficient 
-  AddHistoryOutput("LIFT",       "CL",   FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Sideforce coefficient   
-  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the x-axis    
-  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the y-axis    
-  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the z-axis      
-  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in x direction    
-  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in y direction    
-  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in z direction      
-  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
-  /// END_GROUP
- 
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
   AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
@@ -250,78 +226,22 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
   /// END_GROUP
   
-  
-  /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
-  vector<string> Marker_Monitoring;
-  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
-    Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
-  }  
-  
-  /// DESCRIPTION: Drag coefficient   
-  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Lift coefficient   
-  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Sideforce coefficient     
-  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the x-axis      
-  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the y-axis      
-  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Moment around the z-axis        
-  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in x direction      
-  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in y direction      
-  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Force in z direction        
-  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Lift-to-drag ratio  
-  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
-  /// END_GROUP 
-  
   /// DESCRIPTION: Angle of attack  
   AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC, "AOA");
   /// DESCRIPTION: Linear solver iterations   
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
   
-  /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
-  vector<string> Marker_Analyze;
-  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
-    Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
-  }  
-  /// DESCRIPTION: Average mass flow    
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average Mach number      
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average Temperature        
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average Pressure  
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average Density  
-  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average Enthalpy  
-  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average velocity in normal direction of the surface
-  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Flow uniformity 
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Secondary strength
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Momentum distortion  
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Secondary over uniformity 
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average total temperature  
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Average total pressure   
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// DESCRIPTION: Pressure drop    
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
-  /// END_GROUP
+  /*--- Add analyze surface history fields --- */
+  
+  AddAnalyzeSurfaceOutput(config);
+  
+  /*--- Add aerodynamic coefficients fields --- */
+  
+  AddAerodynamicCoefficients(config);
   
 }
 
-void CIncFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
+void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];  
@@ -401,63 +321,19 @@ void CIncFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     }
 
   }
-  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
-  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
-  if (nDim == 3)
-    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
-  SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
-  SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
-  if (nDim == 3)
-    SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
-  if (nDim == 3)
-    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   
-  SetHistoryOutputValue("AOA", config->GetAoA());
-  SetHistoryOutputValue("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
-  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  /*--- Set the analyse surface history values --- */
   
+  SetAnalyzeSurface(flow_solver, geometry, config, false);
   
-  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);    
-  }
+  /*--- Set aeroydnamic coefficients --- */
   
-  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
-    
-    SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", config->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_MACH",     config->GetSurface_Mach(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TEMP",     config->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_PRESS",    config->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_DENSITY",  config->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY",  config->GetSurface_Enthalpy(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL",  config->GetSurface_NormalVelocity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("UNIFORMITY",  config->GetSurface_Uniformity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH",  config->GetSurface_SecondaryStrength(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION",  config->GetSurface_MomentumDistortion(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY",  config->GetSurface_SecondOverUniform(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP",  config->GetSurface_TotalTemperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS",  config->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",  config->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
-    
-    
-  }
+  SetAerodynamicCoefficients(config, flow_solver);
 
 }
 
 
-void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
+void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES");
@@ -583,7 +459,7 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->node[iPoint]; 
   CVariable* Node_Heat = NULL; 
@@ -714,7 +590,7 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 }
 
-void CIncFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
   
   if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver()  == RANS)) {  
     SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
@@ -727,7 +603,7 @@ void CIncFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
   }
 }
 
-su2double CIncFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
+su2double CFlowIncOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
   unsigned short iDim, jDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
@@ -755,14 +631,14 @@ su2double CIncFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
   return Q;
 }
 
-bool CIncFlowOutput::SetInit_Residuals(CConfig *config){
+bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
         (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
   
 }
 
-bool CIncFlowOutput::SetUpdate_Averages(CConfig *config){
+bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
   return false;
   
 //  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);

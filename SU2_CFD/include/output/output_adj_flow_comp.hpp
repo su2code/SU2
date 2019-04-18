@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_adj.hpp
+ * \file output_flow_discadj.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -40,8 +40,8 @@
 
 #include "output.hpp"
 
-/*! \class CAdjFlowOutput
- *  \brief Output class for flow continuous adjoint problems.
+/*! \class CDiscAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
@@ -49,10 +49,9 @@ class CAdjFlowOutput : public COutput {
 private:
 
   unsigned short nDim, turb_model;
-
+  
 public:
 
-  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
@@ -70,13 +69,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
-  
-  /*!
-   * \brief SetHistoryOutputFields
-   * \param config
-   */
+
+
   void SetHistoryOutputFields(CConfig *config);
-    
+  
   /*!
    * \brief SetVolumeOutputFields
    * \param config
@@ -117,5 +113,5 @@ public:
    * \return 
    */
   bool SetUpdate_Averages(CConfig *config);
-  
+
 };

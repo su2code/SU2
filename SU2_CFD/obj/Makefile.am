@@ -74,14 +74,15 @@ libSU2Core_sources = \
   ../include/output/output_structure_legacy.hpp \
   ../include/output/output_structure_legacy.inl \
   ../include/output/output_baseline.hpp \
-  ../include/output/output_fea.hpp \
-  ../include/output/output_fea_discadj.hpp \
+  ../include/output/output_elasticity.hpp \
+  ../include/output/output_adj_elasticity.hpp \
   ../include/output/output_flow.hpp \
-  ../include/output/output_flow_adj.hpp \
-  ../include/output/output_flow_discadj.hpp \
-  ../include/output/output_flow_fem.hpp \
+  ../include/output/output_flow_comp.hpp \
+  ../include/output/output_adj_flow.hpp \
+  ../include/output/output_adj_heat.hpp \
+  ../include/output/output_flow_comp_fem.hpp \
   ../include/output/output_flow_inc.hpp \
-  ../include/output/output_flow_inc_discadj.hpp \
+  ../include/output/output_adj_flow_inc.hpp \
   ../include/output/output_heat.hpp \
   ../include/output/output_heat_discadj.hpp \
   ../include/output/output_mesh.hpp \
@@ -110,6 +111,7 @@ libSU2Core_sources = \
   ../src/driver_direct_multizone.cpp \
   ../src/driver_adjoint_multizone.cpp \
   ../src/driver_direct_singlezone.cpp \
+  ../src/driver_adjoint_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
@@ -124,28 +126,28 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
-  ../src/output_cgns.cpp \
-  ../src/output_structure.cpp \
-  ../src/output_physics.cpp \
-  ../src/output_tecplot.cpp \
-  ../src/output_fieldview.cpp \
-  ../src/output_su2.cpp \
-  ../src/output_paraview.cpp \
-  ../src/output_csv.cpp \
-  ../src/output_mesh.cpp \
-  ../src/output_direct_elasticity.cpp \
-  ../src/output_direct_mean.cpp \
-  ../src/output_direct_mean_fem.cpp \
-  ../src/output_direct_mean_inc.cpp \
-  ../src/output_direct_heat.cpp \
-  ../src/output_baseline.cpp \
-  ../src/output_adjoint_elasticity.cpp \
-  ../src/output_adjoint_discrete.cpp \
-  ../src/output_adjoint_discrete_inc.cpp \
-  ../src/output_adjoint_mean.cpp \
-  ../src/output_adjoint_heat.cpp \
-  ../src/output_driver.cpp \
-  ../src/output_structure_legacy.cpp \
+  ../src/output/output_cgns.cpp \
+  ../src/output/output_structure.cpp \
+  ../src/output/output_physics.cpp \
+  ../src/output/output_tecplot.cpp \
+  ../src/output/output_fieldview.cpp \
+  ../src/output/output_su2.cpp \
+  ../src/output/output_paraview.cpp \
+  ../src/output/output_csv.cpp \
+  ../src/output/output_mesh.cpp \
+  ../src/output/output_elasticity.cpp \
+  ../src/output/output_flow.cpp \
+  ../src/output/output_flow_comp.cpp \
+  ../src/output/output_flow_comp_fem.cpp \
+  ../src/output/output_flow_inc.cpp \
+  ../src/output/output_heat.cpp \
+  ../src/output/output_baseline.cpp \
+  ../src/output/output_adj_elasticity.cpp \
+  ../src/output/output_adj_heat.cpp \
+  ../src/output/output_adj_flow_comp.cpp \
+  ../src/output/output_adj_flow_inc.cpp \
+  ../src/output/output_driver.cpp \
+  ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \
