@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -21,7 +21,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -145,9 +145,10 @@ public:
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
+  CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve  System;       /*!< \brief Linear solver/smoother. */
   vector<su2double> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
   CSysMatrix TestBasis;    /*!< \brief vector to store test basis for Petrov-Galerkin projection in reduced modelling (rom) computations. */
-  CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
   CSysMatrix StiffMatrix;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
@@ -4443,7 +4444,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -7124,6 +7125,11 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
+  /* Sliding meshes variables */
+
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
+
 public:
   
   /*!
@@ -7480,6 +7486,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
+  /*!
+   * \brief Impose the interface state across sliding meshes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+   void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
    /*!
     * \brief compare to values.
     * \param[in] a - value 1.
@@ -8314,6 +8330,47 @@ public:
    * \brief A virtual member.
    */
   void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Get the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   */
+   su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
+
   
 };
 
@@ -11994,7 +12051,13 @@ public:
   void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
 
-  
+  /*!
+   * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Integrate_FSI_Loads(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -13220,7 +13283,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -13498,6 +13561,7 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
+  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -13830,6 +13894,7 @@ public:
                              su2double                *resFaces,
                              CNumerics                *conv_numerics,
                              su2double                *workArray);
+  using CSolver::BC_Euler_Wall;
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
@@ -13851,6 +13916,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Far_Field;
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
@@ -13872,6 +13938,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Sym_Plane;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition. It is a virtual
@@ -13893,6 +13960,7 @@ public:
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray);
+  using CSolver::BC_Supersonic_Outlet;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
@@ -13916,6 +13984,7 @@ public:
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
                         su2double                *workArray);
+  using CSolver::BC_Inlet;
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
@@ -13939,6 +14008,7 @@ public:
                          CNumerics                *conv_numerics,
                          unsigned short           val_marker,
                          su2double                *workArray);
+  using CSolver::BC_Outlet;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
@@ -13962,6 +14032,7 @@ public:
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker,
                                 su2double                *workArray);
+  using CSolver::BC_HeatFlux_Wall;
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
@@ -13985,6 +14056,7 @@ public:
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker,
                                   su2double                *workArray);
+  using CSolver::BC_Isothermal_Wall;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
@@ -14008,6 +14080,7 @@ public:
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
                           su2double                *workArray);
+  using CSolver::BC_Riemann;
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
@@ -14029,6 +14102,7 @@ public:
                          su2double                *resFaces,
                          CNumerics                *conv_numerics,
                          su2double                *workArray);
+  using CSolver::BC_Custom;
 
 #ifdef RINGLEB
   /*!
@@ -14841,7 +14915,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:
