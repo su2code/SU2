@@ -1486,6 +1486,8 @@ inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFile
 
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 
+inline string CConfig::GetRom_FileName(void) { return Rom_FileName; }
+
 inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
 
 inline string CConfig::GetSolution_AdjFEMFileName(void) { return Solution_AdjFEMFileName; }

@@ -725,6 +725,7 @@ private:
   Solution_FlowFileName,			/*!< \brief Flow solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
+  Rom_FileName,             /*!< \brief POD modes input file for reduced order model computation. */
   Solution_FEMFileName,			/*!< \brief Solution input file for structural problem. */
   Solution_AdjFEMFileName,     /*!< \brief Adjoint solution input file for structural problem. */
   Flow_FileName,					/*!< \brief Flow variables output file. */
@@ -5332,6 +5333,13 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void);
+  
+  /*!
+   * \brief Get the name of the file with the POD modes for the reduced order model
+   *      problem.
+   * \return Name of the file with the POD modes found externally.
+   */
+  string GetRom_FileName(void);
   
   /*!
    * \brief Get the name of the file with the solution of the structural problem.

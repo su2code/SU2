@@ -1587,6 +1587,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
@@ -5113,7 +5115,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
         else cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
-
+    
+    if (Reduced_Model) {
+      cout << "Read test basis for reduced order model computation from: " << Rom_FileName << "." << endl;
+    }
+    
     if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
   
