@@ -12953,7 +12953,30 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
-    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("GradU_x");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradU_y");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradU_z");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradV_x");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradV_y");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradV_z");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradW_x");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradW_y");
+      nVar_Par +=1;
+      Variable_Names.push_back("GradW_z");
+      nVar_Par +=1;
+      Variable_Names.push_back("Max_Length");
+
+    }
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13279,6 +13302,28 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          
+          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+            }
+          }
+          Local_Data[jPoint][iVar] = Grad_Vel[0][0]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[0][1]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[0][2]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[1][0]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[1][1]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[1][2]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[2][0]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[2][1]  ; iVar++;
+          Local_Data[jPoint][iVar] = Grad_Vel[2][2]  ; iVar++;
+          
+          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetMaxLength(); iVar++;
+
+        }
         
       }
       
