@@ -194,7 +194,7 @@ public:
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, su2double tol,
-                                  unsigned long m, su2double *residual, bool monitoring);
+                                  unsigned long m, su2double *residual, bool monitoring, bool TapeActive);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -209,7 +209,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                       CPreconditioner & precond, su2double tol,
-                      unsigned long m, su2double *residual, bool monitoring);
+                      unsigned long m, su2double *residual, bool monitoring, bool TapeActive);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -224,7 +224,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, su2double tol,
-                        unsigned long m, su2double *residual, bool monitoring);
+                        unsigned long m, su2double *residual, bool monitoring, bool TapeActive);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method

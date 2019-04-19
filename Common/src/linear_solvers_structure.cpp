@@ -197,10 +197,9 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
 
   int rank        = SU2_MPI::GetRank();
-  bool TapeActive = AD::IsRecording();
 
   /*--- Check the subspace size ---*/
   
@@ -321,10 +320,9 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
 }
 
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                               CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
+                               CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
 	
   int rank        = SU2_MPI::GetRank();
-  bool TapeActive = AD::IsRecording();
   
   /*---  Check the subspace size ---*/
   
@@ -477,10 +475,9 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
   
   int rank        = SU2_MPI::GetRank();
-  bool TapeActive = AD::IsRecording();
 
   /*--- Check the subspace size ---*/
   
@@ -656,6 +653,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 #ifdef CODI_REVERSE_TYPE
 
+    TapeActive = AD::globalTape.isActive();
+
     AD::StartExtFunc(false, false);
 
     AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
@@ -666,7 +665,6 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 #endif
 
-    TapeActive = AD::IsRecording();
   }
 
   /*--- Solve the linear system using a Krylov subspace method ---*/
@@ -701,13 +699,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     
     switch (KindSolver) {
       case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput);
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
         break;
       case FGMRES:
-        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput);
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
         break;
       case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput);
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
@@ -715,7 +713,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         while (IterLinSol < MaxIter) {
           /*--- Enforce a hard limit on total number of iterations ---*/
           unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput);
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, TapeActive);
           if ( Residual < SolverTol*Norm0 ) break;
         }
         break;
@@ -854,13 +852,13 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput);
+      IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, true);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput);
+      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, true);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput);
+      IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, true);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
@@ -868,7 +866,7 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput);
+        IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, true);
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;

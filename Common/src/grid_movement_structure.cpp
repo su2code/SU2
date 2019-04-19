@@ -137,6 +137,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
+  bool TapeActive = AD::IsRecording();
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
   
@@ -250,7 +251,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, TapeActive);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -265,7 +266,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, TapeActive);
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -285,7 +286,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, TapeActive);
 
           break;
 
@@ -293,14 +294,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, TapeActive);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, TapeActive);
 
           break;
 
