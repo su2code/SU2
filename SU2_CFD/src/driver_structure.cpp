@@ -5982,6 +5982,7 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   case REFERENCE_GEOMETRY:
   case REFERENCE_NODE:
   case VOLUME_FRACTION:
+  case TOPOL_DISCRETENESS:
     Kind_Objective_Function = FEM_OBJECTIVE_FUNCTION;
     break;
   default:
@@ -6551,6 +6552,10 @@ void CDiscAdjFSIDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
           break;
         case VOLUME_FRACTION:
           kind_OFunction = "(Volume Fraction): ";
+          val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
+          break;
+        case TOPOL_DISCRETENESS:
+          kind_OFunction = "(Topology discreteness): ";
           val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
           break;
         default:
