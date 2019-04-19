@@ -456,9 +456,14 @@ CDriver::CDriver(char* confFile,
        Not for the FEM solver, because this is handled later, because
        the integration points must be known. ---*/
   if( !fem_solver ) {
-    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement();
-    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSurface_Movement(MOVING_WALL)
-                          || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
+    
+    initStaticMovement = false;
+    
+    for (iZone = 0; iZone < nZone; iZone ++){
+      Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
+      initStaticMovement = (config_container[iZone]->GetGrid_Movement() && (config_container[iZone]->GetSurface_Movement(MOVING_WALL)
+                            || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
+    }
 
 
     if(initStaticMovement){
@@ -3634,6 +3639,9 @@ void CDriver::InitStaticMeshMovement(){
 
 
       break;
+      
+      default:
+        break;
     }
 
     if (config_container[iZone]->GetnMarker_Moving() > 0){
