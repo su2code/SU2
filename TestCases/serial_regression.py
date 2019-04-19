@@ -1065,7 +1065,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66299.000000] #last 4 columns
+    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66127.000000] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
@@ -1076,7 +1076,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.578187, -5.758338] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.731033, -5.527944] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1156,7 +1156,7 @@ def main():
     naca0012_def_file.cfg_file  = "surface_file_NACA0012.cfg"
     naca0012_def_file.test_iter = 10
     naca0012_def_file.test_vals = [0.00344658] #residual
-    naca0012_def_file.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca0012_def_file.su2_exec  = "SU2_DEF"
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
     
