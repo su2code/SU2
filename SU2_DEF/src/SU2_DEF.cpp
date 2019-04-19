@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, nZone, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, VERB_NONE);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -121,10 +121,10 @@ int main(int argc, char *argv[]) {
     
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DEF, iZone, nZone, VERB_HIGH);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DEF, iZone, nZone, VERB_HIGH);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
   }
