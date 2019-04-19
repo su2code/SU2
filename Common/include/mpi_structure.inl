@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "mpi_structure.hpp"
 #pragma once
 
 #ifdef HAVE_MPI
@@ -250,6 +250,12 @@ inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
 }
 
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  MPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, recvdispls, recvtype, comm);
+}
+
 inline void CBaseMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   Datatype recvtype,int source, int recvtag,
@@ -455,6 +461,12 @@ inline void CMediMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   AMPI_Alltoall(sendbuf, sendcount, convertDatatype(sendtype), recvbuf, recvcount, convertDatatype(recvtype), convertComm(comm));
 }
 
+inline void CMediMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  AMPI_Alltoallv(sendbuf, sendcounts, sdispls, convertDatatype(sendtype), recvbuf, recvcounts, recvdispls, convertDatatype(recvtype), comm);
+}
+
 inline void CMediMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   Datatype recvtype,int source, int recvtag,
@@ -595,6 +607,12 @@ inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
                                   void *recvbuf, int recvcount, Datatype recvtype,
                                   Comm comm){
   CopyData(sendbuf, recvbuf, recvcount, sendtype);
+}
+
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                                   Comm comm) {
+  CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
 }
 
 inline void CBaseMPIWrapper::Probe(int source, int tag, Comm comm, Status *status){}
