@@ -51,8 +51,8 @@ CPrimalGrid::CPrimalGrid(void) {
   JacobianFaceIsConstant = NULL;
   GlobalIndex = 0;
 
-  nProcElemIsInterpolDonor = 0;
-  ProcElemIsInterpolDonor  = NULL;
+  nProcElemIsOnlyInterpolDonor = 0;
+  ProcElemIsOnlyInterpolDonor  = NULL;
 }
 
 CPrimalGrid::~CPrimalGrid() {
@@ -63,7 +63,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
  if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
- if (ProcElemIsInterpolDonor != NULL) delete[] ProcElemIsInterpolDonor;
+ if (ProcElemIsOnlyInterpolDonor != NULL) delete[] ProcElemIsOnlyInterpolDonor;
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -111,42 +111,42 @@ void CPrimalGrid::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
     JacobianFaceIsConstant[i] = false;
 }
 
-void CPrimalGrid::AddProcElemIsInterpolDonor(unsigned long procInterpol) {
+void CPrimalGrid::AddProcElemIsOnlyInterpolDonor(unsigned long procInterpol) {
 
   /*--- First check if the processor is not stored already. ---*/
   bool alreadyStored = false;
-  for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
-    if(ProcElemIsInterpolDonor[iProc] == procInterpol) alreadyStored = true;
+  for(unsigned short iProc=0; iProc<nProcElemIsOnlyInterpolDonor; ++iProc)
+    if(ProcElemIsOnlyInterpolDonor[iProc] == procInterpol) alreadyStored = true;
 
   if( !alreadyStored ) {
 
     /*--- Check for any previously stored processors. In that case
           a reallocation must be carried out. ---*/
-    if( nProcElemIsInterpolDonor ) {
+    if( nProcElemIsOnlyInterpolDonor ) {
 
       /* Copy the old ones. */
-      unsigned long *tmpProc = new unsigned long[nProcElemIsInterpolDonor];
-      for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
-        tmpProc[iProc] = ProcElemIsInterpolDonor[iProc];
+      unsigned long *tmpProc = new unsigned long[nProcElemIsOnlyInterpolDonor];
+      for(unsigned short iProc=0; iProc<nProcElemIsOnlyInterpolDonor; ++iProc)
+        tmpProc[iProc] = ProcElemIsOnlyInterpolDonor[iProc];
 
       /* Reallocate the memory for ProcElemIsInterpolDonor. */
-      delete[] ProcElemIsInterpolDonor;
-      ProcElemIsInterpolDonor = new unsigned long[nProcElemIsInterpolDonor+1];
+      delete[] ProcElemIsOnlyInterpolDonor;
+      ProcElemIsOnlyInterpolDonor = new unsigned long[nProcElemIsOnlyInterpolDonor+1];
 
       /* Copy the data back and release tmpProc again. */
-      for(unsigned short iProc=0; iProc<nProcElemIsInterpolDonor; ++iProc)
-         ProcElemIsInterpolDonor[iProc] = tmpProc[iProc];
+      for(unsigned short iProc=0; iProc<nProcElemIsOnlyInterpolDonor; ++iProc)
+         ProcElemIsOnlyInterpolDonor[iProc] = tmpProc[iProc];
       delete[] tmpProc;
     }
     else {
 
        /* No previously stored processors. Just allocate the memory. */
-       ProcElemIsInterpolDonor = new unsigned long[1];
+       ProcElemIsOnlyInterpolDonor = new unsigned long[1];
     }
 
     /*--- Store the new processor. ---*/
-    ProcElemIsInterpolDonor[nProcElemIsInterpolDonor] = procInterpol;
-    ++nProcElemIsInterpolDonor;
+    ProcElemIsOnlyInterpolDonor[nProcElemIsOnlyInterpolDonor] = procInterpol;
+    ++nProcElemIsOnlyInterpolDonor;
   }
 }
 
