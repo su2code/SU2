@@ -8426,7 +8426,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long  iPoint, jPoint, iElem;
   unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
-  unsigned short nDomain, iNode, iDomain, jDomain, jNode;
+  unsigned short nDomain, iNode, iDomain, jDomain, jNode, iProc;
   vector<unsigned long>::iterator it;
   
   vector<vector<unsigned long> > SendTransfLocal;	/*!< \brief Vector to store the type of transformation for this send point. */
@@ -8437,7 +8437,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   map<unsigned long, unsigned long>::const_iterator MI;
 
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
-    additional elements (and nodes) may be needed in the communication pattern. ---*/
+    additional elements (and nodes) may be added as halo's. ---*/
   if (config->GetWall_Functions()){
 
     if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. " << endl;
@@ -8508,6 +8508,42 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
             ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
             
           }
+        }
+      }
+    }
+  }
+
+  /*--- The points of the elements that are only used as donors for interpolation
+        must be added to the communication pattern. ---*/
+
+  for (iElem = 0; iElem < nElem; iElem++) {
+    for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
+      iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
+
+      if(iDomain == rank) {
+
+        /*--- This is a halo element that only serves as a donor for interpolation
+              on this processor. This means that all its points are halo points as
+              well and must be added to the receive pattern. ---*/
+        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+
+          jPoint  = elem[iElem]->GetNode(jNode);
+          jDomain = node[jPoint]->GetColor();
+
+          ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+        }
+      }
+      else {
+
+        /*--- This element is only an interpolation donor on rank iDomain.
+                Add the owned points of this element to the send pattern. ---*/
+        for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+
+          jPoint  = elem[iElem]->GetNode(jNode);
+          jDomain = node[jPoint]->GetColor();
+
+          if(jDomain == rank)
+            SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
         }
       }
     }
@@ -13360,8 +13396,8 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                                                         dummy, donorElem, rankDonor, parCoor,
                                                         weightsInterpol) ) {
 
-            /*--- Indicate that this element is an interpolation donor element on rankID. ---*/
-            elem[donorElem]->AddProcElemIsInterpolDonor(rankID);
+            /*--- Indicate that this element is only an interpolation donor element on rankID. ---*/
+            elem[donorElem]->AddProcElemIsOnlyInterpolDonor(rankID);
 
             /*--- Check if the donor element is considered to be an owned element on
                   this processor. An element is considered owned if the lowest rank
@@ -13538,13 +13574,15 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     /*--- Check if anything needs to be updated to the local data structures. ---*/
     if(nLocalSearchPoints > 0) {
 
-      /*--- Loop over the receive buffers to determine the new nodes that
-            must be added for the interpolation of exchange points for the
-            wall treatment. ---*/
+      /* Define the vectors for a temporary storage of the information of
+         the nodes to be added. */
       vector<unsigned long> newNodesGlobalID;
       vector<int>           newNodesColor;
       vector<su2double>     newNodesCoords;
 
+      /*--- Loop over the receive buffers to determine the new nodes that
+            must be added for the interpolation of exchange points for the
+            wall treatment. ---*/
       for(int i=0; i<nRankRecvData; ++i) {
 
         /* Initialize the indices in the four receive buffers. */
@@ -13588,7 +13626,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       }
 
       /*--- Reallocate the array Local_to_Global_Point. ---*/
-      const unsigned long nPointNew  = nPoint+newNodesGlobalID.size();
+      const unsigned long nPointNew  = nPoint + newNodesGlobalID.size();
       long *tmpLocal_to_Global_Point = new long[nPointNew];
       memcpy(tmpLocal_to_Global_Point, Local_to_Global_Point, nPoint*sizeof(long));
 
@@ -13624,11 +13662,158 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       nPoint     = nPointNew;
       nPointNode = nPointNew;
 
+      /* Define the vectors for a temporary storage of the information of
+         the elements to be added. */
+      vector<unsigned short> newElemType;
+      vector<unsigned long>  newElemData;
+
       /*--- Loop over the receive buffers to store the interpolation
             information in the vertices of the wall boundaries. In the
             same loop, store the information of the elements that must
             be added. ---*/
-      SU2_MPI::Error("Global search not ready yet", CURRENT_FUNCTION);
+     for(int i=0; i<nRankRecvData; ++i) {
+
+        /* Initialize the indices in the three receive buffers.
+           Note that the integer receive buffer is not needed in
+           the loop over the number of boundary points. */
+        const int nBoundPoints = intRecvBuf[i][0];
+        unsigned long indS = 0, indL = 0, indD = 0;
+
+        /* Loop over the number of boundary points stored in these buffers. */
+        for(int j=0; j<nBoundPoints; ++j) {
+
+          /* Easier storage of the data in the short receive buffer. */
+          const unsigned short iMarkerID        = shortRecvBuf[i][indS];
+          const unsigned short firstTimeStorage = shortRecvBuf[i][indS+1];
+          const unsigned short nDonors          = shortRecvBuf[i][indS+2];
+          const unsigned short elemType         = shortRecvBuf[i][indS+3];
+
+          /* Easier storage of the data in the long receive buffer. */
+          const unsigned long iVertex   = longRecvBuf[i][indL];
+          const unsigned long donorElem = longRecvBuf[i][indL+1];
+
+          /* Convert the global point ID's to local point ID's. */
+          map<unsigned long, unsigned long>::const_iterator MI;
+          for(unsigned short k=0; k<nDonors; ++k) {
+            MI = Global_to_Local_Point.find(longRecvBuf[i][indL+2+k]);
+            if(MI == Global_to_Local_Point.end())
+              SU2_MPI::Error("Global point ID not found in Global_to_Local_Point",
+                             CURRENT_FUNCTION);
+            longRecvBuf[i][indL+2+k] = MI->second;
+          }
+
+          /* If it is the first time that this element is stored,
+             store the required information of the element. */
+          if( firstTimeStorage ) {
+
+            /* Add the element to the map Global_to_Local_Elem. */
+            const unsigned long newLocalElemID = Global_to_Local_Elem.size();
+            Global_to_Local_Elem[donorElem] = newLocalElemID;
+
+            /* Store the information of the new element. */
+            newElemType.push_back(elemType);
+            newElemData.push_back(donorElem);
+
+            for(unsigned short k=0; k<nDonors; ++k)
+              newElemData.push_back(longRecvBuf[i][indL+2+k]);
+          }
+
+          /* Search the global element ID in Global_to_Local_Elem. */
+          MI = Global_to_Local_Elem.find(donorElem);
+          if(MI == Global_to_Local_Elem.end())
+            SU2_MPI::Error("Global element ID not found in Global_to_Local_Elem",
+                           CURRENT_FUNCTION);
+
+          /* Store the donor element, number of donors and donor
+             points in the vertex data structured for the wall. */
+          vertex[iMarkerID][iVertex]->SetDonorElem(MI->second);
+          vertex[iMarkerID][iVertex]->SetnDonorPoints(nDonors);
+          vertex[iMarkerID][iVertex]->Allocate_DonorInfo();
+
+          for(unsigned short k=0; k<nDonors; ++k) {
+            const unsigned long donor = longRecvBuf[i][indL+2+k];
+            vertex[iMarkerID][iVertex]->SetInterpDonorPoint(k, donor);
+            vertex[iMarkerID][iVertex]->SetInterpDonorProcessor(k, node[donor]->GetColor());
+            vertex[iMarkerID][iVertex]->SetDonorCoeff(k, doubleRecvBuf[i][indD+k*(nDim+1)]);
+          }
+
+          /* Update the indices for the next boundary point. */
+          indS += 4;
+          indL += 2 + nDonors;
+          indD += (nDim+1)*nDonors;
+        }
+      }
+
+      /*--- Reallocate the element information and add the new
+            entries at the end. ---*/
+      const unsigned long nElemNew  = nElem + newElemType.size();
+      CPrimalGrid** tmpElem = new CPrimalGrid*[nElemNew];
+      for(unsigned long i=0; i<nElem; ++i)
+        tmpElem[i] = elem[i];
+
+      delete [] elem;
+      elem = tmpElem;
+
+      /* Add the new elements. */
+      unsigned long indL = 0;
+      for(unsigned long i=nElem; i<nElemNew; ++i) {
+        const unsigned long ind = i - nElem;
+        const unsigned long globalElemID = newElemData[indL++];
+
+        switch( newElemType[ind] ) {
+
+          case TRIANGLE: {
+            elem[i] = new CTriangle(newElemData[indL], newElemData[indL+1],
+                                    newElemData[indL+2], 2);
+            indL += 3;
+            break;
+          }
+
+          case QUADRILATERAL: {
+            elem[i] = new CQuadrilateral(newElemData[indL],   newElemData[indL+1],
+                                         newElemData[indL+2], newElemData[indL+3], 2);
+            indL += 4;
+            break;
+          }
+
+          case TETRAHEDRON: {
+            elem[i] = new CTetrahedron(newElemData[indL],   newElemData[indL+1],
+                                       newElemData[indL+2], newElemData[indL+3]);
+            indL += 4;
+            break;
+          }
+
+          case HEXAHEDRON: {
+            elem[i] = new CHexahedron(newElemData[indL],   newElemData[indL+1],
+                                      newElemData[indL+2], newElemData[indL+3],
+                                      newElemData[indL+4], newElemData[indL+5],
+                                      newElemData[indL+6], newElemData[indL+7]);
+            indL += 8;
+            break;
+          }
+
+          case PRISM: {
+            elem[i] = new CPrism(newElemData[indL],   newElemData[indL+1],
+                                 newElemData[indL+2], newElemData[indL+3],
+                                 newElemData[indL+4], newElemData[indL+5]);
+            indL += 6;
+            break;
+          }
+
+          case PYRAMID: {
+            elem[i] = new CPyramid(newElemData[indL],   newElemData[indL+1],
+                                   newElemData[indL+2], newElemData[indL+3],
+                                   newElemData[indL+4]);
+            indL += 5;
+            break;
+          }
+        }
+
+        /* Set the global element ID and indicate that this element is only
+           an interpolation donor for the LES wall treatment on this rank. */
+        elem[i]->SetGlobalIndex(globalElemID);
+        elem[i]->AddProcElemIsOnlyInterpolDonor(rank);
+      }
     }
   }
 
