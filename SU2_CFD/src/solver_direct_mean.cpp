@@ -17665,7 +17665,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Twall, dTdn, dTdrho, thermal_conductivity;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
-  su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
+  su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0}, NormalArea[3] = {0.0,0.0,0.0};
   su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
   tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
@@ -17681,15 +17681,12 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
+  bool wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
+  
   /*--- Retrieve the specified wall temperature from config
         as well as the wall function treatment.---*/
   
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
-  
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
-//  }
   
   /*--- Loop over boundary points ---*/
   
@@ -17709,9 +17706,10 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt (Area);
       
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      
+      for (iDim = 0; iDim < nDim; iDim++){
+        NormalArea[iDim] = -Normal[iDim];
+        UnitNormal[iDim]  = -Normal[iDim]/Area;
+      }
       /*--- Calculate useful quantities ---*/
       
       theta2 = 0.0;
@@ -17749,14 +17747,69 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         Res_Visc[iVar] = 0.0;
       }
       
-      /*--- Set the residual, truncation error and velocity value on the boundary ---*/
-      
-      node[iPoint]->SetVelocity_Old(Vector);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-      node[iPoint]->SetVel_ResTruncError_Zero();
-      
+      if (wall_model){
+        
+        /*--- Wall functions are used to model the lower part of the boundary
+         layer. Consequently, a slip boundary condition is used for the
+         velocities and the skin friction and heat flux from the wall
+         should drive the velocities towards the no-slip and prescribed
+         heat flux. Therefore the right states for the actual flow solver
+         can be computed using BoundaryStates_Euler_Wall. ---*/
+        
+        su2double Density_b, StaticEnergy_b, Enthalpy_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
+        su2double Density_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, ProjGridVel = 0.0, turb_ke = 0.0;
+        su2double Velocity_i[3] = {0.0,0.0,0.0}, Velocity_b[3] = {0.0,0.0,0.0};
+        
+        /*--- Get the state i ---*/
+        
+        VelMagnitude2_i = 0.0; ProjVelocity_i = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+          ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+          VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
+        }
+        Density_i = node[iPoint]->GetDensity();
+        Energy_i = node[iPoint]->GetEnergy();
+        
+        /*--- Compute the boundary state b ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim]; //Force the velocity to be tangential to the surface.
+        
+        if (grid_movement) {
+          GridVel = geometry->node[iPoint]->GetGridVel();
+          ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += GridVel[iDim] - ProjGridVel * UnitNormal[iDim];
+        }
+        
+        VelMagnitude2_b = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          VelMagnitude2_b += Velocity_b[iDim] * Velocity_b[iDim];
+        
+        /*--- Compute the residual ---*/
+        
+        Density_b = Density_i;
+        StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
+        Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b + turb_ke;
+        
+        FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
+        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+        Pressure_b = FluidModel->GetPressure();
+        Enthalpy_b = Energy_b + Pressure_b/Density_b;
+        
+        conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Res_Conv);
+
+      }
+      else{
+        /*--- Set the residual, truncation error and velocity value on the boundary ---*/
+        node[iPoint]->SetVelocity_Old(Vector);
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        node[iPoint]->SetVel_ResTruncError_Zero();
+      }
       /*--- Compute the normal gradient in temperature using Twall ---*/
       
       dTdn = -(node[Point_Normal]->GetPrimitive(0) - Twall)/dist_ij;
@@ -17775,7 +17828,12 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       /*--- Apply a weak boundary condition for the energy equation.
        Compute the residual due to the prescribed heat flux. ---*/
       
-      Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
+      if (wall_model){
+        su2double heatflux_WM = node[iPoint]->GetHeatFlux();
+        Res_Visc[nDim+1] = heatflux_WM * Area;
+      }
+      else{
+        Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;}
       
       /*--- Calculate Jacobian for implicit time stepping ---*/
       
