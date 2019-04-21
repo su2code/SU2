@@ -827,6 +827,9 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
      read and stored. ---*/
 
     if (driver_config->GetnConfigFiles() > 0){
+      if (rank == MASTER_NODE){
+        cout  << endl << "Parsing sub-config file for zone " << iZone << endl;
+      }
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
     }

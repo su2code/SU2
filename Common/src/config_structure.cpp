@@ -4984,7 +4984,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
@@ -5001,16 +5001,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
-
-  if (nConfig_Files != 0) {
-    cout << "List of config files: ";
-    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
-      cout << Config_Filenames[iConfig];
-      if (iConfig < nConfig_Files-1) cout << ", ";
-      else cout <<".";
-    }
-    cout<< endl;
-  }
 
   if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
@@ -9189,44 +9179,27 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
 }
 
 void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
-
-  unsigned short iMarker_CfgFile, iMarker_ZoneInterface;
-
-  /*--- If the command MARKER_ZONE_INTERFACE is not in the config file, nMarker_ZoneInterface will be 0 ---*/
-  if (nMarker_ZoneInterface == 0){
-
-    /*--- Copy the marker interface from the driver configuration file ---*/
-
-    nMarker_ZoneInterface = driver_config->GetnMarker_ZoneInterface();
-    Marker_ZoneInterface = new string[nMarker_ZoneInterface];
-
-    /*--- Set the Markers at the interface from the main config file ---*/
-    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
-      Marker_ZoneInterface[iMarker_ZoneInterface] = driver_config->GetMarkerTag_ZoneInterface(iMarker_ZoneInterface);
+  
+  for (unsigned short iZone = 0; iZone < nZone; iZone++){
+    
+    if (config_container[iZone]->GetTime_Domain() != GetTime_Domain()){
+      SU2_MPI::Error("Option TIME_DOMAIN must be the same in all zones.", CURRENT_FUNCTION);
     }
-
-    /*--- Identification of Multizone markers ---*/
-    if (rank == MASTER_NODE) cout << endl << "-------------------- Interface Boundary Information ---------------------" << endl;
-    if (rank == MASTER_NODE) cout << "The interface markers are: ";
-
-    unsigned short indexOutput = 0;
-    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-      unsigned short indexMarker = 0;
-      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
-      for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
-        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface]){
-          indexMarker = (int)(iMarker_ZoneInterface/2+1);
-          indexOutput++;
-          if (rank == MASTER_NODE) cout << Marker_CfgFile_TagBound[iMarker_CfgFile];
-        }
-      }
-      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
-      if (rank == MASTER_NODE){
-        if (indexMarker > 0 && (indexOutput < (nMarker_ZoneInterface/2))) cout << ", ";
-        else if (indexMarker > 0 && (indexOutput == (nMarker_ZoneInterface/2))) cout << ".";
-      }
+    if (config_container[iZone]->GetnTime_Iter() != GetnTime_Iter()){
+      SU2_MPI::Error("Option TIME_ITER must be the same in all zones.", CURRENT_FUNCTION);
     }
-    if (rank == MASTER_NODE) cout << endl;
+    if (config_container[iZone]->GetnOuter_Iter() != GetnOuter_Iter()){
+      SU2_MPI::Error("Option OUTER_ITER must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetTime_Step() != GetTime_Step()){
+      SU2_MPI::Error("Option TIME_STEP must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Problem() != GetMultizone_Problem()){
+      SU2_MPI::Error("Option MULTIZONE must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
+      SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Set the Restart iter for time dependent problems ---*/
