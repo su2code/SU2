@@ -57,23 +57,23 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   if (surf_sol) {
     if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
-    else filename = config->GetSurfFlowCoeff_FileName();
+    else filename = config->GetSurfCoeff_FileName();
   }
   else {
     if (adjoint)
     filename = config->GetAdj_FileName();
-    else filename = config->GetFlow_FileName();
+    else filename = config->GetVolume_FileName();
   }
   
-  if (Kind_Solver == FEM_ELASTICITY) {
-    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-    else filename = config->GetStructure_FileName().c_str();
-  }
+//  if (Kind_Solver == FEM_ELASTICITY) {
+//    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
+//    else filename = config->GetStructure_FileName().c_str();
+//  }
   
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
-  }
+//  if (Kind_Solver == HEAT_EQUATION_FVM) {
+//    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+//    else filename = config->GetHeat_FileName().c_str();
+//  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol) filename = config->GetSurfSens_FileName();
@@ -1718,7 +1718,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
 
     if (adjoint)
       buffer = config->GetAdj_FileName();
-    else buffer = config->GetFlow_FileName();
+    else buffer = config->GetVolume_FileName();
 
     if (config->GetKind_SU2() == SU2_DOT) {
       buffer = config->GetVolSens_FileName();
@@ -1733,7 +1733,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     else cout << "Error: wrong number of dimensions: " << dims << endl;
     
     /*--- Open Tecplot file ---*/
-    err = TECINI142((char *)config->GetFlow_FileName().c_str(),
+    err = TECINI142((char *)config->GetVolume_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
                     (char *)".",
@@ -2144,15 +2144,15 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
   if (adjoint)
     buffer = config->GetAdj_FileName();
-  else buffer = config->GetFlow_FileName();
+  else buffer = config->GetVolume_FileName();
   
-  if (Kind_Solver == FEM_ELASTICITY) {
-    buffer = config->GetStructure_FileName().c_str();
-  }
+//  if (Kind_Solver == FEM_ELASTICITY) {
+//    buffer = config->GetStructure_FileName().c_str();
+//  }
   
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    buffer = config->GetHeat_FileName().c_str();
-  }
+//  if (Kind_Solver == HEAT_EQUATION_FVM) {
+//    buffer = config->GetHeat_FileName().c_str();
+//  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetVolSens_FileName();
@@ -2177,7 +2177,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   }
 
   /*--- Open Tecplot file ---*/
-  err = TECINI142((char *)config->GetFlow_FileName().c_str(),
+  err = TECINI142((char *)config->GetVolume_FileName().c_str(),
                   (char *)variables.c_str(),
                   (char *)file.str().c_str(),
                   (char *)".",
@@ -2725,7 +2725,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   if (!wrote_surf_file) {
     
     file.str(string());
-    buffer = config->GetSurfFlowCoeff_FileName();
+    buffer = config->GetSurfCoeff_FileName();
     if (config->GetKind_SU2() == SU2_DOT) {
       buffer = config->GetSurfSens_FileName();
     }
@@ -2810,7 +2810,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     ShareConnectivityFromZone  = 0;
     
     /*--- Open Tecplot file ---*/
-    err = TECINI142((char *)config->GetSurfFlowCoeff_FileName().c_str(),
+    err = TECINI142((char *)config->GetSurfCoeff_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
                     (char *)".",
@@ -3038,15 +3038,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   /*--- Write file name with extension ---*/
   
   if (adjoint) buffer = config->GetSurfAdjCoeff_FileName();
-  else buffer = config->GetSurfFlowCoeff_FileName();
-  
-  if (Kind_Solver == FEM_ELASTICITY) {
-    buffer = config->GetSurfStructure_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    buffer = config->GetSurfHeat_FileName().c_str();
-  }
+  else buffer = config->GetSurfCoeff_FileName();
   
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetSurfSens_FileName();
@@ -3168,7 +3160,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   
   /*--- Open Tecplot file ---*/
-  err = TECINI142((char *)config->GetFlow_FileName().c_str(),
+  err = TECINI142((char *)config->GetVolume_FileName().c_str(),
                   (char *)variables.c_str(),
                   (char *)file.str().c_str(),
                   (char *)".",

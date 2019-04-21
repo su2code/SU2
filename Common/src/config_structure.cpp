@@ -1667,46 +1667,16 @@ void CConfig::SetConfig_Options() {
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
-  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
-  addStringOption("CONV_FILENAME_FSI", Conv_FileName_FSI, string("historyFSI.csv"));
-  /* DESCRIPTION: Viscous limiter turbulent equations */
-  addBoolOption("WRITE_CONV_FILENAME_FSI", Write_Conv_FSI, false);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
+  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_ADJ_STRUCTURE_FILENAME", Solution_AdjFEMFileName, string("solution_adjoint_structure.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
-  addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
+  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
-  /*!\brief RESTART_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
-  addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
-  /*!\brief RESTART_ADJ_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
-  addStringOption("RESTART_ADJ_STRUCTURE_FILENAME", Restart_AdjFEMFileName, string("restart_adjoint_structure.dat"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
-  addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
-  /*!\brief VOLUME_STRUCTURE_FILENAME
-   * \n  DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
-  /*!\brief VOLUME_ADJ_STRUCTURE_FILENAME
-   * \n  DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("VOLUME_ADJ_STRUCTURE_FILENAME", AdjStructure_FileName, string("adj_structure"));
-  /*!\brief SURFACE_STRUCTURE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
-  /*!\brief SURFACE_STRUCTURE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_ADJ_STRUCTURE_FILENAME", AdjSurfStructure_FileName, string("adj_surface_structure"));
-  /*!\brief SURFACE_HEAT_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config */
-  addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
-  /*!\brief VOLUME_HEAT_FILENAME
-   *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
+  addStringOption("VOLUME_FILENAME", Volume_FileName, string("flow"));
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
@@ -1718,7 +1688,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
   /*!\brief SURFACE_FLOW_FILENAME
    *  \n DESCRIPTION: Output file surface flow coefficient (w/o extension)  \ingroup Config*/
-  addStringOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
+  addStringOption("SURFACE_FILENAME", SurfCoeff_FileName, string("surface"));
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
@@ -2762,6 +2732,8 @@ void CConfig::SetnZone(){
   }
   
   if (Multizone_Problem == YES){
+    
+    /*--- Some basic multizone checks ---*/
     
     if (nMarker_ZoneInterface % 2 != 0){
       SU2_MPI::Error("Number of markers in MARKER_ZONE_INTERFACE must be a multiple of 2", CURRENT_FUNCTION);
@@ -5117,12 +5089,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Restart) {
       if (Read_Binary_Restart) cout << "Reading and writing binary SU2 native restart files." << endl;
       else cout << "Reading and writing ASCII SU2 native restart files." << endl;
-      if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FileName << "." << endl;
       if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
-      if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
-      if (Kind_Solver == DISC_ADJ_FEM){
-        cout << "Read structural adjoint solution from: " << Solution_AdjFEMFileName << "." << endl;
-      }
     }
     else {
         if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
@@ -5130,7 +5098,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (ContinuousAdjoint)
-      cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
   
     if (!fea){
       if (Kind_Regime == COMPRESSIBLE) {
@@ -5284,13 +5252,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 			break;
 		case GRAD_ADJOINT:
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
 		case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
 		}
@@ -6170,36 +6138,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((!fea)) {
-      if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
-        cout << "Flow variables file name: " << Flow_FileName << "." << endl;
-        cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
-      }
-
-      if (ContinuousAdjoint || DiscreteAdjoint) {
-        cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
-        cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-        cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
-        cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
-      }
+  
+    if (!ContinuousAdjoint && !DiscreteAdjoint) {
+      cout << "Surface coefficients file name: " << SurfCoeff_FileName << "." << endl;
+      cout << "Volume file name: " << Volume_FileName << "." << endl;
+      cout << "Restart file name: " << Restart_FileName << "." << endl;
     }
-    else if (fea){
-      if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        Wrt_Srf_Sol = false;
-        cout << "Structure variables file name: " << Structure_FileName << "." << endl;
-        cout << "Restart structure file name: " << Restart_FEMFileName << "." << endl;
-      }
-      if (ContinuousAdjoint || DiscreteAdjoint) {
-        Wrt_Srf_Sol = false;
-        cout << "Structure variables file name: " << AdjStructure_FileName << "." << endl;
-        cout << "Restart structure file name: " << Restart_AdjFEMFileName << "." << endl;
-      }
-    }
-    else{
-      cout << "Surface coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
-      cout << "Variables file name: " << Flow_FileName << "." << endl;
-      cout << "Restart file name: " << Restart_FlowFileName << "." << endl;
+    
+    if (ContinuousAdjoint || DiscreteAdjoint) {
+      cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
+      cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
+      cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
     }
 
   }
@@ -6215,7 +6165,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
-    cout << "Flow variables file name: " << Flow_FileName << "." << endl;
+    cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
 
   if (val_software == SU2_DEF) {
@@ -6250,7 +6200,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_MSH) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
+    cout << "Restart flow file name: " << Restart_FileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
         (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
       if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;

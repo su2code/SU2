@@ -1120,7 +1120,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   string UnstExt, text_line;
   ifstream restart_file;
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- Modify file name for multizone problems ---*/
   if (nZone >1)

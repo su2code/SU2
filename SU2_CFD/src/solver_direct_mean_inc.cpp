@@ -104,7 +104,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  string filename = config->GetSolution_FlowFileName();
+  string filename = config->GetSolution_FileName();
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -113,7 +113,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
-  string filename_ = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -6988,7 +6988,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -7292,7 +7292,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
 

@@ -297,7 +297,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)

@@ -68,16 +68,15 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetHeat_FileName();
+  VolumeFilename = config->GetVolume_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfHeat_FileName();
+  SurfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_HeatFileName();
-  
+  RestartFilename = config->GetRestart_FileName();
 }
 
 CHeatOutput::~CHeatOutput(void) {
