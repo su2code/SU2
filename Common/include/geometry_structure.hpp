@@ -1570,6 +1570,11 @@ public:
    */
   void SetElemVolume(CConfig *config);
 
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void UpdateBoundaries(CConfig *config);
 };
 
 /*!
