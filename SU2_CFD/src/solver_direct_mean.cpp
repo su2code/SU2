@@ -16207,7 +16207,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     auto it = std::unique( WallFunctions_.begin(), WallFunctions_.end() );
     bool wasUnique = (it == WallFunctions_.end() );
     
-    if(wasUnique){
+    if(!wasUnique){
       switch (config->GetWallFunction_Treatment(WallFunctionsMarker_[0])) {
         case EQUILIBRIUM_WALL_MODEL:
           WallModel = new CWallModel1DEQ(config,WallFunctionsMarker_[0]);
@@ -16230,6 +16230,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         default:
           break;
       }
+    }
+    else{
+      SU2_MPI::Error("Wall function/model type must be the same in all wall BCs", CURRENT_FUNCTION);
     }
   }
 
@@ -16422,7 +16425,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   }
   
   /*--- Compute the TauWall from the wall functions ---*/
-  
   if (WallFunctionUsed)
     SetTauWall_WF(geometry, solver_container, config);
   
