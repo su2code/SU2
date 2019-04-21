@@ -3593,7 +3593,15 @@ void CDriver::Interface_Preprocessing() {
   if (rank == MASTER_NODE) 
   delete [] Buffer_Recv_mark;
 #endif
-
+  
+  /*--- Update boundary condition information since some
+   *  kind of BCs have changed during the setup of the interfaces --- */
+  
+  for (iZone = 0; iZone < nZone; iZone ++){
+    if (config_container[iZone]->GetMarker_n_ZoneInterface() != 0)  
+      for (unsigned short iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++)
+        geometry_container[iZone][INST_0][iMGlevel]->UpdateBoundaries(config_container[iZone]);
+  }
 }
 
 void CDriver::InitStaticMeshMovement(){
