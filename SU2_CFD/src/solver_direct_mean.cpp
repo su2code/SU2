@@ -13955,7 +13955,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   string averageField = "DensityMean";
   string primeField = "UUPrimeMean";
   unsigned short averageIndex = 0, averageVars = 0;
-  unsigned short primeIndex = 0, primeVars = 4;
+  unsigned short primeIndex = 0;
   
   string UnstExt, text_line;
   ifstream restart_file;
@@ -14016,7 +14016,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- The number of variables of the prime average is 4 for 2D (3 Stresses + Pressure)
        and 7 for 3D (6 Stresses + Pressure)---*/
       
-      if (geometry[MESH_0]->GetnDim() == 3) primeVars = 7;
+      // if (geometry[MESH_0]->GetnDim() == 3) primeVars = 7;
     }
   }
 
@@ -16213,6 +16213,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           WallModel = new CWallModel1DEQ(config,WallFunctionsMarker_[0]);
           WallModelUsed = true;
           WallFunctionUsed = false;
+          break;
         case LOGARITHMIC_WALL_MODEL:
           WallModel = new CWallModelLogLaw(config,WallFunctionsMarker_[0]);
           WallModelUsed = true;
@@ -16222,11 +16223,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           WallModel = NULL;
           WallModelUsed = false;
           WallFunctionUsed= false;
+          break;
         case ADAPTIVE_WALL_FUNCTION:
         case STANDARD_WALL_FUNCTION:
           WallModel = NULL;
           WallModelUsed = false;
           WallFunctionUsed= true;
+          break;
         default:
           break;
       }
@@ -16353,7 +16356,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
                               (config->GetKind_Upwind_Flow() == ROE ||
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2);
-  bool wall_functions       = config->GetWall_Functions();
   
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -17758,7 +17760,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
          heat flux. Therefore the right states for the actual flow solver
          can be computed using BoundaryStates_Euler_Wall. ---*/
         
-        su2double Density_b, StaticEnergy_b, Enthalpy_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
+        su2double Density_b, StaticEnergy_b, Enthalpy_b, Energy_b, VelMagnitude2_b, Pressure_b;
         su2double Density_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, ProjGridVel = 0.0, turb_ke = 0.0;
         su2double Velocity_i[3] = {0.0,0.0,0.0}, Velocity_b[3] = {0.0,0.0,0.0};
         
@@ -17796,8 +17798,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b + turb_ke;
         
         FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
-        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
         Pressure_b = FluidModel->GetPressure();
         Enthalpy_b = Energy_b + Pressure_b/Density_b;
         
@@ -18620,8 +18620,8 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
     - Set Tau_Wall and Heat_Flux in the node structure for future use.
    ---*/
   
-  unsigned short iDim, jDim, iMarker;
-  unsigned long iVertex, iPoint, Point_Normal, counter;
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
   bool CalculateWallModel = false;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -18674,11 +18674,11 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         
         /*--- Main task 1: Interpolate to have the velocity and pressure at the exchange location---*/
         su2double *normals = geometry->vertex[iMarker][iVertex]->GetNormal();
-        unsigned long donorElem = geometry->vertex[iMarker][iVertex]->GetDonorElem();
-        unsigned short nDonors  = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
+        unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
         su2double vel_LES[3] = {0.0, 0.0, 0.0}, rho_LES = 0.0, e_LES   = 0.0,Area = 0.0;
         
-        for (iDim = 0; iDim < nDim; iDim++) Area += normals[iDim]*normals[iDim]; Area = sqrt(Area);
+        for (iDim = 0; iDim < nDim; iDim++) Area += normals[iDim]*normals[iDim];
+        Area = sqrt(Area);
         for (iDim = 0; iDim < nDim; iDim++) normals[iDim]/=Area;
         
         /*--- Load the coefficients and interpolate---*/
