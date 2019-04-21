@@ -186,7 +186,6 @@ CDriver::CDriver(char* confFile,
 
       for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         geometry_container[iZone][iInst][iMesh]->MatchNearField(config_container[iZone]);
-        geometry_container[iZone][iInst][iMesh]->MatchInterface(config_container[iZone]);
         geometry_container[iZone][iInst][iMesh]->MatchActuator_Disk(config_container[iZone]);
       }
 
@@ -3536,6 +3535,8 @@ void CDriver::Interface_Preprocessing() {
         nVar = solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
         transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
+        config_container[donorZone]->SetMarker_All_KindBC(markDonor, FLUID_INTERFACE);
+        solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->InitSlidingState(config_container[donorZone], geometry_container[donorZone][INST_0][MESH_0], markDonor);     
       }
       else if (fluid_donor && heat_target) {
         nVarTransfer = 0;
@@ -3547,6 +3548,8 @@ void CDriver::Interface_Preprocessing() {
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
+        
+        config_container[donorZone]->SetMarker_All_KindBC(markDonor, CHT_WALL_INTERFACE);
       }
       else if (heat_donor && fluid_target) {
         nVarTransfer = 0;
@@ -3558,6 +3561,7 @@ void CDriver::Interface_Preprocessing() {
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
+        config_container[donorZone]->SetMarker_All_KindBC(markDonor, CHT_WALL_INTERFACE);        
       }
       else if (heat_donor && heat_target) {
         SU2_MPI::Error("Conjugate heat transfer between solids not implemented yet.", CURRENT_FUNCTION);

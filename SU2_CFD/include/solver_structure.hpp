@@ -770,13 +770,6 @@ public:
   
   /*!
    * \brief A virtual member.
-    * \param[in] geometry - Geometrical definition of the problem.
-    * \param[in] config - Definition of the particular problem.
-    */
-  virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1303,6 +1296,12 @@ public:
    */
   virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
 
+  /*!
+   * \brief Allocate the sliding state arrays.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
+  
   /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
@@ -5119,13 +5118,6 @@ public:
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
@@ -5486,6 +5478,12 @@ public:
   */
   su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
+  /*!
+   * \brief Allocate the sliding state arrays.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -10370,13 +10368,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
