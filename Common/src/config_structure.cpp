@@ -2763,6 +2763,10 @@ void CConfig::SetnZone(){
   
   if (Multizone_Problem == YES){
     
+    if (nMarker_ZoneInterface % 2 != 0){
+      SU2_MPI::Error("Number of markers in MARKER_ZONE_INTERFACE must be a multiple of 2", CURRENT_FUNCTION);
+    }
+    
     SinglezoneDriver  = NO;
     
     if (Multizone_Mesh){
