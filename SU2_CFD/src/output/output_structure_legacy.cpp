@@ -464,7 +464,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   ofstream SurfFlow_file;
   
   /*--- Write file name with extension if unsteady ---*/
-  strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
+  strcpy (cstr, config->GetSurfCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
