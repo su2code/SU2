@@ -679,7 +679,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     
     /*--- Write file name with extension if unsteady ---*/
     char buffer[50];
-    string filename = config->GetSurfFlowCoeff_FileName();
+    string filename = config->GetSurfCoeff_FileName();
     ofstream SurfFlow_file;
     
     /*--- Write file name with extension if unsteady ---*/
@@ -4045,16 +4045,16 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   
   /*--- Retrieve filename from config ---*/
   
-  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else if (disc_adj_fem){
-    filename = config->GetRestart_AdjFEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
+//  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
+//    filename = config->GetRestart_AdjFileName();
+//    filename = config->GetObjFunc_Extension(filename);
+//  } else if (fem) {
+//    filename = config->GetRestart_FEMFileName();
+//  } else if (disc_adj_fem){
+//    filename = config->GetRestart_AdjFEMFileName();
+//  } else {
+//    filename = config->GetRestart_FileName();
+//  }
   
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
@@ -11270,8 +11270,8 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
     unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
 
     /*--- Write file name with extension ---*/
-    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
-    strcpy (cstr, filename.data());
+//    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
+//    strcpy (cstr, filename.data());
 
     if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
       long iExtIter = config[ZONE_FLOW]->GetRestart_Iter();
@@ -17572,16 +17572,16 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
 
   /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else if (disc_adj_fem){
-    filename = config->GetRestart_AdjFEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
+//  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+//    filename = config->GetRestart_AdjFileName();
+//    filename = config->GetObjFunc_Extension(filename);
+//  } else if (fem) {
+//    filename = config->GetRestart_FEMFileName();
+//  } else if (disc_adj_fem){
+//    filename = config->GetRestart_AdjFEMFileName();
+//  } else {
+//    filename = config->GetRestart_FileName();
+//  }
   
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
@@ -17702,14 +17702,14 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   /*--- Retrieve filename from config ---*/
 
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
+//  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+//    filename = config->GetRestart_AdjFileName();
+//    filename = config->GetObjFunc_Extension(filename);
+//  } else if (fem) {
+//    filename = config->GetRestart_FEMFileName();
+//  } else {
+//    filename = config->GetRestart_FileName();
+//  }
 
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)

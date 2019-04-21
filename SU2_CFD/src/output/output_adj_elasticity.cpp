@@ -83,11 +83,11 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry,
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfStructure_FileName();
+  SurfaceFilename = config->GetSurfAdjCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_AdjFEMFileName();
+  RestartFilename = config->GetRestart_FileName();
   
 }
 

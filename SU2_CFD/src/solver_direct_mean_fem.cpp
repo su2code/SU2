@@ -9481,7 +9481,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
