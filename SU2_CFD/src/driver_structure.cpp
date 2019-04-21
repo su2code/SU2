@@ -3537,6 +3537,9 @@ void CDriver::Interface_Preprocessing() {
         if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
         config_container[donorZone]->SetMarker_All_KindBC(markDonor, FLUID_INTERFACE);
         solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->InitSlidingState(config_container[donorZone], geometry_container[donorZone][INST_0][MESH_0], markDonor);     
+        if (config_container[donorZone]->GetKind_Turb_Model() != NONE){
+          solver_container[donorZone][INST_0][MESH_0][TURB_SOL]->InitSlidingState(config_container[donorZone], geometry_container[donorZone][INST_0][MESH_0], markDonor);               
+        }
       }
       else if (fluid_donor && heat_target) {
         nVarTransfer = 0;

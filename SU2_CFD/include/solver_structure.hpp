@@ -8353,6 +8353,12 @@ public:
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 
   /*!
+   * \brief Allocate the sliding state arrays.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
+  
+  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
@@ -9524,6 +9530,12 @@ public:
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 
+  /*!
+   * \brief Allocate the sliding state arrays.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
+  
   /*!
    * \brief Set custom turbulence variables at the vertex of an inlet.
    * \param[in] iMarker - Marker identifier.

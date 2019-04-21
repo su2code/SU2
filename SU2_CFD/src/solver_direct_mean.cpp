@@ -15397,20 +15397,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
     
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-
-    }
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
