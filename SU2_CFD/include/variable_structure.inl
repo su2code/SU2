@@ -175,7 +175,7 @@ inline su2double CVariable::GetAnisoGrad(unsigned short val_var) { return AnisoG
 
 inline void CVariable::SetAnisoHess(unsigned short val_var, su2double val_sens_hess) { AnisoHess[val_var] = val_sens_hess; }
 
-inline void CVariable::AddAnisoHess(unsigned short val_var, su2double val_sens_hess) { AnisoHess[val_var] = val_sens_hess; }
+inline void CVariable::AddAnisoHess(unsigned short val_var, su2double val_sens_hess) { AnisoHess[val_var] += val_sens_hess; }
 
 inline su2double *CVariable::GetAnisoHess(void) { return AnisoHess; }
 

@@ -6603,10 +6603,9 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
   unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
-  su2double vnx[3], vny[3], vnz[3];
+  su2double vnx[3], vny[3];
   su2double graTri[2];
   su2double Crd[3][2], Sens[3];
-  su2double Area, rap;
 
   //--- note: currently only implemented for Tri
 
@@ -6617,7 +6616,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       node[iPoint]->SetAnisoSens(local_Mach);
     }
     else if (Kind_Aniso_Sensor == ANISO_PRES) {
-      const su2double local_Pres = node[iPoint]->GetPrimitive(nDim+1);
+      const su2double local_Pres = node[iPoint]->GetPressure();
       node[iPoint]->SetAnisoSens(local_Pres);
     }
 
@@ -6639,12 +6638,12 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
-    vnx[0] = Crd[1][1]-Crd[2][1]; 
-    vny[0] = Crd[2][0]-Crd[1][0];  
-    vnx[1] = Crd[2][1]-Crd[0][1]; 
-    vny[1] = Crd[0][0]-Crd[2][0];  
-    vnx[2] = Crd[0][1]-Crd[1][1]; 
-    vny[2] = Crd[1][0]-Crd[0][0];  
+    vnx[0] = Crd[1][1]-Crd[2][1];
+    vny[0] = Crd[2][0]-Crd[1][0];
+    vnx[1] = Crd[2][1]-Crd[0][1];
+    vny[1] = Crd[0][0]-Crd[2][0];
+    vnx[2] = Crd[0][1]-Crd[1][1];
+    vny[2] = Crd[1][0]-Crd[0][0];
 
     //--- gradient at the element ( graTri = 2*|T|*gradT ) 
     graTri[0] = Sens[0]*vnx[0] + Sens[1]*vnx[1] + Sens[2]*vnx[2];
@@ -6653,11 +6652,8 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     //--- assembling
     for (unsigned short iNode=0; iNode<3; ++iNode) {
       const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      Area = 0.0;
-      for (unsigned short iDim = 0; iDim < 2; ++iDim)
-        Area += geometry->node[kNode]->GetVolume()*geometry->node[kNode]->GetVolume();
-
-      rap = sqrt(Area)/6.0;
+      const su2double Area = geometry->node[kNode]->GetVolume();
+      const su2double rap = 1./(Area*6.0);
       node[kNode]->AddAnisoGrad(0, graTri[0] * rap);
       node[kNode]->AddAnisoGrad(1, graTri[1] * rap);
     }
@@ -6668,11 +6664,9 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
-  unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
-  su2double vnx[3], vny[3], vnz[3];
+  su2double vnx[3], vny[3];
   su2double hesTri[3];
   su2double Crd[3][2], Grad[3][2];
-  su2double Area, rap;
 
   //--- note: currently only implemented for Tri
 
@@ -6698,27 +6692,24 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
-    vnx[0] = Crd[1][1]-Crd[2][1]; 
-    vny[0] = Crd[2][0]-Crd[1][0];  
-    vnx[1] = Crd[2][1]-Crd[0][1]; 
-    vny[1] = Crd[0][0]-Crd[2][0];  
-    vnx[2] = Crd[0][1]-Crd[1][1]; 
-    vny[2] = Crd[1][0]-Crd[0][0];  
+    vnx[0] = Crd[1][1]-Crd[2][1];
+    vny[0] = Crd[2][0]-Crd[1][0];
+    vnx[1] = Crd[2][1]-Crd[0][1];
+    vny[1] = Crd[0][0]-Crd[2][0];
+    vnx[2] = Crd[0][1]-Crd[1][1];
+    vny[2] = Crd[1][0]-Crd[0][0];
 
     //--- hessian at the element ( hesTri = 2*|T|*hessienT ) 
-    hesTri[0] =         Grad[0][0]*vnx[0] + Grad[0][0]*vnx[1] + Grad[2][0]*vnx[2];
-    hesTri[1] = 0.5 * ( Grad[0][0]*vny[0] + Grad[0][0]*vny[1] + Grad[2][0]*vny[2]
-                      + Grad[0][1]*vnx[0] + Grad[0][1]*vnx[1] + Grad[2][1]*vnx[2] );
-    hesTri[2] =         Grad[0][1]*vny[0] + Grad[0][1]*vny[1] + Grad[2][1]*vny[2];
+    hesTri[0] =         Grad[0][0]*vnx[0] + Grad[1][0]*vnx[1] + Grad[2][0]*vnx[2];
+    hesTri[1] = 0.5 * ( Grad[0][0]*vny[0] + Grad[1][0]*vny[1] + Grad[2][0]*vny[2]
+                      + Grad[0][1]*vnx[0] + Grad[1][1]*vnx[1] + Grad[2][1]*vnx[2] );
+    hesTri[2] =         Grad[0][1]*vny[0] + Grad[1][1]*vny[1] + Grad[2][1]*vny[2];
     
     //--- assembling
     for (unsigned short iNode=0; iNode<3; ++iNode) {
       const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      Area = 0.0;
-      for (unsigned short iDim = 0; iDim < 2; ++iDim)
-        Area += geometry->node[kNode]->GetVolume()*geometry->node[kNode]->GetVolume();
-
-      rap = sqrt(Area)/6.0;
+      const su2double Area = geometry->node[kNode]->GetVolume();
+      const su2double rap = 1./(Area*6.0);
       node[kNode]->AddAnisoHess(0, hesTri[0] * rap);
       node[kNode]->AddAnisoHess(1, hesTri[1] * rap);
       node[kNode]->AddAnisoHess(2, hesTri[2] * rap);

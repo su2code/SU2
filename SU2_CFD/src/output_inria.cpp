@@ -129,7 +129,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
 	
     /*--- Loop over the variables and write the values to file ---*/
     for (iVar = 0; iVar < nVar_Total; iVar++) {
-			bufDbl[iVar] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
+			bufDbl[iVar] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
     }
 
 		GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
@@ -266,7 +266,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   for (iPoint = 0; iPoint < npoin; iPoint++) {
 	iVar = TagBc[bcMach];
-	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
+	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
 	GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
   }
 	
@@ -303,7 +303,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   for (iPoint = 0; iPoint < npoin; iPoint++) {
 	iVar = TagBc[bcPres];
-	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
+	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
 	GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
   }
 		
@@ -344,7 +344,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
     for (iPoint = 0; iPoint < npoin; iPoint++) {
 	  iVar = TagBc[bcGoal];
-	  bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iVar][iPoint]);
+	  bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
 	  GmfSetLin(OutGoal, GmfSolAtVertices, bufDbl);
     }
 		
