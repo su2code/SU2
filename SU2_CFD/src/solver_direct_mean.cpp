@@ -18690,7 +18690,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           e_LES   += donnorCoeff*node[donorPoint]->GetSolution(nVar-1)/node[donorPoint]->GetSolution(0);
           
           for (iDim = 0; iDim < nDim; iDim++ ){
-            vel_LES[iDim+1] += donnorCoeff*node[donorPoint]->GetSolution(iDim+1)/node[donorPoint]->GetSolution(0);
+            vel_LES[iDim] += donnorCoeff*node[donorPoint]->GetSolution(iDim+1)/node[donorPoint]->GetSolution(0);
           }
         }
         
