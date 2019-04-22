@@ -12954,6 +12954,28 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
+ 
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Vorticity_x");
+      Variable_Names.push_back("Vorticity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      }
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Q_Criterion");
+    }
+    
+    if (rotating_frame) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Relative_Velocity_x");
+      Variable_Names.push_back("Relative_Velocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
+      }
+    }
+    
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       nVar_Par +=1;
@@ -12976,28 +12998,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("GradW_z");
       nVar_Par +=1;
       Variable_Names.push_back("Max_Length");
-
-    }
-    
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      nVar_Par += 2;
-      Variable_Names.push_back("Vorticity_x");
-      Variable_Names.push_back("Vorticity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
-      }
       
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
-    }
-    
-    if (rotating_frame) {
-      nVar_Par += 2;
-      Variable_Names.push_back("Relative_Velocity_x");
-      Variable_Names.push_back("Relative_Velocity_y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
-      }
     }
     
   }
