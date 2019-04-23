@@ -194,7 +194,7 @@ CDriver::CDriver(char* confFile,
        periodic points on the pair of periodic faces after the translation
        or rotation is taken into account. ---*/
       
-      if (config_container[iZone]->GetnMarker_Periodic() != 0) {
+      if ((config_container[iZone]->GetnMarker_Periodic() != 0) && !fem_solver) {
         for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
           
           /*--- Note that we loop over pairs of periodic markers individually
