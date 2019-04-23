@@ -7898,7 +7898,7 @@ bool CConfig::GetVolumetric_Movement(){
     volumetric_movement = true;
   }
   
-  if (Kind_SU2 == SU2_DEF || Kind_SU2 == SU2_DOT){ volumetric_movement = true;}
+  if (Kind_SU2 == SU2_DEF || Kind_SU2 == SU2_DOT || (DirectDiff != NO_DERIVATIVE)){ volumetric_movement = true;}
   return volumetric_movement;
 }
 
