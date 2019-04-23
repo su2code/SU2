@@ -51,9 +51,7 @@ private:
   unsigned short nVar;
 
   unsigned short turb_model;
-  
-  bool grid_movement;
-  
+    
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
 
 public:

@@ -331,6 +331,18 @@ public:
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);  
   
   
+  /*!
+   * \brief SetHistory_Output
+   * \param geometry
+   * \param solver_container
+   * \param config
+   * \param TimeIter
+   * \param OuterIter
+   * \param InnerIter
+   */
+  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
+  
+  
   void SetMultizoneHistory_Output(COutput** output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter);
   
   /*! 
