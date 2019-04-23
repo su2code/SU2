@@ -445,8 +445,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     RelaxCoeff        = 1.0;
     ForceCoeff        = 1.0;
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 

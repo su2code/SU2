@@ -140,7 +140,8 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
   
-  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CFEAVariable::~CFEAVariable(void) {

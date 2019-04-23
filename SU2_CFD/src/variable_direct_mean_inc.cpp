@@ -280,7 +280,10 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CIncEulerVariable::~CIncEulerVariable(void) {

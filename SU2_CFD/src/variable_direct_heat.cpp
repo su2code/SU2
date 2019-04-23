@@ -86,7 +86,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     Undivided_Laplacian = new su2double [nVar];
   }
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {  }

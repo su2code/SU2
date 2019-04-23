@@ -260,6 +260,18 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   }
 
 }
+
+void COutput::SetHistory_Output(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CConfig *config) {
+  
+  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+  
+  LoadHistoryData(config, geometry, solver_container);
+  
+  Postprocess_HistoryData(config);
+
+}
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter){
   
   curr_TimeIter  = TimeIter;
