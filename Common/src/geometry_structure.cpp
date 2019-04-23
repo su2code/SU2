@@ -8917,9 +8917,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+        if (config->GetSolid_Wall(iMarker))
           node[Point_Surface]->SetSolidBoundary(true);
       }
     }

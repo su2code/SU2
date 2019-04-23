@@ -3286,9 +3286,7 @@ void CDriver::SetTransferTypes(){
             break;
           } 
         }
-        
-        cout << markTarget << " " << markDonor << endl;
-        
+                
 #ifdef HAVE_MPI
         
         Donor_check  = -1;
@@ -3377,9 +3375,6 @@ void CDriver::SetTransferTypes(){
           break;
         }
         
-        /*--- Initialize the appropriate transfer strategy ---*/
-        if (rank == MASTER_NODE) cout << "Transferring ";
-        
         if (fluid_donor && structural_target && (!discrete_adjoint)) {
           transfer_types[donorZone][targetZone] = FLOW_TRACTION;
           if (markDonor != -1){
@@ -3400,9 +3395,6 @@ void CDriver::SetTransferTypes(){
         }
         else if (fluid_donor && fluid_target) {
           transfer_types[donorZone][targetZone] = SLIDING_INTERFACE;
-          if (markDonor != -1 ){
-            config_container[donorZone]->SetMarker_All_KindBC(markDonor, FLUID_INTERFACE);
-          }
         }
         else if (fluid_donor && heat_target) {
           nVarTransfer = 0;
@@ -3412,9 +3404,6 @@ void CDriver::SetTransferTypes(){
           else if (config_container[donorZone]->GetWeakly_Coupled_Heat())
             transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
           else { }
-          if (markDonor != -1 ){
-            config_container[donorZone]->SetMarker_All_KindBC(markDonor, CHT_WALL_INTERFACE);
-          }
         }
         else if (heat_donor && fluid_target) {
           if(config_container[targetZone]->GetEnergy_Equation())
@@ -3422,9 +3411,6 @@ void CDriver::SetTransferTypes(){
           else if (config_container[targetZone]->GetWeakly_Coupled_Heat())
             transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;
           else { }
-          if (markDonor != -1 ){
-            config_container[donorZone]->SetMarker_All_KindBC(markDonor, CHT_WALL_INTERFACE);
-          }
         }
         else if (heat_donor && heat_target) {
           SU2_MPI::Error("Conjugate heat transfer between solids not implemented yet.", CURRENT_FUNCTION);
@@ -3789,6 +3775,7 @@ void CDriver::Interface_Preprocessing() {
         transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
         if (markDonor != -1 ){
+          config_container[donorZone]->SetMarker_All_KindBC(markDonor, FLUID_INTERFACE);          
           solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->InitSlidingState(config_container[donorZone], geometry_container[donorZone][INST_0][MESH_0], markDonor);     
           if (config_container[donorZone]->GetKind_Turb_Model() != NONE){
             solver_container[donorZone][INST_0][MESH_0][TURB_SOL]->InitSlidingState(config_container[donorZone], geometry_container[donorZone][INST_0][MESH_0], markDonor);               
@@ -3805,6 +3792,9 @@ void CDriver::Interface_Preprocessing() {
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
+        if (markDonor != -1 ){
+          config_container[donorZone]->SetMarker_All_KindBC(markDonor, CHT_WALL_INTERFACE);
+        }
       }
       else if (heat_donor && fluid_target) {
         nVarTransfer = 0;
@@ -3850,6 +3840,14 @@ void CDriver::Interface_Preprocessing() {
   if (rank == MASTER_NODE) 
   delete [] Buffer_Recv_mark;
 #endif
+  
+  /*--- Update boundary information since some kind BCs have changed ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++){
+    for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+      geometry_container[iZone][INST_0][iMesh]->UpdateBoundaries(config_container[iZone]);
+    }
+  }
   
 }
 
