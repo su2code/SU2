@@ -83,6 +83,8 @@ inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned 
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::SetMeshElasticProperties(unsigned long iElem, su2double val_E) { }
+
 inline void CNumerics::ReadDV(CConfig *config){ }
 
 inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
@@ -156,6 +158,14 @@ inline void CFEAElasticity::Compute_Lame_Parameters(void) {
   Mu     = E / (2.0*(1.0 + Nu));
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   Kappa  = Lambda + (2/3)*Mu;
+}
+
+inline void CFEAMeshElasticity::SetMeshElasticProperties(unsigned long iElem, su2double val_E)  {
+  if (element_based){ E_i[iElem]  = val_E;}
+}
+
+inline void CFEAMeshElasticity::SetElement_Properties(CElement *element, CConfig *config)  {
+  if(element_based){E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();}
 }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }

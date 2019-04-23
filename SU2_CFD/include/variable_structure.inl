@@ -103,6 +103,8 @@ inline void CVariable::SetUndivided_Laplacian(unsigned short val_var, su2double 
 
 inline void CVariable::SetAuxVar(su2double val_auxvar) { AuxVar = val_auxvar; }
 
+inline void CVariable::SetSolution_Old(void) { }
+
 inline void CVariable::SetSolution_Old(unsigned short val_var, su2double val_solution_old) { Solution_Old[val_var] = val_solution_old; }
 
 inline void CVariable::SetLimiter(unsigned short val_var, su2double val_limiter) { Limiter[val_var] = val_limiter; }
@@ -559,6 +561,10 @@ inline void CVariable::SetSolution_time_n(void) { }
 
 inline void CVariable::SetSolution_time_n(unsigned short val_var, su2double val_solution_time_n) { }
 
+inline void CVariable::SetSolution_time_n1(void) { }
+
+inline void CVariable::SetSolution_time_n1(unsigned short val_var, su2double val_solution_time_n) { }
+
 inline void CVariable::SetSolution_Vel(su2double *val_solution_vel) { }
 
 inline void CVariable::SetSolution_Vel(unsigned short val_var, su2double val_solution_vel) { }
@@ -632,6 +638,20 @@ inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestret
 inline su2double *CVariable::GetPrestretch(void) { return NULL; }
 
 inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
+
+inline su2double CVariable::GetMesh_Coord(unsigned short iDim) { return 0.0; }
+
+inline su2double *CVariable::GetMesh_Coord() { return NULL; }
+
+inline void CVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { }
+
+inline su2double CVariable::GetWallDistance(void) { return 0.0; }
+
+inline void CVariable::SetWallDistance(su2double val_dist) { }
+
+inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
+
+inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
 
 inline void CVariable::Register_femSolution_time_n() { }
 
@@ -1632,3 +1652,54 @@ inline su2double CDiscAdjFEABoundVariable::GetFlowTractionSensitivity(unsigned s
 inline bool CDiscAdjFEAVariable::Get_isVertex(void) { return false; }
 
 inline bool CDiscAdjFEABoundVariable::Get_isVertex(void) { return true; }
+
+inline su2double CMeshVariable::GetMesh_Coord(unsigned short iDim) { return Mesh_Coord[iDim]; }
+
+inline su2double *CMeshVariable::GetMesh_Coord(void) { return Mesh_Coord; }
+
+inline void CMeshVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { Mesh_Coord[iDim] = val_coord;}
+
+inline void CMeshVariable::SetSolution_Old(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[iDim] = Solution[iDim];
+}
+
+inline void CMeshVariable::SetSolution_time_n(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_time_n[iDim] = Solution[iDim];
+}
+
+inline void CMeshVariable::SetSolution_time_n(unsigned short iDim, su2double val_disp) { Solution_time_n[iDim] = val_disp;}
+
+inline void CMeshVariable::SetSolution_time_n1(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_time_n1[iDim] = Solution_time_n[iDim];
+}
+
+inline void CMeshVariable::SetSolution_time_n1(unsigned short iDim, su2double val_disp) { Solution_time_n1[iDim] = val_disp;}
+
+inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
+
+inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = val_dist; }
+
+inline bool CMeshVariable::Get_isVertex(void) { return false; }
+
+inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return Boundary_Displacement[iDim]; }
+
+inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
+}
+
+inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }
+
+inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
+
+inline void CMeshElement::SetRef_Volume(su2double val_volume) { Ref_Volume = val_volume; }
+
+inline su2double CMeshElement::GetCurr_Volume(void) { return Curr_Volume; }
+
+inline void CMeshElement::SetCurr_Volume(su2double val_volume) { Curr_Volume = val_volume; }
+
+inline su2double CMeshElement::GetWallDistance(void) { return WallDistance; }
+
+inline void CMeshElement::SetWallDistance(su2double val_volume) { WallDistance = val_volume; }

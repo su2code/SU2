@@ -40,6 +40,9 @@
 CSysVector::CSysVector(void) {
   
   vec_val = NULL;
+  nElm = 0; nElmDomain = 0;
+  nBlk = 0; nBlkDomain = 0;
+  nVar = 0;
   
 }
 
@@ -160,10 +163,6 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
 
 CSysVector::~CSysVector() {
   delete [] vec_val;
-  
-  nElm = 0; nElmDomain = 0;
-  nBlk = 0; nBlkDomain = 0;
-  nVar = 0;
   
 }
 

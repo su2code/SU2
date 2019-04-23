@@ -1079,6 +1079,8 @@ inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRa
 
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
+inline unsigned short CConfig::GetKind_Deform_Strategy(void) { return Kind_Deform_Strategy; }
+
 inline bool CConfig::GetVisualize_Volume_Def(void) { return Visualize_Volume_Def; }
 
 inline bool CConfig::GetVisualize_Surface_Def(void) { return Visualize_Surface_Def; }

@@ -282,7 +282,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
   }
 
 }
