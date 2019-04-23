@@ -1491,6 +1491,18 @@ public:
    */
   void Print_DirectResidual(unsigned short kind_recording);
 
+  /*!
+   * \brief Record the main computational path.
+   */
+
+  void MainRecording(void);
+
+  /*!
+   * \brief Record the secondary computational path.
+   */
+
+  void SecondaryRecording(void);
+
 };
 
 
