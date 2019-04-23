@@ -2665,7 +2665,7 @@ void CConfig::SetHeader(unsigned short val_software){
    the two lines below that use the dt variable. ---*/
   //time_t now = time(0);
   //string dt = ctime(&now); dt[24] = '.';
-  if (iZone == 0){
+  if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
     cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
