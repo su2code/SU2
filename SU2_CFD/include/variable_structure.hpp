@@ -2600,36 +2600,6 @@ public:
   void AddStress_FEM(unsigned short iVar, su2double val_stress);
   
   /*!
-   * \brief Add surface load to the residual term
-   */
-  virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
-  
-  /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
-   */
-  virtual void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
-  
-  /*!
-   * \brief Get the residual term due to surface load
-   */
-  virtual su2double Get_SurfaceLoad_Res(unsigned short iVar);
-  
-  /*!
-   * \brief Clear the surface load residual
-   */
-  virtual void Clear_SurfaceLoad_Res(void);
-  
-  /*!
-   * \brief Store the surface load as the load for the previous time step.
-   */
-  virtual void Set_SurfaceLoad_Res_n(void);
-  
-  /*!
-   * \brief Get the surface load from the previous time step.
-   */
-  virtual su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
-  
-  /*!
    * \brief Add body forces to the residual term.
    */
   void Add_BodyForces_Res(su2double *val_bodyForce);
@@ -2643,41 +2613,6 @@ public:
    * \brief Get the body forces.
    */
   su2double Get_BodyForces_Res(unsigned short iVar);
-  
-  /*!
-   * \brief Set the flow traction at a node on the structural side
-   */
-  virtual void Set_FlowTraction(su2double *val_flowTraction);
-  
-  /*!
-   * \brief Add a value to the flow traction at a node on the structural side
-   */
-  virtual void Add_FlowTraction(su2double *val_flowTraction);
-  
-  /*!
-   * \brief Get the residual term due to the flow traction
-   */
-  virtual su2double Get_FlowTraction(unsigned short iVar);
-  
-  /*!
-   * \brief Set the value of the flow traction at the previous time step.
-   */
-  virtual void Set_FlowTraction_n(void);
-  
-  /*!
-   * \brief Retrieve the value of the flow traction from the previous time step.
-   */
-  virtual su2double Get_FlowTraction_n(unsigned short iVar);
-  
-  /*!
-   * \brief Clear the flow traction residual
-   */
-  virtual void Clear_FlowTraction(void);
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual bool Get_isVertex(void);
   
   /*!
    * \brief Set the value of the old solution.

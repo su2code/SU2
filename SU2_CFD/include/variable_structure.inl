@@ -1058,33 +1058,21 @@ inline void CFEAVariable::AddStress_FEM(unsigned short iVar, su2double val_stres
 
 inline su2double *CFEAVariable::GetStress_FEM(void) { return Stress; }
 
-inline void CFEAVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
-
 inline void CFEABoundVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
 }
 
-inline void CFEAVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) { }
-
 inline void CFEABoundVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
 
-inline su2double CFEAVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return 0.0;}
-
 inline su2double CFEABoundVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
-
-inline void CFEAVariable::Clear_SurfaceLoad_Res(void) { }
 
 inline void CFEABoundVariable::Clear_SurfaceLoad_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_SurfaceLoad_Res_n(void) { }
-
 inline void CFEABoundVariable::Set_SurfaceLoad_Res_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
 }
-
-inline su2double CFEAVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return 0.0;}
 
 inline su2double CFEABoundVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return Residual_Ext_Surf_n[iVar]; }
 
@@ -1099,40 +1087,26 @@ inline void CFEAVariable::Clear_BodyForces_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Body[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_FlowTraction(su2double *val_flowTraction) { }
-
 inline void CFEABoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = val_flowTraction[iVar];
 }
-
-inline void CFEAVariable::Add_FlowTraction(su2double *val_flowTraction) { }
 
 inline void CFEABoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
 
-inline su2double CFEAVariable::Get_FlowTraction(unsigned short iVar) { return 0.0;}
-
 inline su2double CFEABoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
-
-inline void CFEAVariable::Clear_FlowTraction(void) { }
 
 inline void CFEABoundVariable::Clear_FlowTraction(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_FlowTraction_n(void) { }
-
 inline void CFEABoundVariable::Set_FlowTraction_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction_n[iVar] = FlowTraction[iVar];
 }
 
-inline su2double CFEAVariable::Get_FlowTraction_n(unsigned short iVar) { return 0.0;}
-
 inline su2double CFEABoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
-
-inline bool CFEAVariable::Get_isVertex(void) { return false; }
 
 inline bool CFEABoundVariable::Get_isVertex(void) { return true; }
 
