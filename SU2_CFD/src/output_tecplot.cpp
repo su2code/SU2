@@ -1338,7 +1338,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
               }
               else {
                 values_to_write.resize(rank_num_points);
-                for(unsigned long i = 0; i < rank_num_points; ++i)
+                for(unsigned long i = 0; i < (unsigned long) rank_num_points; ++i)
                   values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
                 err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]);
               }
