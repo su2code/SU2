@@ -2734,7 +2734,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
-  bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
 
   int Direct_Iter;
 
