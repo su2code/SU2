@@ -3184,24 +3184,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     nExtIter = nTimeIter;
   }
-  /*--- Fluid-Structure Interaction problems ---*/
 
-  if (FSI_Problem) {
-    unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
-    for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
-      new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
-    }
-    if (nKind_SurfaceMovement != 0) delete [] Kind_SurfaceMovement;
-    Kind_SurfaceMovement = new_surface_movement;
-    nKind_SurfaceMovement++;
-    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
-      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE_STATIC;
-    }
-    else{
-      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE;
-    }
-  }
-  
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -6798,6 +6781,33 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker){
   }
   
   return false;
+}
+
+void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement){
+  
+  unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
+  string* new_marker_moving = new string[nMarker_Moving+1];
+  
+  for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
+    new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
+    new_marker_moving[iMarker_Moving] = Marker_Moving[iMarker_Moving];
+  }
+  
+  if (nKind_SurfaceMovement > 0){
+    delete [] Marker_Moving;
+    delete [] Kind_SurfaceMovement;
+  }
+  
+  Kind_SurfaceMovement = new_surface_movement;
+  Marker_Moving        = new_marker_moving;
+  
+  Kind_SurfaceMovement[nMarker_Moving] = kind_movement;
+  cout << "SETTING BOUNDMARKER " << Marker_All_TagBound[iMarker] <<  endl;
+  Marker_Moving[nMarker_Moving] = Marker_All_TagBound[iMarker];
+  
+  nMarker_Moving++;
+  nKind_SurfaceMovement++;
+  
 }
 
 CConfig::~CConfig(void) {
