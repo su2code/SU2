@@ -728,70 +728,6 @@ public:
 };
 
 /*!
- * \class CGeneralDriver
- * \brief Class for driving a structural iteration of the physics within multiple zones.
- * \author T. Economon
- */
-class CGeneralDriver : public CDriver {
-public:
-  
-  /*! 
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
-   * \param[in] val_periodic - Bool for periodic BCs.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CGeneralDriver(char* confFile,
-                 unsigned short val_nZone,
-                 unsigned short val_nDim,
-                 bool val_periodic,
-                 SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CGeneralDriver(void);
-
-  /*! 
-   * \brief Run a single iteration of the physics within a single zone.
-   */  
-  void Run();
-
-  /*!
-   * \brief Update the dual-time solution for a single zone.
-   */
-  void Update();
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the single zone solver.
-   */
-  void ResetConvergence();
-
-  /*!
-   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (single zone).
-   */
-  void DynamicMeshUpdate(unsigned long ExtIter);
-
-  /*!
-   * \brief Perform a static mesh deformation, without considering grid velocity (single zone).
-   */
-  void StaticMeshUpdate();
-
-  /*!
-   * \brief Perform a mesh deformation as initial condition (single zone).
-   */
-  void SetInitialMesh();
-
-  /*!
-   * \brief Process the boundary conditions and update the multigrid structure.
-   */
-  void BoundaryConditionsUpdate();
-};
-
-
-/*!
  * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
@@ -947,119 +883,6 @@ public:
 
 };
 
-
-/*!
- * \class CDiscAdjMultiZoneDriver
- * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
- * \author T. Albring
- */
-class CDiscAdjFluidDriver : public CFluidDriver {
-
-protected:
-  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
-  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
-  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
-
-public:
-
-  /*!
-    * \brief Constructor of the class.
-    * \param[in] confFile - Configuration file name.
-    * \param[in] val_nZone - Total number of zones.
-    * \param[in] val_nDim - Number of dimensions.
-    * \param[in] val_periodic - Bool for periodic BCs.
-    * \param[in] MPICommunicator - MPI communicator for SU2.
-    */
-  CDiscAdjFluidDriver(char* confFile,
-                   unsigned short val_nZone,
-                   unsigned short val_nDim,
-                   bool val_periodic,
-                   SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjFluidDriver(void);
-
-  /*!
-   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
-   */
-
-  void Run();
-
-  /*!
-   * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
-   */
-
-  void SetRecording(unsigned short kind_recording);
-
-  /*!
-   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
-   */
-  virtual void DirectRun();
-
-  /*!
-   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
-   */
-  virtual void SetObjFunction();
-
-  /*!
-   * \brief Initialize the adjoint value of the objective function.
-   */
-  void SetAdj_ObjFunction();
-};
-
-/*!
- * \class CDiscAdjTurbomachineryDriver
- * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
- * \author S. Vitale, T. Albring
- */
-class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
-
-public:
-
-	 /*!
-	   * \brief Constructor of the class.
-	   * \param[in] confFile - Configuration file name.
-	   * \param[in] val_nZone - Total number of zones.
-	   * \param[in] val_nDim - Number of dimensions.
-     * \param[in] val_periodic - Bool for periodic BCs.
-     * \param[in] MPICommunicator - MPI communicator for SU2.
-	   */
-  CDiscAdjTurbomachineryDriver(char* confFile,
-                   unsigned short val_nZone,
-                   unsigned short val_nDim,
-                   bool val_periodic,
-                   SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjTurbomachineryDriver(void);
-
-  /*!
-   * \brief Run a single iteration of the direct solver.
-   */
-  void DirectRun();
-
-  /*!
-   * \brief Set Obj.Function for turbomachinery design.
-   */
-  void SetObjFunction();
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
-
-};
 /*!
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
@@ -1711,6 +1534,18 @@ public:
    * \brief Print out the direct residuals.
    */
   void Print_DirectResidual(unsigned short kind_recording);
+
+  /*!
+   * \brief Record the main computational path.
+   */
+
+  void MainRecording(void);
+
+  /*!
+   * \brief Record the secondary computational path.
+   */
+
+  void SecondaryRecording(void);
 
 };
 

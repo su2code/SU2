@@ -1147,6 +1147,11 @@ void CTurboIteration::Postprocess( COutput *output,
   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
   solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);
 
+
+  /*--- Compute turboperformance for single-zone adjoint cases. ---*/
+  if (config_container[val_iZone]->GetSinglezone_Driver() && config_container[val_iZone]->GetDiscrete_Adjoint())
+    output->ComputeTurboPerformance(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
 }
 
 CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
@@ -2515,6 +2520,10 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[val_iZone]->GetFrozen_Visc_Disc()) {
     solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
   }
+  if (config_container[val_iZone]->GetWeakly_Coupled_Heat()) {
+    solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  }
+
 
 }
 
@@ -2725,7 +2734,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
-  bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
 
   int Direct_Iter;
 
