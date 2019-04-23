@@ -590,6 +590,7 @@ private:
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
   GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  unsigned short Kind_Deform_Strategy;  /*!< \brief Type of mesh deformation strategy. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
@@ -4162,6 +4163,12 @@ public:
    * \return type of stiffness to impose for FEA mesh deformation.
    */
   unsigned short GetDeform_Stiffness_Type(void);
+
+  /*!
+   * \brief Get the strategy for FEA mesh deformation.
+   * \return Strategy for FEA mesh deformation (incremental or absolute).
+   */
+  unsigned short GetKind_Deform_Strategy(void);
   
   /*!
    * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
