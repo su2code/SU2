@@ -1029,6 +1029,43 @@ def main():
     cht_incompressible.tol       = 0.0001
     test_list.append(cht_incompressible)
 
+    ##############################################
+    ### Method of Manufactured Solutions (MMS) ###
+    ##############################################
+
+    # FVM, compressible, laminar N-S
+    mms_fvm_ns           = TestCase('mms_fvm_ns')
+    mms_fvm_ns.cfg_dir   = "mms/fvm_navierstokes"
+    mms_fvm_ns.cfg_file  = "lam_mms_roe.cfg"
+    mms_fvm_ns.test_iter = 20
+    mms_fvm_ns.test_vals = [0.0, 0.0, 0.0, 0.0] #last 4 columns
+    mms_fvm_ns.su2_exec  = "SU2_CFD"
+    mms_fvm_ns.timeout   = 1600
+    mms_fvm_ns.tol       = 0.0001
+    test_list.append(mms_fvm_ns)
+    
+    # FVM, incompressible, euler
+    mms_fvm_inc_euler           = TestCase('mms_fvm_inc_euler')
+    mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
+    mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
+    mms_fvm_inc_euler.test_iter = 20
+    mms_fvm_inc_euler.test_vals = [0.0, 0.0, 0.0, 0.0] #last 4 columns
+    mms_fvm_inc_euler.su2_exec  = "SU2_CFD"
+    mms_fvm_inc_euler.timeout   = 1600
+    mms_fvm_inc_euler.tol       = 0.0001
+    test_list.append(mms_fvm_inc_euler)
+    
+    # FVM, incompressible, laminar N-S
+    mms_fvm_inc_ns           = TestCase('mms_fvm_inc_ns')
+    mms_fvm_inc_ns.cfg_dir   = "mms/fvm_incomp_navierstokes"
+    mms_fvm_inc_ns.cfg_file  = "lam_mms_fds.cfg"
+    mms_fvm_inc_ns.test_iter = 20
+    mms_fvm_inc_ns.test_vals = [0.0, 0.0, 0.0, 0.0] #last 4 columns
+    mms_fvm_inc_ns.su2_exec  = "SU2_CFD"
+    mms_fvm_inc_ns.timeout   = 1600
+    mms_fvm_inc_ns.tol       = 0.0001
+    test_list.append(mms_fvm_inc_ns)
+    
     ######################################
     ### RUN TESTS                      ###
     ######################################  
