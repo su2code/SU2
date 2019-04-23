@@ -37,7 +37,7 @@
 #pragma once
 
 #include "codi.hpp"
-#include "tools/dataStore.hpp"
+#include "codi/tools/dataStore.hpp"
 
 #ifndef CODI_INDEX_TAPE
 #  define CODI_INDEX_TAPE 0
