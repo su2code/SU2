@@ -3612,13 +3612,22 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Close the file. ---*/
 
     fclose(fhw);
+    
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
 
+    nVar = var_buf[1];
 #else
 
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
     int ierr;
+    MPI_Offset disp;
+    unsigned short iVar;
+    unsigned long index, iChar;
+    string field_buf;
+    char str_buf[CGNS_STRING_SIZE];
     
     /*--- All ranks open the file using MPI. ---*/
 
@@ -3652,17 +3661,48 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
-    /*--- All ranks close the file after writing. ---*/
-    
-    MPI_File_close(&fhw);
 
-#endif
 
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
     nVar = var_buf[1];
-
+    
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+  
+    char *mpi_str_buf = new char[nVar*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nVar_Buf*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, nVar*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+    
+    /*--- Broadcast the string names of the variables. ---*/
+  
+    SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+    
+    fields.push_back("Point_ID");
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+    
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+#endif
   } else {
 
     /*--- First, check that this is not a binary restart file. ---*/

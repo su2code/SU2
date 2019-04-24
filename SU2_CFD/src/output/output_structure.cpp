@@ -5819,8 +5819,14 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (config->GetUnsteady_Simulation() == STEADY) {
     write_header = ((curr_InnerIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);
+  } else if  (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    if (!config->GetRestart())
+      write_header = ((curr_TimeIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
+    else {
+      write_header = (((curr_TimeIter - config->GetRestart_Iter()) % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
+    }
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
