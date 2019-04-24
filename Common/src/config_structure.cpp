@@ -1909,8 +1909,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
-  /* DESCRIPTION: Deformation strategy \ingroup Config*/
-  addEnumOption("DEFORM_STRATEGY", Kind_Deform_Strategy, Deform_Strategy, DEFORM_INCREMENTAL);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
