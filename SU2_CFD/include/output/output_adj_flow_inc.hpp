@@ -47,6 +47,8 @@
  */
 class CAdjFlowIncOutput : public COutput {
 private:
+  
+  bool cont_adj;
 
   unsigned short nDim, turb_model;
   bool heat, weakly_coupled_heat;

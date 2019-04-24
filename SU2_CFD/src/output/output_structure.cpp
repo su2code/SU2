@@ -232,32 +232,44 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   curr_TimeIter  = TimeIter;
   curr_OuterIter = OuterIter;
   curr_InnerIter = InnerIter;
-
+  
+  bool write_header, write_history, write_screen;
+  
+  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+  
+  LoadHistoryData(config, geometry, solver_container);
+  
+  Postprocess_HistoryData(config);
+  
   /*--- Output using only the master node ---*/
-
+  
   if (rank == MASTER_NODE) {
-
-    bool write_header, write_history, write_screen;
-
-    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-
-    LoadHistoryData(config, geometry, solver_container);
     
-    Postprocess_HistoryData(config);
-        
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config);
     if (write_history) SetHistoryFile_Output(config);
-
+    
     /*--- Write the screen header---------------------------------------------------------------------------*/
     write_header = WriteScreen_Header(config);
     if (write_header) SetScreen_Header(config);
-
+    
     /*--- Write the screen output---------------------------------------------------------------------------*/
     write_screen = WriteScreen_Output(config);
     if (write_screen) SetScreen_Output(config);
-
+    
   }
+
+}
+
+void COutput::SetHistory_Output(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CConfig *config) {
+  
+  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+  
+  LoadHistoryData(config, geometry, solver_container);
+  
+  Postprocess_HistoryData(config);
 
 }
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter){
@@ -265,28 +277,29 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, uns
   curr_TimeIter  = TimeIter;
   curr_OuterIter = OuterIter;
   
+
+  bool write_header, write_screen, write_history;
+  
+  /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+  
+  LoadMultizoneHistoryData(output, config);
+  
   /*--- Output using only the master node ---*/
-
+  
   if (rank == MASTER_NODE) {
-
-    bool write_header, write_screen, write_history;
-
-    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-
-    LoadMultizoneHistoryData(output, config);
-
+    
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config[ZONE_0]);
     if (write_history) SetHistoryFile_Output(config[ZONE_0]);
-
+    
     /*--- Write the screen header---------------------------------------------------------------------------*/
     write_header = WriteScreen_Header(config[ZONE_0]);
     if (write_header) SetScreen_Header(config[ZONE_0]);
-
+    
     /*--- Write the screen output---------------------------------------------------------------------------*/
     write_screen = WriteScreen_Output(config[ZONE_0]);
     if (write_screen) SetScreen_Output(config[ZONE_0]);
-
+    
   }
   
 }
@@ -5401,43 +5414,45 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config){
   
-  if (rank == MASTER_NODE){
-   
+
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
-   
+    
     Postprocess_HistoryFields(config);
     
-    /*--- Check for consistency and remove fields that are requested but not available --- */
-    
-    CheckHistoryOutput();
-    
-    /*--- Open history file and print the header ---*/
-    
-    PrepareHistoryFile(config);
-    
-    /*--- Set the multizone screen header ---*/
-
-    if (config->GetMultizone_Problem()){
-      MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
-      MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
-      MultiZoneHeaderTable->SetPrintHeaderBottomLine(false);
+    if (rank == MASTER_NODE){
+      
+      /*--- Check for consistency and remove fields that are requested but not available --- */
+      
+      CheckHistoryOutput();
+      
+      /*--- Open history file and print the header ---*/
+      
+      PrepareHistoryFile(config);
+      
+      /*--- Set the multizone screen header ---*/
+      
+      if (config->GetMultizone_Problem()){
+        MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
+        MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+        MultiZoneHeaderTable->SetPrintHeaderBottomLine(false);
+      }
+      
     }
     
-  }
-  
 }
 
 void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config){
   
+  
+  /*--- Set the History output fields using a virtual function call to the child implementation ---*/
+  
+  SetMultizoneHistoryOutputFields(output, config);
+  
   if (rank == MASTER_NODE){
-   
-    /*--- Set the History output fields using a virtual function call to the child implementation ---*/
-    
-    SetMultizoneHistoryOutputFields(output, config);
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
@@ -5797,7 +5812,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   
    map<string, bool>::iterator it = Average.begin();
    for (it = Average.begin(); it != Average.end(); it++){
-     cout << "AVG_" + it->first << endl;
      AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES");
    }
   

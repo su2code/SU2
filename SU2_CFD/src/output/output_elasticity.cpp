@@ -89,15 +89,15 @@ CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsig
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetStructure_FileName();
+  VolumeFilename = config->GetVolume_FileName();
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfStructure_FileName();
+  SurfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FEMFileName();
+  RestartFilename = config->GetRestart_FileName();
 
 }
 
@@ -126,13 +126,13 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   if (linear_analysis){
     SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_RMS(1)));
-    if (nVar_FEM == 3){
+    if (nDim == 3){
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
     SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
-    if (nVar_FEM == 3){
+    if (nDim == 3){
       SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
     }
   }
@@ -140,7 +140,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   if (multizone){
     SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
-    if (nVar_FEM == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
+    if (nDim == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
   }
   
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());

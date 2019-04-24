@@ -1417,8 +1417,6 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
-inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
-
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
@@ -1457,41 +1455,17 @@ inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
-inline string CConfig::GetConv_FileName_FSI(void) { return Conv_FileName_FSI; }
-
 inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; }
 
-inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
+inline string CConfig::GetSolution_FileName(void) { return Solution_FileName; }
 
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 
-inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
+inline string CConfig::GetVolume_FileName(void) { return Volume_FileName; }
 
-inline string CConfig::GetSolution_AdjFEMFileName(void) { return Solution_AdjFEMFileName; }
-
-inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
-
-inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
-
-inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
-
-inline string CConfig::GetAdjStructure_FileName(void) { return Structure_FileName; }
-
-inline string CConfig::GetAdjSurfStructure_FileName(void) { return SurfStructure_FileName; }
-
-inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
-
-inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
-
-inline string CConfig::GetRestart_FlowFileName(void) { return Restart_FlowFileName; }
-
-inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileName; }
+inline string CConfig::GetRestart_FileName(void) { return Restart_FileName; }
 
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
-
-inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName; }
-
-inline string CConfig::GetRestart_AdjFEMFileName(void) { return Restart_AdjFEMFileName; }
 
 inline string CConfig::GetAdj_FileName(void) { return Adj_FileName; }
 
@@ -1499,7 +1473,7 @@ inline string CConfig::GetObjFunc_Grad_FileName(void) { return ObjFunc_Grad_File
 
 inline string CConfig::GetObjFunc_Value_FileName(void) { return ObjFunc_Value_FileName; }
 
-inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_FileName; }
+inline string CConfig::GetSurfCoeff_FileName(void) { return SurfCoeff_FileName; }
 
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
 
@@ -1634,8 +1608,6 @@ inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
 inline bool CConfig::GetInconsistent_Disc(void){ return Inconsistent_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
-
-inline bool CConfig::GetWrite_Conv_FSI(void) { return Write_Conv_FSI; }
 
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 

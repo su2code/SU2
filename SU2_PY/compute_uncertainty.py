@@ -98,7 +98,7 @@ def main():
         ztate.update(info)
 	
 	# Solution merging
-    	konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    	konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
     	info = SU2.run.merge(konfig)
     	ztate.update(info)
 
@@ -125,7 +125,7 @@ def main():
     ztate.update(info)
     
     # Solution merging
-    konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
     info = SU2.run.merge(konfig)
     state.update(info)
 
@@ -151,16 +151,16 @@ def main():
     ztate.update(info)
 
     # Solution merging
-    konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
     info = SU2.run.merge(konfig)
     ztate.update(info)
 
 def sendOutputFiles( config, folderName = ''):
     config.CONV_FILENAME = folderName + config.CONV_FILENAME
     #config.BREAKDOWN_FILENAME = folderName + config.BREAKDOWN_FILENAME
-    config.RESTART_FLOW_FILENAME = folderName + config.RESTART_FLOW_FILENAME
-    config.VOLUME_FLOW_FILENAME = folderName + config.VOLUME_FLOW_FILENAME
-    config.SURFACE_FLOW_FILENAME = folderName + config.SURFACE_FLOW_FILENAME
+    config.RESTART_FILENAME = folderName + config.RESTART_FILENAME
+    config.VOLUME_FILENAME = folderName + config.VOLUME_FILENAME
+    config.SURFACE_FILENAME = folderName + config.SURFACE_FILENAME
 
 
 if __name__ == "__main__":

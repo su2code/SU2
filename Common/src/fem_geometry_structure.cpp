@@ -6873,7 +6873,6 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
           
           /* Determine the prescribed translation velocity, rotation rate
                and rotation center. */
-          const unsigned short jMarker = config->GetMarker_Moving(boundaries[i].markerTag);
           const su2double Center[] = {config->GetMotion_Origin()[0],
                                       config->GetMotion_Origin()[1],
                                       config->GetMotion_Origin()[2]};

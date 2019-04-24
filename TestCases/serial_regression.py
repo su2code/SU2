@@ -932,8 +932,8 @@ def main():
     uniform_flow         = TestCase('uniform_flow')
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
-    uniform_flow.test_iter = 10
-    uniform_flow.test_vals = [10.000000, 0.000000, -8.795489, -10.906295] #last 4 columns
+    uniform_flow.test_iter = 2
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.118432] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -945,8 +945,8 @@ def main():
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
-    channel_2D.test_iter = 4
-    channel_2D.test_vals = [0.000000, -0.092580, -0.311363, -0.422168] #last 4 columns
+    channel_2D.test_iter = 2
+    channel_2D.test_vals = [2.000000, 0.000000, 0.396634, 0.320019, 0.403674] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -959,7 +959,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [1.000000, 0.000000, 0.659340, 0.786693, 0.671212] #last 5 columns
+    channel_3D.test_vals = [1.000000, 0.000000, 0.649093, 0.797702, 0.718414] #last 5 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -972,7 +972,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [-10.959248, -9.233598, -7.680970, -6.352204] #last 4 columns
+    pipe.test_vals = [0.457554, 0.542877, 0.781840, 0.944999] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -985,7 +985,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, -0.193512, -0.680198, -0.879603] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.715494, 1.096497, 1.126065] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -998,7 +998,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 0.384648, 1.092480] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208747, 1.128612] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1011,7 +1011,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.736160, -1.619596] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.720453, -1.603019] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1065,7 +1065,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66299.000000] #last 4 columns
+    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66127.000000] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
@@ -1076,7 +1076,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.578187, -5.758338] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.731033, -5.527944] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1104,7 +1104,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [10.000000, -2.555933, -3.280592] #last 4 columns
+    cht_incompressible.test_vals = [10.000000, -2.601006, -3.342894] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -1156,7 +1156,7 @@ def main():
     naca0012_def_file.cfg_file  = "surface_file_NACA0012.cfg"
     naca0012_def_file.test_iter = 10
     naca0012_def_file.test_vals = [0.00344658] #residual
-    naca0012_def_file.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca0012_def_file.su2_exec  = "SU2_DEF"
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
     

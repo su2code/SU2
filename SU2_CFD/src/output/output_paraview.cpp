@@ -91,26 +91,26 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
     if (adjoint || disc_adj)
       fileroot = config->GetSurfAdjCoeff_FileName();
     else
-      fileroot = config->GetSurfFlowCoeff_FileName();
+      fileroot = config->GetSurfCoeff_FileName();
   }
   else {
     if (adjoint || disc_adj)
       fileroot = config->GetAdj_FileName();
     else
-      fileroot = config->GetFlow_FileName();
+      fileroot = config->GetVolume_FileName();
   }
   
-  if (Kind_Solver == FEM_ELASTICITY) {
-    if (surf_sol)
-      fileroot = config->GetSurfStructure_FileName().c_str();
-    else
-      fileroot = config->GetStructure_FileName().c_str();
-  }
+//  if (Kind_Solver == FEM_ELASTICITY) {
+//    if (surf_sol)
+//      fileroot = config->GetSurfStructure_FileName().c_str();
+//    else
+//      fileroot = config->GetStructure_FileName().c_str();
+//  }
   
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) fileroot = config->GetSurfHeat_FileName().c_str();
-    else fileroot = config->GetHeat_FileName().c_str();
-  }
+//  if (Kind_Solver == HEAT_EQUATION_FVM) {
+//    if (surf_sol) fileroot = config->GetSurfHeat_FileName().c_str();
+//    else fileroot = config->GetHeat_FileName().c_str();
+//  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -191,33 +191,33 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetSurfAdjCoeff_FileName();
     else
-      filename = config->GetSurfFlowCoeff_FileName();
+      filename = config->GetSurfCoeff_FileName();
   }
   else {
     if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetAdj_FileName();
     else
-      filename = config->GetFlow_FileName();
+      filename = config->GetVolume_FileName();
   }
   
-  if (Kind_Solver == FEM_ELASTICITY) {
-    if (surf_sol)
-      filename = config->GetSurfStructure_FileName().c_str();
-    else
-      filename = config->GetStructure_FileName().c_str();
-  }
+//  if (Kind_Solver == FEM_ELASTICITY) {
+//    if (surf_sol)
+//      filename = config->GetSurfStructure_FileName().c_str();
+//    else
+//      filename = config->GetStructure_FileName().c_str();
+//  }
 
-  if (Kind_Solver == DISC_ADJ_FEM) {
-    if (surf_sol)
-      filename = config->GetAdjSurfStructure_FileName().c_str();
-    else
-      filename = config->GetAdjStructure_FileName().c_str();
-  }
+//  if (Kind_Solver == DISC_ADJ_FEM) {
+//    if (surf_sol)
+//      filename = config->GetAdjSurfStructure_FileName().c_str();
+//    else
+//      filename = config->GetAdjStructure_FileName().c_str();
+//  }
 
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
-  }
+//  if (Kind_Solver == HEAT_EQUATION_FVM) {
+//    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+//    else filename = config->GetHeat_FileName().c_str();
+//  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -1168,13 +1168,13 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     if (adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
     else
-      filename = config->GetSurfFlowCoeff_FileName();
+      filename = config->GetSurfCoeff_FileName();
   }
   else {
     if (adjoint)
       filename = config->GetAdj_FileName();
     else
-      filename = config->GetFlow_FileName();
+      filename = config->GetVolume_FileName();
   }
   if (config->GetKind_SU2() == SU2_DEF) {
     if (new_file) {
@@ -1187,22 +1187,22 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
   }
   
-  if (Kind_Solver == FEM_ELASTICITY) {
-    if (surf_sol)
-      filename = config->GetSurfStructure_FileName().c_str();
-    else {
-      filename = config->GetStructure_FileName().c_str();
-      if (!new_file) {
-        filename = filename + "_def";
-      }
-    }
-  }
+//  if (Kind_Solver == FEM_ELASTICITY) {
+//    if (surf_sol)
+//      filename = config->GetSurfStructure_FileName().c_str();
+//    else {
+//      filename = config->GetStructure_FileName().c_str();
+//      if (!new_file) {
+//        filename = filename + "_def";
+//      }
+//    }
+//  }
   
   
-  if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
-  }
+//  if (Kind_Solver == HEAT_EQUATION_FVM) {
+//    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+//    else filename = config->GetHeat_FileName().c_str();
+//  }
   
   strcpy (cstr, filename.c_str());
   

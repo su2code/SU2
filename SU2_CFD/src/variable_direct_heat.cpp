@@ -53,7 +53,6 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   bool low_fidelity = false;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool multizone = config->GetMultizone_Problem();
 
   Undivided_Laplacian = NULL;
 
@@ -87,7 +86,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     Undivided_Laplacian = new su2double [nVar];
   }
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {  }

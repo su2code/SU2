@@ -127,6 +127,9 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       Solution_BGS[iVar]          = 0.0;
     }
   }
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 
 }
 

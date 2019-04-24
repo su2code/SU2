@@ -2077,7 +2077,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   ifstream restart_file_n;
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  string filename = config->GetSolution_FlowFileName();
+  string filename = config->GetSolution_FileName();
   string filename_n;
 
   /*--- Auxiliary vector for storing the coordinates ---*/
@@ -3590,7 +3590,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -3603,10 +3602,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
@@ -4027,11 +4024,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
   unsigned short iDim, iVar;
-  unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
   unsigned short iInst = config->GetiInst();
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
@@ -4050,10 +4043,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   filename = config->GetFilename(filename, ".dat");
@@ -4169,7 +4160,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   ifstream solution_file;
   unsigned short iVar;
   unsigned long iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -4178,10 +4168,8 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
@@ -4316,7 +4304,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
   /*--- Retrieve filename from config ---*/
 
-  filename = config->GetSolution_FlowFileName();
+  filename = config->GetSolution_FileName();
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
@@ -4538,7 +4526,7 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   string UnstExt, text_line;
   ifstream restart_file;
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   if (config->GetWrt_Unsteady()) {
     restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), ".dat");

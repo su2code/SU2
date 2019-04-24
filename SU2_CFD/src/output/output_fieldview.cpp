@@ -54,13 +54,13 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   /*--- Write file name with extension ---*/
   
   if (adjoint) filename = config->GetAdj_FileName();
-  else filename = config->GetFlow_FileName();
+  else filename = config->GetVolume_FileName();
   
-  if (Kind_Solver == FEM_ELASTICITY)
-    filename = config->GetStructure_FileName().c_str();
+//  if (Kind_Solver == FEM_ELASTICITY)
+//    filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+//  if (Kind_Solver == HEAT_EQUATION_FVM)
+//    filename = config->GetHeat_FileName().c_str();
   
 
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -495,13 +495,13 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   /*--- Write file name with extension ---*/
   
   if (adjoint) filename = config->GetAdj_FileName();
-  else filename = config->GetFlow_FileName();
+  else filename = config->GetVolume_FileName();
   
-  if (Kind_Solver == FEM_ELASTICITY)
-    filename = config->GetStructure_FileName().c_str();
+//  if (Kind_Solver == FEM_ELASTICITY)
+//    filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+//  if (Kind_Solver == HEAT_EQUATION_FVM)
+//    filename = config->GetHeat_FileName().c_str();
   
   
   strcpy (cstr, filename.c_str());

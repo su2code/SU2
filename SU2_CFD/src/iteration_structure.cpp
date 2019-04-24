@@ -274,7 +274,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
     }
   }
   if (config_container[val_iZone]->GetSurface_Movement(FLUID_STRUCTURE)){
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && Screen_Output)
         cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
 
       /*--- Deform the volume grid around the new boundary locations ---*/
@@ -282,7 +282,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
       if (rank == MASTER_NODE && Screen_Output)
         cout << "Deforming the volume grid." << endl;
       grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                           config_container[val_iZone], true);
+                                           config_container[val_iZone], true, Screen_Output, true);
 
       nIterMesh = grid_movement[val_iZone][val_iInst]->Get_nIterMesh();
       stat_mesh = (nIterMesh == 0);
@@ -305,18 +305,18 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
   }
   if (config_container[val_iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
     
-    if ((rank == MASTER_NODE) && (!discrete_adjoint))
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && Screen_Output)
       cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
     
     /*--- Deform the volume grid around the new boundary locations ---*/
     
-    if ((rank == MASTER_NODE) && (!discrete_adjoint))
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
       cout << "Deforming the volume grid." << endl;
     
     grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                    config_container[val_iZone], true, false);
+                                                                    config_container[val_iZone], true, Screen_Output, false);
     
-    if ((rank == MASTER_NODE) && (!discrete_adjoint))
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
       cout << "There is no grid velocity." << endl;
     
     /*--- Update the multigrid structure after moving the finest grid,
@@ -1490,8 +1490,6 @@ void CFEAIteration::Iterate(COutput *output,
   bool disc_adj_fem = false;
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
 
-  bool write_output = true;
-
   bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
 
   ofstream ConvHist_file;
@@ -1913,14 +1911,12 @@ void CFEAIteration::Solve(COutput *output,
                                 unsigned short val_iInst
                                 ) {
 
-  bool Convergence = false;
-
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-  Convergence = Monitor(output, integration_container, geometry_container,
+  Monitor(output, integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
@@ -2770,7 +2766,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
-  bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
 
   int Direct_Iter;
 

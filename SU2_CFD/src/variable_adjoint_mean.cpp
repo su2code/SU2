@@ -135,6 +135,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
       HB_Source[iVar] = 0.0;
   }
   
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim,
@@ -219,6 +221,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
       HB_Source[iVar] = 0.0;
   }
   
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CAdjEulerVariable::~CAdjEulerVariable(void) {
