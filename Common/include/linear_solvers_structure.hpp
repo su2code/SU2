@@ -191,10 +191,11 @@ public:
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, su2double tol,
-                                  unsigned long m, su2double *residual, bool monitoring);
+                                  unsigned long m, su2double *residual, bool monitoring, CConfig *config);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -206,10 +207,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                       CPreconditioner & precond, su2double tol,
-                      unsigned long m, su2double *residual, bool monitoring);
+                      unsigned long m, su2double *residual, bool monitoring, CConfig *config);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -221,10 +223,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, su2double tol,
-                        unsigned long m, su2double *residual, bool monitoring);
+                        unsigned long m, su2double *residual, bool monitoring, CConfig *config);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method
