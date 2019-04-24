@@ -50,7 +50,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
   cgsize_t isize[3][1];
   
   /*--- Create CGNS base file name ---*/
-  base_file = config->GetFlow_FileName();
+  base_file = config->GetVolume_FileName();
   
   /*--- Add CGNS extension. ---*/
   base_file = base_file.append(".cgns");
@@ -58,7 +58,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
   /*--- Create CGNS results file name ---*/
   if (unsteady) {
     
-    buffer = config->GetFlow_FileName();
+    buffer = config->GetVolume_FileName();
     
     results_file.str(string()); results_file << buffer;
     if (((int)iExtIter >= 0) && ((int)iExtIter < 10))      results_file << "_0000" << iExtIter;
@@ -189,7 +189,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
   cgsize_t isize[3][1], elem_start, elem_end;
   
   /*--- Create CGNS base file name ---*/
-  base_file = config->GetFlow_FileName();
+  base_file = config->GetVolume_FileName();
   
   /*--- Add CGNS extension. ---*/
   base_file = base_file.append(".cgns");
@@ -197,7 +197,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
   /*--- Create CGNS results file name ---*/
   if (unsteady) {
     
-    buffer = config->GetFlow_FileName();
+    buffer = config->GetVolume_FileName();
     
     results_file.str(string()); results_file << buffer;
     if (((int)iExtIter >= 0) && ((int)iExtIter < 10))      results_file << "_0000" << iExtIter;
@@ -337,7 +337,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
   /*--- Create CGNS base file name ---*/
-  base_file = config->GetFlow_FileName();
+  base_file = config->GetVolume_FileName();
   
   /*--- Add CGNS extension. ---*/
   base_file = base_file.append(".cgns");
@@ -345,7 +345,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   /*--- Create CGNS results file name ---*/
   if (unsteady) {
     
-    buffer = config->GetFlow_FileName();
+    buffer = config->GetVolume_FileName();
     
     results_file.str(string()); results_file << buffer;
     if (((int)iExtIter >= 0) && ((int)iExtIter < 10))      results_file << "_0000" << iExtIter;

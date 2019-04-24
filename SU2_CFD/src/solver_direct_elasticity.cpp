@@ -445,8 +445,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     RelaxCoeff        = 1.0;
     ForceCoeff        = 1.0;
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 
@@ -1416,7 +1416,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
   bool restart = config->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetRestart_Iter()); // Initial calculation for restart
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) ==SU2_TYPE::Int(config->GetRestart_Iter())); // Initial calculation for restart
   
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
   
@@ -4306,19 +4306,9 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   su2double *dispPred, *dispCalc, *dispPred_Old, *dispCalc_Old;
   su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
   
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-  
-  ofstream historyFile_FSI;
-  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-  if (writeHistFSI && (rank == MASTER_NODE)) {
-    char cstrFSI[200];
-    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-    strcpy (cstrFSI, filenameHistFSI.data());
-    historyFile_FSI.open (cstrFSI, std::ios_base::app);
-  }
   
   
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
@@ -4326,29 +4316,19 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     
     if (RelaxMethod_FSI == NO_RELAXATION) {
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
+      if (rank == MASTER_NODE) {
         
         SetWAitken_Dyn(1.0);
         
-        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
-        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 << "," ;
       }
       
     }
     else if (RelaxMethod_FSI == FIXED_PARAMETER) {
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
+      if (rank == MASTER_NODE) {
         
         SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
         
-        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
-        else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
       }
       
     }
@@ -4364,12 +4344,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
         
         SetWAitken_Dyn(WAitkDyn);
-        if (writeHistFSI && (rank == MASTER_NODE)) {
-          if (iOuterIter == 0) historyFile_FSI << " " << endl ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
-        }
         
       }
       else {
@@ -4417,21 +4391,13 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         SetWAitken_Dyn(WAitkDyn);
         
-        if (writeHistFSI && (rank == MASTER_NODE)) {
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
-          historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
-        }
-        
       }
       
     }
     else {
       if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
     }
-  
-  if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
-  
+    
 }
 
 void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
@@ -4938,7 +4904,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetSolution_FEMFileName();
+  filename = config->GetSolution_FileName();
 
   /*--- If multizone, append zone name ---*/
 

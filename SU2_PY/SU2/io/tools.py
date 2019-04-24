@@ -1153,8 +1153,8 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME
+        restart  = config.RESTART_FILENAME
+        solution = config.SOLUTION_FILENAME
         
         # expand zones
         restarts  = expand_zones(restart,config)

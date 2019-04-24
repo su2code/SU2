@@ -100,15 +100,15 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetFlow_FileName(); 
+  VolumeFilename = config->GetVolume_FileName(); 
   
   /*--- Set the surface filename --- */
   
-  SurfaceFilename = config->GetSurfFlowCoeff_FileName();
+  SurfaceFilename = config->GetSurfCoeff_FileName();
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FlowFileName();
+  RestartFilename = config->GetRestart_FileName();
   
 }
 

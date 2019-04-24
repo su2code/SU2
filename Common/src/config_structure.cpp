@@ -477,7 +477,7 @@ void CConfig::SetPointersNull(void) {
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
@@ -1088,8 +1088,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
-  /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
-  addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
@@ -1669,46 +1667,16 @@ void CConfig::SetConfig_Options() {
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
-  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
-  addStringOption("CONV_FILENAME_FSI", Conv_FileName_FSI, string("historyFSI.csv"));
-  /* DESCRIPTION: Viscous limiter turbulent equations */
-  addBoolOption("WRITE_CONV_FILENAME_FSI", Write_Conv_FSI, false);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
+  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_ADJ_STRUCTURE_FILENAME", Solution_AdjFEMFileName, string("solution_adjoint_structure.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
-  addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
+  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
-  /*!\brief RESTART_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
-  addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
-  /*!\brief RESTART_ADJ_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
-  addStringOption("RESTART_ADJ_STRUCTURE_FILENAME", Restart_AdjFEMFileName, string("restart_adjoint_structure.dat"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
-  addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
-  /*!\brief VOLUME_STRUCTURE_FILENAME
-   * \n  DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
-  /*!\brief VOLUME_ADJ_STRUCTURE_FILENAME
-   * \n  DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("VOLUME_ADJ_STRUCTURE_FILENAME", AdjStructure_FileName, string("adj_structure"));
-  /*!\brief SURFACE_STRUCTURE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
-  /*!\brief SURFACE_STRUCTURE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_ADJ_STRUCTURE_FILENAME", AdjSurfStructure_FileName, string("adj_surface_structure"));
-  /*!\brief SURFACE_HEAT_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config */
-  addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
-  /*!\brief VOLUME_HEAT_FILENAME
-   *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
+  addStringOption("VOLUME_FILENAME", Volume_FileName, string("flow"));
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
@@ -1720,7 +1688,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
   /*!\brief SURFACE_FLOW_FILENAME
    *  \n DESCRIPTION: Output file surface flow coefficient (w/o extension)  \ingroup Config*/
-  addStringOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
+  addStringOption("SURFACE_FILENAME", SurfCoeff_FileName, string("surface"));
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
@@ -2697,7 +2665,7 @@ void CConfig::SetHeader(unsigned short val_software){
    the two lines below that use the dt variable. ---*/
   //time_t now = time(0);
   //string dt = ctime(&now); dt[24] = '.';
-  if (iZone == 0){
+  if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
     cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
@@ -2765,6 +2733,12 @@ void CConfig::SetnZone(){
   
   if (Multizone_Problem == YES){
     
+    /*--- Some basic multizone checks ---*/
+    
+    if (nMarker_ZoneInterface % 2 != 0){
+      SU2_MPI::Error("Number of markers in MARKER_ZONE_INTERFACE must be a multiple of 2", CURRENT_FUNCTION);
+    }
+    
     SinglezoneDriver  = NO;
     
     if (Multizone_Mesh){
@@ -2806,7 +2780,7 @@ void CConfig::SetnZone(){
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iMarker;
+  unsigned short iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
@@ -3210,24 +3184,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     nExtIter = nTimeIter;
   }
-  /*--- Fluid-Structure Interaction problems ---*/
 
-  if (FSI_Problem) {
-    unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
-    for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
-      new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
-    }
-    if (nKind_SurfaceMovement != 0) delete [] Kind_SurfaceMovement;
-    Kind_SurfaceMovement = new_surface_movement;
-    nKind_SurfaceMovement++;
-    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
-      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE_STATIC;
-    }
-    else{
-      Kind_SurfaceMovement[nMarker_Moving] = FLUID_STRUCTURE;
-    }
-  }
-  
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -4404,8 +4361,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -4663,8 +4619,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InterfaceBound[iMarker_InterfaceBound];
+  for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_ZoneInterface; iMarker_InterfaceBound++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ZoneInterface[iMarker_InterfaceBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERFACE_BOUNDARY;
     iMarker_CfgFile++;
   }
@@ -4986,7 +4942,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
@@ -5003,16 +4959,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
-
-  if (nConfig_Files != 0) {
-    cout << "List of config files: ";
-    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
-      cout << Config_Filenames[iConfig];
-      if (iConfig < nConfig_Files-1) cout << ", ";
-      else cout <<".";
-    }
-    cout<< endl;
-  }
 
   if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
@@ -5129,12 +5075,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Restart) {
       if (Read_Binary_Restart) cout << "Reading and writing binary SU2 native restart files." << endl;
       else cout << "Reading and writing ASCII SU2 native restart files." << endl;
-      if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FileName << "." << endl;
       if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
-      if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
-      if (Kind_Solver == DISC_ADJ_FEM){
-        cout << "Read structural adjoint solution from: " << Solution_AdjFEMFileName << "." << endl;
-      }
     }
     else {
         if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
@@ -5142,7 +5084,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (ContinuousAdjoint)
-      cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
   
     if (!fea){
       if (Kind_Regime == COMPRESSIBLE) {
@@ -5296,13 +5238,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 			break;
 		case GRAD_ADJOINT:
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
 		case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
 		}
@@ -6182,36 +6124,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((!fea)) {
-      if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
-        cout << "Flow variables file name: " << Flow_FileName << "." << endl;
-        cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
-      }
-
-      if (ContinuousAdjoint || DiscreteAdjoint) {
-        cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
-        cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-        cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
-        cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
-      }
+  
+    if (!ContinuousAdjoint && !DiscreteAdjoint) {
+      cout << "Surface coefficients file name: " << SurfCoeff_FileName << "." << endl;
+      cout << "Volume file name: " << Volume_FileName << "." << endl;
+      cout << "Restart file name: " << Restart_FileName << "." << endl;
     }
-    else if (fea){
-      if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        Wrt_Srf_Sol = false;
-        cout << "Structure variables file name: " << Structure_FileName << "." << endl;
-        cout << "Restart structure file name: " << Restart_FEMFileName << "." << endl;
-      }
-      if (ContinuousAdjoint || DiscreteAdjoint) {
-        Wrt_Srf_Sol = false;
-        cout << "Structure variables file name: " << AdjStructure_FileName << "." << endl;
-        cout << "Restart structure file name: " << Restart_AdjFEMFileName << "." << endl;
-      }
-    }
-    else{
-      cout << "Surface coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
-      cout << "Variables file name: " << Flow_FileName << "." << endl;
-      cout << "Restart file name: " << Restart_FlowFileName << "." << endl;
+    
+    if (ContinuousAdjoint || DiscreteAdjoint) {
+      cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
+      cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
+      cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
     }
 
   }
@@ -6227,7 +6151,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
-    cout << "Flow variables file name: " << Flow_FileName << "." << endl;
+    cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
 
   if (val_software == SU2_DEF) {
@@ -6262,7 +6186,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_MSH) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
+    cout << "Restart flow file name: " << Restart_FileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
         (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
       if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
@@ -6321,15 +6245,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
       BoundaryTable << Marker_NearFieldBound[iMarker_NearFieldBound];
       if (iMarker_NearFieldBound < nMarker_NearFieldBound-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
-  
-  if (nMarker_InterfaceBound != 0) {
-    BoundaryTable << "Interface boundary";
-    for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-      BoundaryTable << Marker_InterfaceBound[iMarker_InterfaceBound];
-      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -6848,6 +6763,56 @@ int CConfig::GetMarker_ZoneInterface(string val_marker) {
 }
 
 
+bool CConfig::GetSolid_Wall(unsigned short iMarker){
+  
+  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
+      Marker_All_KindBC[iMarker] == EULER_WALL){
+    return true;
+  }
+  
+  return false;
+}
+
+bool CConfig::GetViscous_Wall(unsigned short iMarker){
+  
+  if (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
+      Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+      Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE){
+    return true;
+  }
+  
+  return false;
+}
+
+void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement){
+  
+  unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
+  string* new_marker_moving = new string[nMarker_Moving+1];
+  
+  for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
+    new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
+    new_marker_moving[iMarker_Moving] = Marker_Moving[iMarker_Moving];
+  }
+  
+  if (nKind_SurfaceMovement > 0){
+    delete [] Marker_Moving;
+    delete [] Kind_SurfaceMovement;
+  }
+  
+  Kind_SurfaceMovement = new_surface_movement;
+  Marker_Moving        = new_marker_moving;
+  
+  Kind_SurfaceMovement[nMarker_Moving] = kind_movement;
+  cout << "SETTING BOUNDMARKER " << Marker_All_TagBound[iMarker] <<  endl;
+  Marker_Moving[nMarker_Moving] = Marker_All_TagBound[iMarker];
+  
+  nMarker_Moving++;
+  nKind_SurfaceMovement++;
+  
+}
+
 CConfig::~CConfig(void) {
 	
   unsigned long iDV, iMarker, iPeriodic, iFFD;
@@ -7203,7 +7168,6 @@ CConfig::~CConfig(void) {
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
-  if (Marker_InterfaceBound != NULL )     delete[] Marker_InterfaceBound;
   if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
@@ -7317,7 +7281,7 @@ string CConfig::GetFilename(string filename, string ext){
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
-  if (GetWrt_Unsteady()){
+  if (GetWrt_Unsteady() || GetWrt_Dynamic()){
     filename = GetUnsteady_FileName(filename, GetExtIter(), ext);
   }
   
@@ -9178,44 +9142,27 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
 }
 
 void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
-
-  unsigned short iMarker_CfgFile, iMarker_ZoneInterface;
-
-  /*--- If the command MARKER_ZONE_INTERFACE is not in the config file, nMarker_ZoneInterface will be 0 ---*/
-  if (nMarker_ZoneInterface == 0){
-
-    /*--- Copy the marker interface from the driver configuration file ---*/
-
-    nMarker_ZoneInterface = driver_config->GetnMarker_ZoneInterface();
-    Marker_ZoneInterface = new string[nMarker_ZoneInterface];
-
-    /*--- Set the Markers at the interface from the main config file ---*/
-    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
-      Marker_ZoneInterface[iMarker_ZoneInterface] = driver_config->GetMarkerTag_ZoneInterface(iMarker_ZoneInterface);
+  
+  for (unsigned short iZone = 0; iZone < nZone; iZone++){
+    
+    if (config_container[iZone]->GetTime_Domain() != GetTime_Domain()){
+      SU2_MPI::Error("Option TIME_DOMAIN must be the same in all zones.", CURRENT_FUNCTION);
     }
-
-    /*--- Identification of Multizone markers ---*/
-    if (rank == MASTER_NODE) cout << endl << "-------------------- Interface Boundary Information ---------------------" << endl;
-    if (rank == MASTER_NODE) cout << "The interface markers are: ";
-
-    unsigned short indexOutput = 0;
-    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-      unsigned short indexMarker = 0;
-      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
-      for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
-        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface]){
-          indexMarker = (int)(iMarker_ZoneInterface/2+1);
-          indexOutput++;
-          if (rank == MASTER_NODE) cout << Marker_CfgFile_TagBound[iMarker_CfgFile];
-        }
-      }
-      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
-      if (rank == MASTER_NODE){
-        if (indexMarker > 0 && (indexOutput < (nMarker_ZoneInterface/2))) cout << ", ";
-        else if (indexMarker > 0 && (indexOutput == (nMarker_ZoneInterface/2))) cout << ".";
-      }
+    if (config_container[iZone]->GetnTime_Iter() != GetnTime_Iter()){
+      SU2_MPI::Error("Option TIME_ITER must be the same in all zones.", CURRENT_FUNCTION);
     }
-    if (rank == MASTER_NODE) cout << endl;
+    if (config_container[iZone]->GetnOuter_Iter() != GetnOuter_Iter()){
+      SU2_MPI::Error("Option OUTER_ITER must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetTime_Step() != GetTime_Step()){
+      SU2_MPI::Error("Option TIME_STEP must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Problem() != GetMultizone_Problem()){
+      SU2_MPI::Error("Option MULTIZONE must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetMultizone_Mesh() != GetMultizone_Mesh()){
+      SU2_MPI::Error("Option MULTIZONE_MESH must be the same in all zones.", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Set the Restart iter for time dependent problems ---*/

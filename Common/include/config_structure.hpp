@@ -119,7 +119,6 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -203,7 +202,6 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -246,7 +244,6 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -726,31 +723,19 @@ private:
   nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
   string Mesh_FileName,			/*!< \brief Mesh input file. */
   Mesh_Out_FileName,				/*!< \brief Mesh output file. */
-  Solution_FlowFileName,			/*!< \brief Flow solution input file. */
+  Solution_FileName,			/*!< \brief Flow solution input file. */
   Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
-  Solution_FEMFileName,			/*!< \brief Solution input file for structural problem. */
-  Solution_AdjFEMFileName,     /*!< \brief Adjoint solution input file for structural problem. */
-  Flow_FileName,					/*!< \brief Flow variables output file. */
-  Structure_FileName,					/*!< \brief Structure variables output file. */
-  SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
-  AdjStructure_FileName,         /*!< \brief Structure variables output file. */
-  AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
-  SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
-  Heat_FileName,					/*!< \brief Heat variables output file. */
+  Volume_FileName,					/*!< \brief Flow variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
-  Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
-  Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
-  Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
+  Restart_FileName,			/*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
-  Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
-  Restart_AdjFEMFileName,      /*!< \brief Restart file for FEM elasticity. */
   Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
   ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
   ObjFunc_Value_FileName,			/*!< \brief Objective function. */
-  SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
+  SurfCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
@@ -2952,13 +2937,7 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void);
-  
-  /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
-   */
-  unsigned short GetnMarker_InterfaceBound(void);
-  
+
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -4701,12 +4680,6 @@ public:
   bool GetFrozen_Limiter_Disc(void);
   
   /*!
-   * \brief Write convergence file for FSI problems
-   * \return <code>FALSE</code> means no file is written.
-   */
-  bool GetWrite_Conv_FSI(void);
-  
-  /*!
    * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
    * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
    */
@@ -5343,7 +5316,7 @@ public:
    * \brief Get the name of the file with the solution of the flow problem.
    * \return Name of the file with the solution of the flow problem.
    */
-  string GetSolution_FlowFileName(void);
+  string GetSolution_FileName(void);
   
   /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
@@ -5352,19 +5325,7 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the solution of the structural problem.
-   * \return Name of the file with the solution of the structural problem.
-   */
-  string GetSolution_FEMFileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the solution of the adjoint structural problem.
-   * \return Name of the file with the solution of the structural problem.
-   */
-  string GetSolution_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
@@ -5394,13 +5355,7 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetConv_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the convergence history of the problem for FSI applications.
-   * \return Name of the file with convergence history of the problem.
-   */
-  string GetConv_FileName_FSI(void);
-  
+
   /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
    * \return Name of the file with forces breakdown of the problem.
@@ -5411,44 +5366,8 @@ public:
    * \brief Get the name of the file with the flow variables.
    * \return Name of the file with the primitive variables.
    */
-  string GetFlow_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetSurfStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint structure variables.
-   * \return Name of the file with the adjoint structure variables.
-   */
-  string GetAdjStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint structure variables.
-   * \return Name of the file with the adjoint structure variables.
-   */
-  string GetAdjSurfStructure_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
-  string GetSurfHeat_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the wave variables.
-   * \return Name of the file with the wave variables.
-   */
-  string GetHeat_FileName(void);
-  
+  string GetVolume_FileName(void);
+
   /*!
    * \brief Get the name of the restart file for the heat variables.
    * \return Name of the restart file for the flow variables.
@@ -5492,26 +5411,14 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FlowFileName(void);
+  string GetRestart_FileName(void);
   
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
   string GetRestart_AdjFileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the structural variables.
-   * \return Name of the restart file for the structural variables.
-   */
-  string GetRestart_FEMFileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the structural adjoint variables.
-   * \return Name of the restart file for the structural adjoint variables.
-   */
-  string GetRestart_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the adjoint variables.
    * \return Name of the file with the adjoint variables.
@@ -5534,7 +5441,7 @@ public:
    * \brief Get the name of the file with the surface information for the flow problem.
    * \return Name of the file with the surface information for the flow problem.
    */
-  string GetSurfFlowCoeff_FileName(void);
+  string GetSurfCoeff_FileName(void);
   
   /*!
    * \brief Get the name of the file with the surface information for the adjoint problem.
@@ -5710,6 +5617,14 @@ public:
    * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
    */
   bool GetSurface_Movement(unsigned short kind_movement);
+  
+  /*!
+   * \brief Set a surface movement marker.
+   * \param[in] iMarker - Moving marker.
+   * \param[in] kind_movement - Kind of surface movement.
+   * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
+   */
+  void SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement);
   
   /*!
    * \brief Get the type of dynamic mesh motion. Each zone gets a config file.
@@ -6135,6 +6050,21 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void);
+
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a solid boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool GetSolid_Wall(unsigned short iMarker);
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
+   */
+  bool GetViscous_Wall(unsigned short iMarker);
 
   /*!
    * \brief Determines if problem is adjoint

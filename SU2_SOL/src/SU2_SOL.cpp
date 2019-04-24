@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
         /*--- For the fluid zone (ZONE_0) ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
         if (SolutionInstantiatedFlow == false &&
-            (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetRestart_Iter())) ||
+            (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()))) ||
                                iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
           solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
@@ -449,7 +449,7 @@ int main(int argc, char *argv[]) {
         /*--- Either instantiate the solution class or load a restart file. ---*/
         /*--- Either instantiate the solution class or load a restart file. ---*/
         if (SolutionInstantiatedFEM == false &&
-            (iExtIter == 0 || ((config_container[ZONE_1]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_1]->GetRestart_Iter())) ||
+            (iExtIter == 0 || ((config_container[ZONE_1]->GetRestart() && (SU2_TYPE::Int(iExtIter) == SU2_TYPE::Int(config_container[ZONE_1]->GetRestart_Iter()))) ||
                                iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_1]->GetnExtIter()))) {
           solver_container[ZONE_1][INST_0] = new CBaselineSolver(geometry_container[ZONE_1][INST_0], config_container[ZONE_1]);
@@ -524,7 +524,7 @@ int main(int argc, char *argv[]) {
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated[iZone] == false &&
                     (iExtIter == 0 ||
-                     (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetRestart_Iter() ||
+                     (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()) ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
 
@@ -605,7 +605,7 @@ int main(int argc, char *argv[]) {
 
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated[iZone] == false &&
-                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetRestart_Iter() ||
+                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter ==  SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()) ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
@@ -724,7 +724,7 @@ int main(int argc, char *argv[]) {
 
                 /*--- Either instantiate the solution class or load a restart file. ---*/
                 if (SolutionInstantiated == false &&
-                    (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetRestart_Iter())) ||
+                    (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) ==  SU2_TYPE::Int(config_container[ZONE_0]->GetRestart_Iter()))) ||
                                        iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                        iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);

@@ -1252,7 +1252,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Set the derivatives of the boundary nodes.
@@ -1372,7 +1372,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.

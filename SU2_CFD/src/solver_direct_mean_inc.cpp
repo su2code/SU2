@@ -104,7 +104,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  string filename = config->GetSolution_FlowFileName();
+  string filename = config->GetSolution_FileName();
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -113,7 +113,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
-  string filename_ = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -527,21 +527,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-
-    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
@@ -556,8 +541,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (fsi || multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
 
     /*--- Define some structures for locating max residuals ---*/
 
@@ -2428,7 +2413,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   
   /*--- The value of the solution for the first iteration of the dual time ---*/
   
-  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == config->GetRestart_Iter()))) {
+  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == (long)config->GetRestart_Iter()))) {
     
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -2444,7 +2429,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       }
     }
     
-    if ((restart && (long)ExtIter == config->GetRestart_Iter()) &&
+    if ((restart && (long)ExtIter == (long)config->GetRestart_Iter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
@@ -7003,7 +6988,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  string restart_filename = config->GetSolution_FileName();
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -7250,6 +7235,23 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   }
 }
 
+void CIncEulerSolver::InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker){
+  
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+  SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+  
+  for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+    SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+    
+    SlidingStateNodes[iMarker][iPoint] = 0;
+    for (iVar = 0; iVar < nPrimVar+1; iVar++)
+      SlidingState[iMarker][iPoint][iVar] = NULL;
+  }
+}
+
 CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
   /*--- Basic array initialization ---*/
@@ -7290,7 +7292,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -7768,21 +7770,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
-    
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-
-    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
