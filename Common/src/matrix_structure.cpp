@@ -410,6 +410,279 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
 
 }
 
+void CSysMatrix::InitiateComms(CSysVector & x,
+                               CGeometry *geometry,
+                               CConfig *config,
+                               unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iVar;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  
+  unsigned long iPoint, offset, buf_offset;
+  
+  int iMessage, iSend, nSend;
+  
+  /*--- Create a boolean for reversing the order of comms. ---*/
+  
+  bool reverse = false;
+  
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+  
+  switch (commType) {
+    case SOLUTION_MATRIX:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      reverse          = false;
+      break;
+    case SOLUTION_MATRIXTRANS:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      reverse          = true;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  
+  /*--- Check to make sure we have created a large enough buffer
+   for these comms during preprocessing. This is only for the su2double
+   buffer. It will be reallocated whenever we find a larger count
+   per point. After the first cycle of comms, this should be inactive. ---*/
+  
+  if (COUNT_PER_POINT > geometry->countPerPoint) {
+    geometry->AllocateP2PComms(COUNT_PER_POINT);
+  }
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDSend = geometry->bufD_P2PSend;
+  
+  /*--- Load the specified quantity from the solver into the generic
+   communication buffer in the geometry class. ---*/
+  
+  if (geometry->nP2PSend > 0) {
+    
+    /*--- Post all non-blocking recvs first before sends. ---*/
+    
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, reverse);
+    
+    for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
+      
+      switch (commType) {
+          
+        case SOLUTION_MATRIX:
+          
+          /*--- Compute our location in the send buffer. ---*/
+          
+          offset = geometry->nPoint_P2PSend[iMessage];
+          
+          /*--- Total count can include multiple pieces of data per point. ---*/
+          
+          nSend = (geometry->nPoint_P2PSend[iMessage+1] -
+                   geometry->nPoint_P2PSend[iMessage]);
+          
+          for (iSend = 0; iSend < nSend; iSend++) {
+            
+            /*--- Get the local index for this communicated data. ---*/
+            
+            iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+            
+            /*--- Compute the offset in the recv buffer for this point. ---*/
+            
+            buf_offset = (offset + iSend)*geometry->countPerPoint;
+            
+            /*--- Load the buffer with the data to be sent. ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
+            
+          }
+          
+          break;
+          
+        case SOLUTION_MATRIXTRANS:
+          
+          /*--- We are going to communicate in reverse, so we use the
+           recv buffer for the send instead. Also, all of the offsets
+           and counts are derived from the recv data structures. ---*/
+          
+          bufDSend = geometry->bufD_P2PRecv;
+          
+          /*--- Compute our location in the send buffer. ---*/
+          
+          offset = geometry->nPoint_P2PRecv[iMessage];
+          
+          /*--- Total count can include multiple pieces of data per point. ---*/
+          
+          nSend = (geometry->nPoint_P2PRecv[iMessage+1] -
+                   geometry->nPoint_P2PRecv[iMessage]);
+          
+          for (iSend = 0; iSend < nSend; iSend++) {
+            
+            /*--- Get the local index for this communicated data. Here we
+             again use the recv structure to find the send point, since
+             the usual recv points are now the senders in reverse mode. ---*/
+            
+            iPoint = geometry->Local_Point_P2PRecv[offset + iSend];
+            
+            /*--- Compute the offset in the recv buffer for this point. ---*/
+            
+            buf_offset = (offset + iSend)*geometry->countPerPoint;
+            
+            /*--- Load the buffer with the data to be sent. ---*/
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
+            
+          }
+          
+          break;
+          
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+          
+      }
+      
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+      
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, reverse);
+      
+    }
+  }
+  
+}
+
+void CSysMatrix::CompleteComms(CSysVector & x,
+                               CGeometry *geometry,
+                               CConfig *config,
+                               unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iVar;
+  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  
+  int ind, source, iMessage, jRecv;
+  SU2_MPI::Status status;
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDRecv = geometry->bufD_P2PRecv;
+  
+  /*--- Store the data that was communicated into the appropriate
+   location within the local class data structures. ---*/
+  
+  if (geometry->nP2PRecv > 0) {
+    
+    for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
+      
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
+      
+      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
+                       &ind, &status);
+      
+      /*--- Once we have recv'd a message, get the source rank. ---*/
+      
+      source = status.MPI_SOURCE;
+      
+      switch (commType) {
+        case SOLUTION_MATRIX:
+          
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PRecv2Neighbor[source];
+          
+          /*--- Get the point offset for the start of this message. ---*/
+          
+          offset = geometry->nPoint_P2PRecv[jRecv];
+          
+          /*--- Get the number of packets to be received in this message. ---*/
+          
+          nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
+                   geometry->nPoint_P2PRecv[jRecv]);
+          
+          for (iRecv = 0; iRecv < nRecv; iRecv++) {
+            
+            /*--- Get the local index for this communicated data. ---*/
+            
+            iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+            
+            /*--- Compute the offset in the recv buffer for this point. ---*/
+            
+            buf_offset = (offset + iRecv)*geometry->countPerPoint;
+            
+            /*--- Store the data correctly depending on the quantity. ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              x[iPoint*nVar+iVar] = bufDRecv[buf_offset+iVar];
+            
+          }
+          break;
+          
+        case SOLUTION_MATRIXTRANS:
+          
+          /*--- We are going to communicate in reverse, so we use the
+           send buffer for the recv instead. Also, all of the offsets
+           and counts are derived from the send data structures. ---*/
+          
+          bufDRecv = geometry->bufD_P2PSend;
+          
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PSend2Neighbor[source];
+          
+          /*--- Get the point offset for the start of this message. ---*/
+          
+          offset = geometry->nPoint_P2PSend[jRecv];
+          
+          /*--- Get the number of packets to be received in this message. ---*/
+          
+          nRecv = (geometry->nPoint_P2PSend[jRecv+1] -
+                   geometry->nPoint_P2PSend[jRecv]);
+          
+          for (iRecv = 0; iRecv < nRecv; iRecv++) {
+            
+            /*--- Get the local index for this communicated data. ---*/
+            
+            iPoint = geometry->Local_Point_P2PSend[offset + iRecv];
+            
+            /*--- Compute the offset in the recv buffer for this point. ---*/
+            
+            buf_offset = (offset + iRecv)*geometry->countPerPoint;
+            
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              x[iPoint*nVar+iVar] += bufDRecv[buf_offset+iVar];
+            
+          }
+          
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+    }
+    
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+#endif
+    
+  }
+  
+}
+
 su2double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
@@ -659,7 +932,6 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   }
   
 }
-
 
 su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   
@@ -1216,7 +1488,9 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   }
   
   /*--- MPI Parallelization ---*/
-  SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1247,8 +1521,10 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
   }
 
   /*--- MPI Parallelization ---*/
-  SendReceive_SolutionTransposed(prod, geometry, config);
 
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  
 }
 
 void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
@@ -1448,13 +1724,16 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
 unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1476,25 +1755,31 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "Jacobi Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "Jacobi Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -1515,7 +1800,8 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -1523,17 +1809,23 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     mat_vec(x, A_x);
     r -= A_x;
     
-    /*--- Check if solution has converged, else output the relative
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# Jacobi smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
@@ -1685,7 +1977,8 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1695,6 +1988,8 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   su2double *Block_ij, omega = 1.0;
   long iPoint, jPoint;
   unsigned short iVar;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1716,25 +2011,31 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "ILU Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "ILU Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -1806,7 +2107,8 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -1814,17 +2116,23 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
     mat_vec(x, A_x);
     r -= A_x;
     
-    /*--- Check if solution has converged, else output the relative 
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# ILU smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
@@ -1849,7 +2157,8 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
@@ -1867,7 +2176,8 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1875,6 +2185,8 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   unsigned long iPoint, iVar;
   su2double omega = 1.0;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1897,25 +2209,31 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "LU_SGS Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "LU_SGS Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -1935,7 +2253,8 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(xStar, geometry, config);
+    InitiateComms(xStar, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(xStar, geometry, config, SOLUTION_MATRIX);
     
     /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
     
@@ -1959,7 +2278,8 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -1968,17 +2288,23 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     r -= A_x;
     xStar = x;
     
-    /*--- Check if solution has converged, else output the relative
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# LU_SGS smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
@@ -2203,7 +2529,8 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(prod, geometry, config);
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     
     /*--- Solve linelet using a Thomas' algorithm ---*/
     
@@ -2272,8 +2599,9 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     }
     
     /*--- MPI Parallelization ---*/
-    
-    SendReceive_Solution(prod, geometry, config);
+        
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     
   }
   else {
