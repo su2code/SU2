@@ -501,9 +501,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   if (multizone) SetSolution_Old();
 
-  /*--- Initialize vector and sparse matrix ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
+  /*--- Initialize sparse matrix ---*/
   Jacobian.SetValZero();
 
   /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
@@ -514,6 +512,10 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
   /*--- Compute the stiffness matrix. ---*/
   Compute_StiffMatrix(geometry[MESH_0], numerics, config);
+
+  /*--- Initialize vectors and clean residual ---*/
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
@@ -554,40 +556,19 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
-
-  switch(config->GetKind_Deform_Strategy()){
-  case DEFORM_INCREMENTAL:
-    /*--- LinSysSol contains incremental x, y, z displacements (respect to the previous iteration). ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        /*--- Retrieve the displacement from the solution of the linear system ---*/
-        val_disp = node[iPoint]->GetSolution(iDim) + LinSysSol[total_index];
-        /*--- Store the displacement of the mesh node ---*/
-        node[iPoint]->SetSolution(iDim, val_disp);
-        /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
-        val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
-        /*--- Update the geometry container ---*/
-        geometry->node[iPoint]->SetCoord(iDim, val_coord);
-      }
+  /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++) {
+      total_index = iPoint*nDim + iDim;
+      /*--- Retrieve the displacement from the solution of the linear system ---*/
+      val_disp = LinSysSol[total_index];
+      /*--- Store the displacement of the mesh node ---*/
+      node[iPoint]->SetSolution(iDim, val_disp);
+      /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
+      val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
+      /*--- Update the geometry container ---*/
+      geometry->node[iPoint]->SetCoord(iDim, val_coord);
     }
-    break;
-  case DEFORM_ABSOLUTE:
-    /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        /*--- Retrieve the displacement from the solution of the linear system ---*/
-        val_disp = LinSysSol[total_index];
-        /*--- Store the displacement of the mesh node ---*/
-        node[iPoint]->SetSolution(iDim, val_disp);
-        /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
-        val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
-        /*--- Update the geometry container ---*/
-        geometry->node[iPoint]->SetCoord(iDim, val_coord);
-      }
-    }
-    break;
   }
 
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
@@ -729,19 +710,9 @@ void CMeshSolver::ComputeBoundary_Displacements(CGeometry *geometry, CConfig *co
         /*--- Get the displacement on the vertex ---*/
         VarDisp = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 
-        switch(config->GetKind_Deform_Strategy()){
-        case DEFORM_INCREMENTAL:
-          /*--- The displacement is incremental. ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            VarCoord[iDim] = VarDisp[iDim];
-          }
-          break;
-        case DEFORM_ABSOLUTE:
-          /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
-          }
-          break;
+        /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
         }
 
         if (geometry->node[iNode]->GetDomain()) {
