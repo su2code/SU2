@@ -3040,7 +3040,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
        (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
-       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
+       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE) &&
+       (Kind_GridMovement[ZONE_0] != ELASTICITY)))
     Grid_Movement = false;
   
   if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
