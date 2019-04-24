@@ -378,7 +378,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
         ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
         ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
-        (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
+        (config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
         (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
       
       /*--- Reserve memory for the ILU matrix. ---*/
