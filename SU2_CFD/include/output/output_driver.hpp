@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -51,7 +51,7 @@
 #include <fstream>
 
 #include "output.hpp"
-#include "../../Common/include/config_structure.hpp"
+#include "../../../Common/include/config_structure.hpp"
 
 using namespace std;
 

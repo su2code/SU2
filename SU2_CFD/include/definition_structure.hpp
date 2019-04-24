@@ -38,15 +38,13 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/mpi_structure.hpp"
 
 #include <ctime>
 
-#include "../../../Common/include/config_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
-
-
+#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
 
 using namespace std;
 
