@@ -933,7 +933,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.118432] #last 4 columns
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.117827] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1011,7 +1011,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.720453, -1.603019] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.722945, -1.612486] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1023,7 +1023,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.663771, -2.002700] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.766116, -2.206522] #last 3 columns
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00001
@@ -1488,7 +1488,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259671, -0.040621, 0.144134] #last 4 columns
+    pywrapper_rigidMotion.test_vals     = [-4.691612, -2.206047, -2.288896, 0.777467] #last 4 columns
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600
