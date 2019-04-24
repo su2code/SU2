@@ -76,5 +76,4 @@ void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::R
   }
   
 }
-
 #endif

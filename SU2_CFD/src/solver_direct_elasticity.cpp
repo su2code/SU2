@@ -466,11 +466,15 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- If dynamic, we also need to communicate the old solution ---*/
   
-  if(dynamic) Set_MPI_Solution_Old(geometry, config);
+  if(dynamic) {
+    InitiateComms(geometry, config, SOLUTION_FEA_OLD);
+    CompleteComms(geometry, config, SOLUTION_FEA_OLD);
+  }
   
 }
 
@@ -2738,8 +2742,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
       Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
 
       /*--- MPI solution ---*/
-
-      Set_MPI_Solution(geometry, config);
+      
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
     }
     else {
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2766,8 +2771,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
-
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -2844,8 +2850,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
-
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
     } else {
 
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2872,9 +2879,10 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- MPI solution ---*/
-
-      Set_MPI_Solution(geometry, config);
-
+      
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -3875,8 +3883,8 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
-  
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -3938,7 +3946,8 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
   /*--- Loop over n points (as we have already communicated everything ---*/
@@ -4135,7 +4144,8 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_DISPONLY);
+  CompleteComms(geometry, config, SOLUTION_DISPONLY);
   
 }
 
@@ -4204,7 +4214,8 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -4491,7 +4502,8 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+  InitiateComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
+  CompleteComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
   
 }
 
@@ -5053,12 +5065,20 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   }
 
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
-
-  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+  
+  solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
+  solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  
+  if (dynamic) {
+    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+  }
   if (fluid_structure && !dynamic){
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry[MESH_0], config);
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry[MESH_0], config);
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
+        
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
   }
 
   delete [] Sol;
