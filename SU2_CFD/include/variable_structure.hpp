@@ -65,6 +65,7 @@ protected:
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
+  su2double **Rmatrix;    /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
   su2double *Limiter;        /*!< \brief Limiter of the solution of the problem. */
   su2double *Solution_Max;    /*!< \brief Max solution for limiter computation. */
   su2double *Solution_Min;    /*!< \brief Min solution for limiter computation. */
@@ -541,6 +542,35 @@ public:
    * \return Value of the solution gradient.
    */
   su2double GetGradient(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+   * \brief Set the value of an entry in the Rmatrix for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \param[in] val_value - Value of the Rmatrix entry.
+   */
+  void SetRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value);
+  
+  /*!
+   * \brief Set to zero the Rmatrix for least squares gradient calculations.
+   */
+  void SetRmatrixZero(void);
+  
+  /*!
+   * \brief Add <i>val_value</i> to the Rmatrix for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \param[in] val_value - Value to add to the Rmatrix entry.
+   */
+  void AddRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value);
+  
+  /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  su2double GetRmatrix(unsigned short val_iDim, unsigned short val_jDim);
   
   /*!
    * \brief Set the value of the limiter.
