@@ -1879,17 +1879,6 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("WALL_DISTANCE", SOLID_WALL_DISTANCE);
 
 /*!
- * \brief Strategies for mesh deformation
- */
-enum ENUM_DEFORM_STRATEGY {
-  DEFORM_INCREMENTAL,       /*!< \brief Use an incremental strategy, where each linear mesh solution starts at the previous position. */
-  DEFORM_ABSOLUTE			      /*!< \brief Use an absolute strategy, where each linear mesh solution starts at the initial position. */
-};
-static const map<string, ENUM_DEFORM_STRATEGY> Deform_Strategy = CCreateMap<string, ENUM_DEFORM_STRATEGY>
-("INCREMENTAL", DEFORM_INCREMENTAL)
-("ABSOLUTE", DEFORM_ABSOLUTE);
-
-/*!
  * \brief The direct differentation variables.
  */
 enum ENUM_DIRECTDIFF_VAR {
