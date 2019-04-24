@@ -111,6 +111,59 @@ CGeometry::CGeometry(void) {
   CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
   CustomBoundaryTemperature = NULL;   //Customized temperature wall
 
+  /*--- MPI point-to-point data structures ---*/
+  
+  nP2PSend = 0;
+  nP2PRecv = 0;
+  
+  countPerPoint = 0;
+  
+  bufD_P2PSend = NULL;
+  bufD_P2PRecv = NULL;
+  
+  bufS_P2PSend = NULL;
+  bufS_P2PRecv = NULL;
+  
+  req_P2PSend = NULL;
+  req_P2PRecv = NULL;
+  
+  nPoint_P2PSend = NULL;
+  nPoint_P2PRecv = NULL;
+  
+  Neighbors_P2PSend = NULL;
+  Neighbors_P2PRecv = NULL;
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PRecv = NULL;
+
+  /*--- MPI periodic data structures ---*/
+  
+  nPeriodicSend = 0;
+  nPeriodicRecv = 0;
+  
+  countPerPeriodicPoint = 0;
+  
+  bufD_PeriodicSend = NULL;
+  bufD_PeriodicRecv = NULL;
+  
+  bufS_PeriodicSend = NULL;
+  bufS_PeriodicRecv = NULL;
+  
+  req_PeriodicSend = NULL;
+  req_PeriodicRecv = NULL;
+  
+  nPoint_PeriodicSend = NULL;
+  nPoint_PeriodicRecv = NULL;
+  
+  Neighbors_PeriodicSend = NULL;
+  Neighbors_PeriodicRecv = NULL;
+  
+  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicRecv = NULL;
+  
+  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicRecv = NULL;
+  
 }
 
 CGeometry::~CGeometry(void) {
@@ -198,6 +251,1276 @@ CGeometry::~CGeometry(void) {
     delete [] CustomBoundaryTemperature;
   }
 
+  /*--- Delete structures for MPI point-to-point communication. ---*/
+  
+  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  
+  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
+  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+  
+  if (req_P2PSend != NULL) delete [] req_P2PSend;
+  if (req_P2PRecv != NULL) delete [] req_P2PRecv;
+  
+  if (nPoint_P2PRecv != NULL) delete [] nPoint_P2PRecv;
+  if (nPoint_P2PSend != NULL) delete [] nPoint_P2PSend;
+  
+  if (Neighbors_P2PSend != NULL) delete [] Neighbors_P2PSend;
+  if (Neighbors_P2PRecv != NULL) delete [] Neighbors_P2PRecv;
+  
+  if (Local_Point_P2PSend != NULL) delete [] Local_Point_P2PSend;
+  if (Local_Point_P2PRecv != NULL) delete [] Local_Point_P2PRecv;
+  
+  /*--- Delete structures for MPI periodic communication. ---*/
+  
+  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
+  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  
+  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
+  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
+  
+  if (req_PeriodicSend != NULL) delete [] req_PeriodicSend;
+  if (req_PeriodicRecv != NULL) delete [] req_PeriodicRecv;
+  
+  if (nPoint_PeriodicRecv != NULL) delete [] nPoint_PeriodicRecv;
+  if (nPoint_PeriodicSend != NULL) delete [] nPoint_PeriodicSend;
+  
+  if (Neighbors_PeriodicSend != NULL) delete [] Neighbors_PeriodicSend;
+  if (Neighbors_PeriodicRecv != NULL) delete [] Neighbors_PeriodicRecv;
+  
+  if (Local_Point_PeriodicSend != NULL) delete [] Local_Point_PeriodicSend;
+  if (Local_Point_PeriodicRecv != NULL) delete [] Local_Point_PeriodicRecv;
+  
+  if (Local_Marker_PeriodicSend != NULL) delete [] Local_Marker_PeriodicSend;
+  if (Local_Marker_PeriodicRecv != NULL) delete [] Local_Marker_PeriodicRecv;
+
+}
+
+void CGeometry::PreprocessP2PComms(CGeometry *geometry,
+                                   CConfig *config) {
+  
+  /*--- We start with the send and receive lists already available in
+   the form of SEND_RECEIVE boundary markers. We will loop through
+   these markers and establish the neighboring ranks and number of
+   send/recv points per pair. We will store this information and set
+   up persistent data structures so that we can reuse them throughout
+   the calculation for any point-to-point communications. The goal
+   is to break the non-blocking comms into InitiateComms() and
+   CompleteComms() in separate routines so that we can overlap the
+   communication and computation to hide the communication latency. ---*/
+  
+  /*--- Local variables. ---*/
+  
+  unsigned short iMarker;
+  unsigned long  nVertexS, nVertexR, iVertex, MarkerS, MarkerR;
+  
+  int iRank, iSend, iRecv, count;
+  
+  /*--- Create some temporary structures for tracking sends/recvs. ---*/
+  
+  int *nPoint_Send_All = new int[size+1]; nPoint_Send_All[0] = 0;
+  int *nPoint_Recv_All = new int[size+1]; nPoint_Recv_All[0] = 0;
+  int *nPoint_Flag = new int[size];
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    nPoint_Send_All[iRank] = 0; nPoint_Recv_All[iRank] = 0; nPoint_Flag[iRank]= -1;
+  }
+  nPoint_Send_All[size] = 0; nPoint_Recv_All[size] = 0;
+  
+  /*--- Loop through all of our SEND_RECEIVE markers and track
+   our sends with each rank. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      /*--- Get the destination rank and number of points to send. ---*/
+      
+      iRank    = config->GetMarker_All_SendRecv(iMarker)-1;
+      nVertexS = geometry->nVertex[iMarker];
+      
+      /*--- If we have not visited this element yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
+      
+      if ((nPoint_Flag[iRank] != (int)iMarker)) {
+        nPoint_Flag[iRank]        = (int)iMarker;
+        nPoint_Send_All[iRank+1] += nVertexS;
+      }
+      
+    }
+  }
+  
+  delete [] nPoint_Flag;
+  
+  /*--- Communicate the number of points to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+  SU2_MPI::Alltoall(&(nPoint_Send_All[1]), 1, MPI_INT,
+                    &(nPoint_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  nP2PSend = 0; nP2PRecv = 0;
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    if ((iRank != rank) && (nPoint_Send_All[iRank+1] > 0)) nP2PSend++;
+    if ((iRank != rank) && (nPoint_Recv_All[iRank+1] > 0)) nP2PRecv++;
+    
+    nPoint_Send_All[iRank+1] += nPoint_Send_All[iRank];
+    nPoint_Recv_All[iRank+1] += nPoint_Recv_All[iRank];
+  }
+  
+  /*--- Allocate only as much memory as we need for the P2P neighbors. ---*/
+  
+  nPoint_P2PSend = new int[nP2PSend+1]; nPoint_P2PSend[0] = 0;
+  nPoint_P2PRecv = new int[nP2PRecv+1]; nPoint_P2PRecv[0] = 0;
+  
+  Neighbors_P2PSend = new int[nP2PSend];
+  Neighbors_P2PRecv = new int[nP2PRecv];
+  
+  iSend = 0; iRecv = 0;
+  for (iRank = 0; iRank < size; iRank++) {
+    
+    if ((nPoint_Send_All[iRank+1] > nPoint_Send_All[iRank]) && (iRank != rank)) {
+      Neighbors_P2PSend[iSend] = iRank;
+      nPoint_P2PSend[iSend+1] = nPoint_Send_All[iRank+1];
+      iSend++;
+    }
+    
+    if ((nPoint_Recv_All[iRank+1] > nPoint_Recv_All[iRank]) && (iRank != rank)) {
+      Neighbors_P2PRecv[iRecv] = iRank;
+      nPoint_P2PRecv[iRecv+1] = nPoint_Recv_All[iRank+1];
+      iRecv++;
+    }
+    
+  }
+  
+  /*--- Create a reverse mapping of the message to the rank so that we
+   can quickly access the correct data in the buffers when receiving
+   messages dynamically. ---*/
+  
+  P2PSend2Neighbor.clear();
+  for (iSend = 0; iSend < nP2PSend; iSend++)
+    P2PSend2Neighbor[Neighbors_P2PSend[iSend]] = iSend;
+  
+  P2PRecv2Neighbor.clear();
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++)
+    P2PRecv2Neighbor[Neighbors_P2PRecv[iRecv]] = iRecv;
+  
+  delete [] nPoint_Send_All;
+  delete [] nPoint_Recv_All;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
+    Local_Point_P2PSend[iSend] = 0;
+  
+  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    Local_Point_P2PRecv[iRecv] = 0;
+  
+  /*--- We allocate the memory for communicating values in a later step
+   once we know the maximum packet size that we need to communicate. This
+   memory is deallocated and reallocated automatically in the case that
+   the previously allocated memory is not sufficient. ---*/
+  
+  bufD_P2PSend = NULL;
+  bufD_P2PRecv = NULL;
+  
+  bufS_P2PSend = NULL;
+  bufS_P2PRecv = NULL;
+  
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  if (nP2PSend > 0) {
+    req_P2PSend   = new SU2_MPI::Request[nP2PSend];
+  }
+  if (nP2PRecv > 0) {
+    req_P2PRecv   = new SU2_MPI::Request[nP2PRecv];
+  }
+  
+  /*--- Build lists of local index values for send. ---*/
+  
+  count = 0;
+  for (iSend = 0; iSend < nP2PSend; iSend++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+        
+        MarkerS  = iMarker;
+        nVertexS = geometry->nVertex[MarkerS];
+        iRank    = config->GetMarker_All_SendRecv(MarkerS)-1;
+        
+        if (iRank == Neighbors_P2PSend[iSend]) {
+          for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+            Local_Point_P2PSend[count] = geometry->vertex[MarkerS][iVertex]->GetNode();
+            count++;
+          }
+        }
+        
+      }
+    }
+  }
+  
+  /*--- Build lists of local index values for receive. ---*/
+
+  count = 0;
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+        
+        MarkerR  = iMarker+1;
+        nVertexR = geometry->nVertex[MarkerR];
+        iRank    = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+        
+        if (iRank == Neighbors_P2PRecv[iRecv]) {
+          for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+            Local_Point_P2PRecv[count] = geometry->vertex[MarkerR][iVertex]->GetNode();
+            count++;
+          }
+        }
+        
+      }
+    }
+  }
+  
+  /*--- In the future, some additional data structures could be created
+   here to separate the interior and boundary nodes in order to help
+   further overlap computation and communication. ---*/
+  
+}
+
+void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
+  
+  /*--- This routine is activated whenever we attempt to perform
+   a point-to-point MPI communication with our neighbors but the
+   memory buffer allocated is not large enough for the packet size.
+   Therefore, we deallocate the previously allocated space and
+   reallocate a large enough array. Note that after the first set
+   communications, this routine will not need to be called again. ---*/
+  
+  int iSend, iRecv;
+  
+  /*--- Store the larger packet size to the class data. ---*/
+  
+  countPerPoint = val_countPerPoint;
+  
+  /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
+  
+  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  
+  bufD_P2PSend = new su2double[countPerPoint*nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
+    bufD_P2PSend[iSend] = 0.0;
+  
+  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+  
+  bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    bufD_P2PRecv[iRecv] = 0.0;
+  
+  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+  
+  bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
+    bufS_P2PSend[iSend] = 0;
+  
+  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
+  
+  bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    bufS_P2PRecv[iRecv] = 0;
+  
+}
+
+void CGeometry::PostP2PRecvs(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short commType,
+                             bool val_reverse) {
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, iRecv, offset, nPointP2P, count, source, tag;
+  
+  /*--- Launch the non-blocking recv's first. Note that we have stored
+   the counts and sources, so we can launch these before we even load
+   the data and send from the neighbor ranks. ---*/
+  
+  iMessage = 0;
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+    
+    /*--- In some instances related to the adjoint solver, we need
+     to reverse the direction of communications such that the normal
+     send nodes become the recv nodes and vice-versa. ---*/
+    
+    if (val_reverse) {
+      
+      /*--- Compute our location in the buffer using the send data
+       structure since we are reversing the comms. ---*/
+      
+      offset = countPerPoint*nPoint_P2PSend[iRecv];
+      
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. Note again that we select the send
+       points here as the recv points. ---*/
+      
+      nPointP2P = nPoint_P2PSend[iRecv+1] - nPoint_P2PSend[iRecv];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      count = countPerPoint*nPointP2P;
+      
+      /*--- Get the rank from which we receive the message. Note again
+       that we use the send rank as the source instead of the recv rank. ---*/
+      
+      source = Neighbors_P2PSend[iRecv];
+      tag    = source + 1;
+      
+      /*--- Post non-blocking recv for this proc. Note that we use the
+       send buffer here too. This is important to make sure the arrays
+       are the correct size. ---*/
+      
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+      
+    } else {
+      
+      /*--- Compute our location in the recv buffer. ---*/
+      
+      offset = countPerPoint*nPoint_P2PRecv[iRecv];
+      
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. ---*/
+      
+      nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      count = countPerPoint*nPointP2P;
+      
+      /*--- Get the rank from which we receive the message. ---*/
+      
+      source = Neighbors_P2PRecv[iRecv];
+      tag    = source + 1;
+      
+      /*--- Post non-blocking recv for this proc. ---*/
+      
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+      
+    }
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+}
+
+void CGeometry::PostP2PSends(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short commType,
+                             int val_iSend,
+                             bool val_reverse) {
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, offset, nPointP2P, count, dest, tag;
+  
+  /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
+  
+  iMessage = val_iSend;
+  
+  /*--- In some instances related to the adjoint solver, we need
+   to reverse the direction of communications such that the normal
+   send nodes become the recv nodes and vice-versa. ---*/
+  
+  if (val_reverse) {
+    
+    /*--- Compute our location in the buffer using the recv data
+     structure since we are reversing the comms. ---*/
+    
+    offset = countPerPoint*nPoint_P2PRecv[val_iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. Note again that we select the recv
+     points here as the send points. ---*/
+    
+    nPointP2P = nPoint_P2PRecv[val_iSend+1] - nPoint_P2PRecv[val_iSend];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+    
+    /*--- Get the rank to which we send the message. Note again
+     that we use the recv rank as the dest instead of the send rank. ---*/
+    
+    dest = Neighbors_P2PRecv[val_iSend];
+    tag  = rank + 1;
+    
+    /*--- Post non-blocking send for this proc. Note that we use the
+     send buffer here too. This is important to make sure the arrays
+     are the correct size. ---*/
+    
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
+  } else {
+    
+    /*--- Compute our location in the send buffer. ---*/
+    
+    offset = countPerPoint*nPoint_P2PSend[val_iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. ---*/
+    
+    nPointP2P = nPoint_P2PSend[val_iSend+1] - nPoint_P2PSend[val_iSend];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+    
+    /*--- Get the rank to which we send the message. ---*/
+    
+    dest = Neighbors_P2PSend[val_iSend];
+    tag  = rank + 1;
+    
+    /*--- Post non-blocking send for this proc. ---*/
+    
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
+  }
+  
+}
+
+void CGeometry::InitiateComms(CGeometry *geometry,
+                              CConfig *config,
+                              unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  
+  unsigned long iPoint, offset, buf_offset;
+  
+  int iMessage, iSend, nSend;
+  
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+  
+  switch (commType) {
+    case COORDINATES:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case GRID_VELOCITY:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case COORDINATES_OLD:
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        COUNT_PER_POINT  = nDim*2;
+      else
+        COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case MAX_LENGTH:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case NEIGHBORS:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_UNSIGNED_SHORT;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  
+  /*--- Check to make sure we have created a large enough buffer
+   for these comms during preprocessing. This is only for the su2double
+   buffer. It will be reallocated whenever we find a larger count
+   per point. After the first cycle of comms, this should be inactive. ---*/
+  
+  if (COUNT_PER_POINT > geometry->countPerPoint) {
+    geometry->AllocateP2PComms(COUNT_PER_POINT);
+  }
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDSend      = geometry->bufD_P2PSend;
+  unsigned short *bufSSend = geometry->bufS_P2PSend;
+  
+  su2double *vector = NULL;
+  
+  /*--- Load the specified quantity from the solver into the generic
+   communication buffer in the geometry class. ---*/
+  
+  if (nP2PSend > 0) {
+    
+    /*--- Post all non-blocking recvs first before sends. ---*/
+    
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
+    
+    for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
+      
+      /*--- Compute our location in the send buffer. ---*/
+      
+      offset = nPoint_P2PSend[iMessage];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      nSend = (nPoint_P2PSend[iMessage+1] - nPoint_P2PSend[iMessage]);
+      
+      for (iSend = 0; iSend < nSend; iSend++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iSend)*countPerPoint;
+        
+        switch (commType) {
+          case COORDINATES:
+            vector = node[iPoint]->GetCoord();
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = vector[iDim];
+            break;
+          case GRID_VELOCITY:
+            vector = node[iPoint]->GetGridVel();
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = vector[iDim];
+            break;
+          case COORDINATES_OLD:
+            vector = node[iPoint]->GetCoord_n();
+            for (iDim = 0; iDim < nDim; iDim++) {
+              bufDSend[buf_offset+iDim] = vector[iDim];
+            }
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+              vector = node[iPoint]->GetCoord_n1();
+              for (iDim = 0; iDim < nDim; iDim++) {
+                bufDSend[buf_offset+nDim+iDim] = vector[iDim];
+              }
+            }
+            break;
+          case MAX_LENGTH:
+            bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
+            break;
+          case NEIGHBORS:
+            bufSSend[buf_offset] = geometry->node[iPoint]->GetnPoint();
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
+      }
+      
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+      
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
+      
+    }
+  }
+  
+}
+
+void CGeometry::CompleteComms(CGeometry *geometry,
+                              CConfig *config,
+                              unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iDim;
+  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  
+  int ind, source, iMessage, jRecv;
+  SU2_MPI::Status status;
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDRecv      = geometry->bufD_P2PRecv;
+  unsigned short *bufSRecv = geometry->bufS_P2PRecv;
+  
+  /*--- Store the data that was communicated into the appropriate
+   location within the local class data structures. Note that we
+   recv and store the data in any order to take advantage of the
+   non-blocking comms. ---*/
+  
+  if (nP2PRecv > 0) {
+    
+    for (iMessage = 0; iMessage < nP2PRecv; iMessage++) {
+      
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
+      
+      SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+      
+      /*--- Once we have recv'd a message, get the source rank. ---*/
+      
+      source = status.MPI_SOURCE;
+      
+      /*--- We know the offsets based on the source rank. ---*/
+      
+      jRecv = P2PRecv2Neighbor[source];
+      
+      /*--- Get the point offset for the start of this message. ---*/
+      
+      offset = nPoint_P2PRecv[jRecv];
+      
+      /*--- Get the number of packets to be received in this message. ---*/
+      
+      nRecv = nPoint_P2PRecv[jRecv+1] - nPoint_P2PRecv[jRecv];
+      
+      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        
+        /*--- Compute the total offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iRecv)*countPerPoint;
+        
+        /*--- Store the data correctly depending on the quantity. ---*/
+        
+        switch (commType) {
+          case COORDINATES:
+            for (iDim = 0; iDim < nDim; iDim++)
+              node[iPoint]->SetCoord(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case GRID_VELOCITY:
+            for (iDim = 0; iDim < nDim; iDim++)
+              node[iPoint]->SetGridVel(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case COORDINATES_OLD:
+            node[iPoint]->SetCoord_n(&bufDRecv[buf_offset]);
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              node[iPoint]->SetCoord_n1(&bufDRecv[buf_offset+nDim]);
+            break;
+          case MAX_LENGTH:
+            node[iPoint]->SetMaxLength(bufDRecv[buf_offset]);
+            break;
+          case NEIGHBORS:
+            node[iPoint]->SetnNeighbor(bufSRecv[buf_offset]);
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
+      }
+    }
+    
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
+#endif
+    
+  }
+  
+}
+
+void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
+                                        CConfig *config) {
+  
+  /*--- We start with the send and receive lists already available in
+   the form of stored periodic point-donor pairs. We will loop through
+   these markers and establish the neighboring ranks and number of
+   send/recv points per pair. We will store this information and set
+   up persistent data structures so that we can reuse them throughout
+   the calculation for any periodic boundary communications. The goal
+   is to break the non-blocking comms into InitiatePeriodicComms() and
+   CompletePeriodicComms() in separate routines so that we can overlap the
+   communication and computation to hide the communication latency. ---*/
+  
+  /*--- Local variables. ---*/
+  
+  unsigned short iMarker;
+  unsigned long iPoint, iVertex, iPeriodic;
+  
+  int iRank, iSend, iRecv, ii, jj;
+  
+  /*--- Create some temporary structures for tracking sends/recvs. ---*/
+  
+  int *nPoint_Send_All = new int[size+1]; nPoint_Send_All[0] = 0;
+  int *nPoint_Recv_All = new int[size+1]; nPoint_Recv_All[0] = 0;
+  int *nPoint_Flag     = new int[size];
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    nPoint_Send_All[iRank] = 0;
+    nPoint_Recv_All[iRank] = 0;
+    nPoint_Flag[iRank]= -1;
+  }
+  nPoint_Send_All[size] = 0; nPoint_Recv_All[size] = 0;
+  
+  /*--- Loop through all of our periodic markers and track
+   our sends with each rank. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        /*--- Get the current periodic point index. We only communicate
+         the owned nodes on a rank, as the MPI comms will take care of
+         the halos after completing the periodic comms. ---*/
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Get the rank that holds the matching periodic point
+           on the other marker in the periodic pair. ---*/
+          
+          iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          
+          /*--- If we have not visited this point last, increment our
+           number of points that must be sent to a particular proc. ---*/
+          
+          if ((nPoint_Flag[iRank] != (int)iPoint)) {
+            nPoint_Flag[iRank]    = (int)iPoint;
+            nPoint_Send_All[iRank+1] += 1;
+          }
+          
+        }
+      }
+    }
+  }
+  
+  delete [] nPoint_Flag;
+  
+  /*--- Communicate the number of points to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many periodic points it will receive from each other processor. ---*/
+  
+  SU2_MPI::Alltoall(&(nPoint_Send_All[1]), 1, MPI_INT,
+                    &(nPoint_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  
+  /*--- Check how many messages we will be sending and receiving.
+   Here we also put the counters into cumulative storage format to
+   make the communications simpler. Note that we are allowing each
+   rank to communicate to themselves in these counters, although
+   it will not be done through MPI. ---*/
+  
+  nPeriodicSend = 0; nPeriodicRecv = 0;
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    if ((nPoint_Send_All[iRank+1] > 0)) nPeriodicSend++;
+    if ((nPoint_Recv_All[iRank+1] > 0)) nPeriodicRecv++;
+    
+    nPoint_Send_All[iRank+1] += nPoint_Send_All[iRank];
+    nPoint_Recv_All[iRank+1] += nPoint_Recv_All[iRank];
+  }
+  
+  /*--- Allocate only as much memory as needed for the periodic neighbors. ---*/
+  
+  nPoint_PeriodicSend = new int[nPeriodicSend+1]; nPoint_PeriodicSend[0] = 0;
+  nPoint_PeriodicRecv = new int[nPeriodicRecv+1]; nPoint_PeriodicRecv[0] = 0;
+  
+  Neighbors_PeriodicSend = new int[nPeriodicSend];
+  Neighbors_PeriodicRecv = new int[nPeriodicRecv];
+  
+  iSend = 0; iRecv = 0;
+  for (iRank = 0; iRank < size; iRank++) {
+    if ((nPoint_Send_All[iRank+1] > nPoint_Send_All[iRank])) {
+      Neighbors_PeriodicSend[iSend] = iRank;
+      nPoint_PeriodicSend[iSend+1] = nPoint_Send_All[iRank+1];
+      iSend++;
+    }
+    if ((nPoint_Recv_All[iRank+1] > nPoint_Recv_All[iRank])) {
+      Neighbors_PeriodicRecv[iRecv] = iRank;
+      nPoint_PeriodicRecv[iRecv+1] = nPoint_Recv_All[iRank+1];
+      iRecv++;
+    }
+  }
+  
+  /*--- Create a reverse mapping of the message to the rank so that we
+   can quickly access the correct data in the buffers when receiving
+   messages dynamically later during the iterations. ---*/
+  
+  PeriodicSend2Neighbor.clear();
+  for (iSend = 0; iSend < nPeriodicSend; iSend++)
+    PeriodicSend2Neighbor[Neighbors_PeriodicSend[iSend]] = iSend;
+  
+  PeriodicRecv2Neighbor.clear();
+  for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++)
+    PeriodicRecv2Neighbor[Neighbors_PeriodicRecv[iRecv]] = iRecv;
+  
+  delete [] nPoint_Send_All;
+  delete [] nPoint_Recv_All;
+  
+  /*--- Allocate the memory to store the local index values for both
+   the send and receive periodic points and periodic index. ---*/
+  
+  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
+    Local_Point_PeriodicSend[iSend] = 0;
+  
+  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
+    Local_Marker_PeriodicSend[iSend] = 0;
+  
+  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+    Local_Point_PeriodicRecv[iRecv] = 0;
+  
+  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+    Local_Marker_PeriodicRecv[iRecv] = 0;
+  
+  /*--- We allocate the buffers for communicating values in a later step
+   once we know the maximum packet size that we need to communicate. This
+   memory is deallocated and reallocated automatically in the case that
+   the previously allocated memory is not sufficient. ---*/
+  
+  bufD_PeriodicSend = NULL;
+  bufD_PeriodicRecv = NULL;
+  
+  bufS_PeriodicSend = NULL;
+  bufS_PeriodicRecv = NULL;
+  
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  if (nPeriodicSend > 0) {
+    req_PeriodicSend   = new SU2_MPI::Request[nPeriodicSend];
+  }
+  if (nPeriodicRecv > 0) {
+    req_PeriodicRecv   = new SU2_MPI::Request[nPeriodicRecv];
+  }
+  
+  /*--- Allocate arrays for sending the periodic point index and marker
+   index to the recv rank so that it can store the local values. Therefore,
+   the recv rank can quickly loop through the buffers to unpack the data. ---*/
+  
+  unsigned short nPackets = 2;
+  unsigned long *idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]*nPackets];
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]*nPackets; iSend++)
+    idSend[iSend] = 0;
+  
+  /*--- Build the lists of local index and periodic marker index values. ---*/
+  
+  ii = 0; jj = 0;
+  for (iSend = 0; iSend < nPeriodicSend; iSend++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          /*--- Get the current periodic point index. We only communicate
+           the owned nodes on a rank, as the MPI comms will take care of
+           the halos after completing the periodic comms. ---*/
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            /*--- Get the rank that holds the matching periodic point
+             on the other marker in the periodic pair. ---*/
+            
+            iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            
+            /*--- If the rank for the current periodic point matches the
+             rank of the current send message, then store the local point
+             index on the matching periodic point and the periodic marker
+             index to be communicated to the recv rank. ---*/
+            
+            if (iRank == Neighbors_PeriodicSend[iSend]) {
+              Local_Point_PeriodicSend[ii]  = iPoint;
+              Local_Marker_PeriodicSend[ii] = (unsigned long)iMarker;
+              jj = ii*nPackets;
+              idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+              jj++;
+              idSend[jj] = (unsigned long)iPeriodic;
+              ii++;
+            }
+            
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Allocate arrays for receiving the periodic point index and marker
+   index to the recv rank so that it can store the local values. ---*/
+  
+  unsigned long *idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]*nPackets];
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++)
+    idRecv[iRecv] = 0;
+  
+#ifdef HAVE_MPI
+  
+  int iMessage, offset, count, source, dest, tag;
+  
+  /*--- Launch the non-blocking recv's first. Note that we have stored
+   the counts and sources, so we can launch these before we even load
+   the data and send from the periodically matching ranks. ---*/
+  
+  iMessage = 0;
+  for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
+    
+    /*--- Compute our location in the recv buffer. ---*/
+    
+    offset = nPackets*nPoint_PeriodicRecv[iRecv];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of elems that we need to recv. ---*/
+    
+    count = nPackets*(nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv]);
+    
+    /*--- Get the rank from which we receive the message. ---*/
+    
+    source = Neighbors_PeriodicRecv[iRecv];
+    tag    = source + 1;
+    
+    /*--- Post non-blocking recv for this proc. ---*/
+    
+    SU2_MPI::Irecv(&(static_cast<unsigned long*>(idRecv)[offset]),
+                   count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                   &(req_PeriodicRecv[iMessage]));
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+  /*--- Post the non-blocking sends. ---*/
+  
+  iMessage = 0;
+  for (iSend = 0; iSend < nPeriodicSend; iSend++) {
+    
+    /*--- Compute our location in the send buffer. ---*/
+    
+    offset = nPackets*nPoint_PeriodicSend[iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. ---*/
+    
+    count = nPackets*(nPoint_PeriodicSend[iSend+1] - nPoint_PeriodicSend[iSend]);
+    
+    /*--- Get the rank to which we send the message. ---*/
+    
+    dest = Neighbors_PeriodicSend[iSend];
+    tag  = rank + 1;
+    
+    /*--- Post non-blocking send for this proc. ---*/
+    
+    SU2_MPI::Isend(&(static_cast<unsigned long*>(idSend)[offset]),
+                   count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                   &(req_PeriodicSend[iMessage]));
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+  /*--- Wait for the non-blocking comms to complete. ---*/
+  
+  SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
+  SU2_MPI::Waitall(nPeriodicRecv, req_PeriodicRecv, MPI_STATUS_IGNORE);
+  
+#else
+  
+  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
+  
+  int myStart, myFinal;
+  for (int val_iSend = 0; val_iSend < nPeriodicSend; val_iSend++) {
+    iRank   = geometry->PeriodicRecv2Neighbor[rank];
+    iRecv   = geometry->nPoint_PeriodicRecv[iRank]*nPackets;
+    myStart = nPoint_PeriodicSend[val_iSend]*nPackets;
+    myFinal = nPoint_PeriodicSend[val_iSend+1]*nPackets;
+    for (iSend = myStart; iSend < myFinal; iSend++) {
+      idRecv[iRecv] = idSend[iSend];
+      iRecv++;
+    }
+  }
+  
+#endif
+  
+  /*--- Store the local periodic point and marker index values in our
+   data structures so we can quickly unpack data during the iterations. ---*/
+  
+  ii = 0;
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++) {
+    Local_Point_PeriodicRecv[iRecv]  = idRecv[ii]; ii++;
+    Local_Marker_PeriodicRecv[iRecv] = idRecv[ii]; ii++;
+  }
+  
+  delete [] idSend;
+  delete [] idRecv;
+  
+}
+
+void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) {
+  
+  /*--- This routine is activated whenever we attempt to perform
+   a periodic MPI communication with our neighbors but the
+   memory buffer allocated is not large enough for the packet size.
+   Therefore, we deallocate the previously allocated arrays and
+   reallocate a large enough array. Note that after the first set
+   communications, this routine will not need to be called again. ---*/
+  
+  int iSend, iRecv, nSend, nRecv;
+  
+  /*--- Store the larger packet size to the class data. ---*/
+  
+  countPerPeriodicPoint = val_countPerPeriodicPoint;
+  
+  /*--- Store the total size of the send/recv arrays for clarity. ---*/
+  
+  nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
+  nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
+  
+  /*-- Deallocate and reallocate our cummunication memory. ---*/
+  
+  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  
+  bufD_PeriodicSend = new su2double[nSend];
+  for (iSend = 0; iSend < nSend; iSend++)
+    bufD_PeriodicSend[iSend] = 0.0;
+  
+  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
+  
+  bufD_PeriodicRecv = new su2double[nRecv];
+  for (iRecv = 0; iRecv < nRecv; iRecv++)
+    bufD_PeriodicRecv[iRecv] = 0.0;
+  
+  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
+  
+  bufS_PeriodicSend = new unsigned short[nSend];
+  for (iSend = 0; iSend < nSend; iSend++)
+    bufS_PeriodicSend[iSend] = 0;
+  
+  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
+  
+  bufS_PeriodicRecv = new unsigned short[nRecv];
+  for (iRecv = 0; iRecv < nRecv; iRecv++)
+    bufS_PeriodicRecv[iRecv] = 0;
+  
+}
+
+void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
+                                  CConfig *config,
+                                  unsigned short commType) {
+  
+  /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
+  
+#ifdef HAVE_MPI
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, iRecv, offset, nPointPeriodic, count, source, tag;
+  
+  /*--- Launch the non-blocking recv's first. Note that we have stored
+   the counts and sources, so we can launch these before we even load
+   the data and send from the neighbor ranks. ---*/
+  
+  iMessage = 0;
+  for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
+    
+    /*--- Compute our location in the recv buffer. ---*/
+    
+    offset = countPerPeriodicPoint*nPoint_PeriodicRecv[iRecv];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of elems that we need to recv. ---*/
+    
+    nPointPeriodic = nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPeriodicPoint*nPointPeriodic;
+    
+    /*--- Get the rank from which we receive the message. ---*/
+    
+    source = Neighbors_PeriodicRecv[iRecv];
+    tag    = source + 1;
+    
+    /*--- Post non-blocking recv for this proc. ---*/
+    
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]),
+                       count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                       &(req_PeriodicRecv[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]),
+                       count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+                       &(req_PeriodicRecv[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+#endif
+  
+}
+
+void CGeometry::PostPeriodicSends(CGeometry *geometry,
+                                  CConfig *config,
+                                  unsigned short commType,
+                                  int val_iSend) {
+  
+  /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
+  
+#ifdef HAVE_MPI
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, offset, nPointPeriodic, count, dest, tag;
+  
+  /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
+  
+  iMessage = val_iSend;
+  
+  /*--- Compute our location in the send buffer. ---*/
+  
+  offset = countPerPeriodicPoint*nPoint_PeriodicSend[val_iSend];
+  
+  /*--- Take advantage of cumulative storage format to get the number
+   of points that we need to send. ---*/
+  
+  nPointPeriodic = (nPoint_PeriodicSend[val_iSend+1] -
+                    nPoint_PeriodicSend[val_iSend]);
+  
+  /*--- Total count can include multiple pieces of data per element. ---*/
+  
+  count = countPerPeriodicPoint*nPointPeriodic;
+  
+  /*--- Get the rank to which we send the message. ---*/
+  
+  dest = Neighbors_PeriodicSend[val_iSend];
+  tag  = rank + 1;
+  
+  /*--- Post non-blocking send for this proc. ---*/
+  
+  switch (commType) {
+    case COMM_TYPE_DOUBLE:
+      SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]),
+                     count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                     &(req_PeriodicSend[iMessage]));
+      break;
+    case COMM_TYPE_UNSIGNED_SHORT:
+      SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]),
+                     count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+                     &(req_PeriodicSend[iMessage]));
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  
+#else
+  
+  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
+  
+  int iSend, myStart, myFinal, iRecv, iRank;
+  iRank   = geometry->PeriodicRecv2Neighbor[rank];
+  iRecv   = geometry->nPoint_PeriodicRecv[iRank]*countPerPeriodicPoint;
+  myStart = nPoint_PeriodicSend[val_iSend]*countPerPeriodicPoint;
+  myFinal = nPoint_PeriodicSend[val_iSend+1]*countPerPeriodicPoint;
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        bufD_PeriodicRecv[iRecv] =  bufD_PeriodicSend[iSend];
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        bufS_PeriodicRecv[iRecv] =  bufS_PeriodicSend[iSend];
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    iRecv++;
+  }
+  
+#endif
+  
 }
 
 su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
@@ -1377,9 +2700,12 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;
-  geometry_container[MESH_0]->Set_MPI_Coord(config);
+  
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
   if (config->GetGrid_Movement()){
-    geometry_container[MESH_0]->Set_MPI_GridVel(config);
+    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
+    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
   
   geometry_container[MESH_0]->SetCoord_CG();
@@ -2424,7 +3750,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
   
   /*--- Initialize several class data members for later. ---*/
   
@@ -2505,6 +3831,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_nBoundQuadrilateral = new unsigned long[nMarker_Max];
   
   short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
+  for (iMarker = 0; iMarker < nMarker_Max; iMarker++)
+    Buffer_Send_Marker_All_SendRecv[iMarker] = 0;
   
   char *Marker_All_TagBound             = new char[nMarker_Max*MAX_STRING_SIZE];
   char *Buffer_Send_Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
@@ -5382,8 +6710,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
-                                     CConfig *config,
-                                     bool val_flag) {
+                                     CConfig *config) {
 
   /*--- Get rank and size. ---*/
 
@@ -6007,13 +7334,13 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(colorSend, nPoint_Send, colorSendReq,
-                colorRecv, nPoint_Recv, colorRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
+                   colorRecv, nPoint_Recv, colorRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(idSend, nPoint_Send, idSendReq,
-                idRecv, nPoint_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq,
+                   idRecv, nPoint_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6028,8 +7355,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
-  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
+  CompleteCommsAll(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteCommsAll(nSends,    idSendReq, nRecvs,    idRecvReq);
 
   /*--- Store the complete color map for this rank in class data. Now,
    each rank has a color value for all owned nodes as well as any repeated
@@ -6271,13 +7598,13 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6299,8 +7626,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
-  CompleteComms(nSends,   idSendReq, nRecvs,   idRecvReq);
+  CompleteCommsAll(nSends, connSendReq, nRecvs, connRecvReq);
+  CompleteCommsAll(nSends,   idSendReq, nRecvs,   idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper structure
    It will be loaded into the geometry objects in a later step. ---*/
@@ -6579,17 +7906,17 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(colorSend, nPoint_Send, colorSendReq,
-                colorRecv, nPoint_Recv, colorRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
+                   colorRecv, nPoint_Recv, colorRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(idSend, nPoint_Send, idSendReq,
-                idRecv, nPoint_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq,
+                   idRecv, nPoint_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(coordSend, nPoint_Send, coordSendReq,
-                coordRecv, nPoint_Recv, coordRecvReq,
-                nDim, COMM_TYPE_DOUBLE);
+  InitiateCommsAll(coordSend, nPoint_Send, coordSendReq,
+                   coordRecv, nPoint_Recv, coordRecvReq,
+                   nDim, COMM_TYPE_DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6612,9 +7939,9 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
-  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
-  CompleteComms(nSends, coordSendReq, nRecvs, coordRecvReq);
+  CompleteCommsAll(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteCommsAll(nSends,    idSendReq, nRecvs,    idRecvReq);
+  CompleteCommsAll(nSends, coordSendReq, nRecvs, coordRecvReq);
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -6924,17 +8251,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(markerSend, nElem_Send, markerSendReq,
-                markerRecv, nElem_Recv, markerRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
+                   markerRecv, nElem_Recv, markerRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6961,9 +8288,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
-  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
-  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
+  CompleteCommsAll(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteCommsAll(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteCommsAll(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate
@@ -7278,17 +8605,17 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(markerSend, nElem_Send, markerSendReq,
-                markerRecv, nElem_Recv, markerRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
+                   markerRecv, nElem_Recv, markerRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -7311,9 +8638,9 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
-  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
-  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
+  CompleteCommsAll(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteCommsAll(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteCommsAll(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure. It will be loaded into the geometry objects in a later step. ---*/
@@ -8176,6 +9503,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   /*--- Initialize pointers for turbomachinery computations  ---*/
   
   nSpanWiseSections       = new unsigned short[2];
+	nSpanSectionsByMarker   = new unsigned short[nMarker];
   SpanWiseValue           = new su2double*[2];
   for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
     nSpanWiseSections[iMarker]      = 0;
@@ -8196,6 +9524,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++){
+		nSpanSectionsByMarker[iMarker]  = 0;
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -8231,14 +9560,14 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
 }
 
-void CPhysicalGeometry::InitiateComms(void *bufSend,
-                                      int *nElemSend,
-                                      SU2_MPI::Request *sendReq,
-                                      void *bufRecv,
-                                      int *nElemRecv,
-                                      SU2_MPI::Request *recvReq,
-                                      unsigned short countPerElem,
-                                      unsigned short commType) {
+void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
+                                         int *nElemSend,
+                                         SU2_MPI::Request *sendReq,
+                                         void *bufRecv,
+                                         int *nElemRecv,
+                                         SU2_MPI::Request *recvReq,
+                                         unsigned short countPerElem,
+                                         unsigned short commType) {
 
   /*--- Local variables ---*/
 
@@ -8396,10 +9725,10 @@ void CPhysicalGeometry::InitiateComms(void *bufSend,
 
 }
 
-void CPhysicalGeometry::CompleteComms(int nSends,
-                                      SU2_MPI::Request *sendReq,
-                                      int nRecvs,
-                                      SU2_MPI::Request *recvReq) {
+void CPhysicalGeometry::CompleteCommsAll(int nSends,
+                                         SU2_MPI::Request *sendReq,
+                                         int nRecvs,
+                                         SU2_MPI::Request *recvReq) {
 
   /*--- Local variables ---*/
 
@@ -8883,6 +10212,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[Point_Surface]->SetSolidBoundary(true);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPeriodicBoundary(true);
       }
     }
     
@@ -10840,7 +12172,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
         if (rank == MASTER_NODE) {
           if (nPeriodic - 1 != 0)
-            cout << nPeriodic - 1 << " periodic transformations." << endl;
+            SU2_MPI::Error(string("Mesh file contains outdated periodic format!\n\n") +
+                           string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
+                           string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
+                           string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
         }
         config->SetnPeriodicIndex(nPeriodic);
         
@@ -10873,23 +12208,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           delete [] center; delete [] rotation; delete [] translate;
         }
       }
-    }
-    
-    /*--- If no periodic transormations were found, store default zeros ---*/
-    
-    if (!found_transform) {
-      unsigned short nPeriodic = 1, iPeriodic = 0;
-      config->SetnPeriodicIndex(nPeriodic);
-      su2double* center    = new su2double[3];
-      su2double* rotation  = new su2double[3];
-      su2double* translate = new su2double[3];
-      for (unsigned short iDim = 0; iDim < 3; iDim++) {
-        center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-      }
-      config->SetPeriodicCenter(iPeriodic,    center);
-      config->SetPeriodicRotation(iPeriodic,  rotation);
-      config->SetPeriodicTranslate(iPeriodic, translate);
-      delete [] center; delete [] rotation; delete [] translate;
     }
   
   /*--- Close the input file ---*/
@@ -12395,22 +13713,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     
   }
 
-  /*--- Periodic transformations are not implemented yet for CGNS.
-   Store default zeros. ---*/
-  
-  unsigned short nPeriodic = 1, iPeriodic = 0;
-  config->SetnPeriodicIndex(nPeriodic);
-  su2double* center    = new su2double[3];
-  su2double* rotation  = new su2double[3];
-  su2double* translate = new su2double[3];
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-  }
-  config->SetPeriodicCenter(iPeriodic, center);
-  config->SetPeriodicRotation(iPeriodic, rotation);
-  config->SetPeriodicTranslate(iPeriodic, translate);
-  delete [] center; delete [] rotation; delete [] translate;
-  
   /*--- Deallocate temporary memory. ---*/
   
   delete[] vertices;
@@ -13379,6 +14681,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     node[iPoint]->ResetBoundary();
     node[iPoint]->SetPhysicalBoundary(false);
     node[iPoint]->SetSolidBoundary(false);
+    node[iPoint]->SetPeriodicBoundary(false);
     node[iPoint]->SetDomain(true);
   }
   
@@ -13450,6 +14753,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[InvResult[iPoint]]->SetSolidBoundary(true);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+          node[InvResult[iPoint]]->SetPeriodicBoundary(true);
       }
     }
   }
@@ -13605,8 +14911,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   long jVertex;
   int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
-  short SendRecv;
-  bool isPeriodic;
+  short PeriodicBoundary;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
   
 #ifdef HAVE_MPI
@@ -13642,15 +14947,11 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                 /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
                  * in order to caount the number of Span ---*/
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                         nSpan++;
-
-                      }
                     }
                   }
                 }
@@ -13691,43 +14992,40 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
-                    jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
-                        coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
-                        case CENTRIFUGAL:
-                          valueSpan[nSpan_loc] = coord[2];
-                          break;
-                        case CENTRIPETAL:
-                          valueSpan[nSpan_loc] = coord[2];
-                          break;
-                        case AXIAL:
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+                  	jVertex = node[iPoint]->GetVertex(jMarker);
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                      coord = node[iPoint]->GetCoord();
+                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      case CENTRIFUGAL:
+                        valueSpan[nSpan_loc] = coord[2];
+                        break;
+                      case CENTRIPETAL:
+                        valueSpan[nSpan_loc] = coord[2];
+                        break;
+                      case AXIAL:
+                        valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        break;
+                      case CENTRIPETAL_AXIAL:
+                        if (marker_flag == OUTFLOW){
                           valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          break;
-                        case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
-                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          }
-                          else{
-                            valueSpan[nSpan_loc] = coord[2];
-                          }
-                          break;
-                        case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
-                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          }
-                          else{
-                            valueSpan[nSpan_loc] = coord[2];
-                          }
-                          break;
-
                         }
-                        nSpan_loc++;
+                        else{
+                          valueSpan[nSpan_loc] = coord[2];
+                        }
+                        break;
+                      case AXIAL_CENTRIFUGAL:
+                        if (marker_flag == INFLOW){
+                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        }
+                        else{
+                          valueSpan[nSpan_loc] = coord[2];
+                        }
+                        break;
+
                       }
+                      nSpan_loc++;
                     }
                   }
                 }
@@ -13827,48 +15125,44 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
               for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
                 iPoint = vertex[iMarker][iVertex]->GetNode();
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = node[iPoint]->GetVertex(jMarker);
-                    if (jVertex != -1) {
-                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-                      if (isPeriodic && (SendRecv < 0)){
-                        coord = node[iPoint]->GetCoord();
-                        switch (config->GetKind_TurboMachinery(val_iZone)){
-                        case CENTRIFUGAL: case CENTRIPETAL:
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                          break;
-                        case AXIAL:
+                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                      coord = node[iPoint]->GetCoord();
+                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      case CENTRIFUGAL: case CENTRIPETAL:
+                        if (coord[2] < min) min = coord[2];
+                        if (coord[2] > max) max = coord[2];
+                        break;
+                      case AXIAL:
+                        radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                        if (radius < min) min = radius;
+                        if (radius > max) max = radius;
+                        break;
+                      case CENTRIPETAL_AXIAL:
+                        if (marker_flag == OUTFLOW){
                           radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                           if (radius < min) min = radius;
                           if (radius > max) max = radius;
-                          break;
-                        case CENTRIPETAL_AXIAL:
-                          if (marker_flag == OUTFLOW){
-                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                            if (radius < min) min = radius;
-                            if (radius > max) max = radius;
-                          }
-                          else{
-                            if (coord[2] < min) min = coord[2];
-                            if (coord[2] > max) max = coord[2];
-                          }
-                          break;
-
-                        case AXIAL_CENTRIFUGAL:
-                          if (marker_flag == INFLOW){
-                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                            if (radius < min) min = radius;
-                            if (radius > max) max = radius;
-                          }
-                          else{
-                            if (coord[2] < min) min = coord[2];
-                            if (coord[2] > max) max = coord[2];
-                          }
-                          break;
                         }
+                        else{
+                          if (coord[2] < min) min = coord[2];
+                          if (coord[2] > max) max = coord[2];
+                        }
+                        break;
 
+                      case AXIAL_CENTRIFUGAL:
+                        if (marker_flag == INFLOW){
+                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          if (radius < min) min = radius;
+                          if (radius > max) max = radius;
+                        }
+                        else{
+                          if (coord[2] < min) min = coord[2];
+                          if (coord[2] > max) max = coord[2];
+                        }
+                        break;
                       }
                     }
                   }
@@ -14822,7 +16116,6 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           if(allocate){
-            nSpanSectionsByMarker[iMarker]            = nSpanWiseSections[marker_flag-1];
             AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
@@ -15435,9 +16728,9 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     node[iPoint]->SetMaxLength(max_delta);
   }
 
-  /*--- Distribute information twice for periodic boundaries ---*/
-  Set_MPI_MaxLength(config);
-  Set_MPI_MaxLength(config);
+  InitiateComms(this, config, MAX_LENGTH);
+  CompleteComms(this, config, MAX_LENGTH);
+
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
@@ -16064,6 +17357,396 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
+                                      unsigned short val_periodic) {
+  
+  unsigned short iMarker, iDim, jMarker, pMarker = 0, index;
+  unsigned short iPeriodic, nPeriodic;
+
+  unsigned long iVertex, iPoint, iPointGlobal;
+  unsigned long jVertex, jVertex_, jPoint, jPointGlobal;
+  unsigned long pVertex = 0, pPoint = 0, pPointGlobal = 0;
+  unsigned long nLocalVertex_Periodic = 0, MaxLocalVertex_Periodic = 0;
+  unsigned long nPointMatch = 0;
+
+  int iProcessor, pProcessor = 0, nProcessor = size;
+
+  bool isBadMatch = false;
+  
+  string Marker_Tag;
+  
+  su2double *Coord_i, Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
+  su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
+  su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  
+  /*--- Tolerance for distance-based match to report warning. ---*/
+  
+  su2double epsilon = 1e-6;
+  
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+  
+  nPeriodic = config->GetnMarker_Periodic();
+  
+  /*--- Send an initial message to the console. ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << "Matching the periodic boundary points for marker pair ";
+    cout << val_periodic << "." << endl;
+  }
+  
+  /*--- Compute the total number of vertices that sit on a periodic
+   boundary on our local rank. We only include our "owned" nodes. ---*/
+  
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+        }
+      }
+    }
+  }
+  
+  /*--- Communicate our local periodic point count globally
+   and receive the counts of periodic points from all other ranks.---*/
+  
+  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+  unsigned long *Buffer_Recv_nVertex = new unsigned long [nProcessor];
+  
+  Buffer_Send_nVertex[0] = nLocalVertex_Periodic;
+  
+  /*--- Copy our own count in serial or use collective comms with MPI. ---*/
+  
+#ifndef HAVE_MPI
+  MaxLocalVertex_Periodic = nLocalVertex_Periodic;
+  Buffer_Recv_nVertex[0] = Buffer_Send_nVertex[0];
+#else
+  SU2_MPI::Allreduce(&nLocalVertex_Periodic, &MaxLocalVertex_Periodic, 1,
+                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Prepare buffers to send the information for each
+   periodic point to all ranks so that we can match pairs. ---*/
+  
+  su2double *Buffer_Send_Coord           = new su2double [MaxLocalVertex_Periodic*nDim];
+  unsigned long *Buffer_Send_Point       = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_Vertex      = new unsigned long [MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Send_Marker      = new unsigned long [MaxLocalVertex_Periodic];
+  
+  su2double *Buffer_Recv_Coord           = new su2double [nProcessor*MaxLocalVertex_Periodic*nDim];
+  unsigned long *Buffer_Recv_Point       = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_Vertex      = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  unsigned long *Buffer_Recv_Marker      = new unsigned long [nProcessor*MaxLocalVertex_Periodic];
+  
+  unsigned long nBuffer_Coord       = MaxLocalVertex_Periodic*nDim;
+  unsigned long nBuffer_Point       = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_GlobalIndex = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Vertex      = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Marker      = MaxLocalVertex_Periodic;
+  
+  for (iVertex = 0; iVertex < MaxLocalVertex_Periodic; iVertex++) {
+    Buffer_Send_Point[iVertex]       = 0;
+    Buffer_Send_GlobalIndex[iVertex] = 0;
+    Buffer_Send_Vertex[iVertex]      = 0;
+    Buffer_Send_Marker[iVertex]      = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+  }
+  
+  /*--- Store the local index, global index, local boundary index,
+   marker index, and point coordinates in the buffers for sending.
+   Note again that this is only for the current pair of periodic
+   markers and for only the "owned" points on each rank. ---*/
+  
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          iPointGlobal = node[iPoint]->GetGlobalIndex();
+          if (node[iPoint]->GetDomain()) {
+            Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
+            Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
+            Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
+            Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
+            for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+            nLocalVertex_Periodic++;
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Copy our own data in serial or use collective comms to gather
+   the data for all points on each rank with MPI. Note that, since the
+   periodic point count should be small relative to the volume grid
+   and we are only storing one periodic marker pair at a time,
+   repeating the data for each pair on all ranks should be manageable. ---*/
+  
+#ifndef HAVE_MPI
+  for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
+  Buffer_Recv_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
+  for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
+  Buffer_Recv_Point[iBuffer_Point] = Buffer_Send_Point[iBuffer_Point];
+  for (unsigned long iBuffer_GlobalIndex = 0; iBuffer_GlobalIndex < nBuffer_GlobalIndex; iBuffer_GlobalIndex++)
+  Buffer_Recv_GlobalIndex[iBuffer_GlobalIndex] = Buffer_Send_GlobalIndex[iBuffer_GlobalIndex];
+  for (unsigned long iBuffer_Vertex = 0; iBuffer_Vertex < nBuffer_Vertex; iBuffer_Vertex++)
+  Buffer_Recv_Vertex[iBuffer_Vertex] = Buffer_Send_Vertex[iBuffer_Vertex];
+  for (unsigned long iBuffer_Marker = 0; iBuffer_Marker < nBuffer_Marker; iBuffer_Marker++)
+  Buffer_Recv_Marker[iBuffer_Marker] = Buffer_Send_Marker[iBuffer_Marker];
+#else
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE,
+                     Buffer_Recv_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Now that all ranks have the data for all periodic points for
+   this pair of periodic markers, we match the individual points
+   based on the translation / rotation specified for the marker pair. ---*/
+  
+  maxdist_local = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        
+        /*--- Retrieve the supplied periodic information. ---*/
+        
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        center     = config->GetPeriodicRotCenter(Marker_Tag);
+        angles     = config->GetPeriodicRotAngles(Marker_Tag);
+        trans      = config->GetPeriodicTranslation(Marker_Tag);
+
+        /*--- Store (center+trans) as it is constant and will be added. ---*/
+        
+        translation[0] = center[0] + trans[0];
+        translation[1] = center[1] + trans[1];
+        translation[2] = center[2] + trans[2];
+        
+        /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+        
+        Theta    = angles[0];      Phi = angles[1];     Psi = angles[2];
+        cosTheta = cos(Theta);  cosPhi = cos(Phi);   cosPsi = cos(Psi);
+        sinTheta = sin(Theta);  sinPhi = sin(Phi);   sinPsi = sin(Psi);
+        
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+        
+        rotMatrix[0][0] = cosPhi*cosPsi;
+        rotMatrix[1][0] = cosPhi*sinPsi;
+        rotMatrix[2][0] = -sinPhi;
+        
+        rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+        rotMatrix[2][1] = sinTheta*cosPhi;
+        
+        rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[2][2] = cosTheta*cosPhi;
+        
+        /*--- Loop over each point on the periodic marker that this rank
+         holds locally and find the matching point from the donor marker. ---*/
+        
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          
+          /*--- Local and global index for the owned periodic point. ---*/
+          
+          iPoint       = vertex[iMarker][iVertex]->GetNode();
+          iPointGlobal = node[iPoint]->GetGlobalIndex();
+          
+          /*--- If this is not a ghost, find the periodic match. ---*/
+          
+          if (node[iPoint]->GetDomain()) {
+            
+            /*--- Coordinates of the current boundary point ---*/
+            
+            Coord_i = node[iPoint]->GetCoord();
+            
+            /*--- Get the position vector from rotation center to point. ---*/
+            
+            dx = Coord_i[0] - center[0];
+            dy = Coord_i[1] - center[1];
+            if (nDim == 3) dz = Coord_i[2] - center[2];
+            else           dz = 0.0;
+            
+            /*--- Compute transformed point coordinates. ---*/
+            
+            rotCoord[0] = (rotMatrix[0][0]*dx +
+                           rotMatrix[0][1]*dy +
+                           rotMatrix[0][2]*dz + translation[0]);
+            
+            rotCoord[1] = (rotMatrix[1][0]*dx +
+                           rotMatrix[1][1]*dy +
+                           rotMatrix[1][2]*dz + translation[1]);
+            
+            rotCoord[2] = (rotMatrix[2][0]*dx +
+                           rotMatrix[2][1]*dy +
+                           rotMatrix[2][2]*dz + translation[2]);
+            
+            /*--- Our search is based on the minimum distance, so we
+             initialize the distance to a large value. ---*/
+            
+            mindist = 1E6; pProcessor = 0; pPoint = 0;
+            
+            /*--- Loop over all of the periodic data that was gathered from
+             all ranks in order to find the matching periodic point. ---*/
+            
+            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+            for (jVertex = 0; jVertex < Buffer_Recv_nVertex[iProcessor]; jVertex++) {
+              
+              /*--- Store the loop index more easily. ---*/
+              
+              index = iProcessor*MaxLocalVertex_Periodic + jVertex;
+              
+              /*--- For each candidate, we have the local and global index,
+               along with the boundary vertex and marker index. ---*/
+              
+              jPoint       = Buffer_Recv_Point[index];
+              jPointGlobal = Buffer_Recv_GlobalIndex[index];
+              jVertex_     = Buffer_Recv_Vertex[index];
+              jMarker      = Buffer_Recv_Marker[index];
+              
+              /*--- The gathered data will also include the current
+               "owned" periodic point that we are matching, so first make
+               sure that we avoid the original point by checking that the
+               global index values are not the same. ---*/
+              
+              if ((jPointGlobal != iPointGlobal)) {
+                
+                /*--- Compute the distance between the candidate periodic
+                 point and the transformed coordinates of the owned point. ---*/
+                
+                dist = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Coord_j[iDim] = Buffer_Recv_Coord[index*nDim + iDim];
+                  dist         += pow(Coord_j[iDim]-rotCoord[iDim],2.0);
+                }
+                dist = sqrt(dist);
+                
+                /*--- Compare the distance against the existing minimum
+                 and also perform checks just to be sure that this is an
+                 independent periodic point (even if on the same rank). ---*/
+                
+                if (((dist < mindist) && (iProcessor != rank)) ||
+                    ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
+                  
+                  /*--- We have found an intermediate match. Store the
+                   data for this point before continuing the search. ---*/
+                  
+                  mindist      = dist;
+                  pProcessor   = iProcessor;
+                  pPoint       = jPoint;
+                  pPointGlobal = jPointGlobal;
+                  pVertex      = jVertex_;
+                  pMarker      = jMarker;
+                  
+                }
+              }
+              
+            }
+            
+            /*--- Store the data for the best match found for the
+             owned periodic point. ---*/
+            
+            vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
+            maxdist_local = max(maxdist_local, mindist);
+            nPointMatch++;
+            
+            /*--- If the distance to the closest point is larger than our
+             tolerance, then throw a warning for this point. ---*/
+            
+            if (mindist > epsilon) {
+              cout.precision(10);
+              cout << endl;
+              cout << "   Bad match for point " << iPointGlobal << ".\tNearest";
+              cout << " donor distance: " << scientific << mindist << ".";
+              maxdist_local = min(maxdist_local, 0.0);
+              isBadMatch = true;
+            }
+            
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Communicate the final count of number of matched points
+   for the periodic boundary pair and the max distance for all
+   pairs of points. ---*/
+  
+#ifndef HAVE_MPI
+  maxdist_global = maxdist_local;
+#else
+  unsigned long nPointMatch_Local = nPointMatch;
+  SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG,
+                  MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE,
+                  MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Output some information about the matching process. ---*/
+  
+  if (rank == MASTER_NODE) {
+    if (nPointMatch > 0) {
+      cout <<" Matched " << nPointMatch << " points with a max distance of: ";
+      cout << maxdist_global <<"."<< endl;
+    } else {
+      cout <<" No matching points for periodic marker pair ";
+      cout << val_periodic << " in current zone." << endl;
+    }
+    
+    /*--- Print final warning when finding bad matches. ---*/
+    
+    if (isBadMatch) {
+      cout << endl;
+      cout << "\n !!! Warning !!!" << endl;
+      cout << "Bad matches found. Computation will continue, but be cautious.\n";
+    }
+  }
+  
+  /*--- Free local memory for communications. ---*/
+  
+  delete[] Buffer_Send_Coord;
+  delete[] Buffer_Send_Point;
+  
+  delete[] Buffer_Recv_Coord;
+  delete[] Buffer_Recv_Point;
+  
+  delete[] Buffer_Send_nVertex;
+  delete[] Buffer_Recv_nVertex;
+  
+  delete [] Buffer_Send_GlobalIndex;
+  delete [] Buffer_Send_Vertex;
+  delete [] Buffer_Send_Marker;
+  
+  delete [] Buffer_Recv_GlobalIndex;
+  delete [] Buffer_Recv_Vertex;
+  delete [] Buffer_Recv_Marker;
+  
+}
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
@@ -19138,28 +20821,10 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
-  bool isPeriodic = false;
-  unsigned long iVertex;
-  unsigned short iMarker, RotationKind, nPeriodicR = 0, nPeriodicS = 0;
-  
-  /*--- Check for the presence of any periodic BCs ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        RotationKind = vertex[iMarker][iVertex]->GetRotation_Type();
-        if (RotationKind > 0) nPeriodicS++;
-      }
-    }
-  }
-#ifndef HAVE_MPI
-  nPeriodicR = nPeriodicS;
-#else
-  SU2_MPI::Allreduce(&nPeriodicS, &nPeriodicR, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (nPeriodicR != 0) isPeriodic = true;
-  
-  if (isPeriodic && (config->GetnMGLevels() > 0)) {
+  /*--- Check for the presence of any periodic BCs and disable multigrid
+   for now if found. ---*/
+
+  if ((config->GetnMarker_Periodic() != 0) && (config->GetnMGLevels() > 0)) {
     if (rank == MASTER_NODE)
       cout << "WARNING: Periodicity has been detected. Disabling multigrid. "<< endl;
     config->SetMGLevels(0);
@@ -21663,6 +23328,33 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
           vertex[iMarker][iVertex]->SetDonorPoint(iPoint, node[iPoint]->GetGlobalIndex(), iVertex, iMarker, iProcessor);
+        }
+      }
+    }
+  }
+  
+}
+
+void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) {
+  
+  unsigned short iMarker, iPeriodic, nPeriodic;
+  unsigned long iVertex, iPoint;
+  int iProcessor = rank;
+  
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+  
+  nPeriodic = config->GetnMarker_Periodic();
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (node[iPoint]->GetDomain()) {
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, node[iPoint]->GetGlobalIndex(), iVertex, iMarker, iProcessor);
+          }
         }
       }
     }

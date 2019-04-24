@@ -2020,6 +2020,8 @@ inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
 
+inline unsigned short CConfig::GetComm_Level(void) { return Comm_Level; }
+
 inline bool CConfig::GetTopology_Optimization(void) const { return topology_optimization; }
 
 inline string CConfig::GetTopology_Optim_FileName(void) const { return top_optim_output_file; }
