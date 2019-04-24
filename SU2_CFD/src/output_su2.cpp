@@ -363,8 +363,82 @@ void COutput::WriteProjectedSensitivity(CConfig *config,
     if (SurfacePoint[iPoint]) {nSurf_Poin++; LocalIndex[iPoint] = nSurf_Poin;}
   }
   
+  /*--- Hack in a filter for now ---*/
+  
+  unsigned short type;
+  su2double param, radius;
+  
+  // error if more than one kernel
+  if (config->GetTopology_Optim_Num_Kernels() != 1) {
+    SU2_MPI::Error("Only a single kernel is allowed for surface sensitivity smoothing.",CURRENT_FUNCTION);
+  }
+  
+  vector<pair<unsigned short,su2double> > kernels;
+  vector<su2double> filter_radius;
+  for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
+  {
+    config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
+    kernels.push_back(make_pair(type,param));
+    filter_radius.push_back(radius);
+  }
+  
+  unsigned long jPoint, kPoint;
+  unsigned short kernel_type = kernels[0].first;
+  su2double kernel_param = kernels[0].second;
+  su2double kernel_radius = filter_radius[0];
+  
+  unsigned short nDim = geometry->GetnDim();
+  
+  su2double *output_values = new su2double[nSurf_Poin*nDim];
+  kPoint = 0;
+  
+  //loop over all surface points, we need to smooth each
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    if (LocalIndex[iPoint+1] != 0) {
+      
+      // loop all neighbors within the radius
+      su2double weight = 0.0, numerator[3] = {0.0,0.0,0.0}, denominator[3] = {0.0,0.0,0.0};
+      
+      for (jPoint = 0; jPoint < nGlobal_Poin; jPoint++) {
+        if (LocalIndex[jPoint+1] != 0) {
+          
+          su2double distance = 0.0;
+          for (unsigned short iDim=0; iDim<nDim; ++iDim)
+            distance += pow(Data[iDim][iPoint]-Data[iDim][jPoint],2.0);
+          distance = sqrt(distance);
+          
+          if (distance <= kernel_radius) {
+            switch ( kernel_type ) {
+              case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
+              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
+              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2.0)); break;
+              default: break;
+            }
+            weight *= 1.0 ; //vol_elem[*it];
+            
+            // apply the weight to this point, skip the coord in data
+            for (unsigned short iDim=0; iDim<nDim; ++iDim){
+              numerator[iDim]   += weight*Data[nDim+iDim][jPoint];
+              denominator[iDim] += weight;
+            }
+            
+          }
+          
+        }
+      }
+      
+      //final value after smoothing
+      for (unsigned short iDim=0; iDim<nDim; ++iDim){
+        output_values[kPoint*nDim+iDim] = numerator[iDim]/denominator[iDim];
+      }
+      kPoint++;
+      
+    }
+  }
+  
   /*--- Write surface x,y,z and surface dJ/dx, dJ/dy, dJ/dz data. ---*/
   
+    kPoint=0;
   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
     
     if (LocalIndex[iPoint+1] != 0) {
@@ -373,12 +447,20 @@ void COutput::WriteProjectedSensitivity(CConfig *config,
        we subtract 2 from the fields list to ignore the initial ID and
        final sens.normal value in the Data array. ---*/
       
-      for (iVar = 0; iVar < config->fields.size()-2; iVar++)
+      for (iVar = 0; iVar < nDim; iVar++)
       Sens_File << scientific << Data[iVar][iPoint] << "\t";
+      
+      for (unsigned short iDim=0; iDim<nDim; ++iDim){
+        Sens_File << scientific << output_values[kPoint*nDim+iDim] << "\t";
+      }
+      kPoint++;
+      
       Sens_File << scientific << "\n";
       
     }
   }
+  
+  delete [] output_values;
   
 }
 

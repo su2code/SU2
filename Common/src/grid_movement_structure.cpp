@@ -3022,19 +3022,38 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         Surface_File.open(filename.c_str(), ios::out);
         Surface_File.precision(15);
+        
+        /*--- Create a mapping of local and global index so that we
+         can write the surface file in order of increasing global index. ---*/
+        
+        map<unsigned long, unsigned long> Point_Map;
+        map<unsigned long, unsigned long>::iterator MI;
         unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
+        
         for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           if (config->GetMarker_All_DV(iMarker) == YES) {
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
               jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
-              Coords = geometry->node[jPoint]->GetCoord();
-              Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-              if (geometry->GetnDim() == 2) Surface_File << endl;
-              else Surface_File << "\t" << Coords[2] << endl;
+              Point_Map[GlobalIndex] = jPoint;
             }
           }
         }
+        
+        /*--- Now loop through map in global ordering. ---*/
+        
+        for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
+          GlobalIndex = MI->first;
+          jPoint      = MI->second;
+          Coords      = geometry->node[jPoint]->GetCoord();
+          Surface_File << GlobalIndex;
+          Surface_File << scientific << "\t" << Coords[0] << "\t" << Coords[1];
+          if (geometry->GetnDim() == 2) Surface_File << "\n";
+          else Surface_File << scientific << "\t" << Coords[2] << "\n";
+        }
+        
+        /*--- Close the file. ---*/
+        
         Surface_File.close();
         
       } else {
