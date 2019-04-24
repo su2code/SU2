@@ -681,6 +681,16 @@ public:
   map<string, string> GetAllBoundaryMarkersType();
 
   /*!
+   * \brief Set the mesh displacement for the elasticity mesh solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] DispX - Value of the mesh displacement in the direction X.
+   * \param[in] DispY - Value of the mesh displacement in the direction Y.
+   * \param[in] DispZ - Value of the mesh displacement in the direction Z.
+   */
+  void SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+
+  /*!
    * \brief Set the load in X direction for the structural solver.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -688,7 +698,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  void SetLoads(unsigned short iMarker, unsigned short iVertex, unsigned short iGlobalIndex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ);
+  void SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ);
 
   /*!
    * \brief Return the displacements from the FEA solver.

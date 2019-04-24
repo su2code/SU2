@@ -932,17 +932,26 @@ void CFluidDriver::BoundaryConditionsUpdate(){
   }
 }
 
-void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, unsigned short iGlobalIndex, passivedouble LoadX,
-                       passivedouble LoadY, passivedouble LoadZ) {
+void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
+  PyWrapVarCoord[0] = DispX;
+  PyWrapVarCoord[1] = DispY;
+  PyWrapVarCoord[2] = DispZ;
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->node[iPoint]->SetSolution(PyWrapVarCoord);
+
+}
+
+void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ) {
+
+  unsigned long iPoint;
   PyWrapNodalForce[0] = LoadX;
   PyWrapNodalForce[1] = LoadY;
   PyWrapNodalForce[2] = LoadZ;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
-
   solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->Set_FlowTraction(PyWrapNodalForce);
 
 }
