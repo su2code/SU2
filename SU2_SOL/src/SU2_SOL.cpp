@@ -655,8 +655,8 @@ int main(int argc, char *argv[]) {
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
           solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-          solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
-          output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst], iZone);          
+          output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][iInst]);
 
           /*--- Print progress in solution writing to the screen. ---*/
           if (rank == MASTER_NODE) {
