@@ -380,7 +380,7 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ADJ_VELOCITY-Y", "Residual_Adjoint_Velocity_y", "RESIDUAL");  
   if (nDim == 3)
     /// DESCRIPTION: Residual of the adjoint Velocity z-component.
-    AddVolumeOutput("RES_ADJ_Velocity-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL");
+    AddVolumeOutput("RES_ADJ_VELOCITY-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL");
   /// DESCRIPTION: Residual of the adjoint temperature.
   AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Temperature", "RESIDUAL");
   if (!config->GetFrozen_Visc_Disc()){      

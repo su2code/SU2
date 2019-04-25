@@ -49,6 +49,7 @@
 #include <cmath>
 #include <time.h>
 #include <fstream>
+#include <string>
 
 #include "output.hpp"
 #include "../../../Common/include/config_structure.hpp"
