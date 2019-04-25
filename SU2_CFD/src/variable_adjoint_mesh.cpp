@@ -45,17 +45,9 @@ CDiscAdjMeshVariable::CDiscAdjMeshVariable(su2double *val_coor, unsigned short v
   /*--- Store the dimensionality of the problem ---*/
   nDim = val_nDim;
 
-  /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
-  Mesh_Coord_Sens  = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Mesh_Coord_Sens[iDim] = val_coor[iDim];
-  }
-
 }
 
 CDiscAdjMeshVariable::~CDiscAdjMeshVariable(void) {
-
-  if (Mesh_Coord_Sens != NULL)    delete [] Mesh_Coord_Sens;
 
 }
 
@@ -63,12 +55,23 @@ CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(su2double *val_coor, unsign
 
   unsigned short iDim;
 
+  bool fsi = false;
+
   /*--- Initialize Boundary Displacement container to 0.0 ---*/
   Bound_Disp_Sens   = new su2double [nDim];
   Bound_Disp_Direct = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     Bound_Disp_Sens[iDim]   = 0.0;
     Bound_Disp_Direct[iDim] = 0.0;
+  }
+
+  /*--- Container for the BGS solution at the previous iteration ---*/
+  Solution_BGS_k        = NULL;
+  if (fsi){
+    Solution_BGS_k        = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_BGS_k[iDim]        = 0.0;
+    }
   }
 
 }
