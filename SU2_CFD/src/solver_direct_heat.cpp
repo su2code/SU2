@@ -40,6 +40,7 @@
 CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
 
   ConjugateVar = NULL;
+  HeatFlux     = NULL;
 }
 
 CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -206,6 +207,16 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
+  /*--- Heat flux in all the markers ---*/
+  
+  HeatFlux = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      HeatFlux[iMarker][iVertex] = 0.0;
+    }
+  }
+  
   /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
   if(heat_equation) {
     su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
@@ -241,7 +252,18 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   SolverName = "HEAT";
 }
 
-CHeatSolverFVM::~CHeatSolverFVM(void) { }
+CHeatSolverFVM::~CHeatSolverFVM(void) {
+  
+  unsigned short iMarker;
+  
+  if (HeatFlux != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] HeatFlux[iMarker];
+    }
+    delete [] HeatFlux;
+  }
+  
+}
 
 
 void CHeatSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1324,7 +1346,10 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn; // TDE *config->GetHeat_Flux_Ref();
+          
+          Heat_Flux[iMarker] += HeatFlux[iMarker][iVertex]*Area;
+          
         }
       }
     }
@@ -1362,7 +1387,9 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity*dTdn; // TDE *config->GetHeat_Flux_Ref();
+          
+          Heat_Flux[iMarker] += HeatFlux[iMarker][iVertex]*Area;
 
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
           if ( Boundary == HEAT_FLUX ) {

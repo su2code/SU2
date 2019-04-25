@@ -59,6 +59,7 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
     RequestedVolumeFields.push_back("SOLUTION");
+    RequestedVolumeFields.push_back("PRIMITIVE");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
@@ -140,6 +141,9 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   // SOLUTION
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION");
 
+  // Primitives
+  AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
+
   // Residuals  
   AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
   
@@ -163,6 +167,13 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   
   // Residuals    
   SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  
+}
+
+void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+  
+  /* Heat flux value at each surface grid node. */
+  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));
   
 }
 

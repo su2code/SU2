@@ -93,4 +93,15 @@ public:
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
  
+  /*!
+   * \brief LoadSurfaceData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   * \param iMarker
+   * \param iVertex
+   */
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);
+  
 };
