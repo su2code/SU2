@@ -72,7 +72,7 @@ void CSinglezoneDriver::StartSolver() {
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
-  if (config_container[ZONE_0]->GetRestart())
+  if (config_container[ZONE_0]->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
@@ -85,6 +85,10 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Run a time-step iteration of the single-zone problem. ---*/
 
     Run();
+
+    /*--- Perform some postprocessing on the solution before the update ---*/
+
+    Postprocess();
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -157,13 +161,11 @@ void CSinglezoneDriver::Run() {
   iteration_container[ZONE_0][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-  /*--- A corrector step can help preventing numerical instabilities ---*/
-  Corrector();
-
-
 }
 
-void CSinglezoneDriver::Corrector() {
+void CSinglezoneDriver::Postprocess() {
+
+    /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
       iteration_container[ZONE_0][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
