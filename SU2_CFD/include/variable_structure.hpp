@@ -2211,7 +2211,6 @@ public:
    */
   virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord);
 
-
     /*!
    * \brief A virtual member. Get the value of the wall distance in reference coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
@@ -2226,6 +2225,20 @@ public:
   virtual void SetWallDistance(su2double val_dist);
 
   /*!
+   * \brief A virtual member. Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord_Sens[nDim]
+   */
+  virtual void SetMesh_Coord_Sens(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  virtual su2double GetMesh_Coord_Sens(unsigned short iDim);
+
+  /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
@@ -2236,6 +2249,32 @@ public:
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   virtual void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  virtual su2double* GetBound_Disp_Direct();
+
+  /*!
+   * \brief A virtual member. Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  virtual void SetBound_Disp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief A virtual member. Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord_Sens[nDim]
+   */
+  virtual void SetBound_Disp_Sens(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  virtual su2double GetBound_Disp_Sens(unsigned short iDim);
 
    /*!
     * \brief A virtual member.
@@ -5165,7 +5204,56 @@ public:
    * \brief Determine whether the node is a moving vertex.
    * \return False. The node is not at the boundary.
    */
-  bool Get_isVertex(void);
+  virtual bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshVariable : public CVariable {
+protected:
+
+  su2double *Mesh_Coord_Sens;  /*!< \brief Store the sensitivity respect to the reference coordinates. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshVariable(void);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord_Sens[nDim]
+   */
+  void SetMesh_Coord_Sens(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  su2double GetMesh_Coord_Sens(unsigned short iDim);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  virtual bool Get_isVertex(void);
 
 };
 
@@ -5207,6 +5295,68 @@ public:
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return True. The node is at the boundary.
+   */
+  bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshBoundVariable : public CDiscAdjMeshVariable {
+protected:
+
+  su2double* Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
+  su2double* Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshBoundVariable(void);
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  su2double* GetBound_Disp_Direct();
+
+  /*!
+   * \brief Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  void SetBound_Disp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord_Sens[nDim]
+   */
+  void SetBound_Disp_Sens(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  su2double GetBound_Disp_Sens(unsigned short iDim);
 
   /*!
    * \brief Determine whether the node is a moving vertex.
