@@ -235,10 +235,18 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
 
   /*--- Initialize from zero everywhere. ---*/
+  long iVertex;
+  bool isVertex;
 
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
+    isVertex = false;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1){isVertex = true; break;}
+    }
+    if (isVertex) node[iPoint] = new CFEABoundVariable(SolRest, nDim, nVar, config);
+    else          node[iPoint] = new CFEAVariable(SolRest, nDim, nVar, config);
   }
   
   bool reference_geometry = config->GetRefGeom();
@@ -458,11 +466,15 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- If dynamic, we also need to communicate the old solution ---*/
   
-  if(dynamic) Set_MPI_Solution_Old(geometry, config);
+  if(dynamic) {
+    InitiateComms(geometry, config, SOLUTION_FEA_OLD);
+    CompleteComms(geometry, config, SOLUTION_FEA_OLD);
+  }
   
 }
 
@@ -2513,6 +2525,12 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
         
       }
       
+    } else {
+      
+      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
+      
+      for (iVar = 0; iVar < nPoint; iVar++) Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
+      
     }
     
   }
@@ -2647,52 +2665,46 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
+        if (iNode != jPoint) {
+          Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
+        }
+        else{
+          Jacobian.SetBlock(iNode,jPoint,mId_Aux);
         }
       }
 
-      /*--- Delete the columns for a particular node ---*/
+    }
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
+    /*--- Always delete the iNode column, even for halos ---*/
 
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
 
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-            }
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
+
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
           }
+        }
 
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
-            }
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
           }
+        }
 
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-          }
-
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
         }
 
       }
@@ -2700,7 +2712,6 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
     }
 
   }
-
 
 }
 
@@ -2731,8 +2742,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
       Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
 
       /*--- MPI solution ---*/
-
-      Set_MPI_Solution(geometry, config);
+      
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
     }
     else {
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2759,8 +2771,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
-
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -2837,8 +2850,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
       /*--- MPI solution ---*/
 
-      Set_MPI_Solution(geometry, config);
-
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
     } else {
 
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
@@ -2865,9 +2879,10 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- MPI solution ---*/
-
-      Set_MPI_Solution(geometry, config);
-
+      
+      InitiateComms(geometry, config, SOLUTION_FEA);
+      CompleteComms(geometry, config, SOLUTION_FEA);
+      
       /*--- Compute the root mean square residual ---*/
 
       SetResidual_RMS(geometry, config);
@@ -3681,7 +3696,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3783,7 +3797,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3797,7 +3810,9 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
           }
         }
         else {
-          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Res_FSI_Cont[iVar] = node[iPoint]->Get_FlowTraction(iVar);
+          }
         }
         LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
       }
@@ -3868,8 +3883,8 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
-  
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -3931,7 +3946,8 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
   /*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
   /*--- Loop over n points (as we have already communicated everything ---*/
@@ -3995,7 +4011,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4082,7 +4097,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++) {
             Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
           }
-          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -4130,7 +4144,8 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_DISPONLY);
+  CompleteComms(geometry, config, SOLUTION_DISPONLY);
   
 }
 
@@ -4199,7 +4214,8 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
   
   /*--- Perform the MPI communication of the solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION_FEA);
+  CompleteComms(geometry, config, SOLUTION_FEA);
   
 }
 
@@ -4233,8 +4249,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
-  CSysSolve femSystem;
-  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- The the number of iterations of the linear solver ---*/
   
@@ -4487,7 +4502,8 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry,
   
   /*--- Perform the MPI communication of the solution, displacements only ---*/
   
-  Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+  InitiateComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
+  CompleteComms(fea_geometry[MESH_0], fea_config, SOLUTION_DISPONLY);
   
 }
 
@@ -5049,12 +5065,20 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   }
 
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
-
-  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
+  
+  solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
+  solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  
+  if (dynamic) {
+    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+  }
   if (fluid_structure && !dynamic){
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry[MESH_0], config);
-      solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry[MESH_0], config);
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
+        
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
   }
 
   delete [] Sol;
