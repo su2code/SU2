@@ -266,8 +266,11 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /*--- Add aerodynamic coefficients fields --- */
   
-  AddAerodynamicCoefficients(config);  
-
+  AddAerodynamicCoefficients(config); 
+  
+  /*--- Add Cp diff fields ---*/
+  
+  Add_CpInverseDesignOutput(config);
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -612,6 +615,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   
   SetAerodynamicCoefficients(config, flow_solver);
 
+  /*--- Set Cp diff fields ---*/
+  
+  Set_CpInverseDesign(flow_solver, geometry, config);
+  
 }
 
 su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
