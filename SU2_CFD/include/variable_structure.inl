@@ -649,9 +649,21 @@ inline su2double CVariable::GetWallDistance(void) { return 0.0; }
 
 inline void CVariable::SetWallDistance(su2double val_dist) { }
 
+inline void CVariable::SetMesh_Coord_Sens(unsigned short iDim, su2double val_coord) { }
+
+inline su2double CVariable::GetMesh_Coord_Sens(unsigned short iDim) { return 0.0; }
+
 inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
 
 inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
+
+inline su2double *CVariable::GetBound_Disp_Direct(void) { return NULL; }
+
+inline void CVariable::SetBound_Disp_Direct(su2double *val_BoundDisp) { }
+
+inline void CVariable::SetBound_Disp_Sens(unsigned short iDim, su2double val_coord) { }
+
+inline su2double CVariable::GetBound_Disp_Sens(unsigned short iDim) { return 0.0; }
 
 inline void CVariable::Register_femSolution_time_n() { }
 
@@ -1659,6 +1671,12 @@ inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = 
 
 inline bool CMeshVariable::Get_isVertex(void) { return false; }
 
+inline void CDiscAdjMeshVariable::SetMesh_Coord_Sens(unsigned short iDim, su2double val_coord) { Mesh_Coord_Sens[iDim] = val_coord; }
+
+inline su2double CDiscAdjMeshVariable::GetMesh_Coord_Sens(unsigned short iDim) { return Mesh_Coord_Sens[iDim]; }
+
+inline bool CDiscAdjMeshVariable::Get_isVertex(void) { return false; }
+
 inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return Boundary_Displacement[iDim]; }
 
 inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
@@ -1666,6 +1684,16 @@ inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
 }
 
 inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }
+
+inline su2double *CDiscAdjMeshBoundVariable::GetBound_Disp_Direct(void) { return Bound_Disp_Direct; }
+
+inline void CDiscAdjMeshBoundVariable::SetBound_Disp_Direct(su2double *val_BoundDisp) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Bound_Disp_Direct[iDim] = val_BoundDisp[iDim]; }
+
+inline void CDiscAdjMeshBoundVariable::SetBound_Disp_Sens(unsigned short iDim, su2double val_coord) { Bound_Disp_Sens[iDim] = val_coord; }
+
+inline su2double CDiscAdjMeshBoundVariable::GetBound_Disp_Sens(unsigned short iDim) { return Bound_Disp_Sens[iDim]; }
+
+inline bool CDiscAdjMeshBoundVariable::Get_isVertex(void) { return true; }
 
 inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
 
