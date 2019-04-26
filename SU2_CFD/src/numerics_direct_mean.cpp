@@ -4949,6 +4949,28 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
 
+
+void CAvgGrad_Base::ReplaceTauWall(const su2double *val_normal,
+                                   const su2double *val_dir_tan,
+                                   const su2double val_tau_wall) {
+
+  /*--- ---*/
+  unsigned short iDim,jDim;
+  su2double Area;
+  
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += val_normal[iDim]*val_normal[iDim];
+  Area = sqrt(Area);
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      tau[iDim][jDim] = 0.0;
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    tau[iDim][iDim] = -val_tau_wall*val_dir_tan[iDim]*Area;
+}
+
 void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
 {
   /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
@@ -5373,10 +5395,16 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Wall shear stress values (wall functions) ---*/
   /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
+  
+//  if ((TauWall_i > 0) && (TauWall_j > 0))
+//    cout << TauWall_i << " " << TauWall_j << " " << DirTan_i[0] << " " << DirTan_j[0] << " " << DirTan_i[1] << " " << DirTan_j[1] << " " << DirTan_i[2] << " " << DirTan_j[2] << endl;
   if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
   else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
   else Mean_TauWall = -1.0;
+  
+ for (iDim = 0; iDim < nDim; iDim++)
+   Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
 
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
@@ -5390,7 +5418,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
-  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
+  //if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
+  if (Mean_TauWall > 0) ReplaceTauWall(Normal, Mean_DirTan, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);

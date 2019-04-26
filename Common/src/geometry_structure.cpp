@@ -14543,7 +14543,6 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
           for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
             
             unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
-            
             su2double *iNormal = vertex[iMarker][iVertex]->GetNormal();
             su2double normals[] = {0.0,0.0,0.0},Area;
             su2double *Coord  = node[iPoint]->GetCoord();

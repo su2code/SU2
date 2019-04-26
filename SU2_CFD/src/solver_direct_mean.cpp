@@ -16759,6 +16759,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Wall shear stress values (wall functions) ---*/
     
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[iPoint]->GetTauWall());
+    numerics->SetDirTan(node[iPoint]->GetDirTanWM(), node[iPoint]->GetDirTanWM());
 
     /*--- Compute and update residual ---*/
     
@@ -17813,6 +17814,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         Enthalpy_b = Energy_b + Pressure_b/Density_b;
         
         conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Res_Conv);
+        //cout << Density_b << " " << Velocity_b[0] << " " <<  Velocity_b[1] << " " << Velocity_b[2] << " " << Pressure_b <<  " " << Enthalpy_b << " " << NormalArea[0] << " " << NormalArea[1] << " " << NormalArea[2] << " " << Res_Conv[0] << " " << Res_Conv[1] << " " << Res_Conv[2] << " " << Res_Conv[3] << " " << Res_Conv[4] << endl;
         
         /*--- Grid velocity correction to the energy term ---*/
         if (grid_movement) {
@@ -17893,7 +17895,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           /*--- Get the grid velocity at the current boundary node ---*/
           GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += GridVel[iDim];
-        }
+        
         
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -17936,9 +17938,10 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
         
         Res_Conv[nDim+1] = Pressure*ProjGridVel;
-        for (iDim = 0 ; iDim < nDim; iDim++)
+        for (iDim = 0 ; iDim < nDim; iDim++){
           Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
-        
+        }
+        //cout << Res_Visc[1] << " " << Res_Visc[2] << " " << Res_Visc[3] << endl;
         /*--- TODO: Add the ---*/
         
         if (implicit) {
@@ -18004,6 +18007,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           /*--- Subtract the block from the Global Jacobian structure ---*/
           
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
         }
       }
       else{
@@ -18880,13 +18884,13 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         if (!geometry->node[iPoint]->GetDomain()) continue;
         
         /*--- Main task 1: Interpolate to have the velocity and pressure at the exchange location---*/
-        su2double *normals = geometry->vertex[iMarker][iVertex]->GetNormal();
+        su2double *normals = geometry->vertex[iMarker][iVertex]->GetNormal(), Unit_Normal[] = {0.0,0.0,0.0};
         unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
         su2double vel_LES[3] = {0.0, 0.0, 0.0}, rho_LES = 0.0, e_LES   = 0.0,Area = 0.0;
         
         for (iDim = 0; iDim < nDim; iDim++) Area += normals[iDim]*normals[iDim];
         Area = sqrt(Area);
-        for (iDim = 0; iDim < nDim; iDim++) normals[iDim]/=Area;
+        for (iDim = 0; iDim < nDim; iDim++) Unit_Normal[iDim] = normals[iDim]/Area;
         
         /*--- Load the coefficients and interpolate---*/
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
@@ -18917,8 +18921,8 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         /* Determine the tangential velocity by subtracting the normal
          velocity component. */
         su2double velNorm = 0.0;
-        for(iDim = 0; iDim < nDim; iDim++) velNorm += normals[iDim]*vel_LES[iDim];
-        for(iDim = 0; iDim < nDim; iDim++) vel_LES[iDim] -= normals[iDim]*velNorm;
+        for(iDim = 0; iDim < nDim; iDim++) velNorm += Unit_Normal[iDim]*vel_LES[iDim];
+        for(iDim = 0; iDim < nDim; iDim++) vel_LES[iDim] -= Unit_Normal[iDim]*velNorm;
         
         /* Determine the magnitude of the tangential velocity as well
          as its direction (unit vector). */
@@ -18947,11 +18951,10 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         /*--- Set tau wall and heat flux at the node. ---*/
         node[iPoint]->SetTauWall(tauWall);
         node[iPoint]->SetHeatFlux(qWall);
+        node[iPoint]->SetDirTanWM(dirTan);
         
       }
     }
   }
-
-  
 }
 

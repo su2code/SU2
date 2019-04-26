@@ -1431,6 +1431,14 @@ public:
    * \param[in] val_tauwall_j - Tauwall at point j
    */
   virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+
+  /*!
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
+   */
+  virtual void SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j);
+
   
   /*!
    * \brief - Calculate the central/upwind blending function for a face
@@ -3062,6 +3070,8 @@ class CAvgGrad_Base : public CNumerics {
   Mean_turb_ke,                /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
+  *DirTan_i, *DirTan_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
+  Mean_DirTan[3],              /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
   *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Edge_Vector;                /*!< \brief Vector from point i to point j. */
@@ -3092,7 +3102,18 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_tau_wall - The wall stress
    */
   void AddTauWall(const su2double *val_normal,
-                  su2double val_tau_wall);
+                  const su2double val_tau_wall);
+  
+  /*!
+   * \brief Replace the stress tensor with the wall model
+   *
+   *
+   * \param[in] val_dir_tan - Tangential vector at the exchange location.
+   * \param[in] val_tau_wall - The wall stress
+   */
+  void ReplaceTauWall(const su2double *val_normal,
+                      const su2double *val_dir_tan,
+                      const su2double val_tau_wall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
@@ -3223,6 +3244,13 @@ class CAvgGrad_Base : public CNumerics {
    */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 
+  /*!
+   * \brief Set the value of the wall shear stress at point i and j (wall functions).
+   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+   */
+  void SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j);
+  
   /*!
    * \brief Calculate the viscous + turbulent stress tensor
    * \param[in] val_primvar - Primitive variables.

@@ -582,6 +582,13 @@ inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tau
   TauWall_j = val_tauwall_j;
 }
 
+inline void CNumerics::SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j) { }
+
+inline void CAvgGrad_Base::SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j) {
+  DirTan_i = val_dirtan_i;
+  DirTan_j = val_dirtan_j;
+}
+
 inline su2double CAvgGrad_Base::GetStressTensor(unsigned short iDim, unsigned short jDim) const {
   return tau[iDim][jDim];
 }
