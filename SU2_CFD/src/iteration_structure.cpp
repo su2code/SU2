@@ -2900,10 +2900,6 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   integration_container[val_iZone][val_iInst][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone],
                                                                                   IntIter,log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-  /*--- Write the convergence history (only screen output) ---*/
-
-  if(IntIter != nIntIter-1)
-     output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), IntIter);
 
 
   if (dynamic){
@@ -3204,7 +3200,20 @@ bool CDiscAdjFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
+    unsigned short val_iInst)     { 
+
+  /*--- Write the convergence history (only screen output) ---*/
+  
+  output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], 
+                            solver_container[val_iZone][INST_0][MESH_0],
+                            config_container[val_iZone], 
+                            config_container[val_iZone]->GetTimeIter(), 
+                            config_container[val_iZone]->GetOuterIter(),
+                            config_container[val_iZone]->GetInnerIter());
+  
+  return false;
+  
+}
 void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ****integration_container,
     CGeometry ****geometry_container,

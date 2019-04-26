@@ -100,12 +100,6 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 
 }
 
-inline bool CAdjElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true; }
-
-inline bool CAdjElasticityOutput::WriteScreen_Header(CConfig *config) { return true; }
-
-inline bool CAdjElasticityOutput::WriteScreen_Output(CConfig *config) { return true; }
-
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers

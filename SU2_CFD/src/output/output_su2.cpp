@@ -295,27 +295,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
     
 //    remove(str.c_str());
     
-    /*--- Get the total number of periodic transformations ---*/
-    
-    nPeriodic = config->GetnPeriodicIndex();
-    output_file << "NPERIODIC= " << nPeriodic << endl;
-    
-    /*--- From iPeriodic obtain the iMarker ---*/
-    
-    for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-      
-      /*--- Retrieve the supplied periodic information. ---*/
-      
-      center = config->GetPeriodicCenter(iPeriodic);
-      angles = config->GetPeriodicRotation(iPeriodic);
-      transl = config->GetPeriodicTranslate(iPeriodic);
-      
-      output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
-      output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
-      output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
-      output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-      
-    }
     output_file.close();
   }
 
