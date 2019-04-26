@@ -309,14 +309,16 @@ public:
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessHistoryOutput(CConfig *config);  
+  void PreprocessHistoryOutput(CConfig *config, bool wrt = true);  
   
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config);  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt = true);  
   
   
   /*!
