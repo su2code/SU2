@@ -304,7 +304,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
+    if (multizone) SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());

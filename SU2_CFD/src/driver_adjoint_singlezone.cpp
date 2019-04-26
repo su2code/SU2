@@ -49,7 +49,11 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
-  nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
+  if (!config_container[ZONE_0]->GetTime_Domain())
+    nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
+  else {
+    nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
+  }
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -115,6 +119,8 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
 
   config_container[ZONE_0]->SetExtIter(TimeIter);
+  
+  config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
@@ -146,7 +152,7 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- of the previous iteration. The values are passed to the AD tool.
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetIntIter(Adjoint_Iter);
+    config->SetInnerIter(Adjoint_Iter);
     if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
       config->SetExtIter(Adjoint_Iter);
 

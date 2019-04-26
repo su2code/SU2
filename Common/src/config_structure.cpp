@@ -3014,7 +3014,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC) nIter = 1;
+    if (Dynamic_Analysis == STATIC) nTimeIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -7870,7 +7870,10 @@ bool CConfig::GetVolumetric_Movement(){
     volumetric_movement = true;
   }
   
-  if (Kind_SU2 == SU2_DEF || Kind_SU2 == SU2_DOT){ volumetric_movement = true;}
+  if (Kind_SU2 == SU2_DEF || 
+      Kind_SU2 == SU2_DOT || 
+      DirectDiff)
+  { volumetric_movement = true;}
   return volumetric_movement;
 }
 
