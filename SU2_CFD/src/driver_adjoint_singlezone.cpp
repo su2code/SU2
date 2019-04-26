@@ -67,6 +67,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
+  
+  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Initialize the direct iteration ---*/
 
@@ -77,6 +79,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) direct_iteration = new CTurboIteration(config);
     else       direct_iteration = new CFluidIteration(config);
+    if (compressible) direct_output = new CFlowCompOutput(config, geometry, solver, ZONE_0);
+    else direct_output = new CFlowIncOutput(config, geometry, solver, ZONE_0);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -85,6 +89,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
+    direct_output = new CFlowCompFEMOutput(config, geometry, solver, ZONE_0);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -93,6 +98,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
+    direct_output = new CElasticityOutput(config, geometry, ZONE_0);
     MainVariables = FEA_DISP_VARS;
     SecondaryVariables = NONE;
     break;
@@ -101,11 +107,14 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
+    direct_output = new CHeatOutput(config, geometry, ZONE_0);    
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
 
   }
+  
+ direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
@@ -308,6 +317,8 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
+  
+  direct_output->SetHistory_Output(geometry, solver, config);
 
   /*--- Specific scalar objective functions ---*/
 

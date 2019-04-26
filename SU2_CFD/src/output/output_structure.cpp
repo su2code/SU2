@@ -5412,7 +5412,7 @@ void COutput::SetScreen_Output(CConfig *config) {
   }
 }
 
-void COutput::PreprocessHistoryOutput(CConfig *config){
+void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   
 
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
@@ -5423,7 +5423,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     Postprocess_HistoryFields(config);
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && wrt){
       
       /*--- Check for consistency and remove fields that are requested but not available --- */
       
@@ -5445,14 +5445,14 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
 }
 
-void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config){
+void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt){
   
   
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
   
   SetMultizoneHistoryOutputFields(output, config);
   
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE && wrt){
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
