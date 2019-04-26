@@ -180,7 +180,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-12.272146, -3.335311, 0.000001, 2.351005] #last 4 columns
+    poiseuille.test_vals = [-5.050732, 0.648355, 0.012273, 13.643219] #last 4 columns
     poiseuille.su2_exec  = "SU2_CFD"
     poiseuille.new_output = True
     poiseuille.timeout   = 1600
@@ -827,7 +827,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.050658, -13.393664, 0.174911, 0.430700] #last 4 columns
+    ls89_sa.test_vals = [-5.046850, -13.386345, 0.174911, 0.430700] #last 4 columns
     ls89_sa.su2_exec  = "SU2_CFD"
     ls89_sa.new_output= True
     ls89_sa.timeout   = 1600
@@ -868,7 +868,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.304569, 0.419188, 80.085850, 1.034777] #last 4 columns
+    Jones_tc.test_vals = [-5.301588, 0.418684, 78.467650, 0.990182] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -880,7 +880,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.423322, -1.618510, 82.250600, 2.791319] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.344742, -1.553279, 82.250600, 2.791916] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
@@ -892,7 +892,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.837052, 5.787185, 73.679900, 0.888919] #last 4 columns
+    axial_stage2D.test_vals = [-1.789990, 5.695319, 73.361330, 0.904458] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -904,7 +904,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-1.114556, 6.120416, 67.101480, 0.070037] #last 4 columns
+    transonic_stator.test_vals = [-1.202869, 6.150690, 96.239500, 0.062740] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.new_output  = False
     transonic_stator.timeout   = 1600
@@ -916,7 +916,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.486965, 4.460638, 6.455770, 0.004009] #last 4 columns
+    transonic_stator_rst.test_vals = [-8.277755, -3.005732, 5.285371, 0.003100] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.new_output  = False
     transonic_stator_rst.timeout   = 1600

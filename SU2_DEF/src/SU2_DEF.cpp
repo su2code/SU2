@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank, size;
   string str;
-  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
@@ -83,7 +82,6 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_DEF);
 
   nZone    = config->GetnZone();
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
   
@@ -121,10 +119,10 @@ int main(int argc, char *argv[]) {
     
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DEF, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DEF, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DEF, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DEF, iZone, nZone, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
   }
@@ -151,15 +149,9 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines
-     will be entirely removed eventually in favor of the new methods. ---*/
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    if (periodic) {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    } else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-    }
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -220,6 +212,9 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
       
     }
+    /*--- Create the point-to-point MPI communication structures. ---*/
+    
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Allocate the mesh output ---*/
     
@@ -229,6 +224,7 @@ int main(int argc, char *argv[]) {
     
     output[iZone]->PreprocessVolumeOutput(config_container[iZone], geometry_container[iZone]);    
     
+
   }
   
 

@@ -142,6 +142,7 @@ CMultizoneDriver::~CMultizoneDriver(void) {
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
+  delete [] nVarZone;
 
   delete [] prefixed_motion;
 

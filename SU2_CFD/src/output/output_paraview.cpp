@@ -2788,7 +2788,6 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   fclose(fhw);
   
-  
 #else
   
   /*--- Parallel binary output using MPI I/O. ---*/
