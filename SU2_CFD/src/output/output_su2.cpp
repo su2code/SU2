@@ -60,15 +60,26 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".su2");
+  if (!config->GetMultizone_Mesh())
+    filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".su2");
+  
 
   strcpy (out_file, filename.c_str());
   strcpy (cstr, out_file); 
   
   if (rank == MASTER_NODE){
+
+    if (config->GetMultizone_Mesh() && config->GetnZone() > 1 && config->GetiZone() == 0){
+      output_file.open(cstr, ios::out);
+      output_file << "NZONE= " << config->GetnZone() << endl;
+    }
+    else if (config->GetMultizone_Mesh() && config->GetiZone() != 0){
+      output_file.open(cstr, ios::out | ios::app);
+    }
+    else {
+      output_file.open(cstr, ios::out);
+    }
     
-    
-    output_file.open(cstr, ios::out);
     
     if (config->GetnZone() > 1){
       output_file << "IZONE= " << config->GetiZone()+1 << endl;
