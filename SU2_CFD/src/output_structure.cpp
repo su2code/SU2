@@ -12434,24 +12434,6 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       delete [] Local_Data_Copy;
       
     }
-
-    /*--- Write an Inria format mesh file.
-          Note: currently only for serial. ---*/
-    if (rank == MASTER_NODE) {
-      if ( config[iZone]->GetWrt_InriaMesh() ) {
-        if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
-        SetInriaMesh(config[iZone], geometry[iZone][iInst][MESH_0]);
-      }
-    }
-
-    /*--- Write an Inria format restart file.
-          Note: currently only for serial, and uses Local_Data so must be
-          performed before SortOutputData. ---*/
-    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_ECC){
-      if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
-      SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-      WriteInriaOutputs(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-    }
     
     /*--- After loading the data local to a processor, we perform a sorting,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
@@ -12473,6 +12455,43 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
     }
 
+    /*--- Write an Inria format restart file. ---*/
+    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_ECC){
+      if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
+      SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+      if (rank == MASTER_NODE) cout << "Writing Inria sensor files." << endl;
+      WriteInriaOutputs(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+    }
+
+    /*--- Write an Inria format mesh file.
+          Note: currently only for serial. ---*/
+    if (rank == MASTER_NODE) {
+      if ( config[iZone]->GetWrt_InriaMesh()  && size == 1 ) {
+    
+        if (rank == MASTER_NODE) cout <<"Sorting volumetric grid connectivity." << endl;
+          
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TETRAHEDRON  );
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   );
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        );
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      );
+          
+        
+        /*--- Sort surface grid connectivity. ---*/
+          
+        if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
+          
+        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
+        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
+        SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
+
+        if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
+          
+        SetInriaMesh(config[iZone], geometry[iZone][iInst][MESH_0]);
+      }
+    }
+
     /*--- Write a slice on a structured mesh if requested. ---*/
 
     if (config[iZone]->GetWrt_Slice()) {
@@ -12487,7 +12506,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((Wrt_Vol || Wrt_Srf) && !fem_solver) {
+    if ((Wrt_Vol || Wrt_Srf || config[iZone]->GetWrt_InriaMesh()) && !fem_solver) {
       
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 

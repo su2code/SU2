@@ -55,6 +55,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   string filename;
   
   unsigned long OutSol,i, npoin = geometry->GetGlobal_nPointDomain();
+  unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024], BasNam[1024];
@@ -80,7 +81,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   ptr = strstr(BasNam,".solb");	
   if ( ptr != NULL )
     BasNam[ptr-BasNam]='\0';
-  sprintf(OutNam, "%s.solb", BasNam);
+  SPRINTF (OutNam, "%s.solb", BasNam);
 	
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
@@ -106,34 +107,59 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
 	
   /*--- Write the restart file ---*/
 
-	for (iVar = 0; iVar < nVar_Total; iVar++) {
+	for (iVar = 0; iVar < nVar_Par; iVar++) {
 		VarTyp[iVar] = GmfSca;
 	}
 	
-	npoin = geometry->GetGlobal_nPointDomain();
-	
-	//printf("SET KWD : %d %d %d %d\n", OutSol, GmfSolAtVertices, npoin, nVar_Total);
-	//printf("VarTyp = ");
-	//for (iVar = 0; iVar < nVar_Total; iVar++) 
-	//	printf("%d ",VarTyp[iVar]);
-	//printf("\n");
-	
-	if ( !GmfSetKwd(OutSol, GmfSolAtVertices, npoin, nVar_Total, VarTyp) ) {
+	if ( !GmfSetKwd(OutSol, GmfSolAtVertices, npoin, nVar_Par, VarTyp) ) {
 	  printf("\n\n   !!! Error !!!\n" );
       printf("Unable to write %s", OutNam);
       printf("Now exiting...\n\n");
       exit(EXIT_FAILURE);
 	}
 
-  for (iPoint = 0; iPoint < npoin; iPoint++) {
-	
-    /*--- Loop over the variables and write the values to file ---*/
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-			bufDbl[iVar] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
+  myPoint = 0;
+  offset = 0;
+  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+        
+        Global_Index = iPoint + offset;
+        
+        /*--- Only write original domain points, i.e., exclude any periodic
+         or halo nodes, even if they are output in the viz. files. ---*/
+        
+        if (Global_Index < nPoint_Restart) {
+                    
+          myPoint++;
+          
+          /*--- Loop over the variables and write the values to file ---*/
+          
+          for (iVar = 0; iVar < nVar_Par; iVar++){
+            bufDbl[iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+          }
+          GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
+        }
+      }
     }
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
 
-		GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
-	}
+ //  for (iPoint = 0; iPoint < npoin; iPoint++) {
+	
+ //    /*--- Loop over the variables and write the values to file ---*/
+ //    for (iVar = 0; iVar < nVar_Par; iVar++) {
+	// 		bufDbl[iVar] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
+ //    }
+
+	// 	GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
+	// }
   
 	if ( !GmfCloseMesh(OutSol) ) {
 	  printf("\n\n   !!! Error !!!\n" );
@@ -156,35 +182,50 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
+  unsigned short nVar_First, nVar_Second, nVar_Consv_Par;
   unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long FirstIndex = NONE, SecondIndex = NONE;
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  //ofstream restart_file;
   string filename;
   
   unsigned long OutMach, OutPres, OutGoal, i, npoin = geometry->GetGlobal_nPointDomain();
+  unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024], BasNam[1024];
   char *ptr=NULL;
 	
   int NbrVar, idxVar;
+
+  /*--- Use a switch statement to decide how many solver containers we have
+   in this zone for output. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
+    default: SecondIndex = NONE; break;
+  }
+  
+  nVar_First = solver[FirstIndex]->GetnVar();
+  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second;
 	
   /* Get indices of mach, pres, etc. in the solution array */
   unsigned short *TagBc;
   TagBc = new unsigned short [100];
 	
   idxVar=0;
-  idxVar += nDim + nVar_Consv; // Add coordinates and conservative variables
+  idxVar += nDim + nVar_Consv_Par; // Add coordinates and conservative variables
   
   if (!config->GetLow_MemoryOutput()) {
     
     if (config->GetWrt_Limiters()) {
-      idxVar += nVar_Consv; // Add limiters
+      idxVar += nVar_Consv_Par; // Add limiters
     }
     if (config->GetWrt_Residuals()) {
-      idxVar += nVar_Consv; // Add residuals
+      idxVar += nVar_Consv_Par; // Add residuals
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -229,20 +270,20 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   } else {
     filename = config->GetRestart_FlowFileName();
   }
-	
-	/*--- Get output name *.solb ---*/
-	
 
-	
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
+
+  /*--- Number of variables (1 for sensor files). ---*/
+  NbrVar = 1;
+  VarTyp[0]  = GmfSca;
 	
   /*--- Open the restart file and write the solution. ---*/
 
   /*--- Write MACH ---*/
 
-  sprintf(OutNam, "mach.solb");
+  SPRINTF (OutNam, "mach.solb");
   OutMach = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
 	
   if ( !OutMach ) {
@@ -252,23 +293,50 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     exit(EXIT_FAILURE);
   }	
 	
-  npoin = geometry->GetGlobal_nPointDomain();
-		
-  NbrVar = 1;
-  VarTyp[0]  = GmfSca;
-	
   if ( !GmfSetKwd(OutMach, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
     printf("\n\n   !!! Error !!!\n" );
     printf("Unable to write Mach");
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
   }
-	
-  for (iPoint = 0; iPoint < npoin; iPoint++) {
-	iVar = TagBc[bcMach];
-	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
-	GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
+
+  myPoint = 0;
+  offset = 0;
+  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+        
+        Global_Index = iPoint + offset;
+        
+        /*--- Only write original domain points, i.e., exclude any periodic
+         or halo nodes, even if they are output in the viz. files. ---*/
+        
+        if (Global_Index < nPoint_Restart) {
+                    
+          myPoint++;
+          
+          /*--- Loop over the variables and write the values to file ---*/
+          
+          iVar = TagBc[bcMach];
+          bufDbl[0] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+          GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
+        }
+      }
+    }
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+    
   }
+	
+ //  for (iPoint = 0; iPoint < npoin; iPoint++) {
+	// iVar = TagBc[bcMach];
+	// bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
+	// GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
+ //  }
 	
   if ( !GmfCloseMesh(OutMach) ) {
     printf("\n\n   !!! Error !!!\n" );
@@ -279,7 +347,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   /*--- Write PRES ---*/
 
-  sprintf(OutNam, "pres.solb");
+  SPRINTF (OutNam, "pres.solb");
   OutPres = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
 	
   if ( !OutPres ) {
@@ -289,23 +357,50 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     exit(EXIT_FAILURE);
   }
 	
-  npoin = geometry->GetGlobal_nPointDomain();
-		
-  NbrVar = 1;
-  VarTyp[0]  = GmfSca;
-	
   if ( !GmfSetKwd(OutPres, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
     printf("\n\n   !!! Error !!!\n" );
     printf("Unable to write pressure");
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
   }
-	
-  for (iPoint = 0; iPoint < npoin; iPoint++) {
-	iVar = TagBc[bcPres];
-	bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
-	GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
+
+  myPoint = 0;
+  offset = 0;
+  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+        
+        Global_Index = iPoint + offset;
+        
+        /*--- Only write original domain points, i.e., exclude any periodic
+         or halo nodes, even if they are output in the viz. files. ---*/
+        
+        if (Global_Index < nPoint_Restart) {
+                    
+          myPoint++;
+          
+          /*--- Loop over the variables and write the values to file ---*/
+          
+          iVar = TagBc[bcPres];
+          bufDbl[0] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+          GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
+        }
+      }
+    }
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+    
   }
+	
+ //  for (iPoint = 0; iPoint < npoin; iPoint++) {
+	// iVar = TagBc[bcPres];
+	// bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
+	// GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
+ //  }
 		
 	/*--- Close files ---*/
   	
@@ -320,7 +415,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
   if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
 
-    sprintf(OutNam, "goal.solb");
+    SPRINTF (OutNam, "goal.solb");
     OutGoal = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
 	
     if ( !OutGoal ) {
@@ -330,23 +425,50 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
       exit(EXIT_FAILURE);
     }
 	
-    npoin = geometry->GetGlobal_nPointDomain();
-		
-    NbrVar = 1;
-    VarTyp[0]  = GmfSca;
-	
     if ( !GmfSetKwd(OutGoal, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
       printf("\n\n   !!! Error !!!\n" );
       printf("Unable to write ECC");
       printf("Now exiting...\n\n");
       exit(EXIT_FAILURE);
     }
-	
-    for (iPoint = 0; iPoint < npoin; iPoint++) {
-	  iVar = TagBc[bcGoal];
-	  bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
-	  GmfSetLin(OutGoal, GmfSolAtVertices, bufDbl);
+
+    myPoint = 0;
+    offset = 0;
+    for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+      if (rank == iProcessor) {
+        for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+          
+          /*--- Global Index of the current point. (note outer loop over procs) ---*/
+          
+          Global_Index = iPoint + offset;
+          
+          /*--- Only write original domain points, i.e., exclude any periodic
+           or halo nodes, even if they are output in the viz. files. ---*/
+          
+          if (Global_Index < nPoint_Restart) {
+                      
+            myPoint++;
+            
+            /*--- Loop over the variables and write the values to file ---*/
+            
+            iVar = TagBc[bcGoal];
+            bufDbl[0] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+            GmfSetLin(OutGoal, GmfSolAtVertices, bufDbl);
+          }
+        }
+      }
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+      
     }
+	
+   //  for (iPoint = 0; iPoint < npoin; iPoint++) {
+	  // iVar = TagBc[bcGoal];
+	  // bufDbl[0] = SU2_TYPE::GetValue(Local_Data[iPoint][iVar]);
+	  // GmfSetLin(OutGoal, GmfSolAtVertices, bufDbl);
+   //  }
 		
 	/*--- Close files ---*/
   	
@@ -378,9 +500,9 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	
   unsigned short nMarker = config->GetnMarker_All();
   unsigned long cptElem = 0, nTri=0, nLin=0, nQua=0;
+  unsigned long myPoint, offset, Global_Index;
 
-  int Dim;
-  int OutMsh,i;
+  unsigned long OutMsh,i;
   int iVer,iTri,iEfr,iTet;
   passivedouble bufDbl[8];
   char OutNam[2014];
@@ -394,34 +516,70 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
   /*--- Read the name of the output and input file ---*/
   str = config->GetMesh_Out_FileName();
 
-  //strcpy (out_file, str.c_str());
-  //strcpy (cstr, out_file);
-  //output_file.precision(15);
-  //output_file.open(cstr, ios::out);
+  unsigned short lastindex = str.find_last_of(".");
+  str = str.substr(0, lastindex);
 
-  sprintf(OutNam, "%s.meshb", str.c_str());
+  SPRINTF (OutNam, "%s.meshb", str.c_str());
 	
-  Dim = nDim;
-  if ( !(OutMsh = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,Dim)) ) {
+  OutMsh = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
+  if ( !OutMsh ) {
     printf("  ## ERROR: Cannot open mesh file %s ! \n",OutNam);
 	return;
   }
   
   /*--- Write vertices ---*/
 	
-  GmfSetKwd(OutMsh, GmfVertices, nGlobal_Poin);
-	
-  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-	for (iDim = 0; iDim < nDim; iDim++)
-      bufDbl[iDim] = SU2_TYPE::GetValue(Coords[iDim][iPoint]);
-		
-	if ( nDim == 2 ) {
-	  GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],0); 
-	}
-	else {
-	  GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],bufDbl[2],0); 
-	}
+  GmfSetKwd(OutMsh, GmfVertices, nPoint_Restart);
+
+  myPoint = 0;
+  offset = 0;
+  for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+        
+        Global_Index = iPoint + offset;
+        
+        /*--- Only write original domain points, i.e., exclude any periodic
+         or halo nodes, even if they are output in the viz. files. ---*/
+        
+        if (Global_Index < nPoint_Restart) {
+                    
+          myPoint++;
+          
+          /*--- Loop over the variables and write the values to file ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            bufDbl[iDim] = SU2_TYPE::GetValue(Parallel_Data[iDim][iPoint]);
+
+          if ( nDim == 2 ) {
+            GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],0); 
+          }
+          else {
+            GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],bufDbl[2],0); 
+          }
+        }
+      }
+    }
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+    
   }
+	
+ //  for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+	// for (iDim = 0; iDim < nDim; iDim++)
+ //      bufDbl[iDim] = SU2_TYPE::GetValue(Coords[iDim][iPoint]);
+		
+	// if ( nDim == 2 ) {
+	//   GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],0); 
+	// }
+	// else {
+	//   GmfSetLin(OutMsh, GmfVertices,bufDbl[0],bufDbl[1],bufDbl[2],0); 
+	// }
+ //  }
 
   /*--- Write 2D elements ---
     Note: in 3D, triangles/quads are boundary markers
@@ -431,19 +589,19 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		
     /*--- Write triangles ---*/
 		
-	GmfSetKwd(OutMsh, GmfTriangles, nGlobal_Tria);
-  	for (iElem = 0; iElem < nGlobal_Tria; iElem++) {
+	GmfSetKwd(OutMsh, GmfTriangles, nParallel_Tria);
+  	for (iElem = 0; iElem < nParallel_Tria; iElem++) {
   	  iNode = iElem*N_POINTS_TRIANGLE;
-	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria[iNode+0],Conn_Tria[iNode+1],Conn_Tria[iNode+2], 0);  
+	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria_Par[iNode+0],Conn_Tria_Par[iNode+1],Conn_Tria_Par[iNode+2], 0);  
   	}	
 
 	/*--- Write quadrilaterals ---*/
 		
-	if ( nGlobal_Quad > 0  ) {
-	  GmfSetKwd(OutMsh, GmfQuadrilaterals, nGlobal_Quad);
-	  for (iElem = 0; iElem < nGlobal_Quad; iElem++) {
+	if ( nParallel_Quad > 0  ) {
+	  GmfSetKwd(OutMsh, GmfQuadrilaterals, nParallel_Quad);
+	  for (iElem = 0; iElem < nParallel_Quad; iElem++) {
   		  iNode = iElem*N_POINTS_QUADRILATERAL;
-				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad[iNode+0],Conn_Quad[iNode+1],Conn_Quad[iNode+2], Conn_Quad[iNode+3], 0);  
+				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad_Par[iNode+0],Conn_Quad_Par[iNode+1],Conn_Quad_Par[iNode+2], Conn_Quad_Par[iNode+3], 0);  
   		}
 	  }
 	
@@ -451,43 +609,41 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	
 	/*--- Write tetrahedra ---*/
 	
-	
-	
-	if ( nGlobal_Tetr > 0  ) {
-		GmfSetKwd(OutMsh, GmfTetrahedra, nGlobal_Tetr);
-		for (iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+	if ( nParallel_Tetr > 0  ) {
+		GmfSetKwd(OutMsh, GmfTetrahedra, nParallel_Tetr);
+		for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
 	    iNode = iElem*N_POINTS_TETRAHEDRON;
-			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr[iNode+0],Conn_Tetr[iNode+1],Conn_Tetr[iNode+2], Conn_Tetr[iNode+3], 0); 
+			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr_Par[iNode+0],Conn_Tetr_Par[iNode+1],Conn_Tetr_Par[iNode+2], Conn_Tetr_Par[iNode+3], 0); 
 	  }
 	}
 	
 	/*--- Write hexahedra ---*/
 	
-	if ( nGlobal_Hexa > 0 ) {
-		GmfSetKwd(OutMsh, GmfHexahedra, nGlobal_Hexa);
-		for (iElem = 0; iElem < nGlobal_Hexa; iElem++) {
+	if ( nParallel_Hexa > 0 ) {
+		GmfSetKwd(OutMsh, GmfHexahedra, nParallel_Hexa);
+		for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
 	    iNode = iElem*N_POINTS_HEXAHEDRON;
-			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa[iNode+0],Conn_Hexa[iNode+1], Conn_Hexa[iNode+2], Conn_Hexa[iNode+3], Conn_Hexa[iNode+4],Conn_Hexa[iNode+5],Conn_Hexa[iNode+6], Conn_Hexa[iNode+7],  0); 
+			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa_Par[iNode+0],Conn_Hexa_Par[iNode+1], Conn_Hexa_Par[iNode+2], Conn_Hexa_Par[iNode+3], Conn_Hexa_Par[iNode+4],Conn_Hexa_Par[iNode+5],Conn_Hexa_Par[iNode+6], Conn_Hexa_Par[iNode+7],  0); 
 	  }
 	}
 	
 	/*--- Write prisms ---*/
 	
-	if ( nGlobal_Pris > 0 ) {
-		GmfSetKwd(OutMsh, GmfPrisms, nGlobal_Pris);
-		for (iElem = 0; iElem < nGlobal_Pris; iElem++) {
+	if ( nParallel_Pris > 0 ) {
+		GmfSetKwd(OutMsh, GmfPrisms, nParallel_Pris);
+		for (iElem = 0; iElem < nParallel_Pris; iElem++) {
 	    iNode = iElem*N_POINTS_PRISM;
-			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris[iNode+0],Conn_Pris[iNode+1], Conn_Pris[iNode+2], Conn_Pris[iNode+3], Conn_Pris[iNode+4],Conn_Pris[iNode+5],  0); 
+			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris_Par[iNode+0],Conn_Pris_Par[iNode+1], Conn_Pris_Par[iNode+2], Conn_Pris_Par[iNode+3], Conn_Pris_Par[iNode+4],Conn_Pris_Par[iNode+5],  0); 
 	  }
 	}
 	
 	/*--- Write pyramids ---*/
 	
-	if ( nGlobal_Pyra > 0 ) {
-		GmfSetKwd(OutMsh, GmfPyramids, nGlobal_Pyra);
-		for (iElem = 0; iElem < nGlobal_Pyra; iElem++) {
+	if ( nParallel_Pyra > 0 ) {
+		GmfSetKwd(OutMsh, GmfPyramids, nParallel_Pyra);
+		for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
 	    iNode = iElem*N_POINTS_PYRAMID;
-	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra[iNode+0],Conn_Pyra[iNode+1], Conn_Pyra[iNode+2], Conn_Pyra[iNode+3], Conn_Pyra[iNode+4],0); 
+	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra_Par[iNode+0],Conn_Pyra_Par[iNode+1], Conn_Pyra_Par[iNode+2], Conn_Pyra_Par[iNode+3], Conn_Pyra_Par[iNode+4],0); 
 		}
 	}
 	
