@@ -4113,7 +4113,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  virtual void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config, unsigned short val_irkstep);
 
   /*!
    * \brief A virtual member.
@@ -9011,7 +9011,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  void SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver** solver_container, CConfig* config, unsigned short val_irkstep);
  
 };
 

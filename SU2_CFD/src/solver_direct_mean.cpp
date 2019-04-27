@@ -16431,7 +16431,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetTauWall_WF(geometry, solver_container, config);
   
   if (WallModelUsed  && (iMesh == MESH_0))
-    SetTauWallHeatFlux_WMLES(geometry, solver_container, config);
+    SetTauWallHeatFlux_WMLES(geometry, solver_container, config, iRKStep);
   
   /*--- Roe Low Dissipation Sensor ---*/
   
@@ -18820,7 +18820,7 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
   }
 }
 
-void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
   
   /*---
    List TODO here:
@@ -18932,27 +18932,53 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         su2double dirTan[3] = {0.0, 0.0, 0.0};
         for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
         
-        /* Compute the wall shear stress and heat flux vector using
-         the wall model. */
-        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-        WallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
-                                              Wall_HeatFlux, HeatFlux_Prescribed,
-                                              Wall_Temperature, Temperature_Prescribed,
-                                              FluidModel, tauWall, qWall, ViscosityWall,
-                                              kOverCvWall);
-        //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
-        /* Compute the wall velocity in tangential direction. */
-        const su2double *solWall = node[iPoint]->GetSolution();
-        su2double velWallTan = 0.0;
-        for( iDim = 0; iDim < nDim; iDim++)
-          velWallTan += solWall[iDim+1]*dirTan[iDim];
-        velWallTan /= solWall[0];
-        
-        /*--- Set tau wall and heat flux at the node. ---*/
-        node[iPoint]->SetTauWall(tauWall);
-        node[iPoint]->SetHeatFlux(qWall);
-        node[iPoint]->SetDirTanWM(dirTan);
-        
+        if ((config->GetIntIter() == 0) && (iRKStep == 0)){
+          /* Compute the wall shear stress and heat flux vector using
+           the wall model. */
+          su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+          WallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
+                                                Wall_HeatFlux, HeatFlux_Prescribed,
+                                                Wall_Temperature, Temperature_Prescribed,
+                                                FluidModel, tauWall, qWall, ViscosityWall,
+                                                kOverCvWall);
+          //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
+          /* Compute the wall velocity in tangential direction. */
+          const su2double *solWall = node[iPoint]->GetSolution();
+          su2double velWallTan = 0.0;
+          for( iDim = 0; iDim < nDim; iDim++)
+            velWallTan += solWall[iDim+1]*dirTan[iDim];
+          velWallTan /= solWall[0];
+          
+          /*--- Set tau wall and heat flux at the node. ---*/
+          node[iPoint]->SetTauWall(tauWall);
+          node[iPoint]->SetHeatFlux(qWall);
+          node[iPoint]->SetDirTanWM(dirTan);
+        }
+        else{
+          /*---
+          http://wmles.umd.edu/coupling-les-to-a-wall-stress-model/
+          An additional way to reduce the computational cost is to solve the wall-stress model only once per time step (e.g., in a Runge-Kutta method or in an iterative solution of an implicit solver). This can be done by recognizing that the whole wall-modeling philosophy necessarily implies that the modeled \vec{\tau}_w will lack any high-frequency oscillations, and thus can never approximate the instantaneous \vec{\tau}_w — the best we can hope for is that it matches the average \vec{\tau}_w, and that it matches those frequencies in \vec{\tau}_w that correspond to time-scales in the log-layer. Given this, we can interpret Eqn. (1) as taking the instantaneous \vec{u}_{{\rm wm-top}, \parallel} and multiplying it by a “transfer-function” \left| \vec{\tau}_{w, \parallel} \right| / \left| \vec{u}_{{\rm wm-top}, \parallel} \right| that scales the magnitude of the vector. We can then approximate this “transfer function” by computing it infrequently and storing it for re-use in subsequent RK substeps or iterations. In other words, we don’t assume that the \vec{\tau}_w stays constant, but that the “transfer function” does.
+          ---*/
+          su2double *dirTan_old;
+          dirTan_old  = node[iPoint]->GetDirTanWM();
+          
+          su2double tauWall_old = node[iPoint]->GetTauWall();
+          su2double qWall_old = node[iPoint]->GetHeatFlux();
+          su2double dirTanMag_old = sqrt(dirTan_old[0]*dirTan_old[0] + dirTan_old[1]*dirTan_old[1] + dirTan_old[2]*dirTan_old[2]);
+          su2double dirTanMag_new = sqrt(dirTan[0]*dirTan[0] + dirTan[1]*dirTan[1] + dirTan[2]*dirTan[2]);
+          su2double TransferFunction = tauWall_old / dirTanMag_old;
+          su2double tauWall_new = dirTanMag_new * TransferFunction;
+          
+          TransferFunction = qWall_old / dirTanMag_old;
+          su2double qWall_new = dirTanMag_new * TransferFunction;
+          
+          //cout << dirTanMag_old << " " << dirTanMag_new << " " << tauWall_old << " " << tauWall_new << endl;
+          /*--- Set tau wall and heat flux at the node based on transfer functions. ---*/
+          node[iPoint]->SetTauWall(tauWall_new);
+          node[iPoint]->SetHeatFlux(qWall_new);
+          node[iPoint]->SetDirTanWM(dirTan);
+          
+        }
       }
     }
   }
