@@ -14434,6 +14434,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+        cout << "Rank: " << rank << " Wall boundary flagged for marker " << Marker_Tag << endl;
+
         if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
            (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
           wallFunctions = true;
@@ -14621,7 +14624,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
   /* Determine the number of search points for which a global search must be
      carried out for each rank and store them in such a way that the info can
-     be used directly in Allgatherv. */
+     be used directly in Allgatherv later on. */
   vector<int> recvCounts(size), displs(size);
   int nLocalSearchPoints = (int) markerIDGlobalSearch.size();
 
