@@ -155,7 +155,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;  
   case SST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-    AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
     AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     break;
@@ -182,7 +182,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
     AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
     break;
@@ -209,7 +209,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("BGS_KINETIC_ENERGY", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
     AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
     break;
@@ -261,7 +261,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputValue("RMS_KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
   }
@@ -276,7 +276,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
     break;  
   case SST:
-    SetHistoryOutputValue("MAX_KINETIC_ENERGY", log10(turb_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
   }
@@ -292,7 +292,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
       break;  
     case SST:
-      SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
+      SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
       SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
       break;
     }
@@ -352,8 +352,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("TKE", "TKE", "SOLUTION");
-    AddVolumeOutput("OMEGA", "Omega", "SOLUTION");
+    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
+    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
@@ -397,21 +397,21 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Residuals
-  AddVolumeOutput("RESIDUAL_PRESSURE", "Residual_Density", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_VELOCITY-X", "Residual_Momentum_x", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_VELOCITY-Y", "Residual_Momentum_y", "RESIDUAL");
+  AddVolumeOutput("RES_PRESSURE", "Residual_Density", "RESIDUAL");
+  AddVolumeOutput("RES_VELOCITY-X", "Residual_Momentum_x", "RESIDUAL");
+  AddVolumeOutput("RES_VELOCITY-Y", "Residual_Momentum_y", "RESIDUAL");
   if (nDim == 3)
-    AddVolumeOutput("RESIDUAL_VELOCITY-Z", "Residual_Momentum_z", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Energy", "RESIDUAL");
+    AddVolumeOutput("RES_VELOCITY-Z", "Residual_Momentum_z", "RESIDUAL");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Energy", "RESIDUAL");
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("RESIDUAL_TKE", "Residual_TKE", "RESIDUAL");
-    AddVolumeOutput("RESIDUAL_OMEGA", "Residual_Omega", "RESIDUAL");
+    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL");
+    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("RESIDUAL_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
+    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
     break;
   case NONE:
     break;
@@ -428,7 +428,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   switch(config->GetKind_Turb_Model()){
   case SST:
     AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "RESIDUAL");
-    AddVolumeOutput("LIMITER_OMEGA", "Limiter_Omega", "RESIDUAL");
+    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "RESIDUAL");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
@@ -493,7 +493,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   switch(config->GetKind_Turb_Model()){
   case SST:
     SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(0));
-    SetVolumeOutputValue("OMEGA", iPoint, Node_Turb->GetSolution(1));
+    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(1));
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
@@ -525,24 +525,24 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC());
   }
   
-  SetVolumeOutputValue("RESIDUAL_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 0));
-  SetVolumeOutputValue("RESIDUAL_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 1));
-  SetVolumeOutputValue("RESIDUAL_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 2));
+  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 1));
+  SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 2));
   if (nDim == 3){
-    SetVolumeOutputValue("RESIDUAL_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
-    SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 4));
+    SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 4));
   } else {
-    SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));   
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
   }
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    SetVolumeOutputValue("RESIDUAL_TKE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
-    SetVolumeOutputValue("RESIDUAL_OMEGA", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
+    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    SetVolumeOutputValue("RESIDUAL_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
     break;
   case NONE:
     break;
@@ -561,7 +561,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   switch(config->GetKind_Turb_Model()){
   case SST:
     SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter_Primitive(0));
-    SetVolumeOutputValue("LIMITER_OMEGA", iPoint, Node_Turb->GetLimiter_Primitive(1));
+    SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter_Primitive(1));
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 

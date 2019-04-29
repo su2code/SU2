@@ -194,6 +194,18 @@ COutput::COutput(CConfig *config) {
   /*--- Default is not to use the FEM output merging --- */
   
   fem_output = false;
+
+  /*--- Default is to write history to file and screen --- */
+
+  no_writing = false;
+
+  Cauchy_Serie = new su2double[config->GetCauchy_Elems()];
+
+  Conv_Field = config->GetConv_Field();
+
+  Cauchy_Value = 0.0;
+  for (unsigned short iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+    Cauchy_Serie[iCounter] = 0.0;
   
 }
 
@@ -243,7 +255,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   
   /*--- Output using only the master node ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && !no_writing) {
     
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config);
@@ -286,7 +298,7 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, uns
   
   /*--- Output using only the master node ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && !no_writing) {
     
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config[ZONE_0]);
@@ -5414,6 +5426,7 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   
+    no_writing = !wrt;
 
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
@@ -5423,7 +5436,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
     
     Postprocess_HistoryFields(config);
     
-    if (rank == MASTER_NODE && wrt){
+    if (rank == MASTER_NODE && !no_writing){
       
       /*--- Check for consistency and remove fields that are requested but not available --- */
       
@@ -5447,12 +5460,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
 void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt){
   
-  
+  no_writing = !wrt;
+
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
   
   SetMultizoneHistoryOutputFields(output, config);
   
-  if (rank == MASTER_NODE && wrt){
+  if (rank == MASTER_NODE && !no_writing){
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    

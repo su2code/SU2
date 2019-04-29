@@ -164,6 +164,8 @@ protected:
   unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
   su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
+  bool no_writing;
+
 protected:
 
   int rank, 	  /*!< \brief MPI Rank. */
