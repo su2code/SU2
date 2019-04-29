@@ -77,6 +77,12 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_TEMPERATURE";
+
+
 }
 
 CHeatOutput::~CHeatOutput(void) {
@@ -141,7 +147,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION");
 
   // Residuals  
-  AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
   
 }
 

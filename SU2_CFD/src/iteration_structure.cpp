@@ -763,17 +763,23 @@ bool CFluidIteration::Monitor(COutput *output,
 #endif
   UsedTime = StopTime - StartTime;
 
-  /*--- If convergence was reached --*/
-  StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
 
   if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
-    output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0], solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], config_container[val_iZone]->GetTimeIter(), config_container[val_iZone]->GetOuterIter(), config_container[val_iZone]->GetInnerIter());
+    output->SetHistory_Output(geometry_container[val_iZone][INST_0][MESH_0],
+                              solver_container[val_iZone][INST_0][MESH_0],
+                              config_container[val_iZone],
+                              config_container[val_iZone]->GetTimeIter(),
+                              config_container[val_iZone]->GetOuterIter(),
+                              config_container[val_iZone]->GetInnerIter());
   }
   
   if (config_container[val_iZone]->GetCFL_Adapt() == YES) {
       if (!(config_container[val_iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
         output->SetCFL_Number(solver_container, config_container, val_iZone);
   }
+
+  /*--- If convergence was reached --*/
+  StopCalc =  output->Convergence_Monitoring(config_container[val_iZone], config_container[val_iZone]->GetInnerIter());
 
   return StopCalc;
 

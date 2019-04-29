@@ -95,6 +95,11 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsig
   /*--- Add the obj. function extension --- */
   
   RestartFilename = config->GetObjFunc_Extension(RestartFilename);
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_ADJ_PRESSURE";
+
 }
 
 CAdjFlowIncOutput::~CAdjFlowIncOutput(void) {

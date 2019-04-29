@@ -107,6 +107,12 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, CGeometry *geometry, CSolver *
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DENSITY";
+
   
 }
 
@@ -652,15 +658,14 @@ su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, 
 
 bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
-        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  return (config->GetUnsteady_Simulation() != STEADY && (curr_InnerIter == 0))||
+        (config->GetUnsteady_Simulation() == STEADY && (curr_InnerIter < 2));
   
 }
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
   
-  return false;
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetUnsteady_Simulation() != STEADY && curr_InnerIter == 0);
       
 }
 

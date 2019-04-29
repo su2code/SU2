@@ -99,6 +99,10 @@ CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsig
   
   RestartFilename = config->GetRestart_FileName();
 
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DISP_X";
+
 }
 
 CElasticityOutput::~CElasticityOutput(void) {
