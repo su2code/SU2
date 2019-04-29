@@ -77,7 +77,11 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config) : COutput
   MultiZoneHeaderString = "Multizone Summary";
   
   HistoryFilename = "multizone_history";
-      
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "AVG_BGS_RES[0]";
+
 }
 
 CDriverOutput::~CDriverOutput() {

@@ -318,7 +318,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
   ObjFunc = 0.0;
   
-  direct_output->SetHistory_Output(geometry, solver, config);
+  direct_output->SetHistory_Output(geometry, solver, config,
+                                   config->GetTimeIter(),
+                                   config->GetOuterIter(),
+                                   config->GetInnerIter());
 
   /*--- Specific scalar objective functions ---*/
 

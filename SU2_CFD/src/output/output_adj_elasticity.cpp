@@ -88,6 +88,10 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry,
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "ADJOINT_DISP_X";
   
 }
 
