@@ -148,11 +148,6 @@ void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     
   }
   
-  /*--- Reset pressure corrections to zero for next iteration. ---*/
-   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	   node[iPoint]->SetSolution(0,0.0);
-   }
-
   /*--- Initialize the Jacobian matrices ---*/
 
   Jacobian.SetValZero();
@@ -1378,10 +1373,13 @@ void CPoissonSolverFVM::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
 su2double Poisson_Coeff_i, Poissonval_i;
-su2double Velocity_i[3], MassFlux_Part;
-unsigned long iVertex, iPoint, jPoint;
+su2double Velocity_i[3], MassFlux_Part, small=1E-6;
+unsigned long iVertex, iPoint, jPoint, Point_Normal;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
+su2double Coeff_Mean;
+su2double *MomCoeffxNormal = new su2double[nDim];
+su2double dist_ij_2, proj_vector_ij, Edge_Vector[3];
 
 for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1396,6 +1394,29 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
        
        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
        
+       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Multiply the normal with the coefficients of the momentum equation
+         *    and use it instead of the normal during the projection operation ---*/
+       for (iDim = 0; iDim < nDim; iDim++) {
+		   Coeff_Mean = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_i/delT_i;
+           Coeff_Mean = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Coeff_Mean;
+
+	       MomCoeffxNormal[iDim] = Coeff_Mean*Normal[iDim];
+       }
+
+       /*--- Compute vector going from iPoint to jPoint ---*/
+
+       dist_ij_2 = 0; proj_vector_ij = 0;
+       for (iDim = 0; iDim < nDim; iDim++) {
+           Edge_Vector[iDim] = geometry->node[Point_Normal]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+           dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+           proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
+       }
+       if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+       else proj_vector_ij = proj_vector_ij/dist_ij_2;
+       
+       
        for (iVar = 0; iVar < nVar; iVar++) {
 		   Residual[iVar] = 0.0;
 	   }
@@ -1408,7 +1429,7 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 			 LinSysRes.SubtractBlock(iPoint, Residual);
 				 
 		    if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
-			   Jacobian_i[0][0] = 0.0;
+			   Jacobian_i[0][0] = -proj_vector_ij;
 			   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 		    }			    
 		}

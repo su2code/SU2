@@ -106,7 +106,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
-  
+ 
   Flux0 = 0.5*(Face_Flux + fabs(Face_Flux)) ;
   Flux1 = 0.5*(Face_Flux - fabs(Face_Flux)) ;
     

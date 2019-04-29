@@ -5535,8 +5535,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       LinSysRes.AddBlock(iPoint, Residual);
       
-      cout<<"Farfield flux: "<<Residual[1]-V_domain[0]*Normal[0]<<", "<<Residual[2]-V_domain[0]*Normal[1]<<" Coords: "<<geometry->node[iPoint]->GetCoord(0)<<", "<<geometry->node[iPoint]->GetCoord(1)<<", "<<iPoint<<endl;
-      
+     
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
       if (implicit)

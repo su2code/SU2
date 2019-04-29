@@ -466,12 +466,9 @@ bool CPBIncNSVariable::SetPrimVar(su2double Density_Inf, su2double eddy_visc, su
   SetLaminarViscosity(FluidModel->GetLaminarViscosity());
   
   /*--- Set eddy viscosity locally and in the fluid model. ---*/
-  
   SetEddyViscosity(eddy_visc);
   FluidModel->SetEddyViscosity(eddy_visc);
-
   
-  return physical;
-  
+  return physical; 
 }
 

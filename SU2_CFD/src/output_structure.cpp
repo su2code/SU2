@@ -13338,6 +13338,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (pressure_based) {
 		  Variable_Names.push_back("Residual_Velocity_x");
 		  Variable_Names.push_back("Residual_Velocity_y");
+		  if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
       }
       else {
 		  Variable_Names.push_back("Residual_Pressure");

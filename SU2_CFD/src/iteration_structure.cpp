@@ -1110,6 +1110,7 @@ void CPBFluidIteration::Iterate(COutput *output,
                                     unsigned short val_iInst) {
   unsigned long IntIter, ExtIter;
   unsigned long MassIter, nMassIter, PressureIter, nPressureIter;
+  su2double first_iter, last_iter;
   
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
@@ -1120,14 +1121,7 @@ void CPBFluidIteration::Iterate(COutput *output,
    steady or an unsteady simulaiton */
   
   if ( !unsteady ) IntIter = ExtIter;
-  else IntIter = config_container[val_iZone]->GetIntIter();
-  
-  
-  /* ---- Start velocity and pressure correction loop---*/
-  
-  /*--- Have to check net mass flux/convergence to stop the loop, this value is provisional ---*/
-  nMassIter = 2; nPressureIter = 2;
-  
+  else IntIter = config_container[val_iZone]->GetIntIter(); 
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
@@ -1139,43 +1133,39 @@ void CPBFluidIteration::Iterate(COutput *output,
       config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
   }
   
-  for (MassIter = 0; MassIter < nMassIter; MassIter++) {
-      integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+  /*--- Solve the momentum equations. ---*/
+  integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   
-  }
-	
+
+
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
 	
   solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
 	
 
- /*--- Solve the poisson equation ---*/
-	config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
+  /*--- Solve the poisson equation ---*/
+  config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
 	
-    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) {
-		integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+  integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
-    }
    
-    /*--- Correct pressure and velocities ---*/
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  /*--- Correct pressure and velocities ---*/
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     
-    /*--- Set the prmitive value based on updated solution ---*/
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
-    
-    
-    /*--- Calculate the inviscid and viscous forces ---*/
+  /*--- Set the prmitive value based on updated solution ---*/
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
+
+  /*--- Calculate the inviscid and viscous forces ---*/
       
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);  
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);  
+    
+    
   /*--- Write the convergence history ---*/
 
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
-    
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone,val_iInst);
-    
-  }
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) 
+	 output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone,val_iInst);
   
 }
 
@@ -1233,7 +1223,44 @@ void CPBFluidIteration::Update(COutput *output,
   
 }
 
-void CPBFluidIteration::Monitor()     { }
+bool CPBFluidIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     {
+
+  bool StopCalc = false;
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
+
+  /*--- Write the convergence history for the fluid (only screen output) ---*/
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+
+  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+
+  return StopCalc;
+
+
+}
 void CPBFluidIteration::Output()      { }
 void CPBFluidIteration::Postprocess(COutput *output,
                                     CIntegration ****integration_container,
@@ -1567,70 +1594,6 @@ void CHeatIteration::Solve(COutput *output,
   //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
 
 }
-
-/*CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
-CPoissonIteration::~CPoissonIteration(void) { }
-void CPoissonIteration::Preprocess(COutput *output,
-                                   CIntegration ****integration_container,
-                                   CGeometry ****geometry_container,
-                                   CSolver *****solver_container,
-                                   CNumerics ******numerics_container,
-                                   CConfig **config_container,
-                                   CSurfaceMovement **surface_movement,
-                                   CVolumetricMovement ***grid_movement,
-                                   CFreeFormDefBox*** FFDBox,
-                                   unsigned short val_iZone,
-                                   unsigned short val_iInst) { }
-void CPoissonIteration::Iterate(COutput *output,
-                                CIntegration ****integration_container,
-                                CGeometry ****geometry_container,
-                                CSolver *****solver_container,
-                                CNumerics ******numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement ***grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone,
-                                unsigned short val_iInst) {
-  
- unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- Set the value of the internal iteration ---/
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-  /*--- Poisson equation ---/
-  config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
-
-  integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone, val_iInst); 
-}
-void CPoissonIteration::Update(COutput *output,
-                               CIntegration ****integration_container,
-                               CGeometry ****geometry_container,
-                               CSolver *****solver_container,
-                               CNumerics ******numerics_container,
-                               CConfig **config_container,
-                               CSurfaceMovement **surface_movement,
-                               CVolumetricMovement ***grid_movement,
-                               CFreeFormDefBox*** FFDBox,
-                               unsigned short val_iZone,
-                               unsigned short val_iInst)      { }
-void CPoissonIteration::Monitor()     { }
-void CPoissonIteration::Output()      { }
-void CPoissonIteration::Postprocess(COutput *output,
-                        CIntegration ****integration_container,
-                        CGeometry ****geometry_container,
-                        CSolver *****solver_container,
-                        CNumerics ******numerics_container,
-                        CConfig **config_container,
-                        CSurfaceMovement **surface_movement,
-                        CVolumetricMovement ***grid_movement,
-                        CFreeFormDefBox*** FFDBox,
-                        unsigned short val_iZone,
-                        unsigned short val_iInst) { }*/
 
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }

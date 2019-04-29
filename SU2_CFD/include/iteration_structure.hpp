@@ -583,7 +583,17 @@ public:
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
-  void Monitor();
+  bool Monitor(COutput *output,
+      CIntegration ****integration_container,
+      CGeometry ****geometry_container,
+      CSolver *****solver_container,
+      CNumerics ******numerics_container,
+      CConfig **config_container,
+      CSurfaceMovement **surface_movement,
+      CVolumetricMovement ***grid_movement,
+      CFreeFormDefBox*** FFDBox,
+      unsigned short val_iZone,
+      unsigned short val_iInst);
   
   /*!
    * \brief Outputs desired files and quantities for the fluid system.
