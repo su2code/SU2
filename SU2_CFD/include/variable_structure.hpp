@@ -2211,7 +2211,6 @@ public:
    */
   virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord);
 
-
     /*!
    * \brief A virtual member. Get the value of the wall distance in reference coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
@@ -2226,6 +2225,17 @@ public:
   virtual void SetWallDistance(su2double val_dist);
 
   /*!
+   * \brief A virtual member. Register the reference coordinates of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  virtual void Register_MeshCoord(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
+   */
+  virtual void GetAdjoint_MeshCoord(su2double *adj_mesh);
+
+  /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
@@ -2236,6 +2246,42 @@ public:
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   virtual void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  virtual su2double* GetBoundDisp_Direct();
+
+  /*!
+   * \brief A virtual member. Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  virtual void SetBoundDisp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
+   */
+  virtual void SetBoundDisp_Sens(su2double *val_sens);
+
+  /*!
+   * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  virtual su2double GetBoundDisp_Sens(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Register the boundary displacements of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  virtual void Register_BoundDisp(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.
+   */
+  virtual void GetAdjoint_BoundDisp(su2double *adj_disph);
 
    /*!
     * \brief A virtual member.
@@ -5257,7 +5303,51 @@ public:
    * \brief Determine whether the node is a moving vertex.
    * \return False. The node is not at the boundary.
    */
-  bool Get_isVertex(void);
+  virtual bool Get_isVertex(void);
+
+  /*!
+   * \brief Register the reference coordinates of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  void Register_MeshCoord(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
+   */
+  void GetAdjoint_MeshCoord(su2double *adj_mesh);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshVariable : public CVariable {
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshVariable(void);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  virtual bool Get_isVertex(void);
 
 };
 
@@ -5305,6 +5395,91 @@ public:
    * \return True. The node is at the boundary.
    */
   bool Get_isVertex(void);
+
+  /*!
+   * \brief Register the boundary displacements of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  void Register_BoundDisp(bool input);
+
+  /*!
+   * \brief Recover the value of the adjoint of the boundary displacements.
+   */
+  void GetAdjoint_BoundDisp(su2double *adj_disph);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshBoundVariable : public CDiscAdjMeshVariable {
+protected:
+
+  su2double* Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
+  su2double* Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
+
+  su2double* Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshBoundVariable(void);
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  su2double* GetBoundDisp_Direct();
+
+  /*!
+   * \brief Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  void SetBoundDisp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
+   */
+  void SetBoundDisp_Sens(su2double *val_sens);
+
+  /*!
+   * \brief Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  su2double GetBoundDisp_Sens(unsigned short iDim);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return True. The node is at the boundary.
+   */
+  bool Get_isVertex(void);
+
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
 
 };
 

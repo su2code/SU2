@@ -496,8 +496,8 @@ const int INC_TERM = 2;      /*!< \brief Position of the incompressible term in 
 const int FEA_ADJ = 6;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
 
-const int MESH_SOL = 9;   /*!< \brief Position of the mesh solver. */
-
+const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
 
 
 /*!
@@ -1926,7 +1926,8 @@ enum ENUM_RECORDING {
   FLOW_CROSS_TERM = 5,
   FEM_CROSS_TERM_GEOMETRY = 6,
   GEOMETRY_CROSS_TERM = 7,
-  ALL_VARIABLES = 8
+  ALL_VARIABLES = 8,
+  MESH_DEFORM = 9
 };
 
 /*!
