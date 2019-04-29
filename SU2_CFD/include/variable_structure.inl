@@ -649,9 +649,25 @@ inline su2double CVariable::GetWallDistance(void) { return 0.0; }
 
 inline void CVariable::SetWallDistance(su2double val_dist) { }
 
+inline void CVariable::Register_MeshCoord(bool input) { }
+
+inline void CVariable::GetAdjoint_MeshCoord(su2double *adj_mesh) { }
+
 inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
 
 inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
+
+inline su2double *CVariable::GetBoundDisp_Direct(void) { return NULL; }
+
+inline void CVariable::SetBoundDisp_Direct(su2double *val_BoundDisp) { }
+
+inline void CVariable::SetBoundDisp_Sens(su2double *val_sens) { }
+
+inline su2double CVariable::GetBoundDisp_Sens(unsigned short iDim) { return 0.0; }
+
+inline void CVariable::Register_BoundDisp(bool input) { }
+
+inline void CVariable::GetAdjoint_BoundDisp(su2double *adj_disp) { }
 
 inline void CVariable::Register_femSolution_time_n() { }
 
@@ -1684,6 +1700,24 @@ inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = 
 
 inline bool CMeshVariable::Get_isVertex(void) { return false; }
 
+inline void CMeshVariable::Register_MeshCoord(bool input) {
+    if (input) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Mesh_Coord[iVar]);
+    }
+    else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Mesh_Coord[iVar]);
+    }
+}
+
+inline void CMeshVariable::GetAdjoint_MeshCoord(su2double *adj_mesh) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        adj_mesh[iVar] = SU2_TYPE::GetDerivative(Mesh_Coord[iVar]);
+    }
+}
+
+inline bool CDiscAdjMeshVariable::Get_isVertex(void) { return false; }
+
 inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return Boundary_Displacement[iDim]; }
 
 inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
@@ -1691,6 +1725,39 @@ inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
 }
 
 inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }
+
+inline void CMeshBoundVariable::Register_BoundDisp(bool input) {
+    if (input) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterInput(Boundary_Displacement[iVar]);
+    }
+    else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        AD::RegisterOutput(Boundary_Displacement[iVar]);
+    }
+}
+
+inline void CMeshBoundVariable::GetAdjoint_BoundDisp(su2double *adj_disp) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        adj_disp[iVar] = SU2_TYPE::GetDerivative(Boundary_Displacement[iVar]);
+    }
+}
+
+inline su2double *CDiscAdjMeshBoundVariable::GetBoundDisp_Direct(void) { return Bound_Disp_Direct; }
+
+inline void CDiscAdjMeshBoundVariable::SetBoundDisp_Direct(su2double *val_BoundDisp) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Bound_Disp_Direct[iDim] = val_BoundDisp[iDim]; }
+
+inline void CDiscAdjMeshBoundVariable::SetBoundDisp_Sens(su2double *val_sens) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Bound_Disp_Sens[iDim] = val_sens[iDim]; }
+
+inline su2double CDiscAdjMeshBoundVariable::GetBoundDisp_Sens(unsigned short iDim) { return Bound_Disp_Sens[iDim]; }
+
+inline bool CDiscAdjMeshBoundVariable::Get_isVertex(void) { return true; }
+
+inline void CDiscAdjMeshBoundVariable::Set_BGSSolution_k(void) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Bound_Disp_Sens[iVar];
+}
+
+inline su2double CDiscAdjMeshBoundVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
 inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
 

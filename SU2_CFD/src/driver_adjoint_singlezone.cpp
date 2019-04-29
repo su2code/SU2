@@ -66,6 +66,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
 
+  /*--- Determine if the problem has a mesh deformation solver ---*/
+  bool mesh_def = ((config->GetGrid_Movement()) && (config->GetKind_GridMovement() == ELASTICITY));
+
   /*--- Initialize the direct iteration ---*/
 
   switch (config->GetKind_Solver()) {
@@ -76,7 +79,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (turbo) direct_iteration = new CTurboIteration(config);
     else       direct_iteration = new CFluidIteration(config);
     MainVariables = FLOW_CONS_VARS;
-    SecondaryVariables = MESH_COORDS;
+    if (mesh_def) SecondaryVariables = MESH_DEFORM;
+    else          SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
@@ -386,6 +390,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
+  /*--- Mesh movement (if necessary) ---*/
+  if (kind_recording == MESH_DEFORM)
+    direct_iteration->SetGrid_Movement(geometry_container,surface_movement,grid_movement,FFDBox,numerics_container,solver_container,config_container,ZONE_0,INST_0,config->GetIntIter(),config->GetExtIter());
+
   /*--- Zone preprocessing ---*/
 
   direct_iteration->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -511,8 +519,14 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
-
-  solver[ADJFLOW_SOL]->SetSensitivity(geometry,config);
+  switch(SecondaryVariables){
+  case MESH_COORDS:
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  case MESH_DEFORM:
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
