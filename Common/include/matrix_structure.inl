@@ -71,7 +71,7 @@ inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned lon
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster(val_block[iVar][jVar]);
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster<OtherType,false>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -89,7 +89,7 @@ inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned lon
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster(val_block[iVar*nVar+jVar]);
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster<OtherType,false>(val_block[iVar*nVar+jVar]);
       break;
     }
   }
@@ -107,7 +107,7 @@ inline void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned lon
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += TypeCaster(val_block[iVar][jVar]);
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += TypeCaster<OtherType,false>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -125,7 +125,7 @@ inline void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigne
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= TypeCaster(val_block[iVar][jVar]);
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= TypeCaster<OtherType,false>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -142,7 +142,7 @@ inline void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType
     step++;
     if (col_ind[index] == block_i) {	// Only elements on the diagonal
       for (iVar = 0; iVar < nVar; iVar++)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += TypeCaster(val_matrix);
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += TypeCaster<OtherType,false>(val_matrix);
       break;
     }
   }
@@ -164,7 +164,7 @@ inline void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType
           matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
       
       for (iVar = 0; iVar < nVar; iVar++)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = TypeCaster(val_matrix);
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = TypeCaster<OtherType,false>(val_matrix);
       
       break;
     }
