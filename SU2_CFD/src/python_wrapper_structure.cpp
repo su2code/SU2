@@ -944,6 +944,29 @@ void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex
 
 }
 
+vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint;
+  vector<su2double> Disp_Sens(3, 0.0);
+  vector<passivedouble> Disp_Sens_passive(3, 0.0);
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+  Disp_Sens[0] = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->node[iPoint]->GetBoundDisp_Sens(0);
+  Disp_Sens[1] = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->node[iPoint]->GetBoundDisp_Sens(1);
+  if (solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->GetnVar() == 3)
+    Disp_Sens[2] = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->node[iPoint]->GetBoundDisp_Sens(2);
+  else
+    Disp_Sens[2] = 0.0;
+
+  Disp_Sens_passive[0] = SU2_TYPE::GetValue(Disp_Sens[0]);
+  Disp_Sens_passive[1] = SU2_TYPE::GetValue(Disp_Sens[1]);
+  Disp_Sens_passive[2] = SU2_TYPE::GetValue(Disp_Sens[2]);
+
+  return Disp_Sens_passive;
+
+}
+
 void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ) {
 
   unsigned long iPoint;
@@ -958,12 +981,11 @@ void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedo
 
 vector<passivedouble> CDriver::GetDisplacements(unsigned short iMarker, unsigned short iVertex) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
   vector<su2double> Displacements(3, 0.0);
   vector<passivedouble> Displacements_passive(3, 0.0);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
 
   Displacements[0] = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution(0);
   Displacements[1] = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution(1);
@@ -971,8 +993,6 @@ vector<passivedouble> CDriver::GetDisplacements(unsigned short iMarker, unsigned
     Displacements[2] = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution(2);
   else
     Displacements[2] = 0.0;
-
-//  cout << "Set Displacement " << iPoint << ":" << GlobalIndex << " " << Displacements[0] << " " << Displacements[1] << " " << Displacements[2] << endl;
 
   Displacements_passive[0] = SU2_TYPE::GetValue(Displacements[0]);
   Displacements_passive[1] = SU2_TYPE::GetValue(Displacements[1]);

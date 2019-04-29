@@ -691,6 +691,14 @@ public:
   void SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
 
   /*!
+   * \brief Return the sensitivities of the mesh boundary vertices.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vector of sensitivities.
+   */
+  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
    * \brief Set the load in X direction for the structural solver.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
