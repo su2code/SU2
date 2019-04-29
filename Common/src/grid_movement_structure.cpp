@@ -97,8 +97,9 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
-  geometry->Set_MPI_Coord(config);
-
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
+  
 }
 
 void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
@@ -191,9 +192,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
-
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    
+    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    
+    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
@@ -250,7 +254,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+          System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -265,7 +269,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+            IterLinSol = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
+
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -285,7 +290,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
@@ -293,14 +298,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = System.CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
@@ -3360,7 +3365,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
   MaxDiff = my_MaxDiff;
@@ -9238,8 +9242,11 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
       AD::StopRecording();
     }
 #endif
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    
+    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
 #ifdef CODI_REVERSE_TYPE
     if (TapeActive) AD::StartRecording();
 #endif
@@ -9289,8 +9296,9 @@ void CElasticityMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config){
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
-  geometry->Set_MPI_Coord(config);
-
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
+  
 }
 
 
@@ -9361,7 +9369,8 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
       }
     }
   }
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
 
   /*--- Apply displacement boundary conditions to the FSI interfaces. ---*/
 

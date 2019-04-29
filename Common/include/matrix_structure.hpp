@@ -112,7 +112,7 @@ private:
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks.
    */
-  template<class OtherType>
+  template<class OtherType, bool Active = false>
   ScalarType TypeCaster(const OtherType & val) const;
 
 public:
@@ -164,6 +164,32 @@ public:
    * \brief Sets to zero all the entries of the sparse matrix.
    */
   void SetValZero(void);
+  
+  /*!
+   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  template<class OtherType>
+  void InitiateComms(CSysVector<OtherType> & x,
+                     CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data in the vector.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  template<class OtherType>
+  void CompleteComms(CSysVector<OtherType> & x,
+                     CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
   
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
@@ -286,7 +312,7 @@ public:
    * \param[in] i - Index of the row.
    */
   void DeleteValsRowi(unsigned long i);
-  
+
   /*!
    * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
    * \param[in] a - Matrix to compute the determinant.
