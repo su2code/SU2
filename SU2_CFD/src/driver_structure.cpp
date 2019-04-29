@@ -1406,9 +1406,15 @@ void CDriver::MeshSolver_Preprocessing(CSolver ****solver_container, CGeometry *
   /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
   bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
 
-  if (dynamic_mesh)
+  bool discrete_adjoint = (config->GetDiscrete_Adjoint());
+
+  if (dynamic_mesh){
     solver_container[val_iInst][MESH_0][MESH_SOL] = new CMeshSolver(geometry[val_iInst][MESH_0], config);
 
+    if (discrete_adjoint)
+      solver_container[val_iInst][MESH_0][ADJMESH_SOL] = new CDiscAdjMeshSolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][MESH_SOL]);
+
+  }
 
 }
 

@@ -3765,11 +3765,12 @@ public:
   virtual void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config);
   
   /*!
-   * \brief  A virtual member.
+   * \brief A virtual member. Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
+  virtual void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
@@ -12826,9 +12827,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -13109,9 +13111,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CConfig *config);
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
   
   /*!
    * \brief Set the objective function.
@@ -16045,7 +16048,7 @@ public:
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
    */
-  CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver);
+  CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver* solver);
 
   /*!
    * \brief Destructor of the class.
@@ -16067,6 +16070,14 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Extract and set the geometrical sensitivity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.

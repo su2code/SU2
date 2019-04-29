@@ -52,7 +52,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config)  : 
 
 }
 
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver)  : CSolver(){
+CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver)  : CSolver(){
 
   unsigned short iVar, iMarker, iDim;
   unsigned long iPoint;
@@ -66,7 +66,6 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   nDim = geometry->GetnDim();
 
   /*-- Store some information about direct solver ---*/
-  this->KindDirect_Solver = Kind_Solver;
   this->direct_solver = direct_solver;
 
   nPoint       = geometry->GetnPoint();
@@ -225,6 +224,46 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
     node[iPoint]->SetBoundDisp_Sens(Solution);
 
   }
+
+}
+
+void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+  su2double Sensitivity, eps;
+  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+
+  /*--- Extract the sensitivities ---*/
+  ExtractAdjoint_Solution(geometry, config);
+
+  /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
+  ExtractAdjoint_Variables(geometry, config);
+
+  /*--- Store the sensitivities in the flow adjoint container ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+
+      /*--- The sensitivity was extracted using ExtractAdjoint_Solution ---*/
+      Sensitivity = node[iPoint]->GetSolution(iDim);
+
+      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+      if (config->GetSens_Remove_Sharp()) {
+        eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
+          Sensitivity = 0.0;
+      }
+
+      /*--- Store the sensitivities ---*/
+      if (!time_stepping) {
+        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, Sensitivity);
+      } else {
+        solver[ADJFLOW_SOL]->node[iPoint]->SetSensitivity(iDim, solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(iDim) + Sensitivity);
+      }
+    }
+  }
+  solver[ADJFLOW_SOL]->SetSurface_Sensitivity(geometry, config);
 
 }
 
