@@ -2511,6 +2511,17 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 
   }
 
+  /*--- Register the variables of the mesh deformation ---*/
+  if (kind_recording == MESH_DEFORM){
+
+    /*--- Undeformed mesh coordinates ---*/
+    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+
+    /*--- Boundary displacements ---*/
+    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+
+  }
+
 }
 
 void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
@@ -3194,7 +3205,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
 
   /*--- Global sensitivities ---*/
-  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][val_iInst][MESH_0],config_container[val_iZone]);
+  solver_container[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
 
   // TEMPORARY output only for standalone structural problems
   if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){

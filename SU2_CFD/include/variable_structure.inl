@@ -1732,6 +1732,8 @@ inline void CDiscAdjMeshBoundVariable::Set_BGSSolution_k(void) {
     Solution_BGS_k[iVar] = Bound_Disp_Sens[iVar];
 }
 
+inline su2double CDiscAdjMeshBoundVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
+
 inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
 
 inline void CMeshElement::SetRef_Volume(su2double val_volume) { Ref_Volume = val_volume; }
