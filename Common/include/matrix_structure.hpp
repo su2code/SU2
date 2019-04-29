@@ -112,7 +112,7 @@ private:
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks.
    */
-  template<class OtherType, bool Active = false>
+  template<class OtherType, bool Active>
   ScalarType TypeCaster(const OtherType & val) const;
 
 public:
