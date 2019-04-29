@@ -2128,7 +2128,6 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  unsigned short Kind_Solver = config->GetKind_Solver();
 
   /*--- Consistent data for Tecplot zones ---*/
   Debug            = 0;
@@ -3039,7 +3038,6 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  unsigned short Kind_Solver = config->GetKind_Solver();
   
   file.str(string());
   

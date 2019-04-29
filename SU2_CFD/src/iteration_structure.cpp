@@ -2884,7 +2884,6 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
 
-  unsigned long nIntIter = config_container[val_iZone]->GetnIter();
   unsigned long IntIter  = config_container[val_iZone]->GetIntIter();
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
