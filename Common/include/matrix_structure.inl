@@ -46,15 +46,15 @@ inline void CSysMatrix<ScalarType>::SetValZero(void) {
 }
 
 template<class ScalarType>
-template<class OtherType>
+template<class OtherType, bool Active>
 inline ScalarType CSysMatrix<ScalarType>::TypeCaster(const OtherType & val) const {
-  // return val; to enable AD in matrix
-  return SU2_TYPE::GetValue(val);
+  if (Active) return val;
+  else return SU2_TYPE::GetValue(val);
 }
 
 #ifdef CODI_REVERSE_TYPE
 template<>
-template<class OtherType>
+template<class OtherType, bool Active>
 inline passivedouble CSysMatrix<passivedouble>::TypeCaster(const OtherType & val) const {
   return SU2_TYPE::GetValue(val);
 }
