@@ -1658,10 +1658,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
-  addStringOption("VOLUME_FILENAME", Volume_FileName, string("flow"));
+  addStringOption("VOLUME_FILENAME", Volume_FileName, string("vol_solution"));
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
+  addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adj_vol_solution"));
   /*!\brief GRAD_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function gradient  \ingroup Config*/
   addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));

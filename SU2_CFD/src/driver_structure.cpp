@@ -3257,8 +3257,6 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 void CDriver::SetTransferTypes(){
   
   unsigned short donorZone, targetZone;
-  unsigned short nVar, nVarTransfer;
-
   unsigned short nMarkerTarget, iMarkerTarget, nMarkerDonor, iMarkerDonor;
 
   /*--- Initialize some useful booleans ---*/
@@ -3437,8 +3435,6 @@ void CDriver::SetTransferTypes(){
           transfer_types[donorZone][targetZone] = SLIDING_INTERFACE;
         }
         else if (fluid_donor && heat_target) {
-          nVarTransfer = 0;
-          nVar = 4;
           if(config_container[donorZone]->GetEnergy_Equation())
             transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
           else if (config_container[donorZone]->GetWeakly_Coupled_Heat())

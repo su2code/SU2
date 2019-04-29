@@ -40,9 +40,8 @@
 void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, offset, nElem;
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, VTK_Type, nMarker_;
   short SendTo;
-  su2double *center, *angles, *transl;
   ifstream input_file;
   string filename, Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;

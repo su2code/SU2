@@ -1,5 +1,5 @@
 /*!
- * \file output_direct_mean_inc.cpp
+ * \file output_flow_inc.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
  * \version 6.0.1 "Falcon"
