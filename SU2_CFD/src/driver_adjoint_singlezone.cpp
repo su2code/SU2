@@ -390,9 +390,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
-  /*--- Mesh movement (if necessary) ---*/
-  if (kind_recording == MESH_DEFORM)
-    direct_iteration->SetGrid_Movement(geometry_container,surface_movement,grid_movement,FFDBox,numerics_container,solver_container,config_container,ZONE_0,INST_0,config->GetIntIter(),config->GetExtIter());
+  /*--- Mesh movement ---*/
+
+  direct_iteration->Deform_Mesh(geometry_container,numerics_container,solver_container,config_container,ZONE_0,INST_0,kind_recording);
 
   /*--- Zone preprocessing ---*/
 
