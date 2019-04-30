@@ -16177,6 +16177,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     default:
       SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
   }
+
+  /*--- Set the WMLES model to NULL and indicate that either Wall Model for LES and Wall Function for RANS are used. ---*/
+  WallModel        = NULL;
+  WallModelUsed    = false;
+  WallFunctionUsed = false;
   
   /*--- Set the Wall Model in case of a LES  ---*/
   
@@ -16330,7 +16335,6 @@ CNSSolver::~CNSSolver(void) {
   if( SGSModel ) delete SGSModel;
   
 }
-
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, ErrorCounter = 0;
