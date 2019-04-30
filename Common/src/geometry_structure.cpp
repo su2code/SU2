@@ -14428,14 +14428,16 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /*--------------------------------------------------------------------------*/
   
   bool wallFunctions = false;
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-
+        
+        cout << "Rank: " << rank << " nMarker: " << nMarker << " " << nMarker_Global << endl;
         cout << "Rank: " << rank << " Wall boundary flagged for marker " << Marker_Tag << endl;
+        cout <<  "Rank: " << rank << " nElem " << nElem << endl;
 
         if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
            (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
@@ -14450,7 +14452,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /* If no wall models are used, nothing needs to be done and a
    return can be made. */
   if( !wallFunctions ) return;
-  
+  cout << "Rank: " << rank << " Wall Functions " << wallFunctions << endl;
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Build the local ADT of the volume elements. The currently  ---*/
   /*---         stored halo elements are included, because this info will  ---*/
@@ -14462,6 +14464,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned short> markerIDElem;
   vector<unsigned long>  elemID;
+  
   
   /*--- Loop over all elements ---*/
   for (unsigned long iElem = 0; iElem < nElem; iElem++){
@@ -14603,7 +14606,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             }
           }
         }
+        break;
       }
+      default:
+        break;
+
     }
   }
 
