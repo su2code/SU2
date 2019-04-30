@@ -12917,6 +12917,22 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
       Variable_Names.push_back("Adaptation_Parameter");
       nVar_Par += 1;
+
+      if(nDim == 2){
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        nVar_Par += 3;
+      }
+      else{
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        Variable_Names.push_back("Aniso_Metric[3]");
+        Variable_Names.push_back("Aniso_Metric[4]");
+        Variable_Names.push_back("Aniso_Metric[5]");
+        nVar_Par += 6;
+      }
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13156,6 +13172,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
           iVar++;
+
+          unsigned short iMetr, nMetr;
+          if(nDim == 2) nMetr = 3;
+          else          nMetr = 6;
+            
+          for(iMetr = 0; iMetr < nMetr; iMetr++){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            iVar++;
+          }
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -13895,6 +13920,22 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
       Variable_Names.push_back("Adaptation_Parameter");
       nVar_Par += 1;
+
+      if(nDim == 2){
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        nVar_Par += 3;
+      }
+      else{
+        Variable_Names.push_back("Aniso_Metric[0]");
+        Variable_Names.push_back("Aniso_Metric[1]");
+        Variable_Names.push_back("Aniso_Metric[2]");
+        Variable_Names.push_back("Aniso_Metric[3]");
+        Variable_Names.push_back("Aniso_Metric[4]");
+        Variable_Names.push_back("Aniso_Metric[5]");
+        nVar_Par += 6;
+      }
     }
     
     /*--- For the continouus adjoint, we write either convective scheme's
@@ -14097,6 +14138,15 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
           iVar++;
+
+          unsigned short iMetr, nMetr;
+          if(nDim == 2) nMetr = 3;
+          else          nMetr = 6;
+            
+          for(iMetr = 0; iMetr < nMetr; iMetr++){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            iVar++;
+          }
         }
         
         /*--- Load data for the convective scheme sensor. ---*/

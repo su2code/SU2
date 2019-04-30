@@ -1950,6 +1950,22 @@ void CErrorEstimationDriver::ComputeECC() {
                              fine_geometry_container[ZONE_0][INST_0][MESH_0],
                              fine_config_container[ZONE_0]);
 
+  if(rank == MASTER_NODE) cout << "Computing gradient via L2 Projection." << endl;
+  if(nDim == 2)
+    coarse_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetGradient_L2Proj2(coarse_geometry_container[ZONE_0][INST_0][MESH_0], 
+                                                                                   coarse_config_container[ZONE_0]);
+  else
+    coarse_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetGradient_L2Proj3(coarse_geometry_container[ZONE_0][INST_0][MESH_0], 
+                                                                                   coarse_config_container[ZONE_0]);
+
+  if(rank == MASTER_NODE) cout << "Computing Hessian via L2 Projection." << endl;
+  if(nDim == 2)
+    coarse_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetHessian_L2Proj2(coarse_geometry_container[ZONE_0][INST_0][MESH_0], 
+                                                                                  coarse_config_container[ZONE_0]);
+  else
+    coarse_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetHessian_L2Proj3(coarse_geometry_container[ZONE_0][INST_0][MESH_0], 
+                                                                                  coarse_config_container[ZONE_0]);
+
 }
 
 void CErrorEstimationDriver::Run() {
