@@ -8557,6 +8557,8 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
   delete [] buffer;
   cgns_err = cg_close(FFDBox_cgns_file);
   if (cgns_err) cg_error_print();
+#else // Not built with CGNS support
+  cout << "CGNS file requested for FFD but SU2 was built without CGNS support. No file written" << "\n"; 
 #endif
 }
 
