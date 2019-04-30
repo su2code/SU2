@@ -630,7 +630,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
             /*--- Store the data correctly depending on the quantity. ---*/
             
             for (iVar = 0; iVar < nVar; iVar++)
-              x[iPoint*nVar+iVar] = TypeCaster<su2double,true>(bufDRecv[buf_offset+iVar]);
+              x[iPoint*nVar+iVar] = ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
             
           }
           break;
@@ -668,7 +668,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
             
             
             for (iVar = 0; iVar < nVar; iVar++)
-              x[iPoint*nVar+iVar] += TypeCaster<su2double,true>(bufDRecv[buf_offset+iVar]);
+              x[iPoint*nVar+iVar] += ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
             
           }
           

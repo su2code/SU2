@@ -110,10 +110,16 @@ private:
 #endif
 
   /*!
-   * \brief Handle type conversion for when we Set, Add, etc. blocks.
+   * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
    */
-  template<class OtherType, bool Active>
-  ScalarType TypeCaster(const OtherType & val) const;
+  template<class DstType, class SrcType>
+  DstType ActiveAssign(const SrcType & val) const;
+
+  /*!
+   * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
+   */
+  template<class DstType, class SrcType>
+  DstType PassiveAssign(const SrcType & val) const;
 
 public:
   
