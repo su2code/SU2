@@ -563,6 +563,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_Density_Local;
   delete [] Surface_Enthalpy_Local;
   delete [] Surface_NormalVelocity_Local;
+  delete [] Surface_StreamVelocity2_Local;
+  delete [] Surface_TransvVelocity2_Local;
   delete [] Surface_Pressure_Local;
   delete [] Surface_TotalTemperature_Local;
   delete [] Surface_TotalPressure_Local;
@@ -575,18 +577,23 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_Density_Total;
   delete [] Surface_Enthalpy_Total;
   delete [] Surface_NormalVelocity_Total;
+  delete [] Surface_StreamVelocity2_Total;
+  delete [] Surface_TransvVelocity2_Total;
   delete [] Surface_Pressure_Total;
   delete [] Surface_TotalTemperature_Total;
   delete [] Surface_TotalPressure_Total;
   delete [] Surface_Area_Total;
   delete [] Surface_MassFlow_Abs_Total;
-  
+  delete [] Surface_MomentumDistortion_Total;
+
   delete [] Surface_MassFlow;
   delete [] Surface_Mach;
   delete [] Surface_Temperature;
   delete [] Surface_Density;
   delete [] Surface_Enthalpy;
   delete [] Surface_NormalVelocity;
+  delete [] Surface_StreamVelocity2;
+  delete [] Surface_TransvVelocity2;
   delete [] Surface_Pressure;
   delete [] Surface_TotalTemperature;
   delete [] Surface_TotalPressure;
@@ -757,7 +764,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
   
   surfCp_filename = "TargetCp";
   
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, curr_TimeIter, ".dat");
+  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curr_TimeIter, ".dat");
   
   strcpy (cstr, surfCp_filename.c_str());
     

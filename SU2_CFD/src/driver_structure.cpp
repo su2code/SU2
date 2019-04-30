@@ -977,6 +977,8 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
     
   }
  
+  delete [] geometry_aux;
+  
 }
 
 

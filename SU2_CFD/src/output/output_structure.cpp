@@ -207,6 +207,12 @@ COutput::COutput(CConfig *config) {
   for (unsigned short iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
     Cauchy_Serie[iCounter] = 0.0;
   
+  /*--- Initialize all convergence flags to false. ---*/
+  
+  Convergence        = false;
+  Convergence_FSI    = false;
+  Convergence_FullMG = false;
+  
 }
 
 COutput::~COutput(void) {
@@ -2859,7 +2865,15 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   nSurf_Poin_Par = 0;
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
     if (surfPoint[iPoint] != -1) {
+      
+      /*--- Save the global index values for CSV output. ---*/
+      
+      Renumber2Global[nSurf_Poin_Par] = surfPoint[iPoint];
+      
+      /*--- Increment total number of surface points found locally. ---*/
+      
       nSurf_Poin_Par++;
+
     }
   }
   
@@ -3366,7 +3380,6 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   map<unsigned long,unsigned long> Global2Renumber;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     Global2Renumber[globalRecv[ii]] = renumbRecv[ii] + 1;
-    Renumber2Global[renumbRecv[ii] + 1] = globalRecv[ii];
   }
   
   
@@ -3728,7 +3741,6 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (int ii = 0; ii < nElem_Send[size]; ii++) {
     Global2Renumber[outliers[ii]] = idSend[ii] + 1;
-    Renumber2Global[idSend[ii] + 1] = outliers[ii];
   }
   
   /*--- We can now overwrite the local connectivity for our surface elems
@@ -4061,7 +4073,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry)
 
     for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
-      strcpy(str_buf, Variable_Names[iVar].c_str());
+      strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
       file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
     }
@@ -4442,6 +4454,7 @@ void COutput::DeallocateSurfaceData_Parallel() {
     
     Global2Renumber.clear();
     Renumber2Global.clear();
+    
     /*--- Deallocate memory for surface solution data ---*/
     
     for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {

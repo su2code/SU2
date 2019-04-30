@@ -50,8 +50,6 @@ class CHeatOutput : public COutput {
 private:
   bool multizone;
 
-  char char_histfile[200];
-
 public:
 
 

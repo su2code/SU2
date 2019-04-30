@@ -46,7 +46,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
   bool fem_solver = false;
-  bool periodic   = false;
   
   su2double** Gradient;
   unsigned short iDV, iDV_Value;

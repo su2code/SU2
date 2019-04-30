@@ -6328,7 +6328,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   bool adjoint = config->GetContinuous_Adjoint();
-  unsigned short iDim = 0, nDim = 3;
+  unsigned short iDim = 0;
   
   /*--- Retrieve values from the config file ---*/
   
@@ -9505,8 +9505,6 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord;
   int EL_KIND = 0;
-
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   bool RightVol = true;
 
