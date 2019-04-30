@@ -60,10 +60,10 @@ inline passivedouble CSysMatrix<su2double>::ActiveAssign(const su2double & val) 
 template<class ScalarType>
 template<class DstType, class SrcType>
 inline DstType CSysMatrix<ScalarType>::PassiveAssign(const SrcType & val) const {
-#ifndef CODI_REVERSE_TYPE
-  return val;
-#else
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
   return SU2_TYPE::GetValue(val);
+#else
+  return val;
 #endif
 }
 
