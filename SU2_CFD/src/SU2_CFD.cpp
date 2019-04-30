@@ -96,7 +96,6 @@ int main(int argc, char *argv[]) {
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
