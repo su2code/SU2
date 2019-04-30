@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -7292,7 +7292,7 @@ string CConfig::GetFilename(string filename, string ext){
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
   if (GetWrt_Unsteady() || GetWrt_Dynamic()){
-    filename = GetUnsteady_FileName(filename, GetExtIter(), ext);
+    filename = GetUnsteady_FileName(filename, (int)GetExtIter(), ext);
   }
   
   return filename;

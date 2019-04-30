@@ -48,7 +48,6 @@
 class CAdjElasticityOutput : public COutput {
 private:
   unsigned short nVar_FEM, nDim;
-  char char_histfile[200];
 
 public:
 

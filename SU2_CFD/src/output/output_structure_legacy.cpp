@@ -8685,7 +8685,7 @@ void COutputLegacy::SetMesh_Files(CGeometry **geometry, CConfig **config, unsign
     
     bool Wrt_Vol = config[iZone]->GetVisualize_Volume_Def();
     bool Wrt_Srf = config[iZone]->GetVisualize_Surface_Def();
-    bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
+    //bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
     
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
