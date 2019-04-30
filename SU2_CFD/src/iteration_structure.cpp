@@ -382,6 +382,48 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
 
 }
 
+void CIteration::Deform_Mesh(CGeometry ****geometry_container,
+                             CNumerics ******numerics_container,
+                             CSolver *****solver_container,
+                             CConfig **config_container,
+                             unsigned short val_iZone,
+                             unsigned short val_iInst,
+                             unsigned short kind_recording)   {
+
+  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
+  bool TapeActive = NO;
+
+
+  /*--- Perform the elasticity mesh movement ---*/
+  if (Kind_Grid_Movement == ELASTICITY) {
+
+    if(kind_recording != MESH_DEFORM){
+      /*--- In any other recordings, the tape is passive during the deformation ---*/
+      TapeActive = AD::isTapeActive();
+      AD::StopRecording();
+    }
+
+    /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
+
+    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetMesh_Stiffness(geometry_container[val_iZone][val_iInst],
+                                                                                numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
+                                                                                config_container[val_iZone]);
+    /*--- Deform the volume grid around the new boundary locations ---*/
+
+    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
+                                                                         numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
+                                                                         config_container[val_iZone]);
+
+    if(TapeActive) {
+      /*--- Start recording if it was stopped ---*/
+      AD::StartRecording();
+    }
+  }
+
+}
+
+
+
 void CIteration::Preprocess(COutput *output,
                             CIntegration ****integration_container,
                             CGeometry ****geometry_container,
