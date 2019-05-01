@@ -9479,27 +9479,48 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   nelem_edge_bound     = iElem_Line;
   nelem_triangle_bound = iElem_Tria;
   nelem_quad_bound     = iElem_Quad;
-
-  /*--- Set some auxiliary information on a per-marker basis. ---*/
-
+  
+  /*--- Reset the marker lists so that config carries the local info. ---*/
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
+    
     Global_Marker = Marker_Local_to_Global[iMarker];
-
+    
     /*--- Now each domain has the right information ---*/
-
-    string Grid_Marker = config->GetMarker_All_TagBound(Marker_Local_to_Global[iMarker]);
-    short SendRecv     = config->GetMarker_All_SendRecv(Marker_Local_to_Global[iMarker]);
-
-    Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
+    
+    string Grid_Marker = config->GetMarker_All_TagBound(Global_Marker);
+    short SendRecv     = config->GetMarker_All_SendRecv(Global_Marker);
+    
+    Tag_to_Marker[iMarker]       = Marker_Tags[Global_Marker];
     Marker_All_SendRecv[iMarker] = SendRecv;
-
+    
     /*--- Set the marker tags correctly to match the values in config. ---*/
-
+    
     config->SetMarker_All_TagBound(iMarker, Tag_to_Marker[iMarker]);
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
-
+    
+    /*--- Update config information storing the boundary information in the right place ---*/
+    
+    config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Tag_to_Marker[iMarker]));
+    config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Tag_to_Marker[iMarker]));
+    
   }
+  
+  /*--- Set the correct local number of markers in the config. ---*/
+  
+  config->SetnMarker_All(nMarker);
   
   /*--- Initialize pointers for turbomachinery computations  ---*/
   
@@ -9764,7 +9785,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must be sended. */
 
   map<unsigned long, unsigned long>::const_iterator MI;
-
+  
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
     additional elements (and nodes) may be added as halo's. ---*/
   if (config->GetWall_Functions()){
