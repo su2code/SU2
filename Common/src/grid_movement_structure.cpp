@@ -8521,7 +8521,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
     pointlen *= dims[ii];
   }
 
-  double *buffer = new double[pointlen];
+  passivedouble *buffer = new passivedouble[pointlen];
   SPRINTF (zonename, "SU2_Zone_%d", SU2_TYPE::Int(iFFDBox));
   
   cgns_err = cg_zone_write(FFDBox_cgns_file, cgns_base, zonename, dims, CGNS_ENUMV(Structured), &cgns_zone);
@@ -8540,7 +8540,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
       for (jDegree = 0; jDegree <= mDegree; jDegree++) {
         for (iDegree = 0; iDegree <= lDegree; iDegree++) {
           pos = iDegree + jDegree*(lDegree+1)+ kDegree*(lDegree+1)*(mDegree+1);
-          buffer[pos] = Coord_Control_Points[iDegree][jDegree][kDegree][iDim];
+          buffer[pos] = SU2_TYPE::GetValue(Coord_Control_Points[iDegree][jDegree][kDegree][iDim]);
         }
       }
     }
