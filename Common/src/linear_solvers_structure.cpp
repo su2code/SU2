@@ -466,14 +466,15 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     x.Plus_AX(y[k], Z[k]);
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# FGMRES final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
-  }
-  
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
   
-  if (monitoring) {
+  if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
+    
+    if (rank == MASTER_NODE) {
+      cout << "# FGMRES final (true) residual:" << endl;
+      cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
+    }
+    
     mat_vec(x, W[0]);
     W[0] -= b;
     ScalarType res = W[0].norm();
@@ -486,6 +487,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
         cout << "# res - beta = " << res - beta << endl << endl;
       }
     }
+    
   }
   
   (*residual) = beta;
