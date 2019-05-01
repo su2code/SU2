@@ -2749,8 +2749,19 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     else {
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
       /*---  Compute the residual Ax-f ---*/
-
+#ifndef CODI_REVERSE_TYPE
       Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+#else
+      /*---  We need temporaries to interface with the matrix ---*/
+      {
+        CSysVector<passivedouble> sol, res;
+        sol.PassiveCopy(LinSysSol);
+        res.PassiveCopy(LinSysRes);
+        CSysVector<passivedouble> aux(res);
+        Jacobian.ComputeResidual(sol, res, aux);
+        LinSysAux.PassiveCopy(aux);
+      }
+#endif
 
       /*--- Set maximum residual to zero ---*/
 
@@ -2858,8 +2869,19 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
       /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
 
       /*---  Compute the residual Ax-f ---*/
-
+#ifndef CODI_REVERSE_TYPE
       Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+#else
+      /*---  We need temporaries to interface with the matrix ---*/
+      {
+        CSysVector<passivedouble> sol, res;
+        sol.PassiveCopy(LinSysSol);
+        res.PassiveCopy(LinSysRes);
+        CSysVector<passivedouble> aux(res);
+        Jacobian.ComputeResidual(sol, res, aux);
+        LinSysAux.PassiveCopy(aux);
+      }
+#endif
 
       /*--- Set maximum residual to zero ---*/
 
