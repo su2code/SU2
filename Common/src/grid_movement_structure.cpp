@@ -186,8 +186,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
     
-    CMatrixVectorProduct* mat_vec = NULL;
-    CPreconditioner* precond = NULL;
+    CMatrixVectorProduct<su2double>* mat_vec = NULL;
+    CPreconditioner<su2double>* precond = NULL;
 
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
@@ -209,20 +209,20 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     	if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
+    		precond = new CLU_SGSPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    		mat_vec = new CSysMatrixVectorProduct<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
@@ -233,14 +233,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     			(config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
         if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
     		StiffMatrix.BuildJacobiPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    		mat_vec = new CSysMatrixVectorProductTransposed<su2double>(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner<su2double>(StiffMatrix, geometry, config);
     	}
 
     }
