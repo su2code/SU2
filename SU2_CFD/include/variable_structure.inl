@@ -45,12 +45,6 @@ inline void CVariable::SetVelSolutionOldDVector(void) { }
 
 inline void CVariable::SetVelSolutionDVector(void) { }
 
-inline void CVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { }
-
-inline void CVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { }
-
-inline su2double **CVariable::GetTraction(void) { return NULL; }
-
 inline void CVariable::SetStress_FEM(unsigned short iVar, su2double val_stress) { }
 
 inline void CVariable::AddStress_FEM(unsigned short iVar, su2double val_stress) { }
@@ -65,8 +59,6 @@ inline void CVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
 
 inline void CVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) { }
 
-inline su2double *CVariable::Get_SurfaceLoad_Res(void) { return NULL;}
-
 inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_SurfaceLoad_Res(void) { }
@@ -77,8 +69,6 @@ inline su2double CVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return 
 
 inline void CVariable::Add_BodyForces_Res(su2double *val_bodyForce) { }
 
-inline su2double *CVariable::Get_BodyForces_Res(void) { return NULL;}
-
 inline su2double CVariable::Get_BodyForces_Res(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_BodyForces_Res(void) { }
@@ -87,8 +77,6 @@ inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
 
 inline void CVariable::Add_FlowTraction(su2double *val_flowTraction) { }
 
-inline su2double *CVariable::Get_FlowTraction(void) { return NULL;}
-
 inline su2double CVariable::Get_FlowTraction(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_FlowTraction(void) { }
@@ -96,6 +84,8 @@ inline void CVariable::Clear_FlowTraction(void) { }
 inline void CVariable::Set_FlowTraction_n(void) { }
 
 inline su2double CVariable::Get_FlowTraction_n(unsigned short iVar) { return 0.0; }
+
+inline bool CVariable::Get_isVertex(void) { return false; }
 
 inline su2double CVariable::GetBetaInc2(void) { return 0; }
 
@@ -1064,33 +1054,28 @@ inline void CFEAVariable::AddStress_FEM(unsigned short iVar, su2double val_stres
 
 inline su2double *CFEAVariable::GetStress_FEM(void) { return Stress; }
 
-inline void CFEAVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+inline void CFEABoundVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
 }
 
-inline void CFEAVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) { Residual_Ext_Surf[iVar] = val_surfForce;}
+inline void CFEABoundVariable::Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
 
-inline su2double *CFEAVariable::Get_SurfaceLoad_Res(void) { return Residual_Ext_Surf;}
+inline su2double CFEABoundVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
 
-inline su2double CFEAVariable::Get_SurfaceLoad_Res(unsigned short iVar) { return Residual_Ext_Surf[iVar];}
-
-inline void CFEAVariable::Clear_SurfaceLoad_Res(void) {
+inline void CFEABoundVariable::Clear_SurfaceLoad_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_SurfaceLoad_Res_n(void) {
+inline void CFEABoundVariable::Set_SurfaceLoad_Res_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
 }
 
-inline su2double CFEAVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return Residual_Ext_Surf_n[iVar];}
+inline su2double CFEABoundVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return Residual_Ext_Surf_n[iVar]; }
 
 inline void CFEAVariable::Add_BodyForces_Res(su2double *val_bodyForce) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Residual_Ext_Body[iVar] += val_bodyForce[iVar];
 }
-
-inline su2double *CFEAVariable::Get_BodyForces_Res(void) { return Residual_Ext_Body;}
 
 inline su2double CFEAVariable::Get_BodyForces_Res(unsigned short iVar) { return Residual_Ext_Body[iVar];}
 
@@ -1098,29 +1083,28 @@ inline void CFEAVariable::Clear_BodyForces_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Body[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_FlowTraction(su2double *val_flowTraction) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    FlowTraction[iVar] = val_flowTraction[iVar];
+inline void CFEABoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = val_flowTraction[iVar];
 }
 
-inline void CFEAVariable::Add_FlowTraction(su2double *val_flowTraction) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    FlowTraction[iVar] += val_flowTraction[iVar];
+inline void CFEABoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
-inline su2double *CFEAVariable::Get_FlowTraction(void) { return FlowTraction;}
 
-inline su2double CFEAVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar];}
+inline su2double CFEABoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
 
-inline void CFEAVariable::Clear_FlowTraction(void) {
+inline void CFEABoundVariable::Clear_FlowTraction(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = 0.0;
 }
 
-inline void CFEAVariable::Set_FlowTraction_n(void) {
+inline void CFEABoundVariable::Set_FlowTraction_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction_n[iVar] = FlowTraction[iVar];
 }
 
-inline su2double CFEAVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar];}
+inline su2double CFEABoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
+
+inline bool CFEABoundVariable::Get_isVertex(void) { return true; }
 
 inline void CFEAVariable::SetSolution_time_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Solution_time_n[iVar] = Solution[iVar];
@@ -1259,12 +1243,6 @@ inline void CFEAVariable::SetPrestretch(unsigned short iVar, su2double val_prest
 inline su2double *CFEAVariable::GetPrestretch(void) { return Prestretch; }
 
 inline su2double CFEAVariable::GetPrestretch(unsigned short iVar) { return Prestretch[iVar]; }
-
-inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
-
-inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] += val_traction; }
-
-inline su2double **CFEABoundVariable::GetTraction(void) { return Traction; }
 
 inline su2double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
@@ -1634,3 +1612,60 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
+
+inline su2double CMeshVariable::GetMesh_Coord(unsigned short iDim) { return Mesh_Coord[iDim]; }
+
+inline su2double *CMeshVariable::GetMesh_Coord(void) { return Mesh_Coord; }
+
+inline void CMeshVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { Mesh_Coord[iDim] = val_coord;}
+
+inline su2double CMeshVariable::GetDisplacement(unsigned short iDim) { return Displacement[iDim]; }
+
+inline su2double *CMeshVariable::GetDisplacement(void) { return Displacement; }
+
+inline void CMeshVariable::SetDisplacement(unsigned short iDim, su2double val_disp) { Displacement[iDim] = val_disp;}
+
+inline su2double CMeshVariable::GetDisplacement_Old(unsigned short iDim) { return Displacement_Old[iDim]; }
+
+inline void CMeshVariable::SetDisplacement_Old(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_Old[iDim] = Displacement[iDim];
+}
+
+inline su2double CMeshVariable::GetDisplacement_n(unsigned short iDim) { return Displacement_n[iDim]; }
+
+inline su2double *CMeshVariable::GetDisplacement_n(void) { return Displacement_n; }
+
+inline void CMeshVariable::SetDisplacement_n(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_n[iDim] = Displacement[iDim];
+}
+
+inline void CMeshVariable::SetDisplacement_n(unsigned short iDim, su2double val_disp) { Displacement_n[iDim] = val_disp;}
+
+inline su2double CMeshVariable::GetDisplacement_n1(unsigned short iDim) { return Displacement_n1[iDim]; }
+
+inline su2double *CMeshVariable::GetDisplacement_n1(void) { return Displacement_n1; }
+
+inline void CMeshVariable::SetDisplacement_n1(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_n1[iDim] = Displacement_n[iDim];
+}
+
+inline void CMeshVariable::SetDisplacement_n1(unsigned short iDim, su2double val_disp) { Displacement_n1[iDim] = val_disp;}
+
+inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
+
+inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = val_dist; }
+
+inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
+
+inline void CMeshElement::SetRef_Volume(su2double val_volume) { Ref_Volume = val_volume; }
+
+inline su2double CMeshElement::GetCurr_Volume(void) { return Curr_Volume; }
+
+inline void CMeshElement::SetCurr_Volume(su2double val_volume) { Curr_Volume = val_volume; }
+
+inline su2double CMeshElement::GetWallDistance(void) { return WallDistance; }
+
+inline void CMeshElement::SetWallDistance(su2double val_volume) { WallDistance = val_volume; }

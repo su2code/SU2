@@ -392,7 +392,7 @@ CDriver::CDriver(char* confFile,
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
         for (iInst = 0; iInst < nInst[iZone]; iInst++){
           if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
-          iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, iInst, 0, 0);
+          iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, ZONE_0, iInst, 0, 0);
         }
       }
     }
@@ -1382,6 +1382,9 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
   }
 
+  /*--- Preprocess the mesh solver for dynamic meshes. ---*/
+  /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
+  MeshSolver_Preprocessing(solver_container, geometry, config, val_iInst);
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -1393,6 +1396,19 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   /*--- Set up any necessary inlet profiles ---*/
 
   Inlet_Preprocessing(solver_container[val_iInst], geometry[val_iInst], config);
+
+}
+
+void CDriver::MeshSolver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry,
+                                       CConfig *config, unsigned short val_iInst) {
+
+  /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
+  /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
+  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
+
+  if (dynamic_mesh)
+    solver_container[val_iInst][MESH_0][MESH_SOL] = new CMeshSolver(geometry[val_iInst][MESH_0], config);
+
 
 }
 
@@ -1546,6 +1562,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool restart      = config->GetRestart();
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
+  bool grid_movement = (config->GetGrid_Movement() &&
+                       (config->GetKind_GridMovement() == ELASTICITY));
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1650,6 +1668,12 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     if (disc_adj_heat) {
       solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
+  }
+
+  if (restart && grid_movement){
+    /*--- Always restart with the last state ---*/
+    val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/
@@ -2756,6 +2780,13 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
 
   }
+
+
+  /*--- We initialize the numerics for the mesh solver ---*/
+  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
+
+  if (dynamic_mesh)
+    numerics_container[val_iInst][MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
 
 }
 
@@ -4085,7 +4116,7 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 }
@@ -4187,7 +4218,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 
@@ -5573,7 +5604,7 @@ void CFSIDriver::Run() {
     /*--------------------- Mesh deformation --------------------------*/
     /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
+  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, numerics_container, solver_container,
         config_container, ZONE_FLOW, INST_0, 0, ExtIter);
 
     /*-----------------------------------------------------------------*/
@@ -5780,8 +5811,7 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],config_container[ZONE_STRUCT], iMarker);
     break;
   }
   }
@@ -5891,7 +5921,7 @@ void CFSIDriver::Update() {
   /*-------------------- Set the grid movement -------------------------*/
 
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container, surface_movement,
-                                                   grid_movement, FFDBox, solver_container,
+                                                   grid_movement, FFDBox, numerics_container, solver_container,
       config_container, ZONE_FLOW, INST_0, IntIter, ExtIter);
 
   /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
@@ -6719,7 +6749,7 @@ void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsign
   /*-----------------------------------------------------------------*/
 
   direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
-                                                   grid_movement, FFDBox, solver_container,
+                                                   grid_movement, FFDBox, numerics_container, solver_container,
                                                    config_container, ZONE_FLOW, INST_0, IntIter, ExtIter);
 
   geometry_container[ZONE_FLOW][INST_0][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
@@ -7290,8 +7320,7 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
     break;
   }
 
@@ -7495,8 +7524,7 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
-        config_container[ZONE_STRUCT], iMarker);
+        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
     break;
   }
 
@@ -7655,7 +7683,7 @@ void CMultiphysicsZonalDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 
