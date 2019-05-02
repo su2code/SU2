@@ -41,26 +41,28 @@
 #include "../include/matrix_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m, const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n, codi::DataStore* d){
+template<class ScalarType>
+void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m,
+                                      const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n,
+                                      codi::DataStore* d) {
   
-  CSysVector* LinSysRes_b = NULL;
+  CSysVector<su2double>* LinSysRes_b = NULL;
   d->getData(LinSysRes_b);
   
-  CSysVector* LinSysSol_b = NULL;
+  CSysVector<su2double>* LinSysSol_b = NULL;
   d->getData(LinSysSol_b);
   
-  CSysMatrix* Jacobian = NULL;
+  CSysMatrix<ScalarType>* Jacobian = NULL;
   d->getData(Jacobian);
-
+  
   CGeometry* geometry  = NULL;
   d->getData(geometry);
-
+  
   CConfig* config      = NULL;
   d->getData(config);
   
-  CSysSolve* solver;
+  CSysSolve<ScalarType>* solver = NULL;
   d->getData(solver);
-  
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
@@ -70,10 +72,14 @@ void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::R
   }
   
   solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
-    
+  
   for (unsigned long i = 0; i < n; i ++) {
     x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
   }
   
 }
+
+template class CSysSolve_b<su2double>;
+template class CSysSolve_b<passivedouble>;
+
 #endif
