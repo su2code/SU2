@@ -13250,7 +13250,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             iVar++;
             
             /* p'p' = pmean * pmean - ppmean */
-            Local_Data[jPoint][iVar] = pmean * pmean - ppmean;
+            Local_Data[jPoint][iVar] = -(pmean * pmean - ppmean);
             iVar++;
 
           }
@@ -13279,7 +13279,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             iVar++;
             
             /* p'p' = pmean * pmean - ppmean */
-            Local_Data[jPoint][iVar] = pmean * pmean - ppmean;
+            Local_Data[jPoint][iVar] = -(pmean * pmean - ppmean);
             iVar++;
           }
 
