@@ -134,7 +134,7 @@ public:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic);
+  void Input_Preprocessing(SU2_Comm MPICommunicator);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
