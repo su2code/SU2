@@ -9811,12 +9811,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     /*--- Perform the preprocessing tasks when wall functions are used. ---*/
     WallModelPreprocessing(config);
   }
-  cout << "Rank " << rank << " in SetSendReceive" << endl;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    cout << "Rank: " << rank << " iMarker: " << iMarker << " Tag: " << Marker_Tag << " Type: " << config->GetMarker_All_KindBC(iMarker) << endl;
-  }
-  
+
   /*--- Allocate the first dimension of the double vectors to
     store the external nodes. ---*/
 
@@ -14448,37 +14443,50 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 }
 
 void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
+
+  cout << "Rank: " << rank << " nMarker: " << config->GetnMarker_All() << " " << nMarker << endl;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    cout << "Rank: " << rank << " iMarker: " << iMarker << " BC: "
+         << config->GetMarker_All_KindBC(iMarker) << " Tag: "
+         << config->GetMarker_All_TagBound(iMarker) << endl;
+  }
  
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Check whether wall models are used at all.                 ---*/
   /*--------------------------------------------------------------------------*/
-  
-  bool wallFunctions = false;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+
+  /*--- Determine whether or not there are local markers for which
+        wall functions must be used. ---*/
+  unsigned short wallFunctions = 0;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
-        cout << "Rank: " << rank << " nMarker: " << nMarker << " " << nMarker_Global << endl;
-        cout << "Rank: " << rank << " Wall boundary flagged for marker " << Marker_Tag << endl;
-        cout << "Rank: " << rank << " nElem " << nElem << endl;
-
         if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
            (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
-          wallFunctions = true;
+          wallFunctions = 1;
         break;
       }
       default:  /* Just to avoid a compiler warning. */
         break;
     }
   }
+
+  /*--- Carry out an allreduce to find out the global value of wallFunctions.
+        Only needed in parallel mode. ---*/
+#ifdef HAVE_MPI
+  unsigned short wallFunctionsLocal = wallFunctions;
+  SU2_MPI::Allreduce(& wallFunctionsLocal, &wallFunctions, 1, MPI_UNSIGNED_SHORT,
+                     MPI_MAX, MPI_COMM_WORLD);
+#endif
   
   /* If no wall models are used, nothing needs to be done and a
    return can be made. */
   if( !wallFunctions ) return;
-  cout << "Rank: " << rank << " Wall Functions " << wallFunctions << endl;
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Build the local ADT of the volume elements. The currently  ---*/
   /*---         stored halo elements are included, because this info will  ---*/
