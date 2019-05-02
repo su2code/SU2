@@ -1552,7 +1552,7 @@ public:
                       unsigned short kind_recording);
 
   /*!
-   * \brief Record a single iteration of the direct mean flow system.
+   * \brief Record a single iteration of the direct FEM system.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definition of the particular problem.
@@ -1825,7 +1825,7 @@ public:
                       unsigned short kind_recording);
 
   /*!
-   * \brief Record a single iteration of the direct mean flow system.
+   * \brief Record a single iteration of the direct heat system.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definition of the particular problem.
