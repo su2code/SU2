@@ -9811,7 +9811,12 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     /*--- Perform the preprocessing tasks when wall functions are used. ---*/
     WallModelPreprocessing(config);
   }
-
+  cout << "Rank " << rank << " in SetSendReceive" << endl;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    cout << "Rank: " << rank << " iMarker: " << iMarker << " Tag: " << Marker_Tag << " Type: " << config->GetMarker_All_KindBC(iMarker) << endl;
+  }
+  
   /*--- Allocate the first dimension of the double vectors to
     store the external nodes. ---*/
 
@@ -14458,7 +14463,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
         
         cout << "Rank: " << rank << " nMarker: " << nMarker << " " << nMarker_Global << endl;
         cout << "Rank: " << rank << " Wall boundary flagged for marker " << Marker_Tag << endl;
-        cout <<  "Rank: " << rank << " nElem " << nElem << endl;
+        cout << "Rank: " << rank << " nElem " << nElem << endl;
 
         if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
            (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
@@ -14899,10 +14904,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     for(int i=0; i<nRankRecvData; ++i)
       ii += intRecvBuf[i][0];
 
-    if(ii != nLocalSearchPoints)
+    if(ii != nLocalSearchPoints){
+      cout << ii << " " << nLocalSearchPoints << endl;
       SU2_MPI::Error("Number of received global data points is not correct",
                      CURRENT_FUNCTION);
-
+    }
     /*--- Check if anything needs to be updated to the local data structures. ---*/
     if(nLocalSearchPoints > 0) {
 
