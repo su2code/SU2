@@ -3386,8 +3386,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
-
-    if (!adjoint) {
+      if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
@@ -5466,6 +5465,17 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
 
+  /*--- Initializing Vectors --- */
+  for (iVar=0; iVar<nVar ;iVar++){
+    U_domain[iVar] = 0.0;
+    U_outlet[iVar] = 0.0;
+  }
+
+  for (iVar=0; iVar<nPrimVar; iVar++){
+    V_domain[iVar] = 0.0;
+    V_outlet[iVar] = 0.0;
+  }
+
   unsigned short T_INDEX       = node[0]->GetTIndex();
   unsigned short TVE_INDEX     = node[0]->GetTveIndex();
   unsigned short VEL_INDEX     = node[0]->GetVelIndex();
@@ -5545,10 +5555,13 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
 
       /*--- Compute Species Concentrations ---*/
-      //Using partial pressures
+      //Using partial pressures, maybe not
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-        Ys[iSpecies] = (V_domain[iSpecies]*Ru/Ms[iSpecies]*Temperature)/Pressure;
+        Ys[iSpecies] = V_domain[iSpecies]/Density;
       }
+      //for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+      //  Ys[iSpecies] = (V_domain[iSpecies]*Ru/Ms[iSpecies]*Temperature)/Pressure;
+      //}
 
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {
@@ -5602,7 +5615,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         V_outlet[PRESS_INDEX] = Pressure;
         V_outlet[RHO_INDEX]   = Density;
         V_outlet[H_INDEX]     = Energy+Pressure/Density;
-        V_outlet[A_INDEX]     = Velocity2*Mach_Exit;
+        V_outlet[A_INDEX]     = SoundSpeed;
 
         for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
           V_outlet[RHOCVTR_INDEX ] += Density* Ys[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
@@ -5651,50 +5664,49 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           V_outlet[RHOCVVE_INDEX] += V_outlet[nSpecies-1] * Cves;
         }
 
-      }
-
-      /*--- Conservative variables, using the derived quantities ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
-        U_outlet[iSpecies] = V_outlet[iSpecies];
-      }
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
-      U_outlet[nVar-2] = Energy;
-
-      /*--- Set the total energy ---*/
-      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-
-        // Species formation energy
-        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-        // Species vibrational energy
-        if (thetav[iSpecies] != 0.0)
-          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-        else
-          Ev = 0.0;
-
-        // Species electronic energy
-        num = 0.0;
-        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        /*--- Conservative variables, using the derived quantities ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
+          U_outlet[iSpecies] = V_outlet[iSpecies];
         }
-        Ee = Ru/Ms[iSpecies] * (num/denom);
 
-        // Mixture vibrational-electronic energy
-        U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
+        for (iDim = 0; iDim < nDim; iDim++)
+          U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
+        U_outlet[nVar-2] = Energy;
 
-      }
+        /*--- Set the Electronic energy ---*/
+        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
 
-      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+          // Species formation energy
+          Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
 
-        // Species formation energy
-        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+          // Species vibrational energy
+          if (thetav[iSpecies] != 0.0)
+            Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+          else
+            Ev = 0.0;
 
-        // Electron t-r mode contributes to mixture vib-el energy
-        U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+          // Species electronic energy
+          num = 0.0;
+          denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+          for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+            num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+            denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+          }
+          Ee = Ru/Ms[iSpecies] * (num/denom);
+
+          // Mixture vibrational-electronic energy
+          U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
+        }
+
+        for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+
+          // Species formation energy
+          Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+
+          // Electron t-r mode contributes to mixture vib-el energy
+          U_outlet[nVar-1] += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+        }
+
       }
 
       /*--- Set various quantities in the solver class ---*/
@@ -7749,7 +7761,6 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
 
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
-
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;

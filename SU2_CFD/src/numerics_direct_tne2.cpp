@@ -2119,6 +2119,7 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
 
     }
   }
+
   for (iVar = nSpecies; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
@@ -2780,8 +2781,8 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
       A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
       B_sr   = 0.015 * pow(mu, 0.25);
       tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
-      num   += X[iSpecies];
-      denom += X[iSpecies] / tau_sr[iSpecies][jSpecies];
+      num   += X[jSpecies];
+      denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
     }
     tauMW[iSpecies] = num / denom;
 
