@@ -14444,13 +14444,6 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
 void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
-  cout << "Rank: " << rank << " nMarker: " << config->GetnMarker_All() << " " << nMarker << endl;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    cout << "Rank: " << rank << " iMarker: " << iMarker << " BC: "
-         << config->GetMarker_All_KindBC(iMarker) << " Tag: "
-         << config->GetMarker_All_TagBound(iMarker) << endl;
-  }
- 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Check whether wall models are used at all.                 ---*/
   /*--------------------------------------------------------------------------*/
@@ -14836,14 +14829,14 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     for(int i=0; i<size; ++i) {
       if( intReturnBuf[i][0] ) {
 
-        SU2_MPI::Isend(shortReturnBuf.data(), shortReturnBuf.size(), MPI_UNSIGNED_SHORT,
-                       i, i, MPI_COMM_WORLD, &sendReqs[ii++]);
-        SU2_MPI::Isend(intReturnBuf.data(), intReturnBuf.size(), MPI_INT,
-                       i, i+1, MPI_COMM_WORLD, &sendReqs[ii++]);
-        SU2_MPI::Isend(longReturnBuf.data(), longReturnBuf.size(), MPI_UNSIGNED_LONG,
-                       i, i+2, MPI_COMM_WORLD, &sendReqs[ii++]);
-        SU2_MPI::Isend(doubleReturnBuf.data(), doubleReturnBuf.size(), MPI_DOUBLE,
-                       i, i+3, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(shortReturnBuf[i].data(), shortReturnBuf[i].size(),
+                       MPI_UNSIGNED_SHORT, i, i, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(intReturnBuf[i].data(), intReturnBuf[i].size(),
+                       MPI_INT, i, i+1, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(longReturnBuf[i].data(), longReturnBuf[i].size(),
+                       MPI_UNSIGNED_LONG, i, i+2, MPI_COMM_WORLD, &sendReqs[ii++]);
+        SU2_MPI::Isend(doubleReturnBuf[i].data(), doubleReturnBuf[i].size(),
+                       MPI_DOUBLE, i, i+3, MPI_COMM_WORLD, &sendReqs[ii++]);
       }
     }
 
@@ -14997,7 +14990,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
         if(nDim == 2) node[i] = new CPoint(newNodesCoords[ind*nDim],
                                            newNodesCoords[ind*nDim+1],
                                            newNodesGlobalID[ind], config);
-        if(nDim == 2) node[i] = new CPoint(newNodesCoords[ind*nDim],
+        if(nDim == 3) node[i] = new CPoint(newNodesCoords[ind*nDim],
                                            newNodesCoords[ind*nDim+1],
                                            newNodesCoords[ind*nDim+2],
                                            newNodesGlobalID[ind], config);
