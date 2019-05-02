@@ -5838,7 +5838,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
       /*--- Adjoint solver ---*/
       if (adjoint) {
-
         /*--- Adjoint solution coefficients ---*/
         Total_Sens_Geo       = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
         Total_Sens_Mach      = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
@@ -6863,7 +6862,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
-                    cout << "  Sens_Press" << "      Sens_AoA" << endl;
+                    cout << "   Sens_Press" << "     Sens_AoA" << endl;
                   }
                   if (incompressible) {
                     if (energy) {

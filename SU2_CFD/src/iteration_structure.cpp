@@ -3243,7 +3243,6 @@ void CDiscAdjTNE2Iteration::RegisterInput(CSolver *****solver_container, CGeomet
     /*--- Register flow and turbulent variables as input ---*/
 
     if ((Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_TNE2_EULER)) {
-
       solver_container[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
       solver_container[iZone][iInst][MESH_0][ADJTNE2_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
