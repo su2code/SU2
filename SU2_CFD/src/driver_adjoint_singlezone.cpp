@@ -190,7 +190,8 @@ void CDiscAdjSinglezoneDriver::Run() {
     AD::ClearAdjoints();
 
     if (config->GetTime_Domain())
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0, INST_0);
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container,
+                                  true, 0.0, ZONE_0, INST_0);
 
     if (StopCalc) break;
 
@@ -214,7 +215,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   if (config->GetKind_Solver() == DISC_ADJ_FEM){
 
     /*--- Apply the boundary condition to clamped nodes ---*/
-    iteration->Postprocess(output,integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+    iteration->Postprocess(output,integration_container,geometry_container,solver_container,numerics_container,
+                           config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
 
   }
 
@@ -245,7 +247,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Set the dependencies of the iteration ---*/
 
-  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, kind_recording);
+  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
+                             INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/
 
@@ -343,13 +346,16 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1,
+                                                                  config->GetnSpanWiseSections()));
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config->GetnMarker_TurboPerformance() - 1,
+                                                                    config->GetnSpanWiseSections()));
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1, config->GetnSpanWiseSections()));
+        solver[FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config->GetnMarker_TurboPerformance() - 1,
+                                                                  config->GetnSpanWiseSections()));
         break;
       default:
         break;
@@ -388,7 +394,9 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Zone preprocessing ---*/
 
-  direct_iteration->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Preprocess(output, integration_container, geometry_container, solver_container,
+                               numerics_container, config_container, surface_movement, grid_movement,
+                               FFDBox, ZONE_0, INST_0);
 
   /*--- Run one single iteration ---*/
 
@@ -396,11 +404,14 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(output, integration_container, geometry_container, solver_container, numerics_container,
+                            config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 
-  direct_iteration->Postprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Postprocess(output, integration_container, geometry_container, solver_container,
+                                numerics_container, config_container, surface_movement, grid_movement,
+                                FFDBox, ZONE_0, INST_0);
 
   /*--- Print the direct residual to screen ---*/
 
