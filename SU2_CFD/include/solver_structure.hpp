@@ -146,15 +146,20 @@ protected:
   
 public:
   
-  CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
-  CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysMatrix Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve  System;       /*!< \brief Linear solver/smoother. */
+  CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
+  CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
+  CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
+#else
+  CSysMatrix<su2double> Jacobian;
+  CSysSolve<su2double>  System;
+#endif
   
-  CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+  CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
-  CSysVector OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
+  CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
   
   CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
@@ -10353,11 +10358,11 @@ public:
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   // Another set of matrix structures for the Lm equations
-  CSysMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysMatrix<su2double> JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   su2double *LinSysSolItmc;    /*!< \brief vector to store iterative solution of implicit linear system. */
   su2double *LinSysResItmc;    /*!< \brief vector to store iterative residual of implicit linear system. */
   su2double *rhsItmc;    /*!< \brief right hand side of implicit linear system. */
-  CSysMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysMatrix<su2double> JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   su2double *LinSysSolReth;    /*!< \brief vector to store iterative solution of implicit linear system. */
   su2double *LinSysResReth;    /*!< \brief vector to store iterative residual of implicit linear system. */
   su2double *rhsReth;    /*!< \brief right hand side of implicit linear system. */
@@ -11354,8 +11359,8 @@ private:
   su2double AllBound_CWave;  /*!< \brief Total wave strength for all the boundaries. */
   su2double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
   
-  CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-  CSysMatrix StiffMatrixTime;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+  CSysMatrix<su2double> StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+  CSysMatrix<su2double> StiffMatrixTime;  /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
   
   su2double **StiffMatrix_Elem,      /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
   **StiffMatrix_Node;              /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
@@ -11862,14 +11867,14 @@ private:
 
 public:
   
-  CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
-  CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
-  CSysVector LinSysReact;      /*!< \brief Vector to store the residual before applying the BCs */
+  CSysVector<su2double> TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
+  CSysVector<su2double> TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
+  CSysVector<su2double> LinSysReact;      /*!< \brief Vector to store the residual before applying the BCs */
 
-  CSysVector LinSysSol_Adj;   /*!< \brief Vector to store the solution of the adjoint problem */
-  CSysVector LinSysRes_Adj;   /*!< \brief Vector to store the residual of the adjoint problem */
+  CSysVector<su2double> LinSysSol_Adj;   /*!< \brief Vector to store the solution of the adjoint problem */
+  CSysVector<su2double> LinSysRes_Adj;   /*!< \brief Vector to store the residual of the adjoint problem */
 
-  CSysMatrix MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
+  CSysMatrix<su2double> MassMatrix;       /*!< \brief Sparse structure for storing the mass matrix. */
 
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
   CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
