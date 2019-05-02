@@ -17360,10 +17360,10 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
                                       unsigned short val_periodic) {
   
-  unsigned short iMarker, iDim, jMarker, pMarker = 0, index;
+  unsigned short iMarker, iDim, jMarker, pMarker = 0;
   unsigned short iPeriodic, nPeriodic;
 
-  unsigned long iVertex, iPoint, iPointGlobal;
+  unsigned long iVertex, iPoint, iPointGlobal, index;
   unsigned long jVertex, jVertex_, jPoint, jPointGlobal;
   unsigned long pVertex = 0, pPoint = 0, pPointGlobal = 0;
   unsigned long nLocalVertex_Periodic = 0, MaxLocalVertex_Periodic = 0;
