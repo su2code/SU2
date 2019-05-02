@@ -4586,6 +4586,18 @@ void CDiscAdjFluidDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
+
+
+    /*--- If necessary smooth the calculated geometry sensitivities ---*/
+
+    // check if zones and stuff are correct, especially ADJFLOW_SOL
+
+    if (config_container[ZONE_0]->GetSmoothGradient()) {
+      for (iZone = 0; iZone < nZone; iZone++) {
+        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SmoothGradient(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+      }
+    }
+
   }
 }
 

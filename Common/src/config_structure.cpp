@@ -1557,6 +1557,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 

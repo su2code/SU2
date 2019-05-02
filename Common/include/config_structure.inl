@@ -329,6 +329,8 @@ inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
+inline bool CConfig::GetSmoothGradient(void) { return SmoothGradient; }
+
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
