@@ -123,7 +123,7 @@ CDriver::CDriver(char* confFile,
   /*--- Preprocessing of the config and mesh files. In this routine, the config file is read
    and it is determined whether a problem is single physics or multiphysics. . ---*/
 
-  Input_Preprocessing(MPICommunicator, val_periodic);
+  Input_Preprocessing(MPICommunicator);
 
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
    based data structure is constructed, i.e. node and cell neighbors are
@@ -804,7 +804,7 @@ void CDriver::Postprocessing() {
 }
 
 
-void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
+void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
 
   char zone_file_name[MAX_STRING_SIZE];
 
