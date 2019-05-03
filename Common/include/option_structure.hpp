@@ -837,6 +837,7 @@ enum ENUM_TURB_MODEL {
   SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
   SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
   SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SA_SALSA = 7, /*!< \brief Kind of Turbulent model (Spalart-Allmaras SALSA). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
@@ -845,7 +846,8 @@ static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, EN
 ("SST", SST)
 ("SA_E", SA_E)
 ("SA_COMP", SA_COMP)
-("SA_E_COMP", SA_E_COMP);
+("SA_E_COMP", SA_E_COMP)
+("SA_SALSA", SA_SALSA);
 
 /*!
  * \brief types of transition models

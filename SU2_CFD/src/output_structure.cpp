@@ -4457,13 +4457,13 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: 
+    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: case SA_SALSA:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
     case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: case SA_SALSA:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
     case SST:   	SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\""); break;
@@ -4826,7 +4826,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: case SA_SALSA: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
       }
     }
@@ -4845,7 +4845,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: case SA_SALSA: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
@@ -5708,7 +5708,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
+              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: case SA_SALSA: cout << "       Res[nu]"; break;
               case SST:	      cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
@@ -18708,7 +18708,7 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
   unsigned short nVar_Turb = 0;
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP: case SA_SALSA:
         nVar_Turb = 1;
         turb_val[0] = solver[TURB_SOL]->GetNuTilde_Inf();
         break;

@@ -3620,6 +3620,50 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_TurbSA_SALSA
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ */
+class CAvgGrad_TurbSA_SALSA : public CAvgGrad_Scalar {
+private:
+  
+  const su2double sigma;
+  su2double nu_i, nu_j, nu_e;
+  
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn(void);
+  
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                          su2double **Jacobian_j, CConfig *config);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_TurbSA_SALSA(unsigned short val_nDim, unsigned short val_nVar,
+                  bool correct_grad, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_TurbSA_SALSA(void);
+};
+
+/*!
  * \class CAvgGrad_TransLM
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
@@ -4684,6 +4728,105 @@ public:
      * \brief  ______________.
      */
     su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_SALSA
+ * \brief Class for integrating the source terms of the Spalart-Allmaras SALSA modification turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina.
+ * \version 6.2.0 "Falcon"
+ */
+class CSourcePieceWise_TurbSA_SALSA : public CNumerics {
+private:
+  su2double cv1_3;
+  su2double k2;
+  su2double cb1;
+  su2double cw2;
+  su2double ct3;
+  su2double ct4;
+  su2double cw3_6;
+  su2double cb2_sigma;
+  su2double sigma;
+  su2double cb2;
+  su2double cw1;
+  unsigned short iDim;
+  su2double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double r, g, g_6, glim, fw;
+  su2double norm2_Grad;
+  su2double dfv1, dfv2, dShat;
+  su2double dr, dg, dfw;
+  bool incompressible;
+  bool rotating_frame;
+  su2double intermittency;
+  su2double Production, Destruction, CrossProduction;
+  su2double Sbar;
+  unsigned short jDim, kDim;
+  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double rho_ratio;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbSA_SALSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TurbSA_SALSA(void);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] intermittency_in - Value of the intermittency.
+   */
+  void SetIntermittency(su2double intermittency_in);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_production - Value of the Production.
+   */
+  void SetProduction(su2double val_production);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_destruction - Value of the Destruction.
+   */
+  void SetDestruction(su2double val_destruction);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_crossproduction - Value of the CrossProduction.
+   */
+  void SetCrossProduction(su2double val_crossproduction);
+  
+  /*!
+   * \brief ______________.
+   */
+  su2double GetProduction(void);
+  
+  /*!
+   * \brief  ______________.
+   */
+  su2double GetDestruction(void);
+  
+  /*!
+   * \brief  ______________.
+   */
+  su2double GetCrossProduction(void);
 };
 
 /*!

@@ -303,6 +303,37 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
 
 }
 
+CAvgGrad_TurbSA_SALSA::CAvgGrad_TurbSA_SALSA(unsigned short val_nDim,
+                                 unsigned short val_nVar, bool correct_grad,
+                                 CConfig *config)
+: CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
+}
+
+CAvgGrad_TurbSA_SALSA::~CAvgGrad_TurbSA_SALSA(void) {
+}
+
+void CAvgGrad_TurbSA_SALSA::ExtraADPreaccIn() {
+}
+
+void CAvgGrad_TurbSA_SALSA::FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+  
+  /*--- Compute mean effective viscosity ---*/
+  
+  nu_i = Laminar_Viscosity_i/Density_i;
+  nu_j = Laminar_Viscosity_j/Density_j;
+  nu_e = 0.5*(nu_i+nu_j+(TurbVar_i[0]/sigma)+(TurbVar_j[0]/sigma));
+  
+  val_residual[0] = nu_e*Proj_Mean_GradTurbVar[0];
+  
+  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+  
+  if (implicit) {
+    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
+    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+  }
+  
+}
+
 CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
@@ -618,6 +649,146 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     //  AD::SetPreaccOut(val_residual[0]);
     //  AD::EndPreacc();
     
+}
+
+CSourcePieceWise_TurbSA_SALSA::CSourcePieceWise_TurbSA_SALSA(unsigned short val_nDim, unsigned short val_nVar,
+                                                     CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  rotating_frame = config->GetRotating_Frame();
+  
+  /*--- Spalart-Allmaras closure constants ---*/
+  
+  cv1_3 = pow(7.1, 3.0);
+  k2    = pow(0.41, 2.0);
+  cb1   = 0.1355;
+  cw2   = 0.3;
+  ct3   = 1.2;
+  ct4   = 0.5;
+  cw3_6 = pow(2.0, 6.0);
+  sigma = 2./3.;
+  cb2   = 0.622;
+  cb2_sigma = cb2/sigma;
+  cw1 = cb1/k2+(1.0+cb2)/sigma;
+  
+}
+
+CSourcePieceWise_TurbSA_SALSA::~CSourcePieceWise_TurbSA_SALSA(void) { }
+
+void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+  
+  //  AD::StartPreacc();
+  //  AD::SetPreaccIn(V_i, nDim+6);
+  //  AD::SetPreaccIn(Vorticity_i, nDim);
+  //  AD::SetPreaccIn(StrainMag_i);
+  //  AD::SetPreaccIn(TurbVar_i[0]);
+  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+  
+  if (incompressible) {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
+  
+  val_residual[0] = 0.0;
+  Production      = 0.0;
+  Destruction     = 0.0;
+  CrossProduction = 0.0;
+  val_Jacobian_i[0][0] = 0.0;
+  
+  
+  /*
+   From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
+   This form was developed primarily to extend the predictive capabiliy of the model for nonequilibrium conditions. It also makes use of some of the aspects of the (SA-Edwards) version. The reference is:
+   Rung, T., Bunge, U., Schatz, M., and Thiele, F., "Restatement of the Spalart-Allmaras Eddy-Viscosity Model in Strain-Adaptive Formulation," AIAA Journal, Vol. 41, No. 7, 2003, pp. 1396-1399.
+   */
+  
+  /*--- Evaluate Omega, here Omega is the Strain Rate ---*/
+  
+  Sbar = 0.0;
+  for(iDim=0;iDim<nDim;++iDim)
+    for(jDim=0;jDim<nDim;++jDim)
+      for(kDim=0;kDim<nDim;++kDim)
+        Sbar+= (0.5*(PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim]) - ((1.0/3.0)*PrimVar_Grad_i[1+kDim][kDim]*delta[iDim][jDim]));
+  
+  Sbar = 2.0 * Sbar * Sbar;
+  Omega = sqrt(max(Sbar,0.0));
+  
+  /*--- Rotational correction term ---*/
+  
+  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+  
+  if (dist_i > 1e-10) {
+    
+    /*--- Production term ---*/
+    
+    dist_i_2 = dist_i*dist_i;
+    nu = Laminar_Viscosity_i/Density_i;
+    Ji = TurbVar_i[0]/nu;
+    Ji_2 = Ji*Ji;
+    Ji_3 = Ji_2*Ji;
+    fv1 = Ji_3/(Ji_3+cv1_3);
+    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+    S = Omega;
+    inv_k2_d2 = 1.0/(k2*dist_i_2);
+    Shat = max(S*((1.0/max(Ji,1.0e-16))+fv1),1.0e-16);
+    
+    Shat = max(Shat, 1.0e-10);
+    inv_Shat = 1.0/Shat;
+    
+    /*--- Production term ---*/;
+    
+    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    
+    /*--- Destruction term ---*/
+    
+    rho_ratio = 0.7 * sqrt(config->GetDensity_FreeStream() / Density_i);
+    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    r = 1.6 * tanh(rho_ratio * r);
+    
+    g = r + cw2*(pow(r,6.0)-r);
+    g_6 =  pow(g,6.0);
+    glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+    fw = g*glim;
+    
+    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+    
+    /*--- Diffusion term ---*/
+    
+    norm2_Grad = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+    
+    CrossProduction = cb2_sigma*norm2_Grad*Volume;
+    
+    val_residual[0] = Production - Destruction + CrossProduction;
+    
+    /*--- Implicit part, production term ---*/
+    
+    dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
+    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    
+    if ( Shat <= 1.0e-10 ) dShat = 0.0;
+    else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
+    val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    
+    /*--- Implicit part, destruction term ---*/
+    
+    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
+    dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
+    dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
+    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    
+  }
+  
+  //  AD::SetPreaccOut(val_residual[0]);
+  //  AD::EndPreacc();
+  
 }
 
 CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,

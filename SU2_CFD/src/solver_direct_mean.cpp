@@ -16508,6 +16508,29 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
+    if (config->GetKind_Turb_Model() == SA_SALSA){
+      su2double **PrimVar_Grad_i, **PrimVar_Grad_j;
+      su2double Sbar_i = 0.0, Sbar_j = 0.0;
+      su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+      unsigned short iDim, jDim, kDim;
+      
+      PrimVar_Grad_i = node[iPoint]->GetGradient_Primitive();
+      PrimVar_Grad_j = node[jPoint]->GetGradient_Primitive();
+      
+      for(iDim=0;iDim<nDim;++iDim){
+        for(jDim=0;jDim<nDim;++jDim){
+          for(kDim=0;kDim<nDim;++kDim){
+            Sbar_i += (0.5*(PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim]) - ((1.0/3.0)*PrimVar_Grad_i[1+kDim][kDim]*delta[iDim][jDim]));
+            Sbar_j += (0.5*(PrimVar_Grad_j[1+iDim][jDim]+PrimVar_Grad_j[1+jDim][iDim]) - ((1.0/3.0)*PrimVar_Grad_j[1+kDim][kDim]*delta[iDim][jDim]));
+          }
+        }
+      }
+      Sbar_i = sqrt(2.0 * Sbar_i * Sbar_i);
+      Sbar_j = sqrt(2.0 * Sbar_j * Sbar_j);
+      numerics->SetTurbKineticEnergy((node[iPoint]->GetEddyViscosity()/node[iPoint]->GetDensity())*Sbar_i/sqrt(0.09),
+                                     (node[jPoint]->GetEddyViscosity()/node[jPoint]->GetDensity())*Sbar_j/sqrt(0.09));
+    }
+    
     /*--- Wall shear stress values (wall functions) ---*/
     
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[iPoint]->GetTauWall());

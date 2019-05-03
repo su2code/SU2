@@ -526,6 +526,20 @@ inline su2double CSourcePieceWise_TurbSA_E::GetDestruction(void) { return Destru
 
 inline su2double CSourcePieceWise_TurbSA_E::GetCrossProduction(void) { return CrossProduction; }
 
+inline void CSourcePieceWise_TurbSA_SALSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbSA_SALSA::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_SALSA::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_SALSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CSourcePieceWise_TurbSA_SALSA::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA_SALSA::GetDestruction(void) { return Destruction; }
+
+inline su2double CSourcePieceWise_TurbSA_SALSA::GetCrossProduction(void) { return CrossProduction; }
+
 inline void CSourcePieceWise_TurbSA_E_COMP::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 
 inline void CSourcePieceWise_TurbSA_E_COMP::SetProduction(su2double val_production) { Production = val_production; }
