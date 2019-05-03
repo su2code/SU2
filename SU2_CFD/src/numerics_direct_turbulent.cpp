@@ -661,7 +661,6 @@ CSourcePieceWise_TurbSA_SALSA::CSourcePieceWise_TurbSA_SALSA(unsigned short val_
   
   cv1_3 = pow(7.1, 3.0);
   k2    = pow(0.41, 2.0);
-  cb1   = 0.1355;
   cw2   = 0.3;
   ct3   = 1.2;
   ct4   = 0.5;
@@ -669,7 +668,6 @@ CSourcePieceWise_TurbSA_SALSA::CSourcePieceWise_TurbSA_SALSA(unsigned short val_
   sigma = 2./3.;
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
-  cw1 = cb1/k2+(1.0+cb2)/sigma;
   
 }
 
@@ -739,6 +737,16 @@ void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2
     
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
+    
+    /*--- Sensitization to nonequilibrium effects ---*/
+    
+    inv_S = 1.0 / max(S, 1.0e-10);
+    alpha1 = pow(1.01 * (TurbVar_i[0] * inv_S * inv_k2_d2), 0.65);
+    alpha2 = pow(max(0.0, 1.0 - tanh(Ji/68.0)),0.65);
+    gama_i = max(alpha1,alpha2);
+    Gama_i = min(1.25,max(gama_i,0.75));
+    cb1 = 0.1355 * sqrt(Gama_i);
+    cw1 = cb1/k2+(1.0+cb2)/sigma;
     
     /*--- Production term ---*/;
     

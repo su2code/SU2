@@ -4764,6 +4764,7 @@ private:
   unsigned short jDim, kDim;
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double rho_ratio;
+  su2double inv_S, alpha1, alpha2, gama_i, Gama_i;
   
 public:
   
