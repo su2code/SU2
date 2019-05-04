@@ -12,11 +12,15 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - Thomas.Economon@us.bosch.com
+            - e.t.a.vanderweide@utwente.nl
+            - jhchoi89@stanford.edu
+            - gomer@stanford.edu
+            - esmolina@stanford.edu
   
 branches:
     only:
-        - develop
+        - feature_hom
 
 python:
     - 2.7
@@ -82,7 +86,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_hom https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
