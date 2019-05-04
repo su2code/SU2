@@ -5076,6 +5076,17 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
 
+  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5462,12 +5473,35 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   bool gravity            = config->GetGravityForce();
   bool ionization         = config->GetIonization();
 
-  //su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
-  //su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
-  su2double *U_domain; su2double *U_outlet= new su2double[nVar];
-  su2double *V_domain;  su2double *V_outlet= new su2double[nPrimVar];
+  su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
+  su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+  //su2double *U_domain; su2double *U_outlet= new su2double[nVar];
+  //su2double *V_domain;  su2double *V_outlet= new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
+
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+
+  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
 
   unsigned short T_INDEX       = node[0]->GetTIndex();
   unsigned short TVE_INDEX     = node[0]->GetTveIndex();
@@ -5519,10 +5553,10 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         UnitaryNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
-      //for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-      //for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
-      V_domain = node[iPoint]-> GetPrimVar();
-      U_domain = node[iPoint]-> GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = node[iPoint]->GetSolution(iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+      //V_domain = node[iPoint]-> GetPrimVar();
+      //U_domain = node[iPoint]-> GetSolution();
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
