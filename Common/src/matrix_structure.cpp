@@ -2467,10 +2467,7 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
     pastix_data.iparm[IPARM_SYM]           = API_SYM_YES;
     pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LDLT;
     break;
-  case PASTIX_ILU:
-    pastix_data.iparm[IPARM_INCOMPLETE]    = API_YES;
-    pastix_data.iparm[IPARM_LEVEL_OF_FILL] = pastix_int_t(config->GetLinear_Solver_ILU_n());
-  case PASTIX_LU: case PASTIX_LU_P:
+  case PASTIX_LU: case PASTIX_LU_P: case PASTIX_ILU:
     pastix_data.iparm[IPARM_SYM]           = API_SYM_NO;
     pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LU;
     break;
