@@ -2460,8 +2460,6 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
 
   /*--- Set factorization options ---*/
 
-  pastix_data.iparm[IPARM_INCOMPLETE]      = API_NO;
-
   switch (kind_fact) {
   case PASTIX_LDLT: case PASTIX_LDLT_P:
     pastix_data.iparm[IPARM_SYM]           = API_SYM_YES;
