@@ -21049,8 +21049,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
     }
     Variable_Names.push_back("Mach");
 
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
     if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
       nVar_Par += 1;
       Variable_Names.push_back("Laminar_Viscosity");
@@ -21168,7 +21166,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
         Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
         Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
 
-        if (Kind_Solver == FEM_NAVIER_STOKES){
+        if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
           Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
         }
         if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
@@ -21204,12 +21202,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
 
-      if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-        // todo: Export Eddy instead of Laminar viscosity
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
       }
 
       /*--- Increment the point counter. ---*/
