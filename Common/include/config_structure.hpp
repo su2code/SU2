@@ -1102,6 +1102,7 @@ private:
 
   unsigned long pastix_fact_freq; /*!< \brief (Re-)Factorization frequency for PaStiX */
   unsigned short pastix_verb_lvl; /*!< \brief Verbosity level for PaStiX */
+  unsigned short pastix_fill_lvl; /*!< \brief Fill level for PaStiX ILU */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9183,6 +9184,12 @@ public:
    * \return 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail.
    */
   unsigned short GetPastixVerbLvl(void);
+
+  /*!
+   * \brief Get the desired level of fill for the PaStiX ILU
+   * \return Level of fill.
+   */
+  unsigned short GetPastixFillLvl(void);
 };
 
 #include "config_structure.inl"

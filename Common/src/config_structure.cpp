@@ -2382,6 +2382,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: 0 - Quiet, 1 - During factorization and cleanup, 2 - Even more detail. */
   addUnsignedShortOption("PASTIX_VERBOSITY_LEVEL", pastix_verb_lvl, 0);
 
+  /* DESCRIPTION: Level of fill for PaStiX incomplete LU factorization. */
+  addUnsignedShortOption("PASTIX_FILL_LEVEL", pastix_fill_lvl, 1);
+
   /* END_CONFIG_OPTIONS */
 
 }

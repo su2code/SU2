@@ -2282,7 +2282,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
   pastix_data.iparm[IPARM_RHSD_CHECK]          = API_NO;
   pastix_data.iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
   pastix_data.iparm[IPARM_INCOMPLETE]          = incomplete;
-  pastix_data.iparm[IPARM_LEVEL_OF_FILL]       = pastix_int_t(config->GetLinear_Solver_ILU_n());
+  pastix_data.iparm[IPARM_LEVEL_OF_FILL]       = pastix_int_t(config->GetPastixFillLvl());
 
   /*--- Prepare sparsity structure ---*/
 
