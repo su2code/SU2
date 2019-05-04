@@ -1906,6 +1906,9 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
   }
 
+  /*--- Allowing for Primitive Variables to be passed ---*/
+  Set_MPI_Primitive(geometry,config);
+
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
@@ -3386,7 +3389,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
-      if (!adjoint) {
+    if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
@@ -5452,7 +5455,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   su2double thoTve, exptv, thsqr, Cvvs, Cves;
   su2double num, num2, num3, denom;
 
-  su2double Gas_Constant  = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement      = config->GetGrid_Movement();
@@ -5460,21 +5462,12 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   bool gravity            = config->GetGravityForce();
   bool ionization         = config->GetIonization();
 
-  su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
-  su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+  //su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
+  //su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+  su2double *U_domain; su2double *U_outlet= new su2double[nVar];
+  su2double *V_domain;  su2double *V_outlet= new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
-
-  /*--- Initializing Vectors --- */
-  for (iVar=0; iVar<nVar ;iVar++){
-    U_domain[iVar] = 0.0;
-    U_outlet[iVar] = 0.0;
-  }
-
-  for (iVar=0; iVar<nPrimVar; iVar++){
-    V_domain[iVar] = 0.0;
-    V_outlet[iVar] = 0.0;
-  }
 
   unsigned short T_INDEX       = node[0]->GetTIndex();
   unsigned short TVE_INDEX     = node[0]->GetTveIndex();
@@ -5526,8 +5519,10 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         UnitaryNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+      //for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
+      //for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+      V_domain = node[iPoint]-> GetPrimVar();
+      U_domain = node[iPoint]-> GetSolution();
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -5559,9 +5554,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
         Ys[iSpecies] = V_domain[iSpecies]/Density;
       }
-      //for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-      //  Ys[iSpecies] = (V_domain[iSpecies]*Ru/Ms[iSpecies]*Temperature)/Pressure;
-      //}
 
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {
@@ -7384,6 +7376,9 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
   }
 
+  /*--- Allowing for Primitive Variables to be passed ---*/
+  Set_MPI_Primitive(geometry,config);
+
   /*--- Artificial dissipation ---*/
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
@@ -8891,6 +8886,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
     if (geometry->node[iPoint]->GetDomain()) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
@@ -8908,6 +8904,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Compute distance between wall & normal neighbor ---*/
       Coord_i = geometry->node[iPoint]->GetCoord();
       Coord_j = geometry->node[jPoint]->GetCoord();
+
       dij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         dij += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
