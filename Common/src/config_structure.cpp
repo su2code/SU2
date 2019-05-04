@@ -39,6 +39,12 @@
 #include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem_geometry_structure.hpp"
 
+#ifdef PROFILE
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
+#endif
+
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
 vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
 vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
@@ -8959,7 +8965,8 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
   if(MI == GEMM_Profile_MNK.end()) {
 
     /* Entry is not present yet. Create it. */
-    GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+    const int ind = GEMM_Profile_MNK.size();
+    GEMM_Profile_MNK[MNK] = ind;
 
     GEMM_Profile_NCalls.push_back(1);
     GEMM_Profile_TotTime.push_back(val_elapsed_time);
@@ -9039,7 +9046,8 @@ void CConfig::GEMMProfilingCSV(void) {
         if(MI == GEMM_Profile_MNK.end()) {
 
           /* Entry is not present yet. Create it. */
-          GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+          const int ind = GEMM_Profile_MNK.size();
+          GEMM_Profile_MNK[MNK] = ind;
 
           GEMM_Profile_NCalls.push_back(recvBufNCalls[i]);
           GEMM_Profile_TotTime.push_back(recvBufTotTime[i]);
