@@ -808,6 +808,7 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
   su2double SolverTol, Norm0 = 0.0;
   bool ScreenOutput;
+  bool TapeActive = true;
 
   /*--- Normal mode ---*/
 
