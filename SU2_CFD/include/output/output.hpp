@@ -164,6 +164,8 @@ protected:
   unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
   su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
+  bool no_writing;
+
 protected:
 
   int rank, 	  /*!< \brief MPI Rank. */
@@ -184,6 +186,7 @@ protected:
   
   enum HistoryFieldType {           
     TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
+    TYPE_REL_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
     TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
     TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
@@ -252,6 +255,17 @@ protected:
   
   unsigned long curr_TimeIter, curr_OuterIter, curr_InnerIter;
     
+  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
+  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
+  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
+  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
+  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
+  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
+  bool Convergence,    /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
+  Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
+  Convergence_FullMG;    /*!< \brief To indicate if the Full Multigrid has converged and it is necessary to add a new level. */
+  su2double InitResidual;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  string Conv_Field;
 public:
   
   /*----------------------------- Public member functions ----------------------------*/
@@ -309,14 +323,16 @@ public:
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessHistoryOutput(CConfig *config);  
+  void PreprocessHistoryOutput(CConfig *config, bool wrt = true);  
   
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
-  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config);  
+  void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt = true);  
   
   
   /*!
@@ -435,6 +451,8 @@ public:
     return HistoryOutput_Map;
   }
   
+  bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
+
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  

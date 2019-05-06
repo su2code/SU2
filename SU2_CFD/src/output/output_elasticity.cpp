@@ -1,8 +1,8 @@
 /*!
- * \file output_direct_elasticity.cpp
+ * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -98,6 +98,10 @@ CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsig
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DISP_X";
 
 }
 

@@ -49,7 +49,11 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
-  nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
+  if (!config_container[ZONE_0]->GetTime_Domain())
+    nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
+  else {
+    nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
+  }
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -63,6 +67,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
+  
+  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
 
   /*--- Initialize the direct iteration ---*/
 
@@ -73,31 +79,42 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) direct_iteration = new CTurboIteration(config);
     else       direct_iteration = new CFluidIteration(config);
+    if (compressible) direct_output = new CFlowCompOutput(config, geometry, solver, ZONE_0);
+    else direct_output = new CFlowIncOutput(config, geometry, solver, ZONE_0);
     MainVariables = FLOW_CONS_VARS;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = new CFEMFluidIteration(config);
+    direct_output = new CFlowCompFEMOutput(config, geometry, solver, ZONE_0);
     MainVariables = FLOW_CONS_VARS;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration = new CFEAIteration(config);
+    direct_output = new CElasticityOutput(config, geometry, ZONE_0);
     MainVariables = FEA_DISP_VARS;
+    SecondaryVariables = NONE;
     break;
 
   case DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = new CHeatIteration(config);
+    direct_output = new CHeatOutput(config, geometry, ZONE_0);    
     MainVariables = FLOW_CONS_VARS;
+    SecondaryVariables = MESH_COORDS;
     break;
 
   }
+  
+ direct_output->PreprocessHistoryOutput(config, false);
 
 }
 
@@ -111,6 +128,8 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
 
   config_container[ZONE_0]->SetExtIter(TimeIter);
+  
+  config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
 
@@ -121,19 +140,12 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- For the adjoint iteration we need the derivatives of the iteration function with
-   *    respect to the conservative variables. Since these derivatives do not change in the steady state case
-   *    we only have to record if the current recording is different from cons. variables. ---*/
+   *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
+   *--- we only have to record if the current recording is different from the main variables. ---*/
 
   if (RecordingState != MainVariables){
 
-    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-     *    as argument ensures that all information from a previous recording is removed. ---*/
-
-    SetRecording(NONE);
-
-    /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
-
-    SetRecording(MainVariables);
+    MainRecording();
 
   }
 
@@ -146,11 +158,24 @@ void CDiscAdjSinglezoneDriver::Run() {
   for (Adjoint_Iter = 0; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
 
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-     *--- of the previous iteration. The values are passed to the AD tool. ---*/
+     *--- of the previous iteration. The values are passed to the AD tool.
+     *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
-    config->SetIntIter(Adjoint_Iter);
+    config->SetInnerIter(Adjoint_Iter);
     if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
       config->SetExtIter(Adjoint_Iter);
+
+    /*--- Secondary sensitivities must be computed with a certain frequency. ---*/
+    /*--- It is also done at the beginning so all memory gets allocated.     ---*/
+    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (SecondaryVariables != NONE)){
+
+      /*--- Computes secondary sensitivities ---*/
+      SecondaryRecording();
+
+      /*--- Recompute main sensitivities ---*/
+      MainRecording();
+
+    }
 
     iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
@@ -177,13 +202,6 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     AD::ClearAdjoints();
 
-    if ((Adjoint_Iter % config->GetWrt_Sol_Freq() == 0) && (Adjoint_Iter != 0)){
-      /*--- Postprocess computes secondary sensitivities ---*/
-      Postprocess();
-      /*--- Preprocess recomputes the main graph ---*/
-      Preprocess(config->GetExtIter());
-    }
-
     if (config->GetTime_Domain())
       output[ZONE_0]->SetHistory_Output(geometry_container[ZONE_0][INST_0][MESH_0], 
                                         solver_container[ZONE_0][INST_0][MESH_0], 
@@ -200,45 +218,20 @@ void CDiscAdjSinglezoneDriver::Run() {
 
 void CDiscAdjSinglezoneDriver::Postprocess() {
 
-  /*--- Compute the geometrical sensitivities ---*/
+
 
   if (config->GetKind_Solver() == DISC_ADJ_EULER ||
       config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
       config->GetKind_Solver() == DISC_ADJ_RANS){
 
-    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-     * as argument ensures that all information from a previous recording is removed. ---*/
+    /*--- Compute the geometrical sensitivities ---*/
+    SecondaryRecording();
 
-    SetRecording(NONE);
-
-    /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
-
-    SetRecording(MESH_COORDS);
-
-    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-     *    of the current iteration. The values are passed to the AD tool. ---*/
-
-    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-
-    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
-
-    SetAdj_ObjFunction();
-
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-
-    AD::ComputeAdjoint();
-
-    /*--- Extract the computed sensitivity values. ---*/
-
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry,config);
-
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-    AD::ClearAdjoints();
   }
 
   if (config->GetKind_Solver() == DISC_ADJ_FEM){
 
+    /*--- Apply the boundary condition to clamped nodes ---*/
     iteration->Postprocess(output[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
 
   }
@@ -261,7 +254,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
     if (rank == MASTER_NODE && kind_recording == MainVariables) {
       cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iteration to store computational graph." << endl;
+      cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
     }
     iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
@@ -324,6 +317,11 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   bool turbo        = (config->GetBoolTurbomachinery());
 
   ObjFunc = 0.0;
+  
+  direct_output->SetHistory_Output(geometry, solver, config,
+                                   config->GetTimeIter(),
+                                   config->GetOuterIter(),
+                                   config->GetInnerIter());
 
   /*--- Specific scalar objective functions ---*/
 
@@ -435,6 +433,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recording){
 
   /*--- Print the residuals of the direct iteration that we just recorded ---*/
+  /*--- This routine should be moved to the output, once the new structure is in place ---*/
   if ((rank == MASTER_NODE) && (kind_recording == MainVariables)){
 
     switch (config->GetKind_Solver()) {
@@ -443,7 +442,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))
-           << ", log10[U(2)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(2)) << "." << endl;;
+           << ", log10[U(2)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(2)) << "." << endl;
       cout << "log10[U(3)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(3));
       if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(4));
       cout << "." << endl;
@@ -486,6 +485,59 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
+  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != NONE)){
+    cout << endl << "Recording the computational graph with respect to the ";
+    switch (SecondaryVariables){
+      case MESH_COORDS: cout << "mesh coordinates." << endl;    break;
+      default:          cout << "secondary variables." << endl; break;
+     }
+  }
 
 }
 
+void CDiscAdjSinglezoneDriver::MainRecording(){
+
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+   *    as argument ensures that all information from a previous recording is removed. ---*/
+
+  SetRecording(NONE);
+
+  /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+
+  SetRecording(MainVariables);
+
+}
+
+void CDiscAdjSinglezoneDriver::SecondaryRecording(){
+
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+   * as argument ensures that all information from a previous recording is removed. ---*/
+
+  SetRecording(NONE);
+
+  /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+
+  SetRecording(SecondaryVariables);
+
+  /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *    of the current iteration. The values are passed to the AD tool. ---*/
+
+  iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+
+  /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+  SetAdj_ObjFunction();
+
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+  AD::ComputeAdjoint();
+
+  /*--- Extract the computed sensitivity values. ---*/
+
+  solver[ADJFLOW_SOL]->SetSensitivity(geometry,config);
+
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  AD::ClearAdjoints();
+
+}

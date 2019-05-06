@@ -153,6 +153,12 @@ inline void CVariable::SubtractAuxVarGradient(unsigned short val_dim, su2double 
 
 inline su2double CVariable::GetGradient(unsigned short val_var, unsigned short val_dim) { return Gradient[val_var][val_dim]; }
 
+inline void CVariable::SetRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value) { Rmatrix[val_iDim][val_jDim] = val_value; }
+
+inline void CVariable::AddRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value) { Rmatrix[val_iDim][val_jDim] += val_value; }
+
+inline su2double CVariable::GetRmatrix(unsigned short val_iDim, unsigned short val_jDim) { return Rmatrix[val_iDim][val_jDim]; }
+
 inline su2double CVariable::GetLimiter(unsigned short val_var) { return Limiter[val_var]; }
 
 inline su2double CVariable::GetSolution_Max(unsigned short val_var) { return Solution_Max[val_var]; }

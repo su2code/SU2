@@ -194,6 +194,24 @@ COutput::COutput(CConfig *config) {
   /*--- Default is not to use the FEM output merging --- */
   
   fem_output = false;
+
+  /*--- Default is to write history to file and screen --- */
+
+  no_writing = false;
+
+  Cauchy_Serie = new su2double[config->GetCauchy_Elems()];
+
+  Conv_Field = config->GetConv_Field();
+
+  Cauchy_Value = 0.0;
+  for (unsigned short iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+    Cauchy_Serie[iCounter] = 0.0;
+  
+  /*--- Initialize all convergence flags to false. ---*/
+  
+  Convergence        = false;
+  Convergence_FSI    = false;
+  Convergence_FullMG = false;
   
 }
 
@@ -217,6 +235,8 @@ COutput::~COutput(void) {
   
   delete ConvergenceTable;
   delete MultiZoneHeaderTable;
+
+  delete [] Cauchy_Serie;
   
 }
 
@@ -243,7 +263,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   
   /*--- Output using only the master node ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && !no_writing) {
     
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config);
@@ -286,7 +306,7 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, uns
   
   /*--- Output using only the master node ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && !no_writing) {
     
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config[ZONE_0]);
@@ -636,6 +656,98 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
 }
 
+
+bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
+
+  unsigned short iCounter;
+
+  bool Already_Converged = Convergence;
+
+  su2double monitor = HistoryOutput_Map[Conv_Field].Value;
+
+  /*--- Cauchy based convergence criteria ---*/
+
+  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT) {
+
+      Old_Func = New_Func;
+      New_Func = monitor;
+      Cauchy_Func = fabs(New_Func - Old_Func);
+
+      Cauchy_Serie[Iteration % config->GetCauchy_Elems()] = Cauchy_Func;
+      Cauchy_Value = 1;
+      if (Iteration  >= config->GetCauchy_Elems()) {
+          Cauchy_Value = 0;
+          for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+            Cauchy_Value += Cauchy_Serie[iCounter];
+      }
+
+      if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
+      else { Convergence = true; Convergence_FullMG = true; }
+
+  }
+
+  /*--- Residual based convergence criteria ---*/
+
+  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_RESIDUAL || HistoryOutput_Map[Conv_Field].FieldType == TYPE_REL_RESIDUAL) {
+
+      /*--- Check the convergence ---*/
+
+      if ((monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+      else { Convergence = false; Convergence_FullMG = false; }
+
+  }
+
+  /*--- Do not apply any convergence criteria of the number
+     of iterations is less than a particular value ---*/
+
+  if (Iteration < config->GetStartConv_Iter()) {
+      Convergence = false;
+      Convergence_FullMG = false;
+  }
+
+  if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
+
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+      else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
+  else { Convergence = false; Convergence_FullMG = false; }
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+
+  /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+
+  if (monitor != monitor) {
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+  }
+
+
+  return Convergence;
+}
 
 
 void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, bool surf, bool val_sort) {
@@ -2753,7 +2865,15 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   nSurf_Poin_Par = 0;
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
     if (surfPoint[iPoint] != -1) {
+      
+      /*--- Save the global index values for CSV output. ---*/
+      
+      Renumber2Global[nSurf_Poin_Par] = surfPoint[iPoint];
+      
+      /*--- Increment total number of surface points found locally. ---*/
+      
       nSurf_Poin_Par++;
+
     }
   }
   
@@ -3260,7 +3380,6 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   map<unsigned long,unsigned long> Global2Renumber;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     Global2Renumber[globalRecv[ii]] = renumbRecv[ii] + 1;
-    Renumber2Global[renumbRecv[ii] + 1] = globalRecv[ii];
   }
   
   
@@ -3622,7 +3741,6 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (int ii = 0; ii < nElem_Send[size]; ii++) {
     Global2Renumber[outliers[ii]] = idSend[ii] + 1;
-    Renumber2Global[idSend[ii] + 1] = outliers[ii];
   }
   
   /*--- We can now overwrite the local connectivity for our surface elems
@@ -3955,7 +4073,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry)
 
     for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
-      strcpy(str_buf, Variable_Names[iVar].c_str());
+      strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
       file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
     }
@@ -4336,6 +4454,7 @@ void COutput::DeallocateSurfaceData_Parallel() {
     
     Global2Renumber.clear();
     Renumber2Global.clear();
+    
     /*--- Deallocate memory for surface solution data ---*/
     
     for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
@@ -5412,8 +5531,9 @@ void COutput::SetScreen_Output(CConfig *config) {
   }
 }
 
-void COutput::PreprocessHistoryOutput(CConfig *config){
+void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   
+    no_writing = !wrt;
 
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
@@ -5423,7 +5543,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     Postprocess_HistoryFields(config);
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && !no_writing){
       
       /*--- Check for consistency and remove fields that are requested but not available --- */
       
@@ -5445,14 +5565,15 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
 }
 
-void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config){
+void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, bool wrt){
   
-  
+  no_writing = !wrt;
+
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
   
   SetMultizoneHistoryOutputFields(output, config);
   
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE && !no_writing){
     
     /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
    
@@ -5611,6 +5732,11 @@ void COutput::CheckHistoryOutput(){
   
   nRequestedHistoryFields = RequestedHistoryFields.size();
   
+  /*--- Check that the requested convergence monitoring field is available ---*/
+
+  if (HistoryOutput_Map.count(Conv_Field) == 0){
+    SU2_MPI::Error(string("Convergence monitoring field ") + Conv_Field + string(" not available"), CURRENT_FUNCTION);
+  }
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
@@ -5763,7 +5889,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
-      if ( SetInit_Residuals(config) ) {
+      if ( SetInit_Residuals(config) || (currentField.Value > Init_Residuals[HistoryOutput_List[iField]]) ) {
         Init_Residuals[HistoryOutput_List[iField]] = currentField.Value;
       }
       SetHistoryOutputValue("REL_" + HistoryOutput_List[iField], currentField.Value - Init_Residuals[HistoryOutput_List[iField]]);
@@ -5783,6 +5909,11 @@ void COutput::Postprocess_HistoryData(CConfig *config){
       }
     }
   }
+
+  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT){
+    SetHistoryOutputValue("CAUCHY", Cauchy_Value);
+  }
+
   
   map<string, su2double>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
@@ -5799,7 +5930,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup);
+      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, TYPE_REL_RESIDUAL);
       Average[currentField.OutputGroup] = true;
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
@@ -5809,6 +5940,9 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
     }
   }
   
+  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT){
+    AddHistoryOutput("CAUCHY", "C["  + HistoryOutput_Map[Conv_Field].FieldName + "]", FORMAT_SCIENTIFIC, "RESIDUAL");
+  }
   
    map<string, bool>::iterator it = Average.begin();
    for (it = Average.begin(); it != Average.end(); it++){
@@ -5819,10 +5953,16 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (config->GetUnsteady_Simulation() == STEADY) {
     write_header = ((curr_InnerIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);
+  } else if  (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    if (!config->GetRestart())
+      write_header = ((curr_TimeIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
+    else {
+      write_header = (((curr_TimeIter - config->GetRestart_Iter()) % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
+    }
   } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetInnerIter() == 0;
   }
 
   /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
