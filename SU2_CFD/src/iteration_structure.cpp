@@ -2576,7 +2576,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
-
+  solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   solver_container[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
   solver_container[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
 
