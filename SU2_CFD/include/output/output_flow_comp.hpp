@@ -48,8 +48,6 @@
 class CFlowCompOutput : public CFlowOutput {
 private:
   
-  unsigned short nVar;
-
   unsigned short turb_model;
     
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;

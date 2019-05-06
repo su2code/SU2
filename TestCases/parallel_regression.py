@@ -172,7 +172,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-11.951416, -3.326795, 0.000001, 2.351005] #last 4 columns
+    poiseuille.test_vals = [-5.050864, 0.648220, 0.000349, 13.639525] #last 4 columns
     poiseuille.su2_exec  = "parallel_computation.py -f"
     poiseuille.timeout   = 1600
     poiseuille.tol       = 0.001
@@ -291,7 +291,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.437400, -4.558626, 1.231779, -0.007820, 0.081480] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-6.437367, -4.558626, 1.231779, -0.007820, 0.081480] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
@@ -446,6 +446,7 @@ def main():
     fem_ns_unsteady_cylinder.test_vals = [-3.558582,-3.014464,-0.038927,1.383983] #last 4 columns
     fem_ns_unsteady_cylinder.su2_exec  = "SU2_CFD"
     fem_ns_unsteady_cylinder.timeout   = 1600
+    fem_ns_unsteady_cylinder.unsteady  = True
     fem_ns_unsteady_cylinder.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder)
 
@@ -457,6 +458,7 @@ def main():
     fem_ns_unsteady_cylinder_ader.test_vals = [-35.000000,-35.000000,-0.041003,1.391339] #last 4 columns
     fem_ns_unsteady_cylinder_ader.su2_exec  = "SU2_CFD"
     fem_ns_unsteady_cylinder_ader.timeout   = 1600
+    fem_ns_unsteady_cylinder_ader.unsteady  = True
     fem_ns_unsteady_cylinder_ader.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder_ader)
 
@@ -795,9 +797,10 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.294362, 0.429473, 80.085570, 1.034776] #last 4 columns
+    Jones_tc.test_vals = [-5.301576, 0.418692, 78.467450, 0.990201] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
+    Jones_tc.new_output = False
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
@@ -806,9 +809,10 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.411257, -1.606960, 82.250600, 2.791316] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.344743, -1.553291, 82.250600, 2.791916] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.new_output = False
     Jones_tc_rst.tol       = 0.00001
     test_list.append(Jones_tc_rst)
 
@@ -817,9 +821,10 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.835157, 5.788771, 73.679900, 0.888920] #last 4 columns
+    axial_stage2D.test_vals = [-1.789989, 5.695321, 73.361330, 0.904454] #last 4 columns
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
+    axial_stage2D.new_output = False
     axial_stage2D.tol       = 0.00001
     test_list.append(axial_stage2D)
     
@@ -828,9 +833,10 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-1.106713, 6.115842, 67.308610, 0.071854] #last 4 columns
+    transonic_stator.test_vals = [-1.200053, 6.148389, 96.766110, 0.063114] #last 4 columns
     transonic_stator.su2_exec  = "parallel_computation.py -f"
     transonic_stator.timeout   = 1600
+    transonic_stator.new_output = False
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
     
@@ -839,9 +845,10 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.484635, 4.462656, 6.460177, 0.004009] #last 4 columns
+    transonic_stator_rst.test_vals = [-8.277744, -3.005768, 5.285371, 0.003100] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.new_output = False
     transonic_stator_rst.tol       = 0.00001
     test_list.append(transonic_stator_rst)
 
@@ -854,7 +861,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 1.000000,  -0.188747, -10.629606] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000 ,-0.188747,-10.629606] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1087,6 +1094,7 @@ def main():
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
     pywrapper_unsteadyCHT.unsteady      = True
+    pywrapper_unsteadyCHT.new_output    = False
     test_list.append(pywrapper_unsteadyCHT)
 
     # Rigid motion
@@ -1198,7 +1206,6 @@ def main():
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
-    tutorial_turb_oneram6.no_restart = True
     test_list.append(tutorial_turb_oneram6)
 
     # Inviscid NACA 0012 Design

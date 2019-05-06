@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool fem_solver = false;
-  bool periodic = false;
   bool multizone = false;
 
   /*--- MPI initialization ---*/
@@ -82,7 +81,6 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_SOL);
 
   nZone = config->GetnZone();
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
 
@@ -122,11 +120,12 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_SOL, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_SOL, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_SOL, iZone, nZone, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_SOL, iZone, nZone, true);
     }
+
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
@@ -184,9 +183,7 @@ int main(int argc, char *argv[]) {
 
       geometry_container[iZone][iInst] = NULL;
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines 
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -197,11 +194,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
@@ -211,7 +204,7 @@ int main(int argc, char *argv[]) {
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
-
+      
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
@@ -226,6 +219,10 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
       geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
 
+      /*--- Create the point-to-point MPI communication structures for the fvm solver. ---*/
+      
+      if (!fem_solver) geometry_container[iZone][iInst]->PreprocessP2PComms(geometry_container[iZone][iInst], config_container[iZone]);
+      
       /* Test for a fem solver, because some more work must be done. */
 
       if (fem_solver) {
@@ -655,8 +652,8 @@ int main(int argc, char *argv[]) {
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
           solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-          solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
-          output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst], iZone);          
+          output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][iInst]);
 
           /*--- Print progress in solution writing to the screen. ---*/
           if (rank == MASTER_NODE) {

@@ -1973,6 +1973,8 @@ inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
 
+inline unsigned short CConfig::GetComm_Level(void) { return Comm_Level; }
+
 inline bool CConfig::GetTopology_Optimization(void) const { return topology_optimization; }
 
 inline string CConfig::GetTopology_Optim_FileName(void) const { return top_optim_output_file; }
@@ -2053,3 +2055,5 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
+
+inline string CConfig::GetConv_Field(){ return ConvField; }

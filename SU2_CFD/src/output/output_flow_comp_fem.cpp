@@ -1,8 +1,8 @@
 /*!
- * \file output_direct_mean.cpp
+ * \file output_flow_comp_fem.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -114,7 +114,12 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSo
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
-  
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_DENSITY";
+
+
 }
 
 CFlowCompFEMOutput::~CFlowCompFEMOutput(void) {
@@ -201,8 +206,8 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   // Turbulent Residuals
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("TKE", "TKE", "SOLUTION");
-    AddVolumeOutput("OMEGA", "Omega", "SOLUTION");
+    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
+    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 

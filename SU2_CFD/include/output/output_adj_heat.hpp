@@ -48,7 +48,6 @@
 class CAdjHeatOutput : public COutput {
 private:
   unsigned short nDim;
-  char char_histfile[200];
 
 public:
 
