@@ -55,6 +55,7 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
   }
 
   direct_iteration = new CIteration**[nZone];
+  direct_output = new COutput*[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -67,15 +68,24 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
         case EULER: case NAVIER_STOKES: case RANS:
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE) {
+            direct_output[iZone] = new CFlowCompOutput(config_container[iZone], geometry_container[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          }
+          else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE) {
+            direct_output[iZone] = new CFlowIncOutput(config_container[iZone], geometry_container[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          }
           break;
         case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
           direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
+          direct_output[iZone] = new CHeatOutput(config_container[iZone], geometry_container[iZone][iInst][MESH_0], iZone);
           break;
 
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.", CURRENT_FUNCTION);
       }
     }
+
+    direct_output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
   }
 }
 
@@ -584,6 +594,18 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   ObjFunc = 0.0;
 
+  /*--- Set to zero the combo objective functions ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+        break;
+    }
+  }
+
   /*--- Repeat objective function calculations, in case they have been included in
    *    the integration step and therefore have to be excluded from this part of the tape. ---*/
 
@@ -600,21 +622,14 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         if(heat) {
           solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
+        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
         break;
       case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
         solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         break;
     }
-  }
 
-  for (iZone = 0; iZone < nZone; iZone++){
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-      solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
-      break;
-    }
+    direct_output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 
   /*--- Specific scalar objective functions ---*/
@@ -649,19 +664,26 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     switch (config_container[iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
-        ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
-
-        if(heat) {
-          if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
-          }
-          else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+          if (heat) {
             ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
           }
+          else {
+            ObjFunc += direct_output[iZone]->GetHistoryFieldValue("AVG_TEMP");
+          }
+        }
+        else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+          if (heat) {
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+          }
+          else {
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+          }
+        }
+        else {
+          ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
         }
         break;
-
       case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
         if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
           ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
