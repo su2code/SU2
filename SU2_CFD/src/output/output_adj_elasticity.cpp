@@ -1,8 +1,8 @@
 /*!
- * \file output_adjoint_mean.cpp
+ * \file output_adj_elasticity.cpp
  * \brief Main subroutines for elasticity discrete adjoint output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -88,6 +88,10 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry,
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "ADJOINT_DISP_X";
   
 }
 
@@ -99,12 +103,6 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 
 
 }
-
-inline bool CAdjElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true; }
-
-inline bool CAdjElasticityOutput::WriteScreen_Header(CConfig *config) { return true; }
-
-inline bool CAdjElasticityOutput::WriteScreen_Output(CConfig *config) { return true; }
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   

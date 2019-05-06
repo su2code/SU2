@@ -63,4 +63,8 @@ public:
   
   void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
   
+  void Add_CpInverseDesignOutput(CConfig *config);
+  
+  void Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  
 };

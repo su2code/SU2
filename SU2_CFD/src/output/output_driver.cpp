@@ -2,7 +2,7 @@
  * \file output_driver.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -77,7 +77,11 @@ CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config) : COutput
   MultiZoneHeaderString = "Multizone Summary";
   
   HistoryFilename = "multizone_history";
-      
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "AVG_BGS_RES[0]";
+
 }
 
 CDriverOutput::~CDriverOutput() {

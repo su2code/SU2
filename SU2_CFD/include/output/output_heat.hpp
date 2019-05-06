@@ -50,8 +50,6 @@ class CHeatOutput : public COutput {
 private:
   bool multizone;
 
-  char char_histfile[200];
-
 public:
 
 
@@ -92,7 +90,7 @@ public:
    * \param iPoint
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
- 
+
   /*!
    * \brief LoadSurfaceData
    * \param config
@@ -102,6 +100,7 @@ public:
    * \param iMarker
    * \param iVertex
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   
+
 };

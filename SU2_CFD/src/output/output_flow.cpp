@@ -1,4 +1,39 @@
-
+/*!
+ * \file output_flow.cpp
+ * \brief Main subroutines for compressible flow output
+ * \author R. Sanchez
+ * \version 6.2.0 "Falcon"
+ *
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ *
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "../../include/output/output_flow.hpp"
 
@@ -528,6 +563,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_Density_Local;
   delete [] Surface_Enthalpy_Local;
   delete [] Surface_NormalVelocity_Local;
+  delete [] Surface_StreamVelocity2_Local;
+  delete [] Surface_TransvVelocity2_Local;
   delete [] Surface_Pressure_Local;
   delete [] Surface_TotalTemperature_Local;
   delete [] Surface_TotalPressure_Local;
@@ -540,18 +577,23 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_Density_Total;
   delete [] Surface_Enthalpy_Total;
   delete [] Surface_NormalVelocity_Total;
+  delete [] Surface_StreamVelocity2_Total;
+  delete [] Surface_TransvVelocity2_Total;
   delete [] Surface_Pressure_Total;
   delete [] Surface_TotalTemperature_Total;
   delete [] Surface_TotalPressure_Total;
   delete [] Surface_Area_Total;
   delete [] Surface_MassFlow_Abs_Total;
-  
+  delete [] Surface_MomentumDistortion_Total;
+
   delete [] Surface_MassFlow;
   delete [] Surface_Mach;
   delete [] Surface_Temperature;
   delete [] Surface_Density;
   delete [] Surface_Enthalpy;
   delete [] Surface_NormalVelocity;
+  delete [] Surface_StreamVelocity2;
+  delete [] Surface_TransvVelocity2;
   delete [] Surface_Pressure;
   delete [] Surface_TotalTemperature;
   delete [] Surface_TotalPressure;
@@ -657,4 +699,151 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   }
   
   SetHistoryOutputValue("AOA", config->GetAoA());
+}
+
+
+void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
+  
+  AddHistoryOutput("CP_DIFF", "Cp_Diff", FORMAT_FIXED, "CP_DIFF");
+  
+}
+
+void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config){
+  
+  unsigned short iMarker, icommas, Boundary, iDim;
+  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  bool *PointInDomain;
+  string text_line, surfCp_filename;
+  ifstream Surface_file;
+  char cstr[200];
+  
+  
+  nPointLocal = geometry->GetnPoint();
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nPointGlobal = nPointLocal;
+#endif
+  
+  Point2Vertex = new unsigned long[nPointGlobal][2];
+  PointInDomain = new bool[nPointGlobal];
+  
+  for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
+    PointInDomain[iPoint] = false;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+    
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        /*--- The Pressure file uses the global numbering ---*/
+        
+#ifndef HAVE_MPI
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+#else
+        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+#endif
+        
+        if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
+          Point2Vertex[iPoint][0] = iMarker;
+          Point2Vertex[iPoint][1] = iVertex;
+          PointInDomain[iPoint] = true;
+          solver_container->SetCPressureTarget(iMarker, iVertex, 0.0);
+        }
+        
+      }
+    }
+  }
+  
+  /*--- Prepare to read the surface pressure files (CSV) ---*/
+  
+  surfCp_filename = "TargetCp";
+  
+  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curr_TimeIter, ".dat");
+  
+  strcpy (cstr, surfCp_filename.c_str());
+    
+  /*--- Read the surface pressure file ---*/
+  
+  string::size_type position;
+  
+  Surface_file.open(cstr, ios::in);
+  
+  if (!(Surface_file.fail())) {
+    
+    getline(Surface_file, text_line);
+    
+    while (getline(Surface_file, text_line)) {
+      for (icommas = 0; icommas < 50; icommas++) {
+        position = text_line.find( ",", 0 );
+        if (position!=string::npos) text_line.erase (position,1);
+      }
+      stringstream  point_line(text_line);
+      
+      if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff;
+      if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff;
+      
+      if (PointInDomain[iPoint]) {
+        
+        /*--- Find the vertex for the Point and Marker ---*/
+        
+        iMarker = Point2Vertex[iPoint][0];
+        iVertex = Point2Vertex[iPoint][1];
+        
+        solver_container->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+        
+      }
+      
+    }
+    
+    Surface_file.close();
+    
+  }
+  
+  /*--- Compute the pressure difference ---*/
+  
+  PressDiff = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+    
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        
+        Cp = solver_container->GetCPressure(iMarker, iVertex);
+        CpTarget = solver_container->GetCPressureTarget(iMarker, iVertex);
+        
+        Area = 0.0;
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+        
+        PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
+      }
+      
+    }
+  }
+  
+#ifdef HAVE_MPI
+  su2double MyPressDiff = PressDiff;   PressDiff = 0.0;
+  SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Update the total Cp difference coeffient ---*/
+  
+  solver_container->SetTotal_CpDiff(PressDiff);
+  
+  SetHistoryOutputValue("CP_DIFF", PressDiff);
+  
+  delete [] Point2Vertex;
+  delete [] PointInDomain;
 }

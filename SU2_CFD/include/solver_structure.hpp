@@ -124,7 +124,8 @@ protected:
   **Jacobian_ij,        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  
+  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
@@ -140,7 +141,10 @@ protected:
   unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-
+  
+  bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
+  bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
+  
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
 public:
@@ -171,6 +175,50 @@ public:
    */
   virtual ~CSolver(void);
   
+  /*!
+   * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiateComms(CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data in the solver class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void CompleteComms(CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
+  
+  /*!
+   * \brief Routine to load a solver quantity into the data structures for MPI periodic communication and to launch non-blocking sends and recvs.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiatePeriodicComms(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short val_periodic_index,
+                             unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking periodic communications launched by InitiatePeriodicComms() and unpacking of the data in the solver class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void CompletePeriodicComms(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short val_periodic_index,
+                             unsigned short commType);
+
   /*!
    * \brief Set number of linear solver iterations.
    * \param[in] val_iterlinsolver - Number of linear iterations.
@@ -514,8 +562,8 @@ public:
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
-  
-  /*!
+
+    /*!
    * \brief Set the value of the RMS residual respective solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -523,11 +571,11 @@ public:
   void SetResidual_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Set Value of the residual if there is a grid movement.
+   * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
+  void SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Impose the send-receive boundary condition.
@@ -996,6 +1044,16 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                           CNumerics *numerics, CConfig *config);
   
   /*!
   * \brief Impose the interface state across sliding meshes.
@@ -2856,7 +2914,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   virtual su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -4411,6 +4469,18 @@ public:
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
+   * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
+   */
+  void SetImplicitPeriodic(bool val_implicit_periodic);
+  
+  /*!
+   * \brief Routine that sets the flag controlling solution rotation for periodic BCs.
+   * \param[in] val_implicit_periodic - Flag controlling solution rotation for periodic BCs.
+   */
+  void SetRotatePeriodic(bool val_rotate_periodic);
+
+  /*!
    * \brief Retrieve the solver name for output purposes.
    * \param[out] val_solvername - Name of the solver.
    */
@@ -4756,8 +4826,6 @@ protected:
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
   
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -5263,6 +5331,16 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config);
   
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
@@ -7054,7 +7132,7 @@ protected:
   su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
   ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
-  
+
   su2double
   AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CL_Inv,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
@@ -7135,8 +7213,6 @@ protected:
   *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
 
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -7536,6 +7612,16 @@ public:
    */
    void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config);
+  
    /*!
     * \brief compare to values.
     * \param[in] a - value 1.
@@ -8221,7 +8307,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
-  
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9498,7 +9584,16 @@ public:
   void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
-  
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config);
+ 
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10335,8 +10430,6 @@ protected:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
