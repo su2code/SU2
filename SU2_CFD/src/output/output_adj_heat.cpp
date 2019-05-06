@@ -1,8 +1,8 @@
 /*!
- * \file output_adjoint_heat.cpp
+ * \file output_adj_heat.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -84,6 +84,11 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned sh
   /*--- Add the obj. function extension --- */
   
   RestartFilename = config->GetObjFunc_Extension(RestartFilename);
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_ADJ_TEMPERATURE";
+
 }
 
 CAdjHeatOutput::~CAdjHeatOutput(void) {

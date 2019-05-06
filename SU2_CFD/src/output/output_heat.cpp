@@ -1,8 +1,8 @@
 /*!
- * \file output_direct_heat.cpp
+ * \file output_heat.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -78,6 +78,12 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   /*--- Set the restart filename --- */
   
   RestartFilename = config->GetRestart_FileName();
+
+  /*--- Set the default convergence field --- */
+
+  if (Conv_Field.size() == 0 ) Conv_Field = "RMS_TEMPERATURE";
+
+
 }
 
 CHeatOutput::~CHeatOutput(void) {
@@ -145,7 +151,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
 
   // Residuals  
-  AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
   
 }
 
@@ -166,7 +172,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(0));
   
   // Residuals    
-  SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
   
 }
 

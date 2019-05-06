@@ -1439,7 +1439,7 @@ protected:
   CIntegration **integration;                   /*!< \brief Container vector with all the integration methods. */
   CGeometry *geometry;                          /*!< \brief Geometrical definition of the problem. */
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
-
+  COutput *direct_output;
 
 public:
 
@@ -1501,6 +1501,18 @@ public:
    * \brief Print out the direct residuals.
    */
   void Print_DirectResidual(unsigned short kind_recording);
+
+  /*!
+   * \brief Record the main computational path.
+   */
+
+  void MainRecording(void);
+
+  /*!
+   * \brief Record the secondary computational path.
+   */
+
+  void SecondaryRecording(void);
 
 };
 

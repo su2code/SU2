@@ -291,7 +291,7 @@ unsigned long CDriver::GetExtIter(){
 
 su2double CDriver::GetUnsteady_TimeStep(){
 
-  return config_container[ZONE_0]->GetDelta_UnstTime();
+  return config_container[ZONE_0]->GetTime_Step();
 }
 
 su2double CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iVertex) {

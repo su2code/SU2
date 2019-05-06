@@ -197,10 +197,12 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, CConfig *config, bool TapeActive) {
 
-  int rank        = SU2_MPI::GetRank();
-
+  int rank = SU2_MPI::GetRank();
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
+  
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
@@ -218,35 +220,38 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   }
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-
+  
   mat_vec(x, A_x);
   r = b; r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0 = b.norm();
 
-  /*--- Skip solver when residual is small, but not when called during recording ---*/
-
-  if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
-    if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
-    return 0;
+  /*--- Only compute the residuals in full communication mode. ---*/
+  
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
+      if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      WriteHeader("CG", tol, norm_r);
+      WriteHistory(i, norm_r, norm0);
+    }
+    
   }
   
   su2double alpha, beta, r_dot_z;
   precond(r, z);
   p = z;
-  
-  /*--- Set the norm to the initial initial residual value ---*/
-  
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    WriteHeader("CG", tol, norm_r);
-    WriteHistory(i, norm_r, norm0);
-  }
-  
+
   /*---  Loop over all search directions ---*/
   
   for (i = 0; i < (int)m; i++) {
@@ -266,11 +271,17 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
     x.Plus_AX(alpha, p);
     r.Plus_AX(-alpha, A_x);
     
-    /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) WriteHistory(i+1, norm_r, norm0);
+      
+    }
     
     precond(r, z);
     
@@ -287,16 +298,14 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
     
   }
   
-
-  
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
-  }
-  
   /*--- Recalculate final residual (this should be optional) ---*/
   
-  if (monitoring) {
+  if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
+    
+    if (rank == MASTER_NODE) {
+      cout << "# Conjugate Gradient final (true) residual:" << endl;
+      cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+    }
     
     mat_vec(x, A_x);
     r = b; r -= A_x;
@@ -312,7 +321,6 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
     }
     
   }
-
   
   (*residual) = norm_r;
 	return (unsigned long) i;
@@ -320,9 +328,9 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
 }
 
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                               CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
+                               CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, CConfig *config, bool TapeActive) {
 	
-  int rank        = SU2_MPI::GetRank();
+  int rank = SU2_MPI::GetRank();
   
   /*---  Check the subspace size ---*/
   
@@ -370,9 +378,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   su2double beta = W[0].norm();
   
-  /*--- Skip solver when residual is small, but not when called during recording ---*/
-
-  if ( ((beta < tol*norm0) || (beta < eps)) && !TapeActive ) {
+  if ( (beta < tol*norm0) || (beta < eps) && !TapeActive) {
     
     /*---  System is already solved ---*/
     
@@ -475,10 +481,12 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, bool TapeActive) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring, CConfig *config, bool TapeActive) {
   
-  int rank        = SU2_MPI::GetRank();
-
+  int rank = SU2_MPI::GetRank();
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
+  
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
@@ -501,32 +509,35 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 
   mat_vec(x, A_x);
   r = b; r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0 = b.norm();
 
-  /*--- Skip solver when residual is small, but not when called during recording ---*/
-
-  if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive ) {
-    if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
-    return 0;
+  /*--- Only compute the residuals in full communication mode. ---*/
+  
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( ((norm_r < tol*norm0) || (norm_r < eps)) && !TapeActive) {
+      if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      WriteHeader("BCGSTAB", tol, norm_r);
+      WriteHistory(i, norm_r, norm0);
+    }
+    
   }
   
   /*--- Initialization ---*/
   
   su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   p = su2double(0.0); v = su2double(0.0); r_0 = r;
-  
-  /*--- Set the norm to the initial initial residual value ---*/
-  
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    WriteHeader("BCGSTAB", tol, norm_r);
-    WriteHistory(i, norm_r, norm0);
-  }
   
   /*---  Loop over all search directions ---*/
   
@@ -583,21 +594,29 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     /*--- r_{i} = r_{i-1/2} - omega * A * z ---*/
     r.Plus_AX(-omega, A_x);
     
-    /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
-  }
+  /*--- Recalculate final residual (this should be optional) ---*/
   
-    /*--- Recalculate final residual (this should be optional) ---*/
-  if (monitoring) {
+  if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
+    
+    if (rank == MASTER_NODE) {
+      cout << "# BCGSTAB final (true) residual:" << endl;
+      cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+    }
+    
     mat_vec(x, A_x);
     r = b; r -= A_x;
     su2double true_res = r.norm();
@@ -608,6 +627,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
       cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
       cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
     }
+    
   }
   
   (*residual) = norm_r;
@@ -650,9 +670,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()) {
-
 #ifdef CODI_REVERSE_TYPE
-
+    
     TapeActive = AD::globalTape.isActive();
 
     AD::StartExtFunc(false, false);
@@ -662,9 +681,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     /*--- Stop the recording for the linear solver ---*/
 
     AD::StopRecording();
-
 #endif
-
   }
 
   /*--- Solve the linear system using a Krylov subspace method ---*/
@@ -699,13 +716,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     
     switch (KindSolver) {
       case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
         break;
       case FGMRES:
-        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
         break;
       case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, TapeActive);
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
@@ -713,7 +730,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         while (IterLinSol < MaxIter) {
           /*--- Enforce a hard limit on total number of iterations ---*/
           unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, TapeActive);
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, config, TapeActive);
           if ( Residual < SolverTol*Norm0 ) break;
         }
         break;
@@ -766,7 +783,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
     AD::StartRecording();
     
-    AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+    AD::SetExtFuncOut(&LinSysSol[0], (int)LinSysSol.GetLocSize());
    
 #ifdef CODI_REVERSE_TYPE
     AD::FuncHelper->addUserData(&LinSysRes);
@@ -853,13 +870,13 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, true);
+      IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config, TapeActive);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, true);
+      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput, config, TapeActive);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, true);
+      IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config, TapeActive);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
@@ -867,7 +884,7 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, true);
+        IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput, config, TapeActive);
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;

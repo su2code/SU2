@@ -40,9 +40,8 @@
 void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, offset, nElem;
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, VTK_Type, nMarker_;
   short SendTo;
-  su2double *center, *angles, *transl;
   ifstream input_file;
   string filename, Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
@@ -60,15 +59,26 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".su2");
+  if (!config->GetMultizone_Mesh())
+    filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".su2");
+  
 
   strcpy (out_file, filename.c_str());
   strcpy (cstr, out_file); 
   
   if (rank == MASTER_NODE){
+
+    if (config->GetMultizone_Mesh() && config->GetnZone() > 1 && config->GetiZone() == 0){
+      output_file.open(cstr, ios::out);
+      output_file << "NZONE= " << config->GetnZone() << endl;
+    }
+    else if (config->GetMultizone_Mesh() && config->GetiZone() != 0){
+      output_file.open(cstr, ios::out | ios::app);
+    }
+    else {
+      output_file.open(cstr, ios::out);
+    }
     
-    
-    output_file.open(cstr, ios::out);
     
     if (config->GetnZone() > 1){
       output_file << "IZONE= " << config->GetiZone()+1 << endl;
@@ -295,27 +305,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
     
 //    remove(str.c_str());
     
-    /*--- Get the total number of periodic transformations ---*/
-    
-    nPeriodic = config->GetnPeriodicIndex();
-    output_file << "NPERIODIC= " << nPeriodic << endl;
-    
-    /*--- From iPeriodic obtain the iMarker ---*/
-    
-    for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-      
-      /*--- Retrieve the supplied periodic information. ---*/
-      
-      center = config->GetPeriodicCenter(iPeriodic);
-      angles = config->GetPeriodicRotation(iPeriodic);
-      transl = config->GetPeriodicTranslate(iPeriodic);
-      
-      output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
-      output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
-      output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
-      output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-      
-    }
     output_file.close();
   }
 
