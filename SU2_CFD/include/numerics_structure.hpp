@@ -4751,7 +4751,7 @@ private:
   su2double cb2;
   su2double cw1;
   unsigned short iDim;
-  su2double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double nu, nu_t, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;
@@ -4765,6 +4765,7 @@ private:
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double rho_ratio;
   su2double inv_S, alpha1, alpha2, gama_i, Gama_i;
+  su2double turb_ke;
   
 public:
   
@@ -4828,6 +4829,30 @@ public:
    * \brief  ______________.
    */
   su2double GetCrossProduction(void);
+
+   /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] config: config file
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+  /*!
+     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+     * \param[in] turb_ke: turbulent kinetic energy of the node
+     */
+  void SetPerturbedStrainMag(su2double turb_ke);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
