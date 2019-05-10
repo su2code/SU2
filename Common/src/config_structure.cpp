@@ -5026,6 +5026,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
           case SA_SALSA:   cout << "SALSA Spalart Allmaras" << endl; break;
+          case SA_RC:   cout << "Rotation/Curvature Spalart Allmaras" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         cout << "Hybrid RANS/LES: ";
