@@ -1115,6 +1115,7 @@ private:
          ECC_Restart_Adj_FileName,   /*!< \brief File name of higher order interpolated adjoint solution that is output */
          ECC_Solution_Adj_FileName;  /*!< \brief File name of higher order interpolated adjoint solution that is input */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
+  unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9321,6 +9322,12 @@ public:
    * \return Flag for field variable to be used as sensor
    */
   unsigned short GetKind_Aniso_Sensor(void);
+
+  /*!
+   * \brief Get constraint complexity
+   * \return Mesh complexity
+   */
+  unsigned long GetMesh_Complexity(void);
 };
 
 #include "config_structure.inl"

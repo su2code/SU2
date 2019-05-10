@@ -2126,3 +2126,5 @@ inline bool CConfig::GetUsing_Target_Mesh(void) { return use_target_mesh; }
 inline void CConfig::SetUsing_Target_Mesh(bool val_using_target_mesh) { use_target_mesh = val_using_target_mesh; }
 
 inline unsigned short CConfig::GetKind_Aniso_Sensor(void) { return Kind_Aniso_Sensor; }
+
+inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }

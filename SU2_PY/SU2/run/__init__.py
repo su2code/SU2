@@ -20,3 +20,4 @@ from .geometry   import geometry
 from .adaptation import adaptation
 from .merge      import merge
 from .amg        import amg
+from .amg_ecc    import amg_ecc

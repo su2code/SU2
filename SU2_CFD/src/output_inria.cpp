@@ -169,7 +169,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   string filename;
   
-  unsigned long OutMach, OutPres, OutGoal, OutMetr;
+  unsigned long OutMach, OutPres, OutGoal, OutGrad, OutMetr;
   unsigned long i, npoin = geometry->GetGlobal_nPointDomain();
   unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
@@ -441,6 +441,69 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
       exit(EXIT_FAILURE);
     }
 
+    /*--- Write gradient vector ---*/
+
+    SPRINTF (OutNam, "grad.solb");
+    OutGrad = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
+  
+    if ( !OutGrad ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("Unable to open %s", OutNam);
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+
+    VarTyp[0] = GmfVec;
+  
+    if ( !GmfSetKwd(OutGrad, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("Unable to write ECC");
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+
+    myPoint = 0;
+    offset = 0;
+    for (unsigned short iProcessor = 0; iProcessor < size; iProcessor++) {
+      if (rank == iProcessor) {
+        for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+          
+          /*--- Global Index of the current point. (note outer loop over procs) ---*/
+          
+          Global_Index = iPoint + offset;
+          
+          /*--- Only write original domain points, i.e., exclude any periodic
+           or halo nodes, even if they are output in the viz. files. ---*/
+          
+          if (Global_Index < nPoint_Restart) {
+                      
+            myPoint++;
+            
+            /*--- Loop over the variables and write the values to file ---*/
+            
+            iVar = TagBc[bcGoal]+1;
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDbl[iDim] = SU2_TYPE::GetValue(Parallel_Data[iVar+iDim][iPoint]);
+            GmfSetLin(OutGrad, GmfSolAtVertices, bufDbl);
+          }
+        }
+      }
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+      
+    }
+    
+    /*--- Close files ---*/
+    
+    if ( !GmfCloseMesh(OutGrad) ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("Cannot close solution file");
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+
     /*--- Write metric tensor ---*/
 
     SPRINTF (OutNam, "metr.solb");
@@ -485,7 +548,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
             
             /*--- Loop over the variables and write the values to file ---*/
             
-            iVar = TagBc[bcGoal];
+            iVar = TagBc[bcGoal]+nDim+1;
             for (iMetr = 0; iMetr < nMetr; iMetr++)
               bufDbl[iMetr] = SU2_TYPE::GetValue(Parallel_Data[iVar+iMetr][iPoint]);
             GmfSetLin(OutMetr, GmfSolAtVertices, bufDbl);
@@ -610,7 +673,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	GmfSetKwd(OutMsh, GmfTriangles, nParallel_Tria);
   	for (iElem = 0; iElem < nParallel_Tria; iElem++) {
   	  iNode = iElem*N_POINTS_TRIANGLE;
-	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria_Par[iNode+0],Conn_Tria_Par[iNode+1],Conn_Tria_Par[iNode+2], 0);  
+	  GmfSetLin(OutMsh, GmfTriangles,Conn_Tria_Par[iNode+0],Conn_Tria_Par[iNode+1],Conn_Tria_Par[iNode+2], 1);  
   	}	
 
 	/*--- Write quadrilaterals ---*/
@@ -619,7 +682,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	  GmfSetKwd(OutMsh, GmfQuadrilaterals, nParallel_Quad);
 	  for (iElem = 0; iElem < nParallel_Quad; iElem++) {
   		  iNode = iElem*N_POINTS_QUADRILATERAL;
-				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad_Par[iNode+0],Conn_Quad_Par[iNode+1],Conn_Quad_Par[iNode+2], Conn_Quad_Par[iNode+3], 0);  
+				GmfSetLin(OutMsh, GmfQuadrilaterals,Conn_Quad_Par[iNode+0],Conn_Quad_Par[iNode+1],Conn_Quad_Par[iNode+2], Conn_Quad_Par[iNode+3], 1);  
   		}
 	  }
 	
@@ -631,7 +694,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfTetrahedra, nParallel_Tetr);
 		for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
 	    iNode = iElem*N_POINTS_TETRAHEDRON;
-			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr_Par[iNode+0],Conn_Tetr_Par[iNode+1],Conn_Tetr_Par[iNode+2], Conn_Tetr_Par[iNode+3], 0); 
+			GmfSetLin(OutMsh, GmfTetrahedra,Conn_Tetr_Par[iNode+0],Conn_Tetr_Par[iNode+1],Conn_Tetr_Par[iNode+2], Conn_Tetr_Par[iNode+3], 1); 
 	  }
 	}
 	
@@ -641,7 +704,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfHexahedra, nParallel_Hexa);
 		for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
 	    iNode = iElem*N_POINTS_HEXAHEDRON;
-			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa_Par[iNode+0],Conn_Hexa_Par[iNode+1], Conn_Hexa_Par[iNode+2], Conn_Hexa_Par[iNode+3], Conn_Hexa_Par[iNode+4],Conn_Hexa_Par[iNode+5],Conn_Hexa_Par[iNode+6], Conn_Hexa_Par[iNode+7],  0); 
+			GmfSetLin(OutMsh, GmfHexahedra,Conn_Hexa_Par[iNode+0],Conn_Hexa_Par[iNode+1], Conn_Hexa_Par[iNode+2], Conn_Hexa_Par[iNode+3], Conn_Hexa_Par[iNode+4],Conn_Hexa_Par[iNode+5],Conn_Hexa_Par[iNode+6], Conn_Hexa_Par[iNode+7],  1); 
 	  }
 	}
 	
@@ -651,7 +714,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfPrisms, nParallel_Pris);
 		for (iElem = 0; iElem < nParallel_Pris; iElem++) {
 	    iNode = iElem*N_POINTS_PRISM;
-			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris_Par[iNode+0],Conn_Pris_Par[iNode+1], Conn_Pris_Par[iNode+2], Conn_Pris_Par[iNode+3], Conn_Pris_Par[iNode+4],Conn_Pris_Par[iNode+5],  0); 
+			GmfSetLin(OutMsh, GmfPrisms,Conn_Pris_Par[iNode+0],Conn_Pris_Par[iNode+1], Conn_Pris_Par[iNode+2], Conn_Pris_Par[iNode+3], Conn_Pris_Par[iNode+4],Conn_Pris_Par[iNode+5],  1); 
 	  }
 	}
 	
@@ -661,7 +724,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		GmfSetKwd(OutMsh, GmfPyramids, nParallel_Pyra);
 		for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
 	    iNode = iElem*N_POINTS_PYRAMID;
-	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra_Par[iNode+0],Conn_Pyra_Par[iNode+1], Conn_Pyra_Par[iNode+2], Conn_Pyra_Par[iNode+3], Conn_Pyra_Par[iNode+4],0); 
+	  	GmfSetLin(OutMsh, GmfPyramids,Conn_Pyra_Par[iNode+0],Conn_Pyra_Par[iNode+1], Conn_Pyra_Par[iNode+2], Conn_Pyra_Par[iNode+3], Conn_Pyra_Par[iNode+4],1); 
 		}
 	}
 	
@@ -714,7 +777,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				cptElem++;
 
 				
-				GmfSetLin(OutMsh, GmfEdges,bnd->GetNode(0)+1,bnd->GetNode(1)+1,iMarker); 	
+				GmfSetLin(OutMsh, GmfEdges,bnd->GetNode(0)+1,bnd->GetNode(1)+1,iMarker+2); 	
 			}
 		}
 	
@@ -747,7 +810,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				
 				cptElem++;
 				
-				GmfSetLin(OutMsh, GmfTriangles,PointSurface[bnd->GetNode(0)]+1,PointSurface[bnd->GetNode(1)]+1, PointSurface[bnd->GetNode(2)]+1,iMarker); 	
+				GmfSetLin(OutMsh, bnd->GetNode(0)+1,bnd->GetNode(1)+1, bnd->GetNode(2)+1,iMarker+2); 	
 			}
 		}
 	
@@ -776,7 +839,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				
 				cptElem++;
 				
-				GmfSetLin(OutMsh, GmfTriangles,bnd->GetNode(0)+1,bnd->GetNode(1)+1, bnd->GetNode(2)+1, bnd->GetNode(3)+1,iMarker); 	
+				GmfSetLin(OutMsh, GmfTriangles,bnd->GetNode(0)+1,bnd->GetNode(1)+1, bnd->GetNode(2)+1, bnd->GetNode(3)+1,iMarker+2); 	
 			}
 		}
 	

@@ -2413,8 +2413,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Compute an error estimate */
   addBoolOption("ERROR_ESTIMATE", error_estimate, false);
 
-  /* DESCRIPTION: Compute an error estimate */
+  /* DESCRIPTION: Sensor used to determine anisotropy */
   addEnumOption("ANISO_SENSOR", Kind_Aniso_Sensor, Aniso_Sensor_Map, ANISO_MACH);
+
+  /* DESCRIPTION: Constraint mesh complexity */
+  addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 1000);
 
   /* END_CONFIG_OPTIONS */
 

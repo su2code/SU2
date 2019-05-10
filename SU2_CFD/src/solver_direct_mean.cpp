@@ -6663,14 +6663,14 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
   su2double vnx[3], vny[3];
   su2double hesTri[3];
   su2double Crd[3][2], Grad[3][2];
 
   //--- note: currently only implemented for Tri
 
-  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     //--- initialize sensor Hessian
     node[iPoint]->SetAnisoHess(0, 0.0);
@@ -6714,6 +6714,60 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
       node[kNode]->AddAnisoHess(1, hesTri[1] * rap);
       node[kNode]->AddAnisoHess(2, hesTri[2] * rap);
     }
+  }
+
+  //--- normalize to obtain Lp metric
+  su2double p = 2.0;                                                  // For now, hardcode L2 metric
+  su2double LocalSumDetH  = 0.0,                                      // Sum of absolute value of determinant on processor
+            GlobalSumDetH = 0.0,                                      // Sum of absolute value of determinant on all processors
+            Complexity    = su2double(config->GetMesh_Complexity());  // Constraing mesh complexity
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double DetH = node[iPoint]->GetAnisoHess(0)*node[iPoint]->GetAnisoHess(2)
+                         - node[iPoint]->GetAnisoHess(1)*node[iPoint]->GetAnisoHess(1);
+    const su2double TraH = node[iPoint]->GetAnisoHess(0)+node[iPoint]->GetAnisoHess(2);
+
+    const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
+    const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
+
+    LocalSumDetH += pow(abs(Lam1*Lam2), p/(2.*p+3.));
+
+  }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&LocalSumDetH, &GlobalSumDetH, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    GlobalSumDetH = LocalSumDetH;
+#endif    
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double DetH = node[iPoint]->GetAnisoHess(0)*node[iPoint]->GetAnisoHess(2)
+                         - node[iPoint]->GetAnisoHess(1)*node[iPoint]->GetAnisoHess(1);
+    const su2double TraH = node[iPoint]->GetAnisoHess(0)+node[iPoint]->GetAnisoHess(2);
+
+    const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
+    const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
+
+    const su2double RuH[2][2]    = {{node[iPoint]->GetAnisoHess(1),node[iPoint]->GetAnisoHess(1)},
+                                    {Lam1-node[iPoint]->GetAnisoHess(0),Lam2-node[iPoint]->GetAnisoHess(0)}};
+
+    const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
+                                    {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
+    const su2double LamRuU[2][2] = {{abs(Lam1)*RuU[0][0],abs(Lam1)*RuU[1][0]},
+                                    {abs(Lam2)*RuU[0][1],abs(Lam2)*RuU[1][1]}};
+    const su2double Metr[2][2]   = {{RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]},
+                                    {RuU[1][0]*LamRuU[0][0]+RuU[1][1]*LamRuU[1][0], RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]}};
+
+    const su2double factor = pow(Complexity, 2./3.)
+                           * pow(GlobalSumDetH, -2./3.)
+                           * pow(abs(Lam1*Lam2), -1./(2.*p+3.));
+
+    node[iPoint]->SetAnisoHess(0, factor*Metr[0][0]);
+    node[iPoint]->SetAnisoHess(1, factor*Metr[0][1]);
+    node[iPoint]->SetAnisoHess(2, factor*Metr[1][1]);
+
   }
 
 }

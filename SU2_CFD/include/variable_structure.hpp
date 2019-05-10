@@ -460,6 +460,13 @@ public:
   void AddAnisoHess(unsigned short val_var, su2double val_sens_hess);
 
   /*!
+   * \brief Scale the sensor Hessian.
+   * \param[in] val_scale - Scaling factor.
+   * \param[in] val_nHess - Size of Hessian.
+   */
+  void ScaleAnisoHess(su2double val_scale, unsigned short val_nHess);
+
+  /*!
    * \brief Get the value of the sensor Hessian.
    */
   su2double *GetAnisoHess(void);

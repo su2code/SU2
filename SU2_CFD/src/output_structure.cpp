@@ -12919,12 +12919,21 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
 
       if(nDim == 2){
+        Variable_Names.push_back("Aniso_Grad[0]");
+        Variable_Names.push_back("Aniso_Grad[1]");
+        nVar_Par += 2;
+
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
         nVar_Par += 3;
       }
       else{
+        Variable_Names.push_back("Aniso_Grad[0]");
+        Variable_Names.push_back("Aniso_Grad[1]");
+        Variable_Names.push_back("Aniso_Grad[2]");
+        nVar_Par += 3;
+        
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
@@ -13173,12 +13182,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
           iVar++;
 
+          for(iDim = 0; iDim < nDim; iDim++){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoGrad(iDim);
+            iVar++;
+          }
+
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
           else          nMetr = 6;
             
           for(iMetr = 0; iMetr < nMetr; iMetr++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            // Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
             iVar++;
           }
         }
@@ -13922,12 +13937,21 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += 1;
 
       if(nDim == 2){
+        Variable_Names.push_back("Aniso_Grad[0]");
+        Variable_Names.push_back("Aniso_Grad[1]");
+        nVar_Par += 2;
+
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
         nVar_Par += 3;
       }
       else{
+        Variable_Names.push_back("Aniso_Grad[0]");
+        Variable_Names.push_back("Aniso_Grad[1]");
+        Variable_Names.push_back("Aniso_Grad[2]");
+        nVar_Par += 3;
+
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
@@ -14138,6 +14162,11 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
           iVar++;
+
+          for(iDim = 0; iDim < nDim; iDim++){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoGrad(iDim);
+            iVar++;
+          }
 
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
