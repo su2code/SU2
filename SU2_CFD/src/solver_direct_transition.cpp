@@ -209,8 +209,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- MPI solution ---*/
 
 //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
   SlidingState       = new su2double*** [nMarker];
@@ -352,8 +352,8 @@ void CTransLMSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- MPI solution and compute the separation intermittency. ---*/
 
 //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart.
-  solver[MESH_0][TRANS_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][TRANS_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   solver[MESH_0][TRANS_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
