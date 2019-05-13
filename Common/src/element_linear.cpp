@@ -2364,6 +2364,11 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
     RefCoord [iNode] = new su2double[nDim];
   }
 
+  CurrentCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    CurrentCoord [iNode] = new su2double[nDim];
+  }
+
   GaussWeight = new su2double [nGaussPoints];
 
   GaussCoord = new su2double*[nGaussPoints];
@@ -2383,6 +2388,16 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
     for (jNode = 0; jNode < nNodes; jNode++){
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
+  }
+
+  Ks_ab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Ks_ab[iNode] = new su2double [nNodes];
+  }
+
+  Kt_a = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kt_a[iNode] = new su2double [nDim];
   }
 
   /*--- Store the shape functions (they only need to be computed once) ---*/
@@ -2573,6 +2588,11 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
     RefCoord [iNode] = new su2double[nDim];
   }
 
+  CurrentCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    CurrentCoord [iNode] = new su2double[nDim];
+  }
+
   GaussWeight = new su2double [nGaussPoints];
 
   GaussCoord = new su2double*[nGaussPoints];
@@ -2593,6 +2613,16 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
     for (jNode = 0; jNode < nNodes; jNode++){
       Kab [iNode][jNode] = new su2double[nDimSq];
     }
+  }
+
+  Ks_ab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Ks_ab[iNode] = new su2double [nNodes];
+  }
+
+  Kt_a = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kt_a[iNode] = new su2double [nDim];
   }
 
   /*--- Store the shape functions (they only need to be computed once) ---*/
