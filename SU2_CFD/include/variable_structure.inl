@@ -415,11 +415,11 @@ inline su2double *CVariable::GetdTdU() { return NULL; }
 
 inline su2double *CVariable::GetdTvedU() { return NULL; }
 
-inline su2double CVariable::CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species) { return 0; }
+inline su2double CVariable::CalcEve(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species) { return 0; }
 
 inline su2double *CVariable::GetEve(void) { return NULL; }
 
-inline su2double CVariable::CalcHs(CConfig *config, su2double val_T, su2double val_eves, unsigned short val_Species) { return 0; }
+inline su2double CVariable::CalcHs(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species) { return 0; }
 
 inline su2double CVariable::CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
 

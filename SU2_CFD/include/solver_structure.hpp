@@ -43,7 +43,7 @@
 #include "../../Common/include/mpi_structure.hpp"
 
 #ifdef HAVE_MUTATIONPP
-#include "mutaion++.h"
+#include "mutation++.h"
 #endif
 
 #include <cmath>
@@ -61,6 +61,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "variable_structure.hpp"
+#include "reactive_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
@@ -9145,7 +9146,8 @@ protected:
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
   CFluidModel  *FluidModel;         /*!< \brief fluid model used in the solver */
-
+  CReactive    *reactive;           /*!< \brief mixture model used in the solver */
+  
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
             ***SpanTotalFlux,

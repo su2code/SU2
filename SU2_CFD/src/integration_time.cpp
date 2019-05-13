@@ -49,6 +49,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned long Iteration,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
+
+  
   unsigned short FinestMesh, iMGLevel = 0;
   su2double monitor = 1.0;
   bool FullMG = false;
@@ -78,6 +80,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     RecursiveParam = V_CYCLE;
     FullMG = true;
   }
+
+  
   
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
 	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
@@ -96,6 +100,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       
     }
   }
+
+ 
 	
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
@@ -107,21 +113,34 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     config[iZone]->SubtractFinestMesh();
   }
 
+  
+
   /*--- Set the current finest grid (full multigrid strategy) ---*/
   
   FinestMesh = config[iZone]->GetFinestMesh();
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
+
+  //std::cout << "Mutation MultiGrid_Iteration 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+ 
   
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone, iInst);
 
+  //std::cout << "Mutation MultiGrid_Iteration 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
+
+   
 
    solver_container[iZone][iInst][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][MESH_0],
                                                                          solver_container[iZone][iInst][MESH_0], config[iZone],
                                                                          MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
+
+ 
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
   
@@ -145,6 +164,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned long Iteration,
                                             unsigned short iZone,
                                             unsigned short iInst) {
+
+ 
   
   unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
   
@@ -152,6 +173,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+
+  
   
   for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
     
@@ -159,6 +182,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
       case CLASSICAL_RK4_EXPLICIT: iRKLimit = 4; break;
       case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
+
+      
 
     /*--- Time and space integration ---*/
     
@@ -168,6 +193,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
       
+      
+
       if (iRKStep == 0) {
         
         /*--- Set the old solution ---*/
@@ -186,22 +213,31 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
         
       }
+
+      //std::cout << "Mutation MultiGrid_Cycle 1"  << std::endl<< std::endl<< std::endl<< std::endl;
       
       /*--- Space integration ---*/
       
       Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
       
+      //std::cout << "Mutation MultiGrid_Cycle 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       
       Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
       
+      //std::cout << "Mutation MultiGrid_Cycle 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
       
+      //std::cout << "Mutation MultiGrid_Cycle 4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
     }
     
   }
+
   
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
@@ -265,6 +301,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       }
     }
   }
+
   
 }
 
@@ -1118,6 +1155,8 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             CConfig *config, unsigned short iMesh,
                                             unsigned short iStep,
                                             unsigned short RunTime_EqSystem) {
+
+  
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

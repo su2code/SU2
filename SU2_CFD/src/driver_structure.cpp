@@ -1292,8 +1292,11 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
     if (tne2_euler) {
       if (compressible) {
+        //std::cout << "MUTATION 1 CDriver::Solver_Preprocessing"  << std::endl;
         solver_container[val_iInst][iMGlevel][TNE2_SOL] = new CTNE2EulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        //std::cout << "MUTATION 2 CDriver::Solver_Preprocessing"  << std::endl;
         solver_container[val_iInst][iMGlevel][TNE2_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
+        //std::cout << "MUTATION 3 CDriver::Solver_Preprocessing"  << std::endl;
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TNE2_SOL]->GetnVar();
     }
@@ -4063,22 +4066,35 @@ void CDriver::StartSolver(){
   while ( ExtIter < config_container[ZONE_0]->GetnExtIter() ) {
 
     /*--- Perform some external iteration preprocessing. ---*/
-
+   
+    //std::cout << "Mutation driver 1"  << std::endl<< std::endl<< std::endl<< std::endl;
     PreprocessExtIter(ExtIter);
+
+    //std::cout << "Mutation driver 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+    
 
     /*--- Perform a dynamic mesh update if required. ---*/
 
       if (!fem_solver) {
-        DynamicMeshUpdate(ExtIter);
-      }
-
+        DynamicMeshUpdate(ExtIter); }
+      
     /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
 
+    //std::cout << "Mutation driver 1" << std::endl << std::endl ;   
+
     Run();
+
+    //std::cout << "Mutation driver 2" << std::endl << std::endl ;  
+
+    //std::cout << "Mutation driver 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+    
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
     Update();
+
+    //std::cout << "Mutation driver 4"  << std::endl<< std::endl<< std::endl<< std::endl;
 
     /*--- Terminate the simulation if only the Jacobian must be computed. ---*/
     if (config_container[ZONE_0]->GetJacobian_Spatial_Discretization_Only()) break;
@@ -4409,9 +4425,13 @@ void CFluidDriver::Run() {
 
   /*--- Zone preprocessing ---*/
 
+  //std::cout << "Mutation driver run 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
+  //std::cout << "Mutation driver run 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+  
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
    this is done once in the interpolator_container constructor 
@@ -4441,11 +4461,16 @@ void CFluidDriver::Run() {
           Transfer_Data(iZone, jZone);
 
     /*--- For each zone runs one single iteration ---*/
-
+    //std::cout << "Mutation driver run 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+    
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
+      //std::cout << "Mutation driver run 1"  << std::endl<< std::endl<< std::endl<< std::endl;
       iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      //std::cout << "Mutation driver run 2"  << std::endl<< std::endl<< std::endl<< std::endl;
     }
+
+   
 
     /*--- Check convergence in each zone --*/
 

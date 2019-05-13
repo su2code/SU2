@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file solver_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author F. Palacios, T. Economon
@@ -183,12 +183,23 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Secondary   = NULL;
   Secondary_i = NULL; Secondary_j = NULL;
 
+  
+  nSpecies     = config->GetnSpecies();
+  
+
+  if(config->GetMUTATION_PP()) reactive = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive = new CReactiveHardCode();
+
+
+  reactive->InitializeMixture(config);
+  
+  
+
   /*--- Set the gamma value ---*/
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
+  Gamma = 0.0; //Cat vai ser p apagar
+  Gamma_Minus_One = 0.0;
 
   /*--- Define geometric constants in the solver structure ---*/
-  nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
   nDim         = geometry->GetnDim();
 
@@ -217,6 +228,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
   SetNondimensionalization(geometry, config, iMesh);
+
+  
+
 
   /*--- Allocate a CVariable array for each node of the mesh ---*/
   node = new CVariable*[nPoint];
@@ -302,7 +316,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    
 
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) || (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -479,7 +495,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStreamND();
   Mach_Inf           = config->GetMach();
-  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream(); //1T 
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
@@ -519,30 +535,55 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
 
+  
+
+
   /*--- Create a CVariable that stores the free-stream values ---*/
-  node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
+  node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, 
                                       Mvec_Inf, Temperature_Inf,
                                       Temperature_ve_Inf, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
+
+  
+  
+
   check_infty = node_infty->SetPrimVar_Compressible(config);
 
+  
+
+  
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
-                                          Temperature_ve_Inf, nDim, nVar, nPrimVar, nPrimVarGrad,
-                                          config);
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, 
+                                          Mvec_Inf, Temperature_Inf, 
+                                          Temperature_ve_Inf, nDim, nVar, 
+                                          nPrimVar, nPrimVarGrad, config);
+
+    
+  }
+
+  
+
+
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
+
+ 
+
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
 
-    if (nonPhys) {
+    if (nonPhys) { 
       bool ionization;
       unsigned short iEl, nHeavy, nEl, *nElStates;
-      su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
+      su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc; 
+      su2double rhoE_Cv, rhoE_Ev, rhoE_Ee, rhoE_Ef, rhoE_sq;
       su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-      su2double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      su2double *xi,  *thetav, **thetae, **g, *Tref, *hf;
+      vector<su2double> Ms, Cvtr, Cvve, Cv, Energies;
 
       /*--- Determine the number of heavy species ---*/
       ionization = config->GetIonization();
@@ -551,7 +592,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
       /*--- Load variables from the config class --*/
       xi        = config->GetRotationModes();      // Rotational modes of energy storage
-      Ms        = config->GetMolar_Mass();         // Species molar mass
+      Ms        = reactive->Get_MolarMass();         // Species molar mass
       thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
       thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
       g         = config->GetElDegeneracy();       // Degeneracy of electron states
@@ -562,30 +603,40 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
       /*--- Rename & initialize for convenience ---*/
       RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)]
       Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
-      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
       T       = Temperature_Inf;                // Translational-rotational temperature [K]
+      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
       sqvel   = 0.0;                            // Velocity^2 [m2/s2]
       rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
       rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
       denom   = 0.0;
       conc    = 0.0;
-      rhoCvtr = 0.0;
 
+      
+      
+      
       /*--- Calculate mixture density from supplied primitive quantities ---*/
       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
+        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T; //Cat DONE
       for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve; //Cat nao e necessario por agora, dado que so passa por aqui quando ha ionizacao
       rho = Pressure_Inf / denom;
 
+      Cvve = reactive->Get_CvVibElSpecies(MassFrac_Inf, rho, T, Tve);
+      Cvtr = reactive->Get_CvTraRotSpecies(MassFrac_Inf, rho, T, Tve); 
+
+      Cv.resize(nSpecies);
+      
       /*--- Calculate sound speed and extract velocities ---*/
       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        Cv[iSpecies] = Cvtr[iSpecies] + Cvve[iSpecies];
         conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
-        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-      }
+        //rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat DONE
+        rhoCvtr += rho*MassFrac_Inf[iSpecies]*Cv[iSpecies];
+        //std::cout << "Mutation Cv=" << Cv[iSpecies] << std::endl << std::endl;
+        }
       soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
       for (iDim = 0; iDim < nDim; iDim++){
-        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed; 
       }
       /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -594,7 +645,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
         // Species formation energy
         Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
         // Species vibrational energy
         if (thetav[iSpecies] != 0.0)
           Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
@@ -603,7 +653,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
         // Species electronic energy
         num = 0.0;
-        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve); 
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
           num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
           denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
@@ -611,13 +661,43 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
         Ee = Ru/Ms[iSpecies] * (num/denom);
 
         // Mixture total energy
-        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                        + Ev + Ee + Ef + 0.5*sqvel);
+        //rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]) //Cat DONE for now
 
+                        //+ Ev + Ee + Ef + 0.5*sqvel);
+
+        //Energies[0] += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]) //Cat DONE for now
+                        //+ Ev + Ee + Ef);
+
+          
         // Mixture vibrational-electronic energy
-        rhoEve += rhos * (Ev + Ee);
+        //rhoEve += rhos * (Ev + Ee); 
+
+        //rhoE_Cv += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]));
+        //rhoE_Ev += rhos * Ev;
+        //rhoE_Ee += rhos * Ee;
+        //rhoE_Ef += rhos * Ef;
+        //rhoE_sq += rhos * 0.5*sqvel;
+
+        //std::cout << "rhoE_Cv=" << rhoE_Cv << std::endl;
+        //std::cout << "rhoE_Ev=" << rhoE_Ev << std::endl;
+        //std::cout << "rhoE_Ee=" << rhoE_Ee << std::endl;
+        //std::cout << "rhoE_Ef=" << rhoE_Ef << std::endl;
+        //std::cout << "rhoE_sq=" << rhoE_sq << std::endl;
+
+
       }
-      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+
+      Energies = reactive->Get_MixtureEnergies(MassFrac_Inf, rho, T, Tve);
+
+      rhoE   = rho*(Energies[0] + 0.5*sqvel);
+      rhoEve = rho*Energies[1];
+       
+      
+      //std::cout << "rhoEve=" << rhoEve << std::endl;
+      //std::cout << "rhoE=" << rhoE << std::endl;
+      
+
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) { //Cat nao e necessario por agora, dado que so passa por aqui quando ha ionizacao
         // Species formation energy
         Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
 
@@ -642,6 +722,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     }
   }
 
+  
+
   /*--- Warning message about non-physical points ---*/
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
@@ -662,6 +744,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
+
+  
 
 
   /*--- MPI solution ---*/
@@ -752,6 +836,10 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
     delete [] HeatFlux;
   }
   if (nVertex != NULL) delete [] nVertex;
+
+  if (reactive != NULL) delete [] reactive;
+
+
 }
 
 void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -864,7 +952,7 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
         /*--- Copy transformed conserved variables back into buffer. ---*/
         for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, Solution[iVar]);
+          node[iPoint]->SetSolution(iVar, Solution[iVar]); 
 
       }
 
@@ -1226,6 +1314,8 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
           node[iPoint]->SetPrimVar(iVar, Primitive[iVar]);
 
       }
+
+      std::cout << std::endl<< std::endl<< "mutation AQUIIIIIIIIIIIIIIIIIIIIIIIIII" << std::endl << std::endl << std::endl << std::endl;
 
       /*--- Deallocate receive buffer ---*/
       delete [] Buffer_Receive_V;
@@ -1895,6 +1985,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
   bool nonPhys;
 
+  
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
@@ -1906,6 +1997,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
   }
 
+  
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
@@ -1915,11 +2007,13 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       SetPrimitive_Gradient_LS(geometry, config);
+
     }
 
     /*--- Limiter computation ---*/
     if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
       SetPrimitive_Limiter(geometry, config);
+
     }
 
   }
@@ -1933,6 +2027,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     }
   }
 
+  
   /*--- Initialize the jacobian matrices ---*/
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
@@ -1944,6 +2039,8 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
+
+
 }
 
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
@@ -2274,6 +2371,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   //su2double ProjGradV_i, ProjGradV_j;
   //su2double  lim_ij;
 
+//  std::cout << "Mutation upwind 1" << std::endl << std::endl ;  
+
   /*--- Set booleans based on config settings ---*/
   bool implicit 		= (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool muscl    		= (config->GetMUSCL_TNE2() && (iMesh == MESH_0));
@@ -2317,6 +2416,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+  //for(iEdge = 0; iEdge < 1; iEdge++) {
 
     /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
     iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -2445,7 +2546,28 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     }
 
     /*--- Compute the upwind residual ---*/
-    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+
+     //std::cout << "Mutation Upwind iPoint=" << iPoint << std::endl << std::endl;
+    
+numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+
+if ((iPoint==11) || (jPoint==11) ) {
+    
+
+
+      //std::cout << "Mutation UPWIND" << std::endl << std::endl;
+    
+
+     // std::cout << "Mutation val_residual[0]=" << Res_Conv[0] << std::endl << std::endl;
+     // std::cout << "Mutation val_residual[1]=" << Res_Conv[1] << std::endl << std::endl;
+     // std::cout << "Mutation val_residual[2]=" << Res_Conv[2] << std::endl << std::endl;
+     // std::cout << "Mutation val_residual[3]=" << Res_Conv[3] << std::endl << std::endl;
+     // std::cout << "Mutation val_residual[4]=" << Res_Conv[4] << std::endl << std::endl;
+      //std::cout << "Mutation val_residual[5]=" << Res_Conv[5] << std::endl << std::endl;
+    }
+
+    
+
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
@@ -2532,6 +2654,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
+  //std::cout << "Mutation Source residual 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2575,29 +2699,37 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
 
-    /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
-
-    /*--- Check for errors before applying source to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (Residual[iVar] != Residual[iVar]) err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-
-    /*--- Apply the chemical sources to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eChm_local++;
+    /*--- Compute the non-equilibrium chemistry ---*/                              //Chemistry
+   // numerics->ComputeChemistry(Residual, Jacobian_i, config);
+//
+   // /*--- Check for errors before applying source to the linear system ---*/
+   // err = false;
+   // for (iVar = 0; iVar < nVar; iVar++)
+   //   if (Residual[iVar] != Residual[iVar]) err = true;
+   // if (implicit)
+   //   for (iVar = 0; iVar < nVar; iVar++)
+   //     for (jVar = 0; jVar < nVar; jVar++)
+   //       if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+//
+   // /*--- Apply the chemical sources to the linear system ---*/
+   // if (!err) {
+   //   LinSysRes.SubtractBlock(iPoint, Residual);
+   //   if (implicit)
+   //     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+   // } else
+   //   eChm_local++;
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
+
+    //std::cout << "Mutation Source residual 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+
+    //std::cout << "Mutation Source residual 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+   
+    
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -3399,11 +3531,17 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
   }
 
+  //std::cout << "Mutation explicit 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 
+  //std::cout << "Mutation explicit 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
+
+  //std::cout << "Mutation explicit 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
 }
 
@@ -4167,6 +4305,7 @@ void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
 void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
 
   unsigned short iSpecies, iEl;
+  
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
       Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
       Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -4189,6 +4328,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   su2double Mach          = config->GetMach();
   su2double Reynolds      = config->GetReynolds();
 
+
   bool unsteady           = (config->GetUnsteady_Simulation() != NO);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
@@ -4200,25 +4340,31 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   bool aeroelastic        = config->GetAeroelastic_Simulation();
   bool ionization         = config->GetIonization();
 
-  su2double *Ms, *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
+  su2double  *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev, *Cptr, *Cpve;
   su2double RuSI          = UNIVERSAL_GAS_CONSTANT;
   su2double Ru            = 1000.0*RuSI;
   su2double T             = config->GetTemperature_FreeStream();
   su2double Tve           = config->GetTemperature_ve_FreeStream();
 
+  vector<su2double> Ms, Cvtr, Cvve, Cv, Energies;
+
   unsigned short nSpecies = config->GetnSpecies();
   Tref                    = config->GetRefTemperature();
-  Ms                      = config->GetMolar_Mass();
+  Ms                      = reactive->Get_MolarMass();
   xi                      = config->GetRotationModes();
   nElStates               = config->GetnElStates();
   hf                      = config->GetEnthalpy_Formation();
   thetav                  = config->GetCharVibTemp();
   thetae                  = config->GetCharElTemp();
   g                       = config->GetElDegeneracy();
+
+ 
   ionization = config->GetIonization();
+
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
+
 
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -4234,9 +4380,12 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   /*--- Compute Gas Constant ---*/
   // This needs work for Ionization and such
+
+
+
   MassFrac_Inf  = config->GetMassFrac_FreeStream();
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    Mass += MassFrac_Inf[iSpecies] * Ms[iSpecies];
+    Mass += MassFrac_Inf[iSpecies] * Ms[iSpecies];//Cat DONE
   GasConstant_Inf = Ru / Mass; config->SetGas_Constant(GasConstant_Inf);
 
   /*--- Compute the Free Stream Pressure, Temperatrue, and Density ---*/
@@ -4250,12 +4399,66 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
   Density_FreeStream = Pressure_FreeStream / denom;
 
+  config->SetDensity_FreeStream(Density_FreeStream);
+
+  Gamma = config->GetGamma();
+
+  //Cat gamma calcular gamma p freestream - usar isso nesta funcao throughout
+
+  
+  //Gamma    = reactive->Get_Gamma(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+  //su2double GammaFrozen    = reactive->Get_GammaFrozen(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+  //su2double GammaEquilibrium    = reactive->Get_GammaEquilibrium(MassFrac_Inf, Density_FreeStream, T, Tve);
+  
+
+  //std::cout << setprecision(6)<< "THIS   Gamma=" << Gamma<< std::endl<<  std::endl;
+
+  //std::cout << setprecision(6)<< "GammaFrozen=" << GammaFrozen <<std::endl<<  std::endl;
+
+  //std::cout << setprecision(6)<< "GammaEquilibrium=" << GammaEquilibrium <<  std::endl <<  std::endl;
+
+
+  //Cvve     = new su2double[nHeavy];
+  //Cptr     = new su2double[nHeavy];
+  //Cpve     = new su2double[nHeavy];
+  Cvtr     = reactive->Get_CvTraRotSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
+  Cvve     = reactive->Get_CvVibElSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+  Cv.resize(nSpecies);
+  //Cvve     = reactive->Get_CvVibElSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
+  //Cptr     = reactive->Get_CpTraRotSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
+  //Cpve     = reactive->Get_CpVibElSpecies(MassFrac_Inf, Density_FreeStream, T, Tve);
+      
+  //su2double *E_species;
+  //E_species = new su2double[2*nSpecies];
+  //E_species = reactive->Get_SpeciesEnergies(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+    //std::cout << setprecision(6)<< "Mutation solver 1" <<   std::endl;
+
   /*--- Calculate sound speed and extract velocities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    Cv[iSpecies] = Cvtr[iSpecies] + Cvve[iSpecies];
+    //std::cout << setprecision(6)<< "Mutation solver 2" <<   std::endl;
     conc += MassFrac_Inf[iSpecies]*Density_FreeStream/Ms[iSpecies];
-    rhoCvtr += Density_FreeStream*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+    //rhoCvtr += Density_FreeStream*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat DONE
+    rhoCvtr += Density_FreeStream*MassFrac_Inf[iSpecies] * Cv[iSpecies];
+    //std::cout << "Mutation Cv=" << Cv[iSpecies] << std::endl << std::endl;
+    //std::cout << setprecision(6)<< "Mutation: Cvtr[iSpecies]=" << Cvtr[iSpecies]<<  std::endl;
+    //std::cout << setprecision(6)<< "Mutation: Cvve[iSpecies]=" << Cvve[iSpecies]<<  std::endl;
+    //std::cout << setprecision(6)<< "Mutation: Cptr[iSpecies]=" << Cptr[iSpecies]<<  std::endl;
+    //std::cout << setprecision(6)<< "Mutation: Cpve[iSpecies]=" << Cpve[iSpecies]<<  std::endl;
   }
   soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_FreeStream/Density_FreeStream);
+
+
+
+  //soundspeed = reactive->Get_SoundSpeedFrozen(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+  //std::cout << setprecision(6)<< "Mutation: Density_FreeStream=" << Density_FreeStream<<  std::endl;
+
+//  std::cout << setprecision(10)<< "Mutation: SETNONDIM soundspeed=" << soundspeed<<  std::endl;
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
@@ -4275,37 +4478,67 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   sqvel = ModVel_FreeStream;
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
-
+//su2double Eve;
+//su2double Etr;
   /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    // Species density
-    rhos = MassFrac_Inf[iSpecies]*Density_FreeStream;
-
-    // Species formation energy
-    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-
-    // Species vibrational energy
-    if (thetav[iSpecies] != 0.0)
-      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-    else
-      Ev = 0.0;
+  //for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  //  // Species density
+  //  rhos = MassFrac_Inf[iSpecies]*Density_FreeStream;
+  //
+  //  // Species formation energy
+  //  Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+  //
+  //  // Species vibrational energy
+  //  if (thetav[iSpecies] != 0.0)
+  //    Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+  //  else
+  //    Ev = 0.0;
 
     // Species electronic energy
-    num = 0.0;
-    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-    }
-    Ee = Ru/Ms[iSpecies] * (num/denom);
+  //  num = 0.0;
+  //  denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+  //  for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+  //    num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+  //    denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+  //  }
+  //  Ee = Ru/Ms[iSpecies] * (num/denom);
 
     // Mixture total energy
-    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                    + Ev + Ee + Ef + 0.5*sqvel);
-  }
+  //  rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]) //Cat DONE
+    //                + Ev + Ee + Ef + 0.5*sqvel); 
+
+   //  Eve=Ev + Ee;
+   //  Etr= (3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]) //Cat DONE
+   //                 + Ev + Ee + Ef;
+
+   //                 std::cout << setprecision(9)<< "Mutation    Etr=" << Etr <<std::endl<<std::endl;
+
+   // std::cout << setprecision(9)<< "Mutation    Eve=" << Eve <<std::endl<<std::endl;
+   
+  //}
+
+    //std::cout << "Mutation   Nemo   rhoE=" << rhoE <<std::endl<<std::endl;
+
+    Energies = reactive->Get_MixtureEnergies(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+    //su2double Energy = reactive->Get_MixtureEnergy(MassFrac_Inf, Density_FreeStream, T, Tve);
+
+    //rhoE   = Density_FreeStream*(Energies[0] + Energies[1] + 0.5*sqvel);
+    //std::cout << setprecision(9)<< "Mutation      Etr=" << Energies[0]  <<std::endl<<std::endl;
+    //std::cout << setprecision(9)<< "Mutation      Eve=" << Energies[1] <<std::endl<<std::endl;
+    //std::cout << setprecision(9)<< "Mutation      rhoEsum=" << rhoE <<std::endl<<std::endl;
+
+    
+   // std::cout << setprecision(9)<< "Mutation   MixtureEnergy   E=" << Energy <<std::endl<<std::endl;
+    
+   // std::cout << setprecision(9)<< "Mutation    Etr=" << Etr <<std::endl<<std::endl;
+
+   // std::cout << setprecision(9)<< "Mutation    Eve=" << Eve <<std::endl<<std::endl;
+   
+     
 
   /*--- Viscous initialization ---*/
-  if (viscous) {
+  if (viscous) { 
 
     /*--- The dimensional viscosity is needed to determine the free-stream conditions.
           To accomplish this, simply set the non-dimensional coefficients to the
@@ -4331,6 +4564,10 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
             from the dimensional version of Sutherland's law or the constant
             viscosity, depending on the input option.---*/
 
+      Energy_FreeStream = (Energies[0] + 0.5*ModVel_FreeStream *ModVel_FreeStream);
+      Energy_Ref= 1.0;
+      Energy_FreeStreamND = Energy_FreeStream/Energy_Ref;
+
 
     }
 
@@ -4338,10 +4575,15 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     else {
 
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      //Cat gamma calcular aqui com base no freestream
+
+      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3)); 
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
       Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
+      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*(Gamma-1.0))+0.5*ModVel_FreeStream *ModVel_FreeStream ; //Cat gamma
+      Energy_FreeStreamND = Pressure_FreeStream/(Density_FreeStream*(Gamma-1.0))+0.5*ModVel_FreeStream *ModVel_FreeStream; //Cat gamma
+      Energy_Ref= Energy_FreeStream/Energy_FreeStreamND;
+
     }
 
     /*--- Turbulence kinetic energy ---*/
@@ -4352,12 +4594,17 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
-    Energy_FreeStream    = rhoE/Density_FreeStream;
+    Energy_FreeStream    = Energies[0] + 0.5*sqvel;    //rhoE/Density_FreeStream; 
+    Energy_FreeStreamND = Energies[0] + 0.5*sqvel; //Pressure_FreeStream/(Density_FreeStream*(Gamma-1.0))+0.5*ModVel_FreeStream *ModVel_FreeStream; //Cat gamma
+    Energy_Ref= Energy_FreeStream/Energy_FreeStreamND;
+
   }
 
   /*-- Compute the freestream energy. ---*/
 
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+
+  config->SetEnergy_FreeStream(Energy_FreeStream);
 
   /*--- Compute non dimensional quantities. By definition,
      Lref is one because we have converted the grid to meters. ---*/
@@ -4373,12 +4620,12 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2) //Cat gamma
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
@@ -4392,9 +4639,10 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
   Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
-  Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
+  Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref); 
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
   Froude            = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+  
 
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 
@@ -4430,16 +4678,19 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
-  Energy_FreeStreamND = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
+  //Energy_FreeStreamND = Pressure_FreeStream/(Density_FreeStream*(Gamma-1.0))+0.5*ModVel_FreeStream *ModVel_FreeStream; //Cat gamma
 
+  
+
+  
   if (viscous) {
 
     /*--- Constant viscosity model ---*/
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
+    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref); 
 
     /*--- Sutherland's model ---*/
 
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref); 
     config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
 
@@ -4448,9 +4699,13 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   }
 
-  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  
 
-  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
+
+  //Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; 
+
+  config->SetEnergy_Ref(Energy_Ref);
 
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
@@ -4459,7 +4714,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
 
-    cout.precision(6);
+    cout.precision(10);
 
     if (viscous) {
       cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
@@ -4483,7 +4738,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
       cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-      cout << "Specific Heat Ratio: "<< Gamma << endl;
+      cout << "Specific Heat Ratio: "<< Gamma << endl; 
       break;
 
     case IDEAL_GAS:
@@ -4768,7 +5023,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double **Jacobian_b, **DubDu;
   su2double rhoCvtr, rhoCvve, rho_el, RuSI, Ru;
   su2double rho, cs, P, rhoE, rhoEve, conc, Beta;
-  su2double *u, *Ms, *dPdU;
+  su2double *u,  *dPdU;
+
+  vector<su2double> Ms;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -4790,7 +5047,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 
   /*--- Load parameters from the config class ---*/
-  Ms = config->GetMolar_Mass();
+  Ms = reactive->Get_MolarMass();
 
   /*--- Rename for convenience ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -4902,6 +5159,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   delete [] u;
 }
 
+
+
 void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
@@ -4951,7 +5210,14 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  //for (iVertex = 0; iVertex < 1; iVertex++) {
+
+  
+
+  
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    //if (iPoint==35) std::cout << "Mutation iPoint=" << iPoint << std::endl << std::endl;
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
@@ -4966,8 +5232,10 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Retrieve solution at the boundary node & free-stream ---*/
       U_domain = node[iPoint]->GetSolution();
+      //if (iPoint==35) std::cout << "Mutation U_domain[5]=" << U_domain[5] << std::endl << std::endl;
       V_domain = node[iPoint]->GetPrimVar();
       U_infty  = node_infty->GetSolution();
+      //if (iPoint==35) std::cout << "Mutation U_infty[5]=" << U_infty[5] << std::endl << std::endl;
       V_infty  = node_infty->GetPrimVar();
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
@@ -4981,7 +5249,13 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
+      //std::cout << "BEFORE BC RESIDUAL" << std::endl << std::endl;
+
+      //std::cout << "Mutation Farfield iPoint=" << iPoint << std::endl << std::endl;
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      //std::cout << "AFTER BC RESIDUAL" << std::endl << std::endl;
+
+      //if (iPoint==35) std::cout << "Mutation Residual[5]=" << Residual[5] << std::endl << std::endl;
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -5051,7 +5325,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
   bool implicit             = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
-  su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
+  su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One; //Cat gamma para o futuro
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -5125,8 +5399,8 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = U_domain[nVar-2]/Density;
-        Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-        H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
+        Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2); 
+        H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total; //Cat saltar
         SoundSpeed2 = Gamma*Pressure/Density;
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -5317,11 +5591,9 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
 void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX, iSpecies;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure, P_Exit, Velocity[3],
-      Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
-      Area, UnitaryNormal[3];
+  su2double Pressure, P_Exit, Velocity[3], Velocity2, Entropy, Density, Energy, T, Tve, *cs, rho, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit, Area, UnitaryNormal[3];
 
   bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   su2double Gas_Constant     = config->GetGas_ConstantND();
@@ -5332,11 +5604,20 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
   su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+
+  cs = new su2double[nSpecies];
+
+
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    RHOS_INDEX    = node[iPoint]->GetRhosIndex();
+    RHO_INDEX     = node[iPoint]->GetRhoIndex();
+    T_INDEX       = node[iPoint]->GetTIndex();
+    TVE_INDEX     = node[iPoint]->GetTveIndex();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
@@ -5371,7 +5652,23 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Check whether the flow is supersonic at the exit. The type
        of boundary update depends on this. ---*/
+      T   = V_domain[T_INDEX];
+      Tve = V_domain[TVE_INDEX];
       Density = U_domain[0];
+      rho = V_domain[RHO_INDEX];
+
+
+
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_domain[RHOS_INDEX+iSpecies]/Density;
+
+
+      //Gamma     = reactive->Get_Gamma(cs, Density, T, Tve);
+
+    Gamma = config->GetGamma();
+
+      
+
+      
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity[iDim] = U_domain[iDim+1]/Density;
@@ -5379,8 +5676,14 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         Vn += Velocity[iDim]*UnitaryNormal[iDim];
       }
       Energy     = U_domain[nVar-1]/Density;
-      Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-      SoundSpeed = sqrt(Gamma*Pressure/Density);
+      Pressure   = (Gamma-1.0)*Density*(Energy-0.5*Velocity2); //Cat gamma: temos aqui density com bug, precisamos de cs, T,Tve provavelmente
+      // rho = sum (U_domain(Nspecies-1))
+      // rhos=U_domain(iSpecies); cs = rhos/rho
+      // T = V_domain(nSpecies)
+      // Tve = V_domain(nSpecies+1)
+      //calcular este gamma mais em cima, onde fizer sentido
+
+      SoundSpeed = sqrt(Gamma*Pressure/Density); //Cat gamma
       Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
 
       if (Mach_Exit >= 1.0) {
@@ -5403,19 +5706,19 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          der Weide, last modified 09-10-2007. ---*/
 
         Entropy = Pressure*pow(1.0/Density,Gamma);
-        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+        Riemann = Vn + 2.0*SoundSpeed/(Gamma-1.0);
 
         /*--- Compute the new fictious state at the outlet ---*/
         Density    = pow(P_Exit/Entropy,1.0/Gamma);
         Pressure   = P_Exit;
         SoundSpeed = sqrt(Gamma*P_Exit/Density);
-        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        Vn_Exit    = Riemann - 2.0*SoundSpeed/(Gamma-1.0);
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
-        Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+        Energy  = P_Exit/(Density*(Gamma-1.0)) + 0.5*Velocity2;
 
         /*--- Conservative variables, using the derived quantities ---*/
         U_outlet[0] = Density;
@@ -5481,11 +5784,15 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   delete [] V_domain;
   delete [] V_outlet;
   delete [] Normal;
+  delete [] cs;
 
 }
 
 void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solution_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  
+
   unsigned short iDim, iVar, iSpecies, iEl;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, *Mass_Frac, Velocity2, soundspeed;
@@ -5496,10 +5803,13 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *Ms, *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
+  su2double  *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
   unsigned short nEl, nHeavy, *nElStates;
+
+  vector<su2double> Ms, Cvtr, Energies, Cvve, Cv;
+  
   Tref                    = config->GetRefTemperature();
-  Ms                      = config->GetMolar_Mass();
+  Ms                      = reactive->Get_MolarMass();
   xi                      = config->GetRotationModes();
   nElStates               = config->GetnElStates();
   hf                      = config->GetEnthalpy_Formation();
@@ -5512,9 +5822,16 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
   su2double Ru = 1000.0*RuSI;
 
+  
+
   su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
   su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
   su2double *Normal = new su2double[nDim];
+  Mass_Frac = new su2double[nSpecies];
+
+ 
+  
+
 
   bool ionization = config->GetIonization();
 
@@ -5525,24 +5842,43 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
    so all flow variables can be imposed at the inlet.
    First, retrieve the specified values for the primitive variables. ---*/
   //ASSUME TVE = T for the time being
+
+  
   Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
+  //Mass_Frac      = config->GetMassFrac_FreeStream();
   Temperature    = config->GetInlet_Temperature(Marker_Tag);
   Pressure       = config->GetInlet_Pressure(Marker_Tag);
   Velocity       = config->GetInlet_Velocity(Marker_Tag);
   Temperature_ve = Temperature;
 
+ 
   /*--- Compute Density and Species Densities ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
     denom += Mass_Frac[iSpecies] * (Ru/Ms[iSpecies]) * Temperature;
+    }
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     denom += Mass_Frac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Temperature_ve;
   Density = Pressure / denom;
 
+ 
+
+  
+  Cvtr     = reactive->Get_CvTraRotSpecies(Mass_Frac, Density, Temperature, Temperature_ve);
+
+ 
+  
+
   /*--- Compute Soundspeed and Velocity squared ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     conc += Mass_Frac[iSpecies]*Density/Ms[iSpecies];
-    rhoCvtr += Density*Mass_Frac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+    //rhoCvtr += Density*Mass_Frac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat DONE
+    rhoCvtr += Density*Mass_Frac[iSpecies] * Cvtr[iSpecies];
   }
+
+ 
+
+  
+
   soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure/Density);
 
   Velocity2 = 0.0;
@@ -5582,13 +5918,18 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
     Ee = Ru/Ms[iSpecies] * (num/denom);
 
     // Mixture total energy
-    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
-                    + Ev + Ee + Ef + 0.5*Velocity2);
+    //rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (Temperature-Tref[iSpecies])
+                    //+ Ev + Ee + Ef + 0.5*Velocity2);
 
     // Mixture vibrational-electronic energy
-    rhoEve += rhos * (Ev + Ee);
+    //rhoEve += rhos * (Ev + Ee);
   }
 
+  Energies = reactive->Get_MixtureEnergies(Mass_Frac, Density, Temperature, Temperature_ve);
+
+  rhoE   = Density*(Energies[0] + 0.5*Velocity2);
+  rhoEve = Density*Energies[1];
+  
   /*--- Setting Conservative Variables ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     U_inlet[iSpecies] = Mass_Frac[iSpecies]*Density;
@@ -5693,6 +6034,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   delete [] V_domain;
   delete [] V_inlet;
   delete [] Normal;
+  delete [] Mass_Frac;
 
 }
 
@@ -6346,8 +6688,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   ExtAverageOmega           = NULL;
 
   /*--- Set the gamma value ---*/
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
+  //Gamma = config->GetGamma(); //Cat gamma apagar
+  //Gamma_Minus_One = Gamma - 1.0; //Cat gamma
 
   /*--- Define geometry constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
@@ -6371,7 +6713,16 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Perform the non-dimensionalization for the flow equations using the
     specified reference values. ---*/
+
+  if(config->GetMUTATION_PP()) reactive = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive = new CReactiveHardCode();
+
+  reactive->InitializeMixture(config);
+  
+
+  
   SetNondimensionalization(geometry, config, iMesh);
+  
 
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -6823,6 +7174,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                                        nPrimVar, nPrimVarGrad, config);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
+  
+
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     check = node[iPoint]->SetPrimVar_Compressible(config);
@@ -6832,7 +7185,9 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
       unsigned short iEl, nHeavy, nEl, *nElStates;
       su2double RuSI, Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
       su2double rho, rhos, Ef, Ev, Ee, soundspeed;
-      su2double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      su2double *xi, *thetav, **thetae, **g, *Tref, *hf;
+
+      vector<su2double> Ms, Cvtr, Energies;
 
       /*--- Determine the number of heavy species ---*/
       ionization = config->GetIonization();
@@ -6841,7 +7196,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 
       /*--- Load variables from the config class --*/
       xi        = config->GetRotationModes();      // Rotational modes of energy storage
-      Ms        = config->GetMolar_Mass();         // Species molar mass
+      Ms        = reactive->Get_MolarMass();         // Species molar mass
       thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
       thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
       g         = config->GetElDegeneracy();       // Degeneracy of electron states
@@ -6861,6 +7216,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
       conc    = 0.0;
       rhoCvtr = 0.0;
 
+
       /*--- Calculate mixture density from supplied primitive quantities ---*/
       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
         denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
@@ -6868,10 +7224,16 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
         denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
       rho = Pressure_Inf / denom;
 
+      
+      Cvtr     = reactive->Get_CvTraRotSpecies(MassFrac_Inf, rho, T, Tve);
+
+      
+
       /*--- Calculate sound speed and extract velocities ---*/
       for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
         conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
-        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+        //rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies]; //Cat DONE
+        rhoCvtr += rho*MassFrac_Inf[iSpecies] * Cvtr[iSpecies];
       }
       soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
       for (iDim = 0; iDim < nDim; iDim++){
@@ -6901,19 +7263,27 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
         Ee = Ru/Ms[iSpecies] * (num/denom);
 
         // Mixture total energy
-        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-                        + Ev + Ee + Ef + 0.5*sqvel);
+        //rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies]) //Cat DONE
+                        //+ Ev + Ee + Ef + 0.5*sqvel);
 
-        // Mixture vibrational-electronic energy
-        rhoEve += rhos * (Ev + Ee);
+        // Mixture vibrational-electronic energy //Cat DONE
+        //rhoEve += rhos * (Ev + Ee);
       }
       for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
         // Species formation energy
         Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
 
         // Electron t-r mode contributes to mixture vib-el energy
-        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+        //rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]); //Cat DONE
       }
+
+      
+
+      Energies = reactive->Get_MixtureEnergies(MassFrac_Inf, rho, T, Tve);
+
+      rhoE   = rho*(Energies[0] + 0.5*sqvel);
+      rhoEve = rho*Energies[1];
+      
 
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -7037,6 +7407,8 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
     delete [] Buffet_Sensor;
   }
 
+   if (reactive != NULL) delete [] reactive;
+
 }
 
 void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -7155,11 +7527,14 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   su2double Mean_SoundSpeed, Mean_ProjVel;
   su2double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
   su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
-  su2double cp, cv, cvve, RuSI, Ru, *xi, *Ms, Na, Mmix, Rmix;
+  su2double cp, cv, cvve, RuSI, Ru, *xi,  Na, Mmix, Rmix;
   su2double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
   su2double *V_i, *V_j, *X;
   su2double UnitNormal[3];
   su2double tmp;
+
+
+  vector<su2double> Ms;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -7187,7 +7562,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 
   /*--- Get from config ---*/
   xi = config->GetRotationModes();
-  Ms = config->GetMolar_Mass();
+  Ms = reactive->Get_MolarMass();
 
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -7396,7 +7771,7 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     ); //std::cout << "Mutation RHO_INDEX="  << node[0]->GetRhoIndex()<< std::endl;
   numerics->SetPIndex      ( node[0]->GetPIndex()       );
   numerics->SetTIndex      ( node[0]->GetTIndex()       );
   numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
@@ -7449,8 +7824,13 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
                                         node[jPoint]->GetThermalConductivity_ve() );
 
+    std::cout << "Mutation iPoint=" <<iPoint << std::endl;
+    std::cout << "Mutation jPoint=" <<jPoint << std::endl;
+
     /*--- Compute and update residual ---*/
-    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config); //Cat upw
+
+    //std::cout << "Mutation Viscous_residual 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
@@ -7566,38 +7946,38 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
         eAxi_local++;
     }
 
-    /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
-
-    /*--- Check for errors in the Chemical source term ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (err)
-        break;
-      if (Residual[iVar] != Residual[iVar])
-        err = true;
-      if (implicit)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
-            err = true;
-            break;
-          }
-    }
-
-    /*--- Apply the chemical sources to the linear system ---*/
-    if (!err) {
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    } else
-      eChm_local++;
-
-    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-    if (config->GetExtraOutput()) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-      }
-    }
+    /*--- Compute the non-equilibrium chemistry ---*/    //Chemistry
+    //numerics->ComputeChemistry(Residual, Jacobian_i, config);
+//
+    ///*--- Check for errors in the Chemical source term ---*/
+    //err = false;
+    //for (iVar = 0; iVar < nVar; iVar++) {
+    //  if (err)
+    //    break;
+    //  if (Residual[iVar] != Residual[iVar])
+    //    err = true;
+    //  if (implicit)
+    //    for (jVar = 0; jVar < nVar; jVar++)
+    //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) {
+    //        err = true;
+    //        break;
+    //      }
+    //}
+//
+    ///*--- Apply the chemical sources to the linear system ---*/
+    //if (!err) {
+    //  LinSysRes.SubtractBlock(iPoint, Residual);
+    //  if (implicit)
+    //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    //} else
+    //  eChm_local++;
+//
+    ///*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    //if (config->GetExtraOutput()) {
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+    //  }
+    //}
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
@@ -8476,8 +8856,8 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           Ys   = V[RHOS_INDEX+iSpecies]/rho;
-          eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
-          hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
+          eves = node[iPoint]->CalcEve(config, V, iSpecies);
+          hs   = node[iPoint]->CalcHs(config, V, iSpecies);
           //          Res_Visc[iSpecies] = -rho*Ds[iSpecies]*dYdn[iSpecies] + Ys*SdYdn;
           //          Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
           //          Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
@@ -8685,15 +9065,17 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   /*--- Local variables ---*/
   bool implicit;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX;
+  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double pcontrol;
-  su2double rho, *eves, *hs, RuSI, Ru, *Ms, *xi;
-  su2double *dTdU, *dTvedU, *Cvtr, *Cvve;
+  su2double rho, T, Tve, *eves, *hs, RuSI, Ru,  *xi, *rhos, *cs;
+  su2double *dTdU, *dTvedU, *Cvve;
   su2double *Normal, Area, dij, UnitNormal[3];
   su2double *Di, *Dj, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn;
   su2double **GradY;
   su2double **dVdU;
+
+  vector<su2double> Ms, Cvtr;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -8708,23 +9090,27 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   RHOS_INDEX    = node[0]->GetRhosIndex();
   RHO_INDEX     = node[0]->GetRhoIndex();
   T_INDEX       = node[0] ->GetTIndex();
+  TVE_INDEX     = node[0] ->GetTveIndex();
 
   /*--- Allocate arrays ---*/
   hs    = new su2double[nSpecies];
   Yj    = new su2double[nSpecies];
   dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
+  rhos  = new su2double[nSpecies];
+  cs  = new su2double[nSpecies];
+  
+
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
   dVdU = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     dVdU[iVar] = new su2double[nVar];
-  Cvtr = new su2double[nSpecies];
-
+  
   /*--- Get universal information ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
-  Ms   = config->GetMolar_Mass();
+  Ms   = reactive->Get_MolarMass();
   xi   = config->GetRotationModes();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
@@ -8769,8 +9155,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Dj = node[jPoint]->GetDiffusionCoeff();
       eves = node[iPoint]->GetEve();
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        hs[iSpecies] = node[iPoint]->CalcHs(config, Vi[T_INDEX],
-                                            eves[iSpecies], iSpecies);
+        hs[iSpecies] = node[iPoint]->CalcHs(config, Vi, iSpecies);
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       }
       rho    = Vi[RHO_INDEX];
@@ -8819,9 +9204,16 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
           dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
         }
 
+        T      = Vi[T_INDEX];
+        Tve    = Vi[TVE_INDEX];
+
         /*--- Calculate supplementary quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+          cs[iSpecies] = Vi[RHOS_INDEX+iSpecies]/rho;
+        }
+
+        Cvtr = reactive->Get_CvTraRotSpecies(cs, rho, T, Tve);
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         }
         Cvve = node[iPoint]->GetCvve();
 
@@ -8871,5 +9263,6 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
-  delete [] Cvtr;
+  delete [] cs;
+ 
 }

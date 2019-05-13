@@ -47,6 +47,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "fluid_model.hpp"
+#include "reactive_structure.hpp"
 
 
 using namespace std;
@@ -59,8 +60,8 @@ using namespace std;
 class CVariable {
 protected:
   
-  su2double *Solution,    /*!< \brief Solution of the problem. */
-  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  //su2double *Solution,    /*!< \brief Solution of the problem. */
+  //*Solution_Old;      /*!< \brief Old solution of the problem R-K. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -91,8 +92,13 @@ protected:
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+
+
   
 public:
+
+  su2double *Solution,    /*!< \brief Solution of the problem. */
+  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
   
   /*!
    * \brief Constructor of the class.
@@ -1383,12 +1389,12 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  virtual su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species);
+  virtual su2double CalcEve(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
    */
-  virtual su2double CalcHs(CConfig *config, su2double val_T, su2double val_eves, unsigned short val_Species);
+  virtual su2double CalcHs(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$Cv_s\f$, for input species (not including KE)
@@ -4219,9 +4225,16 @@ protected:
   su2double *dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   su2double *eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   su2double *Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
+  su2double *hs;
 
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+
+  CReactive    *reactive_TNE2variable; 
+  CReactive    *r_TNE2variable; 
+
+  su2double *cs, *massfrac;
+
 
 public:
 
@@ -4262,10 +4275,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTNE2EulerVariable(su2double *val_solution, unsigned short val_ndim,
-                     unsigned short val_nvar, unsigned short val_nvarprim,
-                     unsigned short val_nvarprimgrad, CConfig *config);
-
+  
   /*!
    * \brief Destructor of the class.
    */
@@ -4348,7 +4358,7 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  su2double CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species);
+  su2double CalcEve(CConfig *config, su2double *PrimitiveVar, unsigned short val_Species);
 
   /*!
    * \brief Returns the stored value of Eve at the specified node
@@ -4358,7 +4368,7 @@ public:
   /*!
    * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
    */
-  su2double CalcHs(CConfig *config, su2double val_T, su2double val_eves,
+  su2double CalcHs(CConfig *config, su2double *PrimitiveVar,
                    unsigned short val_Species);
 
   /*!

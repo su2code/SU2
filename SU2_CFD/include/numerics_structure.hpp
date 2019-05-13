@@ -51,6 +51,7 @@
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "variable_structure.hpp"
+#include "reactive_structure.hpp"
 
 using namespace std;
 
@@ -2423,6 +2424,7 @@ private:
   su2double a_j, P_j, h_j, ProjVel_j;
   su2double sq_vel, Proj_ModJac_Tensor_ij;
   unsigned short nSpecies, nVar, nDim;
+  CReactive    *reactive_AUSM;
 
 public:
 
@@ -2470,6 +2472,8 @@ private:
   su2double *rhos_j, *u_j;
   su2double *dPdU_i, *dPdU_j;
   unsigned short nSpecies, nVar, nDim;
+  CReactive *reactive_AUSMPWplus;
+
 
 public:
 
@@ -2528,6 +2532,7 @@ private:
   su2double R;
   su2double *RoedPdU;
   unsigned short nPrimVar, nPrimVarGrad;
+  CReactive    *reactive_AUSMPLUSUP2;
 
 public:
 
@@ -4247,6 +4252,7 @@ private:
   su2double *dkf, *dkb, *dRfok, *dRbok, *A;
   su2double *Cvvs, *Cvvsst;
   su2double *Cves;
+  CReactive *reactive_source;
   //  CVariable *var;
 
 public:

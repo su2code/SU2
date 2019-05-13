@@ -62,6 +62,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
+
+  
+
   unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -75,20 +78,33 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
       break;
     case SPACE_UPWIND:
+      //std::cout << "Mutation Space_Integration 1"  << std::endl<< std::endl<< std::endl<< std::endl;
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
+      //std::cout << "Mutation Space_Integration 2"  << std::endl<< std::endl<< std::endl<< std::endl;
       break;
     case FINITE_ELEMENT:
       solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
       break;
   }
   
+  //std::cout << "Mutation Space_Integration 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+  
+
   /*--- Compute viscous residuals ---*/
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
+
+  //std::cout << "Mutation Space_Integration 4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+ 
   
   /*--- Compute source term residuals ---*/
 
+  //std::cout << "Mutation Space_Integration 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+
+  //std::cout << "Mutation Space_Integration 4"  << std::endl<< std::endl<< std::endl<< std::endl;
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
   
@@ -107,14 +123,21 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
 
+  //std::cout << "Mutation Space_Integration 5"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  
 
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  
+
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
       case EULER_WALL:
+        //std::cout << "Mutation Space_Integration 6"  << std::endl<< std::endl<< std::endl<< std::endl;
         solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        //std::cout << "Mutation Space_Integration 7"  << std::endl<< std::endl<< std::endl<< std::endl;
         break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -152,7 +175,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       	}
       	break;
       case FAR_FIELD:
+        //std::cout << "Mutation Space_Integration 8"  << std::endl<< std::endl<< std::endl<< std::endl;
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        //std::cout << "Mutation Space_Integration 9"  << std::endl<< std::endl<< std::endl<< std::endl;
         break;
       case SYMMETRY_PLANE:
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -209,6 +234,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         }
         break;
     } 
+
+    //std::cout << "Mutation Space_Integration 10"  << std::endl<< std::endl<< std::endl<< std::endl;
+
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
@@ -337,6 +365,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Fluid time integration schemes ---*/
 
+  //std::cout << "Mutation Time_Integration 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+ // std::cout << "Mutation Time_Integration 1"  << config->GetKind_TimeIntScheme() << std::endl<< std::endl<< std::endl<< std::endl;
+
   if (KindSolver != FEM_ELASTICITY) {
 
     switch (config->GetKind_TimeIntScheme()) {
@@ -347,7 +379,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
         solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
         break;
       case (EULER_EXPLICIT):
+
+        //std::cout << "Mutation Time_Integration 2"  << std::endl<< std::endl<< std::endl<< std::endl;
         solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+        //std::cout << "Mutation Time_Integration 3"  << std::endl<< std::endl<< std::endl<< std::endl;
         break;
       case (EULER_IMPLICIT):
         solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);

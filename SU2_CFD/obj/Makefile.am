@@ -86,6 +86,9 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
+  ../include/reactive_structure.hpp \
+  ../include/reactive_structure.inl \
+  ../include/cmutation.hpp \
   ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
@@ -149,8 +152,10 @@ libSU2Core_sources = \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_elasticity.cpp \
   ../src/variable_structure.cpp \
-  ../src/variable_template.cpp
-
+  ../src/variable_template.cpp \
+  ../src/reactive_structure.cpp \
+  ../src/cmutation.cpp 
+  
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
@@ -169,7 +174,8 @@ libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
-su2_cfd_ldadd += @MUTATIONPP_LD@
+libSU2Core_cxx_flags += @MUTATIONPP_CXX@
+libSU2Core_libadd += @MUTATIONPP_LD@
 # endif
 
 if BUILD_NORMAL

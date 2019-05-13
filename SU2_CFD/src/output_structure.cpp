@@ -3146,6 +3146,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
 
           if (compressible) {
+            //std::cout << "mutation 2 v2=" << solver[TNE2_SOL]->node[iPoint]->GetVelocity2() << std::endl << std::endl; 
             Buffer_Send_Var[jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
           }
@@ -13553,7 +13554,9 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
     if (config[iZone]->GetWrt_Binary_Restart()) {
       if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
+      //std::cout << "Mutation helloooo 1" <<  std::endl << std::endl;
       WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
+      //std::cout << "Mutation helloooo 2" <<  std::endl << std::endl;
     } else {
       if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
       WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
@@ -13899,8 +13902,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     if ((config->GetOutput_FileFormat() == PARAVIEW) ||
         (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
+      std::cout << "mutation 1 not tne2" <<  std::endl << std::endl;
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
+      std::cout << "mutation 2 not tne2 " <<  std::endl << std::endl;
     }
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
@@ -14158,6 +14163,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
+
+        //std::cout << "Mutation GetVelocity2()=" << sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2()) << std::endl;
+        //std::cout << "Mutation GetSoundSpeed()=" << solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed() << std::endl;
+
         Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
         
@@ -15469,6 +15478,8 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   bool grid_movement        = (config->GetGrid_Movement());
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
 
+  string Species, DensitySpecies;
+
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -15526,10 +15537,22 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   nVar_Par += nVar_Consv_Par;
 
   // need to generalize
-  if (config->GetKind_GasModel() == N2){
-      Variable_Names.push_back("Density[N2]");
-      Variable_Names.push_back("Density[N]");
+  //if (config->GetKind_GasModel() == N2){
+   //   Variable_Names.push_back("Density[N]");
+   //   Variable_Names.push_back("Density[O]"); 
+   //   Variable_Names.push_back("Densit[NO]");
+   //   Variable_Names.push_back("Densit[N2]"); 
+   //   Variable_Names.push_back("Densit[O2]");
+  
+  //}
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+     std::string Species = std::to_string(iSpecies);
+     DensitySpecies = "Density[" + Species + "]";
+     Variable_Names.push_back(DensitySpecies);
   }
+
+  //std::cout << "Mutation 1" <<  std::endl<< std::endl<< std::endl<< std::endl;
 
 
   Variable_Names.push_back("Momentum_x");
@@ -15537,6 +15560,9 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   if (geometry->GetnDim() == 3) Variable_Names.push_back("Momentum_z");
   Variable_Names.push_back("Energy");
   Variable_Names.push_back("Electronic Energy");
+  //nVar_Par += 1; Variable_Names.push_back("Temperature");
+  //nVar_Par += 1; Variable_Names.push_back("Temperature_VE");
+
 
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
@@ -15625,16 +15651,21 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
     nVar_Par += 1;
     Variable_Names.push_back("Pressure");
 
-    nVar_Par += 2;
+    nVar_Par += 3;
     Variable_Names.push_back("Temperature");
+    Variable_Names.push_back("Tve");
     Variable_Names.push_back("Mach");
+
+   // std::cout << "config->GetOutput_FileFormat() " << config->GetOutput_FileFormat() << std::endl << std::endl;
 
     nVar_Par += 1;
     if ((config->GetOutput_FileFormat() == PARAVIEW) ||
         (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
+      
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
+      
     }
 
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
@@ -15823,10 +15854,18 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
 
       /*--- Load the conservative variable states for the mean flow variables. ---*/
 
+      
+
       for (jVar = 0; jVar < nVar_First; jVar++) {
         Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
         iVar++;
       }
+
+      
+      //Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetTemperature();
+      //iVar++;
+      //Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetTemperature_ve();
+      //iVar++;
 
       /*--- If this is RANS, i.e., the second solver container is not empty,
        then load data for the conservative turbulence variables. ---*/
@@ -15893,6 +15932,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetDensity(); iVar++;
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetPressure(); iVar++;
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetTemperature(); iVar++;
+        Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve(); iVar++;
         Local_Data[jPoint][iVar] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())/solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         Local_Data[jPoint][iVar] = (solver[TNE2_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
 
@@ -19738,6 +19778,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- For now, create a temp 1D buffer to load up the data for writing.
    This will be replaced with a derived data type most likely. ---*/
 
+  //std::cout << "Mutation wrt rst 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
     for (iVar = 0; iVar < nVar_Par; iVar++)
       buf[iPoint*nVar_Par+iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
@@ -19791,11 +19833,15 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    fixed length of 33 for the string length to match with CGNS. This is 
    needed for when we read the strings later. ---*/
 
+  //std::cout << "Mutation wrt rst 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iVar = 0; iVar < nVar_Par; iVar++) {
     strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
     file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
   }
+
+  //std::cout << "Mutation wrt rst 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
@@ -19854,7 +19900,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   }
 
   /*--- Error check opening the file. ---*/
-
+//std::cout << "Mutation wrt rst 5"  << std::endl<< std::endl<< std::endl<< std::endl;
   if (ierr) {
     SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
@@ -19863,8 +19909,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    which we will need in order to read the file later. Also, write the 
    variable string names here. Only the master rank writes the header. ---*/
 
+  //std::cout << "Mutation wrt rst 4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   if (rank == MASTER_NODE) {
     MPI_File_write(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
+    //std::cout << "Mutation wrt rst 4.1"  << std::endl<< std::endl<< std::endl<< std::endl;
     file_size += (su2double)var_buf_size*sizeof(int);
 
     /*--- Write the variable names to the file. Note that we are adopting a
@@ -19873,11 +19922,16 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
     for (iVar = 0; iVar < nVar_Par; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
+      //std::cout << "Mutation wrt rst 4.2"  << std::endl<< std::endl<< std::endl<< std::endl;
       strcpy(str_buf, Variable_Names[iVar].c_str());
+      //std::cout << "Mutation wrt rst 4.3"  << std::endl<< std::endl<< std::endl<< std::endl;
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+      //std::cout << "Mutation wrt rst 4.4"  << std::endl<< std::endl<< std::endl<< std::endl;
       file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
     }
   }
+
+  //std::cout << "Mutation wrt rst 5"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Compute the offset for this rank's linear partition of the data in bytes.
    After the calculations above, we have the partition sizes store in nPoint_Linear
@@ -19958,6 +20012,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   }
   
   /*--- Free temporary data buffer for writing the binary file. ---*/
+
+  //std::cout << "Mutation wrt rst 6"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   delete [] buf;
 

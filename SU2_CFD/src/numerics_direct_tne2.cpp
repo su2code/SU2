@@ -14,6 +14,7 @@
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *  - Prof. Rafael Palacios' group at Imperial College London.
+ 
  *  - Prof. Vincent Terrapon's group at the University of Liege.
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
@@ -48,7 +49,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  ionization = config->GetIonization();
+  //ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
   nVar         = val_nVar;
@@ -128,7 +129,7 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    RoeEve[iSpecies] = var->CalcEve(config, RoeV[TVE_INDEX], iSpecies);
+    RoeEve[iSpecies] = var->CalcEve(config, RoeV, iSpecies);
 
   /*--- Calculate derivatives of pressure ---*/
   var->CalcdPdU(RoeV, RoeEve, config, RoedPdU);
@@ -230,7 +231,7 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
                                                         config) {
 
   /*--- Set booleans from CConfig settings ---*/
-  ionization = config->GetIonization();
+  //ionization = config->GetIonization();
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 
   /*--- Set iterator size ---*/
@@ -383,8 +384,8 @@ void CUpwMSW_TNE2::ComputeResidual(su2double *val_residual,
   ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Evest_i[iSpecies] = var->CalcEve(config, Vst_i[TVE_INDEX], iSpecies);
-    Evest_j[iSpecies] = var->CalcEve(config, Vst_j[TVE_INDEX], iSpecies);
+    Evest_i[iSpecies] = var->CalcEve(config, Vst_i, iSpecies);
+    Evest_j[iSpecies] = var->CalcEve(config, Vst_j, iSpecies);
   }
   var->CalcdPdU(Vst_i, Evest_i, config, dPdUst_i);
   var->CalcdPdU(Vst_j, Evest_j, config, dPdUst_j);
@@ -469,6 +470,8 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
+
+
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
@@ -486,6 +489,15 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
+
+
+
+  if(config->GetMUTATION_PP()) reactive_AUSM = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive_AUSM = new CReactiveHardCode();
+
+  reactive_AUSM->InitializeMixture(config);
+
+  //ionization = reactive_AUSM->Get_Ionization();
 }
 
 CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
@@ -499,6 +511,7 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
+  delete [] reactive_AUSM; 
 }
 
 void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
@@ -508,10 +521,16 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
-  su2double Cvtrs;
-  su2double RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double  T_i, T_j, Tve_i, Tve_j, *cs_i, *cs_j;
+  su2double RuSI, Ru, rho_el_i, rho_el_j,  *xi;
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+
+  vector<su2double> Ms, Cvtrs_i, Cvtrs_j, Cvves_i, Cvves_j, Cv_i, Cv_j;
+
+  //std::cout << "Mutation AUSM 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  //std::cout <<"Mutation AUSM" << std::endl << std::endl;
 
   /*--- Compute geometric quantities ---*/
   Area = 0;
@@ -523,7 +542,8 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
-  Ms   = config->GetMolar_Mass();
+  Ms   = reactive_AUSM->Get_MolarMass(); //Cat DONE
+  //Ms   = config->GetMolar_Mass(); 
   xi   = config->GetRotationModes();
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
@@ -541,6 +561,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
     rho_el_j = 0.0;
   }
 
+  cs_i    = new su2double[nSpecies];
+  cs_j    = new su2double[nSpecies];
+  
+
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -550,6 +574,9 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++) {
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
+    //std::cout << "Mutation u_i[iDim]=" << u_i[iDim] << std::endl << std::endl; 
+    //std::cout << "Mutation u_j[iDim]=" << u_j[iDim] << std::endl << std::endl;
+
   }
 
   P_i       = V_i[P_INDEX];
@@ -560,12 +587,54 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   a_j       = V_j[A_INDEX];
   rho_i     = V_i[RHO_INDEX];
   rho_j     = V_j[RHO_INDEX];
+  T_i       = V_i[T_INDEX];
+  T_j       = V_j[T_INDEX];
+  Tve_i     = V_i[TVE_INDEX];
+  Tve_j     = V_j[TVE_INDEX];
   e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
   e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
   rhoCvtr_i = V_i[RHOCVTR_INDEX];
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  //std::cout << "Mutation a_i[iDim]=" << a_i << std::endl << std::endl; 
+    //Fstd::cout << "Mutation a_j[iDim]=" << a_j << std::endl << std::endl;
+
+  
+ // std::cout << "Mutation V_i[RHOS_INDEX]=" << V_i[RHOS_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_i[RHOS_INDEX+1]=" << V_i[RHOS_INDEX+1]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[RHOS_INDEX]=" << V_j[RHOS_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[RHOS_INDEX+1]=" << V_j[RHOS_INDEX+1]<< std::endl << std::endl; 
+//
+//
+ // std::cout << "Mutation V_i[P_INDEX]=" << V_i[P_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[P_INDEX]=" << V_j[P_INDEX]<< std::endl << std::endl;  
+ // std::cout << "Mutation V_i[H_INDEX]=" << V_i[H_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[H_INDEX]=" << V_j[H_INDEX]<< std::endl << std::endl;  
+ // std::cout << "Mutation V_i[A_INDEX]=" << V_i[A_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[A_INDEX]=" << V_j[A_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_i[RHO_INDEX]=" << V_i[RHO_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[RHO_INDEX]=" << V_j[RHO_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_i[T_INDEX]=" << V_i[T_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[T_INDEX]=" << V_j[T_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_i[TVE_INDEX]=" << V_i[TVE_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[TVE_INDEX]=" << V_j[TVE_INDEX]<< std::endl << std::endl; 
+//
+ // std::cout << "Mutation U_i[nSpecies+nDim+1]=" << U_i[nSpecies+nDim+1] << std::endl << std::endl;
+ // std::cout << "Mutation U_j[nSpecies+nDim+1]=" << U_j[nSpecies+nDim+1] << std::endl << std::endl;
+//
+ // std::cout << "Mutation V_i[RHOCVTR_INDEX]=" << V_i[RHOCVTR_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[RHOCVTR_INDEX]=" << V_j[RHOCVTR_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_i[RHOCVVE_INDEX]=" << V_i[RHOCVVE_INDEX]<< std::endl << std::endl; 
+ // std::cout << "Mutation V_j[RHOCVVE_INDEX]=" << V_j[RHOCVVE_INDEX]<< std::endl << std::endl; 
+
+  
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    cs_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho_i;
+    cs_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/rho_j;
+  }
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -610,12 +679,37 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   FcL[nSpecies+nDim+1] = rho_i*a_i*e_ve_i;
   FcR[nSpecies+nDim+1] = rho_j*a_j*e_ve_j;
 
+  //std::cout << "Mutation rho_i=" << rho_i << std::endl << std::endl; 
+  //std::cout << "Mutation rho_j=" << rho_j << std::endl << std::endl; 
+  //std::cout << "Mutation e_ve_i=" << e_ve_i << std::endl << std::endl; 
+  //std::cout << "Mutation e_ve_j=" << e_ve_j << std::endl << std::endl; 
+
   /*--- Compute numerical flux ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
+  
+  
+  //std::cout << "Mutation Phi=" << Phi << std::endl << std::endl; 
+  //std::cout << "Mutation FcL[iVar]=" << FcL[iVar] << std::endl << std::endl; 
+  //std::cout << "Mutation FcR[iVar]=" << FcR[iVar] << std::endl << std::endl; 
+  //std::cout << "Mutation Area=" << Area << std::endl << std::endl; 
+  //std::cout << "Mutation val_residual[" << iVar << "]=" << val_residual[iVar] << std::endl << std::endl; 
+  }
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
+
+
+  
+
+  //Cvtrs_i = reactive_AUSM->Get_CvTraRotSpecies(cs_i, rho_i, T_i, Tve_i);
+  //Cvtrs_j = reactive_AUSM->Get_CvTraRotSpecies(cs_j, rho_j, T_j, Tve_j);
+
+  //Cvve_i  = reactive_AUSM->Get_CvVibElSpecies(cs_i, rho_i, T_i, Tve_i);
+  //Cvve_j  = reactive_AUSM->Get_CvVibElSpecies(cs_j, rho_j, T_j, Tve_j);
+
+  //Cv_i.resize(nSpecies);
+  //Cv_j.resize(nSpecies);
 
   if (implicit) {
 
@@ -632,10 +726,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
     /*--- Sound speed derivatives: Species density ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+      //Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies]; //Cat DONE
+      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs_i[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
           + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs_j[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
           + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
@@ -833,6 +927,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
       }
     }
   }
+
+  delete [] cs_i;
+  delete [] cs_j;
+
 }
 
 CUpwAUSMPLUSUP2_TNE2::CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned short val_nVar,
@@ -885,6 +983,13 @@ CUpwAUSMPLUSUP2_TNE2::CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned sho
     invP_Tensor[iVar] = new su2double [nVar];
   }
 
+
+  if(config->GetMUTATION_PP()) reactive_AUSMPLUSUP2 = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive_AUSMPLUSUP2 = new CReactiveHardCode();
+
+  reactive_AUSMPLUSUP2->InitializeMixture(config);
+
+
 }
 
 CUpwAUSMPLUSUP2_TNE2::~CUpwAUSMPLUSUP2_TNE2(void) {
@@ -914,17 +1019,22 @@ CUpwAUSMPLUSUP2_TNE2::~CUpwAUSMPLUSUP2_TNE2(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
+  delete [] reactive_AUSMPLUSUP2;
+  
 }
 
 void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   unsigned short iDim, iVar, jVar, kVar, iSpecies, nHeavy, nEl;
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
-  su2double Cvtrs;
-  su2double RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double RuSI, Ru, rho_el_i, rho_el_j,*xi;
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
   su2double sq_veli, sq_velj;
+  su2double  T_i, T_j, Tve_i, Tve_j, *cs_i, *cs_j;
+  su2double Gamma_i, Gamma_j;
+
+  vector<su2double> Ms, Cvtrs_i, Cvtrs_j;
 
   /*--- Face area ---*/
   Area = 0.0;
@@ -937,13 +1047,12 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
-  Ms    = config->GetMolar_Mass();
+  Ms    = reactive_AUSMPLUSUP2->Get_MolarMass(); //Cat DONE
   xi    = config->GetRotationModes();
   RuSI  = UNIVERSAL_GAS_CONSTANT;
   Ru    = 1000.0*RuSI;
   Minf  = config->GetMach();
-  Gamma = config->GetGamma();
-
+  
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) {
     nHeavy = nSpecies-1;
@@ -956,6 +1065,7 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
     rho_el_i = 0.0;
     rho_el_j = 0.0;
   }
+
 
   /*--- Extracting primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
@@ -986,6 +1096,16 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
+  T_i       = V_i[T_INDEX];
+  T_j       = V_j[T_INDEX];
+  Tve_i     = V_i[TVE_INDEX];
+  Tve_j     = V_j[TVE_INDEX];
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    cs_i[iSpecies] = rhos_i[iSpecies]/rho_i;
+    cs_j[iSpecies] = rhos_j[iSpecies]/rho_j;
+  }
+
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -994,9 +1114,12 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
     ProjVel_j += u_j[iDim]*UnitNormal[iDim];
   }
 
+  Gamma = config->GetGamma();
+
+
   /*--- Compute C*  ---*/
-  CstarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_i);
-  CstarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_j);
+  CstarL = sqrt(2.0*(Gamma_i-1.0)/(Gamma_i+1.0)*h_i);
+  CstarR = sqrt(2.0*(Gamma_j-1.0)/(Gamma_j+1.0)*h_j);
 
   /*--- Compute C^ ---*/
   ChatL = CstarL*CstarL/max(CstarL,ProjVel_i);
@@ -1151,6 +1274,10 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
   //}
 
   /*--- AUSM's Jacobian....requires tiny CFL's (this must be fixed) ---*/
+  
+  Cvtrs_i = reactive_AUSMPLUSUP2->Get_CvTraRotSpecies(cs_i, rho_i, T_i, Tve_i);
+  Cvtrs_j = reactive_AUSMPLUSUP2->Get_CvTraRotSpecies(cs_j, rho_j, T_j, Tve_j);
+
   if (implicit) {
 
     /*--- Initialize the Jacobians ---*/
@@ -1166,10 +1293,10 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
 
     /*--- Sound speed derivatives: Species density ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+      //Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies]; //Cat
+      daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs_i[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
           + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+      daR[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs_j[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
           + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
@@ -1367,6 +1494,10 @@ void CUpwAUSMPLUSUP2_TNE2::ComputeResidual(su2double *val_residual, su2double **
       }
     }
   }
+
+  delete [] cs_i;
+  delete [] cs_j;
+
 }
 
 CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
@@ -1412,6 +1543,11 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
   u_j     = new su2double [nDim];
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
+
+  if(config->GetMUTATION_PP()) reactive_AUSMPWplus = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive_AUSMPWplus = new CReactiveHardCode();
+
+  reactive_AUSMPWplus->InitializeMixture(config);
 }
 
 CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
@@ -1443,6 +1579,7 @@ CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
   delete [] u_j;
   delete [] dPdU_i;
   delete [] dPdU_j;
+  delete [] reactive_AUSMPWplus;
 }
 
 void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
@@ -1457,10 +1594,12 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j, *xi;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double fact, gam, dV2L, dV2R;
+
+  vector<su2double> Ms;
 
   alpha = 3.0/16.0;
 
@@ -1478,8 +1617,9 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
-  Ms = config->GetMolar_Mass();
-  xi = config->GetRotationModes();
+  //Ms = config->GetMolar_Mass(); 
+  Ms   = reactive_AUSMPWplus->Get_MolarMass(); //Cat DONE
+  xi   = config->GetRotationModes();
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
 
@@ -1935,7 +2075,7 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    MeanEve[iSpecies] = var->CalcEve(config, MeanV[TVE_INDEX], iSpecies);
+    MeanEve[iSpecies] = var->CalcEve(config, MeanV, iSpecies);
 
   var->CalcdPdU(MeanV, MeanEve, config, MeandPdU);
 
@@ -2034,6 +2174,8 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
   PrimVar_j    = new su2double [nPrimVar];
   Mean_PrimVar = new su2double [nPrimVar];
 
+
+
   Mean_U      = new su2double[nVar];
   Mean_dPdU   = new su2double[nVar];
   Mean_dTdU   = new su2double[nVar];
@@ -2048,8 +2190,21 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
 
   /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
   Mean_GradPrimVar = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    
     Mean_GradPrimVar[iVar] = new su2double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_GradPrimVar[iVar][iDim] = 0.0; }
+
+  PrimVar_Grad_i = new su2double* [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    PrimVar_Grad_i[iVar] = new su2double [nDim];
+
+  PrimVar_Grad_j = new su2double* [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    PrimVar_Grad_j[iVar] = new su2double [nDim];
+
+  
 }
 
 CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
@@ -2072,12 +2227,33 @@ CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
+
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] PrimVar_Grad_i[iVar];
+  delete [] PrimVar_Grad_i;
+
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] PrimVar_Grad_j[iVar];
+  delete [] PrimVar_Grad_j;
 }
 
 void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
                                     su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j,
                                     CConfig *config) {
+
+
+  RHO_INDEX = var->GetRhoIndex();
+  
+
+  
+        
+
+  //}
+
+  //std::cout << "Mutation CAvgGrad_TNE2 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  //std::cout << "Mutation RHO_INDEX="  << RHO_INDEX << std::endl<< std::endl<< std::endl<< std::endl;
 
   unsigned short iSpecies, iVar, iDim;
 
@@ -2090,10 +2266,13 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
+  //std::cout << "Mutation CAvgGrad_TNE2 1.2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   /*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
+  //std::cout << "Mutation CAvgGrad_TNE2 1.3"  << std::endl<< std::endl<< std::endl<< std::endl;
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
                                 Laminar_Viscosity_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
@@ -2101,45 +2280,62 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
   Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
                                       Thermal_Conductivity_ve_j);
 
+  //std::cout << "Mutation CAvgGrad_TNE2 1.4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  
+
+
   /*--- Mean gradient approximation ---*/
   // Mass fraction
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     PrimVar_i[iSpecies] = V_i[iSpecies]/V_i[RHO_INDEX];
+    //std::cout << "Mutation CAvgGrad_TNE2 1.4.1"  << std::endl<< std::endl<< std::endl<< std::endl;
     PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
+    //std::cout << "Mutation CAvgGrad_TNE2 1.4.2"  << std::endl<< std::endl<< std::endl<< std::endl;
     Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
+    //std::cout << "Mutation CAvgGrad_TNE2 1.4.3"  << std::endl<< std::endl<< std::endl<< std::endl;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] *
-                                              (PrimVar_Grad_i[iSpecies][iDim] -
-                                               PrimVar_i[iSpecies] *
-                                               PrimVar_Grad_i[RHO_INDEX][iDim]) +
-                                              1.0/V_j[RHO_INDEX] *
-                                              (PrimVar_Grad_j[iSpecies][iDim] -
-                                               PrimVar_j[iSpecies] *
-                                               PrimVar_Grad_j[RHO_INDEX][iDim]));
+      Mean_GradPrimVar[iSpecies][iDim] =  0.5*(1.0/V_i[RHO_INDEX] *
+                                          (PrimVar_Grad_i[iSpecies][iDim] -
+                                           PrimVar_i[iSpecies] *
+                                           PrimVar_Grad_i[RHO_INDEX][iDim]) +
+                                          1.0/V_j[RHO_INDEX] *
+                                          (PrimVar_Grad_j[iSpecies][iDim] -
+                                           PrimVar_j[iSpecies] *
+                                           PrimVar_Grad_j[RHO_INDEX][iDim]));
 
     }
   }
+
+  //std::cout << "Mutation CAvgGrad_TNE2 1.5"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iVar = nSpecies; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
+
+  //std::cout << "Mutation CAvgGrad_TNE2 1.6"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
     }
   }
+  //std::cout << "Mutation CAvgGrad_TNE2 1.7"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
+
+  //std::cout << "Mutation CAvgGrad_TNE2 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
                      Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
+
+  //std::cout << "Mutation CAvgGrad_TNE2 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2219,6 +2415,8 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
                                              su2double **val_Jacobian_j,
                                              CConfig *config) {
 
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   unsigned short iSpecies;
   su2double dist_ij_2;
 
@@ -2228,15 +2426,21 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
 
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.2"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Make a local copy of the primitive variables ---*/
   // NOTE: We are transforming the species density terms to species mass fractions
@@ -2257,11 +2461,16 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
 
     }
   }
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iVar = nSpecies; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.5"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
@@ -2269,21 +2478,35 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.6"  << std::endl<< std::endl<< std::endl<< std::endl;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies] = 0.5*(eve_i[iSpecies] + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.7"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+// for (iSpecies = 0; iSpecies < nSpecies-1; iSpecies++){
+//  std::cout << "Mutation Diffusion_Coeff_i[" << iSpecies<< "]=" << Diffusion_Coeff_i[iSpecies] << std::endl;
+//  std::cout << "Mutation Diffusion_Coeff_j[" << iSpecies<< "]=" << Diffusion_Coeff_j[iSpecies] << std::endl;
+
+// }
+  
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.7.1"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.8"  << std::endl<< std::endl<< std::endl<< std::endl;
   Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
                                           Laminar_Viscosity_j);
   Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
                                           Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
                                           Thermal_Conductivity_ve_j);
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 1.8"  << std::endl<< std::endl<< std::endl<< std::endl;
 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
@@ -2297,6 +2520,9 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
                      Normal, Mean_Diffusion_Coeff,
@@ -2304,6 +2530,9 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
                      Mean_Thermal_Conductivity,
                      Mean_Thermal_Conductivity_ve,
                      config);
+
+
+  //std::cout << "Mutation CAvgGradCorrected_TNE2 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2376,6 +2605,13 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
   }
+
+  if(config->GetMUTATION_PP()) reactive_source = new CReactiveMutation(config->GetGasModel(), config->GetTransportModel());
+  else reactive_source = new CReactiveHardCode();
+
+  reactive_source->InitializeMixture(config);
+
+
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
@@ -2412,18 +2648,19 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] dkb;
   delete [] dRfok;
   delete [] dRbok;
+  delete [] reactive_source;
 
 }
 
-void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
+void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction, //Cat toda a funcao ?
                                    CConfig *config) {
   unsigned short ii, iSpecies, iIndex, tbl_offset, pwr;
   su2double N;
   su2double *Ms;
   su2double tmp1, tmp2;
   /*--- Acquire database constants from CConfig ---*/
-  Ms = config->GetMolar_Mass();
-  config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction);
+  Ms = config->GetMolar_Mass(); //Cat
+  config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction); //Cat
 
   /*--- Calculate mixture number density ---*/
   N = 0.0;
@@ -2470,7 +2707,7 @@ void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
 
 void CSource_TNE2::ComputeChemistry(su2double *val_residual,
                                     su2double **val_Jacobian_i,
-                                    CConfig *config) {
+                                    CConfig *config) {  //Cat ver esta funcao com cuidado
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
@@ -2484,6 +2721,10 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   su2double *hf, *Tref, *xi;
   su2double af, bf, ab, bb, coeff;
   su2double dThf, dThb;
+  su2double *cs, *Ws;
+
+  Ws = new su2double[nSpecies];
+  cs = new su2double[nSpecies];
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2500,6 +2741,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
+  
+
   T_min   = 800.0;
   epsilon = 80;
 
@@ -2520,8 +2763,10 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   rhoCvtr = V_i[RHOCVTR_INDEX];
   rhoCvve = V_i[RHOCVVE_INDEX];
 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
+
   /*--- Acquire parameters from the configuration file ---*/
-  nReactions = config->GetnReactions();
+  nReactions = config->GetnReactions(); //Cat
   Ms         = config->GetMolar_Mass();
   RxnMap     = config->GetReaction_Map();
   hf         = config->GetEnthalpy_Formation();
@@ -2561,6 +2806,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
     kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
     kb  = kfb / Keq;
 
+    
+
     /*--- Determine production & destruction of each species ---*/
     fwdRxn = 1.0;
     bkwRxn = 1.0;
@@ -2583,18 +2830,28 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       /*--- Products ---*/
       iSpecies = RxnMap[iReaction][1][ii];
       if (iSpecies != nSpecies) {
-        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
+        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
             * eve_i[iSpecies] * Volume;
       }
       /*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
-        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
+        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn)* Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
             * eve_i[iSpecies] * Volume;
       }
     }
+
+   
+
+   
+
+   //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+   //   val_residual_mut[iSpecies]    = Ws[iSpecies]*Volume;
+   //   val_residual_mut[nSpecies+nDim+1] += Ws[iSpecies]* eve_i[iSpecies] * Volume;
+   
+    
 
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -2705,11 +2962,26 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       } // ii
     } // implicit
   } // iReaction
+
+
+
+   //std::cout << "kf=" << kf << " kb=" << kb << std::endl ;
+
+   //std::cout << "W[N2]=" << val_residual[0] <<  std::endl ;
+   //std::cout << "W[N]="  << val_residual[1] <<  std::endl <<  std::endl;
+
+   //Ws = reactive_source->Get_NetProductionRates(cs, rho, T, Tve);
+
+  //std::cout << "Nemo: OmegaCV*Volume =" << val_residual[nSpecies+nDim+1] <<  std::endl ;
+  //std::cout << "Nemo: OmegaCV =" << val_residual[nSpecies+nDim+1]/Volume <<  std::endl ;
+  delete [] cs;
+
+
 }
 
 void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
                                         su2double **val_Jacobian_i,
-                                        CConfig *config) {
+                                        CConfig *config) { //Cat ver esta funcao com cuidado
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
@@ -2718,11 +2990,13 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   // Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl;
-  su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
+  su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N, rho, *cs;
   su2double Qtv, taunum, taudenom;
   su2double mu, A_sr, B_sr, num, denom;
   su2double Cs;
   su2double *Ms, *thetav;
+
+  vector<su2double> OmegaVT;
 
 
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -2736,85 +3010,139 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   }
 
   /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+  //if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  //else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Rename for convenience ---*/
-  RuSI    = UNIVERSAL_GAS_CONSTANT;
-  Ru      = 1000.0*RuSI;
-  P       = V_i[P_INDEX];
+//  RuSI    = UNIVERSAL_GAS_CONSTANT;
+//  Ru      = 1000.0*RuSI;
+//  P       = V_i[P_INDEX];
+  rho     = V_i[RHO_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  rhoCvtr = V_i[RHOCVTR_INDEX];
-  rhoCvve = V_i[RHOCVVE_INDEX];
+//  rhoCvtr = V_i[RHOCVTR_INDEX];
+//  rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
 
   /*--- Read from CConfig ---*/
-  Ms        = config->GetMolar_Mass();
-  thetav    = config->GetCharVibTemp();
+//  Ms        = config->GetMolar_Mass(); //cat
+//  thetav    = config->GetCharVibTemp();
+//
+//  /*--- Calculate mole fractions ---*/
+//  N    = 0.0;
+//  conc = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
+//    N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
+//  }
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
+//
+//  /*--- Loop over species to calculate source term --*/
+//  Qtv      = 0.0;
+//  taunum   = 0.0;
+//  taudenom = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) { 
+//
+//    /*--- Rename for convenience ---*/
+//    rhos   = V_i[RHOS_INDEX+iSpecies];
+//
+//    /*--- Millikan & White relaxation time ---*/
+//    num   = 0.0;
+//    denom = 0.0;
+//
+//    
+//
+//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+//      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+//      B_sr   = 0.015 * pow(mu, 0.25);
+//      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42) ;
+//
+//      
+//
+//      //std::cout << " Nemo: " << iSpecies << "," << jSpecies <<  std::endl ;
+//      //std::cout << " Nemo: A=" << A_sr << " B=" << B_sr  <<  std::endl ;
+//      //std::cout << " Nemo: tau_sr=" <<tau_sr[iSpecies][jSpecies] <<  std::endl  <<  std::endl ;
+//      
+//
+//
+//      num   += X[jSpecies]; // -------- Cat
+//      denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
+//    }
+//    tauMW[iSpecies] = num / denom;
+//
+//    /*--- Park limiting cross section ---*/
+//    Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
+//    tauP[iSpecies] = T*sqrt(T)/(Cs*N);
+//
+//    /*--- Species relaxation time ---*/
+//    taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
+//
+//    //std::cout << " Nemo:" << iSpecies <<  std::endl ;Ggg
+//    //std::cout << " Nemo: tauP[iSpecies] =" << tauP[iSpecies]  <<  std::endl ;
+//    //std::cout << " Nemo: taus=" << taus[iSpecies] <<  std::endl <<  std::endl ;
+//
+//    /*--- Calculate vib.-el. energies ---*/
+//    estar[iSpecies] = var->CalcEve(config, T, iSpecies);
+//
+//    /*--- Add species contribution to residual ---*/
+//    val_residual[nEv] += rhos * (estar[iSpecies] -
+//                                 eve_i[iSpecies]) / taus[iSpecies] * Volume;
+//
+//    //std::cout << " Nemo: EvibEq =" <<rhos * (estar[iSpecies]) <<  std::endl ;
+//    //std::cout << " Nemo: Evib =" <<  rhos * (eve_i[iSpecies]) <<  std::endl ;
+//
+//    
+//    
+//  }
 
-  /*--- Calculate mole fractions ---*/
-  N    = 0.0;
-  conc = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
-    N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
-  }
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
+   cs = new su2double[nSpecies];
 
-  /*--- Loop over species to calculate source term --*/
-  Qtv      = 0.0;
-  taunum   = 0.0;
-  taudenom = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) cs[iSpecies] = V_i[RHOS_INDEX+iSpecies]/rho;
 
-    /*--- Rename for convenience ---*/
-    rhos   = V_i[RHOS_INDEX+iSpecies];
+   //std::cout << " Nemo: ComputeVibRelaxation 1" <<  std::endl ;
 
-    /*--- Millikan & White relaxation time ---*/
-    num   = 0.0;
-    denom = 0.0;
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-      B_sr   = 0.015 * pow(mu, 0.25);
-      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
-      num   += X[iSpecies];
-      denom += X[iSpecies] / tau_sr[iSpecies][jSpecies];
-    }
-    tauMW[iSpecies] = num / denom;
+   //std::cout << "Mutation ComputeVibRelaxation 1"  << std::endl<< std::endl<< std::endl<< std::endl;
 
-    /*--- Park limiting cross section ---*/
-    Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
-    tauP[iSpecies] = T*sqrt(T)/(Cs*N);
+   OmegaVT = reactive_source->Get_VTEnergysourceTerm(cs, rho, T, Tve);
 
-    /*--- Species relaxation time ---*/
-    taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
+   //std::cout << "Mutation ComputeVibRelaxation 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 
-    /*--- Calculate vib.-el. energies ---*/
-    estar[iSpecies] = var->CalcEve(config, T, iSpecies);
+   val_residual[nEv] = OmegaVT[0]*Volume;
 
-    /*--- Add species contribution to residual ---*/
-    val_residual[nEv] += rhos * (estar[iSpecies] -
-                                 eve_i[iSpecies]) / taus[iSpecies] * Volume;
-  }
+   //std::cout << "Mutation ComputeVibRelaxation 3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+   //std::cout << " Nemo: ComputeVibRelaxation 2" <<  std::endl ;
+
+
+  //std::cout << " Nemo: OmegaVT*Volume =" << val_residual[nEv] <<  std::endl ;
+
+   //std::cout << " Nemo: OmegaVT =" << val_residual[nEv]/Volume <<  std::endl <<  std::endl;
+
+//  std::cout << " Mutation: OmegaVT =" << Residual[0] <<  std::endl <<  std::endl;
 
   if (implicit) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-
-      /*--- Rename ---*/
-      rhos = V_i[RHOS_INDEX+iSpecies];
-      Cvvsst[iSpecies] = var->CalcCvve(T, config, iSpecies);
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_Jacobian_i[nEv][iVar] += rhos/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
-                                                          Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;
-      }
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
+    //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//
+    //  /*--- Rename ---*/
+    //  rhos = V_i[RHOS_INDEX+iSpecies];
+    //  Cvvsst[iSpecies] = var->CalcCvve(T, config, iSpecies); // Cvve computed with T instead of Tve - might be a BUG
+//
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    val_Jacobian_i[nEv][iVar] += rhos/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
+    //                                                      Cvve_i[iSpecies]*dTvedU_i[iVar])*Volume;
+    //  }
+    //}
+    //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    //  val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
   }
+
+  //std::cout << "Mutation ComputeVibRelaxation 4"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  delete [] cs;
+
+
 }
 
 void CSource_TNE2::ComputeAxisymmetric(su2double *val_residual,

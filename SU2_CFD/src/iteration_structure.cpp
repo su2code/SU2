@@ -597,6 +597,7 @@ void CFluidIteration::Iterate(COutput *output,
                                  unsigned short val_iInst) {
   unsigned long IntIter, ExtIter;
   
+  
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
                      (config_container[val_iZone]->GetDiscrete_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Disc());
@@ -628,16 +629,20 @@ void CFluidIteration::Iterate(COutput *output,
       config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
       
   }
+
   
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
   if ((config_container[val_iZone]->GetKind_Solver() != TNE2_EULER) && (config_container[val_iZone]->GetKind_Solver() != TNE2_NAVIER_STOKES)) {
+    
     integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone, val_iInst);
   }else{
+    
     integration_container[val_iZone][val_iInst][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_TNE2_SYS, IntIter, val_iZone, val_iInst);
+    
   }
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
@@ -1146,12 +1151,16 @@ void CTNE2Iteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) {
+
+ 
   unsigned long IntIter, ExtIter;
 
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
                      (config_container[val_iZone]->GetDiscrete_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Disc());
   ExtIter = config_container[val_iZone]->GetExtIter();
+
+  
 
   /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
@@ -1170,11 +1179,15 @@ void CTNE2Iteration::Iterate(COutput *output,
 
   }
 
+  //std::cout << "Mutation iterate 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
   integration_container[val_iZone][val_iInst][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_TNE2_SYS, IntIter, val_iZone, val_iInst);
 
+  //std::cout << "Mutation iterate 2"  << std::endl<< std::endl<< std::endl<< std::endl;
+  
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
 
@@ -1193,6 +1206,8 @@ void CTNE2Iteration::Iterate(COutput *output,
     }
 
   }
+
+  
 
   if (config_container[val_iZone]->GetWeakly_Coupled_Heat()){
     config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS, ExtIter);
@@ -1215,6 +1230,8 @@ void CTNE2Iteration::Iterate(COutput *output,
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
 
   }
+
+ 
 
 }
 

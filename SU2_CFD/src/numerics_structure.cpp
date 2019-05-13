@@ -168,7 +168,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   /*--- Initializing variables for TNE ---*/
   Diffusion_Coeff_i = NULL;  Diffusion_Coeff_j = NULL;
 
-  hs     = NULL; Cvtr   = NULL;
+  hs     = NULL;
+  Cvtr   = NULL;
   eve_i  = NULL; eve_j  = NULL;
   Cvve_i = NULL; Cvve_j = NULL;
   Ys_i   = NULL; Ys_j   = NULL;
@@ -726,14 +727,22 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   Ru  = 1000.0*RuSI;
   V   = val_primvar;
   GV  = val_gradprimvar;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    hs[iSpecies]  = var->CalcHs(config, T, val_eve[iSpecies], iSpecies);
 
+ // std::cout << "Mutation GetViscousProjFlux 1"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    hs[iSpecies]  = var->CalcHs(config, val_primvar, iSpecies);
+     
+
+  std::cout << "Mutation GetViscousProjFlux 1.2"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += GV[VEL_INDEX+iDim][iDim];
 
+
+   std::cout << "Mutation GetViscousProjFlux 1.2.1"  << std::endl<< std::endl<< std::endl<< std::endl;
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -742,6 +751,9 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     }
   }
 
+  std::cout << "Mutation GetViscousProjFlux 1.3"  << std::endl<< std::endl<< std::endl<< std::endl;
+
+  
   /*--- Compute the viscous stress tensor ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     for (jDim = 0; jDim < nDim; jDim++)
@@ -789,6 +801,8 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }
+
+  std::cout << "Mutation GetViscousProjFlux 2"  << std::endl<< std::endl<< std::endl<< std::endl;
 }
 
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
@@ -1092,7 +1106,7 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
     Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
-    hs[iSpecies]   = var->CalcHs(config, T, val_Mean_Eve[iSpecies], iSpecies);
+    hs[iSpecies]   = var->CalcHs(config, val_Mean_PrimVar, iSpecies);
     Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++)

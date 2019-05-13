@@ -176,6 +176,8 @@ am__libSU2Core_a_SOURCES_DIST =  \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
+	../include/reactive_structure.hpp \
+	../include/reactive_structure.inl ../include/cmutation.hpp \
 	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
@@ -224,7 +226,8 @@ am__libSU2Core_a_SOURCES_DIST =  \
 	../src/variable_direct_transition.cpp \
 	../src/variable_direct_turbulent.cpp \
 	../src/variable_direct_elasticity.cpp \
-	../src/variable_structure.cpp ../src/variable_template.cpp
+	../src/variable_structure.cpp ../src/variable_template.cpp \
+	../src/reactive_structure.cpp ../src/cmutation.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 =  \
 	../src/libSU2Core_a-data_manufactured_solutions.$(OBJEXT) \
@@ -290,7 +293,9 @@ am__objects_1 =  \
 	../src/libSU2Core_a-variable_direct_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-variable_direct_elasticity.$(OBJEXT) \
 	../src/libSU2Core_a-variable_structure.$(OBJEXT) \
-	../src/libSU2Core_a-variable_template.$(OBJEXT)
+	../src/libSU2Core_a-variable_template.$(OBJEXT) \
+	../src/libSU2Core_a-reactive_structure.$(OBJEXT) \
+	../src/libSU2Core_a-cmutation.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am_libSU2Core_a_OBJECTS = $(am__objects_1)
 libSU2Core_a_OBJECTS = $(am_libSU2Core_a_OBJECTS)
 @BUILD_NORMAL_TRUE@am__EXEEXT_1 = ../bin/SU2_CFD$(EXEEXT)
@@ -329,6 +334,8 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
+	../include/reactive_structure.hpp \
+	../include/reactive_structure.inl ../include/cmutation.hpp \
 	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
@@ -377,7 +384,8 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/variable_direct_transition.cpp \
 	../src/variable_direct_turbulent.cpp \
 	../src/variable_direct_elasticity.cpp \
-	../src/variable_structure.cpp ../src/variable_template.cpp
+	../src/variable_structure.cpp ../src/variable_template.cpp \
+	../src/reactive_structure.cpp ../src/cmutation.cpp
 am__objects_3 = ../src/___bin_SU2_CFD_AD-SU2_CFD.$(OBJEXT)
 am__objects_4 = ../src/___bin_SU2_CFD_AD-data_manufactured_solutions.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
@@ -442,7 +450,9 @@ am__objects_4 = ../src/___bin_SU2_CFD_AD-data_manufactured_solutions.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_direct_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
-	../src/___bin_SU2_CFD_AD-variable_template.$(OBJEXT)
+	../src/___bin_SU2_CFD_AD-variable_template.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-reactive_structure.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-cmutation.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am____bin_SU2_CFD_AD_OBJECTS = $(am__objects_3) \
 @BUILD_REVERSE_TRUE@	$(am__objects_4)
 ___bin_SU2_CFD_AD_OBJECTS = $(am____bin_SU2_CFD_AD_OBJECTS)
@@ -471,6 +481,8 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
+	../include/reactive_structure.hpp \
+	../include/reactive_structure.inl ../include/cmutation.hpp \
 	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
@@ -519,7 +531,8 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/variable_direct_transition.cpp \
 	../src/variable_direct_turbulent.cpp \
 	../src/variable_direct_elasticity.cpp \
-	../src/variable_structure.cpp ../src/variable_template.cpp
+	../src/variable_structure.cpp ../src/variable_template.cpp \
+	../src/reactive_structure.cpp ../src/cmutation.cpp
 am__objects_5 = ../src/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.$(OBJEXT)
 am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-data_manufactured_solutions.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) \
@@ -584,7 +597,9 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-data_manufactured_solutions.$(O
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_structure.$(OBJEXT) \
-	../src/___bin_SU2_CFD_DIRECTDIFF-variable_template.$(OBJEXT)
+	../src/___bin_SU2_CFD_DIRECTDIFF-variable_template.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.$(OBJEXT)
 @BUILD_DIRECTDIFF_TRUE@am____bin_SU2_CFD_DIRECTDIFF_OBJECTS =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__objects_5) $(am__objects_6)
 ___bin_SU2_CFD_DIRECTDIFF_OBJECTS =  \
@@ -794,7 +809,6 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -839,6 +853,9 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
+  ../include/reactive_structure.hpp \
+  ../include/reactive_structure.inl \
+  ../include/cmutation.hpp \
   ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
@@ -902,21 +919,22 @@ libSU2Core_sources = \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_elasticity.cpp \
   ../src/variable_structure.cpp \
-  ../src/variable_template.cpp
+  ../src/variable_template.cpp \
+  ../src/reactive_structure.cpp \
+  ../src/cmutation.cpp 
 
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
-libSU2Core_cxx_flags = -fPIC @su2_externals_INCLUDES@
-libSU2Core_libadd = 
+libSU2Core_cxx_flags = -fPIC @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
+libSU2Core_libadd = @MUTATIONPP_LD@
 
 # always link to built dependencies from ./externals
 
 # if BUILD_MUTATIONPP
 su2_cfd_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
-su2_cfd_ldadd = @su2_externals_LIBS@ @su2_externals_LIBPTHREAD@ \
-	@MUTATIONPP_LD@ $(am__empty)
+su2_cfd_ldadd = @su2_externals_LIBS@ @su2_externals_LIBPTHREAD@
 # endif
 @BUILD_NORMAL_TRUE@libSU2Core_a_SOURCES = $(libSU2Core_sources)
 @BUILD_NORMAL_TRUE@libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
@@ -1100,6 +1118,10 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-variable_template.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-reactive_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-cmutation.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 
 libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU2Core_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2Core.a
@@ -1286,6 +1308,10 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-variable_template.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-reactive_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-cmutation.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 
 ../bin/SU2_CFD_AD$(EXEEXT): $(___bin_SU2_CFD_AD_OBJECTS) $(___bin_SU2_CFD_AD_DEPENDENCIES) $(EXTRA____bin_SU2_CFD_AD_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/SU2_CFD_AD$(EXEEXT)
@@ -1420,6 +1446,10 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-variable_template.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 
 ../bin/SU2_CFD_DIRECTDIFF$(EXEEXT): $(___bin_SU2_CFD_DIRECTDIFF_OBJECTS) $(___bin_SU2_CFD_DIRECTDIFF_DEPENDENCIES) $(EXTRA____bin_SU2_CFD_DIRECTDIFF_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/SU2_CFD_DIRECTDIFF$(EXEEXT)
@@ -1434,6 +1464,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-SU2_CFD.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_multizone.Po@am__quote@
@@ -1468,6 +1499,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_discrete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean.Po@am__quote@
@@ -1499,6 +1531,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.Po@am__quote@
@@ -1533,6 +1566,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.Po@am__quote@
@@ -1563,6 +1597,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_template.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-cmutation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_direct_multizone.Po@am__quote@
@@ -1597,6 +1632,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_tecplot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_discrete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean.Po@am__quote@
@@ -2540,6 +2576,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-variable_template.obj `if test -f '../src/variable_template.cpp'; then $(CYGPATH_W) '../src/variable_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_template.cpp'; fi`
 
+../src/libSU2Core_a-reactive_structure.o: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-reactive_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Tpo -c -o ../src/libSU2Core_a-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Tpo ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/libSU2Core_a-reactive_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+
+../src/libSU2Core_a-reactive_structure.obj: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-reactive_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Tpo -c -o ../src/libSU2Core_a-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Tpo ../src/$(DEPDIR)/libSU2Core_a-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/libSU2Core_a-reactive_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+
+../src/libSU2Core_a-cmutation.o: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-cmutation.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-cmutation.Tpo -c -o ../src/libSU2Core_a-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-cmutation.Tpo ../src/$(DEPDIR)/libSU2Core_a-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/libSU2Core_a-cmutation.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+
+../src/libSU2Core_a-cmutation.obj: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-cmutation.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-cmutation.Tpo -c -o ../src/libSU2Core_a-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-cmutation.Tpo ../src/$(DEPDIR)/libSU2Core_a-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/libSU2Core_a-cmutation.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
+
 ../src/___bin_SU2_CFD-SU2_CFD.o: ../src/SU2_CFD.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-SU2_CFD.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Tpo -c -o ../src/___bin_SU2_CFD-SU2_CFD.o `test -f '../src/SU2_CFD.cpp' || echo '$(srcdir)/'`../src/SU2_CFD.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Po
@@ -3464,6 +3528,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-variable_template.obj `if test -f '../src/variable_template.cpp'; then $(CYGPATH_W) '../src/variable_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_template.cpp'; fi`
 
+../src/___bin_SU2_CFD_AD-reactive_structure.o: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-reactive_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/___bin_SU2_CFD_AD-reactive_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+
+../src/___bin_SU2_CFD_AD-reactive_structure.obj: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-reactive_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/___bin_SU2_CFD_AD-reactive_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+
+../src/___bin_SU2_CFD_AD-cmutation.o: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-cmutation.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Tpo -c -o ../src/___bin_SU2_CFD_AD-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/___bin_SU2_CFD_AD-cmutation.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+
+../src/___bin_SU2_CFD_AD-cmutation.obj: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-cmutation.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Tpo -c -o ../src/___bin_SU2_CFD_AD-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/___bin_SU2_CFD_AD-cmutation.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
+
 ../src/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.o: ../src/SU2_CFD.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.o `test -f '../src/SU2_CFD.cpp' || echo '$(srcdir)/'`../src/SU2_CFD.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po
@@ -4373,6 +4465,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_template.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-variable_template.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_template.obj `if test -f '../src/variable_template.cpp'; then $(CYGPATH_W) '../src/variable_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_template.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.o: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.o `test -f '../src/reactive_structure.cpp' || echo '$(srcdir)/'`../src/reactive_structure.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.obj: ../src/reactive_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/reactive_structure.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-reactive_structure.obj `if test -f '../src/reactive_structure.cpp'; then $(CYGPATH_W) '../src/reactive_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/reactive_structure.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.o: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.o `test -f '../src/cmutation.cpp' || echo '$(srcdir)/'`../src/cmutation.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.obj: ../src/cmutation.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-cmutation.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/cmutation.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-cmutation.obj `if test -f '../src/cmutation.cpp'; then $(CYGPATH_W) '../src/cmutation.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/cmutation.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
