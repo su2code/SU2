@@ -6910,29 +6910,29 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   for (iElem = 0; iElem < nElem; iElem++) {
     for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
       iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
-
+  
       if(iDomain == rank) {
-
+  
         /*--- This is a halo element that only serves as a donor for interpolation
               on this processor. This means that all its points are halo points as
               well and must be added to the receive pattern. ---*/
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
-
+  
           jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
-
+  
           ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
         }
       }
       else {
-
+  
         /*--- This element is only an interpolation donor on rank iDomain.
-                Add the owned points of this element to the send pattern. ---*/
+              Add the owned points of this element to the send pattern. ---*/
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
-
+  
           jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
-
+  
           if(jDomain == rank)
             SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
         }
@@ -6957,7 +6957,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
     ReceivedDomainLocal[iDomain].resize(it - ReceivedDomainLocal[iDomain].begin());
   }
-  
+
   /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
    number of points in the simulation  ---*/
   Max_GlobalPoint = 0;
@@ -11708,7 +11708,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   displs[0] = 0;
   for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
-  int nGlobalSearchPoints = displs.back() + recvCounts.back();
+  const int nGlobalSearchPoints = displs.back() + recvCounts.back();
 
   /* Check if there actually are global searches to be carried out. */
   if(nGlobalSearchPoints > 0) {
@@ -11740,6 +11740,61 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                         MPI_DOUBLE, bufCoorExGlobalSearch.data(),
                         recvCounts.data(), displs.data(), MPI_DOUBLE,
                         MPI_COMM_WORLD);
+
+    /* Create the vector, which indicates whether or not this rank finds
+       interpolation information for the global search points. It is
+       initialized to -1 to indicate that no information is found. */
+    vector<int> thisRankFindsInfo(nGlobalSearchPoints, -1);
+
+    /* Loop over the number global search points. The loop is carried
+       out as a double loop, such that the rank where the point resides is
+       known as well. Furthermore, it is not necessary to search the points
+       that were not found earlier on this rank. */
+    for(int rankID=0; rankID<size; ++rankID) {
+      if(rankID != rank) {
+        for(int i=nSearchPerRank[rankID]; i<nSearchPerRank[rankID+1]; ++i) {
+
+          /* Search the local ADT for the coordinates of the exchange point
+             and check if it is found. If so, set the corresponding
+             entry in thisRankFindsInfo to my rank. */
+          unsigned short dummy;
+          unsigned long  donorElem;
+          int            rankDonor;
+          su2double      parCoor[3], weightsInterpol[8];
+          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                        dummy, donorElem, rankDonor, parCoor,
+                                                        weightsInterpol) )
+            thisRankFindsInfo[i] = rank; 
+        }
+      }
+    }
+
+    /*--- It is likely that multiple ranks find donor information for the search
+          points, possibly even with different donor elements (if the search
+          point resides on an interface or an edge between elements). Therefore
+          it is necessary that a rank is determined, which is responsible for
+          the handling of the interpolation information. It is not possible to
+          decide this with local information (in case different donor elements
+          are found) and hence a communication step is needed. The convention
+          used here is that the processor with the highest rank will handle
+          the interpolation, because then a simple allgather can be used. ---*/
+    vector<int> rankHandlingInterpolData(nGlobalSearchPoints);
+    SU2_MPI::Allreduce(thisRankFindsInfo.data(), rankHandlingInterpolData.data(),
+                       nGlobalSearchPoints, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+    /*--- Find out if there are any points for which no donor is found. ---*/
+    int nFailedPoints = 0;
+    for(int i=0; i<nGlobalSearchPoints; ++i)
+      if(rankHandlingInterpolData[i] == -1) ++nFailedPoints;
+
+    if( nFailedPoints ) {
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      if(rank == MASTER_NODE) {
+        cout << "There are " << nFailedPoints
+             << " for which no global donor element was found." << endl;
+        SU2_MPI::Error("Global donor search failure", CURRENT_FUNCTION);
+      }
+    }
  
     /* Buffers to store the return information. The first element of intReturnBuf
        is the number of search items that must be returned to this rank. */
@@ -11747,6 +11802,10 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     vector<vector<int> >            intReturnBuf(size, vector<int>(0));
     vector<vector<unsigned long> >  longReturnBuf(size, vector<unsigned long>(0));
     vector<vector<su2double> >      doubleReturnBuf(size, vector<su2double>(0));
+
+    /* Buffers needed to communicate additional element donor information.
+       This is needed when points of a donor element are not owned by this rank. */
+    vector<vector<unsigned long> > addElemDonorInfoBuf(size, vector<unsigned long>(0));
 
     /* Allocate the memory for the vector flagElem. If the element is stored in
        the return buffers for a rank, the value of flagElem is set to this rank.
@@ -11765,71 +11824,78 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       if(rankID != rank) {
         for(int i=nSearchPerRank[rankID]; i<nSearchPerRank[rankID+1]; ++i) {
 
-          /* Search the local ADT for the coordinates of the exchange point
-             and check if it is found. */
-          unsigned short dummy;
-          unsigned long  donorElem;
-          int            rankDonor;
-          su2double      parCoor[3], weightsInterpol[8];
-          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
-                                                        dummy, donorElem, rankDonor, parCoor,
-                                                        weightsInterpol) ) {
+          /* Check if this rank should handle the interpolation information
+             for the current global search point. */
+          if(rankHandlingInterpolData[i] == rank) {
 
-            /*--- Indicate that this element is only an interpolation donor element on rankID. ---*/
+            /* Search the local ADT for the coordinates of the exchange point.
+               Of course the information must be found. */
+            unsigned short dummy;
+            unsigned long  donorElem;
+            int            rankDonor;
+            su2double      parCoor[3], weightsInterpol[8];
+            if( !(localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                            dummy, donorElem, rankDonor, parCoor,
+                                                            weightsInterpol)) )
+              SU2_MPI::Error("This should really not happen", CURRENT_FUNCTION);
+
+            /*--- Indicate that this element is only an interpolation donor
+                  element on rankID and determine the number of donors. ---*/
             elem[donorElem]->AddProcElemIsOnlyInterpolDonor(rankID);
-
-            /*--- Check if the donor element is considered to be an owned element on
-                  this processor. An element is considered owned if the lowest rank
-                  of the nodes is equal to the rank of this processor. ---*/
             unsigned short nDonors = elem[donorElem]->GetnNodes();
-            int lowestRank = size;
+
+            /*--- If this element is a prism, swap some of the weights. This is due
+                  to difference in connectivity between ADT and VTK storage. ---*/
+            const unsigned short elemType = elem[donorElem]->GetVTK_Type();
+            if(elemType == PRISM) {
+              swap(weightsInterpol[1], weightsInterpol[2]);
+              swap(weightsInterpol[4], weightsInterpol[5]);
+            }
+
+            /*--- Determine whether or not this element has already been
+                  stored in the return buffers for rankID. ---*/
+            unsigned short firstTimeStorage = 1;
+            if(flagElem[donorElem] == rankID) firstTimeStorage = 0;
+
+            /*--- Store the information in the return buffers. ---*/
+            ++intReturnBuf[rankID][0];
+
+            shortReturnBuf[rankID].push_back(bufMarkerIDGlobalSearch[i]);
+            shortReturnBuf[rankID].push_back(firstTimeStorage);
+            shortReturnBuf[rankID].push_back(nDonors);
+            shortReturnBuf[rankID].push_back(elemType);
+
+            longReturnBuf[rankID].push_back(bufBoundaryNodeIDGlobalSearch[i]);
+            longReturnBuf[rankID].push_back(elem[donorElem]->GetGlobalIndex());
 
             for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
               const unsigned long donor = elem[donorElem]->GetNode(iNode);
-              int rankNode = node[donor]->GetColor();
-              lowestRank = min(lowestRank, rankNode);
+
+              intReturnBuf[rankID].push_back(node[donor]->GetColor());
+              longReturnBuf[rankID].push_back(Local_to_Global_Point[donor]);
+              doubleReturnBuf[rankID].push_back(weightsInterpol[iNode]);
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                doubleReturnBuf[rankID].push_back(node[donor]->GetCoord(iDim));
             }
 
-            if(lowestRank == rank) {
+            /*--- Indicate that this element is stored in the return buffers
+                  for the rank rankID. ---*/
+            flagElem[donorElem] = rankID;
 
-              /*--- Element is considered to be owned. If this element is a prism,
-                    swap some of the weights. This is due to difference in
-                    connectivity between ADT and VTK storage. ---*/
-              const unsigned short elemType = elem[donorElem]->GetVTK_Type();
-              if(elemType == PRISM) {
-                swap(weightsInterpol[1], weightsInterpol[2]);
-                swap(weightsInterpol[4], weightsInterpol[5]);
-              }
-
-              /*--- Determine whether or not this element has already been
-                    stored in the return buffers for rankID. ---*/
-              unsigned short firstTimeStorage = 1;
-              if(flagElem[donorElem] == rankID) firstTimeStorage = 0;
-
-              /*--- Store the information in the return buffers. ---*/
-              ++intReturnBuf[rankID][0];
-
-              shortReturnBuf[rankID].push_back(bufMarkerIDGlobalSearch[i]);
-              shortReturnBuf[rankID].push_back(firstTimeStorage);
-              shortReturnBuf[rankID].push_back(nDonors);
-              shortReturnBuf[rankID].push_back(elemType);
-
-              longReturnBuf[rankID].push_back(bufBoundaryNodeIDGlobalSearch[i]);
-              longReturnBuf[rankID].push_back(elem[donorElem]->GetGlobalIndex());
-
+            /*--- The element may have nodes on other ranks. If this is the
+                  case the information that this element is only an interpolation
+                  donor on rankID must be communicated to the other ranks where
+                  this element is stored. Only needed if this is the first time
+                  that this element is stored. ---*/
+            if( firstTimeStorage ) {
               for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
                 const unsigned long donor = elem[donorElem]->GetNode(iNode);
-
-                intReturnBuf[rankID].push_back(node[donor]->GetColor());
-                longReturnBuf[rankID].push_back(Local_to_Global_Point[donor]);
-                doubleReturnBuf[rankID].push_back(weightsInterpol[iNode]);
-                for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                  doubleReturnBuf[rankID].push_back(node[donor]->GetCoord(iDim));
+                int rankNode = node[donor]->GetColor();
+                if(rankNode != rank) {
+                  addElemDonorInfoBuf[rankNode].push_back(rankID);
+                  addElemDonorInfoBuf[rankNode].push_back(elem[donorElem]->GetGlobalIndex());
+                }
               }
-
-              /*--- Indicate that this element is stored in the return buffers
-                    for the rank rankID. ---*/
-              flagElem[donorElem] = rankID;
             }
           }
         }
@@ -11844,16 +11910,18 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     vector<unsigned long>().swap(bufBoundaryNodeIDGlobalSearch);
     vector<su2double>().swap(coorExGlobalSearch);
     vector<su2double>().swap(bufCoorExGlobalSearch);
+    vector<int>().swap(thisRankFindsInfo);
+    vector<int>().swap(rankHandlingInterpolData);
     vector<int>().swap(flagElem);
 
-    /*--- Determine the number of ranks to which data must be sent and
-          from how many ranks data must be received. Reuse recvCounts and
-          displs, where recvCounts[i] = 1 if a message is sent to rank i
-          and 0 otherwise and all values of displs are 1 to indicate that
-          1 integer is sent in Reduce_scatter. ---*/
+    /*--- Determine the number of ranks to which additional donor information
+          must be sent and from how many ranks data must be received. Reuse
+          recvCounts and displs, where recvCounts[i] = 1 if a message is sent
+          to rank i and 0 otherwise and all values of displs are 1 to indicate
+          that 1 integer is sent in Reduce_scatter. ---*/
     int nRankSendData = 0;
     for(int i=0; i<size; ++i) {
-      recvCounts[i]  = intReturnBuf[i][0] ? 1 : 0;
+      recvCounts[i]  = addElemDonorInfoBuf[i].size() ? 1 : 0;
       displs[i]      = 1;
       nRankSendData += recvCounts[i];
     }
@@ -11862,10 +11930,83 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecvData, displs.data(),
                             MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
+    /*--- Send the addElemDonorInfoBuf to the appropriate ranks using
+          non-blocking sends. ---*/
+    vector<SU2_MPI::Request> sendReqs(nRankSendData);
+    int ii = 0;
+
+    for(int i=0; i<size; ++i) {
+      if( addElemDonorInfoBuf[i].size() ) {
+        SU2_MPI::Isend(addElemDonorInfoBuf[i].data(), addElemDonorInfoBuf[i].size(),
+                       MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD, &sendReqs[ii++]);
+      }
+    }
+
+    /*--- Create the map from global to local element numbering for
+          the currently stored elements. ---*/
+    Global_to_Local_Elem.clear();
+    for(unsigned long i=0; i<nElem; ++i)
+      Global_to_Local_Elem[elem[i]->GetGlobalIndex()] = i;
+
+    /*--- Loop over the number of ranks from which I receive return data. ---*/
+    for(int i=0; i<nRankRecvData; ++i) {
+
+      /* Block until a message with unsigned longs arrives from any rank.
+         Determine the source and the size of the message.   */
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+
+      int sizeMess;
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+      /* Allocate the memory for the receive buffer and receive the message. */
+      vector<unsigned long> longRecvBuf(sizeMess);
+      SU2_MPI::Recv(longRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank, MPI_COMM_WORLD, &status);
+
+      /* Loop over the entries of the receive buffer. Two values per
+         entry are needed, hence the += 2. */
+      for(int j=0; j<sizeMess; j+=2) {
+
+        /* Search the global element ID in Global_to_Local_Elem. */
+        map<unsigned long, unsigned long>::const_iterator MI;
+        MI = Global_to_Local_Elem.find(longRecvBuf[j+1]);
+        if(MI == Global_to_Local_Elem.end())
+          SU2_MPI::Error("Global element ID not found in Global_to_Local_Elem",
+                         CURRENT_FUNCTION);
+
+        /* Flag this element as a donor only element on the given rank. */
+        elem[MI->second]->AddProcElemIsOnlyInterpolDonor(longRecvBuf[j]);
+      }
+    }
+
+    /* Complete the non-blocking sends. */
+    SU2_MPI::Waitall(nRankSendData, sendReqs.data(), MPI_STATUSES_IGNORE);
+
+    /* Wild cards have been used in the communication,
+       so synchronize the ranks to avoid problems.    */
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+    /*--- Determine the number of ranks to which interpolation data must be
+          sent and from how many ranks data must be received. Reuse recvCounts
+          and displs, where recvCounts[i] = 1 if a message is sent to rank i
+          and 0 otherwise and all values of displs are 1 to indicate that
+          1 integer is sent in Reduce_scatter. ---*/
+    nRankSendData = 0;
+    for(int i=0; i<size; ++i) {
+      recvCounts[i]  = intReturnBuf[i][0] ? 1 : 0;
+      displs[i]      = 1;
+      nRankSendData += recvCounts[i];
+    }
+
+    SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecvData, displs.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
     /*--- Send the return buffers to the appropriate ranks using
           non-blocking sends. ---*/
-    vector<SU2_MPI::Request> sendReqs(4*nRankSendData);
-    int ii = 0;
+    sendReqs.resize(4*nRankSendData);
+    ii = 0;
 
     for(int i=0; i<size; ++i) {
       if( intReturnBuf[i][0] ) {
@@ -11947,10 +12088,11 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
       ii += intRecvBuf[i][0];
 
     if(ii != nLocalSearchPoints){
-      cout << ii << " " << nLocalSearchPoints << endl;
+      cout << "Rank: " << rank << " " << ii << " " << nLocalSearchPoints << endl;
       SU2_MPI::Error("Number of received global data points is not correct",
                      CURRENT_FUNCTION);
     }
+
     /*--- Check if anything needs to be updated to the local data structures. ---*/
     if(nLocalSearchPoints > 0) {
 
@@ -12051,7 +12193,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             information in the vertices of the wall boundaries. In the
             same loop, store the information of the elements that must
             be added. ---*/
-     for(int i=0; i<nRankRecvData; ++i) {
+      for(int i=0; i<nRankRecvData; ++i) {
 
         /* Initialize the indices in the three receive buffers.
            Note that the integer receive buffer is not needed in
@@ -12194,7 +12336,13 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
         elem[i]->SetGlobalIndex(globalElemID);
         elem[i]->AddProcElemIsOnlyInterpolDonor(rank);
       }
+
+      /* Update the value of nElem. */
+      nElem = nElemNew;
     }
+
+    /*--- Release the contents of Global_to_Local_Elem again. ---*/
+    Global_to_Local_Elem.clear();
   }
 
 #endif
@@ -12441,6 +12589,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   
   /*--- Select the node with the lowest degree in the grid. ---*/
   
+
   MinDegree = node[0]->GetnNeighbor(); AddPoint = 0;
   for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
     Degree = node[iPoint]->GetnPoint();
@@ -12518,7 +12667,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);
   }
-  
+
   /*--- Reset old data structures ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -12534,15 +12683,17 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   /*--- Set the new coordinates ---*/
   
   su2double **AuxCoord;
-  unsigned long *AuxGlobalIndex;
+  unsigned long *AuxGlobalIndex, *AuxColor;
   
   AuxGlobalIndex = new unsigned long [nPoint];
+  AuxColor = new unsigned long [nPoint];
   AuxCoord = new su2double* [nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     AuxCoord[iPoint] = new su2double [nDim];
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     AuxGlobalIndex[iPoint] = node[iPoint]->GetGlobalIndex();
+    AuxColor[iPoint]       = node[iPoint]->GetColor();
     for (iDim = 0; iDim < nDim; iDim++) {
       AuxCoord[iPoint][iDim] = node[iPoint]->GetCoord(iDim);
     }
@@ -12550,6 +12701,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetGlobalIndex(AuxGlobalIndex[Result[iPoint]]);
+    node[iPoint]->SetColor(AuxColor[Result[iPoint]]);
     for (iDim = 0; iDim < nDim; iDim++)
       node[iPoint]->SetCoord(iDim, AuxCoord[Result[iPoint]][iDim]);
   }
@@ -12557,7 +12709,17 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     delete[] AuxCoord[iPoint];
   delete[] AuxCoord;
+  delete[] AuxColor;
   delete[] AuxGlobalIndex;
+
+  /*--- Reset the maps Local_to_Global_Point and Global_to_Local_Point. ---*/
+
+  Global_to_Local_Point.clear();
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    Local_to_Global_Point[iPoint] = node[iPoint]->GetGlobalIndex();
+    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+  }
   
   /*--- Set the new conectivities ---*/
   
