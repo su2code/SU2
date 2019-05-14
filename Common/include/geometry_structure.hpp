@@ -61,6 +61,7 @@ extern "C" {
 #include <stdlib.h>
 #include <climits>
 
+#include "adt_structure.hpp"
 #include "primal_grid_structure.hpp"
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
@@ -717,12 +718,6 @@ public:
 	 */
 	virtual void ComputeWall_Distance(CConfig *config);
   
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void WallModelPreprocessing(CConfig *config);
-
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
@@ -2021,6 +2016,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void WallModelPreprocessing(CConfig *config);
+
+  /*!
+   * \brief Function, which builds the ADT of the locally stored volume elements.
+   * \param[out] localVolumeADT - Pointer to the ADT to be built.
+   */
+  void BuildLocalVolumeADT(CADTElemClass *&localVolumeADT);
 
 	/*! 
 	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.

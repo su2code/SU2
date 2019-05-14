@@ -11455,7 +11455,6 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   /*---         distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
-
   if ( WallADT.IsEmpty() ) {
   
     /*--- No solid wall boundary nodes in the entire mesh.
@@ -11483,57 +11482,14 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Check whether wall models are used at all.                 ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Determine whether or not there are local markers for which
-        wall functions must be used. ---*/
-  unsigned short wallFunctions = 0;
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-    
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case ISOTHERMAL:
-      case HEAT_FLUX: {
-        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
-           (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
-          wallFunctions = 1;
-        break;
-      }
-      default:  /* Just to avoid a compiler warning. */
-        break;
-    }
-  }
-
-  /*--- Carry out an allreduce to find out the global value of wallFunctions.
-        Only needed in parallel mode. ---*/
-#ifdef HAVE_MPI
-  unsigned short wallFunctionsLocal = wallFunctions;
-  SU2_MPI::Allreduce(& wallFunctionsLocal, &wallFunctions, 1, MPI_UNSIGNED_SHORT,
-                     MPI_MAX, MPI_COMM_WORLD);
-#endif
-  
-  /* If no wall models are used, nothing needs to be done and a
-   return can be made. */
-  if( !wallFunctions ) return;
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2. Build the local ADT of the volume elements. The currently  ---*/
-  /*---         stored halo elements are included, because this info will  ---*/
-  /*---         be available.                                              ---*/
-  /*--------------------------------------------------------------------------*/
+void CPhysicalGeometry::BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {
 
   /* Define the vectors needed to build the ADT. */
   vector<unsigned long>  elemConn;
   vector<unsigned short> VTK_TypeElem;
   vector<unsigned short> markerIDElem;
   vector<unsigned long>  elemID;
-  
-  
+
   /*--- Loop over all elements ---*/
   for (unsigned long iElem = 0; iElem < nElem; iElem++){
 
@@ -11571,24 +11527,27 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   volCoor.reserve(nDim*nPoint);
   
   for(unsigned long i=0; i<nPoint; ++i) {
-      for(unsigned short k=0; k<nDim; ++k)
-        volCoor.push_back(node[i]->GetCoord(k));
+    for(unsigned short k=0; k<nDim; ++k)
+      volCoor.push_back(node[i]->GetCoord(k));
   }
 
-  /* Build the local ADT. */
-  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                               markerIDElem, elemID, false);
+  /* Create and build the ADT. */
+  localVolumeADT = new CADTElemClass(nDim, volCoor, elemConn, VTK_TypeElem,
+                                     markerIDElem, elemID, false);
+}
 
-  /* Release the memory of the vectors used to build the ADT. To make sure
-   that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDElem);
-  vector<unsigned short>().swap(VTK_TypeElem);
-  vector<unsigned long>().swap(elemID);
-  vector<unsigned long>().swap(elemConn);
-  vector<su2double>().swap(volCoor);
-  
+void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
+
+  /* If no wall models are used, nothing needs to be done and a
+   return can be made. */
+  if( !config->GetWall_Functions() ) return;
+
+  /* Build the local ADT of the volume elements, including halo elements. */
+  CADTElemClass *localVolumeADT;
+  BuildLocalVolumeADT(localVolumeADT);
+
   /*--------------------------------------------------------------------------*/
-  /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
+  /*--- Step 1. Search for donor elements at the exchange locations in     ---*/
   /*---         the local elements.                                        ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -11636,9 +11595,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             unsigned long  donorElem;
             int            rankElem;
             su2double      parCoor[3], weightsInterpol[8];
-            if( localVolumeADT.DetermineContainingElement(coorExchange, dummy,
-                                                          donorElem, rankElem, parCoor,
-                                                          weightsInterpol) ) {
+            if( localVolumeADT->DetermineContainingElement(coorExchange, dummy,
+                                                           donorElem, rankElem, parCoor,
+                                                           weightsInterpol) ) {
 
               /*--- Donor element found. No need to flag it as an interpolation
                     donor, because this element is already stored on this rank. 
@@ -11761,9 +11720,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
           unsigned long  donorElem;
           int            rankDonor;
           su2double      parCoor[3], weightsInterpol[8];
-          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
-                                                        dummy, donorElem, rankDonor, parCoor,
-                                                        weightsInterpol) )
+          if( localVolumeADT->DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                         dummy, donorElem, rankDonor, parCoor,
+                                                         weightsInterpol) )
             thisRankFindsInfo[i] = rank; 
         }
       }
@@ -11834,9 +11793,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             unsigned long  donorElem;
             int            rankDonor;
             su2double      parCoor[3], weightsInterpol[8];
-            if( !(localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
-                                                            dummy, donorElem, rankDonor, parCoor,
-                                                            weightsInterpol)) )
+            if( !(localVolumeADT->DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                             dummy, donorElem, rankDonor, parCoor,
+                                                             weightsInterpol)) )
               SU2_MPI::Error("This should really not happen", CURRENT_FUNCTION);
 
             /*--- Indicate that this element is only an interpolation donor
@@ -12346,6 +12305,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   }
 
 #endif
+
+  /* Delete the memory of localVolumeADT again. */
+  delete localVolumeADT;
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
