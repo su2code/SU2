@@ -1023,7 +1023,37 @@ public:
                                   CNumerics *visc_numerics,
                                   CConfig *config,
                                   unsigned short val_marker);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_IsothermalCatalytic_Wall(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics,
+                                           CConfig *config,
+                                           unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CNumerics *conv_numerics,
+                                              CNumerics *visc_numerics,
+                                              CConfig *config,
+                                              unsigned short val_marker);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1038,6 +1068,38 @@ public:
                                 CNumerics *visc_numerics, CConfig *config,
                                 unsigned short val_marker);
   
+  /*!
+   * \brief Impose a constant heat-flux condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
+                                         CSolver **solver_container,
+                                         CNumerics *conv_numerics,
+                                         CNumerics *visc_numerics,
+                                         CConfig *config,
+                                         unsigned short val_marker);
+
+  /*!
+   * \brief Impose a constant heat-flux condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                            CSolver **solver_container,
+                                            CNumerics *conv_numerics,
+                                            CNumerics *visc_numerics,
+                                            CConfig *config,
+                                            unsigned short val_marker);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9497,6 +9559,13 @@ public:
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
+
+  /*!
      * \brief Impose via the residual the Euler wall boundary condition.
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] solver_container - Container vector with all the solutions.
@@ -9666,9 +9735,23 @@ public:
   void SetTotal_CL(su2double val_Total_CL);
 
   /*!
-     * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
-     * \return Value of the lift coefficient (inviscid + viscous contribution).
-     */
+   * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+  void SetTotal_ComboObj(su2double ComboObj);
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
+   * \return Value of the lift coefficient (inviscid + viscous contribution).
+   */
   su2double GetTotal_CL(void);
 
   /*!

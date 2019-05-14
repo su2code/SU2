@@ -796,9 +796,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
   /*!\par CONFIG_CATEGORY: Species Model \ingroup Config*/
-
+   /* DESCRIPTION: Specify if Mutation++ library is used */
+  addBoolOption("MUTATION_PP", MUTATION_PP, true);
+  /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ */
+  addStringOption("GAS_MODEL", GasModel, string("N2"));
   /* DESCRIPTION: Specify chemical model for multi-species simulations */
-  addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, N2);
+  addEnumOption(GasModel, Kind_GasModel, GasModel_Map, N2);
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WBE);
   /* DESCRIPTION: Specify mass fraction of each species */
@@ -3978,14 +3981,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           /*--- Check for errors in the initialization ---*/
           init_err = false;
           if (nSpecies != 2) {
-            cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+            //cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
             init_err = true;
           }
           mf = 0.0;
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
             mf += Gas_Composition[iSpecies];
           if (mf != 1.0) {
-            cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+            //cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
             init_err = true;
           }
 
@@ -4189,14 +4192,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           /*--- Check for errors in the initialization ---*/
           init_err = false;
           if (nSpecies != 5) {
-            cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+            //cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
             init_err = true;
           }
           mf = 0.0;
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
             mf += Gas_Composition[iSpecies];
           if (mf != 1.0) {
-            cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+            //cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
             init_err = true;
           }
 
@@ -5780,6 +5783,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+        if (MUTATION_PP) cout << "Mutation++ = YES." << endl;
+        else {cout << "Mutation++ = NO." << endl;
+             if ((GasModel != "NONE")  && (GasModel != "ARGON") && (GasModel != "AIR-7") && (GasModel != "AIR-21")&& (GasModel != "O2") && (GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON_SID") && (GasModel != "ONESPECIES"))  {
+                SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: ARGON, AIR-7, AIR-21, O2, N2, AIR-5, ARGON_SID, ONESPECIES.", CURRENT_FUNCTION);}}
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
@@ -5787,6 +5794,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if (MUTATION_PP) cout << "Mutation++ = YES." << endl;
+        else {cout << "Mutation++ = NO." << endl;
+             if ((GasModel != "NONE")  && (GasModel != "ARGON") && (GasModel != "AIR-7") && (GasModel != "AIR-21")&& (GasModel != "O2") && (GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON_SID") && (GasModel != "ONESPECIES"))  {
+                SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: ARGON, AIR-7, AIR-21, O2, N2, AIR-5, ARGON_SID, ONESPECIES.", CURRENT_FUNCTION);}}
         break;
       case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
@@ -8900,7 +8911,9 @@ su2double* CConfig::GetInlet_MassFrac(string val_marker) {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
+  
   return Inlet_MassFrac[iMarker_Supersonic_Inlet];
+
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) {

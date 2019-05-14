@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file ad_structure.inl
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
@@ -68,7 +68,7 @@ namespace AD{
 
   extern std::vector<su2double*> localOutputValues;
 
-  inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
+  inline void RegisterInput(su2double &data) { AD::globalTape.registerInput(data);
                                              inputValues.push_back(data.getGradientData());}
 
   inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}

@@ -867,7 +867,19 @@ inline unsigned short CConfig::GetSystemMeasurements(void) { return SystemMeasur
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
+inline string CConfig::GetGasModel(void) { return GasModel; }
+
+inline bool CConfig::GetMUTATION_PP(void) { return MUTATION_PP; }
+
 inline unsigned short CConfig::GetKind_TransCoeffModel(void) {return Kind_TransCoeffModel; }
+
+inline string CConfig::GetTransportModel(void) { 
+  
+  if (Kind_TransCoeffModel == WBE) TransportModel = string("Wilke");
+  
+  if (Kind_TransCoeffModel == GUPTAYOS) TransportModel = string("Gupta-Yos");
+  return TransportModel;
+}
 
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 

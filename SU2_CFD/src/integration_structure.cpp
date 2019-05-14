@@ -213,8 +213,20 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case ISOTHERMAL_NONCATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case ISOTHERMAL_CATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX_NONCATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX_CATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
@@ -328,10 +340,10 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
   
   unsigned short iMGLevel;
-  
+
   if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
     for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
-      
+
       /*--- Set the time step in all the MG levels ---*/
       
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
@@ -354,6 +366,29 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
     }
   }
   
+  if ( ( (RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0) ) ) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
+
+      /*--- Set the time step in all the MG levels ---*/
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
+
+      /*--- Set the force coefficients ---*/
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CD());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CT());
+      solver_container[iZone][INST_0][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][TNE2_SOL]->GetTotal_CQ());
+
+      /*--- Restrict solution and gradients to the coarse levels ---*/
+
+      if (iMGLevel != config[iZone]->GetnMGLevels()) {
+        SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][INST_0][iMGLevel][TNE2_SOL], solver_container[iZone][INST_0][iMGLevel+1][TNE2_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+        SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][INST_0][iMGLevel][TNE2_SOL], solver_container[iZone][INST_0][iMGLevel+1][TNE2_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+      }
+
+    }
+  }
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file codi_forward_structure.inl
  * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
  * \author T. Albring

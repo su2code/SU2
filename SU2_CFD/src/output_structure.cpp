@@ -4591,8 +4591,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\t\"x\"\t\"y\"\t\"z\"";
   }
   
-  cout << "HELP ME" << endl;
-  cout << nVar_Consv << endl;
+
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
   if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == DISC_ADJ_FEM))
       restart_file << "\t\"Displacement_" << iVar+1<<"\"";
@@ -5253,7 +5252,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
-    bool tne2 = (config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES);
+    bool tne2 = (config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_TNE2_NAVIER_STOKES);
     bool buffet = (config[val_iZone]->GetBuffet_Monitoring() || config[val_iZone]->GetKind_ObjFunc() == BUFFET_SENSOR);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
@@ -5375,6 +5374,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Adjoint problem variables ---*/
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
+    if (tne2) {
+      nSpecies = config[val_iZone]->GetnSpecies();
+      nVar_AdjFlow += nSpecies;
+    }
+
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
@@ -5397,9 +5401,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CL      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CD      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSF = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CL         = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD         = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CEff       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5652,7 +5656,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
         
     case TNE2_EULER:              case TNE2_NAVIER_STOKES:
-    case DISC_ADJ_TNE2_EULER:          case DISC_ADJ_TNE2_NAVIER_STOKES:
+    case DISC_ADJ_TNE2_EULER:     case DISC_ADJ_TNE2_NAVIER_STOKES:
 
       /*--- Flow solution coefficients ---*/
 
@@ -5835,7 +5839,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
       /*--- Adjoint solver ---*/
       if (adjoint) {
-
         /*--- Adjoint solution coefficients ---*/
         Total_Sens_Geo       = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
         Total_Sens_Mach      = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
@@ -6333,10 +6336,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           /*--- Flow residual ---*/
           if (nSpecies == 2) {
             if (nDim == 2) {
-              SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]), dummy);
+              SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]), log10 (residual_flow[5]), dummy );
 
             } else {
-              SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]), log10 (residual_flow[5]) );
+              SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]), log10 (residual_flow[5]), log10 (residual_flow[6]) );
             }
           }
 
@@ -6385,9 +6388,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Adjoint flow residuals ---*/
             if (nSpecies == 2) {
               if (nDim == 2){
-                SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
+                SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]), log10 (residual_adjflow[5]) );
               } else {
-                SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]), log10 (residual_adjflow[5]));
+                SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]), log10 (residual_adjflow[5]), log10 (residual_adjflow[6]));
               }
             }
 
@@ -6525,7 +6528,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 break;
 
-              case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+              case DISC_ADJ_EULER     : case DISC_ADJ_NAVIER_STOKES     : case DISC_ADJ_RANS:
+              case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
                 cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetWrt_Sol_Freq() << " iterations): ";
@@ -6830,7 +6834,51 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
-            case DISC_ADJ_TNE2_EULER:
+            case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
+
+              /*--- Visualize the maximum residual ---*/
+              iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0)) << "." << endl;
+              if (config[val_iZone]->GetSystemMeasurements() == SI) {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+              if (nDim == 3) cout << ", " << Coord[2];
+                cout <<   ")." << endl;
+              }
+              else {
+                cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+                if (nDim == 3) cout << ", " << Coord[2]*12.0;
+                cout <<   ")." << endl;
+              }
+
+              /*--- Print out the number of non-physical points and reconstructions ---*/
+              if (config[val_iZone]->GetNonphysical_Points() > 0)
+                cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+
+              //THIS NEEDS TO BE UPDATED FOR MULTIPlE SPECIES.....
+              cout << "    Res[Psi_Rho1]" << "  Res[Psi_Rho2]"<< "   Res[Psi_E]" << "    Res[Psi_Eve]";
+              if (disc_adj) {
+                if (!turbo){
+                  if (compressible) {
+                    cout << "   Sens_Press" << "     Sens_AoA" << endl;
+                  }
+                  if (incompressible) {
+                    if (energy) {
+                      cout << "      Sens_Vin" << "     Sens_Temp" << endl;
+                    } else {
+                      cout << "      Sens_Vin" << "     Sens_Pout" << endl;
+                    }
+                  }
+                } else {
+                  cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;
+                }
+              } else {
+                cout << "      Sens_Geo" << "      Sens_AoA" << endl;
+              }
+
               break;
 
             case ADJ_RANS : case DISC_ADJ_RANS:
@@ -7302,7 +7350,55 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
           }
           break;
-          
+
+      case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
+        if (!DualTime_Iteration) {
+          ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+          ConvHist_file[0].flush();
+        }
+        if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
+          if (DualTime_Iteration || !Unsteady){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            if (compressible) {
+              cout.width(15); cout << log10(residual_adjflow[0]);
+              cout.width(15); cout << log10(residual_adjflow[1]);
+              cout.width(15); cout << log10(residual_adjflow[4]);
+              cout.width(15); cout << log10(residual_adjflow[5]);
+            }
+
+            if (disc_adj) {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              if (!turbo){
+                if (compressible) {
+                cout.width(14); cout << Total_Sens_Press;
+                cout.width(14); cout << Total_Sens_AoA;
+                }
+                if (incompressible) {
+                  cout.width(14); cout << Total_Sens_ModVel;
+                  if (energy) {
+                    cout.width(14); cout << Total_Sens_Temp;
+                  } else {
+                    cout.width(14); cout << Total_Sens_BPressure;
+                  }
+                }
+              } else {
+                cout.width(14); cout << Total_Sens_BPressure;
+                cout.width(15); cout << Total_Sens_Temp;
+              }
+            }else {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Geo;
+              cout.width(14); cout << Total_Sens_AoA;
+            }
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
+        }
+        break;
+
         case ADJ_RANS : case DISC_ADJ_RANS:
           
           if (!DualTime_Iteration) {
@@ -9384,7 +9480,10 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
-        
+
+      case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJTNE2_SOL], solver_container[iZone][INST_0][MESH_0][TNE2_SOL], iExtIter, iZone, INST_0);
+        break;
     }
     
     /*--- Get the file output format ---*/
@@ -12467,6 +12566,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
        break;
 
        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+       case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
          FSIHist_file[0] << adj_flow_resid;
          break;
 
@@ -13735,7 +13835,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 }
 
 void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-  
+
   unsigned short iDim;
   unsigned short Kind_Solver = config->GetKind_Solver();
   unsigned short nDim = geometry->GetnDim();
@@ -15537,6 +15637,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   nVar_Par += nVar_Consv_Par;
 
   // need to generalize
+
   //if (config->GetKind_GasModel() == N2){
    //   Variable_Names.push_back("Density[N]");
    //   Variable_Names.push_back("Density[O]"); 
@@ -15551,6 +15652,18 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
      DensitySpecies = "Density[" + Species + "]";
      Variable_Names.push_back(DensitySpecies);
   }
+
+//  if (config->GetKind_GasModel() == N2){
+//      Variable_Names.push_back("Density[N2]");
+//      Variable_Names.push_back("Density[N]");
+//  } else if (config->GetKind_GasModel() ==  AIR5) {
+//      Variable_Names.push_back("D[N2]");
+//      Variable_Names.push_back("D[02]");
+//      Variable_Names.push_back("D[N0]");
+//      Variable_Names.push_back("D[N]");
+//      Variable_Names.push_back("D[0]");
+//}
+
 
   //std::cout << "Mutation 1" <<  std::endl<< std::endl<< std::endl<< std::endl;
 
@@ -16080,13 +16193,20 @@ void COutput::LoadLocalData_AdjTNE2(CConfig *config, CGeometry *geometry, CSolve
     Variable_Names.push_back("Adjoint_Density[N2]");
     Variable_Names.push_back("Adjoint_Density[N]");
   }
+  if (config->GetKind_GasModel() == AIR5){
+    Variable_Names.push_back("AD[N2]");
+    Variable_Names.push_back("AD[O2]");
+    Variable_Names.push_back("AD[N0]");
+    Variable_Names.push_back("AD[N]");
+    Variable_Names.push_back("AD[O]");
+  }
 
   Variable_Names.push_back("Adjoint_Momentum_x");
   Variable_Names.push_back("Adjoint_Momentum_y");
   if (geometry->GetnDim() == 3)
     Variable_Names.push_back("Adjoint_Momentum_z");
   Variable_Names.push_back("Adjoint_Energy");
-  Variable_Names.push_back("Adjoint_Energy");
+  Variable_Names.push_back("Adjoint_Elec_Energy");
 
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
@@ -19724,6 +19844,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
+  bool tne2      = ((config->GetKind_Solver() == TNE2_EULER) ||
+                   (config->GetKind_Solver() == TNE2_NAVIER_STOKES));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
@@ -19803,7 +19925,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (tne2 && adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJTNE2_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (adjoint) Restart_Metadata[4]         = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
 
   /*--- Set a timer for the binary file writing. ---*/
   

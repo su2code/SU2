@@ -1168,6 +1168,11 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  string GasModel;        /*!< \brief Gas Model. */
+  string TransportModel;
+  bool MUTATION_PP;             /*!< \brief Determines if Mutation++ is to be used  */ 
+  
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3828,11 +3833,19 @@ public:
    */
   unsigned short GetKind_GasModel(void);
 
+  string GetGasModel(void);
+
+
+  bool GetMUTATION_PP(void);
+
+
   /*!
    * \brief Get the transport coefficient model.
    * \return Index of transport coefficient model.
    */
   unsigned short GetKind_TransCoeffModel(void);
+
+   string GetTransportModel(void);
 
   /*!
    * \brief Fluid model that we are using.

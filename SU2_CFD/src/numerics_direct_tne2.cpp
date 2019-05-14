@@ -567,6 +567,9 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
+  if (RHOS_INDEX != 0){
+    cout << "delete me:  " << RHOS_INDEX << endl;
+  }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -774,7 +777,6 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
       }
       val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += mF * a_i;
     }
-
 
     /*--- Calculate derivatives of the split pressure flux ---*/
     if ( (mF >= 0) || ((mF < 0)&&(fabs(mF) <= 1.0)) ) {
@@ -2307,7 +2309,7 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
-  //std::cout << "Mutation CAvgGrad_TNE2 1.5"  << std::endl<< std::endl<< std::endl<< std::endl;
+
   for (iVar = nSpecies; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
@@ -3137,7 +3139,35 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
     //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     //  val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
   }
-
+//<<<<<<< HEAD
+//=======
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
+//
+//  /*--- Loop over species to calculate source term --*/
+//  Qtv      = 0.0;
+//  taunum   = 0.0;
+//  taudenom = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//
+//    /*--- Rename for convenience ---*/
+//    rhos   = V_i[RHOS_INDEX+iSpecies];
+//
+//    /*--- Millikan & White relaxation time ---*/
+//    num   = 0.0;
+//    denom = 0.0;
+//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+//      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+//      B_sr   = 0.015 * pow(mu, 0.25);
+//      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+//      num   += X[jSpecies];
+//      denom += X[jSpecies] / tau_sr[iSpecies][jSpecies];
+//    }
+//    tauMW[iSpecies] = num / denom;
+//  }
+//>>>>>>> fd0d113faee2346868050ef7d2eb2739386bf6a6
+//
   //std::cout << "Mutation ComputeVibRelaxation 4"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   delete [] cs;
