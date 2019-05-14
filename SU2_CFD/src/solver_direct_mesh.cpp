@@ -685,8 +685,15 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
-  /*--- Symmetry plane and periodic boundaries are pending. ---*/
+  /*--- Symmetry plane is, for now, clamped. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Moving(iMarker) == NO) &&
+        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
+         BC_Clamped(geometry, numerics, config, iMarker);
+
+    }
+  }
 
 }
 
