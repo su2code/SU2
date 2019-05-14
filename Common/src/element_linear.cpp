@@ -2600,12 +2600,13 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
     GaussCoord [iGauss] = new su2double[nDim];
   }
 
-  GaussCoord[0][0] = 0.5;                 GaussCoord[0][1] = 0.5;                 GaussCoord[0][2] = -0.577350269189626;  GaussWeight[0] = 0.166666666666666;
-  GaussCoord[1][0] = -0.577350269189626;  GaussCoord[1][1] = 0.0;                 GaussCoord[1][2] = 0.5;                 GaussWeight[1] = 0.166666666666666;
-  GaussCoord[2][0] = 0.5;                 GaussCoord[2][1] = -0.577350269189626;  GaussCoord[2][2] = 0.0;                 GaussWeight[2] = 0.166666666666666;
-  GaussCoord[3][0] = 0.5;                 GaussCoord[3][1] = 0.5;                 GaussCoord[3][2] = 0.577350269189626;   GaussWeight[3] = 0.166666666666666;
-  GaussCoord[4][0] = 0.577350269189626;   GaussCoord[4][1] = 0.0;                 GaussCoord[4][2] = 0.5;                 GaussWeight[4] = 0.166666666666666;
-  GaussCoord[5][0] = 0.5;                 GaussCoord[5][1] = 0.577350269189626;   GaussCoord[5][2] = 0.0;                 GaussWeight[5] = 0.166666666666666;
+  GaussCoord[0][1] = -0.577350269189626;  GaussCoord[0][2] = 0.5;  GaussCoord[0][0] = 0.5;  GaussWeight[0] = -0.166666666666666;
+  GaussCoord[1][1] = -0.577350269189626;  GaussCoord[1][2] = 0.0;  GaussCoord[1][0] = 0.5;  GaussWeight[1] = -0.166666666666666;
+  GaussCoord[2][1] = -0.577350269189626;  GaussCoord[2][2] = 0.5;  GaussCoord[2][0] = 0.0;  GaussWeight[2] = -0.166666666666666;
+  GaussCoord[3][1] = 0.577350269189626;   GaussCoord[3][2] = 0.5;  GaussCoord[3][0] = 0.5;  GaussWeight[3] = -0.166666666666666;
+  GaussCoord[4][1] = 0.577350269189626;   GaussCoord[4][2] = 0.0;  GaussCoord[4][0] = 0.5;  GaussWeight[4] = -0.166666666666666;
+  GaussCoord[5][1] = 0.577350269189626;   GaussCoord[5][2] = 0.5;  GaussCoord[5][0] = 0.0;  GaussWeight[5] = -0.166666666666666;
+
 
   Kab = new su2double **[nNodes];
   for (iNode = 0; iNode < nNodes; iNode++){
