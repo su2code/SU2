@@ -44,6 +44,10 @@ namespace AD{
 
   typedef su2double::TapeType Tape;
 
+  typedef codi::ExternalFunctionHelper<su2double> ExtFuncHelper;
+
+  extern ExtFuncHelper* FuncHelper;
+
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
   extern std::vector<su2double::GradientData> inputValues;
@@ -67,6 +71,8 @@ namespace AD{
   extern std::vector<su2double::GradientData> localInputValues;
 
   extern std::vector<su2double*> localOutputValues;
+
+  extern codi::PreaccumulationHelper<su2double> PreaccHelper;  
 
   inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
                                              inputValues.push_back(data.getGradientData());}
@@ -95,7 +101,7 @@ namespace AD{
   inline void SetPreaccIn(const su2double &data) {
     if (PreaccActive) {
       if (data.isActive()) {
-        localInputValues.push_back(data.getGradientData());
+        PreaccHelper.addInput(data);       
       }
     }
   }
@@ -104,7 +110,7 @@ namespace AD{
     if (PreaccActive) {
       for (unsigned short i = 0; i < size; i++) {
         if (data[i].isActive()) {
-          localInputValues.push_back(data[i].getGradientData());
+          PreaccHelper.addInput(data[i]);
         }
       }
     }
@@ -115,7 +121,7 @@ namespace AD{
       for (unsigned short i = 0; i < size_x; i++) {
         for (unsigned short j = 0; j < size_y; j++) {
           if (data[i][j].isActive()) {
-            localInputValues.push_back(data[i][j].getGradientData());
+            PreaccHelper.addInput(data[i][j]);
           }
         }
       }
@@ -124,7 +130,7 @@ namespace AD{
 
   inline void StartPreacc() {
     if (globalTape.isActive() && PreaccEnabled) {
-      StartPosition = globalTape.getPosition();
+      PreaccHelper.start();
       PreaccActive = true;
     }
   }
@@ -132,7 +138,7 @@ namespace AD{
   inline void SetPreaccOut(su2double& data) {
     if (PreaccActive) {
       if (data.isActive()) {
-        localOutputValues.push_back(&data);
+        PreaccHelper.addOutput(data);
       }
     }
   }
@@ -141,7 +147,7 @@ namespace AD{
     if (PreaccActive) {
       for (unsigned short i = 0; i < size; i++) {
         if (data[i].isActive()) {
-          localOutputValues.push_back(&data[i]);
+          PreaccHelper.addOutput(data[i]);
         }
       }
     }
@@ -152,18 +158,79 @@ namespace AD{
       for (unsigned short i = 0; i < size_x; i++) {
         for (unsigned short j = 0; j < size_y; j++) {
           if (data[i][j].isActive()) {
-            localOutputValues.push_back(&data[i][j]);
+            PreaccHelper.addOutput(data[i][j]);
           }
         }
       }
     }
   }
 
+  inline void EndPreacc(){
+    if (PreaccActive) {
+      PreaccHelper.finish(false);
+    }
+  }
+  
+  inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
+    FuncHelper = new ExtFuncHelper(true);
+    if (!storePrimalInput){
+      FuncHelper->disableInputPrimalStore();
+    }
+    if (!storePrimalOutput){
+      FuncHelper->disableOutputPrimalStore();
+    }
+  }
+  
+  inline void SetExtFuncIn(const su2double &data) {
+    FuncHelper->addInput(data);       
+  }
+
+  inline void SetExtFuncIn(const su2double* data, const int size) {
+    for (int i = 0; i < size; i++) {
+      FuncHelper->addInput(data[i]);
+    }
+
+  }
+
+  inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        FuncHelper->addInput(data[i][j]);
+      }
+    }
+  }
+  
+  inline void SetExtFuncOut(su2double& data) {
+    if (globalTape.isActive()) {
+      FuncHelper->addOutput(data);
+    }
+  }
+
+  inline void SetExtFuncOut(su2double* data, const int size) {
+    for (int i = 0; i < size; i++) {
+      if (globalTape.isActive()) {
+        FuncHelper->addOutput(data[i]);
+      }
+    }
+  }
+
+  inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        if (globalTape.isActive()) {
+          FuncHelper->addOutput(data[i][j]);
+        }
+      }
+    }
+  }
 
   inline void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();
   }
+  
+  inline void EndExtFunc(){delete FuncHelper;}
+  
 #else
 
   /*--- Default implementation if reverse mode is disabled ---*/
@@ -199,5 +266,62 @@ namespace AD{
   inline void StartPreacc() {}
 
   inline void EndPreacc() {}
+  
+  inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){}
+  
+  inline void SetExtFuncIn(const su2double &data) {}
+
+  inline void SetExtFuncIn(const su2double* data, const int size) {}
+
+  inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {}
+  
+  inline void SetExtFuncOut(su2double& data) {}
+
+  inline void SetExtFuncOut(su2double* data, const int size) {}
+
+  inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {}
+  
+  inline void EndExtFunc(){}
 #endif
 }
+
+/*--- If we compile under OSX we have to overload some of the operators for
+ *   complex numbers to avoid the use of the standard operators
+ *  (they use a lot of functions that are only defined for doubles) ---*/
+
+#ifdef __APPLE__
+
+namespace std{
+  
+  template<>
+  inline su2double abs(const complex<su2double>& x){
+    
+    return sqrt(x.real()*x.real() + x.imag()*x.imag());
+    
+  }
+  
+  template<>
+  inline complex<su2double> operator/(const complex<su2double>& x,
+                                      const complex<su2double>& y){
+    
+    su2double d    = (y.real()*y.real() + y.imag()*y.imag());
+    su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
+    su2double imag = (x.imag()*y.real() - x.real()*y.imag())/d;
+    
+    return complex<su2double>(real, imag);
+    
+  }
+  
+  template<>
+  inline complex<su2double> operator*(const complex<su2double>& x,
+                                      const complex<su2double>& y){
+    
+    su2double real = (x.real()*y.real() - x.imag()*y.imag());
+    su2double imag = (x.imag()*y.real() + x.real()*y.imag());
+    
+    return complex<su2double>(real, imag);
+    
+  }
+}
+#endif
+
