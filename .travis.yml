@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - feature_python_AD
+        - develop
 
 python:
     #- 2.7
