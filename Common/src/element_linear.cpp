@@ -44,84 +44,14 @@ CTRIA1::CTRIA1(void) : CElement() {
 CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
   
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-  
-  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  unsigned short iGauss;
   
   nNodes = 3;
   nGaussPoints = 1;
   
-  nDimSq = nDim*nDim;
-  
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
-  
-  NodalExtrap = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalExtrap[iNode] = new su2double[nGaussPoints];
-  }
-  
-  NodalStress = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalStress[iNode] = new su2double[3];
-  }
-  
-  /*--- Initialize structure for current and reference configuration ---*/
-  
-  CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    CurrentCoord [iNode] = new su2double[nDim];
-  }
-  
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    RefCoord [iNode] = new su2double[nDim];
-  }
-  
-  GaussWeight = new su2double [nGaussPoints];
-  
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
+  AllocateStructures(config);
   
   GaussCoord[0][0] = 0.333333333333333;  GaussCoord[0][1] = 0.333333333333333;  GaussWeight[0] = 0.5;
-  
-  Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Mab[iNode] = new su2double [nNodes];
-  }
-  
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++) {
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
-  
-  Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Ks_ab[iNode] = new su2double [nNodes];
-  }
-  
-  Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kt_a[iNode] = new su2double [nDim];
-  }
-  
-  if (body_forces) {
-    FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      FDL_a[iNode] = new su2double [nDim];
-    }
-  }
-  else {
-    FDL_a = NULL;
-  }
   
   su2double Xi, Eta, val_Ni;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -329,89 +259,22 @@ CQUAD4::CQUAD4(void) : CElement() {
 CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
   
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-  
-  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  unsigned short iNode, iGauss;
   
   nNodes = 4;
   nGaussPoints = 4;
   
-  nDimSq = nDim*nDim;
+  AllocateStructures(config);
   
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
+  su2double oneOnSqrt3 = 0.577350269189626;
   
-  NodalExtrap = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalExtrap[iNode] = new su2double[nGaussPoints];
-  }
-  
-  NodalStress = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalStress[iNode] = new su2double[3];
-  }
-  
-  /*--- Initialize structure for current and reference configuration ---*/
-  
-  CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    CurrentCoord [iNode] = new su2double[nDim];
-  }
-  
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    RefCoord [iNode] = new su2double[nDim];
-  }
-  
-  GaussWeight = new su2double [nGaussPoints];
-  
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
-  
-  GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussWeight[0] = 1.0;
-  GaussCoord[1][0] = 0.577350269189626;   GaussCoord[1][1] = -0.577350269189626;  GaussWeight[1] = 1.0;
-  GaussCoord[2][0] = 0.577350269189626;   GaussCoord[2][1] = 0.577350269189626;   GaussWeight[2] = 1.0;
-  GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;   GaussWeight[3] = 1.0;
-  
-  Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Mab[iNode] = new su2double [nNodes];
-  }
-  
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++) {
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
-  
-  Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Ks_ab[iNode] = new su2double [nNodes];
-  }
-  
-  Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kt_a[iNode] = new su2double [nDim];
-  }
-  
-  if (body_forces) {
-    FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      FDL_a[iNode] = new su2double [nDim];
-    }
-  }
-  else {
-    FDL_a = NULL;
-  }
+  GaussCoord[0][0] = -oneOnSqrt3;  GaussCoord[0][1] = -oneOnSqrt3;  GaussWeight[0] = 1.0;
+  GaussCoord[1][0] =  oneOnSqrt3;  GaussCoord[1][1] = -oneOnSqrt3;  GaussWeight[1] = 1.0;
+  GaussCoord[2][0] =  oneOnSqrt3;  GaussCoord[2][1] =  oneOnSqrt3;  GaussWeight[2] = 1.0;
+  GaussCoord[3][0] = -oneOnSqrt3;  GaussCoord[3][1] =  oneOnSqrt3;  GaussWeight[3] = 1.0;
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
+  
   su2double Xi, Eta, val_Ni;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
@@ -423,14 +286,15 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
     val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
   }
   
-  su2double ExtrapCoord[4][2];
+  /*--- Store the extrapolation functions (used to compute nodal stresses) ---*/
   
-  ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;
-  ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;
-  ExtrapCoord[2][0] = 1.732050807568877;   ExtrapCoord[2][1] = 1.732050807568877;
-  ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;
+  su2double ExtrapCoord[4][2], sqrt3 = 1.732050807568877;;
   
-  /*--- Store the shape functions (they only need to be computed once) ---*/
+  ExtrapCoord[0][0] = -sqrt3;  ExtrapCoord[0][1] = -sqrt3;
+  ExtrapCoord[1][0] =  sqrt3;  ExtrapCoord[1][1] = -sqrt3;
+  ExtrapCoord[2][0] =  sqrt3;  ExtrapCoord[2][1] =  sqrt3;
+  ExtrapCoord[3][0] = -sqrt3;  ExtrapCoord[3][1] =  sqrt3;
+  
   for (iNode = 0; iNode < nNodes; iNode++) {
     Xi = ExtrapCoord[iNode][0];
     Eta = ExtrapCoord[iNode][1];
@@ -653,6 +517,8 @@ CQUAD1::CQUAD1(void) : CElement() {
 CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
+  /*--- These elements are currently only used for incompressible terms. ---*/
+
 	unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
 
@@ -727,40 +593,6 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 }
 
 CQUAD1::~CQUAD1(void) {
-
-  unsigned short iVar, jVar;
-
-  for (iVar = 0; iVar < nGaussPoints; iVar++){
-    delete [] GaussCoord[iVar];
-    delete [] GaussPoint[iVar];
-  }
-
-  for (iVar = 0; iVar < nNodes; iVar++){
-    for (jVar = 0; jVar < nNodes; jVar++){
-      delete [] Kab[iVar][jVar];
-    }
-    delete [] CurrentCoord[iVar];
-    delete [] RefCoord[iVar];
-    delete [] Mab[iVar];
-    delete [] Kab[iVar];
-    delete [] Ks_ab[iVar];
-    delete [] Kt_a[iVar];
-    if (FDL_a != NULL) delete [] FDL_a[iVar];
-    delete [] NodalExtrap[iVar];
-  }
-
-  delete [] GaussCoord;
-  delete [] GaussPoint;
-  delete [] CurrentCoord;
-  delete [] RefCoord;
-  delete [] Mab;
-  delete [] Kab;
-  delete [] Ks_ab;
-  delete [] Kt_a;
-  delete [] GaussWeight;
-  delete [] NodalExtrap;
-
-  if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -1001,84 +833,14 @@ CTETRA1::CTETRA1(void) : CElement() {
 CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
   
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-  
-  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  unsigned short iGauss;
   
   nNodes = 4;
   nGaussPoints = 1;
   
-  nDimSq = nDim*nDim;
-  
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
-  
-  NodalExtrap = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalExtrap[iNode] = new su2double[nGaussPoints];
-  }
-  
-  NodalStress = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalStress[iNode] = new su2double[6];
-  }
-  
-  /*--- Initialize structure for current and reference configuration ---*/
-  
-  CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    CurrentCoord [iNode] = new su2double[nDim];
-  }
-  
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    RefCoord [iNode] = new su2double[nDim];
-  }
-  
-  GaussWeight = new su2double [nGaussPoints];
-  
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
+  AllocateStructures(config);
   
   GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 0.166666666666666;
-  
-  Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Mab[iNode] = new su2double [nNodes];
-  }
-  
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++) {
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
-  
-  Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Ks_ab[iNode] = new su2double [nNodes];
-  }
-  
-  Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kt_a[iNode] = new su2double [nDim];
-  }
-  
-  if (body_forces) {
-    FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      FDL_a[iNode] = new su2double [nDim];
-    }
-  }
-  else {
-    FDL_a = NULL;
-  }
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
   su2double Xi, Eta, Zeta, val_Ni;
@@ -1087,10 +849,10 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
     
-    val_Ni = Xi;						GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = Eta;						GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 1.0 - Xi - Eta - Zeta;	GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = Zeta;					GaussPoint[iGauss]->SetNi(val_Ni,3);
+    val_Ni = Xi;						  GaussPoint[iGauss]->SetNi(val_Ni,0);
+    val_Ni = Eta;						  GaussPoint[iGauss]->SetNi(val_Ni,1);
+    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss]->SetNi(val_Ni,2);
+    val_Ni = Zeta;					  GaussPoint[iGauss]->SetNi(val_Ni,3);
   }
   
   /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
@@ -1314,94 +1076,26 @@ CHEXA8::CHEXA8(void) : CElement() {
 CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
   
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-  
-  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  unsigned short iNode, iGauss;
   
   nNodes = 8;
   nGaussPoints = 8;
   
-  nDimSq = nDim*nDim;
-  
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
-  
-  NodalExtrap = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalExtrap[iNode] = new su2double[nGaussPoints];
-  }
-  
-  NodalStress = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    NodalStress[iNode] = new su2double[6];
-  }
-  
-  /*--- Initialize structure for current and reference configuration ---*/
-  
-  CurrentCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    CurrentCoord [iNode] = new su2double[nDim];
-  }
-  
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    RefCoord [iNode] = new su2double[nDim];
-  }
-  
-  GaussWeight = new su2double [nGaussPoints];
-  
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
-  
-  GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussCoord[0][2] = -0.577350269189626;	GaussWeight[0] = 1.0;
-  GaussCoord[1][0] = 0.577350269189626;   GaussCoord[1][1] = -0.577350269189626;  GaussCoord[1][2] = -0.577350269189626;  GaussWeight[1] = 1.0;
-  GaussCoord[2][0] = 0.577350269189626;   GaussCoord[2][1] = 0.577350269189626;  	GaussCoord[2][2] = -0.577350269189626;  GaussWeight[2] = 1.0;
-  GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;  	GaussCoord[3][2] = -0.577350269189626;  GaussWeight[3] = 1.0;
-  GaussCoord[4][0] = -0.577350269189626;  GaussCoord[4][1] = -0.577350269189626;  GaussCoord[4][2] = 0.577350269189626;  	GaussWeight[4] = 1.0;
-  GaussCoord[5][0] = 0.577350269189626;   GaussCoord[5][1] = -0.577350269189626;  GaussCoord[5][2] = 0.577350269189626;  	GaussWeight[5] = 1.0;
-  GaussCoord[6][0] = 0.577350269189626;   GaussCoord[6][1] = 0.577350269189626;  	GaussCoord[6][2] = 0.577350269189626;  	GaussWeight[6] = 1.0;
-  GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[7] = 1.0;
-  
-  Mab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Mab[iNode] = new su2double [nNodes];
-  }
-  
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++) {
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
-  
-  Ks_ab = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Ks_ab[iNode] = new su2double [nNodes];
-  }
-  
-  Kt_a = new su2double *[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++) {
-    Kt_a[iNode] = new su2double [nDim];
-  }
-  
-  if (body_forces) {
-    FDL_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      FDL_a[iNode] = new su2double [nDim];
-    }
-  }
-  else {
-    FDL_a = NULL;
-  }
-  
+  AllocateStructures(config);
+
+  su2double oneOnSqrt3 = 0.577350269189626;
+
+  GaussCoord[0][0] = -oneOnSqrt3;  GaussCoord[0][1] = -oneOnSqrt3;  GaussCoord[0][2] = -oneOnSqrt3;	 GaussWeight[0] = 1.0;
+  GaussCoord[1][0] =  oneOnSqrt3;  GaussCoord[1][1] = -oneOnSqrt3;  GaussCoord[1][2] = -oneOnSqrt3;  GaussWeight[1] = 1.0;
+  GaussCoord[2][0] =  oneOnSqrt3;  GaussCoord[2][1] =  oneOnSqrt3;  GaussCoord[2][2] = -oneOnSqrt3;  GaussWeight[2] = 1.0;
+  GaussCoord[3][0] = -oneOnSqrt3;  GaussCoord[3][1] =  oneOnSqrt3;  GaussCoord[3][2] = -oneOnSqrt3;  GaussWeight[3] = 1.0;
+  GaussCoord[4][0] = -oneOnSqrt3;  GaussCoord[4][1] = -oneOnSqrt3;  GaussCoord[4][2] =  oneOnSqrt3;  GaussWeight[4] = 1.0;
+  GaussCoord[5][0] =  oneOnSqrt3;  GaussCoord[5][1] = -oneOnSqrt3;  GaussCoord[5][2] =  oneOnSqrt3;  GaussWeight[5] = 1.0;
+  GaussCoord[6][0] =  oneOnSqrt3;  GaussCoord[6][1] =  oneOnSqrt3;  GaussCoord[6][2] =  oneOnSqrt3;  GaussWeight[6] = 1.0;
+  GaussCoord[7][0] = -oneOnSqrt3;  GaussCoord[7][1] =  oneOnSqrt3;  GaussCoord[7][2] =  oneOnSqrt3;  GaussWeight[7] = 1.0;
   
   /*--- Store the shape functions (they only need to be computed once) ---*/
+  
   su2double Xi, Eta, Zeta, val_Ni;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
     Xi = GaussCoord[iGauss][0];
@@ -1418,20 +1112,19 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
     val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);		GaussPoint[iGauss]->SetNi(val_Ni,7);
   }
   
+  /*--- Store the extrapolation functions ---*/
   
-  su2double ExtrapCoord[8][3];
+  su2double ExtrapCoord[8][3], sqrt3 = 1.732050807568877;
   
-  ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;  	ExtrapCoord[0][2] = -1.732050807568877;
-  ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;  	ExtrapCoord[1][2] = -1.732050807568877;
-  ExtrapCoord[2][0] = 1.732050807568877;   ExtrapCoord[2][1] = 1.732050807568877;  	ExtrapCoord[2][2] = -1.732050807568877;
-  ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;  	ExtrapCoord[3][2] = -1.732050807568877;
-  ExtrapCoord[4][0] = -1.732050807568877;  ExtrapCoord[4][1] = -1.732050807568877;  	ExtrapCoord[4][2] = 1.732050807568877;
-  ExtrapCoord[5][0] = 1.732050807568877;   ExtrapCoord[5][1] = -1.732050807568877;  	ExtrapCoord[5][2] = 1.732050807568877;
-  ExtrapCoord[6][0] = 1.732050807568877;   ExtrapCoord[6][1] = 1.732050807568877;  	ExtrapCoord[6][2] = 1.732050807568877;
-  ExtrapCoord[7][0] = -1.732050807568877;  ExtrapCoord[7][1] = 1.732050807568877;  	ExtrapCoord[7][2] = 1.732050807568877;
+  ExtrapCoord[0][0] = -sqrt3;  ExtrapCoord[0][1] = -sqrt3;  ExtrapCoord[0][2] = -sqrt3;
+  ExtrapCoord[1][0] =  sqrt3;  ExtrapCoord[1][1] = -sqrt3;  ExtrapCoord[1][2] = -sqrt3;
+  ExtrapCoord[2][0] =  sqrt3;  ExtrapCoord[2][1] =  sqrt3;  ExtrapCoord[2][2] = -sqrt3;
+  ExtrapCoord[3][0] = -sqrt3;  ExtrapCoord[3][1] =  sqrt3;  ExtrapCoord[3][2] = -sqrt3;
+  ExtrapCoord[4][0] = -sqrt3;  ExtrapCoord[4][1] = -sqrt3;  ExtrapCoord[4][2] =  sqrt3;
+  ExtrapCoord[5][0] =  sqrt3;  ExtrapCoord[5][1] = -sqrt3;  ExtrapCoord[5][2] =  sqrt3;
+  ExtrapCoord[6][0] =  sqrt3;  ExtrapCoord[6][1] =  sqrt3;  ExtrapCoord[6][2] =  sqrt3;
+  ExtrapCoord[7][0] = -sqrt3;  ExtrapCoord[7][1] =  sqrt3;  ExtrapCoord[7][2] =  sqrt3;
   
-  
-  /*--- Store the shape functions (they only need to be computed once) ---*/
   for (iNode = 0; iNode < nNodes; iNode++) {
     Xi = ExtrapCoord[iNode][0];
     Eta = ExtrapCoord[iNode][1];
@@ -1824,6 +1517,8 @@ CHEXA1::CHEXA1(void) : CElement() {
 CHEXA1::CHEXA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
+  /*--- This element is only used to integrate incompressible terms. ---*/
+
   unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
   nNodes = 8;
@@ -1865,7 +1560,7 @@ CHEXA1::CHEXA1(unsigned short val_nDim, CConfig *config)
     GaussCoord [iGauss] = new su2double[nDim];
   }
 
-  GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 8.0;
+  GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 8.0;
 
   Kk_ab = new su2double **[nNodes];
   for (iNode = 0; iNode < nNodes; iNode++) {
@@ -2330,74 +2025,55 @@ CPYRAM5::CPYRAM5(void) : CElement() {
 CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
+  unsigned short iNode, iGauss;
 
   nNodes = 5;
   nGaussPoints = 5;
 
-  nDimSq = nDim*nDim;
-
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
-
-  /* These structures are only needed for non-linear elasticity in structural analysiss
-   * These elements are only used for mesh deformation
-   */
-
-  NodalExtrap  = NULL;
-  NodalStress  = NULL;
-  CurrentCoord = NULL;
-  Mab          = NULL;
-  Ks_ab        = NULL;
-  Kt_a         = NULL;
-  FDL_a        = NULL;
-
-  /* Initialize structure only for reference configuration
-   * These elements are only used for mesh deformation
-   */
-
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
-    RefCoord [iNode] = new su2double[nDim];
-  }
-
-  GaussWeight = new su2double [nGaussPoints];
-
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
-
-  GaussCoord[0][0] = 0.5;   GaussCoord[0][1] = 0.0;   GaussCoord[0][2] = 0.1531754163448146;  GaussWeight[0] = 0.133333333333333;
-  GaussCoord[1][0] = 0.0;   GaussCoord[1][1] = 0.5;   GaussCoord[1][2] = 0.1531754163448146;  GaussWeight[1] = 0.133333333333333;
-  GaussCoord[2][0] = -0.5;  GaussCoord[2][1] = 0.0;   GaussCoord[2][2] = 0.1531754163448146;  GaussWeight[2] = 0.133333333333333;
-  GaussCoord[3][0] = 0.0;   GaussCoord[3][1] = -0.5;  GaussCoord[3][2] = 0.1531754163448146;  GaussWeight[3] = 0.133333333333333;
-  GaussCoord[4][0] = 0.0;   GaussCoord[4][1] = 0.0;   GaussCoord[4][2] = 0.6372983346207416;  GaussWeight[4] = 0.133333333333333;
-
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
+  AllocateStructures(config);
+  
+  GaussCoord[0][0] = 0.5;  GaussCoord[0][1] = 0.0;  GaussCoord[0][2] = 0.1531754163448146;  GaussWeight[0] = 2.0/15.0;
+  GaussCoord[1][0] = 0.0;  GaussCoord[1][1] = 0.5;  GaussCoord[1][2] = 0.1531754163448146;  GaussWeight[1] = 2.0/15.0;
+  GaussCoord[2][0] =-0.5;  GaussCoord[2][1] = 0.0;  GaussCoord[2][2] = 0.1531754163448146;  GaussWeight[2] = 2.0/15.0;
+  GaussCoord[3][0] = 0.0;  GaussCoord[3][1] =-0.5;  GaussCoord[3][2] = 0.1531754163448146;  GaussWeight[3] = 2.0/15.0;
+  GaussCoord[4][0] = 0.0;  GaussCoord[4][1] = 0.0;  GaussCoord[4][2] = 0.6372983346207416;  GaussWeight[4] = 2.0/15.0;
 
   /*--- Store the shape functions (they only need to be computed once) ---*/
+  
   su2double Xi, Eta, Zeta, val_Ni;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
       Xi = GaussCoord[iGauss][0];
       Eta = GaussCoord[iGauss][1];
       Zeta = GaussCoord[iGauss][2];
 
-      val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta); GaussPoint[iGauss]->SetNi(val_Ni,0);
-      val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta); GaussPoint[iGauss]->SetNi(val_Ni,1);
-      val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta); GaussPoint[iGauss]->SetNi(val_Ni,2);
-      val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta); GaussPoint[iGauss]->SetNi(val_Ni,3);
-      val_Ni = 0.5*(1.0+Zeta);                      GaussPoint[iGauss]->SetNi(val_Ni,4);
+      val_Ni = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,0);
+      val_Ni = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,1);
+      val_Ni = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,2);
+      val_Ni = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);  GaussPoint[iGauss]->SetNi(val_Ni,3);
+      val_Ni = Zeta;                                                   GaussPoint[iGauss]->SetNi(val_Ni,4);
 
+  }
+  
+  /*--- Store the extrapolation functions ---*/
+
+  su2double ExtrapCoord[5][3];
+
+  ExtrapCoord[0][0] =  2.0;  ExtrapCoord[0][1] =  0.0;  ExtrapCoord[0][2] = -0.316397779494322;
+  ExtrapCoord[1][0] =  0.0;  ExtrapCoord[1][1] =  2.0;  ExtrapCoord[1][2] = -0.316397779494322;
+  ExtrapCoord[2][0] = -2.0;  ExtrapCoord[2][1] =  0.0;  ExtrapCoord[2][2] = -0.316397779494322;
+  ExtrapCoord[3][0] =  0.0;  ExtrapCoord[3][1] = -2.0;  ExtrapCoord[3][2] = -0.316397779494322;
+  ExtrapCoord[4][0] =  0.0;  ExtrapCoord[4][1] =  0.0;  ExtrapCoord[4][2] =  1.749193338482970;
+
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Xi = ExtrapCoord[iNode][0];
+    Eta = ExtrapCoord[iNode][1];
+    Zeta = ExtrapCoord[iNode][2];
+
+    NodalExtrap[iNode][0] = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][1] = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][2] = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][3] = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);
+    NodalExtrap[iNode][4] = Zeta;
   }
 
 }
@@ -2422,27 +2098,27 @@ void CPYRAM5::ComputeGrad_Linear(void){
 
       /*--- dN/d xi ---*/
 
-      dNiXj[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-      dNiXj[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
-      dNiXj[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
-      dNiXj[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
+      dNiXj[0][0] = 0.5*(Zeta-Xi-1.0)/(Zeta-1.0);
+      dNiXj[1][0] = 0.5*Xi/(Zeta-1.0);
+      dNiXj[2][0] = 0.5*(1.0-Zeta-Xi)/(Zeta-1.0);
+      dNiXj[3][0] = dNiXj[1][0];
       dNiXj[4][0] = 0.0;
 
       /*--- dN/d eta ---*/
 
-      dNiXj[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-      dNiXj[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-      dNiXj[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
-      dNiXj[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
+      dNiXj[0][1] = 0.5*Eta/(Zeta-1.0);
+      dNiXj[1][1] = 0.5*(Zeta-Eta-1.0)/(Zeta-1.0);
+      dNiXj[2][1] = dNiXj[0][1];
+      dNiXj[3][1] = 0.5*(1.0-Zeta-Eta)/(Zeta-1.0);
       dNiXj[4][1] = 0.0;
 
       /*--- dN/d mu ---*/
 
-      dNiXj[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-      dNiXj[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-      dNiXj[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-      dNiXj[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-      dNiXj[4][2] = 0.5;
+      dNiXj[0][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta - Eta*Eta + Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+      dNiXj[1][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta + Eta*Eta - Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+      dNiXj[2][2] = dNiXj[0][2];
+      dNiXj[3][2] = dNiXj[1][2];
+      dNiXj[4][2] = 1.0;
 
       /*--- Jacobian transformation ---*/
       /*--- This does dX/dXi transpose ---*/
@@ -2539,63 +2215,25 @@ CPRISM6::CPRISM6(void) : CElement() {
 CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-
+  unsigned short iNode, iGauss;
+  
   nNodes = 6;
   nGaussPoints = 6;
 
-  nDimSq = nDim*nDim;
+  AllocateStructures(config);
+  
+  /*--- There is some inconsistency between the shape functions and the order of the nodes
+        that causes "negative" stiffness, the remedy is to use negative weights. ---*/
 
-  GaussPoint = new CGaussVariable*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-  }
-
-  /* These structures are only needed for non-linear elasticity in structural analysiss
-   * These elements are only used for mesh deformation
-   */
-
-  NodalExtrap  = NULL;
-  NodalStress  = NULL;
-  CurrentCoord = NULL;
-  Mab          = NULL;
-  Ks_ab        = NULL;
-  Kt_a         = NULL;
-  FDL_a        = NULL;
-
-  /* Initialize structure only for reference configuration
-   * These elements are only used for mesh deformation
-   */
-
-  RefCoord = new su2double*[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
-    RefCoord [iNode] = new su2double[nDim];
-  }
-
-  GaussWeight = new su2double [nGaussPoints];
-
-  GaussCoord = new su2double*[nGaussPoints];
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-    GaussCoord [iGauss] = new su2double[nDim];
-  }
-
-  GaussCoord[0][0] = 0.5;                 GaussCoord[0][1] = 0.5;                 GaussCoord[0][2] = -0.577350269189626;  GaussWeight[0] = 0.166666666666666;
-  GaussCoord[1][0] = -0.577350269189626;  GaussCoord[1][1] = 0.0;                 GaussCoord[1][2] = 0.5;                 GaussWeight[1] = 0.166666666666666;
-  GaussCoord[2][0] = 0.5;                 GaussCoord[2][1] = -0.577350269189626;  GaussCoord[2][2] = 0.0;                 GaussWeight[2] = 0.166666666666666;
-  GaussCoord[3][0] = 0.5;                 GaussCoord[3][1] = 0.5;                 GaussCoord[3][2] = 0.577350269189626;   GaussWeight[3] = 0.166666666666666;
-  GaussCoord[4][0] = 0.577350269189626;   GaussCoord[4][1] = 0.0;                 GaussCoord[4][2] = 0.5;                 GaussWeight[4] = 0.166666666666666;
-  GaussCoord[5][0] = 0.5;                 GaussCoord[5][1] = 0.577350269189626;   GaussCoord[5][2] = 0.0;                 GaussWeight[5] = 0.166666666666666;
-
-  Kab = new su2double **[nNodes];
-  for (iNode = 0; iNode < nNodes; iNode++){
-    Kab [iNode] = new su2double*[nNodes];
-    for (jNode = 0; jNode < nNodes; jNode++){
-      Kab [iNode][jNode] = new su2double[nDimSq];
-    }
-  }
+  GaussCoord[0][0] =-0.577350269189626;  GaussCoord[0][1] = 1.0/6.0;  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = -1.0/6.0;
+  GaussCoord[1][0] =-0.577350269189626;  GaussCoord[1][1] = 2.0/3.0;  GaussCoord[1][2] = 1.0/6.0;  GaussWeight[1] = -1.0/6.0;
+  GaussCoord[2][0] =-0.577350269189626;  GaussCoord[2][1] = 1.0/6.0;  GaussCoord[2][2] = 2.0/3.0;  GaussWeight[2] = -1.0/6.0;
+  GaussCoord[3][0] = 0.577350269189626;  GaussCoord[3][1] = 1.0/6.0;  GaussCoord[3][2] = 1.0/6.0;  GaussWeight[3] = -1.0/6.0;
+  GaussCoord[4][0] = 0.577350269189626;  GaussCoord[4][1] = 2.0/3.0;  GaussCoord[4][2] = 1.0/6.0;  GaussWeight[4] = -1.0/6.0;
+  GaussCoord[5][0] = 0.577350269189626;  GaussCoord[5][1] = 1.0/6.0;  GaussCoord[5][2] = 2.0/3.0;  GaussWeight[5] = -1.0/6.0;
 
   /*--- Store the shape functions (they only need to be computed once) ---*/
+
   su2double Xi, Eta, Zeta, val_Ni;
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
       Xi = GaussCoord[iGauss][0];
@@ -2609,6 +2247,30 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
       val_Ni = 0.5*Zeta*(Xi+1.0);             GaussPoint[iGauss]->SetNi(val_Ni,4);
       val_Ni = 0.5*(1.0-Eta-Zeta)*(Xi+1.0);   GaussPoint[iGauss]->SetNi(val_Ni,5);
 
+  }
+
+  /*--- Store the extrapolation functions ---*/
+  
+  su2double ExtrapCoord[6][3];
+
+  ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.0/3.0;  ExtrapCoord[0][2] = -1.0/3.0;
+  ExtrapCoord[1][0] = -1.732050807568877;  ExtrapCoord[1][1] =  5.0/3.0;  ExtrapCoord[1][2] = -1.0/3.0;
+  ExtrapCoord[2][0] = -1.732050807568877;  ExtrapCoord[2][1] = -1.0/3.0;  ExtrapCoord[2][2] =  5.0/3.0;
+  ExtrapCoord[3][0] =  1.732050807568877;  ExtrapCoord[3][1] = -1.0/3.0;  ExtrapCoord[3][2] = -1.0/3.0;
+  ExtrapCoord[4][0] =  1.732050807568877;  ExtrapCoord[4][1] =  5.0/3.0;  ExtrapCoord[4][2] = -1.0/3.0;
+  ExtrapCoord[5][0] =  1.732050807568877;  ExtrapCoord[5][1] = -1.0/3.0;  ExtrapCoord[5][2] =  5.0/3.0;
+
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Xi = ExtrapCoord[iNode][0];
+    Eta = ExtrapCoord[iNode][1];
+    Zeta = ExtrapCoord[iNode][2];
+
+    NodalExtrap[iNode][0] = 0.5*Eta*(1.0-Xi);
+    NodalExtrap[iNode][1] = 0.5*Zeta*(1.0-Xi);
+    NodalExtrap[iNode][2] = 0.5*(1.0-Eta-Zeta)*(1.0-Xi);
+    NodalExtrap[iNode][3] = 0.5*Eta*(Xi+1.0);
+    NodalExtrap[iNode][4] = 0.5*Zeta*(Xi+1.0);
+    NodalExtrap[iNode][5] = 0.5*(1.0-Eta-Zeta)*(Xi+1.0);
   }
 
 }

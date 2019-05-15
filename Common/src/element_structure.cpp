@@ -232,6 +232,77 @@ CElement::~CElement(void) {
   
 }
 
+void CElement::AllocateStructures(CConfig* config) {
+
+  /*--- Derived classes should call this method after setting nGauss and nNodes. ---*/
+
+  unsigned short iNode, jNode, iGauss, nDimSq = nDim*nDim;
+
+  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
+  GaussPoint = new CGaussVariable*[nGaussPoints];
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
+  }
+
+  NodalExtrap = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalExtrap[iNode] = new su2double[nGaussPoints];
+  }
+
+  NodalStress = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalStress[iNode] = new su2double[6];
+  }
+
+  CurrentCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    CurrentCoord [iNode] = new su2double[nDim];
+  }
+
+  RefCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    RefCoord [iNode] = new su2double[nDim];
+  }
+
+  GaussWeight = new su2double [nGaussPoints];
+
+  GaussCoord = new su2double*[nGaussPoints];
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+    GaussCoord [iGauss] = new su2double[nDim];
+  }
+
+  Mab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Mab[iNode] = new su2double [nNodes];
+  }
+
+  Kab = new su2double **[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kab [iNode] = new su2double*[nNodes];
+    for (jNode = 0; jNode < nNodes; jNode++) {
+      Kab [iNode][jNode] = new su2double[nDimSq];
+    }
+  }
+
+  Ks_ab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Ks_ab[iNode] = new su2double [nNodes];
+  }
+
+  Kt_a = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kt_a[iNode] = new su2double [nDim];
+  }
+
+  if (body_forces) {
+    FDL_a = new su2double *[nNodes];
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      FDL_a[iNode] = new su2double [nDim];
+    }
+  }
+}
+
 void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
   
   unsigned short iDim, jDim;
