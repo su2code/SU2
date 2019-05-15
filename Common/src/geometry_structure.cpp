@@ -6828,30 +6828,17 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   map<unsigned long, unsigned long>::const_iterator MI;
   
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
-    additional elements (and nodes) may be added as halo's. ---*/
+        additional elements (and nodes) may be added as halo's. Only needed
+        in parallel mode. ---*/
+#ifdef HAVE_MPI
   if (config->GetWall_Functions()){
 
-    if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. " << endl;
+    if (rank == MASTER_NODE)
+      cout << "Adding wall model donor elements to the halo list. " << endl;
 
-    SetPoint_Connectivity();
-    SetRCM_Ordering(config);
-    SetPoint_Connectivity();
-    SetElement_Connectivity();
-    SetBoundVolume();
-    /*--- Correct the orientation of the elements and flip the negative ones. ---*/
-    Check_IntElem_Orientation(config);
-    Check_BoundElem_Orientation(config);
-
-    /*--- Calculate Normals for the wall model preprocessing ---*/
-    SetEdges();
-    SetVertex(config);
-    SetCoord_CG();
-    SetControlVolume(config, ALLOCATE);
-    SetBoundControlVolume(config, ALLOCATE);
-
-    /*--- Perform the preprocessing tasks when wall functions are used. ---*/
-    WallModelPreprocessing(config);
+    AddWallModelDonorHalos(config);
   }
+#endif
 
   /*--- Allocate the first dimension of the double vectors to
     store the external nodes. ---*/
@@ -11538,28 +11525,12 @@ void CPhysicalGeometry::BuildLocalVolumeADT(CADTElemClass *&localVolumeADT) {
 
 void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
-  /* If no wall models are used, nothing needs to be done and a
-   return can be made. */
-  if( !config->GetWall_Functions() ) return;
-
   /* Build the local ADT of the volume elements, including halo elements. */
   CADTElemClass *localVolumeADT;
   BuildLocalVolumeADT(localVolumeADT);
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1. Search for donor elements at the exchange locations in     ---*/
-  /*---         the local elements.                                        ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Define the vectors, which store the boundary marker, boundary node ID
-     and the corresponding exchange coordinates for which no donor element was
-     found in the locally stored volume elements. */
-  vector<unsigned short> markerIDGlobalSearch;
-  vector<unsigned long>  boundaryNodeIDGlobalSearch;
-  vector<su2double>      coorExGlobalSearch;
-  
   /* Loop over the markers and select the ones for which a wall function
-   treatment must be carried out. */
+     treatment must be carried out. */
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     
     switch (config->GetMarker_All_KindBC(iMarker)) {
@@ -11599,10 +11570,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
                                                            donorElem, rankElem, parCoor,
                                                            weightsInterpol) ) {
 
-              /*--- Donor element found. No need to flag it as an interpolation
-                    donor, because this element is already stored on this rank. 
-                    If this element is a prism, swap some of the weights. This is
-                    due to difference in connectivity between ADT and VTK storage. ---*/
+              /*--- Donor element found. If this element is a prism, swap some
+                    of the weights. This is due to difference in connectivity
+                    between ADT and VTK storage. ---*/
               if(elem[donorElem]->GetVTK_Type() == PRISM) {
                 swap(weightsInterpol[1], weightsInterpol[2]);
                 swap(weightsInterpol[4], weightsInterpol[5]);
@@ -11624,10 +11594,108 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             }
             else {
 
-              /* Donor element not found in the local ADT. Store the exchange
-                 coordinates, boundary marker and boundary node ID. */
-              markerIDGlobalSearch.push_back(iMarker);
-              boundaryNodeIDGlobalSearch.push_back(iVertex);
+              /* Donor element not found in the local ADT. This should not happen,
+                 because all halo donors should have been added in the function
+                 CPhysicalGeometry::AddWallModelDonorHalos. */
+              SU2_MPI::Error("Donor element not found. This should not happen",
+                             CURRENT_FUNCTION);
+            }
+          }
+        }
+        break;
+      }
+      default:
+        break;
+
+    }
+  }
+
+  /* Delete the memory of localVolumeADT again. */
+  delete localVolumeADT;
+}
+
+#ifdef HAVE_MPI
+void CPhysicalGeometry::AddWallModelDonorHalos(CConfig *config) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute the normals for the boundaries for which a wall    ---*/
+  /*---         treatment must be used. The sequence if functions calls    ---*/
+  /*---         below does the job, but it is not the most efficient way   ---*/
+  /*---         of doing this. So this may need some improvement.          ---*/
+  /*--------------------------------------------------------------------------*/
+
+  SetPoint_Connectivity();
+  SetRCM_Ordering(config);
+  SetPoint_Connectivity();
+  SetElement_Connectivity();
+  SetBoundVolume();
+
+  /*--- Correct the orientation of the elements and flip the negative ones. ---*/
+  Check_IntElem_Orientation(config);
+  Check_BoundElem_Orientation(config);
+
+  /*--- Calculate Normals for the wall model preprocessing ---*/
+  SetEdges();
+  SetVertex(config);
+  SetCoord_CG();
+  SetControlVolume(config, ALLOCATE);
+  SetBoundControlVolume(config, ALLOCATE);
+
+  /* Build the local ADT of the volume elements, including halo elements. */
+  CADTElemClass *localVolumeADT;
+  BuildLocalVolumeADT(localVolumeADT);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Search for donor elements at the exchange locations in     ---*/
+  /*---         the local elements. Store the ones that are not found.     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Define the vector, which store the exchange coordinates for which no
+     donor element was found in the locally stored volume elements. */
+  vector<su2double> coorExGlobalSearch;
+  
+  /* Loop over the markers and select the ones for which a wall function
+   treatment must be carried out. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+                    
+          /* Retrieve the floating point information for this boundary marker. The
+             exchange location is the first element of the floating point array. */
+          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+ 
+          /*--- Loop over the vertices of the boundary marker. ---*/
+          for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            
+            unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+            su2double *iNormal = vertex[iMarker][iVertex]->GetNormal();
+            su2double normals[] = {0.0,0.0,0.0},Area;
+            su2double *Coord  = node[iPoint]->GetCoord();
+            
+            Area = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += iNormal[iDim]*iNormal[iDim];
+            Area = sqrt(Area);
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) normals[iDim] = -iNormal[iDim]/Area;
+
+            /* Determine the coordinates of the exchange location. Note that the normals
+             point out of the domain, so the normals must be subtracted. */
+            su2double coorExchange[] = {0.0, 0.0, 0.0};  // To avoid a compiler warning.
+            for(unsigned short iDim=0; iDim<nDim; ++iDim)
+              coorExchange[iDim] = Coord[iDim] - doubleInfo[0]*normals[iDim];
+            
+            /* Search for the element, which contains the exchange location.
+               If the element is not found, the point must be stored for
+               the global search. */
+            unsigned short dummy;
+            unsigned long  donorElem;
+            int            rankElem;
+            su2double      parCoor[3], weightsInterpol[8];
+            if( !(localVolumeADT->DetermineContainingElement(coorExchange, dummy,
+                                                             donorElem, rankElem, parCoor,
+                                                             weightsInterpol)) ) {
               for(unsigned short iDim=0; iDim<nDim; ++iDim)
                 coorExGlobalSearch.push_back(coorExchange[iDim]);
             }
@@ -11641,26 +11709,16 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     }
   }
 
-#ifndef HAVE_MPI
-  /* In sequential mode it should not be possible that there are points for which
-     no donor elements are found. Check this. */
-  if( markerIDGlobalSearch.size() ) {
-    ostringstream message;
-    message << markerIDGlobalSearch.size() << " boundary points for which "
-            << "no donor elements for the wall functions were found." << endl
-            << "Something is seriously wrong";
-    SU2_MPI::Error("message.str()", CURRENT_FUNCTION);
-  }
-#endif
-
-  /* The remaining part of this function only needs to be carried out in parallel mode. */
-#ifdef HAVE_MPI
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Gather all points for which a global search must be        ---*/
+  /*---         performed on all processors.                               ---*/
+  /*--------------------------------------------------------------------------*/
 
   /* Determine the number of search points for which a global search must be
      carried out for each rank and store them in such a way that the info can
      be used directly in Allgatherv later on. */
   vector<int> recvCounts(size), displs(size);
-  int nLocalSearchPoints = (int) markerIDGlobalSearch.size();
+  int nLocalSearchPoints = ((int) coorExGlobalSearch.size())/nDim;
 
   SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1,
                      MPI_INT, MPI_COMM_WORLD);
@@ -11681,24 +11739,16 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
     /* Gather the data of the search points for which a global search must
        be carried out on all ranks. */
-    vector<unsigned short> bufMarkerIDGlobalSearch(nGlobalSearchPoints);
-    SU2_MPI::Allgatherv(markerIDGlobalSearch.data(), nLocalSearchPoints,
-                        MPI_UNSIGNED_SHORT, bufMarkerIDGlobalSearch.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT,
-                        MPI_COMM_WORLD);
-
-    vector<unsigned long> bufBoundaryNodeIDGlobalSearch(nGlobalSearchPoints);
-    SU2_MPI::Allgatherv(boundaryNodeIDGlobalSearch.data(), nLocalSearchPoints,
-                        MPI_UNSIGNED_LONG, bufBoundaryNodeIDGlobalSearch.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
-                        MPI_COMM_WORLD);
-
     for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
     vector<su2double> bufCoorExGlobalSearch(nDim*nGlobalSearchPoints);
     SU2_MPI::Allgatherv(coorExGlobalSearch.data(), nDim*nLocalSearchPoints,
                         MPI_DOUBLE, bufCoorExGlobalSearch.data(),
                         recvCounts.data(), displs.data(), MPI_DOUBLE,
                         MPI_COMM_WORLD);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 4. Find the interpolation information for the global points.---*/
+    /*------------------------------------------------------------------------*/
 
     /* Create the vector, which indicates whether or not this rank finds
        interpolation information for the global search points. It is
@@ -11796,57 +11846,42 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
             if( !(localVolumeADT->DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
                                                              dummy, donorElem, rankDonor, parCoor,
                                                              weightsInterpol)) )
-              SU2_MPI::Error("This should really not happen", CURRENT_FUNCTION);
-
-            /*--- Indicate that this element is only an interpolation donor
-                  element on rankID and determine the number of donors. ---*/
-            elem[donorElem]->AddProcElemIsOnlyInterpolDonor(rankID);
-            unsigned short nDonors = elem[donorElem]->GetnNodes();
-
-            /*--- If this element is a prism, swap some of the weights. This is due
-                  to difference in connectivity between ADT and VTK storage. ---*/
-            const unsigned short elemType = elem[donorElem]->GetVTK_Type();
-            if(elemType == PRISM) {
-              swap(weightsInterpol[1], weightsInterpol[2]);
-              swap(weightsInterpol[4], weightsInterpol[5]);
-            }
+              SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
 
             /*--- Determine whether or not this element has already been
                   stored in the return buffers for rankID. ---*/
-            unsigned short firstTimeStorage = 1;
-            if(flagElem[donorElem] == rankID) firstTimeStorage = 0;
+            if(flagElem[donorElem] != rankID) {
 
-            /*--- Store the information in the return buffers. ---*/
-            ++intReturnBuf[rankID][0];
+              /*--- Indicate that this element is only an interpolation donor
+                    element on rankID and determine the number of donors. ---*/
+              elem[donorElem]->AddProcElemIsOnlyInterpolDonor(rankID);
+              unsigned short nDonors = elem[donorElem]->GetnNodes();
 
-            shortReturnBuf[rankID].push_back(bufMarkerIDGlobalSearch[i]);
-            shortReturnBuf[rankID].push_back(firstTimeStorage);
-            shortReturnBuf[rankID].push_back(nDonors);
-            shortReturnBuf[rankID].push_back(elemType);
+              /*--- Store the information in the return buffers. ---*/
+              ++intReturnBuf[rankID][0];
 
-            longReturnBuf[rankID].push_back(bufBoundaryNodeIDGlobalSearch[i]);
-            longReturnBuf[rankID].push_back(elem[donorElem]->GetGlobalIndex());
+              shortReturnBuf[rankID].push_back(nDonors);
+              shortReturnBuf[rankID].push_back(elem[donorElem]->GetVTK_Type());
 
-            for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
-              const unsigned long donor = elem[donorElem]->GetNode(iNode);
+              longReturnBuf[rankID].push_back(elem[donorElem]->GetGlobalIndex());
 
-              intReturnBuf[rankID].push_back(node[donor]->GetColor());
-              longReturnBuf[rankID].push_back(Local_to_Global_Point[donor]);
-              doubleReturnBuf[rankID].push_back(weightsInterpol[iNode]);
-              for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                doubleReturnBuf[rankID].push_back(node[donor]->GetCoord(iDim));
-            }
+              for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+                const unsigned long donor = elem[donorElem]->GetNode(iNode);
 
-            /*--- Indicate that this element is stored in the return buffers
-                  for the rank rankID. ---*/
-            flagElem[donorElem] = rankID;
+                intReturnBuf[rankID].push_back(node[donor]->GetColor());
+                longReturnBuf[rankID].push_back(Local_to_Global_Point[donor]);
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  doubleReturnBuf[rankID].push_back(node[donor]->GetCoord(iDim));
+              }
 
-            /*--- The element may have nodes on other ranks. If this is the
-                  case the information that this element is only an interpolation
-                  donor on rankID must be communicated to the other ranks where
-                  this element is stored. Only needed if this is the first time
-                  that this element is stored. ---*/
-            if( firstTimeStorage ) {
+              /*--- Indicate that this element is stored in the return buffers
+                    for the rank rankID. ---*/
+              flagElem[donorElem] = rankID;
+
+              /*--- The element may have nodes on other ranks. If this is the
+                    case the information that this element is only an interpolation
+                    donor on rankID must be communicated to the other ranks where
+                    this element is stored. ---*/
               for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
                 const unsigned long donor = elem[donorElem]->GetNode(iNode);
                 int rankNode = node[donor]->GetColor();
@@ -11863,15 +11898,16 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
     /*--- Release the memory of the buffers used to gather the data for
           the global searches on all ranks. ---*/
-    vector<unsigned short>().swap(markerIDGlobalSearch);
-    vector<unsigned short>().swap(bufMarkerIDGlobalSearch);
-    vector<unsigned long>().swap(boundaryNodeIDGlobalSearch);
-    vector<unsigned long>().swap(bufBoundaryNodeIDGlobalSearch);
     vector<su2double>().swap(coorExGlobalSearch);
     vector<su2double>().swap(bufCoorExGlobalSearch);
     vector<int>().swap(thisRankFindsInfo);
     vector<int>().swap(rankHandlingInterpolData);
     vector<int>().swap(flagElem);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 5. Send the interpolation information back to the           ---*/
+    /*---         appropriate processor.                                   ---*/
+    /*------------------------------------------------------------------------*/
 
     /*--- Determine the number of ranks to which additional donor information
           must be sent and from how many ranks data must be received. Reuse
@@ -12040,17 +12076,9 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
        so synchronize the ranks to avoid problems.    */
     SU2_MPI::Barrier(MPI_COMM_WORLD);
 
-    /*--- Check whether the number of received data points is equal
-          to nLocalSearchPoints. ---*/
-    ii = 0;
-    for(int i=0; i<nRankRecvData; ++i)
-      ii += intRecvBuf[i][0];
-
-    if(ii != nLocalSearchPoints){
-      cout << "Rank: " << rank << " " << ii << " " << nLocalSearchPoints << endl;
-      SU2_MPI::Error("Number of received global data points is not correct",
-                     CURRENT_FUNCTION);
-    }
+    /*------------------------------------------------------------------------*/
+    /*--- Step 6. Store the additional halo nodes and elements.            ---*/
+    /*------------------------------------------------------------------------*/
 
     /*--- Check if anything needs to be updated to the local data structures. ---*/
     if(nLocalSearchPoints > 0) {
@@ -12068,7 +12096,7 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
 
         /* Initialize the indices in the four receive buffers. */
         const int nBoundPoints = intRecvBuf[i][0];
-        unsigned long indS = 2, indI = 1, indL = 2, indD = 0;
+        unsigned long indS = 0, indI = 1, indL = 1, indD = 0;
 
         /* Loop over the number of boundary points stored in these buffers. */
         for(int j=0; j<nBoundPoints; ++j) {
@@ -12094,15 +12122,15 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               newNodesGlobalID.push_back(globalNodeID);
               newNodesColor.push_back(intRecvBuf[i][indI+k]);
               for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                newNodesCoords.push_back(doubleRecvBuf[i][indD+k*(nDim+1)+iDim+1]);
+                newNodesCoords.push_back(doubleRecvBuf[i][indD+k*nDim+iDim]);
             }
           }
 
           /* Update the indices for the next boundary point. */
-          indS += 4;
+          indS += 2;
           indI += nDonors;
-          indL += 2 + nDonors;
-          indD += (nDim+1)*nDonors;
+          indL += 1 + nDonors;
+          indD += nDim*nDonors;
         }
       }
 
@@ -12164,64 +12192,37 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
         for(int j=0; j<nBoundPoints; ++j) {
 
           /* Easier storage of the data in the short receive buffer. */
-          const unsigned short iMarkerID        = shortRecvBuf[i][indS];
-          const unsigned short firstTimeStorage = shortRecvBuf[i][indS+1];
-          const unsigned short nDonors          = shortRecvBuf[i][indS+2];
-          const unsigned short elemType         = shortRecvBuf[i][indS+3];
+          const unsigned short nDonors  = shortRecvBuf[i][indS];
+          const unsigned short elemType = shortRecvBuf[i][indS+1];
 
           /* Easier storage of the data in the long receive buffer. */
-          const unsigned long iVertex   = longRecvBuf[i][indL];
-          const unsigned long donorElem = longRecvBuf[i][indL+1];
+          const unsigned long donorElem = longRecvBuf[i][indL];
 
           /* Convert the global point ID's to local point ID's. */
           map<unsigned long, unsigned long>::const_iterator MI;
           for(unsigned short k=0; k<nDonors; ++k) {
-            MI = Global_to_Local_Point.find(longRecvBuf[i][indL+2+k]);
+            MI = Global_to_Local_Point.find(longRecvBuf[i][indL+1+k]);
             if(MI == Global_to_Local_Point.end())
               SU2_MPI::Error("Global point ID not found in Global_to_Local_Point",
                              CURRENT_FUNCTION);
-            longRecvBuf[i][indL+2+k] = MI->second;
+            longRecvBuf[i][indL+1+k] = MI->second;
           }
 
-          /* If it is the first time that this element is stored,
-             store the required information of the element. */
-          if( firstTimeStorage ) {
+          /* Add the element to the map Global_to_Local_Elem. */
+          const unsigned long newLocalElemID = Global_to_Local_Elem.size();
+          Global_to_Local_Elem[donorElem] = newLocalElemID;
 
-            /* Add the element to the map Global_to_Local_Elem. */
-            const unsigned long newLocalElemID = Global_to_Local_Elem.size();
-            Global_to_Local_Elem[donorElem] = newLocalElemID;
+          /* Store the information of the new element. */
+          newElemType.push_back(elemType);
+          newElemData.push_back(donorElem);
 
-            /* Store the information of the new element. */
-            newElemType.push_back(elemType);
-            newElemData.push_back(donorElem);
-
-            for(unsigned short k=0; k<nDonors; ++k)
-              newElemData.push_back(longRecvBuf[i][indL+2+k]);
-          }
-
-          /* Search the global element ID in Global_to_Local_Elem. */
-          MI = Global_to_Local_Elem.find(donorElem);
-          if(MI == Global_to_Local_Elem.end())
-            SU2_MPI::Error("Global element ID not found in Global_to_Local_Elem",
-                           CURRENT_FUNCTION);
-
-          /* Store the donor element, number of donors and donor
-             points in the vertex data structured for the wall. */
-          vertex[iMarkerID][iVertex]->SetDonorElem(MI->second);
-          vertex[iMarkerID][iVertex]->SetnDonorPoints(nDonors);
-          vertex[iMarkerID][iVertex]->Allocate_DonorInfo();
-
-          for(unsigned short k=0; k<nDonors; ++k) {
-            const unsigned long donor = longRecvBuf[i][indL+2+k];
-            vertex[iMarkerID][iVertex]->SetInterpDonorPoint(k, donor);
-            vertex[iMarkerID][iVertex]->SetInterpDonorProcessor(k, node[donor]->GetColor());
-            vertex[iMarkerID][iVertex]->SetDonorCoeff(k, doubleRecvBuf[i][indD+k*(nDim+1)]);
-          }
+          for(unsigned short k=0; k<nDonors; ++k)
+            newElemData.push_back(longRecvBuf[i][indL+1+k]);
 
           /* Update the indices for the next boundary point. */
-          indS += 4;
-          indL += 2 + nDonors;
-          indD += (nDim+1)*nDonors;
+          indS += 2;
+          indL += 1 + nDonors;
+          indD += nDim*nDonors;
         }
       }
 
@@ -12304,11 +12305,55 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
     Global_to_Local_Elem.clear();
   }
 
-#endif
-
   /* Delete the memory of localVolumeADT again. */
   delete localVolumeADT;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 7. Reset the data structures needed to compute the normals    ---*/
+  /*---         of the wall boundaries.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Reset the nodes. ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->ResetElem();
+    node[iPoint]->ResetPoint();
+    node[iPoint]->ResetBoundary();
+    node[iPoint]->SetPhysicalBoundary(false);
+    node[iPoint]->SetSolidBoundary(false);
+    node[iPoint]->SetPeriodicBoundary(false);
+    node[iPoint]->SetDomain(true);
+  }
+
+  /*--- Delete the edges. ---*/
+  if (edge != NULL) {
+    for (unsigned long iEdge = 0; iEdge < nEdge; iEdge ++)
+      if (edge[iEdge] != NULL) {delete edge[iEdge]; edge[iEdge] = NULL;}
+    delete[] edge;
+    edge = NULL;
+  }
+
+  /*--- Delete the vertices. ---*/
+  if (vertex != NULL) {
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (vertex[iMarker] != NULL) {
+        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          if (vertex[iMarker][iVertex] != NULL) {
+            delete vertex[iMarker][iVertex];
+            vertex[iMarker][iVertex] = NULL;
+          }
+        }
+        delete [] vertex[iMarker];
+        vertex[iMarker] = NULL;
+      }
+    }
+    delete [] vertex;
+    vertex = NULL;
+  }
+
+  if (nVertex != NULL) {delete [] nVertex; nVertex = NULL;}
+
 }
+#endif
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;

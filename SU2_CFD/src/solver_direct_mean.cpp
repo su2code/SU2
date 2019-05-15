@@ -15224,9 +15224,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (!WallFunctions_.empty()){
     sort(WallFunctions_.begin(), WallFunctions_.end());
     vector<unsigned short>::iterator it = std::unique( WallFunctions_.begin(), WallFunctions_.end() );
-    bool wasUnique = (it == WallFunctions_.end() );
+    WallFunctions_.erase(it, WallFunctions_.end());
     
-    if(!wasUnique){
+    if(WallFunctions_.size() == 1) {
       switch (config->GetWallFunction_Treatment(WallFunctionsMarker_[0])) {
         case EQUILIBRIUM_WALL_MODEL:
           WallModel = new CWallModel1DEQ(config,WallFunctionsMarker_[0]);

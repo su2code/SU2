@@ -717,6 +717,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void ComputeWall_Distance(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WallModelPreprocessing(CConfig *config);
   
 	/*! 
 	 * \brief A virtual member.
@@ -2010,9 +2016,20 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeWall_Distance(CConfig *config);
-  
+
+#ifdef HAVE_MPI
   /*!
-   * \brief Function that carries out the necessary tasks when wall models are used.
+   * \brief Function which determines the additional halo elements needed for
+            the interpolation of the data at the exchange points for the wall
+            model treatment. Only needed in parallel model.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddWallModelDonorHalos(CConfig *config);
+#endif
+
+  /*!
+   * \brief Function that computes the interpolation information for the exchange
+            location for the wall model treatment.
    * \param[in] config - Definition of the particular problem.
    */
   void WallModelPreprocessing(CConfig *config);
