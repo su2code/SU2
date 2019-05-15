@@ -2376,11 +2376,11 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
     GaussCoord [iGauss] = new su2double[nDim];
   }
 
-  GaussCoord[0][0] = 0.5;   GaussCoord[0][1] = 0.0;   GaussCoord[0][2] = 0.1531754163448146;  GaussWeight[0] = 0.133333333333333;
-  GaussCoord[1][0] = 0.0;   GaussCoord[1][1] = 0.5;   GaussCoord[1][2] = 0.1531754163448146;  GaussWeight[1] = 0.133333333333333;
-  GaussCoord[2][0] = -0.5;  GaussCoord[2][1] = 0.0;   GaussCoord[2][2] = 0.1531754163448146;  GaussWeight[2] = 0.133333333333333;
-  GaussCoord[3][0] = 0.0;   GaussCoord[3][1] = -0.5;  GaussCoord[3][2] = 0.1531754163448146;  GaussWeight[3] = 0.133333333333333;
-  GaussCoord[4][0] = 0.0;   GaussCoord[4][1] = 0.0;   GaussCoord[4][2] = 0.6372983346207416;  GaussWeight[4] = 0.133333333333333;
+  GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussCoord[0][2] = -0.577350269189626;  GaussWeight[0] = 1.0;
+  GaussCoord[0][0] =  0.577350269189626;  GaussCoord[0][1] = -0.577350269189626;  GaussCoord[1][2] = -0.577350269189626;  GaussWeight[1] = 1.0;
+  GaussCoord[0][0] =  0.577350269189626;  GaussCoord[0][1] =  0.577350269189626;  GaussCoord[2][2] = -0.577350269189626;  GaussWeight[2] = 1.0;
+  GaussCoord[0][0] = -0.577350269189626;  GaussCoord[0][1] =  0.577350269189626;  GaussCoord[3][2] = -0.577350269189626;  GaussWeight[3] = 1.0;
+  GaussCoord[4][0] =  0.0;                GaussCoord[4][1] =  0.0;                GaussCoord[4][2] =  0.577350269189626;  GaussWeight[4] = 4.0;
 
   Kab = new su2double **[nNodes];
   for (iNode = 0; iNode < nNodes; iNode++){
