@@ -84,14 +84,20 @@ protected:
 	unsigned long iDV;          /*!< \brief ID of the Design Variable (if it is element based) */
 	unsigned long iProp;        /*!< \brief ID of the Element Property */
 
+	/*!
+	 * \brief Allocate element matrices and vectors, to be called by constructors of children classes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void AllocateStructures(CConfig* config);
+
 public:
 	/*!
-	 * \brief Constructor of the class.
+	 * \brief Default constructor of the class.
 	 */
 	CElement(void);
 
 	/*!
-	 * \overload
+	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
