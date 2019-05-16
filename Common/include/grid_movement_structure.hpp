@@ -672,6 +672,14 @@ public:
   void SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original);
 
   /*!
+   * \brief Set the CGNS file of the FFD chuck structure.
+   * \param[in] iFFDBox - Index of the FFD box.
+   * \param[in] original - Original box (before deformation).
+   */
+  void SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool original);
+
+
+  /*!
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
