@@ -512,7 +512,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
   
    /*--- Allocate velocities at every face. This is for momentum interpolation. ---*/
@@ -743,8 +743,8 @@ void CPBIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***sol
       
       /*--- Set the MPI communication ---*/
       
-      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+      /*solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);*/
       
     }
     
@@ -770,7 +770,7 @@ void CPBIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***sol
         }
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
       }
-      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      //solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     }
     delete [] Solution;
     
@@ -794,7 +794,7 @@ void CPBIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***sol
           }
           solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
         }
-        solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        //solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
         solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
       }
       delete [] Solution;
@@ -1465,7 +1465,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
   
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  //solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -1484,7 +1484,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
       }
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    //solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   }
@@ -1533,74 +1533,6 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 void CPBIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
-  unsigned long iEdge, iPoint, jPoint;
-  su2double Pressure_i = 0.0, Pressure_j = 0.0;
-  bool boundary_i, boundary_j;
-  
-  /*--- Reset variables to store the undivided pressure ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
-  }
-  
-  /*--- Evaluate the pressure sensor ---*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    /*--- Get the pressure, or density for incompressible solvers ---*/
-
-    Pressure_i = node[iPoint]->GetDensity();
-    Pressure_j = node[jPoint]->GetDensity();
-
-    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
-    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-    
-    /*--- Both points inside the domain, or both on the boundary ---*/
-    
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      
-      if (geometry->node[iPoint]->GetDomain()) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-      
-      if (geometry->node[jPoint]->GetDomain()) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-      
-    }
-    
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-    
-    if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-    
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-    
-    if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-    
-  }
-  
-  /*--- Set pressure switch for each point ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node[iPoint]->SetSensor(fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
-  
-  /*--- MPI parallelization ---*/
-  
-  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -2648,7 +2580,7 @@ void CPBIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *c
     //AD::EndPreacc();
   }
 
-  Set_MPI_Primitive_Gradient(geometry, config);
+  //Set_MPI_Primitive_Gradient(geometry, config);
 
 }
 
@@ -3482,7 +3414,7 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   }
   SetIterLinSolver(1);
   /*--- MPI solution ---*/
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   
@@ -3553,8 +3485,8 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
   /*--- Solve or smooth the linear system ---*/
 
-  CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  //CSysSolve system;
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- The the number of iterations of the linear solver ---*/
 
@@ -3574,7 +3506,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -5952,7 +5884,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
 
 }
 

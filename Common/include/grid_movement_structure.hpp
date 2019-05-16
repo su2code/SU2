@@ -53,6 +53,7 @@
 #include "matrix_structure.hpp"
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
+#include "linear_solvers_structure_b.hpp"
 #include "element_structure.hpp"
 
 using namespace std;
@@ -671,6 +672,14 @@ public:
   void SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original);
 
   /*!
+   * \brief Set the CGNS file of the FFD chuck structure.
+   * \param[in] iFFDBox - Index of the FFD box.
+   * \param[in] original - Original box (before deformation).
+   */
+  void SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool original);
+
+
+  /*!
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
@@ -967,9 +976,10 @@ protected:
 
 	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
-  CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
 public:
 
@@ -1329,9 +1339,15 @@ protected:
   su2double MinVolume;
   su2double MaxVolume;
 
-  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+#ifndef CODI_FORWARD_TYPE
+  CSysSolve<passivedouble>  System;
+  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#else
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix;
+#endif
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
   su2double E;                  /*!< \brief Young's modulus of elasticity. */
   su2double Nu;                 /*!< \brief Poisson's ratio. */
@@ -1412,13 +1428,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Solve_System(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume for the stiffness matrix for grid deformation.

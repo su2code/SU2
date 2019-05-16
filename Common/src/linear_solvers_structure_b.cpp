@@ -41,222 +41,45 @@
 #include "../include/matrix_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
+template<class ScalarType>
+void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m,
+                                      const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n,
+                                      codi::DataStore* d) {
   
-  /*--- Extract data from the checkpoint handler ---*/
-
-  su2double::GradientData *LinSysRes_Indices;
-  su2double::GradientData *LinSysSol_Indices;
-#if CODI_PRIMAL_INDEX_TAPE
-  su2double::Real *oldValues;
-#endif
-
-  data->getData(LinSysRes_Indices);
-  data->getData(LinSysSol_Indices);
-#if CODI_PRIMAL_INDEX_TAPE
-  data->getData(oldValues);
-#endif
-
-  unsigned long nBlk = 0, nVar = 0, nBlkDomain = 0, size = 0, i = 0;
-
-  data->getData(size);
-  data->getData(nBlk);
-  data->getData(nVar);
-  data->getData(nBlkDomain);
-
-  CSysMatrix* Jacobian = NULL;
-  data->getData(Jacobian);
-
+  CSysVector<su2double>* LinSysRes_b = NULL;
+  d->getData(LinSysRes_b);
+  
+  CSysVector<su2double>* LinSysSol_b = NULL;
+  d->getData(LinSysSol_b);
+  
+  CSysMatrix<ScalarType>* Jacobian = NULL;
+  d->getData(Jacobian);
+  
   CGeometry* geometry  = NULL;
-  data->getData(geometry);
-
+  d->getData(geometry);
+  
   CConfig* config      = NULL;
-  data->getData(config);
-
-  CSysVector LinSysRes_b(nBlk, nBlkDomain, nVar, 0.0);
-  CSysVector LinSysSol_b(nBlk, nBlkDomain, nVar, 0.0);
-  su2double Residual;
-
-  unsigned long MaxIter = config->GetLinear_Solver_Iter();
-  su2double SolverTol = config->GetLinear_Solver_Error();
+  d->getData(config);
+  
+  CSysSolve<ScalarType>* solver = NULL;
+  d->getData(solver);
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
-  for (i = 0; i < size; i ++) {
-    su2double::GradientData& index = LinSysSol_Indices[i];
-    LinSysRes_b[i] = AD::globalTape.getGradient(index);
-    LinSysSol_b[i] = 0.0;
-    AD::globalTape.gradient(index) = 0.0;
+  for (unsigned long i = 0; i < n; i ++) {
+    (*LinSysRes_b)[i] = y_b[i];
+    (*LinSysSol_b)[i] = 0.0;
   }
-  /*--- Set up preconditioner and matrix-vector product ---*/
-
-  CPreconditioner* precond  = NULL;
-
-  switch(config->GetKind_DiscAdj_Linear_Prec()) {
-    case ILU:
-      precond = new CILUPreconditioner(*Jacobian, geometry, config);
-      break;
-    case JACOBI:
-      precond = new CJacobiPreconditioner(*Jacobian, geometry, config);
-      break;
+  
+  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
+  
+  for (unsigned long i = 0; i < n; i ++) {
+    x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
   }
-
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProductTransposed(*Jacobian, geometry, config);
-
-  CSysSolve *solver = new CSysSolve;
-
-  /*--- Solve the system ---*/
-
-  switch(config->GetKind_DiscAdj_Linear_Solver()) {
-    case FGMRES:
-      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
-      break;
-    case BCGSTAB:
-      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
-      break;
-    case CONJUGATE_GRADIENT:
-      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-      break;
-  }
-
-
-  /*--- Update the gradients of the right-hand side of the primal linear system ---*/
-
-  for (i = 0; i < size; i ++) {
-    su2double::GradientData& index = LinSysRes_Indices[i];
-    AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
-  }
-
-#if CODI_PRIMAL_INDEX_TAPE
-  /*--- Set the old values that have been overwritten ---*/
-  for (i = 0; i < size; i ++) {
-    AD::globalTape.setExternalValueChange(LinSysSol_Indices[i], oldValues[i]);
-  }
-#endif
-
-  delete mat_vec;
-  delete precond;
-  delete solver;
+  
 }
 
-void CSysSolve_b::Solve_g(AD::Tape* tape, AD::CheckpointHandler* data){
-  /*--- Extract data from the checkpoint handler ---*/
+template class CSysSolve_b<su2double>;
+template class CSysSolve_b<passivedouble>;
 
-  su2double::GradientData *LinSysRes_Indices;
-  su2double::GradientData *LinSysSol_Indices;
-
-  data->getData(LinSysRes_Indices);
-  data->getData(LinSysSol_Indices);
-
-  unsigned long nBlk, nVar, nBlkDomain, size, i;
-
-  data->getData(size);
-  data->getData(nBlk);
-  data->getData(nVar);
-  data->getData(nBlkDomain);
-
-  CSysMatrix* Jacobian;
-  data->getData(Jacobian);
-
-  CGeometry* geometry;
-  data->getData(geometry);
-
-  CConfig* config;
-  data->getData(config);
-
-  CSysVector LinSysRes_b(nBlk, nBlkDomain, nVar, 0.0);
-  CSysVector LinSysSol_b(nBlk, nBlkDomain, nVar, 0.0);
-  su2double Residual;
-
-  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
-  su2double SolverTol = config->GetDeform_Linear_Solver_Error();
-
-  /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
-
-  for (i = 0; i < size; i ++){
-    su2double::GradientData& index = LinSysSol_Indices[i];
-    LinSysRes_b[i] = AD::globalTape.getGradient(index);
-    LinSysSol_b[i] = 0.0;
-    AD::globalTape.gradient(index) = 0.0;
-  }
-  /*--- Set up preconditioner and matrix-vector product ---*/
-
-  CPreconditioner* precond  = NULL;
-
-  switch(config->GetKind_Deform_Linear_Solver_Prec()){
-    case ILU:
-      precond = new CILUPreconditioner(*Jacobian, geometry, config);
-      break;
-    case JACOBI:
-      precond = new CJacobiPreconditioner(*Jacobian, geometry, config);
-      break;
-  }
-
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProductTransposed(*Jacobian, geometry, config);
-
-  CSysSolve *solver = new CSysSolve;
-
-  /*--- Solve the system ---*/
-
-  switch(config->GetKind_Deform_Linear_Solver()){
-    case FGMRES:
-      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
-      break;
-    case BCGSTAB:
-      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-      break;
-    case CONJUGATE_GRADIENT:
-      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter,  &Residual, false);
-      break;
-  }
-
-
-  /*--- Update the gradients of the right-hand side of the primal linear system ---*/
-
-  for (i = 0; i < size; i ++){
-    su2double::GradientData& index = LinSysRes_Indices[i];
-    AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
-  }
-
-  delete mat_vec;
-  delete precond;
-  delete solver;
-}
-
-void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
-
-  su2double::GradientData *LinSysRes_Indices = NULL;
-  su2double::GradientData *LinSysSol_Indices = NULL;
-#if CODI_PRIMAL_INDEX_TAPE
-  su2double::Real *oldValues;
-#endif
-
-  data->getData(LinSysRes_Indices);
-  data->getData(LinSysSol_Indices);
-#if CODI_PRIMAL_INDEX_TAPE
-  data->getData(oldValues);
-#endif
-
-  delete [] LinSysRes_Indices;
-  delete [] LinSysSol_Indices;
-#if CODI_PRIMAL_INDEX_TAPE
-  delete [] oldValues;
-#endif
-
-  unsigned long nBlk, nVar, nBlkDomain, size;
-
-  data->getData(size);
-  data->getData(nBlk);
-  data->getData(nVar);
-  data->getData(nBlkDomain);
-
-  CSysMatrix* Jacobian;
-  data->getData(Jacobian);
-
-  CGeometry* geometry;
-  data->getData(geometry);
-
-  CConfig* config;
-  data->getData(config);
-}
 #endif
