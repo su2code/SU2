@@ -1459,6 +1459,7 @@ void CFEMStandardElementBase::Vandermonde3D_Pyramid(unsigned short          nPol
   for(unsigned short i=0; i<=nPoly; ++i) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       unsigned short muij = max(i,j);
+      const su2double scaleFact = pow(2,muij+1);
       for(unsigned short k=0; k<=(nPoly-muij); ++k) {
         for(unsigned short l=0; l<nRows; ++l, ++ii) {
 
@@ -1473,11 +1474,14 @@ void CFEMStandardElementBase::Vandermonde3D_Pyramid(unsigned short          nPol
 
           su2double c = t[l];
 
-          /*--- Determine the value of the current basis function in this point. ---*/
+          /*--- Determine the value of the current basis function in this point.
+                The multiplication with scaleFact is necessary, because this
+                formulation is derived in literature for a t coordinate between
+                0 and 1, while in this code t varies between -1 and 1. ---*/
           su2double tmpt = 1.0;
           if( muij ) tmpt = pow(tmp,muij);
 
-          V[ii] = tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
+          V[ii] = scaleFact*tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
                 * NormJacobi(k,2*(muij+1),0,c);
         }
       }
@@ -1511,6 +1515,7 @@ void CFEMStandardElementBase::GradVandermonde3D_Pyramid(unsigned short          
   for(unsigned short i=0; i<=nPoly; ++i) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       unsigned short muij = max(i,j);
+      const su2double scaleFact = pow(2,muij+1);
       for(unsigned short k=0; k<=(nPoly-muij); ++k) {
         for(unsigned short l=0; l<nRows; ++l, ++ii) {
 
@@ -1572,6 +1577,13 @@ void CFEMStandardElementBase::GradVandermonde3D_Pyramid(unsigned short          
                 w.r.t. a multiplied by dadt and the derivative w.r.t. b multiplied
                 by dbdt.                      ---*/
           VDt[ii] += 0.5*a*VDr[ii] + 0.5*b*VDs[ii];
+
+          /*--- Multiply the three derivatives with the scale factor to
+                obtain the correct answers. See Vandermonde3D_Pyramid for
+                the explanation. ---*/
+          VDr[ii] *= scaleFact;
+          VDs[ii] *= scaleFact;
+          VDt[ii] *= scaleFact;
         }
       }
     }
