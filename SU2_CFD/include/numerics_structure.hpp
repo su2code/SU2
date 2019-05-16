@@ -1596,7 +1596,9 @@ public:
   void GetViscousPBIncProjFlux(su2double *val_primvar,
                                           su2double **val_gradprimvar,
                                           su2double *val_normal,
-                                          su2double val_laminar_viscosity);
+                                          su2double val_laminar_viscosity,
+                                          su2double val_eddy_viscosity,
+                                          su2double val_turb_ke);
 };
 
 /*!

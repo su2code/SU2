@@ -1111,6 +1111,8 @@ void CPBFluidIteration::Iterate(COutput *output,
   unsigned long IntIter, ExtIter;
   unsigned long MassIter, nMassIter, PressureIter, nPressureIter;
   su2double first_iter, last_iter;
+  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+
   
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
@@ -1125,41 +1127,62 @@ void CPBFluidIteration::Iterate(COutput *output,
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
-  switch( config_container[val_iZone]->GetKind_Solver() ) {
+  /*switch( config_container[val_iZone]->GetKind_Solver() ) {
     case EULER: 
       config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
       
     case NAVIER_STOKES:
       config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
-  }
+      
+    case RANS:
+      config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;  
+  }*/
   
   /*--- Solve the momentum equations. ---*/
-  integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                  config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   
+  /*integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   */
+  /*integration_container[val_iZone][val_iInst][FLOW_SOL]->CurrentGridIteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, FinestMesh, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   */
 
 
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
 	
-  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  //solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
 	
 
   /*--- Solve the poisson equation ---*/
-  config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
+  //config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
 	
-  integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                            config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
+  /*integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                            config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);*/
+	
+  /*integration_container[val_iZone][val_iInst][POISSON_SOL]->CurrentGridIteration(geometry_container, solver_container, numerics_container,
+                                                                            config_container, FinestMesh, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);*/
    
   /*--- Correct pressure and velocities ---*/
-  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  //solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     
   /*--- Set the prmitive value based on updated solution ---*/
-  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
+  //solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
+  
+  integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_CyclePB(geometry_container, solver_container, numerics_container,
+                                                                  config_container, FinestMesh, 0, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);
+                                                                  
+  if (config_container[val_iZone]->GetKind_Solver() == RANS) {
+    
+    /*--- Solve the turbulence model ---*/
+    
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+    integration_container[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_TURB_SYS, IntIter, val_iZone, val_iInst);
+  }
+  
 
   /*--- Calculate the inviscid and viscous forces ---*/
       
   solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
   solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);  
+  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     
     
   /*--- Write the convergence history ---*/

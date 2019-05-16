@@ -4165,7 +4165,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
       Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
-
+      
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
 
       /*--- Set various other quantities in the solver class ---*/
@@ -4224,7 +4224,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -4285,32 +4285,33 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-//      visc_numerics->SetNormal(Normal);
-//
-//      /*--- Conservative variables w/o reconstruction ---*/
-//
-//      visc_numerics->SetPrimitive(V_domain, V_outlet);
-//
-//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-//
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-//
-//      /*--- Menter's first blending function ---*/
-//
-//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-//
-//      /*--- Compute residual, and Jacobians ---*/
-//
-//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//
-//      /*--- Subtract residual, and update Jacobians ---*/
-//
-//      LinSysRes.SubtractBlock(iPoint, Residual);
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      visc_numerics->SetPrimitive(V_domain, V_outlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Menter's first blending function ---*/
+
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+
+      /*--- Compute residual, and Jacobians ---*/
+
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }

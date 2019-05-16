@@ -2351,14 +2351,16 @@ CSourceNothing::~CSourceNothing(void) { }
 void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
                                           su2double **val_gradprimvar,
                                           su2double *val_normal,
-                                          su2double val_laminar_viscosity) {
+                                          su2double val_laminar_viscosity,
+                                          su2double val_eddy_viscosity,
+                                          su2double val_turb_ke) {
 
   unsigned short iVar, iDim, jDim;
   su2double total_viscosity, div_vel, Density;
 
   Density = val_primvar[nDim+1];
 
-  total_viscosity = (val_laminar_viscosity);
+  total_viscosity = (val_laminar_viscosity + val_eddy_viscosity);
 
   /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
   /*--- Note: Gradients are computed as [iDim][jDim] and not [iDim+1][jDim] because 
@@ -2373,10 +2375,10 @@ void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = (total_viscosity*(val_gradprimvar[jDim][iDim] +
                                           val_gradprimvar[iDim][jDim] )
-                         -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
-                         //-TWO3*Density*val_turb_ke*delta[iDim][jDim]);
+                         -TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+                         -TWO3*Density*val_turb_ke*delta[iDim][jDim]);
 
-  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Density] ---*/
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = tau[0][0];
@@ -2418,7 +2420,7 @@ void CNumerics::GetViscousPBIncProjJacs(su2double val_laminar_viscosity,
   for (iDim = 0; iDim < nDim; iDim++)
     theta += val_normal[iDim]*val_normal[iDim];
 
-  su2double total_viscosity = val_laminar_viscosity ;//+ val_eddy_viscosity;
+  su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
   su2double factor = total_viscosity/(val_dist_ij)*val_dS;
 
   if (nDim == 3) {

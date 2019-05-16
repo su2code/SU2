@@ -335,6 +335,7 @@ void CAvgGradPBInc_Flow::ComputeResidual(su2double *val_residual, su2double **va
   
   Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
 
   /*--- Mean gradient approximation ---*/
   
@@ -344,7 +345,7 @@ void CAvgGradPBInc_Flow::ComputeResidual(su2double *val_residual, su2double **va
       
   /*--- Get projected flux tensor ---*/
   
-  GetViscousPBIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity);
+  GetViscousPBIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke);
   
   /*--- Update viscous residual ---*/
   
@@ -417,7 +418,7 @@ void CAvgGradCorrectedPBInc_Flow::ComputeResidual(su2double *val_residual, su2do
 
  su2double  Mean_GradVar_Edge[5], GradEdge[5];
  su2double  Mean_GradVar_Face[5][3], Mean_GradVar[5][3];
- unsigned short nPrimVarGrad = nDim+2;
+ unsigned short nPrimVarGrad = nDim+2, nPrimVar = nDim+4;
  
  
  /*--- Normalized normal vector ---*/
@@ -429,9 +430,9 @@ void CAvgGradCorrectedPBInc_Flow::ComputeResidual(su2double *val_residual, su2do
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
   
-  /*--- Conversion to Primitive Variables (P, u, v, w, T) ---*/
+  /*--- Conversion to Primitive Variables (P, u, v, w, rho, mu, muT) ---*/
   
-  for (iVar = 0; iVar < nDim+4; iVar++) {
+  for (iVar = 0; iVar < nPrimVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
@@ -446,7 +447,7 @@ void CAvgGradCorrectedPBInc_Flow::ComputeResidual(su2double *val_residual, su2do
   /*--- Mean transport properties ---*/
   
   Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity       = 0.0;//0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
  
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -503,7 +504,7 @@ void CAvgGradCorrectedPBInc_Flow::ComputeResidual(su2double *val_residual, su2do
   
   /*--- Get projected flux tensor ---*/
   
-  GetViscousPBIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity);
+  GetViscousPBIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke);
   
   /*--- Update viscous residual ---*/
   

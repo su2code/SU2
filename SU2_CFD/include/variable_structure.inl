@@ -191,6 +191,14 @@ inline su2double CVariable::GetAuxVarGradient(unsigned short val_dim) { return G
 
 inline su2double *CVariable::GetResTruncError(void) { return Res_TruncError; }
 
+inline su2double CVariable::GetMassTruncError(void) { return Mass_TruncError; }
+
+inline void CVariable::SubtractMass_TruncError(su2double val_mass_truncation_error) { Mass_TruncError -= val_mass_truncation_error ; }
+
+inline void CVariable::AddMass_TruncError(su2double val_mass_truncation_error) { Mass_TruncError += val_mass_truncation_error ; }
+
+inline void CVariable::SetMass_TruncErrorZero(void) { Mass_TruncError = 0.0 ; }
+
 inline void CVariable::SetDelta_Time(su2double val_delta_time) { Delta_Time = val_delta_time; }
 
 inline void CVariable::SetDelta_Time(su2double val_delta_time, unsigned short iSpecies) {  }

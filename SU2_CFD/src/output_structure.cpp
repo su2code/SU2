@@ -5670,7 +5670,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible && !weakly_coupled_heat) {
               if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Mass]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
-              //else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Press]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
@@ -5733,7 +5732,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
-            if (incompressible) cout << "   Res[Press]";
+            if (incompressible && !pressure_based) cout << "   Res[Press]";
+            if (incompressible && pressure_based) cout << "   Res[Velx]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {

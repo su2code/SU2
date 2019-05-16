@@ -56,6 +56,14 @@ inline void CIntegration::MultiGrid_Cycle(CGeometry ****geometry, CSolver *****s
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                  unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
                     
+inline void CIntegration::MultiGrid_CyclePB(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst) { }
+
+inline void CIntegration::CurrentGridIteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                                            CConfig **config, unsigned short iMesh, unsigned short RunTime_EqSystem, unsigned long Iteration,
+                                            unsigned short iZone, unsigned short iInst) { }
+
 inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
                                                       CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
                                                       su2double *monitor) { }
@@ -76,6 +84,7 @@ inline void CIntegration::SetRestricted_PoissonSource(unsigned short RunTime_EqS
 
 inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
                          CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
+
   
 inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow) { }
 

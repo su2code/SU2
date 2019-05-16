@@ -1252,7 +1252,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       Lambda = abs(Poisson_Coeff*Area);     
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);    
       
-      //cout<<"Point: "<<iPoint<<", "<<Lambda<<", "<<", "<<Mom_Coeff_i[0]<<", "<<Mom_Coeff_i[1]<<", "<<Normal[0]<<", "<<Normal[1]<<endl;
     }
    }
 
@@ -1648,7 +1647,6 @@ unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     

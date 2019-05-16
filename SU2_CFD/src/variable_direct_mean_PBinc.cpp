@@ -103,6 +103,8 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
     Res_TruncError[iVar] = 0.0;
   }
   
+  Mass_TruncError = 0.0;
+  
   /*--- Only for residual smoothing (multigrid) ---*/
   
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
@@ -280,12 +282,12 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
     WindGustDer = new su2double [nDim+1];
   }
   
-  /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) (P, vx, vy, vz, rho, lamMu, EddyMu) ---*/
+  /*--- Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho) (P, vx, vy, vz, rho, lamMu, EddyMu) ---*/
   
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, rho),
         We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];

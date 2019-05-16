@@ -291,6 +291,11 @@ public:
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                  unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
+  virtual void MultiGrid_CyclePB(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+  
+  
   /*! 
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -420,6 +425,10 @@ public:
                   CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
 
+  virtual void CurrentGridIteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short RunTime_EqSystem,
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -507,6 +516,37 @@ public:
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                      unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
+  
+  /*! 
+   * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] mu - Variable for controlling the kind of multigrid algorithm.   
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   */
+  void MultiGrid_CyclePB(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+  
+  /*! 
+   * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] mu - Variable for controlling the kind of multigrid algorithm.   
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   */
+  void CurrentGridIteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short RunTime_EqSystem,
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+  
   /*! 
    * \brief Compute the non-dimensional parameters.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -555,6 +595,32 @@ public:
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                                      unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
   
+  
+  /*! 
+   * \brief Compute the fine grid correction to the orimitve variables from the coarse solution. 
+   * \param[out] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void GetProlongated_VarCorrection(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
+                                 CGeometry *geo_coarse, CConfig *config);
+  
+  /*! 
+   * \brief Do an implicit smoothing of the prolongated correction on primitve variables. 
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] solution - Container vector with all the solutions on the finest grid.   
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nSmooth - Number of smoothing iterations.
+   * \param[in] val_smooth_coeff - Relaxation factor.     
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SmoothProlongated_VarCorrection(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
+                                     unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+  
+  
+  
   /*!
    * \brief Do an implicit smoothing of the solution.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
@@ -574,6 +640,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
+  
+  
+  /*!
+   * \brief Set the value of the corrected fine grid primitive variables.
+   * \param[out] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetProlongated_VarCorrection(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
+  
 
   /*! 
    * \brief Compute truncation error in the coarse grid using the fine grid information. 
@@ -612,6 +688,19 @@ public:
                 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*! 
+   * \brief Compute the primitive variables in coarse grid using the fine grid information. 
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRestricted_Variables(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
+                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+  
+  
+  /*! 
    * \brief Add the truncation error to the residual. 
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] flow - Flow solution.
@@ -627,6 +716,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
+             CConfig *config, unsigned short iMesh);
+  
+  /*! 
+   * \brief Compute the forcing term. 
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPBForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
              CConfig *config, unsigned short iMesh);
 };
 

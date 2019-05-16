@@ -64,6 +64,16 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
                                        su2double **val_Jacobian_j,
                                        CConfig *config) {
 
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+  if (pressure_based) {
+	  Density_i = V_i[nDim+1];
+      Density_j = V_j[nDim+1];
+  } 
+  else {
+	  Density_i = V_i[nDim+2];
+      Density_j = V_j[nDim+2];
+  }
+  
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
@@ -72,9 +82,6 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   }
 
   ExtraADPreaccIn();
-
-  Density_i = V_i[nDim+2];
-  Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
   if (grid_movement) {
@@ -162,6 +169,7 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
                                         su2double **Jacobian_j,
                                         CConfig *config) {
 
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
@@ -173,11 +181,18 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
   ExtraADPreaccIn();
 
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
-
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+		  Laminar_Viscosity_i = V_i[nDim+2];  Laminar_Viscosity_j = V_j[nDim+2];
+		  Eddy_Viscosity_i = V_i[nDim+3];     Eddy_Viscosity_j = V_j[nDim+3];
+	  }
+	  else {
+		  AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
+		  
+		  Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
+		  Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+	  }
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
@@ -1185,6 +1200,7 @@ CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
 void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
@@ -1198,11 +1214,18 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   su2double diverg, pk, pw, zeta;
   
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6);
+	  if (pressure_based) {
+		Density_i = V_i[nDim+1];
+		Laminar_Viscosity_i = V_i[nDim+2];
+		Eddy_Viscosity_i = V_i[nDim+3];
+	  }
+	  else {
+		AD::SetPreaccIn(V_i, nDim+6);
 
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];
+		Density_i = V_i[nDim+2];
+		Laminar_Viscosity_i = V_i[nDim+4];
+		Eddy_Viscosity_i = V_i[nDim+5];
+      }
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);

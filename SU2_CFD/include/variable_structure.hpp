@@ -92,6 +92,7 @@ protected:
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  su2double Mass_TruncError;		/*!< \brief Truncation error of mass flux for multigrid cycle. */
   
 public:
   
@@ -498,6 +499,23 @@ public:
   void SetEnergy_ResTruncError_Zero(void);
   
   /*!
+   * \brief Add a value to the truncation error.
+   * \param[in] val_truncation_error - Value that we want to add to the truncation error.
+   */
+  void AddMass_TruncError(su2double val_mass_truncation_error);
+  
+  /*!
+   * \brief Subtract a value to the truncation error.
+   * \param[in] val_truncation_error - Value that we want to subtract to the truncation error.
+   */
+  void SubtractMass_TruncError(su2double val_mass_truncation_error);
+  
+  /*!
+   * \brief Set the truncation error to zero.
+   */
+  void SetMass_TruncErrorZero(void);
+  
+  /*!
    * \brief Get the truncation error.
    * \return Pointer to the truncation error.
    */
@@ -508,6 +526,12 @@ public:
    * \param[in] val_trunc_error - Pointer to the truncation error.
    */
   void GetResTruncError(su2double *val_trunc_error);
+  
+  /*!
+   * \brief Get the truncation error.
+   * \return Pointer to the truncation error.
+   */
+  su2double GetMassTruncError(void);
   
   /*!
    * \brief Set the gradient of the solution.
