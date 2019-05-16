@@ -163,18 +163,20 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
       if (de_effects){
         element_container[DE_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[DE_TERM][EL_HEXA] = new CHEXA8(nDim, config);
+        element_container[DE_TERM][EL_HEXA]  = new CHEXA8 (nDim, config);
+        element_container[DE_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+        element_container[DE_TERM][EL_PRISM] = new CPRISM6(nDim, config);
       }
 
       if (incompressible) {
         element_container[INC_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[INC_TERM][EL_HEXA] = new CHEXA1(nDim, config);
+        element_container[INC_TERM][EL_HEXA]  = new CHEXA1 (nDim, config);
       }
 
 
   }
   
-  node              = new CVariable*[nPoint];
+  node = new CVariable*[nPoint];
   
   /*--- Set element properties ---*/
   elProperties = new unsigned long[4];
@@ -185,7 +187,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   GradN_X = new su2double [nDim];
   GradN_x = new su2double [nDim];
   
-  Total_CFEA      = 0.0;
+  Total_CFEA        = 0.0;
   WAitken_Dyn       = 0.0;
   WAitken_Dyn_tn1   = 0.0;
   loadIncrement     = 0.0;
@@ -1713,8 +1715,8 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
     
-    if (EL_KIND==EL_PYRAM || EL_KIND==EL_PRISM)
-      SU2_MPI::Error("Pyramid and Prism elements are not supported in nonlinear analysis yet.",CURRENT_FUNCTION);
+    if (incompressible) if (element_container[INC_TERM][EL_KIND] == NULL)
+      SU2_MPI::Error("Pyramid and Prism elements are not supported for incompressible analysis yet.",CURRENT_FUNCTION);
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
@@ -1997,9 +1999,6 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
     if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_PYRAM;}
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
-    
-    if (EL_KIND==EL_PYRAM || EL_KIND==EL_PRISM)
-      SU2_MPI::Error("Pyramid and Prism elements are not supported in nonlinear analysis yet.",CURRENT_FUNCTION);
     
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
