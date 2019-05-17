@@ -68,7 +68,7 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
-#include "../../Common/include/toolboxes/solution_toolbox.hpp"
+#include "../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 
 using namespace std;
 

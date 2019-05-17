@@ -36,6 +36,19 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
+#include "../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+
 
 CSolver::CSolver(void) {
 
