@@ -2057,3 +2057,7 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
 inline string CConfig::GetConv_Field(){ return ConvField; }
+
+inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
+
+inline su2double  CConfig::Get_StartTime() {return StartTime;}

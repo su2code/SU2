@@ -585,6 +585,10 @@ CDriver::CDriver(char* confFile,
   StartTime = MPI_Wtime();
 #endif
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->Set_StartTime(StartTime);
+  }  
+ 
 }
 
 void CDriver::Postprocessing() {

@@ -453,6 +453,10 @@ public:
   
   bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
 
+  bool GetConvergence() {return Convergence;}
+
+  void SetConvergence(bool conv) {Convergence = conv;}
+
 protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  

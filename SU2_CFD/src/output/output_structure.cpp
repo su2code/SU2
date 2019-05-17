@@ -257,7 +257,11 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
   
+  LoadCommonHistoryData(config);
+  
   LoadHistoryData(config, geometry, solver_container);
+  
+  Convergence_Monitoring(config, curr_InnerIter);
   
   Postprocess_HistoryData(config);
   
@@ -287,7 +291,11 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
   
+  LoadCommonHistoryData(config);
+  
   LoadHistoryData(config, geometry, solver_container);
+  
+  Convergence_Monitoring(config, curr_InnerIter);  
   
   Postprocess_HistoryData(config);
 
@@ -660,92 +668,101 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
 bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
   unsigned short iCounter;
-
+  
   bool Already_Converged = Convergence;
-
+  
   su2double monitor = HistoryOutput_Map[Conv_Field].Value;
-
+  
   /*--- Cauchy based convergence criteria ---*/
-
+  
   if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT) {
-
-      Old_Func = New_Func;
-      New_Func = monitor;
-      Cauchy_Func = fabs(New_Func - Old_Func);
-
-      Cauchy_Serie[Iteration % config->GetCauchy_Elems()] = Cauchy_Func;
-      Cauchy_Value = 1;
-      if (Iteration  >= config->GetCauchy_Elems()) {
-          Cauchy_Value = 0;
-          for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-            Cauchy_Value += Cauchy_Serie[iCounter];
+    
+    if (Iteration == 0){
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++){
+        Cauchy_Serie[iCounter] = 0.0;
       }
-
-      if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
-      else { Convergence = true; Convergence_FullMG = true; }
-
+      New_Func = monitor;
+    }
+    
+    Old_Func = New_Func;
+    New_Func = monitor;
+    Cauchy_Func = fabs(New_Func - Old_Func);
+    
+    Cauchy_Serie[Iteration % config->GetCauchy_Elems()] = Cauchy_Func;
+    Cauchy_Value = 1.0;
+    if (Iteration >= config->GetCauchy_Elems()){     
+      Cauchy_Value = 0.0;
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Value += Cauchy_Serie[iCounter];
+    }
+    
+    if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
+    else { Convergence = true; Convergence_FullMG = true; New_Func = 0.0;}
+    
+    SetHistoryOutputValue("CAUCHY", Cauchy_Value);
+ 
   }
-
+  
   /*--- Residual based convergence criteria ---*/
-
+  
   if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_RESIDUAL || HistoryOutput_Map[Conv_Field].FieldType == TYPE_REL_RESIDUAL) {
-
-      /*--- Check the convergence ---*/
-
-      if ((monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
-      else { Convergence = false; Convergence_FullMG = false; }
-
+    
+    /*--- Check the convergence ---*/
+    
+    if ((monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+    else { Convergence = false; Convergence_FullMG = false; }
+    
   }
-
+  
   /*--- Do not apply any convergence criteria of the number
      of iterations is less than a particular value ---*/
-
+  
   if (Iteration < config->GetStartConv_Iter()) {
-      Convergence = false;
-      Convergence_FullMG = false;
+    Convergence = false;
+    Convergence_FullMG = false;
   }
-
+  
   if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
-
-
+  
+  
   /*--- Apply the same convergence criteria to all the processors ---*/
-
+  
 #ifdef HAVE_MPI
-
+  
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
   rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
+  
   /*--- Convergence criteria ---*/
-
+  
   sbuf_conv[0] = Convergence;
   SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
+  
   /*-- Compute global convergence criteria in the master node --*/
-
+  
   sbuf_conv[0] = 0;
   if (rank == MASTER_NODE) {
-      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-      else sbuf_conv[0] = 0;
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
   }
-
+  
   SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-
+  
   if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
   else { Convergence = false; Convergence_FullMG = false; }
-
+  
   delete [] sbuf_conv;
   delete [] rbuf_conv;
-
+  
 #endif
-
+  
   /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
+  
   if (monitor != monitor) {
-      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+    SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
   }
-
-
+  
+  
   return Convergence;
 }
 

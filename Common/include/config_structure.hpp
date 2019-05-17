@@ -120,6 +120,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
+  su2double StartTime;
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -9117,6 +9118,10 @@ public:
   * \brief Get the convergence field for monitoring
   */
   string GetConv_Field();
+  
+  void Set_StartTime(su2double starttime);
+  
+  su2double Get_StartTime();
 
 };
 
