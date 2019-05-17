@@ -1477,15 +1477,13 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
   /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
   
   if (nNodes == 6) {
-    /*--- There is some inconsistency between the shape functions and the order of the nodes
-          that causes "negative" stiffness, the remedy is to use negative weights. ---*/
     nGauss = 6;
-    Location[0][0] = -0.577350269189626;  Location[0][1] = 0.166666666666667;  Location[0][2] = 0.166666666666667;  Weight[0] = -0.166666666666667;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.666666666666667;  Location[1][2] = 0.166666666666667;  Weight[1] = -0.166666666666667;
-    Location[2][0] = -0.577350269189626;  Location[2][1] = 0.166666666666667;  Location[2][2] = 0.666666666666667;  Weight[2] = -0.166666666666667;
-    Location[3][0] =  0.577350269189626;  Location[3][1] = 0.166666666666667;  Location[3][2] = 0.166666666666667;  Weight[3] = -0.166666666666667;
-    Location[4][0] =  0.577350269189626;  Location[4][1] = 0.666666666666667;  Location[4][2] = 0.166666666666667;  Weight[4] = -0.166666666666667;
-    Location[5][0] =  0.577350269189626;  Location[5][1] = 0.166666666666667;  Location[5][2] = 0.666666666666667;  Weight[5] = -0.166666666666667;
+    Location[0][0] = -0.577350269189626;  Location[0][1] = 0.166666666666667;  Location[0][2] = 0.166666666666667;  Weight[0] = 0.166666666666667;
+    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.666666666666667;  Location[1][2] = 0.166666666666667;  Weight[1] = 0.166666666666667;
+    Location[2][0] = -0.577350269189626;  Location[2][1] = 0.166666666666667;  Location[2][2] = 0.666666666666667;  Weight[2] = 0.166666666666667;
+    Location[3][0] =  0.577350269189626;  Location[3][1] = 0.166666666666667;  Location[3][2] = 0.166666666666667;  Weight[3] = 0.166666666666667;
+    Location[4][0] =  0.577350269189626;  Location[4][1] = 0.666666666666667;  Location[4][2] = 0.166666666666667;  Weight[4] = 0.166666666666667;
+    Location[5][0] =  0.577350269189626;  Location[5][1] = 0.166666666666667;  Location[5][2] = 0.666666666666667;  Weight[5] = 0.166666666666667;
   }
   
   /*--- Hexahedrons. Nodes of numerical integration at 6 points (order 3). ---*/
