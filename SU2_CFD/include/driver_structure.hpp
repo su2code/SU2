@@ -1415,6 +1415,10 @@ public:
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
 
 };
 

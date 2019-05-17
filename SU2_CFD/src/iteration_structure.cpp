@@ -779,7 +779,7 @@ bool CFluidIteration::Monitor(COutput *output,
   }
 
   /*--- If convergence was reached --*/
-  StopCalc =  output->Convergence_Monitoring(config_container[val_iZone], config_container[val_iZone]->GetInnerIter());
+  StopCalc =  output->GetConvergence();
 
   return StopCalc;
 
