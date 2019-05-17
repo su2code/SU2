@@ -206,6 +206,8 @@ COutput::COutput(CConfig *config) {
   Cauchy_Value = 0.0;
   for (unsigned short iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
     Cauchy_Serie[iCounter] = 0.0;
+
+  Convergence = false;
   
   /*--- Initialize all convergence flags to false. ---*/
   
@@ -5552,6 +5554,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   
     no_writing = !wrt;
 
+    /*--- Set the common output fields ---*/
+    
+    SetCommonHistoryFields(config);
+    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
@@ -5927,11 +5933,6 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     }
   }
 
-  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT){
-    SetHistoryOutputValue("CAUCHY", Cauchy_Value);
-  }
-
-  
   map<string, su2double>::iterator it = Average.begin();
   for (it = Average.begin(); it != Average.end(); it++){
     SetHistoryOutputValue("AVG_" + it->first, it->second/Count[it->first]);
@@ -6014,5 +6015,49 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 //   return false;
 // }
   return true;
+}
+
+void COutput::SetCommonHistoryFields(CConfig *config){
+  
+  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
+  /// DESCRIPTION: The time iteration index.
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// DESCRIPTION: The outer iteration index.
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// DESCRIPTION: The inner iteration index.
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
+  /// END_GROUP
+  
+  /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
+  /// Description: The current time
+  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_FIXED, "TIME_DOMAIN");
+  /// Description: The current time step
+  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_FIXED, "TIME_DOMAIN");
+ 
+  /// DESCRIPTION: Currently used wall-clock time.
+  AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
+  
+}
+
+void COutput::LoadCommonHistoryData(CConfig *config){
+  
+  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
+  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
+  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
+  
+  SetHistoryOutputValue("CUR_TIME",  curr_TimeIter*config->GetTime_Step());
+  SetHistoryOutputValue("TIME_STEP", config->GetTime_Step());
+  
+  su2double StopTime, UsedTime;
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  
+  UsedTime = (StopTime - config->Get_StartTime())/((curr_OuterIter + 1) * (curr_InnerIter+1));
+  
+  SetHistoryOutputValue("PHYS_TIME", UsedTime);
+  
 }
 
