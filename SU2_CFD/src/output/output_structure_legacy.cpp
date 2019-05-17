@@ -20600,7 +20600,7 @@ void COutputLegacy::SetResult_Files_FEM(CSolver ****solver_container, CGeometry 
 
               if (rank == MASTER_NODE) cout << "ParaView binary volume files not available in this mode." << endl;
               if (rank == MASTER_NODE) cout << " Writing ParaView ASCII volume solution file instead." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+//              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
               DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
               break;
 
@@ -20647,7 +20647,7 @@ void COutputLegacy::SetResult_Files_FEM(CSolver ****solver_container, CGeometry 
 
               if (rank == MASTER_NODE) cout << "ParaView binary surface files not available in this mode." << endl;
               if (rank == MASTER_NODE) cout << " Writing ParaView ASCII surface solution file instead." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+//              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
               break;
 
@@ -20777,7 +20777,7 @@ void COutputLegacy::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***
 
               if (rank == MASTER_NODE) cout << "ParaView binary (volume grid) files not available in this mode." << endl;
               if (rank == MASTER_NODE) cout << " Writing ParaView ASCII file instead." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
+//              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
               DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
               break;
 
@@ -20824,7 +20824,7 @@ void COutputLegacy::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***
 
               if (rank == MASTER_NODE) cout << "ParaView binary (surface grid) files not available in this mode." << endl;
               if (rank == MASTER_NODE) cout << " Writing ParaView ASCII file instead." << endl;
-              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
+//              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
               break;
 
