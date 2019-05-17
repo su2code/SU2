@@ -111,15 +111,6 @@ CAdjFlowIncOutput::~CAdjFlowIncOutput(void) {
 }
 
 void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
-
-  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
-  /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
-  /// DESCRIPTION: The internal iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
-  /// DESCRIPTION: The external iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
-  /// END_GROUP
   
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
@@ -222,9 +213,6 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Sensitivity of the objective function with respect to the outlet pressure.
   AddHistoryOutput("SENS_PRESS_OUT",  "Sens_Pout",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
-  
-  /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
   
 }
 

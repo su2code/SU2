@@ -5653,7 +5653,6 @@ void COutput::PrepareHistoryFile(CConfig *config){
   
   /*--- Open the history file ---*/
   
-  cout << "History filename: " << char_histfile << endl;
   HistFile.open(char_histfile, ios::out);
   HistFile.precision(15);
   
@@ -5703,6 +5702,16 @@ void COutput::CheckHistoryOutput(){
   
   nRequestedScreenFields = RequestedScreenFields.size();
   
+  if (rank == MASTER_NODE){
+    cout <<"Screen output fields: ";
+    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
+      RequestedField = RequestedScreenFields[iReqField];            
+      cout << RequestedScreenFields[iReqField];
+      if (iReqField != nRequestedScreenFields - 1) cout << ", ";
+    }
+    cout << endl;
+  }
+  
   /*--- Remove unavailable fields from the history file output ---*/
   
   FieldsToRemove.clear();
@@ -5741,7 +5750,7 @@ void COutput::CheckHistoryOutput(){
   for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
     if (rank == MASTER_NODE) {
       if (iReqField == 0){
-        cout << "  Info: Ignoring the following history output fields/groups:" << endl;
+        cout << "  Info: Ignoring the following history output groups:" << endl;
         cout << "  ";
       }        cout << FieldsToRemove[iReqField];
       if (iReqField != FieldsToRemove.size()-1){
@@ -5754,6 +5763,16 @@ void COutput::CheckHistoryOutput(){
   }
   
   nRequestedHistoryFields = RequestedHistoryFields.size();
+  
+  if (rank == MASTER_NODE){
+    cout <<"History output groups: ";
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      RequestedField = RequestedHistoryFields[iReqField];            
+      cout << RequestedHistoryFields[iReqField];
+      if (iReqField != nRequestedHistoryFields - 1) cout << ", ";
+    }
+    cout << endl;
+  }
   
   /*--- Check that the requested convergence monitoring field is available ---*/
 
@@ -5832,6 +5851,15 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     RequestedVolumeFields.erase(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), FieldsToRemove[iReqField]));
   }
   
+  if (rank == MASTER_NODE){
+    cout <<"Volume output fields: ";
+    for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+      RequestedField = RequestedVolumeFields[iReqField];            
+      cout << RequestedVolumeFields[iReqField];
+      if (iReqField != nRequestedVolumeFields - 1) cout << ", ";
+    }
+    cout << endl;
+  }
   
   /*--- First, prepare the offsets needed throughout below. ---*/    
   

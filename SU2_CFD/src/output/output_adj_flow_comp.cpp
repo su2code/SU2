@@ -108,15 +108,6 @@ CAdjFlowOutput::~CAdjFlowOutput(void) {
 
 void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
-  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
-  /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
-  /// DESCRIPTION: The internal iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
-  /// DESCRIPTION: The external iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
-  /// END_GROUP
-  
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint density.
   AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
@@ -215,9 +206,6 @@ void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
   AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
   /// END_GROUP
-  
-  /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
   
 }
 
