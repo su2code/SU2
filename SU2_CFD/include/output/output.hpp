@@ -1125,6 +1125,8 @@ protected:
    */
   inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
 
+  inline void SetCommonHistoryFields(CConfig *config);
   
+  inline void LoadCommonHistoryData(CConfig *config);
 };
 
