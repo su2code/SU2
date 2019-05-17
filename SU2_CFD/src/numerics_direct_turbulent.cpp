@@ -682,7 +682,9 @@ void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2
   //  AD::SetPreaccIn(TurbVar_i[0]);
   //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
-  
+
+  su2double Density_Stag;
+
   if (incompressible) {
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+4];
@@ -707,14 +709,16 @@ void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2
   
   /*--- Evaluate Omega, here Omega is the Strain Rate ---*/
   
-  Sbar = 0.0;
+  /*Sbar = 0.0;
   for(iDim=0;iDim<nDim;++iDim)
     for(jDim=0;jDim<nDim;++jDim)
       for(kDim=0;kDim<nDim;++kDim)
         Sbar+= (0.5*(PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim]) - ((1.0/3.0)*PrimVar_Grad_i[1+kDim][kDim]*delta[iDim][jDim]));
   
   Sbar = 2.0 * Sbar * Sbar;
-  Omega = sqrt(max(Sbar,0.0));
+  Omega = sqrt(max(Sbar,0.0));*/
+
+  Omega = StrainMag_i;
   
   /*--- Rotational correction term ---*/
   
@@ -737,6 +741,7 @@ void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2
       SetReynoldsStressMatrix(turb_ke);
       SetPerturbedRSM(turb_ke, config);
       SetPerturbedStrainMag(turb_ke);
+      Omega = PerturbedStrainMag;
     }
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
@@ -758,10 +763,14 @@ void CSourcePieceWise_TurbSA_SALSA::ComputeResidual(su2double *val_residual, su2
     /*--- Production term ---*/;
     
     Production = cb1*Shat*TurbVar_i[0]*Volume;
+
+    /* Calculate stagnation density */
+
+    Density_Stag = config->GetDensity_FreeStream() * pow(1 + Gamma_Minus_One/2 * pow(config->GetMach(),2),1/Gamma_Minus_One);
     
     /*--- Destruction term ---*/
-    
-    rho_ratio = 0.7 * sqrt(config->GetDensity_FreeStream() / Density_i);
+
+    rho_ratio = 0.7 * sqrt(Density_Stag / Density_i);
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     r = 1.6 * tanh(rho_ratio * r);
     
