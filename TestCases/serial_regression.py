@@ -1138,7 +1138,7 @@ def main():
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
     brick_pyra_def.test_iter = 10
-    brick_pyra_def.test_vals = [0.00183115] #residual
+    brick_pyra_def.test_vals = [0.00150063] #residual
     brick_pyra_def.su2_exec  = "SU2_DEF"
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
@@ -1151,7 +1151,7 @@ def main():
     brick_prism_def.cfg_dir   = "deformation/brick_prism"
     brick_prism_def.cfg_file  = "def_brick_prism.cfg"
     brick_prism_def.test_iter = 10
-    brick_prism_def.test_vals = [5.684440e-03] #residual
+    brick_prism_def.test_vals = [0.00212069] #residual
     brick_prism_def.su2_exec  = "SU2_DEF"
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-08
@@ -1164,7 +1164,7 @@ def main():
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
     brick_prism_rans_def.test_iter = 10
-    brick_prism_rans_def.test_vals = [2.762780e-07] #residual
+    brick_prism_rans_def.test_vals = [4.8066e-08] #residual
     brick_prism_rans_def.su2_exec  = "SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
