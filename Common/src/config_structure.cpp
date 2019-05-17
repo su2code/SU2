@@ -4073,7 +4073,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
+  if (Kind_Solver == RANS && (Kind_Turb_Model != SST && Kind_Turb_Model != SA_SALSA) && using_uq){
     SU2_MPI::Error("UQ capabilities only implemented for SST turbulence model", CURRENT_FUNCTION);
   }
 
