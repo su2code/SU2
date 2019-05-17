@@ -106,14 +106,6 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  // Iteration numbers
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER");
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "ITER");
-  // Temporarily add both
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER");
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
-  
   // Residuals
   AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS");
   AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS");
