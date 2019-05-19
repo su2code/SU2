@@ -11952,6 +11952,10 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
+        /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+        visc_numerics->SetTauWall(-1.0, -1.0);
+        visc_numerics->SetDirTan(node[iPoint]->GetDirTanWM(), node[iPoint]->GetDirTanWM());
+        
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the 
               following routine based upon the velocity-component gradients. ---*/
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -16712,7 +16716,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  cout << "Isothermal Wall val_marker: " << val_marker << " Marker_Tag: " << Marker_Tag << endl;
+  //cout << "Isothermal Wall val_marker: " << val_marker << " Marker_Tag: " << Marker_Tag << endl;
   
   bool wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
   //bool wall_model = false;
