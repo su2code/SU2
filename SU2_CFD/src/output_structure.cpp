@@ -12471,12 +12471,12 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     
         if (rank == MASTER_NODE) cout <<"Sorting volumetric grid connectivity." << endl;
           
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TETRAHEDRON  );
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   );
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        );
-        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      );
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     , true);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL, true);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TETRAHEDRON  , true);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   , true);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
+        SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
           
         
         /*--- Sort surface grid connectivity. ---*/

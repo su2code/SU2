@@ -75,7 +75,6 @@ int main(int argc, char *argv[]) {
   else
     nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   CErrorEstimationDriver *ErrorEstimationDriver = NULL;
 

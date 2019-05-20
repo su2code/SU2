@@ -343,15 +343,10 @@ void CErrorEstimationDriver::Input_Preprocessing(CConfig **config_container, CGe
       }
       else {
 
-        /*--- Until we finish the new periodic BC implementation, use the old
-         partitioning routines for cases with periodic BCs. The old routines 
-         will be entirely removed eventually in favor of the new methods. ---*/
+        /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+        
+        geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
 
-        if (val_periodic) {
-          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
-        }
       }
 
       /*--- Deallocate the memory of geometry_aux and solver_aux ---*/

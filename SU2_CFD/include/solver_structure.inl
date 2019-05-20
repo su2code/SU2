@@ -112,8 +112,6 @@ inline void CSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config) {
 
 inline void CSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
