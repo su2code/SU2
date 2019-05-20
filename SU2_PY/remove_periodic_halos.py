@@ -60,7 +60,7 @@ for ii in range(len(lines[:])):
     nElems = int(lines[ii+1].split("=")[1])
     kk = ii+3
     for jj in range(nElems):
-      tokens = lines[kk].replace("\n","").split("\t")
+      tokens = lines[kk].replace("\n","").split()
       periodic = int(tokens[2])
       if periodic % 2 == 0:
         periodic_points.append(tokens[1])
@@ -89,8 +89,8 @@ for ii in range(len(lines[:])):
 
 for ii in range(len(lines[:])):
   if "NPOIN=" in lines[ii]:
-    tokens  = lines[ii].replace("\n","").split("\t")
-    nPoints = int(tokens[0].split("=")[1]) - nPeriodic
+    tokens  = lines[ii].replace("\n","").split()
+    nPoints = int(tokens[1]) - nPeriodic
     break
 
 # Count up the interior elements, excluding the added halos
@@ -102,7 +102,7 @@ for ii in range(len(lines[:])):
     nElems   = nElemOld
     kk = ii+1
     for jj in range(nElemOld):
-      element = lines[kk].replace("\n","").split("\t")
+      element = lines[kk].replace("\n","").split()
       conn    = element[1:-1]
       isHalo  = False
       for val in periodic_points:
@@ -146,7 +146,7 @@ for ii in range(len(lines[:])):
     fid.write("NELEM= " + str(nElems) + "\n")
     kk = ii+1
     for jj in range(nElemOld):
-      element = lines[kk].replace("\n","").split("\t")
+      element = lines[kk].replace("\n","").split()
       conn    = element[1:-1]
       isHalo  = False
       for val in periodic_points:
@@ -172,7 +172,7 @@ for ii in range(len(lines[:])):
     # First count number of boundary elems to be removed
 
     for jj in range(nElemOld):
-      element = lines[kk].replace("\n","").split("\t")
+      element = lines[kk].replace("\n","").split()
       conn    = element[1:]
       isHalo  = False
       for val in periodic_points:
@@ -187,7 +187,7 @@ for ii in range(len(lines[:])):
     kk = ii+2
     fid.write("MARKER_ELEMS= " + str(nElems) + "\n")
     for jj in range(nElemOld):
-      element = lines[kk].replace("\n","").split("\t")
+      element = lines[kk].replace("\n","").split()
       conn    = element[1:]
       isHalo  = False
       for val in periodic_points:
