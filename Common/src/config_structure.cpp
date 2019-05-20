@@ -3069,7 +3069,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_MET) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_MET) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
@@ -3077,7 +3077,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_MET) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_MET) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
@@ -4979,7 +4979,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
-    case SU2_INTERP: cout << "|   |___/\\___//___|   Suite (Solution Interpolating Code)               |" << endl; break;
     case SU2_MET: cout << "|   |___/\\___//___|   Suite (Metric Computation Code)                   |" << endl; break;
   }
 
@@ -6251,12 +6250,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
-  }
-
-  if (val_software == SU2_INTERP) {
-    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
-    if (Wrt_Binary_Restart) cout << "Writing binary SU2 native restart file." << endl;
-    else cout << "Writing ASCII SU2 native restart file." << endl;
   }
 
   if (val_software == SU2_DEF) {

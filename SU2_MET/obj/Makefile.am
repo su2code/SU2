@@ -55,7 +55,6 @@ bin_PROGRAMS += ../bin/SU2_MET
 ___bin_SU2_MET_LDADD += \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-data_manufactured_solutions.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-fem_interpolation_structure.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-error_estimation_structure.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model_pig.$(OBJEXT) \

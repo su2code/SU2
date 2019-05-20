@@ -86,11 +86,9 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
-  ../include/fem_interpolation_structure.hpp \
   ../include/error_estimation_structure.hpp \
   ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
-  ../src/fem_interpolation_structure.cpp \
   ../src/error_estimation_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \

@@ -8,7 +8,6 @@ from .interface import (
     DEF               ,
     DOT               ,
     SOL               ,
-    INTERP            ,
     MET               ,
     SOL_FSI)
 

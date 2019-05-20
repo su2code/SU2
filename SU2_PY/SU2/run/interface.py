@@ -242,22 +242,6 @@ def SOL(config):
     
     return
 
-def INTERP(config):
-    """ run SU2_INTERP
-        partitions set by config.NUMBER_PART
-    """
-    konfig = copy.deepcopy(config)
-
-    tempname = 'config_INTERP.cfg'
-    konfig.dump(tempname)
-    # for now run in serial
-    the_Command = 'SU2_INTERP%s %s' % (quote, tempname)
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
 def MET(config):
     """ run SU2_MET
         partitions set by config.NUMBER_PART

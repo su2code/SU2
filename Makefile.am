@@ -69,10 +69,6 @@ if BUILD_SOL
 SUBDIRS +=SU2_SOL/obj
 endif
 
-if BUILD_INTERP
-SUBDIRS +=SU2_INTERP/obj
-endif
-
 if BUILD_MET
 SUBDIRS +=SU2_MET/obj
 endif
