@@ -4001,8 +4001,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Unsteady_Simulation) {
 
       Restart_Flow = false;
-
-      if (Grid_Movement) {
+      if(false) {
+      //if (Grid_Movement) {
         SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
       }
 
@@ -7305,7 +7305,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   char buffer[50];
 
   /*--- Check that a positive value iteration is requested (for now). ---*/
-  
+  if(rank==MASTER_NODE) {cout << "CConfig::GetUnsteady_FileName val_iter: " << val_iter << endl;}
   if (val_iter < 0) {
     SU2_MPI::Error("Requesting a negative iteration number for the restart file!!", CURRENT_FUNCTION);
   }

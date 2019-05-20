@@ -2015,7 +2015,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   
 }
 
-void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
+void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config, int val_iter) {
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -2048,7 +2048,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Modify file name for an unsteady restart ---*/
-  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  //Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  Unst_RestartIter = val_iter - 1;
   filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -2119,7 +2120,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+    //Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+    Unst_RestartIter = val_iter - 2;
     filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
