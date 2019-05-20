@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -80,7 +80,9 @@ inline unsigned long CPoint::GetPoint(unsigned short val_point) { return Point[v
 
 inline su2double CPoint::GetVolume (void) { return Volume[0]; }
 
-inline su2double CPoint::GetPartialVolume (unsigned short val_iFace) { return PartialVolume[0][val_iFace]; }
+inline su2double CPoint::GetPeriodicVolume (void) { return Periodic_Volume; }
+
+inline void CPoint::SetPeriodicVolume (su2double val_volume) { Periodic_Volume = val_volume; }
 
 inline su2double CPoint::GetMaxLength(void) {return MaxLength;}
 
@@ -98,15 +100,13 @@ inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_bo
 
 inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
 
+inline void CPoint::SetPeriodicBoundary(bool val_boundary) { PeriodicBoundary = val_boundary; }
+
+inline bool CPoint::GetPeriodicBoundary(void) { return PeriodicBoundary; }
+
 inline void CPoint::AddVolume (su2double val_Volume) { Volume[0] += val_Volume; }
 
 inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
-
-inline void CPoint::AddPartialVolume (unsigned short val_iFace, su2double val_Volume) { PartialVolume[0][val_iFace] += val_Volume; }
-
-inline void CPoint::SetPartialVolume (unsigned short val_iFace, su2double val_Volume) { PartialVolume[0][val_iFace] = val_Volume; }
-
-inline void CPoint::SetnPartialVolume (unsigned short val_nFace) { PartialVolume[0].resize(val_nFace, 0.0); }
 
 inline void CPoint::SetMaxLength(su2double val_max_length) { MaxLength = val_max_length; }
 
