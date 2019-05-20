@@ -5396,16 +5396,11 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Wall shear stress values (wall functions) ---*/
   /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
   
-//  if ((TauWall_i > 0) && (TauWall_j > 0))
-//    cout << TauWall_i << " " << TauWall_j << " " << DirTan_i[0] << " " << DirTan_j[0] << " " << DirTan_i[1] << " " << DirTan_j[1] << " " << DirTan_i[2] << " " << DirTan_j[2] << endl;
   if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
   else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
   else Mean_TauWall = -1.0;
   
- for (iDim = 0; iDim < nDim; iDim++)
-   Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
-
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
@@ -5419,7 +5414,12 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   //if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
-  if (Mean_TauWall > 0) ReplaceTauWall(Normal, Mean_DirTan, Mean_TauWall);
+  if (Mean_TauWall > 0){
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
+
+    ReplaceTauWall(Normal, Mean_DirTan, Mean_TauWall);
+  }
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
