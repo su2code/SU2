@@ -61,13 +61,9 @@ private:
       size;                                     /*!< \brief MPI Size. */
 
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
-  CGeometry ****coarse_geometry_container;      /*!< \brief Input geometry for which there is a solution */
-  CGeometry ****fine_geometry_container;        /*!< \brief Output geometry that solution is going to be interpolated onto */
-  CSolver *****coarse_solver_container;         /*!< \brief Input solution that needs to be interpolated onto new mesh */
-  CSolver *****fine_solver_container;           /*!< \brief Interpolated solution on new mesh */
-  CSolver *****fine_solver_container2;          /*!< \brief Higher order interpolated solution on new mesh */
-  CConfig **coarse_config_container;            /*!< \brief Definition of the coarse problem. */
-  CConfig **fine_config_container;              /*!< \brief Definition of the output problem. */
+  CGeometry ****geometry_container;             /*!< \brief Geometry for which there is a solution */
+  CSolver *****solver_container;                /*!< \brief Solution for which error is being estimated */
+  CConfig **config_container;                   /*!< \brief Definition of the problem. */
   CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
   CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
   CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
@@ -78,8 +74,7 @@ private:
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
 
   bool fsi,                                     /*!< \brief FSI simulation flag.*/
-       coarse_fem_solver,                       /*!< \brief FEM fluid solver simulation flag for coarse simulation */
-       fine_fem_solver;                         /*!< \brief FEM fluid solver simulation flag for output simulation */
+       fem_solver;                              /*!< \brief FEM fluid solver simulation flag */
 
   unsigned short iZone,                         /*!< \brief Iterator on zones.*/
                  iSol,                          /*!< \brief Iterator on solutions.*/
@@ -173,9 +168,14 @@ public:
   void Solver_Restart(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
 
   /*!
-   * \brief Compute the error in the computable correction on the coarse geometry.
+   * \brief Perform all steps to compute the metric.
    */
-  void ComputeECC(void);
+  void ComputeMetric(void);
+
+  /*!
+   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter.
+   */
+  void SumWeightedHessian(CSolver* solver_flow, CSolver* solver_adj);
 
   /*!
    * \brief Run an iteration of the adjoint solver.
@@ -201,16 +201,6 @@ public:
    * \brief Run an iteration of the flow solver.
    */
   void DirectRun(void);
-
-  /*!
-   * \brief Perform inner product of of residuals and interpolation error to compute the adaptation parameter.
-   */
-  void ComputeAdaptationParameter(CSolver**  coarse_solver,
-                                  CSolver**  fine_solver,
-                                  CSolver**  fine_solver2,
-                                  CGeometry* coarse_geometry,
-                                  CGeometry* fine_geometry,
-                                  CConfig*   config);
 
   /*!
    * \brief Output the solution in solution file.

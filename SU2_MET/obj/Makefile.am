@@ -1,7 +1,7 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Makefile for SU2_ECC
+# \brief Makefile for SU2_MET
 # \author M. Colonno, T. Economon, F. Palacios
 # \version 6.1.0 "Falcon"
 #
@@ -42,17 +42,17 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = 
 
-___bin_SU2_ECC_SOURCES = \
-  ../include/SU2_ECC.hpp \
-  ../src/SU2_ECC.cpp
-___bin_SU2_ECC_CXXFLAGS =
-___bin_SU2_ECC_LDADD = 
+___bin_SU2_MET_SOURCES = \
+  ../include/SU2_MET.hpp \
+  ../src/SU2_MET.cpp
+___bin_SU2_MET_CXXFLAGS =
+___bin_SU2_MET_LDADD = 
 
 if BUILD_REVERSE
 
-bin_PROGRAMS += ../bin/SU2_ECC
+bin_PROGRAMS += ../bin/SU2_MET
 
-___bin_SU2_ECC_LDADD += \
+___bin_SU2_MET_LDADD += \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-data_manufactured_solutions.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
   ../../SU2_CFD/src/bin_SU2_CFD_AD-fem_interpolation_structure.$(OBJEXT) \
@@ -120,17 +120,17 @@ ___bin_SU2_ECC_LDADD += \
   ../../Common/lib/libSU2_AD.a
 
 # always link to built dependencies from ./externals
-___bin_SU2_ECC_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_ECC_LDADD += @su2_externals_LIBS@
-___bin_SU2_ECC_LDADD += @su2_externals_LIBPTHREAD@
+___bin_SU2_MET_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_MET_LDADD += @su2_externals_LIBS@
+___bin_SU2_MET_LDADD += @su2_externals_LIBPTHREAD@
 
 # add reverse flags
-___bin_SU2_ECC_CXXFLAGS += @REVERSE_CXX@
-___bin_SU2_ECC_LDADD += @REVERSE_LIBS@ 
+___bin_SU2_MET_CXXFLAGS += @REVERSE_CXX@
+___bin_SU2_MET_LDADD += @REVERSE_LIBS@ 
 
 # if BUILD_MUTATIONPP
-___bin_SU2_ECC_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_ECC_LDADD += @MUTATIONPP_LD@
+___bin_SU2_MET_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_MET_LDADD += @MUTATIONPP_LD@
 # endif
 
 endif

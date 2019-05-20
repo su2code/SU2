@@ -12456,7 +12456,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     }
 
     /*--- Write an Inria format restart file. ---*/
-    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_ECC){
+    if(config[iZone]->GetError_Estimate() && config[iZone]->GetKind_SU2() == SU2_MET){
       if (rank == MASTER_NODE) cout << "Writing Inria restart file." << endl;
       SetInriaRestart(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
       if (rank == MASTER_NODE) cout << "Writing Inria sensor files." << endl;
@@ -12506,7 +12506,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((Wrt_Vol || Wrt_Srf || config[iZone]->GetWrt_InriaMesh()) && !fem_solver) {
+    if ((Wrt_Vol || Wrt_Srf) && !fem_solver) {
       
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
@@ -12912,28 +12912,17 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Roe_Dissipation");
     }
 
-    /*--- Plot the ECC if performing error estimation. ---*/
+    /*--- Plot the metric tensor. ---*/
 
-    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
-      Variable_Names.push_back("Adaptation_Parameter");
-      nVar_Par += 1;
+    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
 
       if(nDim == 2){
-        Variable_Names.push_back("Aniso_Grad[0]");
-        Variable_Names.push_back("Aniso_Grad[1]");
-        nVar_Par += 2;
-
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
         nVar_Par += 3;
       }
       else{
-        Variable_Names.push_back("Aniso_Grad[0]");
-        Variable_Names.push_back("Aniso_Grad[1]");
-        Variable_Names.push_back("Aniso_Grad[2]");
-        nVar_Par += 3;
-        
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
@@ -13176,24 +13165,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
         }
 
-        /*--- Load data for the ECC. ---*/
+        /*--- Load data for the metric. ---*/
 
-        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
-          iVar++;
-
-          for(iDim = 0; iDim < nDim; iDim++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoGrad(iDim);
-            iVar++;
-          }
+        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
 
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
           else          nMetr = 6;
             
           for(iMetr = 0; iMetr < nMetr; iMetr++){
-            // Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
             iVar++;
           }
         }
@@ -13930,28 +13911,17 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     
     nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
 
-    /*--- Plot the ECC if performing error estimation. ---*/
+    /*--- Plot the metric if performing error estimation. ---*/
 
-    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
-      Variable_Names.push_back("Adaptation_Parameter");
-      nVar_Par += 1;
+    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
 
       if(nDim == 2){
-        Variable_Names.push_back("Aniso_Grad[0]");
-        Variable_Names.push_back("Aniso_Grad[1]");
-        nVar_Par += 2;
-
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
         nVar_Par += 3;
       }
       else{
-        Variable_Names.push_back("Aniso_Grad[0]");
-        Variable_Names.push_back("Aniso_Grad[1]");
-        Variable_Names.push_back("Aniso_Grad[2]");
-        nVar_Par += 3;
-
         Variable_Names.push_back("Aniso_Metric[0]");
         Variable_Names.push_back("Aniso_Metric[1]");
         Variable_Names.push_back("Aniso_Metric[2]");
@@ -14157,23 +14127,15 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         
         Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;
 
-        /*--- Load data for the ECC. ---*/
+        /*--- Load data for the metric. ---*/
 
-        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_ECC){
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam();
-          iVar++;
-
-          for(iDim = 0; iDim < nDim; iDim++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoGrad(iDim);
-            iVar++;
-          }
-
+        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
           else          nMetr = 6;
             
           for(iMetr = 0; iMetr < nMetr; iMetr++){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAdapParam()*solver[FLOW_SOL]->node[iPoint]->GetAnisoHess(iMetr);
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetAnisoMetr(iMetr);
             iVar++;
           }
         }

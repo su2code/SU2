@@ -9,7 +9,7 @@ from .interface import (
     DOT               ,
     SOL               ,
     INTERP            ,
-    ECC               ,
+    MET               ,
     SOL_FSI)
 
 from .direct     import direct
@@ -20,4 +20,3 @@ from .geometry   import geometry
 from .adaptation import adaptation
 from .merge      import merge
 from .amg        import amg
-from .amg_ecc    import amg_ecc

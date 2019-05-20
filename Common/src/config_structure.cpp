@@ -2417,7 +2417,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("ANISO_SENSOR", Kind_Aniso_Sensor, Aniso_Sensor_Map, ANISO_MACH);
 
   /* DESCRIPTION: Constraint mesh complexity */
-  addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 1000);
+  addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 10000);
 
   /* END_CONFIG_OPTIONS */
 
@@ -3069,7 +3069,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_ECC) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_MET) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
@@ -3077,7 +3077,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_ECC) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP || Kind_SU2 == SU2_MET) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
@@ -4980,7 +4980,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
     case SU2_INTERP: cout << "|   |___/\\___//___|   Suite (Solution Interpolating Code)               |" << endl; break;
-    case SU2_ECC: cout << "|   |___/\\___//___|   Suite (Error Estimation Code)                     |" << endl; break;
+    case SU2_MET: cout << "|   |___/\\___//___|   Suite (Metric Computation Code)                   |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
@@ -5500,7 +5500,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT) || (val_software == SU2_ECC)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT) || (val_software == SU2_MET)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {

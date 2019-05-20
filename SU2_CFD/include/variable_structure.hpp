@@ -84,7 +84,8 @@ protected:
   AdapParam,        /*!< \brief Parameter used to drive cell volume in mesh adaptation. */
   AnisoSens,        /*!< \brief Sensor used for anisotropy in mesh adaptation. */
   *AnisoGrad,       /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
-  *AnisoHess;       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  *AnisoHess,       /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  *AnisoMetr;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
@@ -476,6 +477,38 @@ public:
    * \param[in] val_var  - Index value.
    */
   su2double GetAnisoHess(unsigned short val_var);
+
+  /*!
+   * \brief Set the value of the metric.
+   * \param[in] val_var       - Index value.
+   * \param[in] val_sens_metr - Metric value.
+   */
+  void SetAnisoMetr(unsigned short val_var, su2double val_sens_metr);
+
+  /*!
+   * \brief Add the value of the metric.
+   * \param[in] val_var       - Index value.
+   * \param[in] val_sens_metr - Metric value.
+   */
+  void AddAnisoMetr(unsigned short val_var, su2double val_sens_metr);
+
+  /*!
+   * \brief Scale the metric.
+   * \param[in] val_scale - Scaling factor.
+   * \param[in] val_nMetr - Size of metric tensor.
+   */
+  void ScaleAnisoMetr(su2double val_scale, unsigned short val_nMetr);
+
+  /*!
+   * \brief Get the value of the metric tensor.
+   */
+  su2double *GetAnisoMetr(void);
+
+  /*!
+   * \brief Get the value of the metric.
+   * \param[in] val_var  - Index value.
+   */
+  su2double GetAnisoMetr(unsigned short val_var);
   
   /*!
    * \brief Set the velocity of the truncation error to zero.

@@ -1,7 +1,7 @@
 /*!
- * \file SU2_ECC.hpp
- * \brief Headers of the main subroutines of the code SU2_ECC.
- *        The subroutines and functions are in the <i>SU2_ECC.cpp</i> file.
+ * \file SU2_MET.hpp
+ * \brief Headers of the main subroutines of the code SU2_MET.
+ *        The subroutines and functions are in the <i>SU2_MET.cpp</i> file.
  * \author B. Munguía
  * \version 6.1.0 "Falcon"
  *

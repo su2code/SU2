@@ -6603,14 +6603,17 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
   unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
+  su2double density, velocity[2], pressure, enthalpy;
   su2double vnx[3], vny[3];
   su2double graTri[2];
-  su2double Crd[3][2], Sens[3];
+  su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
 
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- store sensor
+    //--- store sensors
     if (Kind_Aniso_Sensor == ANISO_MACH) {
       const su2double local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
       node[iPoint]->SetAnisoSens(local_Mach);
@@ -6620,9 +6623,14 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       node[iPoint]->SetAnisoSens(local_Pres);
     }
 
-    //--- initialize sensor gradient
-    node[iPoint]->SetAnisoGrad(0, 0.0);
-    node[iPoint]->SetAnisoGrad(1, 0.0);
+    //--- initialize gradients to 0
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVar*nDim + iVar*nDim;
+        node[iPoint]->SetAnisoGrad(i+0, 0.0);
+        node[iPoint]->SetAnisoGrad(i+1, 0.0);
+      }
+    }
 
   }
 
@@ -6633,8 +6641,22 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       for (unsigned short iDim = 0; iDim<2; ++iDim) {
         Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       }
-      //--- store sensor
-      Sens[iNode] = node[kNode]->GetAnisoSens();
+      //--- store sensors (goal-oriented)
+      density     = node[kNode]->GetDensity();
+      velocity[0] = node[kNode]->GetVelocity(0);
+      velocity[1] = node[kNode]->GetVelocity(1);
+      pressure    = node[kNode]->GetPressure();
+      enthalpy    = node[kNode]->GetEnthalpy();
+
+      Sens[iNode][0][0] = density*velocity[0];
+      Sens[iNode][1][0] = Sens[iNode][0][0]*velocity[0]+pressure;
+      Sens[iNode][2][0] = Sens[iNode][0][0]*velocity[1];
+      Sens[iNode][3][0] = Sens[iNode][0][0]*enthalpy;
+
+      Sens[iNode][0][1] = density*velocity[1];
+      Sens[iNode][1][1] = Sens[iNode][0][1]*velocity[0];
+      Sens[iNode][2][1] = Sens[iNode][0][1]*velocity[1]+pressure;
+      Sens[iNode][3][1] = Sens[iNode][0][1]*enthalpy;
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -6645,17 +6667,26 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
 
-    //--- gradient at the element ( graTri = 2*|T|*gradT ) 
-    graTri[0] = Sens[0]*vnx[0] + Sens[1]*vnx[1] + Sens[2]*vnx[2];
-    graTri[1] = Sens[0]*vny[0] + Sens[1]*vny[1] + Sens[2]*vny[2];
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- gradient at the element ( graTri = 2*|T|*gradT ) 
+        graTri[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2];
+        graTri[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2];
     
-    //--- assembling
-    for (unsigned short iNode=0; iNode<3; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      const su2double Area = geometry->node[kNode]->GetVolume();
-      const su2double rap = 1./(Area*6.0);
-      node[kNode]->AddAnisoGrad(0, graTri[0] * rap);
-      node[kNode]->AddAnisoGrad(1, graTri[1] * rap);
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Area = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Area*6.0);
+          node[kNode]->AddAnisoGrad(i+0, graTri[0] * rap);
+          node[kNode]->AddAnisoGrad(i+1, graTri[1] * rap);
+        }
+      }
     }
   }
 
@@ -6664,18 +6695,26 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
+  unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
   su2double hesTri[3];
-  su2double Crd[3][2], Grad[3][2];
+  su2double Crd[3][2], Grad[3][2][nVarMetr][nFluxMetr];
 
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     //--- initialize sensor Hessian
-    node[iPoint]->SetAnisoHess(0, 0.0);
-    node[iPoint]->SetAnisoHess(1, 0.0);
-    node[iPoint]->SetAnisoHess(2, 0.0);
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+        node[iPoint]->SetAnisoHess(i+0, 0.0);
+        node[iPoint]->SetAnisoHess(i+1, 0.0);
+        node[iPoint]->SetAnisoHess(i+2, 0.0);
+      }
+    }
 
   }
 
@@ -6687,8 +6726,13 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       }
       //--- store gradient
-      Grad[iNode][0] = node[kNode]->GetAnisoGrad(0);
-      Grad[iNode][1] = node[kNode]->GetAnisoGrad(1);
+      for(iVar = 0; iVar < nVarMetr; iVar++){
+        for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+          const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+          Grad[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+0);
+          Grad[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+1);
+        }
+      }
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -6699,74 +6743,75 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
 
-    //--- hessian at the element ( hesTri = 2*|T|*hessienT ) 
-    hesTri[0] =         Grad[0][0]*vnx[0] + Grad[1][0]*vnx[1] + Grad[2][0]*vnx[2];
-    hesTri[1] = 0.5 * ( Grad[0][0]*vny[0] + Grad[1][0]*vny[1] + Grad[2][0]*vny[2]
-                      + Grad[0][1]*vnx[0] + Grad[1][1]*vnx[1] + Grad[2][1]*vnx[2] );
-    hesTri[2] =         Grad[0][1]*vny[0] + Grad[1][1]*vny[1] + Grad[2][1]*vny[2];
-    
-    //--- assembling
-    for (unsigned short iNode=0; iNode<3; ++iNode) {
-      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
-      const su2double Area = geometry->node[kNode]->GetVolume();
-      const su2double rap = 1./(Area*6.0);
-      node[kNode]->AddAnisoHess(0, hesTri[0] * rap);
-      node[kNode]->AddAnisoHess(1, hesTri[1] * rap);
-      node[kNode]->AddAnisoHess(2, hesTri[2] * rap);
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- hessian at the element ( hesTri = 2*|T|*hessienT ) 
+        hesTri[0] =         Grad[0][0][iVar][iFlux]*vnx[0] 
+                          + Grad[1][0][iVar][iFlux]*vnx[1] 
+                          + Grad[2][0][iVar][iFlux]*vnx[2];
+        hesTri[1] = 0.5 * ( Grad[0][0][iVar][iFlux]*vny[0] 
+                          + Grad[1][0][iVar][iFlux]*vny[1] 
+                          + Grad[2][0][iVar][iFlux]*vny[2]
+                          + Grad[0][1][iVar][iFlux]*vnx[0] 
+                          + Grad[1][1][iVar][iFlux]*vnx[1] 
+                          + Grad[2][1][iVar][iFlux]*vnx[2] );
+        hesTri[2] =         Grad[0][1][iVar][iFlux]*vny[0] 
+                          + Grad[1][1][iVar][iFlux]*vny[1] 
+                          + Grad[2][1][iVar][iFlux]*vny[2];
+        
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Area = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Area*6.0);
+          node[kNode]->AddAnisoHess(i+0, hesTri[0] * rap);
+          node[kNode]->AddAnisoHess(i+1, hesTri[1] * rap);
+          node[kNode]->AddAnisoHess(i+2, hesTri[2] * rap);
+        }
+      }
     }
   }
 
-  //--- normalize to obtain Lp metric
-  su2double p = 2.0;                                                  // For now, hardcode L2 metric
-  su2double LocalSumDetH  = 0.0,                                      // Sum of absolute value of determinant on processor
-            GlobalSumDetH = 0.0,                                      // Sum of absolute value of determinant on all processors
-            Complexity    = su2double(config->GetMesh_Complexity());  // Constraing mesh complexity
-
+  //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double DetH = node[iPoint]->GetAnisoHess(0)*node[iPoint]->GetAnisoHess(2)
-                         - node[iPoint]->GetAnisoHess(1)*node[iPoint]->GetAnisoHess(1);
-    const su2double TraH = node[iPoint]->GetAnisoHess(0)+node[iPoint]->GetAnisoHess(2);
+    CVariable *var = node[iPoint];
 
-    const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
-    const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
 
-    LocalSumDetH += pow(abs(Lam1*Lam2), p/(2.*p+3.));
+        const su2double DetH = var->GetAnisoHess(i+0)*var->GetAnisoHess(i+2)
+                             - var->GetAnisoHess(i+1)*var->GetAnisoHess(i+1);
+        const su2double TraH = var->GetAnisoHess(i+0)+var->GetAnisoHess(i+2);
 
-  }
+        const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
+        const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&LocalSumDetH, &GlobalSumDetH, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    GlobalSumDetH = LocalSumDetH;
-#endif    
+        const su2double RuH[2][2]    = {{var->GetAnisoHess(i+1),var->GetAnisoHess(i+1)},
+                                        {Lam1-var->GetAnisoHess(i+0),Lam2-var->GetAnisoHess(i+0)}};
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+        const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
+                                        {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
 
-    const su2double DetH = node[iPoint]->GetAnisoHess(0)*node[iPoint]->GetAnisoHess(2)
-                         - node[iPoint]->GetAnisoHess(1)*node[iPoint]->GetAnisoHess(1);
-    const su2double TraH = node[iPoint]->GetAnisoHess(0)+node[iPoint]->GetAnisoHess(2);
+        const su2double LamRuU[2][2] = {{abs(Lam1)*RuU[0][0],abs(Lam1)*RuU[1][0]},
+                                        {abs(Lam2)*RuU[0][1],abs(Lam2)*RuU[1][1]}};
 
-    const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
-    const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
+        const su2double Hess[3]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], 
+                                        RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1], 
+                                        RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]};
 
-    const su2double RuH[2][2]    = {{node[iPoint]->GetAnisoHess(1),node[iPoint]->GetAnisoHess(1)},
-                                    {Lam1-node[iPoint]->GetAnisoHess(0),Lam2-node[iPoint]->GetAnisoHess(0)}};
+        var->SetAnisoHess(i+0, Hess[0]);
+        var->SetAnisoHess(i+1, Hess[1]);
+        var->SetAnisoHess(i+2, Hess[2]);
 
-    const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
-                                    {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
-    const su2double LamRuU[2][2] = {{abs(Lam1)*RuU[0][0],abs(Lam1)*RuU[1][0]},
-                                    {abs(Lam2)*RuU[0][1],abs(Lam2)*RuU[1][1]}};
-    const su2double Metr[2][2]   = {{RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0], RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]},
-                                    {RuU[1][0]*LamRuU[0][0]+RuU[1][1]*LamRuU[1][0], RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]}};
-
-    const su2double factor = pow(Complexity, 2./3.)
-                           * pow(GlobalSumDetH, -2./3.)
-                           * pow(abs(Lam1*Lam2), -1./(2.*p+3.));
-
-    node[iPoint]->SetAnisoHess(0, factor*Metr[0][0]);
-    node[iPoint]->SetAnisoHess(1, factor*Metr[0][1]);
-    node[iPoint]->SetAnisoHess(2, factor*Metr[1][1]);
+      }
+    }
 
   }
 

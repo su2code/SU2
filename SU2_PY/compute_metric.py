@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-## \file compute_ecc.py
-#  \brief Python script for calculating the error in the computable correction (ECC) of an objective
+## \file compute_metric.py
+#  \brief Python script for calculating a metric field
 #  \author B. Munguia
 #  \version 6.1.0 "Falcon"
 #
@@ -148,105 +148,8 @@ def main():
         os.system('mkdir ' + folderName)
         os.system('cp ' + konfig.SOLUTION_ADJ_FILENAME + ' ' + folderName)
 
-
-    # perform linear interpolation
-    print "\n\n =================== Performing Linear Interpolation =================== \n\n"
-
-    # make copies
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
-
-    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
-    konfig.RESTART_FLOW_FILENAME  = konfig.INTERPOLATED_RESTART_FILENAME
-    konfig.ERROR_ESTIMATE = 'NO'
-    konfig.MATH_PROBLEM = 'DIRECT'
-
-    folderName = 'LINEAR/'
-    if os.path.isdir(folderName):
-       os.system('rm -R '+folderName)
-    os.system('mkdir ' + folderName)
-    folderName = folderName + 'PRIMAL/'
-    os.system('mkdir ' + folderName)
-    sendOutputFiles(konfig, folderName)
-
-    if quiet:
-        log = 'LINEAR/PRIMAL/log_interp.out'
-    else:
-        log = None
-    with redirect_output(log):   
-        info = SU2.run.INTERP(konfig)
-
-    # make copies
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
-
-    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
-    konfig.SOLUTION_ADJ_FILENAME  = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
-    konfig.RESTART_ADJ_FILENAME   = konfig.INTERPOLATED_RESTART_ADJ_FILENAME
-    konfig.ERROR_ESTIMATE = 'NO'
-    konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
-
-    folderName = 'LINEAR/ADJOINT/'
-    os.system('mkdir ' + folderName)
-    sendOutputFiles(konfig, folderName)
-
-    if quiet:
-        log = 'LINEAR/ADJOINT/log_interp.out'
-    else:
-        log = None
-    with redirect_output(log):   
-        info = SU2.run.INTERP(konfig)
-
-    # perform quadratic interpolation
-    print "\n\n =================== Performing Quadratic Interpolation =================== \n\n"
-
-    # make copies
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
-
-    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
-    konfig.RESTART_FLOW_FILENAME  = konfig.ECC_RESTART_FILENAME
-    konfig.ERROR_ESTIMATE = 'YES'
-    konfig.MATH_PROBLEM = 'DIRECT'
-
-    folderName = 'QUADRATIC/'
-    if os.path.isdir(folderName):
-       os.system('rm -R '+folderName)
-    os.system('mkdir ' + folderName)
-    folderName = folderName + 'PRIMAL/'
-    os.system('mkdir ' + folderName)
-    sendOutputFiles(konfig, folderName)
-
-    if quiet:
-        log = 'QUADRATIC/PRIMAL/log_interp.out'
-    else:
-        log = None
-    with redirect_output(log):   
-        info = SU2.run.INTERP(konfig)
-
-    # make copies
-    konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(state)
-
-    konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
-    konfig.SOLUTION_ADJ_FILENAME  = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
-    konfig.RESTART_ADJ_FILENAME   = konfig.ECC_RESTART_ADJ_FILENAME
-    konfig.ERROR_ESTIMATE = 'YES'
-    konfig.MATH_PROBLEM = 'DISCRETE_ADJOINT'
-
-    folderName = 'QUADRATIC/ADJOINT/'
-    os.system('mkdir ' + folderName)
-    sendOutputFiles(konfig, folderName)
-
-    if quiet:
-        log = 'QUADRATIC/ADJOINT/log_interp.out'
-    else:
-        log = None
-    with redirect_output(log):   
-        info = SU2.run.INTERP(konfig)
-
-    # compute ECC
-    print "\n\n =================== Computing Error in Computable Correction =================== \n\n"
+    # compute metric field
+    print "\n\n =================== Computing Metric Field =================== \n\n"
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -257,23 +160,19 @@ def main():
 
     konfig.SOLUTION_FLOW_FILENAME = 'PRIMAL/' + konfig.RESTART_FLOW_FILENAME
     konfig.SOLUTION_ADJ_FILENAME = 'ADJOINT/' + konfig.RESTART_ADJ_FILENAME
-    konfig.INTERPOLATED_SOLUTION_FILENAME = 'LINEAR/PRIMAL/' + konfig.INTERPOLATED_RESTART_FILENAME
-    konfig.INTERPOLATED_SOLUTION_ADJ_FILENAME = 'LINEAR/ADJOINT/' + konfig.INTERPOLATED_RESTART_ADJ_FILENAME
-    konfig.ECC_SOLUTION_FILENAME = 'QUADRATIC/PRIMAL/' + konfig.ECC_RESTART_FILENAME
-    konfig.ECC_SOLUTION_ADJ_FILENAME = 'QUADRATIC/ADJOINT/' + konfig.ECC_RESTART_ADJ_FILENAME
 
-    folderName = 'ECC/'
+    folderName = 'METRIC/'
     if os.path.isdir(folderName):
        os.system('rm -R '+folderName)
     os.system('mkdir ' + folderName)
     sendOutputFiles(konfig, folderName)
 
     if quiet:
-        log = 'ECC/log_ecc.out'
+        log = 'METRIC/log_metric.out'
     else:
         log = None
     with redirect_output(log):   
-        info = SU2.run.ECC(konfig)
+        info = SU2.run.MET(konfig)
 
 def sendOutputFiles( config, folderName = ''):
     

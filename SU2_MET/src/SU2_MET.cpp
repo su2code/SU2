@@ -1,6 +1,6 @@
 /*!
- * \file SU2_ECC.cpp
- * \brief Main file for the error estimation code (SU2_ECC).
+ * \file SU2_MET.cpp
+ * \brief Main file for the metric computation code (SU2_MET).
  * \author B. Munguía
  * \version 6.1.0 "Falcon"
  *
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/SU2_ECC.hpp"
+#include "../include/SU2_MET.hpp"
 
 using namespace std;
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
    for variables allocation). ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_ECC);
+  config = new CConfig(config_file_name, SU2_MET);
   if (config->GetKind_Solver() == MULTIZONE)
     nZone  = config->GetnConfigFiles();
   else
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   ErrorEstimationDriver = new CErrorEstimationDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
-  ErrorEstimationDriver->ComputeECC();
+  ErrorEstimationDriver->ComputeMetric();
 
   ErrorEstimationDriver->Output();
 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Exit Success (SU2_ECC) ------------------------" << endl << endl;
+    cout << endl <<"------------------------- Exit Success (SU2_MET) ------------------------" << endl << endl;
   
   /*--- Finalize MPI parallelization ---*/
   
