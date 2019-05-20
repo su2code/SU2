@@ -275,6 +275,7 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 
 void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  //TK:: PReaccumulation missing!
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -922,8 +923,7 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
       dot_product = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+4][iDim]; // gradient of eddy viscosity, TK not readliy available yet +4 only to prevent out of bound error/segfault
-
+        dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
       val_residual[nDim+1] -= Volume * scalar_factor * dot_product;
     } // turbulent
     

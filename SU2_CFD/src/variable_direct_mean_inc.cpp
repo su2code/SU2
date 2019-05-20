@@ -88,7 +88,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+6; //TK:: for periodic turb EddyMu
 
   /*--- Allocate residual structures ---*/
   
@@ -161,7 +161,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta)
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu)  //TK:: for periodic turb EddyMu
    * We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];
@@ -216,7 +216,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
  
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+6; //TK:: for periodic turb EddyMu
   
   /*--- Allocate residual structures ---*/
 
@@ -282,7 +282,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu), //TK:: for periodic turb EddyMu
         We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];

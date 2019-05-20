@@ -17781,7 +17781,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
       cout << "Streamwise Periodic Reference Node: [";
       for (iDim = 0; iDim < nDim; iDim++)
         cout <<  " " << Buffer_Send_RefNode[iDim];
-      cout << " " << endl;
+      cout << " ]" << endl;
     }
 
     /*--- Free allocated memory. ---*/
