@@ -37,14 +37,20 @@
 
 #pragma once
 
-inline void CSysVector::SetValZero(void) { 
+template<class ScalarType>
+inline void CSysVector<ScalarType>::SetValZero(void) { 
   for (unsigned long i = 0; i < nElm; i++)
 		vec_val[i] = 0.0;
 }
 
-inline unsigned long CSysVector::GetLocSize() const { return nElm; }
+template<class ScalarType>
+inline unsigned long CSysVector<ScalarType>::GetLocSize() const { return nElm; }
 
-inline unsigned long CSysVector::GetSize() const {
+template<class ScalarType>
+unsigned long CSysVector<ScalarType>::GetNElmDomain() const { return nElmDomain; }
+
+template<class ScalarType>
+inline unsigned long CSysVector<ScalarType>::GetSize() const {
 #ifdef HAVE_MPI
   return nElmGlobal;
 #else
@@ -52,12 +58,51 @@ inline unsigned long CSysVector::GetSize() const {
 #endif
 }
 
-inline unsigned short CSysVector::GetNVar() const { return nVar; }
+template<class ScalarType>
+inline unsigned short CSysVector<ScalarType>::GetNVar() const { return nVar; }
 
-inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
+template<class ScalarType>
+inline unsigned long CSysVector<ScalarType>::GetNBlk() const { return nBlk; }
 
-inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
+template<class ScalarType>
+inline unsigned long CSysVector<ScalarType>::GetNBlkDomain() const { return nBlkDomain; }
 
-inline su2double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
+template<class ScalarType>
+inline ScalarType & CSysVector<ScalarType>::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const su2double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
+template<class ScalarType>
+inline const ScalarType & CSysVector<ScalarType>::operator[](const unsigned long & i) const { return vec_val[i]; }
+
+template<class ScalarType>
+template<class T>
+void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
+
+  /*--- This is a method and not the overload of an operator to make sure who
+   calls it knows the consequence to the derivative information (lost) ---*/
+
+  /*--- check if self-assignment, otherwise perform deep copy ---*/
+  if ((const void*)this == (const void*)&other) return;
+
+  /*--- determine if (re-)allocation is needed ---*/
+  if (nElm != other.GetLocSize() && vec_val != NULL) {
+    delete [] vec_val;
+    vec_val = NULL;
+  }
+
+  /*--- copy ---*/
+  nElm = other.GetLocSize();
+  nElmDomain = other.GetNElmDomain();
+  nBlk = other.GetNBlk();
+	nBlkDomain = other.GetNBlkDomain();
+  nVar = other.GetNVar();
+
+  if (vec_val == NULL)
+    vec_val = new ScalarType[nElm];
+
+  for (unsigned long i = 0; i < nElm; i++)
+    vec_val[i] = SU2_TYPE::GetValue(other[i]);
+
+#ifdef HAVE_MPI
+  nElmGlobal = other.GetSize();
+#endif
+}
