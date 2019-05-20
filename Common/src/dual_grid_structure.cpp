@@ -62,14 +62,12 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(1);
   }
   else { 
     Volume = new su2double[3]; 
     Volume[0] = 0.0; 
     Volume[1] = 0.0; 
     Volume[2] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(3);
   }
 
   Coord = new su2double[nDim];
@@ -158,14 +156,12 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(1);
   }
   else{ 
     Volume = new su2double[3]; 
     Volume[0] = 0.0; 
     Volume[1] = 0.0; 
     Volume[2] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(3);
   }
 
   Coord    = new su2double[nDim]; 
@@ -257,14 +253,12 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   if ( config->GetUnsteady_Simulation() == NO ) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(1);
   }
   else{ 
     Volume = new su2double[3]; 
     Volume[0] = 0.0; 
     Volume[1] = 0.0;
     Volume[2] = 0.0; 
-    if(config->GetError_Estimate()) PartialVolume.resize(3);
   }
 
   Coord    = new su2double[nDim]; 
