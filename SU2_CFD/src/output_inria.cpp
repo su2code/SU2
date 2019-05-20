@@ -47,11 +47,11 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
+  unsigned short nVar_Buf = nVar_Par-nDim;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  //ofstream restart_file;
   string filename;
   
   unsigned long OutSol,i, npoin = geometry->GetGlobal_nPointDomain();
@@ -96,11 +96,11 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
 	
   /*--- Write the restart file ---*/
 
-	for (iVar = 0; iVar < nVar_Par; iVar++) {
+	for (iVar = 0; iVar < nVar_Buf; iVar++) {
 		VarTyp[iVar] = GmfSca;
 	}
 	
-	if ( !GmfSetKwd(OutSol, GmfSolAtVertices, npoin, nVar_Par, VarTyp) ) {
+	if ( !GmfSetKwd(OutSol, GmfSolAtVertices, npoin, nVar_Buf, VarTyp) ) {
 	  printf("\n\n   !!! Error !!!\n" );
       printf("Unable to write %s", OutNam);
       printf("Now exiting...\n\n");
@@ -124,10 +124,11 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
                     
           myPoint++;
           
-          /*--- Loop over the variables and write the values to file ---*/
+          /*--- Loop over the variables and write the values to file,
+           excluding mesh coordinates [0 - (nDim-1)] ---*/
           
-          for (iVar = 0; iVar < nVar_Par; iVar++){
-            bufDbl[iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+          for (iVar = 0; iVar < nVar_Buf; iVar++){
+            bufDbl[iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar+nDim][iPoint]);
           }
           GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
         }
