@@ -4953,23 +4953,27 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 void CAvgGrad_Base::ReplaceTauWall(const su2double *val_normal,
                                    const su2double *val_dir_tan,
                                    const su2double val_tau_wall) {
-
+  
   /*--- ---*/
   unsigned short iDim,jDim;
-  su2double Area;
+  su2double Area, norm;
   
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += val_normal[iDim]*val_normal[iDim];
   Area = sqrt(Area);
+  
+  norm = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
+  norm = sqrt(norm);
 
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
-      tau[iDim][jDim] = 0.0;
-
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    tau[iDim][iDim] = -val_tau_wall*val_dir_tan[iDim]*Area;
+      tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
 }
+
 
 void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
 {
@@ -5421,6 +5425,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     ReplaceTauWall(Normal, Mean_DirTan, Mean_TauWall);
   }
 
+  //cout << tau[0][0] << " " << tau[0][1] << " " << tau[0][2] << " "  << tau[1][0] << " " << tau[1][1] << " " << tau[1][2] << " " << tau[2][0] << " " << tau[2][1] << " " << tau[2][2] << " " << endl;
+  
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
