@@ -146,7 +146,7 @@
 		05E6DB8917EB61E600FA1F7E /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = config_structure.cpp; path = ../../Common/src/config_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DB8A17EB61E600FA1F7E /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = dual_grid_structure.cpp; path = ../../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DB8B17EB61E600FA1F7E /* geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = geometry_structure.cpp; path = ../../Common/src/geometry_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		05E6DB8C17EB61E600FA1F7E /* grid_adaptation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = grid_adaptation_structure.cpp; path = ../../Common/src/grid_adaptation_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		05E6DB8C17EB61E600FA1F7E /* grid_adaptation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = grid_adaptation_structure.cpp; path = ../../Common/src/grid_adaptation_structure.cpp; sourceTree = "<group>"; };
 		05E6DB8D17EB61E600FA1F7E /* grid_movement_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = grid_movement_structure.cpp; path = ../../Common/src/grid_movement_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DB8E17EB61E600FA1F7E /* linear_solvers_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = linear_solvers_structure.cpp; path = ../../Common/src/linear_solvers_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DB8F17EB61E600FA1F7E /* matrix_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = matrix_structure.cpp; path = ../../Common/src/matrix_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -783,7 +783,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6.1.0;
+				CURRENT_PROJECT_VERSION = 6.2.0;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -838,7 +838,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 6.1.0;
+				CURRENT_PROJECT_VERSION = 6.2.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;

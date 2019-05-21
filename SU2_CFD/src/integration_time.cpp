@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -326,8 +326,9 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   
   /*--- MPI the set solution old ---*/
   
-  sol_coarse->Set_MPI_Solution_Old(geo_coarse, config);
-  
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
+
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
@@ -393,11 +394,13 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->node[iPoint]->GetResidual_Old();
           solver->LinSysRes.SetBlock(iPoint, Residual_Old);
+        }
         }
     }
     
@@ -460,11 +463,13 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution_Old = solver->node[iPoint]->GetResidual_Old();
           solver->node[iPoint]->SetSolution(Solution_Old);
+        }
         }
     }
     
@@ -496,7 +501,9 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   }
   
   /*--- MPI the new interpolated solution ---*/
-  sol_fine->Set_MPI_Solution(geo_fine, config);
+  
+  sol_fine->InitiateComms(geo_fine, config, SOLUTION);
+  sol_fine->CompleteComms(geo_fine, config, SOLUTION);
   
   delete [] Solution;
 }
@@ -669,7 +676,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
   /*--- MPI the new interpolated solution ---*/
   
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
   
   delete [] Solution;
   
@@ -934,7 +942,8 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   
   /*--- MPI the new interpolated solution ---*/
   
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
   
   delete [] Solution;
   
@@ -980,8 +989,9 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   }
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
-  
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+    
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
   
 }
 

@@ -1,8 +1,8 @@
-/*!
+﻿/*!
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -3274,9 +3274,11 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   if (RoeSoundSpeed2 <= 0.0) {
     for (iVar = 0; iVar < nVar; iVar++) {
       val_residual[iVar] = 0.0;
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][iVar] = 0.0;
-        val_Jacobian_j[iVar][iVar] = 0.0;
+      if (implicit){
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_i[iVar][jVar] = 0.0;
+          val_Jacobian_j[iVar][jVar] = 0.0;
+        }
       }
     }
     AD::SetPreaccOut(val_residual, nVar);

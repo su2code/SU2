@@ -2,7 +2,7 @@
  * \file wall_model.inl
  * \brief In-Line subroutines of the <i>wall_model.hpp</i> file.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -37,39 +37,9 @@
  
 #pragma once
 
-inline CWallModel::CWallModel(void){
-  h_wm = 0.0;
-}
-
 inline CWallModel::~CWallModel(void){}
 
-inline void CWallModel::Initialize(const unsigned short *intInfo,
-                                   const su2double      *doubleInfo) {}
-
-inline void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
-                                                   const su2double velExchange,
-                                                   const su2double muExchange,
-                                                   const su2double pExchange,
-                                                   const su2double Wall_HeatFlux,
-                                                   const bool      HeatFlux_Prescribed,
-                                                   const su2double Wall_Temperature,
-                                                   const bool      Temperature_Prescribed,
-                                                         su2double &tauWall,
-                                                         su2double &qWall,
-                                                         su2double &ViscosityWall,
-                                                         su2double &kOverCvWall) {}
-
-inline CWallModel1DEQ::CWallModel1DEQ(void) : CWallModel(){
-  expansionRatio = 0.0;
-  numPoints      = 0;
-}
-
 inline CWallModel1DEQ::~CWallModel1DEQ(void){}
-
-inline CWallModelLogLaw::CWallModelLogLaw(void) : CWallModel(){
-  expansionRatio = 0.0;
-  numPoints      = 0;
-}
 
 inline CWallModelLogLaw::~CWallModelLogLaw(void){}
 

@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -1144,8 +1144,8 @@ private:
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
-  bool Compute_Average; /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
-  
+  bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -1467,7 +1467,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1512,15 +1512,6 @@ public:
    * \return Total number of domains in the grid file.
    */
   static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
-
-  /*!
-   * \brief Determine whether there are periodic BCs in the grid.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] config - Definition of the particular problem.
-   * \return Boolean for whether or not there are periodic BCs in the grid.
-   */
-  static bool GetPeriodic(string val_mesh_filename, unsigned short val_format, CConfig *config);
   
   /*!
    * \brief Initializes pointers to null
@@ -4256,12 +4247,6 @@ public:
    * \brief Get factor to multiply smallest volume for deform tolerance.
    * \return Factor to multiply smallest volume for deform tolerance.
    */
-  su2double GetDeform_Tol_Factor(void);
-  
-  /*!
-   * \brief Get factor to multiply smallest volume for deform tolerance.
-   * \return Factor to multiply smallest volume for deform tolerance.
-   */
   su2double GetDeform_Coeff(void);
   
   /*!
@@ -6254,7 +6239,7 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void);
-  
+    
   /*!
    * \brief Get information about the axisymmetric frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
@@ -6829,7 +6814,7 @@ public:
    * \param[in] translate - Pointer to a vector containing the coordinate of the center.
    */
   void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-  
+
   /*!
    * \brief Get the translation vector for a periodic transformation.
    * \param[in] val_index - Index corresponding to the periodic transformation.
@@ -9422,6 +9407,12 @@ public:
   su2double GetMax_Time(void);
 
   /*!
+   * \brief Get the level of MPI communications to be performed.
+   * \return Level of MPI communications.
+   */
+  unsigned short GetComm_Level(void);
+  
+  /*
    * \brief Check if the mesh read supports multiple zones.
    * \return YES if multiple zones can be contained in the mesh file.
    */
@@ -9450,6 +9441,7 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+
 };
 
 #include "config_structure.inl"

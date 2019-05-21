@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -20,7 +20,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -65,6 +65,7 @@ protected:
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
+  su2double **Rmatrix;    /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
   su2double *Limiter;        /*!< \brief Limiter of the solution of the problem. */
   su2double *Solution_Max;    /*!< \brief Max solution for limiter computation. */
   su2double *Solution_Min;    /*!< \brief Min solution for limiter computation. */
@@ -357,12 +358,6 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   su2double *GetSolution_time_n1(void);
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  virtual su2double *Get_femSolution_time_n(void);
 
   /*!
    * \brief Set the value of the old residual.
@@ -547,6 +542,35 @@ public:
    * \return Value of the solution gradient.
    */
   su2double GetGradient(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+   * \brief Set the value of an entry in the Rmatrix for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \param[in] val_value - Value of the Rmatrix entry.
+   */
+  void SetRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value);
+  
+  /*!
+   * \brief Set to zero the Rmatrix for least squares gradient calculations.
+   */
+  void SetRmatrixZero(void);
+  
+  /*!
+   * \brief Add <i>val_value</i> to the Rmatrix for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \param[in] val_value - Value to add to the Rmatrix entry.
+   */
+  void AddRmatrix(unsigned short val_iDim, unsigned short val_jDim, su2double val_value);
+  
+  /*!
+   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
+   * \param[in] val_iDim - Index of the dimension.
+   * \param[in] val_jDim - Index of the dimension.
+   * \return Value of the Rmatrix entry.
+   */
+  su2double GetRmatrix(unsigned short val_iDim, unsigned short val_jDim);
   
   /*!
    * \brief Set the value of the limiter.
@@ -1552,33 +1576,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
-  /*!
-   * \brief A virtual member.
-   
-   */
-  virtual su2double **GetTraction(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
   virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
   
   /*!
    * \brief  A virtual member.
    */
   virtual void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  virtual su2double *Get_SurfaceLoad_Res(void);
   
   /*!
    * \brief A virtual member.
@@ -1608,11 +1611,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual su2double *Get_BodyForces_Res(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
   virtual su2double Get_BodyForces_Res(unsigned short iVar);
   
   /*!
@@ -1633,11 +1631,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual su2double *Get_FlowTraction(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
   virtual su2double Get_FlowTraction(unsigned short iVar);
   
   /*!
@@ -1654,6 +1647,11 @@ public:
    * \brief A virtual member.
    */
   virtual void Clear_FlowTraction(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual bool Get_isVertex(void);
   
   /*!
    * \brief A virtual member.
@@ -2130,7 +2128,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the solution for the index <i>val_var</i>.
    */
-  virtual su2double GetSolution_time_n(unsigned short val_var);
+  su2double GetSolution_time_n(unsigned short val_var);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2613,7 +2611,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
@@ -2648,41 +2646,31 @@ public:
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEAVariable : public CVariable {
 protected:
   
-  bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
-  bool fsi_analysis;            /*!< \brief Bool which determines if the problem is FSI. */
-  
   su2double *Stress;              /*!< \brief Stress tensor. */
-  su2double *FlowTraction;          /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;          /*!< \brief Traction from the fluid field at time n. */
+
+  su2double *Residual_Ext_Body;   /*!< \brief Term of the residual due to body forces */
   
-  //  su2double *Residual_Int;          /*!< \brief Internal stress term for the calculation of the residual */
-  su2double *Residual_Ext_Surf;        /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n;        /*!< \brief Term of the residual due to external forces at time n */
-  su2double *Residual_Ext_Body;        /*!< \brief Term of the residual due to body forces */
+  su2double VonMises_Stress;      /*!< \brief Von Mises stress. */
   
-  su2double VonMises_Stress;         /*!< \brief Von Mises stress. */
+  su2double *Solution_Vel,        /*!< \brief Velocity of the nodes. */
+  *Solution_Vel_time_n;           /*!< \brief Velocity of the nodes at time n. */
   
-  su2double *Solution_time_n;        /*!< \brief Displacement at the nodes at time n */
+  su2double *Solution_Accel,      /*!< \brief Acceleration of the nodes. */
+  *Solution_Accel_time_n;         /*!< \brief Acceleration of the nodes at time n. */
   
-  su2double *Solution_Vel,          /*!< \brief Velocity of the nodes. */
-  *Solution_Vel_time_n;          /*!< \brief Velocity of the nodes at time n. */
+  su2double *Solution_Pred,       /*!< \brief Predictor of the solution for FSI purposes */
+  *Solution_Pred_Old;             /*!< \brief Predictor of the solution at time n for FSI purposes */
   
-  su2double *Solution_Accel,          /*!< \brief Acceleration of the nodes. */
-  *Solution_Accel_time_n;          /*!< \brief Acceleration of the nodes at time n. */
+  su2double *Reference_Geometry;  /*!< \brief Reference solution for optimization problems */
   
-  su2double *Solution_Pred,          /*!< \brief Predictor of the solution for FSI purposes */
-  *Solution_Pred_Old;            /*!< \brief Predictor of the solution at time n for FSI purposes */
+  su2double *Prestretch;          /*!< \brief Prestretch geometry */
   
-  su2double *Reference_Geometry;      /*!< \brief Reference solution for optimization problems */
-  
-  su2double *Prestretch;        /*!< \brief Prestretch geometry */
-  
-  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
   
   
 public:
@@ -2727,41 +2715,6 @@ public:
   void AddStress_FEM(unsigned short iVar, su2double val_stress);
   
   /*!
-   * \brief Add surface load to the residual term
-   */
-  void Add_SurfaceLoad_Res(su2double *val_surfForce);
-  
-  /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
-   */
-  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
-  
-  /*!
-   * \brief Get the residual term due to surface load
-   */
-  su2double *Get_SurfaceLoad_Res(void);
-  
-  /*!
-   * \brief Get the residual term due to surface load
-   */
-  su2double Get_SurfaceLoad_Res(unsigned short iVar);
-  
-  /*!
-   * \brief Clear the surface load residual
-   */
-  void Clear_SurfaceLoad_Res(void);
-  
-  /*!
-   * \brief Store the surface load as the load for the previous time step.
-   */
-  void Set_SurfaceLoad_Res_n(void);
-  
-  /*!
-   * \brief Get the surface load from the previous time step.
-   */
-  su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
-  
-  /*!
    * \brief Add body forces to the residual term.
    */
   void Add_BodyForces_Res(su2double *val_bodyForce);
@@ -2774,47 +2727,7 @@ public:
   /*!
    * \brief Get the body forces.
    */
-  su2double *Get_BodyForces_Res(void);
-  
-  /*!
-   * \brief Get the body forces.
-   */
   su2double Get_BodyForces_Res(unsigned short iVar);
-  
-  /*!
-   * \brief Set the flow traction at a node on the structural side
-   */
-  void Set_FlowTraction(su2double *val_flowTraction);
-  
-  /*!
-   * \brief Add a value to the flow traction at a node on the structural side
-   */
-  void Add_FlowTraction(su2double *val_flowTraction);
-  
-  /*!
-   * \brief Get the residual term due to the flow traction
-   */
-  su2double *Get_FlowTraction(void);
-  
-  /*!
-   * \brief Get the residual term due to the flow traction
-   */
-  su2double Get_FlowTraction(unsigned short iVar);
-  
-  /*!
-   * \brief Set the value of the flow traction at the previous time step.
-   */
-  void Set_FlowTraction_n(void);
-  
-  /*!
-   * \brief Retrieve the value of the flow traction from the previous time step.
-   */
-  su2double Get_FlowTraction_n(unsigned short iVar);
-  
-  /*!
-   * \brief Clear the flow traction residual
-   */
-  void Clear_FlowTraction(void);
   
   /*!
    * \brief Set the value of the old solution.
@@ -2865,25 +2778,6 @@ public:
    * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
    */
   void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
-  
-  /*!
-   * \brief Get the solution at time n.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the solution for the index <i>val_var</i>.
-   */
-  su2double GetSolution_time_n(unsigned short val_var);
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *Get_femSolution_time_n(void);
-  
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *GetSolution_time_n(void);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -3166,11 +3060,18 @@ public:
 /*!
  * \class CFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CVariable {
+class CFEABoundVariable : public CFEAVariable {
 protected:
-  su2double **Traction;  /*!< \brief Stress tensor. */
+
+  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+
+  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
+  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
   
 public:
   
@@ -3184,38 +3085,80 @@ public:
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] val_nElBound - Number of elements in the boundary
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config);
+  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
   ~CFEABoundVariable(void);
-  
+
   /*!
-   * \brief Set the value of the stress.
-   * \param[in] iVar - index of the traction vector.
-   * \param[in] jVar - index of the boundary element.
-   * \param[in] val_stress - Value of the stress.
+   * \brief Add surface load to the residual term
    */
-  void SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
+  void Add_SurfaceLoad_Res(su2double *val_surfForce);
+
   /*!
-   * \brief Add a value to the stress matrix in the element.
-   * \param[in] iVar - index of the traction vector.
-   * \param[in] jVar - index of the boundary element.
-   * \param[in] val_stress - Value of the stress.
+   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  void AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction);
-  
+  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
+
   /*!
-   * \brief Get the value of the stress.
-   * \return Value of the stress.
+   * \brief Get the residual term due to surface load
    */
-  su2double **GetTraction(void);
-  
+  su2double Get_SurfaceLoad_Res(unsigned short iVar);
+
+  /*!
+   * \brief Clear the surface load residual
+   */
+  void Clear_SurfaceLoad_Res(void);
+
+  /*!
+   * \brief Store the surface load as the load for the previous time step.
+   */
+  void Set_SurfaceLoad_Res_n(void);
+
+  /*!
+   * \brief Get the surface load from the previous time step.
+   */
+  su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
+
+  /*!
+   * \brief Set the flow traction at a node on the structural side
+   */
+  void Set_FlowTraction(su2double *val_flowTraction);
+
+  /*!
+   * \brief Add a value to the flow traction at a node on the structural side
+   */
+  void Add_FlowTraction(su2double *val_flowTraction);
+
+  /*!
+   * \brief Get the residual term due to the flow traction
+   */
+  su2double Get_FlowTraction(unsigned short iVar);
+
+  /*!
+   * \brief Set the value of the flow traction at the previous time step.
+   */
+  void Set_FlowTraction_n(void);
+
+  /*!
+   * \brief Retrieve the value of the flow traction from the previous time step.
+   */
+  su2double Get_FlowTraction_n(unsigned short iVar);
+
+  /*!
+   * \brief Clear the flow traction residual
+   */
+  void Clear_FlowTraction(void);
+
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
+
 };
 
 /*!
@@ -5636,7 +5579,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
@@ -5780,13 +5723,6 @@ public:
       * \return Pointer to the old solution vector.
       */
      su2double GetSolution_Vel_time_n(unsigned short val_var);
-
-       /*!
-      * \brief Get the solution at time n.
-      * \param[in] val_var - Index of the variable.
-      * \return Value of the solution for the index <i>val_var</i>.
-      */
-     su2double GetSolution_time_n(unsigned short val_var);
 
     /*!
      * \brief Set the value of the old solution.

@@ -2,7 +2,7 @@
  * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -255,8 +255,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -266,8 +265,9 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   
   /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
+    
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   

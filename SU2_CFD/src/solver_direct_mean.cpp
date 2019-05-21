@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -90,14 +90,15 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   /*--- Numerical methods array initialization ---*/
   
-  iPoint_UndLapl = NULL;
-  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
 
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
+
+  Inlet_Ttotal = NULL; Inlet_Ptotal = NULL; Inlet_FlowDir = NULL;
+  nVertex = NULL;
 
   Smatrix = NULL; Cvector = NULL;
  
@@ -358,7 +359,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nVar = nDim+2;
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
-
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -839,7 +839,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Warning message about non-physical points ---*/
 
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -859,10 +859,23 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
+  
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
+  
   /*--- Perform the MPI communication of the solution ---*/
-
-  Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 
@@ -955,9 +968,6 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
-
-  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
 
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
@@ -1509,992 +1519,6 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     }
   }
 
-
-}
-
-void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-      
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
-      }
-      
-#ifdef HAVE_MPI
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-        
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-        
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-        
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-        
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
-        
-        /*--- Rotate the momentum components. ---*/
-        if (nDim == 2) {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-        }
-        else {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-          Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-        }
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, Solution[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-
-    }
-
-  }
-
-}
-
-void CEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
-
-        /*--- Rotate the momentum components. ---*/
-        if (nDim == 2) {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
-        }
-        else {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-          Solution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
-        }
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution_Old(iVar, Solution[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-
-    }
-
-  }
-}
-
-void CEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Undivided_Laplacian = new su2double [nBufferR_Vector];
-      Buffer_Send_Undivided_Laplacian = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
-      }
-      
-#ifdef HAVE_MPI
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = Buffer_Send_Undivided_Laplacian[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Undivided_Laplacian;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex];
-
-        /*--- Rotate the momentum components. ---*/
-        if (nDim == 2) {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex];
-        }
-        else {
-          Solution[1] = rotMatrix[0][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
-          Solution[2] = rotMatrix[1][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
-          Solution[3] = rotMatrix[2][0]*Buffer_Receive_Undivided_Laplacian[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Undivided_Laplacian[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Undivided_Laplacian[3*nVertexR+iVertex];
-        }
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetUndivided_Laplacian(iVar, Solution[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Undivided_Laplacian;
-
-    }
-
-  }
-
-}
-
-void CEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker, MarkerS, MarkerR, *Buffer_Receive_Neighbor = NULL, *Buffer_Send_Neighbor = NULL;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS;        nBufferR_Vector = nVertexR;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Lambda = new su2double [nBufferR_Vector];
-      Buffer_Send_Lambda = new su2double[nBufferS_Vector];
-      Buffer_Receive_Neighbor = new unsigned short [nBufferR_Vector];
-      Buffer_Send_Neighbor = new unsigned short[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Buffer_Send_Lambda[iVertex] = node[iPoint]->GetLambda();
-        Buffer_Send_Neighbor[iVertex] = geometry->node[iPoint]->GetnPoint();
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      SU2_MPI::Sendrecv(Buffer_Send_Neighbor, nBufferS_Vector, MPI_UNSIGNED_SHORT, send_to, 1,
-                        Buffer_Receive_Neighbor, nBufferR_Vector, MPI_UNSIGNED_SHORT, receive_from, 1, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        Buffer_Receive_Lambda[iVertex] = Buffer_Send_Lambda[iVertex];
-        Buffer_Receive_Neighbor[iVertex] = Buffer_Send_Neighbor[iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Lambda;
-      delete [] Buffer_Send_Neighbor;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        node[iPoint]->SetLambda(Buffer_Receive_Lambda[iVertex]);
-        geometry->node[iPoint]->SetnNeighbor(Buffer_Receive_Neighbor[iVertex]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Lambda;
-      delete [] Buffer_Receive_Neighbor;
-
-    }
-
-  }
-}
-
-void CEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS;        nBufferR_Vector = nVertexR;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Lambda = new su2double [nBufferR_Vector];
-      Buffer_Send_Lambda = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Buffer_Send_Lambda[iVertex] = node[iPoint]->GetSensor();
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        Buffer_Receive_Lambda[iVertex] = Buffer_Send_Lambda[iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Lambda;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        node[iPoint]->SetSensor(Buffer_Receive_Lambda[iVertex]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Lambda;
-
-    }
-
-  }
-}
-
-void CEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-
-  su2double **Gradient = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Gradient[iVar] = new su2double[nDim];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
-      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Gradient;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-        
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-        
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-        
-        /*--- Need to rotate the gradients for all conserved variables. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (nDim == 2) {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-          else {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-        }
-        
-        /*--- Store the received information ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            node[iPoint]->SetGradient(iVar, iDim, Gradient[iVar][iDim]);
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Gradient;
-      
-    }
-    
-  }
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Gradient[iVar];
-  delete [] Gradient;
-  
-}
-
-void CEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
-  
-  su2double *Limiter = new su2double [nVar];
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Limit = new su2double [nBufferR_Vector];
-      Buffer_Send_Limit = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_Limit[iVar*nVertexR+iVertex] = Buffer_Send_Limit[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Limit;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Limiter[iVar] = Buffer_Receive_Limit[iVar*nVertexR+iVertex];
-
-        /*--- Rotate the momentum components. ---*/
-        if (nDim == 2) {
-          Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
-          Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
-        }
-        else {
-          Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-          Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-          Limiter[3] = rotMatrix[2][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-        }
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetLimiter(iVar, Limiter[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Limit;
-
-    }
-
-  }
-
-  delete [] Limiter;
-
-}
-
-void CEulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-
-  su2double **Gradient = new su2double* [nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    Gradient[iVar] = new su2double[nDim];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nPrimVarGrad*nDim;        nBufferR_Vector = nVertexR*nPrimVarGrad*nDim;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
-      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Send_Gradient[iDim*nPrimVarGrad*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Receive_Gradient[iDim*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Gradient;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-
-        /*--- Need to rotate the gradients for all conserved variables. ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if (nDim == 2) {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-          }
-          else {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nPrimVarGrad*nVertexR+iVar*nVertexR+iVertex];
-          }
-        }
-
-        /*--- Store the received information ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            node[iPoint]->SetGradient_Primitive(iVar, iDim, Gradient[iVar][iDim]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Gradient;
-
-    }
-
-  }
-
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    delete [] Gradient[iVar];
-  delete [] Gradient;
-
-}
-
-void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
-
-  su2double *Limiter = new su2double [nPrimVarGrad];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nPrimVarGrad;        nBufferR_Vector = nVertexR*nPrimVarGrad;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Limit = new su2double [nBufferR_Vector];
-      Buffer_Send_Limit = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter_Primitive(iVar);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          Buffer_Receive_Limit[iVar*nVertexR+iVertex] = Buffer_Send_Limit[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Limit;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          Limiter[iVar] = Buffer_Receive_Limit[iVar*nVertexR+iVertex];
-
-        /*--- Rotate the momentum components. ---*/
-        if (nDim == 2) {
-          Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
-          Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex];
-        }
-        else {
-          Limiter[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-          Limiter[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-          Limiter[3] = rotMatrix[2][0]*Buffer_Receive_Limit[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Limit[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Limit[3*nVertexR+iVertex];
-        }
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          node[iPoint]->SetLimiter_Primitive(iVar, Limiter[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Limit;
-
-    }
-
-  }
-
-  delete [] Limiter;
 
 }
 
@@ -3919,7 +2943,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
         
       }
-      
+    } else {
+      ModelTable << "-" << "-";
     }
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
@@ -4169,15 +3194,18 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
         /*--- Set the MPI communication ---*/
 
-        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
+        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_OLD);
+        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_OLD);
+        
       }
 
     }
 
   }
-
+  
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
 
@@ -4242,7 +3270,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -4318,7 +3349,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Error message ---*/
 
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
     SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -4419,7 +3450,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
@@ -4448,7 +3480,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddMax_Lambda_Inv(Lambda);
       }
-
+    }
     }
   }
 
@@ -4475,7 +3507,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
@@ -4842,7 +3874,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Warning message about non-physical reconstructions ---*/
 
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -4928,6 +3960,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   if (rotating_frame) {
+
+    /*--- Include the residual contribution from GCL due to the static
+     mesh movement that is set for rotating frame. ---*/
+    
+    SetRotatingFrame_GCL(geometry, config);
 
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5128,7 +4165,8 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
@@ -5158,14 +4196,22 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddLambda(Lambda);
       }
-
     }
+    }
+  }
+  
+  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
   }
 
   /*--- MPI parallelization ---*/
-
-  Set_MPI_MaxEigenvalue(geometry, config);
-
+  
+  InitiateComms(geometry, config, MAX_EIGENVALUE);
+  CompleteComms(geometry, config, MAX_EIGENVALUE);
+  
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
@@ -5217,10 +4263,18 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
       if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
 
   }
+  
+  /*--- Correct the Laplacian values across any periodic boundaries. ---*/
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+  }
+  
   /*--- MPI parallelization ---*/
 
-  Set_MPI_Undivided_Laplacian(geometry, config);
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
 
   delete [] Diff;
 
@@ -5270,7 +4324,14 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
       if (geometry->node[jPoint]->GetDomain()) { iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j); jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j); }
 
   }
+  
+  /*--- Correct the sensor values across any periodic boundaries. ---*/
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+  }
+  
   /*--- Set pressure switch for each point ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -5278,7 +4339,8 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
 
   /*--- MPI parallelization ---*/
 
-  Set_MPI_Sensor(geometry, config);
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
 
@@ -5351,7 +4413,8 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
     }
   }
 
-  Set_MPI_Sensor(geometry, config);
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
 
@@ -5452,6 +4515,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
@@ -5640,23 +4704,25 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMerit_Inv = 0.0;
   MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
 
-  SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CL_Inv, &AllBound_CL_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CSF_Inv, &AllBound_CSF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Inv = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPx_Inv, &AllBound_CoPx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPy_Inv, &AllBound_CoPy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPz_Inv, &AllBound_CoPz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFx_Inv, &AllBound_CFx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFy_Inv, &AllBound_CFy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CT_Inv, &AllBound_CT_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CL_Inv, &AllBound_CL_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CSF_Inv, &AllBound_CSF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CEff_Inv = AllBound_CL_Inv / (AllBound_CD_Inv + EPS);
+    SU2_MPI::Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPx_Inv, &AllBound_CoPx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPy_Inv, &AllBound_CoPy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPz_Inv, &AllBound_CoPz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFx_Inv, &AllBound_CFx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFy_Inv, &AllBound_CFy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CT_Inv, &AllBound_CT_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+    SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
 
@@ -5695,17 +4761,19 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
   }
 
-  SU2_MPI::Allreduce(MySurface_CL_Inv, Surface_CL_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CD_Inv, Surface_CD_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CSF_Inv, Surface_CSF_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
-    Surface_CEff_Inv[iMarker_Monitoring] = Surface_CL_Inv[iMarker_Monitoring] / (Surface_CD_Inv[iMarker_Monitoring] + EPS);
-  SU2_MPI::Allreduce(MySurface_CFx_Inv, Surface_CFx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFy_Inv, Surface_CFy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFz_Inv, Surface_CFz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMx_Inv, Surface_CMx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(MySurface_CL_Inv, Surface_CL_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CD_Inv, Surface_CD_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CSF_Inv, Surface_CSF_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+      Surface_CEff_Inv[iMarker_Monitoring] = Surface_CL_Inv[iMarker_Monitoring] / (Surface_CD_Inv[iMarker_Monitoring] + EPS);
+    SU2_MPI::Allreduce(MySurface_CFx_Inv, Surface_CFx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFy_Inv, Surface_CFy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFz_Inv, Surface_CFz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMx_Inv, Surface_CMx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
 
   delete [] MySurface_CL_Inv; delete [] MySurface_CD_Inv; delete [] MySurface_CSF_Inv;
   delete [] MySurface_CEff_Inv;  delete [] MySurface_CFx_Inv;   delete [] MySurface_CFy_Inv;
@@ -6014,22 +5082,24 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   MyAllBound_CT_Mnt           = AllBound_CT_Mnt;           AllBound_CT_Mnt = 0.0;
   MyAllBound_CQ_Mnt           = AllBound_CQ_Mnt;           AllBound_CQ_Mnt = 0.0;
 
-  SU2_MPI::Allreduce(&MyAllBound_CD_Mnt, &AllBound_CD_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CL_Mnt, &AllBound_CL_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CSF_Mnt, &AllBound_CSF_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Mnt = AllBound_CL_Mnt / (AllBound_CD_Mnt + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CFx_Mnt, &AllBound_CFx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFy_Mnt, &AllBound_CFy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFz_Mnt, &AllBound_CFz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMx_Mnt, &AllBound_CMx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMy_Mnt, &AllBound_CMy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMz_Mnt, &AllBound_CMz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPx_Mnt, &AllBound_CoPx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPy_Mnt, &AllBound_CoPy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPz_Mnt, &AllBound_CoPz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CT_Mnt, &AllBound_CT_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CQ_Mnt, &AllBound_CQ_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CMerit_Mnt = AllBound_CT_Mnt / (AllBound_CQ_Mnt + EPS);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(&MyAllBound_CD_Mnt, &AllBound_CD_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CL_Mnt, &AllBound_CL_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CSF_Mnt, &AllBound_CSF_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CEff_Mnt = AllBound_CL_Mnt / (AllBound_CD_Mnt + EPS);
+    SU2_MPI::Allreduce(&MyAllBound_CFx_Mnt, &AllBound_CFx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFy_Mnt, &AllBound_CFy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFz_Mnt, &AllBound_CFz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMx_Mnt, &AllBound_CMx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMy_Mnt, &AllBound_CMy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMz_Mnt, &AllBound_CMz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPx_Mnt, &AllBound_CoPx_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPy_Mnt, &AllBound_CoPy_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPz_Mnt, &AllBound_CoPz_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CT_Mnt, &AllBound_CT_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CQ_Mnt, &AllBound_CQ_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CMerit_Mnt = AllBound_CT_Mnt / (AllBound_CQ_Mnt + EPS);
+  }
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
 
@@ -6068,17 +5138,19 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMz_Mnt[iMarker_Monitoring]        = 0.0;
   }
 
-  SU2_MPI::Allreduce(MySurface_CL_Mnt, Surface_CL_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CD_Mnt, Surface_CD_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CSF_Mnt, Surface_CSF_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
-    Surface_CEff_Mnt[iMarker_Monitoring] = Surface_CL_Mnt[iMarker_Monitoring] / (Surface_CD_Mnt[iMarker_Monitoring] + EPS);
-  SU2_MPI::Allreduce(MySurface_CFx_Mnt, Surface_CFx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFy_Mnt, Surface_CFy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFz_Mnt, Surface_CFz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMx_Mnt, Surface_CMx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMy_Mnt, Surface_CMy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMz_Mnt, Surface_CMz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(MySurface_CL_Mnt, Surface_CL_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CD_Mnt, Surface_CD_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CSF_Mnt, Surface_CSF_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+      Surface_CEff_Mnt[iMarker_Monitoring] = Surface_CL_Mnt[iMarker_Monitoring] / (Surface_CD_Mnt[iMarker_Monitoring] + EPS);
+    SU2_MPI::Allreduce(MySurface_CFx_Mnt, Surface_CFx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFy_Mnt, Surface_CFy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFz_Mnt, Surface_CFz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMx_Mnt, Surface_CMx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMy_Mnt, Surface_CMy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMz_Mnt, Surface_CMz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
 
   delete [] MySurface_CL_Mnt; delete [] MySurface_CD_Mnt; delete [] MySurface_CSF_Mnt;
   delete [] MySurface_CEff_Mnt;  delete [] MySurface_CFx_Mnt;   delete [] MySurface_CFy_Mnt;
@@ -6140,7 +5212,8 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     Res_TruncError = node[iPoint]->GetResTruncError();
@@ -6159,7 +5232,8 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -6189,7 +5263,8 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     Res_TruncError = node[iPoint]->GetResTruncError();
@@ -6220,8 +5295,9 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
-
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -6243,7 +5319,8 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Update the solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     local_Res_TruncError = node[iPoint]->GetResTruncError();
@@ -6262,7 +5339,8 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -6297,7 +5375,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Read the volume ---*/
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
@@ -6347,8 +5426,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- Solve or smooth the linear system ---*/
 
-  CSysSolve system;
-  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- The the number of iterations of the linear solver ---*/
 
@@ -6363,10 +5441,16 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       }
     }
   }
-
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+  
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -6378,7 +5462,7 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
-  Partial_Gradient, Partial_Res, *Normal;
+  Partial_Gradient, Partial_Res, *Normal, Vol;
 
   /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho) ---*/
 
@@ -6418,8 +5502,8 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -6435,33 +5519,52 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
           }
       }
     }
+    }
   }
 
+  /*--- Correct the sensor values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
+  }
+  
   /*--- Update gradient value ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Get the volume, which may include periodic components. ---*/
+    
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
+    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
+        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim)/Vol;
         node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
       }
     }
+    
   }
 
   delete [] PrimVar_Vertex;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
 
-  Set_MPI_Primitive_Gradient(geometry, config);
+  /*--- Communicate the gradient values via MPI. ---*/
 
+  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
+  
 }
 
 void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar, iDim, jDim, iNeigh;
   unsigned long iPoint, jPoint;
-  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j;
+  su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
+  su2double z11, z12, z13, z22, z23, z33, detR2;
   bool singular;
 
   /*--- Loop over points of the grid ---*/
@@ -6484,22 +5587,18 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
-
-    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-
-    AD::StartPreacc();
-    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-    AD::SetPreaccIn(Coord_i, nDim);
-
+    
+    /*--- Clear Rmatrix, which could eventually be computed once
+     and stored for static meshes, as well as the prim gradient. ---*/
+    
+    node[iPoint]->SetRmatrixZero();
+    node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
+    
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
 
       PrimVar_j = node[jPoint]->GetPrimitive();
-
-      AD::SetPreaccIn(Coord_j, nDim);
-      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -6509,34 +5608,63 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
 
       if (weight != 0.0) {
 
-        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        node[iPoint]->AddRmatrix(0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
+        node[iPoint]->AddRmatrix(0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
+        node[iPoint]->AddRmatrix(1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
 
         if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+          node[iPoint]->AddRmatrix(0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
         }
 
         /*--- Entries of c:= transpose(A)*b ---*/
 
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            node[iPoint]->AddGradient_Primitive(iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
+          }
+        }
 
       }
-
     }
+  }
+  
+  /*--- Correct the gradient values across any periodic boundaries. ---*/
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+  }
+  
+  /*--- Second loop over points of the grid to compute final gradient ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Set the value of the singular ---*/
+    
+    singular = false;
+    
     /*--- Entries of upper triangular matrix R ---*/
 
+    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
+    
+    r11 = node[iPoint]->GetRmatrix(0,0);
+    r12 = node[iPoint]->GetRmatrix(0,1);
+    r22 = node[iPoint]->GetRmatrix(1,1);
+    
     if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
     if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
     if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
 
     if (nDim == 3) {
+      r13   = node[iPoint]->GetRmatrix(0,2);
+      r23_a = node[iPoint]->GetRmatrix(1,2);
+      r23_b = node[iPoint]->GetRmatrix(2,1);
+      r33   = node[iPoint]->GetRmatrix(2,2);
+
       if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
       if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
       if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
@@ -6583,20 +5711,25 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     /*--- Computation of the gradient: S*c ---*/
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        product = 0.0;
+        Cvector[iVar][iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++) {
-          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
+          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*node[iPoint]->GetGradient_Primitive(iVar, jDim);
         }
-
-        node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
 
-    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
-    AD::EndPreacc();
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        node[iPoint]->SetGradient_Primitive(iVar, iDim, Cvector[iVar][iDim]);
+      }
+    }
+
   }
 
-  Set_MPI_Primitive_Gradient(geometry, config);
+  /*--- Communicate the gradient values via MPI. ---*/
+  
+  InitiateComms(geometry, config, PRIMITIVE_GRADIENT);
+  CompleteComms(geometry, config, PRIMITIVE_GRADIENT);
 
 }
 
@@ -6659,7 +5792,14 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       }
 
     }
+    
+    /*--- Correct the limiter values across any periodic boundaries. ---*/
 
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_1);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_1);
+    }
+    
   }
 
   /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
@@ -6770,15 +5910,17 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
     }
 
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(LocalMinPrimitive, GlobalMinPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(LocalMaxPrimitive, GlobalMaxPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMinPrimitive, GlobalMinPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMaxPrimitive, GlobalMaxPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      GlobalMinPrimitive[iVar] = LocalMinPrimitive[iVar];
-      GlobalMaxPrimitive[iVar] = LocalMaxPrimitive[iVar];
-    }
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        GlobalMinPrimitive[iVar] = LocalMinPrimitive[iVar];
+        GlobalMaxPrimitive[iVar] = LocalMaxPrimitive[iVar];
+      }
 #endif
+    }
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -6856,9 +5998,17 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
   }
 
+  /*--- Correct the limiter values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_2);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_2);
+  }
+
   /*--- Limiter MPI ---*/
 
-  Set_MPI_Primitive_Limiter(geometry, config);
+  InitiateComms(geometry, config, PRIMITIVE_LIMITER);
+  CompleteComms(geometry, config, PRIMITIVE_LIMITER);
 
 }
 
@@ -12474,13 +11624,256 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
+                                CSolver        **solver_container,
+                                CNumerics      *conv_numerics,
+                                CNumerics      *visc_numerics,
+                                CConfig        *config,
+                                unsigned short val_marker) {
 
-  /*--- Call the Euler residual ---*/
+  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint;
 
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  /*--- Allocation of variables necessary for convective fluxes. ---*/
+  su2double Area, ProjVelocity_i;
+  su2double *V_reflected, *V_domain;
+  su2double *Normal     = new su2double[nDim];
+  su2double *UnitNormal = new su2double[nDim];
+
+  /*--- Allocation of variables necessary for viscous fluxes. ---*/
+  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad;
+  su2double *Tangential      = new su2double[nDim];
+  su2double *GradNormVel     = new su2double[nDim];
+  su2double *GradTangVel     = new su2double[nDim];
+
+  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
+  su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    Grad_Reflected[iVar] = new su2double[nDim];
+
+  /*---------------------------------------------------------------------------------------------*/
+  /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
+  /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
+  /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
+  /*---                The "Normal" in SU2 isan Area-Normal and is most likely not constant   ---*/
+  /*---                on the symmetry-plane.                                                 ---*/
+  /*---------------------------------------------------------------------------------------------*/
+
+  /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+  geometry->vertex[val_marker][0]->GetNormal(Normal); 
+  for (iDim = 0; iDim < nDim; iDim++)
+    Normal[iDim] = -Normal[iDim];
+
+  /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt (Area);
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = -Normal[iDim]/Area;
+
+  /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+  if (config->GetViscous()) {
+    switch( nDim ) {
+      case 2: {
+        Tangential[0] = -UnitNormal[1];
+        Tangential[1] =  UnitNormal[0];
+        break;
+      }
+      case 3: {
+        /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
+        unsigned short Largest, Arbitrary, Zero;
+        if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
+                abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
+        else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
+                abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
+        else                                              {Largest=2;Arbitrary=1;Zero=0;}
+
+        Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+        Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+        Tangential[Zero] =  0.0;
+        break;
+      }
+    }
+  }
+  
+  /*--- Loop over all the vertices on this boundary marker. ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*-------------------------------------------------------------------------------*/
+      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
+      /*---         Primitive variables by copying all interior values to the       ---*/
+      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
+      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
+      /*-------------------------------------------------------------------------------*/
+
+      /*--- Allocate the reflected state at the symmetry boundary. ---*/
+      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Grid movement ---*/
+      if (config->GetGrid_Movement())
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+      
+      /*--- Normal vector for this vertex (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+        Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      /*--- Get current solution at this boundary node ---*/
+      V_domain = node[iPoint]->GetPrimitive();
+      
+      /*--- Set the reflected state based on the boundary node. Scalars are copied and 
+            the velocity is mirrored along the symmetry boundary, i.e. the velocity in 
+            normal direction is substracted twice. ---*/
+      for(iVar = 0; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = node[iPoint]->GetPrimitive(iVar);
+
+      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
+            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
+      ProjVelocity_i = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        ProjVelocity_i += node[iPoint]->GetVelocity(iDim)*UnitNormal[iDim];
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_reflected[iDim+1] = node[iPoint]->GetVelocity(iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
+      
+      /*--- Set Primitive and Secondary for numerics class. ---*/
+      conv_numerics->SetPrimitive(V_domain, V_reflected);
+      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+      
+      /*--- Compute the residual using an upwind scheme. ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      
+      /*--- Update residual value ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Jacobian contribution for implicit integration. ---*/
+      if (implicit) {
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
+      
+      if (config->GetViscous()) {
+
+        /*-------------------------------------------------------------------------------*/
+        /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
+        /*---         Primitive variables and their gradients. The viscous numerics   ---*/
+        /*---         container is filled just as the convective numerics container,  ---*/
+        /*---         but the primitive gradients of the reflected state have to be   ---*/
+        /*---         determined additionally such that symmetry at the boundary is   ---*/
+        /*---         enforced. Based on the Viscous_Residual routine.                ---*/
+        /*-------------------------------------------------------------------------------*/
+        
+        /*--- Set the normal vector and the coordinates. ---*/
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+        visc_numerics->SetNormal(Normal);
+        
+        /*--- Set the primitive and Secondary variables. ---*/
+        visc_numerics->SetPrimitive(V_domain, V_reflected);
+        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+        
+        /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
+              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
+              2. The gradients of the velocity components need more attention, i.e. the gradient of the
+                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in 
+                 normal direction is mirrored. ---*/
+
+        /*--- Get gradients of primitives of boundary cell ---*/
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+        
+        /*--- Reflect the gradients for all scalars including the velocity components.
+              The gradients of the velocity components are set later with the 
+              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          if(iVar == 0 || iVar > nDim) { // Exclude velocity component gradients
+
+            /*--- Compute projected part of the gradient in a dot product ---*/
+            ProjGradient = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
+              
+            for (iDim = 0; iDim < nDim; iDim++)           
+              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
+          }
+        }
+        
+        /*--- Compute gradients of normal and tangential velocity:
+              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
+              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
+        for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+          GradNormVel[iVar] = 0.0;
+          GradTangVel[iVar] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+            GradNormVel[iVar] += Grad_Reflected[iDim+1][iVar] * UnitNormal[iDim];
+            GradTangVel[iVar] += Grad_Reflected[iDim+1][iVar] * Tangential[iDim];
+          }
+        }
+
+        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
+              component twice, just as done with velocity above.
+              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+        ProjNormVelGrad = 0.0;
+        ProjTangVelGrad = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([v*n])*t
+          ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([v*t])*n
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+        }
+        
+        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+        for (iVar = 0; iVar < nDim; iVar++) // loops over the velocity component gradients
+          for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
+            Grad_Reflected[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
+        
+        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
+        
+        /*--- Turbulent kinetic energy. ---*/
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the 
+              following routine based upon the velocity-component gradients. ---*/
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration. ---*/
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
+    }
+  }
+  
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
+  delete [] UnitNormal;
+  delete [] Tangential;
+  delete [] GradNormVel;
+  delete [] GradTangVel;
+
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] Grad_Reflected[iVar];
+  delete [] Grad_Reflected;
 }
 
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
@@ -13194,6 +12587,22 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
+void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *numerics, CConfig *config) {
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated correctly during the communications. For implicit calculations,
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+  
+}
+
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
 
@@ -13317,7 +12726,8 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
     /*---   Loop over the boundary edges ---*/
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Get the index for node i plus the boundary face normal ---*/
@@ -13343,6 +12753,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
           Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         LinSysRes.AddBlock(iPoint, Residual);
 
+      }
       }
     }
 
@@ -13580,8 +12991,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -13600,8 +13012,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       }
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
@@ -13611,8 +13025,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[MESH_0]->Set_MPI_Coord(config);
-    geometry[MESH_0]->Set_MPI_GridVel(config);
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -13641,7 +13058,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
     /*--- Recompute the edges and  dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -14823,6 +14241,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
 
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  HF_Visc = NULL; MaxHF_Visc = NULL;
 
   /*--- Inlet Variables ---*/
   Inlet_Ttotal = NULL;
@@ -14831,6 +14250,10 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
+  
+  DonorPrimVar = NULL; DonorGlobalIndex = NULL;
+  
+  HeatConjugateVar = NULL;
 
 }
 
@@ -15133,6 +14556,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
   }
 
+  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorGlobalIndex[iMarker][iVertex] = 0;
+    }
+  }
+
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   unsigned short nHeatConjugateVar = 4;
@@ -15147,16 +14580,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
       }
       HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
-
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  DonorGlobalIndex = new unsigned long* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
     }
   }
 
@@ -15548,7 +14971,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Warning message about non-physical points ---*/
 
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -15584,9 +15007,22 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  SetImplicitPeriodic(euler_implicit);
+  if (iMesh == MESH_0) SetRotatePeriodic(true);
+  
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 
@@ -15682,7 +15118,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
   bool wall_functions       = config->GetWall_Functions();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
@@ -15774,7 +15213,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Error message ---*/
   
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
     
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
@@ -15919,7 +15358,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   /*--- Loop boundary edges ---*/
 
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
@@ -15963,6 +15403,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
 
     }
+    }
   }
 
   /*--- Each element uses their own speed, steady state simulation ---*/
@@ -15991,7 +15432,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 
 
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
@@ -16190,7 +15631,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
 
       /*--- Forces initialization at each Marker ---*/
 
@@ -16462,25 +15903,27 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   MyAllBound_HF_Visc     = AllBound_HF_Visc;                   AllBound_HF_Visc = 0.0;
   MyAllBound_MaxHF_Visc  = pow(AllBound_MaxHF_Visc, MaxNorm);  AllBound_MaxHF_Visc = 0.0;
 
-  SU2_MPI::Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CSF_Visc, &AllBound_CSF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPx_Visc, &AllBound_CoPx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPy_Visc, &AllBound_CoPy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CoPz_Visc, &AllBound_CoPz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_HF_Visc, &AllBound_HF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_MaxHF_Visc, &AllBound_MaxHF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CSF_Visc, &AllBound_CSF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
+    SU2_MPI::Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPx_Visc, &AllBound_CoPx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPy_Visc, &AllBound_CoPy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CoPz_Visc, &AllBound_CoPz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+    SU2_MPI::Allreduce(&MyAllBound_HF_Visc, &AllBound_HF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyAllBound_MaxHF_Visc, &AllBound_MaxHF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
+  }
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
 
@@ -16526,19 +15969,21 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_MaxHF_Visc[iMarker_Monitoring]      = 0.0;
   }
 
-  SU2_MPI::Allreduce(MySurface_CL_Visc, Surface_CL_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CD_Visc, Surface_CD_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CSF_Visc, Surface_CSF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
-    Surface_CEff_Visc[iMarker_Monitoring] = Surface_CL_Visc[iMarker_Monitoring] / (Surface_CD_Visc[iMarker_Monitoring] + EPS);
-  SU2_MPI::Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_HF_Visc, Surface_HF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MySurface_MaxHF_Visc, Surface_MaxHF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    SU2_MPI::Allreduce(MySurface_CL_Visc, Surface_CL_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CD_Visc, Surface_CD_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CSF_Visc, Surface_CSF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+      Surface_CEff_Visc[iMarker_Monitoring] = Surface_CL_Visc[iMarker_Monitoring] / (Surface_CD_Visc[iMarker_Monitoring] + EPS);
+    SU2_MPI::Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_HF_Visc, Surface_HF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MySurface_MaxHF_Visc, Surface_MaxHF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  }
 
   delete [] MySurface_CL_Visc; delete [] MySurface_CD_Visc; delete [] MySurface_CSF_Visc;
   delete [] MySurface_CEff_Visc;  delete [] MySurface_CFx_Visc;   delete [] MySurface_CFy_Visc;
@@ -16617,7 +16062,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
             
       /*--- Loop over the vertices to compute the buffet sensor ---*/
             
@@ -17283,12 +16728,9 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
-      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
-        wall_distance = geometry->node[iPoint]->GetWall_Distance();
-      } else {
-        wall_distance = node[iPoint]->GetDES_LengthScale();
-      }
-      
+    
+      wall_distance = geometry->node[iPoint]->GetWall_Distance();
+    
       node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
 
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {

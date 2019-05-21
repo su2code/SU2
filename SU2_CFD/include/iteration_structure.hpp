@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -697,7 +697,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEMFluidIteration : public CIteration {
 public:
@@ -951,7 +951,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEAIteration : public CIteration {
 public:

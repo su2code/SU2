@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -39,6 +39,12 @@
 #include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem_geometry_structure.hpp"
 
+#ifdef PROFILE
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
+#endif
+
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
 vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
 vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
@@ -57,7 +63,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
   
   /*--- Store MPI rank and size ---*/ 
   
@@ -86,7 +92,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
+  if ((rank == MASTER_NODE) && verb_high && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
 }
@@ -94,7 +100,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
   /*--- Store MPI rank and size ---*/ 
-  
+
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
@@ -340,22 +346,6 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
   return (unsigned short) nDim;
 }
 
-
-bool CConfig::GetPeriodic(string val_mesh_filename,
-                          unsigned short val_format,
-                          CConfig *config) {
-
-  bool isPeriodic = false;
-
-  /*--- For now, assume that if we have periodic BCs in the config, that
-   the user's intent is for there to be periodic BCs in the mesh too. ---*/
-
-  if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
-
-  return isPeriodic;
-  
-}
-
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
@@ -438,19 +428,14 @@ void CConfig::SetPointersNull(void) {
   Engine_Power = NULL;    Engine_NetThrust    = NULL;    Engine_GrossThrust = NULL;
   Engine_Area  = NULL;    EngineInflow_Target = NULL;
   
-  Periodic_Translate   = NULL;   Periodic_Rotation  = NULL;   Periodic_Center    = NULL;
-  Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
-
   Dirichlet_Value           = NULL;     Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
   Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
   Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
   Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
-  FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
-  Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;
-  Inlet_MassFrac            = NULL;
+  FlowLoad_Value            = NULL;
+
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
@@ -541,11 +526,14 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X     = NULL;    Plunging_Ampl_Y     = NULL;    Plunging_Ampl_Z     = NULL;
   RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
   MoveMotion_Origin   = NULL;
+
+  /*--- Periodic BC pointers. ---*/
+  
   Periodic_Translate  = NULL;    Periodic_Rotation   = NULL;    Periodic_Center     = NULL;
   Periodic_Translation= NULL;    Periodic_RotAngles  = NULL;    Periodic_RotCenter  = NULL;
 
-
   /* Harmonic Balance Frequency pointer */
+  
   Omega_HB = NULL;
     
   /*--- Initialize some default arrays to NULL. ---*/
@@ -1744,7 +1732,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-
+  /*!\brief COMM_LEVEL
+   *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
+  addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
@@ -1939,8 +1929,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
   addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
-  /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Deform limit in m or inches */
@@ -1956,7 +1944,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-5);
+  addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
 
@@ -2479,6 +2467,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
+          if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
           if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
           if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
           if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
@@ -2997,6 +2986,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Check for Boundary condition option agreement ---*/
+  if (Kind_InitOption == REYNOLDS){
+    if (Kind_Regime == COMPRESSIBLE && (Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
+      SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
+    }
+  }
+
   /*--- Force number of span-wise section to 1 if 2D case ---*/
   if(val_nDim ==2){
     nSpanWiseSections_User=1;
@@ -5051,6 +5047,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Wrt_Projected_Sensitivity = true;
   }
 
+  /*--- Delay the output until exit for minimal communication mode. ---*/
+  
+  if (Comm_Level != COMM_FULL) {
+    
+    /*--- Disable the use of Comm_Level = NONE until we have properly
+     implemented it. ---*/
+    
+    if (Comm_Level == COMM_NONE)
+      SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
+
+    Wrt_Sol_Freq          = nExtIter+1;
+    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    
+    /*--- Write only the restart. ---*/
+    
+    Wrt_Slice   = false;
+    Wrt_Vol_Sol = false;
+    Wrt_Srf_Sol = false;
+    Wrt_Csv_Sol = false;
+  }
+  
   /*--- Check the conductivity model. Deactivate the turbulent component
    if we are not running RANS. ---*/
   
@@ -5709,7 +5726,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << endl;
+  cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -5737,7 +5754,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
+  cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
   cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
@@ -7177,7 +7194,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (nMarker_Euler != 0) {   
     BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-      BoundaryTable << Marker_Euler[iMarker_Euler] << " ";
+      BoundaryTable << Marker_Euler[iMarker_Euler];
       if (iMarker_Euler < nMarker_Euler-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
@@ -8026,6 +8043,10 @@ CConfig::~CConfig(void) {
   if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
   if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
 
+  if (Outlet_MassFlow != NULL)    delete[]  Outlet_MassFlow;
+  if (Outlet_Density != NULL)    delete[]  Outlet_Density;
+  if (Outlet_Area != NULL)    delete[]  Outlet_Area;
+
   if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
   if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
   if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
@@ -8142,7 +8163,7 @@ CConfig::~CConfig(void) {
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
-  
+
   if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)        delete[] PlaneTag;
   if (CFL != NULL)             delete[] CFL;
@@ -9906,7 +9927,8 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
   if(MI == GEMM_Profile_MNK.end()) {
 
     /* Entry is not present yet. Create it. */
-    GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+    const int ind = GEMM_Profile_MNK.size();
+    GEMM_Profile_MNK[MNK] = ind;
 
     GEMM_Profile_NCalls.push_back(1);
     GEMM_Profile_TotTime.push_back(val_elapsed_time);
@@ -9986,7 +10008,8 @@ void CConfig::GEMMProfilingCSV(void) {
         if(MI == GEMM_Profile_MNK.end()) {
 
           /* Entry is not present yet. Create it. */
-          GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+          const int ind = GEMM_Profile_MNK.size();
+          GEMM_Profile_MNK[MNK] = ind;
 
           GEMM_Profile_NCalls.push_back(recvBufNCalls[i]);
           GEMM_Profile_TotTime.push_back(recvBufTotTime[i]);

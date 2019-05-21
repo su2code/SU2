@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -96,8 +96,6 @@ int main(int argc, char *argv[]) {
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
-  tne2     = ((config->GetKind_Solver() == DISC_ADJ_TNE2_EULER) || (config->GetKind_Solver()==DISC_ADJ_TNE2_NAVIER_STOKES));
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
@@ -186,6 +184,7 @@ int main(int argc, char *argv[]) {
     } else {
 
       /*--- Instantiate the class for external aerodynamics ---*/
+
       driver = new CFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
       
     }
