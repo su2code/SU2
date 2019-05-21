@@ -347,7 +347,7 @@ def init_inria(argument_dict, modes, update = False):
     github_repo_amgint   = 'https://github.com/bmunguia/amginterface'
 
     libMeshb_name = 'libMeshb'
-    amgint_name   = 'AMGInterface'
+    amgint_name   = 'AMG Interface'
 
     alt_name_libMeshb = 'externals/libMeshb'
     alt_name_amgint   = 'externals/amginterface'
@@ -373,7 +373,7 @@ def init_inria(argument_dict, modes, update = False):
     submodule_check(amgint_name,   alt_name_amgint,   github_repo_amgint,   sha_version_amgint,   log, err, update)
 
     # Setup AMG interface
-    subprocess.call(['python','setup.py','build_ext','—inplace'], cwd=alt_name_amgint)
+    subprocess.call(['python','setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
     return True
 
