@@ -2,7 +2,7 @@
  * \file error_estimation_structure.cpp
  * \brief Functions for error estimation.
  * \author B. Munguía
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -778,10 +778,6 @@ void CErrorEstimationDriver::Solver_Restart(CSolver ****solver_container, CGeome
 
 void CErrorEstimationDriver::ComputeMetric() {
 
-  unsigned short iZone, jZone, checkConvergence;
-  unsigned long IntIter = 0, nIntIter = 1;
-  bool unsteady;
-
   CSolver *solver_flow = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
           *solver_adj  = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
 
@@ -822,10 +818,8 @@ void CErrorEstimationDriver::ComputeMetric() {
 
 void CErrorEstimationDriver::SumWeightedHessian(CSolver* solver_flow,
                                                 CSolver* solver_adj) {
-  unsigned long iPoint, iElem;
-  unsigned long nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain(),
-                nElem = geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem();
-  unsigned short iVar, iDim, iFlux;
+
+  unsigned long iPoint, nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size for goal (for different solvers, currently Euler) vs. feature
   unsigned short nMetr = 3*(nDim-1);
   unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
@@ -1078,7 +1072,6 @@ void CErrorEstimationDriver::Solver_Postprocessing(CSolver ****solver_container,
 
 void CErrorEstimationDriver::Solver_Deletion(CSolver ****solver_container,
                                     CConfig *config, unsigned short val_iInst) {
-  unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   heat_fvm, fem,

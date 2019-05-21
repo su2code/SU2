@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_MET.
  *        The subroutines and functions are in the <i>SU2_MET.cpp</i> file.
  * \author B. Munguía
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
