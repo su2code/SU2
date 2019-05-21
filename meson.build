@@ -11,8 +11,6 @@ codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
 codi_rev_args = '-DCODI_REVERSE_TYPE'
 codi_for_args = '-DCODI_FORWARD_TYPE'
 
-
-
 # Add cgns library
 if get_option('enable-cgns')
   subdir('externals/cgns')
@@ -29,13 +27,17 @@ if mpi_dep[0].found() and mpi_dep[1].found() and get_option('enable-mpi')
   
   # compile metis
   subdir('externals/metis')
-
+  
+  # add metis dependency
+  su2_deps     += metis_dep
+  su2_cpp_args += '-DHAVE_METIS' 
+  
   # compile parmetis
   subdir('externals/parmetis')
   
   # add parmetis dependency
   su2_deps     += parmetis_dep
-  
+  su2_cpp_args += '-DHAVE_PARMETIS' 
   if get_option('enable-tecio')
     subdir('externals/tecio/teciompisrc')
     su2_deps += teciompi_dep
@@ -60,7 +62,16 @@ endif
 subdir('Common/src')
 # compile SU2_CFD executable
 subdir('SU2_CFD/src')
-# compile SU2_DOT
+# compile SU2_DOT executable
 subdir('SU2_DOT/src')
+# compile SU2_DEF executable
+subdir('SU2_DEF/src')
+# compile SU2_GEO executable
+subdir('SU2_GEO/src')
+# compile SU2_MSH executable
+subdir('SU2_MSH/src')
+# compile SU2_SOL executable
+subdir('SU2_SOL/src')
+# install python scripts
 subdir('SU2_PY')
 

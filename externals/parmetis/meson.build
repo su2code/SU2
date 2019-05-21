@@ -40,6 +40,6 @@ parmetis = static_library('parmetis',
            'libparmetis/match.c',
            'libparmetis/mmetis.c',
            install : false, include_directories: parmetis_include,
-	   dependencies: [mpi_dep, metis_dep, gklib_dep])
+	   dependencies: [mpi_dep, metis_dep])
 
 parmetis_dep = declare_dependency(link_with: parmetis, include_directories: parmetis_include)
