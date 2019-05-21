@@ -657,7 +657,7 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				cptElem++;
 
 				
-				GmfSetLin(OutMsh, GmfEdges,bnd->GetNode(0)+1,bnd->GetNode(1)+1,iMarker+2); 	
+				GmfSetLin(OutMsh, GmfEdges, bnd->GetNode(0)+1, bnd->GetNode(1)+1, iMarker+2); 	
 			}
 		}
 	
@@ -690,7 +690,8 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				
 				cptElem++;
 				
-				GmfSetLin(OutMsh, bnd->GetNode(0)+1,bnd->GetNode(1)+1, bnd->GetNode(2)+1,iMarker+2); 	
+				GmfSetLin(OutMsh, GmfTriangles, bnd->GetNode(0)+1, bnd->GetNode(1)+1, 
+                                        bnd->GetNode(2)+1, iMarker+2); 	
 			}
 		}
 	
@@ -719,7 +720,8 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				
 				cptElem++;
 				
-				GmfSetLin(OutMsh, GmfTriangles,bnd->GetNode(0)+1,bnd->GetNode(1)+1, bnd->GetNode(2)+1, bnd->GetNode(3)+1,iMarker+2); 	
+				GmfSetLin(OutMsh, GmfQuadrilaterals, PointSurface[bnd->GetNode(0)]+1, PointSurface[bnd->GetNode(1)]+1, 
+                                             PointSurface[bnd->GetNode(2)]+1, PointSurface[bnd->GetNode(3)]+1, iMarker+2); 	
 			}
 		}
 	

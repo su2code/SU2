@@ -383,8 +383,8 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
 
       /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
 
-      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
+      // if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      // geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
 
       /*--- recompute elements surrounding points, points surrounding points ---*/
 
