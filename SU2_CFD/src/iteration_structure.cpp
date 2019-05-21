@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
@@ -1506,6 +1506,12 @@ void CFEMFluidIteration::Iterate(COutput *output,
   
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
   integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+                                                                              solver_container,
+                                                                              numerics_container,
+                                                                              config_container,
+                                                                              RUNTIME_FLOW_SYS,
+                                                                              IntIter, val_iZone,
+                                                                              val_iInst);
 }
 
 void CFEMFluidIteration::Update(COutput *output,
@@ -3300,20 +3306,22 @@ void CDiscAdjTNE2Iteration::SetDependencies(CSolver *****solver_container, CGeom
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
-  solver_container[iZone][iInst][MESH_0][TNE2_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  solver_container[iZone][iInst][MESH_0][TNE2_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+  solver_container[iZone][iInst][MESH_0][TNE2_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
 
   if (turbulent && !frozen_visc){
     solver_container[iZone][iInst][MESH_0][TNE2_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_TNE2_SYS, true);
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
   }
 
   if (heat){
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_Heatflux_Areas(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
-  }
+    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);  }
 }
 
 void CDiscAdjTNE2Iteration::RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, COutput* output, unsigned short iZone, unsigned short iInst){

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -100,9 +100,13 @@ inline su2double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
 
 inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 
+inline void CSolver::SetPrimitive_Gradient(CConfig *config){}
+
 inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point) { }
 
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 

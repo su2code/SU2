@@ -290,9 +290,9 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = 'bd4a639c2fe625a80946c8365bd2976a2868cf46'
+    sha_version_codi = '501dcf0305df147481630f20ce37c2e624fb351f'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-    sha_version_medi = '46a97e1d6e8fdd3cb42b06534cff6acad2a49693'
+    sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
     github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
 
     medi_name = 'MeDiPack'
