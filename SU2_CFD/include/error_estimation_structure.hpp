@@ -178,31 +178,6 @@ public:
   void SumWeightedHessian(CSolver* solver_flow, CSolver* solver_adj);
 
   /*!
-   * \brief Run an iteration of the adjoint solver.
-   */
-  void Run(void);
-
-  /*!
-   * \brief Specify the kind of recording for the adjoint solver.
-   */
-  void SetRecording(unsigned short kind_recording);
-
-  /*!
-   * \brief Set the adjoint value of the objective function.
-   */
-  void SetAdj_ObjFunction(void);
-
-  /*!
-   * \brief Set the objective function.
-   */
-  void SetObjFunction(void);
-
-  /*!
-   * \brief Run an iteration of the flow solver.
-   */
-  void DirectRun(void);
-
-  /*!
    * \brief Output the solution in solution file.
    */
   void Output(void);
