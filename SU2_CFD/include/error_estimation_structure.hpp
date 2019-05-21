@@ -64,13 +64,7 @@ private:
   CGeometry ****geometry_container;             /*!< \brief Geometry for which there is a solution */
   CSolver *****solver_container;                /*!< \brief Solution for which error is being estimated */
   CConfig **config_container;                   /*!< \brief Definition of the problem. */
-  CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
-  CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
-  CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
-  CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
-  CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
 
   bool fsi,                                     /*!< \brief FSI simulation flag.*/
@@ -86,12 +80,6 @@ private:
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
 
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
-
-  unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
-  su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
-  CIteration** direct_iteration;                /*!< \brief A pointer to the direct iteration.*/
-
-  vector<su2double> epsilon_fine;               /*!< \brief A vector to store the adaptation parameter at each fine mesh node. */
 
 public:
 
@@ -130,34 +118,12 @@ public:
   void Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container);
 
   /*!
-   * \brief Construction of iteration classes.
-   */
-  void Iteration_Preprocessing(void);
-
-  /*!
    * \brief Construction of solution classes.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
-
-  /*!
-   * \brief Construction of integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Integration_Preprocessing(CIntegration ***integration_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
-
-  /*!
-   * \brief Definition and allocation of all numerics classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Numerics_Preprocessing(CNumerics *****numerics_container, CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -194,23 +160,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
-
-  /*!
-   * \brief Deallocation of integration classes.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
-
-  /*!
-   * \brief Deallocation of solver classes.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all solution classes.
