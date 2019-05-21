@@ -550,8 +550,9 @@ public:
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config, int val_iter);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
