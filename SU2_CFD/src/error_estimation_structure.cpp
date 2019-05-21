@@ -378,15 +378,13 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
 
       /*--- Compute elements surrounding points, points surrounding points ---*/
 
-            /*--- Compute elements surrounding points, points surrounding points ---*/
-
       if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
 
       /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
 
-      // if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-      // geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
+      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
 
       /*--- recompute elements surrounding points, points surrounding points ---*/
 
@@ -424,11 +422,6 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
       geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 
-      /*--- Compute the max length. ---*/
-
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
-
       /*--- Visualize a dual control volume if requested ---*/
 
       if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
@@ -457,6 +450,33 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
 
     }
 
+  }
+
+  /*--- Create the data structure for MPI point-to-point communications. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+        geometry_container[iZone][iInst][MESH_0]->PreprocessP2PComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    }
+  }
+  
+  /*--- Perform a few preprocessing routines and communications. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+        
+      /*--- Compute the max length. ---*/
+        
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
+        
+      /*--- Communicate the number of neighbors. This is needed for
+       some centered schemes and for multigrid in parallel. ---*/
+        
+      if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea)) cout << "Communicating number of neighbors." << endl;
+      geometry_container[iZone][iInst][MESH_0]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], NEIGHBORS);
+      geometry_container[iZone][iInst][MESH_0]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], NEIGHBORS);
+    }
   }
 
 }
