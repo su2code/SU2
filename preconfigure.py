@@ -376,6 +376,10 @@ def init_inria(argument_dict, modes, update = False):
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
 
     # Install pyAMG
+    if os.path.exists('pyAMG'):
+        print('Removing pyAMG')
+        shutil.rmtree('pyAMG')
+        
     if sys.platform == 'linux' or sys.platform == 'linux2':
         print('Installing pyAMG for Linux.')
         pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
@@ -391,10 +395,6 @@ def init_inria(argument_dict, modes, update = False):
         pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
         pyamg_targz = 'MacPyAmg.tar.gz'
         pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-
-    if os.path.exists('pyAMG'):
-        print('Removing pyAMG')
-        shutil.rmtree('pyAMG')
 
     # For now, only download pyAMG for Linux
     # subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
