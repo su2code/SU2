@@ -75,3 +75,10 @@ if get_option('enable-autodiff')
 			  cpp_args: [su2_cpp_args, codi_rev_args])
 endif
 
+if get_option('enable-directdiff')
+  su2_cfd_dd = executable('SU2_CFD_DD',
+                          su2_cfd_src,
+			  install : true, 
+			  dependencies : [su2_deps, codi_dep, commonDD_dep], 
+			  cpp_args: [su2_cpp_args, codi_for_args])
+endif
