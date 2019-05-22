@@ -1,7 +1,11 @@
 project('SU2', 'c', 'cpp', 
         version: '6.2.0', 
 	license: 'LGPL2',
-	default_options: ['buildtype=debugoptimized', 'optimization=2'])
+	default_options: ['buildtype=release', 'warning_level=0'])
+
+
+pymod = import('python')
+pymod.find_installation('python3')
 
 su2_cpp_args = []
 su2_deps     = []
