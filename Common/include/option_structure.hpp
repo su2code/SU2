@@ -1527,12 +1527,15 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 enum ENUM_ANISO_SENSOR {
   ANISO_MACH = 0,      /*!< \brief Use Mach field for anisotropy. */
   ANISO_PRES = 1,      /*!< \brief Use pressure field for anisotropy. */
-  ANISO_MACH_PRES = 2  /*!< \brief Use Mach and pressure fields for anisotropy. */
+  ANISO_MACH_PRES = 2, /*!< \brief Use Mach and pressure fields for anisotropy. */
+  ANISO_GOAL = 3       /*!< \brief Use adjoint-weighted Euler fluxes for anisotropy. */
 };
+
 static const map<string, ENUM_ANISO_SENSOR> Aniso_Sensor_Map = CCreateMap<string, ENUM_ANISO_SENSOR>
 ("MACH", ANISO_MACH)
 ("PRES", ANISO_PRES)
-("MACH_PRES", ANISO_MACH_PRES);
+("MACH_PRES", ANISO_MACH_PRES)
+("GOAL", ANISO_GOAL);
 
 /*!
  * \brief types of input file formats

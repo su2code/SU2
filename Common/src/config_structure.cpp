@@ -2405,8 +2405,35 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Sensor used to determine anisotropy */
   addEnumOption("ANISO_SENSOR", Kind_Aniso_Sensor, Aniso_Sensor_Map, ANISO_MACH);
 
+  /* DESCRIPTION: Sensor used to determine anisotropy */
+  addBoolOption("WRT_ANISO_SENSOR", Wrt_Aniso_Sensor, false);
+
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 10000);
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SIZES");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SUBITE");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_EXT_ITER");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_RESIDUAL_REDUCTION");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SENSOR");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HMAX");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HMIN");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HGRAD");
 
   /* END_CONFIG_OPTIONS */
 

@@ -1115,6 +1115,7 @@ private:
          ECC_Restart_Adj_FileName,   /*!< \brief File name of higher order interpolated adjoint solution that is output */
          ECC_Solution_Adj_FileName;  /*!< \brief File name of higher order interpolated adjoint solution that is input */
   unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
+  bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
   unsigned long  Mesh_Complexity;    /*!< \brief Constraint mesh complexity */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -9307,6 +9308,12 @@ public:
    * \return <code>TRUE<\code> if error estimation is taking place
   */
   bool GetError_Estimate(void);
+
+  /*!
+   * \brief Check if Inria format sensor files should be written
+   * \return <code>TRUE<\code> if sensor files requested
+   */
+  bool GetWrt_Aniso_Sensor(void);
 
   /*!
    * \brief Get type of sensor used for anisotropy

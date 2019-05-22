@@ -262,6 +262,8 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   /*--- Open the restart file and write the solution. ---*/
 
+  if(config->GetWrt_Aniso_Sensor()){
+
   /*--- Write MACH ---*/
 
   SPRINTF (OutNam, "mach.solb");
@@ -380,7 +382,9 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     exit(EXIT_FAILURE);
   }
 
-  /*--- Write metric ---*/
+  } // End Wrt_Aniso_Sensor
+
+  /*--- Write METR ---*/
 
   if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
 

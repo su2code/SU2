@@ -41,6 +41,7 @@ import numpy as np
 from .. import io   as su2io
 from .. import amginria as su2amg
 from interface import CFD as SU2_CFD
+from interface import MET as SU2_MET
 import _amgio as amgio
 
 def amg ( config , kind='' ):
@@ -74,7 +75,7 @@ def amg ( config , kind='' ):
     adap_res = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.ADAP_SENSOR
-    sensor_avail = ['MACH', 'PRES', 'MACH_PRES']
+    sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
     
     if adap_sensor not in sensor_avail:
         raise RuntimeError , 'Unknown adaptation sensor (ADAP_SENSOR option)\n'
@@ -114,15 +115,15 @@ def amg ( config , kind='' ):
     config_cfd.LOW_MEMORY_OUTPUT = "NO"
     
     config_cfd.WRT_BINARY_RESTART  = "NO"
-    #config_cfd.READ_BINARY_RESTART = "NO"
+    config_cfd.READ_BINARY_RESTART = "NO"
         
     current_mesh     = "Initial_mesh"
     current_solution = "Initial_solution"
         
     if config['RESTART_SOL'] == 'NO':
         
-        stdout_hdl = open('ini.stdout','w') # new targets
-        stderr_hdl = open('ini.stderr','w')
+        stdout_hdl = open('ini.out','w') # new targets
+        stderr_hdl = open('ini.err','w')
         
         success = False
         val_out = [False]
@@ -139,9 +140,24 @@ def amg ( config , kind='' ):
             
             config_cfd.CONV_FILENAME         = "ini_history"
             config_cfd.RESTART_FLOW_FILENAME = current_solution
+            config_cfd.MATH_PROBLEM           = 'DIRECT'
             
             SU2_CFD(config_cfd)
                         
+            if adap_sensor == 'GOAL':
+                current_solution_adj    = "ini_restart_adj.dat"
+
+                config_cfd.CONV_FILENAME          = "ini_history_adj"
+                config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
+                config_cfd.SOLUTION_FLOW_FILENAME = current_solution
+                config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
+                SU2_CFD(config_cfd)
+
+                config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                config_cfd.ERROR_ESTIMATE         = 'YES'
+                config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
+                SU2_MET(config_cfd)
+
         except:
             sys.stdout = sav_stdout
             sys.stderr = sav_stderr
@@ -228,7 +244,7 @@ def amg ( config , kind='' ):
         for iSub in range(nSub):
             
             config_amg['size']        = mesh_size
-            config_amg['amg_log']     = 'ite%d.amg.stdout' % (global_iter)
+            config_amg['amg_log']     = 'ite%d.amg.out' % (global_iter)
             
             # Prints
             pad_cpt = ("(%d/%d)" % (iSub+1, nSub)).ljust(9)
@@ -303,33 +319,78 @@ def amg ( config , kind='' ):
                     sys.stderr.write("## ERROR : Unable to import pyamg module.\n")
                     sys.exit(1)
                 
-                #--- Create sensor used to drive the adaptation
+                if adap_sensor == 'GOAL':
+
+                    #--- Use metric computed from SU2 to drive the adaptation
+
+                    config_amg['metric_in']   = 'metr.solb'
+                    config_amg['sol_in']      = ''
+                    config_amg['itp_sol_in']  = 'current.solb'
+
+                    # mesh.pop('sensor',None)
+
+                    sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+                    
+                    # mesh_new = su2amg.amg_call_python(mesh, config_amg)
+                    #--- For now, just use executable
+                    try :
+                        su2amg.amg_call_met(config_amg)
+                    except:
+                        raise RuntimeError , "\n##ERROR : Call to AMG failed.\n"
+                    
+                    if not os.path.exists(config_amg['mesh_out']):
+                        raise RuntimeError , "\n##ERROR : Mesh adaptation failed.\n"
+                    
+                    if not os.path.exists("current.itp.solb"):
+                        raise RuntimeError , "\n##ERROR AMG: Solution interpolation failed.\n"
+
+                    #--- Convert output from Inria mesh format to su2
+                    # Deal with markers
+                    
+                    save_markers = mesh['markers']
+                    del mesh
+                    
+                    # Read Inria mesh
+                    mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.itp.solb")
+                    mesh['markers'] = save_markers
+                    
+                    current_mesh = "ite%d.su2" % global_iter
+                    current_solution = "ite%d.dat" % global_iter    
+                    
+                    su2amg.write_mesh(current_mesh, current_solution, mesh)
+                    
+                    if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
+                        raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
+
+                else:
                 
-                sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
-                
-                mesh['sensor'] = sensor_wrap['solution']
-                
-                sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
-                
-                mesh_new = su2amg.amg_call_python(mesh, config_amg)
-                                
-                #--- print mesh size
-                
-                sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
-                                
-                mesh_new['markers'] = mesh['markers']
-                mesh_new['dimension'] = mesh['dimension']
-                
-                current_mesh = "ite%d.su2" % global_iter
-                current_solution = "ite%d.dat" % global_iter
-                                
-                su2amg.write_mesh(current_mesh, current_solution, mesh_new)
+                    #--- Create sensor used to drive the adaptation
+                    
+                    sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
+                    
+                    mesh['sensor'] = sensor_wrap['solution']
+                    
+                    sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+                    
+                    mesh_new = su2amg.amg_call_python(mesh, config_amg)
+                                    
+                    #--- print mesh size
+                    
+                    sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+                                    
+                    mesh_new['markers'] = mesh['markers']
+                    mesh_new['dimension'] = mesh['dimension']
+                    
+                    current_mesh = "ite%d.su2" % global_iter
+                    current_solution = "ite%d.dat" % global_iter
+                                    
+                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
                 
             #--- Run su2
             
-            log = 'ite%d.SU2'%global_iter
-            stdout_hdl = open('%sstdout'%log,'w') # new targets
-            stderr_hdl = open('%sstderr'%log,'w')
+            log = 'ite%d.SU2.'%global_iter
+            stdout_hdl = open('%sout'%log,'w') # new targets
+            stderr_hdl = open('%serr'%log,'w')
             
             success = False
             val_out = [False]
@@ -348,6 +409,7 @@ def amg ( config , kind='' ):
                 config_cfd.CONV_FILENAME          = "ite%d_history" % global_iter
                 config_cfd.SOLUTION_FLOW_FILENAME = current_solution_ini
                 config_cfd.RESTART_FLOW_FILENAME  = current_solution
+                config_cfd.MATH_PROBLEM           = 'DIRECT'
                 
                 config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.EXT_ITER = int(adap_ext_iter[iSiz])
@@ -360,6 +422,20 @@ def amg ( config , kind='' ):
                 if not os.path.exists(current_solution) :
                     raise RuntimeError , "\n##ERROR : SU2_CFD Failed.\n"
                     
+                if adap_sensor == 'GOAL':
+                    current_solution_adj = "ite%d_adj.dat" % global_iter
+
+                    config_cfd.CONV_FILENAME          = "ite%d_history_adj" % global_iter
+                    config_cfd.RESTART_ADJ_FILENAME   = current_solution_adj
+                    config_cfd.SOLUTION_FLOW_FILENAME = current_solution
+                    config_cfd.MATH_PROBLEM           = 'DISCRETE_ADJOINT'
+                    config_cfd.RESTART_SOL            = 'NO'
+                    SU2_CFD(config_cfd)
+
+                    config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
+                    config_cfd.ERROR_ESTIMATE         = 'YES'
+                    config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[iSiz])
+                    SU2_MET(config_cfd)
             
             except:
                 sys.stdout = sav_stdout
@@ -374,7 +450,7 @@ def amg ( config , kind='' ):
             
             plot_format      = config_cfd['OUTPUT_FORMAT']
             plot_extension   = su2io.get_extension(plot_format)
-            history_filename = config_cfd['CONV_FILENAME'] + plot_extension
+            history_filename = "ite%d_history" % global_iter + plot_extension
             
             history = su2io.read_history(history_filename)
             
