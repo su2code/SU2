@@ -1,4 +1,14 @@
-tecio_cpp_flags = ['-fpermissive','-DLINUX64', '-DLINUX', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
+tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
+
+if (build_machine.system() == 'darwin')
+  tec_cxx_flags += ['-DDARWIN', '-DMAC64']
+endif
+
+if (build_machine.system() == 'linux')
+  tec_cxx_flags += ['-DLINUX', '-DLINUX64']
+endif
+
+
 tecio_include = include_directories('../', './')
 tecio = static_library('tecio',
            'ClassicZoneWriterAbstract.cpp',

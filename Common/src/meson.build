@@ -1,5 +1,5 @@
 common_include = include_directories('./')
-common_src = ['geometry_structure_fem_part.cpp',
+common_src =files(['geometry_structure_fem_part.cpp',
            'primal_grid_structure.cpp',
            'linear_solvers_structure.cpp',
            'graph_coloring_structure.cpp',
@@ -26,8 +26,9 @@ common_src = ['geometry_structure_fem_part.cpp',
            'interpolation_structure.cpp',
            'mpi_structure.cpp',
            'fem_cgns_elements.cpp',
-           'matrix_structure.cpp',
-	   'toolboxes/printing_toolbox.cpp']
+           'matrix_structure.cpp'])
+
+subdir('toolboxes')
 
 common     = static_library('SU2Common', 
                             common_src,
@@ -51,3 +52,15 @@ if get_option('enable-autodiff')
 
 endif
 
+if get_option('enable-directdiff')
+  
+  commonDD = static_library('SU2CommonDD',
+                            common_src,
+                            install : false, 
+			    dependencies : [su2_deps, codi_dep], 
+			    cpp_args: [su2_cpp_args, codi_for_args])
+
+  commonDD_dep = declare_dependency(link_with: commonDD, 
+                                    include_directories : common_include)
+
+endif

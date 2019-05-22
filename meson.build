@@ -1,4 +1,7 @@
-project('SU2', 'c', 'cpp', version: '6.2.0', default_options: ['buildtype=debugoptimized', 'optimization=2'])
+project('SU2', 'c', 'cpp', 
+        version: '6.2.0', 
+	license: 'LGPL2',
+	default_options: ['buildtype=debugoptimized', 'optimization=2'])
 
 su2_cpp_args = []
 su2_deps     = []
@@ -34,7 +37,9 @@ if mpi_dep[0].found() and mpi_dep[1].found() and get_option('enable-mpi')
   
   # compile parmetis
   subdir('externals/parmetis')
-  
+ 
+  subdir('externals/tecio')
+
   # add parmetis dependency
   su2_deps     += parmetis_dep
   su2_cpp_args += '-DHAVE_PARMETIS' 
