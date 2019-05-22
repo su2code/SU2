@@ -80,9 +80,8 @@ subdir('SU2_SOL/src')
 # install python scripts
 subdir('SU2_PY')
 
-ninja = find_program('./ninja', required : false)
+ninja = find_program('ninja', required : false)
 if ninja.found() == false
-  message('Ninja was not found. Bootstrapping ...')
+  message('Bootstrapping Ninja ...')
   run_config = run_command('externals/ninja/configure.py','--bootstrap')
-  message('./ninja -C <buildfolder> to compile SU2')
 endif
