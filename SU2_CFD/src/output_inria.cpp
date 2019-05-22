@@ -42,6 +42,8 @@ enum BCVAR  { bcMach, bcTemp, bcPres, bcDens, bcGoal };
 
 void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
+#ifdef HAVE_INRIA
+  
   /*--- Local variables ---*/
 	
   unsigned short nZone = geometry->GetnZone();
@@ -146,7 +148,13 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
       printf("Cannot close solution file %s.", OutNam);
       printf("Now exiting...\n\n");
       exit(EXIT_FAILURE);
-	}  
+	}
+  
+#else // Not built with Inria support
+  
+  cout << "GMF file requested but SU2 was built without GMF support. No file written" << "\n";
+  
+#endif
 	
 }
 
@@ -156,6 +164,8 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
 
 */
 void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+#ifdef HAVE_INRIA
   
   /*--- Local variables ---*/
 	
@@ -458,6 +468,12 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   }
 	
   delete [] TagBc;
+  
+#else // Not built with Inria support
+  
+  cout << "GMF file requested but SU2 was built without GMF support. No file written" << "\n";
+  
+#endif
 	
 }
 
@@ -465,6 +481,8 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
 
 void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
+  
+#ifdef HAVE_INRIA
   
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
@@ -740,6 +758,12 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 		delete [] PointSurface;
 	
 	GmfCloseMesh(OutMsh);
+  
+#else // Not built with Inria support
+  
+  cout << "GMF file requested but SU2 was built without GMF support. No file written" << "\n";
+  
+#endif
   
 }
 

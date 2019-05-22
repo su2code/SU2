@@ -43,6 +43,11 @@
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
 #endif
+#ifdef HAVE_INRIA
+extern "C" {
+#include "libmeshb7.h"
+}
+#endif
 #ifdef HAVE_TECIO
   #include "TECIO.h"
 #endif
