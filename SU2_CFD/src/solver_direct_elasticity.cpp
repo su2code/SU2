@@ -65,7 +65,6 @@ CFEASolver::CFEASolver(void) : CSolver() {
   
   Jacobian_c_ij = NULL;
   Jacobian_s_ij = NULL;
-  Jacobian_k_ij = NULL;
   
   MassMatrix_ij = NULL;
   
@@ -108,7 +107,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   bool de_effects = config->GetDE_Effects();                      // Test whether we consider dielectric elastomers
   
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
-  bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   
   element_based = false;          // A priori we don't have an element-based input file (most of the applications will be like this)
   
@@ -122,7 +120,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Number of different terms for FEA ---*/
   nFEA_Terms = 1;
   if (de_effects) nFEA_Terms++;       // The DE term is DE_TERM = 1
-  if (incompressible) nFEA_Terms = 3; // The incompressible term is INC_TERM = 2
   
   /*--- Here is where we assign the kind of each element ---*/
   
@@ -138,41 +135,30 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   }
   
   if (nDim == 2) {
-    
-      /*--- Basic terms ---*/
-      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
-    
-      if (de_effects){
-        element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-        element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
-      }
 
-      if (incompressible){
-        element_container[INC_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-        element_container[INC_TERM][EL_QUAD] = new CQUAD1(nDim, config);
-      }
+    /*--- Basic terms ---*/
+    element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+    element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+
+    if (de_effects){
+      element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+      element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+    }
 
   }
   else if (nDim == 3) {
 
-      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[FEA_TERM][EL_HEXA]  = new CHEXA8 (nDim, config);
-      element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-      element_container[FEA_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+    element_container[FEA_TERM][EL_HEXA]  = new CHEXA8 (nDim, config);
+    element_container[FEA_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+    element_container[FEA_TERM][EL_PRISM] = new CPRISM6(nDim, config);
 
-      if (de_effects){
-        element_container[DE_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[DE_TERM][EL_HEXA]  = new CHEXA8 (nDim, config);
-        element_container[DE_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
-        element_container[DE_TERM][EL_PRISM] = new CPRISM6(nDim, config);
-      }
-
-      if (incompressible) {
-        element_container[INC_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-        element_container[INC_TERM][EL_HEXA]  = new CHEXA1 (nDim, config);
-      }
-
+    if (de_effects){
+      element_container[DE_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+      element_container[DE_TERM][EL_HEXA]  = new CHEXA8 (nDim, config);
+      element_container[DE_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+      element_container[DE_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+    }
 
   }
   
@@ -305,18 +291,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
       }
     }
     
-  }
-  
-  /*--- Term ij of the Jacobian (incompressibility term) ---*/
-  Jacobian_k_ij = NULL;
-  if (incompressible) {
-    Jacobian_k_ij = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_k_ij[iVar] = new su2double [nVar];
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_k_ij[iVar][jVar] = 0.0;
-      }
-    }
   }
   
   /*--- Stress contribution to the node i ---*/
@@ -502,7 +476,6 @@ CFEASolver::~CFEASolver(void) {
   for (iVar = 0; iVar < nVar; iVar++) {
     if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
     if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
-    if (Jacobian_k_ij != NULL) delete[] Jacobian_k_ij[iVar];
     delete [] mZeros_Aux[iVar];
     delete [] mId_Aux[iVar];
     delete [] stressTensor[iVar];
@@ -510,7 +483,6 @@ CFEASolver::~CFEASolver(void) {
   
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
   if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
-  if (Jacobian_k_ij != NULL) delete [] Jacobian_k_ij;
   delete [] Res_Stress_i;
   delete [] Res_Ext_Surf;
   if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
@@ -1689,7 +1661,6 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
   
   su2double Ks_ab;
   su2double *Kab = NULL;
-  su2double *Kk_ab = NULL;
   su2double *Ta = NULL;
   
   su2double *Ta_DE = NULL;
@@ -1697,7 +1668,6 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
   
   unsigned short NelNodes, jNode;
   
-  bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   bool de_effects = config->GetDE_Effects();
 
   bool topology_mode = config->GetTopology_Optimization();
@@ -1715,9 +1685,6 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
     
-    if (incompressible) if (element_container[INC_TERM][EL_KIND] == NULL)
-      SU2_MPI::Error("Pyramid and Prism elements are not supported for incompressible analysis yet.",CURRENT_FUNCTION);
-    
     /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
     
     for (iNode = 0; iNode < nNodes; iNode++) {
@@ -1729,19 +1696,16 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
         /*--- Set current coordinate ---*/
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (de_effects) element_container[DE_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-        if (incompressible) element_container[INC_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 
         /*--- Set reference coordinate ---*/
         if (prestretch_fem) {
           val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
           element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
           if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
-          if (incompressible) element_container[INC_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
         }
         else {
           element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
           if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-          if (incompressible) element_container[INC_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         }
       }
     }
@@ -1755,10 +1719,6 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-    if (incompressible) element_container[INC_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-    
-    /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
-    if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[INC_TERM][EL_KIND], config);
     
     /*--- Compute the components of the Jacobian and the stress term for the material ---*/
     if (element_based){
@@ -1794,19 +1754,16 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
         /*--- Retrieve the values of the FEA term ---*/
         Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
         Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-        if (incompressible) Kk_ab = element_container[INC_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
         
         for (iVar = 0; iVar < nVar; iVar++) {
           Jacobian_s_ij[iVar][iVar] = simp_penalty*Ks_ab;
           for (jVar = 0; jVar < nVar; jVar++) {
             Jacobian_c_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
-            if (incompressible) Jacobian_k_ij[iVar][jVar] = simp_penalty*Kk_ab[iVar*nVar+jVar];
           }
         }
         
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-        if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
         
         /*--- Retrieve the electric contribution to the Jacobian ---*/
         if (de_effects){
