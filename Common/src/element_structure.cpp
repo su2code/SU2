@@ -59,7 +59,6 @@ CElement::CElement(void) {
   Mab = NULL;
   Kab = NULL;
   Ks_ab = NULL;
-  Kk_ab = NULL;
   Kt_a = NULL;
   dNiXj = NULL;
   
@@ -94,7 +93,6 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
   Mab = NULL;
   Kab = NULL;
   Ks_ab = NULL;
-  Kk_ab = NULL;
   Kt_a = NULL;
   dNiXj = NULL;
   
@@ -204,25 +202,13 @@ CElement::~CElement(void) {
     delete [] FDL_a;
   }
 
-  if (Kk_ab != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      for (jNode = 0; jNode < nNodes; jNode++) {
-        delete [] Kk_ab [iNode][jNode];
-      }
-      delete [] Kk_ab [iNode];
-    }
-    delete [] Kk_ab;
-  }
-
 }
 
-void CElement::AllocateStructures(const bool elasticity, const bool incomp, const bool body_forces) {
+void CElement::AllocateStructures(const bool body_forces) {
 
   /*--- Derived classes should call this method after setting nGauss and nNodes. ---*/
 
   unsigned short iNode, jNode, iGauss, nDimSq = nDim*nDim;
-
-  /*--- Structures common to all analysis types ---*/
 
   GaussPoint = new CGaussVariable*[nGaussPoints];
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -254,57 +240,37 @@ void CElement::AllocateStructures(const bool elasticity, const bool incomp, cons
     }
   }
 
-  /*--- Elasticity structures (linear and nonlinear) ---*/
-
-  if (elasticity) {
-
-    NodalExtrap = new su2double*[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      NodalExtrap[iNode] = new su2double[nGaussPoints];
-    }
-
-    NodalStress = new su2double*[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      NodalStress[iNode] = new su2double[6];
-    }
-
-    Mab = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      Mab[iNode] = new su2double [nNodes];
-    }
-
-    Kab = new su2double **[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      Kab [iNode] = new su2double*[nNodes];
-      for (jNode = 0; jNode < nNodes; jNode++) {
-        Kab [iNode][jNode] = new su2double[nDimSq];
-      }
-    }
-
-    Ks_ab = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      Ks_ab[iNode] = new su2double [nNodes];
-    }
-
-    Kt_a = new su2double *[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      Kt_a[iNode] = new su2double [nDim];
-    }
-
+  NodalExtrap = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalExtrap[iNode] = new su2double[nGaussPoints];
   }
 
-  /*--- Pressure component of the stiffness matrix ---*/
-  
-  if (incomp) {
+  NodalStress = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalStress[iNode] = new su2double[6];
+  }
 
-    Kk_ab = new su2double **[nNodes];
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      Kk_ab [iNode] = new su2double*[nNodes];
-      for (jNode = 0; jNode < nNodes; jNode++) {
-        Kk_ab [iNode][jNode] = new su2double[nDimSq];
-      }
+  Mab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Mab[iNode] = new su2double [nNodes];
+  }
+
+  Kab = new su2double **[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kab [iNode] = new su2double*[nNodes];
+    for (jNode = 0; jNode < nNodes; jNode++) {
+      Kab [iNode][jNode] = new su2double[nDimSq];
     }
+  }
 
+  Ks_ab = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Ks_ab[iNode] = new su2double [nNodes];
+  }
+
+  Kt_a = new su2double *[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    Kt_a[iNode] = new su2double [nDim];
   }
 
   /*--- Body forces ---*/
@@ -338,19 +304,6 @@ void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned sho
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[jDim][iDim];
-    }
-  }
-}
-
-void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB) {
-  
-  unsigned short iDim, jDim;
-  
-  /*--- TODO: The incompressible implementation needs further work ---*/
-
-  for(iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] = val_Kk_ab[iDim][jDim];
     }
   }
 }

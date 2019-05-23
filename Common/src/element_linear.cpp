@@ -44,11 +44,11 @@ CTRIA1::CTRIA1(void) : CElement() {
 CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements MAY be used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 3;
   nGaussPoints = 1;
-  AllocateStructures(true,true,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -117,11 +117,11 @@ CQUAD4::CQUAD4(void) : CElement() {
 CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements are NOT used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 4;
   nGaussPoints = 4;
-  AllocateStructures(true,false,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -211,53 +211,6 @@ CQUAD4::~CQUAD4(void) {
 
 }
 
-CQUAD1::CQUAD1(void) : CElement() {
-
-}
-
-CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
-: CElement(val_nDim, config) {
-
-  /*--- Allocate internal structures, these elements are ONLY used for pressure subintegration ---*/
-
-  nNodes = 4;
-  nGaussPoints = 1;
-  AllocateStructures(false,true,false);
-
-  /*--- Gauss coordinates and weights ---*/
-
-  GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 4.0;
-
-  /*--- Store the values of the shape functions and their derivatives ---*/
-
-  unsigned short iGauss;
-  su2double Xi, Eta, val_Ni;
-
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-
-    Xi = GaussCoord[iGauss][0];
-    Eta = GaussCoord[iGauss][1];
-
-    val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);  GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);  GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);  GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);  GaussPoint[iGauss]->SetNi(val_Ni,3);
-
-    /*--- dN/d xi, dN/d eta ---*/
-
-    dNiXj[iGauss][0][0] = -0.25*(1.0-Eta);  dNiXj[iGauss][0][1] = -0.25*(1.0-Xi);
-    dNiXj[iGauss][1][0] =  0.25*(1.0-Eta);  dNiXj[iGauss][1][1] = -0.25*(1.0+Xi);
-    dNiXj[iGauss][2][0] =  0.25*(1.0+Eta);  dNiXj[iGauss][2][1] =  0.25*(1.0+Xi);
-    dNiXj[iGauss][3][0] = -0.25*(1.0+Eta);  dNiXj[iGauss][3][1] =  0.25*(1.0-Xi);
-
-  }
-
-}
-
-CQUAD1::~CQUAD1(void) {
-
-}
-
 CTETRA1::CTETRA1(void) : CElement() {
 
 }
@@ -265,11 +218,11 @@ CTETRA1::CTETRA1(void) : CElement() {
 CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements MAY be used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 4;
   nGaussPoints = 1;
-  AllocateStructures(true,true,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -347,11 +300,11 @@ CHEXA8::CHEXA8(void) : CElement() {
 CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements are NOT used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 8;
   nGaussPoints = 8;
-  AllocateStructures(true,false,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -529,84 +482,6 @@ CHEXA8::~CHEXA8(void) {
 
 }
 
-CHEXA1::CHEXA1(void) : CElement() {
-
-}
-
-CHEXA1::CHEXA1(unsigned short val_nDim, CConfig *config)
-: CElement(val_nDim, config) {
-
-  /*--- Allocate internal structures, these elements are ONLY used for pressure subintegration ---*/
-
-  nNodes = 8;
-  nGaussPoints = 1;
-  AllocateStructures(false,true,false);
-
-  /*--- Gauss coordinates and weights ---*/
-
-  GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 8.0;
-
-  /*--- Store the values of the shape functions and their derivatives ---*/
-
-  unsigned short iGauss;
-  su2double Xi, Eta, Zeta, val_Ni;
-
-  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-
-    Xi = GaussCoord[iGauss][0];
-    Eta = GaussCoord[iGauss][1];
-    Zeta = GaussCoord[iGauss][2];
-
-    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,0);
-    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,1);
-    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,2);
-    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,3);
-    val_Ni = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,4);
-    val_Ni = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,5);
-    val_Ni = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,6);
-    val_Ni = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);   GaussPoint[iGauss]->SetNi(val_Ni,7);
-
-    /*--- dN/d xi ---*/
-
-    dNiXj[iGauss][0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-    dNiXj[iGauss][1][0] =  0.125*(1.0-Eta)*(1.0-Zeta);
-    dNiXj[iGauss][2][0] =  0.125*(1.0+Eta)*(1.0-Zeta);
-    dNiXj[iGauss][3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
-    dNiXj[iGauss][4][0] = -0.125*(1.0-Eta)*(1.0+Zeta);
-    dNiXj[iGauss][5][0] =  0.125*(1.0-Eta)*(1.0+Zeta);
-    dNiXj[iGauss][6][0] =  0.125*(1.0+Eta)*(1.0+Zeta);
-    dNiXj[iGauss][7][0] = -0.125*(1.0+Eta)*(1.0+Zeta);
-
-    /*--- dN/d eta ---*/
-
-    dNiXj[iGauss][0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-    dNiXj[iGauss][1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-    dNiXj[iGauss][2][1] =  0.125*(1.0+Xi)*(1.0-Zeta);
-    dNiXj[iGauss][3][1] =  0.125*(1.0-Xi)*(1.0-Zeta);
-    dNiXj[iGauss][4][1] = -0.125*(1.0-Xi)*(1.0+Zeta);
-    dNiXj[iGauss][5][1] = -0.125*(1.0+Xi)*(1.0+Zeta);
-    dNiXj[iGauss][6][1] =  0.125*(1.0+Xi)*(1.0+Zeta);
-    dNiXj[iGauss][7][1] =  0.125*(1.0-Xi)*(1.0+Zeta);
-
-    /*--- dN/d zeta ---*/
-
-    dNiXj[iGauss][0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-    dNiXj[iGauss][1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-    dNiXj[iGauss][2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-    dNiXj[iGauss][3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-    dNiXj[iGauss][4][2] =  0.125*(1.0-Xi)*(1.0-Eta);
-    dNiXj[iGauss][5][2] =  0.125*(1.0+Xi)*(1.0-Eta);
-    dNiXj[iGauss][6][2] =  0.125*(1.0+Xi)*(1.0+Eta);
-    dNiXj[iGauss][7][2] =  0.125*(1.0-Xi)*(1.0+Eta);
-
-  }
-
-}
-
-CHEXA1::~CHEXA1(void) {
-
-}
-
 CPYRAM5::CPYRAM5(void) : CElement() {
 
 }
@@ -614,11 +489,11 @@ CPYRAM5::CPYRAM5(void) : CElement() {
 CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements are NOT used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 5;
   nGaussPoints = 5;
-  AllocateStructures(true,false,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -746,11 +621,11 @@ CPRISM6::CPRISM6(void) : CElement() {
 CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  /*--- Allocate internal structures, these elements are NOT used for pressure subintegration ---*/
+  /*--- Allocate internal structures ---*/
 
   nNodes = 6;
   nGaussPoints = 6;
-  AllocateStructures(true,false,config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad());
 
   /*--- Gauss coordinates and weights ---*/
 
