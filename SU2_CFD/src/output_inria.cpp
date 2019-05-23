@@ -46,17 +46,13 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   
   /*--- Local variables ---*/
 	
-  unsigned short nZone = geometry->GetnZone();
-  unsigned short Kind_Solver  = config->GetKind_Solver();
-  unsigned short iVar, iDim, nDim = geometry->GetnDim();
+  unsigned short iVar, nDim = geometry->GetnDim();
   unsigned short nVar_Buf = nVar_Par-nDim;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool grid_movement = config->GetGrid_Movement();
-  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
+  unsigned long iPoint;
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   string filename;
   
-  unsigned long OutSol,i, npoin = geometry->GetGlobal_nPointDomain();
+  unsigned long OutSol, npoin = geometry->GetGlobal_nPointDomain();
   unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
@@ -171,22 +167,19 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  unsigned short iVar, iDim, nDim = geometry->GetnDim();
-  unsigned short nVar_First, nVar_Second, nVar_Consv_Par;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned short iVar, nDim = geometry->GetnDim();
+  unsigned short nVar_First = 0, nVar_Second = 0, nVar_Consv_Par;
+  unsigned long iPoint;
   unsigned long FirstIndex = NONE, SecondIndex = NONE;
-  bool grid_movement = config->GetGrid_Movement();
-  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   string filename;
   
   unsigned long OutMach, OutPres, OutMetr;
-  unsigned long i, npoin = geometry->GetGlobal_nPointDomain();
+  unsigned long npoin = geometry->GetGlobal_nPointDomain();
   unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
-  char OutNam[1024], BasNam[1024];
-  char *ptr=NULL;
+  char OutNam[1024];
 	
   int NbrVar, idxVar;
 
@@ -484,24 +477,19 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_INRIA
   
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
-  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
-  su2double *center, *angles, *transl;
+  unsigned long iElem, iPoint, iNode;
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim();
   ofstream output_file;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
-  string::size_type position;
 	
   unsigned short nMarker = config->GetnMarker_All();
   unsigned long cptElem = 0, nTri=0, nLin=0, nQua=0;
   unsigned long myPoint, offset, Global_Index;
 
-  unsigned long OutMsh,i;
-  int iVer,iTri,iEfr,iTet;
+  unsigned long OutMsh;
   passivedouble bufDbl[8];
   char OutNam[2014];
-  int bufInt[8];
 	
   unsigned long *PointSurface=NULL;
   unsigned long nPointSurface=0;
