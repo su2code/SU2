@@ -15836,6 +15836,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
+  bool wall_model = false;
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -15887,6 +15888,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
         if (Marker_Tag == Monitoring_Tag)
           Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
@@ -15932,7 +15934,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         Density = node[iPoint]->GetDensity();
         
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-        
 
         for (iDim = 0; iDim < nDim; iDim++) {
           UnitNormal[iDim] = Normal[iDim]/Area;
@@ -15974,6 +15975,21 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                 }
             }
         
+        }
+        
+        /*--- If Wall Model is used: Scale the viscous stress tensor ---*/
+        
+        if (wall_model){
+          su2double norm = 0.0;
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              norm += 0.5 * Tau[iDim][jDim] * Tau[iDim][jDim];
+          norm = sqrt(norm);
+          
+          su2double TauWall = node[iPoint]->GetTauWall();
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = - Tau[iDim][jDim] * TauWall / norm;
         }
         
         /*--- Project Tau in each surface element ---*/
@@ -16795,7 +16811,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         su2double Density_b, StaticEnergy_b, Enthalpy_b, Energy_b, VelMagnitude2_b, Pressure_b;
         su2double Density_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, ProjGridVel = 0.0, turb_ke = 0.0;
         su2double Velocity_i[3] = {0.0,0.0,0.0}, Velocity_b[3] = {0.0,0.0,0.0};
-        su2double Kappa_b, Chi_b;
+        su2double Kappa_b, Chi_b, TauWall;
         
         /*--- Get the state i ---*/
         
@@ -16919,7 +16935,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           /*--- Get the grid velocity at the current boundary node ---*/
           GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++) Velocity_b[iDim] += GridVel[iDim];
-        
+        }
         
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -16951,6 +16967,19 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
             tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
           }
         
+        /*--- Scale the viscous stress tensor ---*/
+        
+        su2double norm = 0.0;
+        for (iDim = 0 ; iDim < nDim; iDim++)
+          for (jDim = 0 ; jDim < nDim; jDim++)
+            norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
+        norm = sqrt(norm);
+        
+        TauWall = node[iPoint]->GetTauWall();
+        for (iDim = 0 ; iDim < nDim; iDim++)
+          for (jDim = 0 ; jDim < nDim; jDim++)
+            tau[iDim][jDim] = tau[iDim][jDim] * TauWall / norm;
+        
         /*--- Dot product of the stress tensor with the grid velocity ---*/
         
         for (iDim = 0 ; iDim < nDim; iDim++) {
@@ -16958,7 +16987,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           for (jDim = 0 ; jDim < nDim; jDim++)
             tau_vel[iDim] += tau[iDim][jDim]*Velocity_b[jDim];
         }
-        
+        //cout << tau_vel[0] << " " << tau_vel[1] << " " << ProjGridVel << endl;
         /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
         
         Res_Conv[nDim+1] = Pressure*ProjGridVel;
@@ -17029,7 +17058,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           /*--- Subtract the block from the Global Jacobian structure ---*/
           
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        }
         }
       }
       else{
@@ -17954,7 +17982,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         su2double dirTan[3] = {0.0, 0.0, 0.0};
         for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
         
-        //if ((config->GetIntIter() == 0) && (iRKStep == 0)){
+        if ((config->GetIntIter() == 0) && (iRKStep == 0)){
           /* Compute the wall shear stress and heat flux vector using
            the wall model. */
           su2double tauWall, qWall, ViscosityWall, kOverCvWall;
@@ -17972,18 +18000,21 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           velWallTan /= solWall[0];
           
           /*--- Set tau wall and heat flux at the node. ---*/
-          node[iPoint]->SetTauWall(tauWall);
+          node[iPoint]->SetTauWall(-tauWall);
           node[iPoint]->SetHeatFlux(qWall);
           node[iPoint]->SetDirTanWM(dirTan);
-        //cout << iPoint << " " << tauWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << endl;
-//        }
+          //cout << iPoint << " " << tauWall << " " << qWall << " " << ViscosityWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << " " << Temperature << " " << velTan << " " << LaminarViscosity << " " << Pressure << endl;
+        }
 //        else{
 //          /*---
 //          http://wmles.umd.edu/coupling-les-to-a-wall-stress-model/
 //          An additional way to reduce the computational cost is to solve the wall-stress model only once per time step (e.g., in a Runge-Kutta method or in an iterative solution of an implicit solver). This can be done by recognizing that the whole wall-modeling philosophy necessarily implies that the modeled \vec{\tau}_w will lack any high-frequency oscillations, and thus can never approximate the instantaneous \vec{\tau}_w — the best we can hope for is that it matches the average \vec{\tau}_w, and that it matches those frequencies in \vec{\tau}_w that correspond to time-scales in the log-layer. Given this, we can interpret Eqn. (1) as taking the instantaneous \vec{u}_{{\rm wm-top}, \parallel} and multiplying it by a “transfer-function” \left| \vec{\tau}_{w, \parallel} \right| / \left| \vec{u}_{{\rm wm-top}, \parallel} \right| that scales the magnitude of the vector. We can then approximate this “transfer function” by computing it infrequently and storing it for re-use in subsequent RK substeps or iterations. In other words, we don’t assume that the \vec{\tau}_w stays constant, but that the “transfer function” does.
 //          ---*/
 //          su2double *dirTan_old;
+//          su2double *Coord;
+//
 //          dirTan_old  = node[iPoint]->GetDirTanWM();
+//          Coord = geometry->node[iPoint]->GetCoord();
 //
 //          su2double tauWall_old = node[iPoint]->GetTauWall();
 //          su2double qWall_old = node[iPoint]->GetHeatFlux();
@@ -17995,12 +18026,11 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
 //          TransferFunction = qWall_old / dirTanMag_old;
 //          su2double qWall_new = dirTanMag_new * TransferFunction;
 //
-//          //cout << dirTanMag_old << " " << dirTanMag_new << " " << tauWall_old << " " << tauWall_new << endl;
+//          cout << Coord[0] << " " << Coord[1] << " " << dirTanMag_old << " " << dirTanMag_new << " " << tauWall_old << " " << tauWall_new << endl;
 //          /*--- Set tau wall and heat flux at the node based on transfer functions. ---*/
 //          node[iPoint]->SetTauWall(tauWall_new);
 //          node[iPoint]->SetHeatFlux(qWall_new);
 //          node[iPoint]->SetDirTanWM(dirTan);
-//
 //        }
       }
     }
