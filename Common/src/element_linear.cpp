@@ -52,7 +52,7 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 0.333333333333333;  GaussCoord[0][1] = 0.333333333333333;  GaussWeight[0] = 0.5;
+  GaussCoord[0][0] = 1.0/3.0;  GaussCoord[0][1] = 1.0/3.0;  GaussWeight[0] = 0.5;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -91,6 +91,8 @@ su2double CTRIA1::ComputeArea(const FrameType mode){
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
   su2double Area = 0.0;
   
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -183,6 +185,8 @@ su2double CQUAD4::ComputeArea(const FrameType mode){
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
   su2double Area = 0.0;
   
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -269,7 +273,7 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 0.166666666666666;
+  GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 1.0/6.0;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -312,6 +316,8 @@ su2double CTETRA1::ComputeVolume(const FrameType mode){
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
   
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -451,6 +457,8 @@ su2double CHEXA8::ComputeVolume(const FrameType mode){
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
   
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -695,6 +703,8 @@ su2double CPYRAM5::ComputeVolume(const FrameType mode){
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
   
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -747,12 +757,13 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
   /*--- There is some inconsistency between the shape functions and the order of the nodes
         that causes "negative" stiffness, the remedy is to use negative weights. ---*/
 
-  GaussCoord[0][0] =-0.577350269189626;  GaussCoord[0][1] = 1.0/6.0;  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = -1.0/6.0;
-  GaussCoord[1][0] =-0.577350269189626;  GaussCoord[1][1] = 2.0/3.0;  GaussCoord[1][2] = 1.0/6.0;  GaussWeight[1] = -1.0/6.0;
-  GaussCoord[2][0] =-0.577350269189626;  GaussCoord[2][1] = 1.0/6.0;  GaussCoord[2][2] = 2.0/3.0;  GaussWeight[2] = -1.0/6.0;
-  GaussCoord[3][0] = 0.577350269189626;  GaussCoord[3][1] = 1.0/6.0;  GaussCoord[3][2] = 1.0/6.0;  GaussWeight[3] = -1.0/6.0;
-  GaussCoord[4][0] = 0.577350269189626;  GaussCoord[4][1] = 2.0/3.0;  GaussCoord[4][2] = 1.0/6.0;  GaussWeight[4] = -1.0/6.0;
-  GaussCoord[5][0] = 0.577350269189626;  GaussCoord[5][1] = 1.0/6.0;  GaussCoord[5][2] = 2.0/3.0;  GaussWeight[5] = -1.0/6.0;
+  su2double oneOnSqrt3 = 0.577350269189626;
+  GaussCoord[0][0] = -oneOnSqrt3;  GaussCoord[0][1] = 1.0/6.0;  GaussCoord[0][2] = 1.0/6.0;  GaussWeight[0] = -1.0/6.0;
+  GaussCoord[1][0] = -oneOnSqrt3;  GaussCoord[1][1] = 2.0/3.0;  GaussCoord[1][2] = 1.0/6.0;  GaussWeight[1] = -1.0/6.0;
+  GaussCoord[2][0] = -oneOnSqrt3;  GaussCoord[2][1] = 1.0/6.0;  GaussCoord[2][2] = 2.0/3.0;  GaussWeight[2] = -1.0/6.0;
+  GaussCoord[3][0] =  oneOnSqrt3;  GaussCoord[3][1] = 1.0/6.0;  GaussCoord[3][2] = 1.0/6.0;  GaussWeight[3] = -1.0/6.0;
+  GaussCoord[4][0] =  oneOnSqrt3;  GaussCoord[4][1] = 2.0/3.0;  GaussCoord[4][2] = 1.0/6.0;  GaussWeight[4] = -1.0/6.0;
+  GaussCoord[5][0] =  oneOnSqrt3;  GaussCoord[5][1] = 1.0/6.0;  GaussCoord[5][2] = 2.0/3.0;  GaussWeight[5] = -1.0/6.0;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -803,14 +814,14 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 
   /*--- Store the extrapolation functions ---*/
 
-  su2double ExtrapCoord[6][3];
+  su2double ExtrapCoord[6][3], sqrt3 = 1.732050807568877;
 
-  ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.0/3.0;  ExtrapCoord[0][2] = -1.0/3.0;
-  ExtrapCoord[1][0] = -1.732050807568877;  ExtrapCoord[1][1] =  5.0/3.0;  ExtrapCoord[1][2] = -1.0/3.0;
-  ExtrapCoord[2][0] = -1.732050807568877;  ExtrapCoord[2][1] = -1.0/3.0;  ExtrapCoord[2][2] =  5.0/3.0;
-  ExtrapCoord[3][0] =  1.732050807568877;  ExtrapCoord[3][1] = -1.0/3.0;  ExtrapCoord[3][2] = -1.0/3.0;
-  ExtrapCoord[4][0] =  1.732050807568877;  ExtrapCoord[4][1] =  5.0/3.0;  ExtrapCoord[4][2] = -1.0/3.0;
-  ExtrapCoord[5][0] =  1.732050807568877;  ExtrapCoord[5][1] = -1.0/3.0;  ExtrapCoord[5][2] =  5.0/3.0;
+  ExtrapCoord[0][0] = -sqrt3;  ExtrapCoord[0][1] = -1.0/3.0;  ExtrapCoord[0][2] = -1.0/3.0;
+  ExtrapCoord[1][0] = -sqrt3;  ExtrapCoord[1][1] =  5.0/3.0;  ExtrapCoord[1][2] = -1.0/3.0;
+  ExtrapCoord[2][0] = -sqrt3;  ExtrapCoord[2][1] = -1.0/3.0;  ExtrapCoord[2][2] =  5.0/3.0;
+  ExtrapCoord[3][0] =  sqrt3;  ExtrapCoord[3][1] = -1.0/3.0;  ExtrapCoord[3][2] = -1.0/3.0;
+  ExtrapCoord[4][0] =  sqrt3;  ExtrapCoord[4][1] =  5.0/3.0;  ExtrapCoord[4][2] = -1.0/3.0;
+  ExtrapCoord[5][0] =  sqrt3;  ExtrapCoord[5][1] = -1.0/3.0;  ExtrapCoord[5][2] =  5.0/3.0;
 
   for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -834,7 +845,9 @@ su2double CPRISM6::ComputeVolume(const FrameType mode){
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
   su2double Volume = 0.0;
-  
+
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < nDim; iDim++) {
