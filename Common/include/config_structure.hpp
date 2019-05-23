@@ -71,110 +71,109 @@ using namespace std;
  *        stores all the information.
  * \author F. Palacios
  */
-
 class CConfig {
 private:
-  SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
+  SU2_MPI::Comm SU2_Communicator;                /*!< \brief MPI communicator of SU2.*/
   int rank, size;
-  unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
-  unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
-  unsigned short Ref_Inc_NonDim; /*!< \brief Kind of non dimensionalization.*/
-  unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_SU2;                       /*!< \brief Kind of SU2 software component.*/
+  unsigned short Ref_NonDim;                     /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Ref_Inc_NonDim;                 /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Kind_AverageProcess;            /*!< \brief Kind of mixing process.*/
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
-  unsigned short Kind_MixingPlaneInterface; /*!< \brief Kind of mixing process.*/
-  unsigned short Kind_SpanWise; /*!< \brief Kind of span-wise section computation.*/
+  unsigned short Kind_MixingPlaneInterface;      /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_SpanWise;         /*!< \brief Kind of span-wise section computation.*/
   unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
-  unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
-  unsigned short nZoneSpecified; /*!< \brief Number of zones that are specified in config file. */
-  su2double Highlite_Area; /*!< \brief Highlite area. */
-  su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
-  su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_F; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_S; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_S; /*!< \brief Minimum value of the log residual. */
-  su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
-  su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
-  su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
-  su2double Res_FEM_ADJ;     /*!< \brief Convergence criteria for adjoint FEM. */
-  su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
-  su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
-  su2double AdjointLimit; /*!< \brief Adjoint variable limit */
-  su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
-  bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
-  su2double* SubsonicEngine_Cyl; /*!< \brief Coordinates of the box subsonic region */
-  su2double* SubsonicEngine_Values; /*!< \brief Values of the box subsonic region */
-  su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
+  unsigned short iZone, nZone;          /*!< \brief Number of zones in the mesh. */
+  unsigned short nZoneSpecified;        /*!< \brief Number of zones that are specified in config file. */
+  su2double Highlite_Area;              /*!< \brief Highlite area. */
+  su2double Fan_Poly_Eff;               /*!< \brief Highlite area. */
+  su2double OrderMagResidual;           /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidual;             /*!< \brief Minimum value of the log residual. */
+  su2double OrderMagResidualFSI;        /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidualFSI;          /*!< \brief Minimum value of the log residual. */
+  su2double OrderMagResidual_BGS_F;     /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidual_BGS_F;       /*!< \brief Minimum value of the log residual. */
+  su2double OrderMagResidual_BGS_S;     /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidual_BGS_S;       /*!< \brief Minimum value of the log residual. */
+  su2double Res_FEM_UTOL; 		        /*!< \brief UTOL criteria for structural FEM. */
+  su2double Res_FEM_RTOL; 		        /*!< \brief RTOL criteria for structural FEM. */
+  su2double Res_FEM_ETOL; 		        /*!< \brief ETOL criteria for structural FEM. */
+  su2double Res_FEM_ADJ;                /*!< \brief Convergence criteria for adjoint FEM. */
+  su2double EA_ScaleFactor;             /*!< \brief Equivalent Area scaling factor */
+  su2double* EA_IntLimit;               /*!< \brief Integration limits of the Equivalent Area computation */
+  su2double AdjointLimit;               /*!< \brief Adjoint variable limit */
+  su2double* Obj_ChainRuleCoeff;        /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
+  bool MG_AdjointFlow;                  /*!< \brief MG with the adjoint flow problem */
+  su2double* SubsonicEngine_Cyl;        /*!< \brief Coordinates of the box subsonic region */
+  su2double* SubsonicEngine_Values;     /*!< \brief Values of the box subsonic region */
+  su2double* Hold_GridFixed_Coord;      /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
   su2double *DistortionRack;
   su2double *PressureLimits,
   *DensityLimits,
-  *TemperatureLimits; /*!< \brief Limits for the primitive variables */
-  bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
-  bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
-  bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
-  unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
-  unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
-  unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
-  su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
-  su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-  su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
-  su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
-  bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
-  bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
-  Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
-  EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-  Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
-  InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
-  Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
-  Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
-  Weakly_Coupled_Heat, /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
-  Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-  PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
-  Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
-  Low_Mach_Corr,			/*!< \brief Flag to know if we are using a low Mach number correction. */
-  GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
-  SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
-  AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-  SubsonicEngine,			/*!< \brief Engine intake subsonic region. */
-  Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
-  Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
-  Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
-  Inconsistent_Disc,      /*!< \brief Use an inconsistent (primal/dual) discrete adjoint formulation. */
-  Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
-  Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-  Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
-  ionization, /*!< \brief Flag for determining if free electron gas is in the mixture. */
-  Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
-  su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
-  su2double Buffet_lambda; /*!< \brief Offset parameter for buffet sensor.*/
-  su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
-  su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
-  su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
-  Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
-  su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
-  su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCMx_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCMy_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCMz_dCL; /*!< \brief Weight of the drag coefficient. */
-  su2double dCD_dCMy; /*!< \brief Weight of the drag coefficient. */
-  su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
-  su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
+  *TemperatureLimits;              /*!< \brief Limits for the primitive variables */
+  bool ActDisk_DoubleSurface;      /*!< \brief actuator disk double surface  */
+  bool Engine_HalfModel;           /*!< \brief only half model is in the computational grid  */
+  bool ActDisk_SU2_DEF;            /*!< \brief actuator disk double surface  */
+  unsigned short ConvCriteria;	   /*!< \brief Kind of convergence criteria. */
+  unsigned short nFFD_Iter; 	   /*!< \brief Iteration for the point inversion problem. */
+  unsigned short FFD_Blending;     /*!< \brief Kind of FFD Blending function. */
+  su2double* FFD_BSpline_Order;    /*!< \brief BSpline order in i,j,k direction. */
+  su2double FFD_Tol;  	           /*!< \brief Tolerance in the point inversion problem. */
+  su2double Opt_RelaxFactor;  	   /*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;  /*!< \brief Bounds for the line search. */
+  bool Write_Conv_FSI;			   /*!< \brief Write convergence file for FSI problems. */
+  bool ContinuousAdjoint,		   /*!< \brief Flag to know if the code is solving an adjoint problem. */
+  Viscous,                     /*!< \brief Flag to know if the code is solving a viscous problem. */
+  EquivArea,				   /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  Engine,				       /*!< \brief Flag to know if the code is going to compute a problem with engine. */
+  InvDesign_Cp,				   /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,	       /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  Grid_Movement,			   /*!< \brief Flag to know if there is grid movement. */
+  Wind_Gust,                   /*!< \brief Flag to know if there is a wind gust. */
+  Aeroelastic_Simulation,      /*!< \brief Flag to know if there is an aeroelastic simulation. */
+  Weakly_Coupled_Heat,         /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
+  Rotating_Frame,			   /*!< \brief Flag to know if there is a rotating frame. */
+  PoissonSolver,			   /*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
+  Low_Mach_Precon,		       /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+  Low_Mach_Corr,			   /*!< \brief Flag to know if we are using a low Mach number correction. */
+  GravityForce,			       /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+  SmoothNumGrid,			   /*!< \brief Smooth the numerical grid. */
+  AdaptBoundary,			   /*!< \brief Adapt the elements on the boundary. */
+  SubsonicEngine,			   /*!< \brief Engine intake subsonic region. */
+  Frozen_Visc_Cont,			   /*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
+  Frozen_Visc_Disc,			   /*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
+  Frozen_Limiter_Disc,		   /*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
+  Inconsistent_Disc,           /*!< \brief Use an inconsistent (primal/dual) discrete adjoint formulation. */
+  Sens_Remove_Sharp,		   /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
+  Hold_GridFixed,	           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
+  Axisymmetric,                /*!< \brief Flag for axisymmetric calculations */
+  Integrated_HeatFlux,         /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  ionization,                  /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  Buffet_Monitoring;           /*!< \brief Flag for computing the buffet sensor.*/
+  su2double Buffet_k;          /*!< \brief Sharpness coefficient for buffet sensor.*/
+  su2double Buffet_lambda;     /*!< \brief Offset parameter for buffet sensor.*/
+  su2double Damp_Engine_Inflow;	  /*!< \brief Damping factor for the engine inlet. */
+  su2double Damp_Engine_Exhaust;  /*!< \brief Damping factor for the engine exhaust. */
+  su2double Damp_Res_Restric,	  /*!< \brief Damping factor for the residual restriction. */
+  Damp_Correc_Prolong;            /*!< \brief Damping factor for the correction prolongation. */
+  su2double Position_Plane;       /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
+  su2double WeightCd;             /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCL;              /*!< \brief Weight of the drag coefficient. */
+  su2double dCMx_dCL;             /*!< \brief Weight of the drag coefficient. */
+  su2double dCMy_dCL;             /*!< \brief Weight of the drag coefficient. */
+  su2double dCMz_dCL;             /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCMy;             /*!< \brief Weight of the drag coefficient. */
+  su2double CL_Target;            /*!< \brief Weight of the drag coefficient. */
+  su2double CM_Target;            /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
-  unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
-  unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
-  unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
-  su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
-  su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
-  unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-  su2double AdjSharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  unsigned short Unsteady_Simulation;	      /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  unsigned short Dynamic_Analysis;	          /*!< \brief Static or dynamic structural analysis. */
+  unsigned short nStartUpIter;	              /*!< \brief Start up iterations using the fine grid. */
+  su2double FixAzimuthalLine;                 /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
+  su2double **DV_Value;		                  /*!< \brief Previous value of the design variable. */
+  su2double Venkat_LimiterCoeff;			  /*!< \brief Limiter coefficient */
+  unsigned long LimiterIter;	              /*!< \brief Freeze the value of the limiter after a number of iterations */
+  su2double AdjSharp_LimiterCoeff;			  /*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */

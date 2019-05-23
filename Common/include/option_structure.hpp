@@ -1661,7 +1661,7 @@ enum ENUM_OUTPUT_VARS {
   VEL_X = 2,        /*!< \brief X-component of velocity. */
   VEL_Y = 3,        /*!< \brief Y-component of velocity. */
   VEL_Z = 4,        /*!< \brief Z-component of velocity. */
-  PRESSURE = 5, 		/*!< \brief Static pressure. */
+  PRESSURE = 5, 	/*!< \brief Static pressure. */
   MACH = 6,         /*!< \brief Mach number. */
   TEMPERATURE = 7,  /*!< \brief Temperature. */
   LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
@@ -1684,35 +1684,35 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
 enum ENUM_PARAM {
   NO_DEFORMATION = 0,       /*!< \brief No deformation. */
 
-  TRANSLATION = 1,		       /*!< \brief Surface movement as design variable. */
-  ROTATION = 2,			         /*!< \brief Surface rotation as design variable. */
-  SCALE = 3,			           /*!< \brief Surface rotation as design variable. */
+  TRANSLATION = 1,		    /*!< \brief Surface movement as design variable. */
+  ROTATION = 2,			    /*!< \brief Surface rotation as design variable. */
+  SCALE = 3,			    /*!< \brief Surface rotation as design variable. */
   
-  FFD_SETTING = 10,		       /*!< \brief No surface deformation. */
-  FFD_CONTROL_POINT = 11,	   /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_NACELLE = 12,	         /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_GULL = 13,	             /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_CAMBER = 14,		         /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_TWIST = 15,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
-  FFD_THICKNESS = 16,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 17,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_ROTATION = 18,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CONTROL_POINT_2D = 19, /*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 20,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 21,		 /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 22,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_CONTROL_SURFACE = 23,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_SETTING = 10,		      /*!< \brief No surface deformation. */
+  FFD_CONTROL_POINT = 11,	  /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_NACELLE = 12,	          /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_GULL = 13,	          /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_CAMBER = 14,		      /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_TWIST = 15,		      /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
+  FFD_THICKNESS = 16,		  /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_DIHEDRAL_ANGLE = 17,	  /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
+  FFD_ROTATION = 18,		  /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 19,  /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 20,		  /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 21,	  /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TWIST_2D = 22,		  /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CONTROL_SURFACE = 23,	  /*!< \brief Free form deformation for 3D design (control surface). */
   FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
 
-  HICKS_HENNE = 30,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  PARABOLIC = 31,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 32,	       /*!< \brief The four digits NACA airfoil family as design variables. */
-  AIRFOIL = 33,		           /*!< \brief Airfoil definition as design variables. */
-  CST = 34,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
-  SURFACE_BUMP = 35,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
-  SURFACE_FILE = 36,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
+  HICKS_HENNE = 30,	   /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 31,      /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 32,   /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 33,		   /*!< \brief Airfoil definition as design variables. */
+  CST = 34,            /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  SURFACE_BUMP = 35,   /*!< \brief Surfacebump function for flat surfaces deformation. */
+  SURFACE_FILE = 36,   /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
   
-  DV_EFIELD = 40,            /*!< \brief Electric field in deformable membranes. */
+  DV_EFIELD = 40,      /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 41,
   DV_POISSON = 42,
   DV_RHO = 43,
@@ -1778,17 +1778,17 @@ static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, EN
  * \brief types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {
-  STEEPEST_DESCENT = 1,		/*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
-  NEWTON = 2,			/*!< \brief Newton method for point inversion algorithm (Free-Form). */
-  QUASI_NEWTON = 3,		/*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-  CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
-  BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
-  SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
-  SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  STEEPEST_DESCENT = 1,	   /*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
+  NEWTON = 2,			   /*!< \brief Newton method for point inversion algorithm (Free-Form). */
+  QUASI_NEWTON = 3,		   /*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
+  CONJUGATE_GRADIENT = 4,  /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+  FGMRES = 5,    	       /*!< \brief Flexible Generalized Minimal Residual method. */
+  BCGSTAB = 6,	           /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  RESTARTED_FGMRES = 7,    /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  SMOOTHER_LUSGS = 8,      /*!< \brief LU_SGS smoother. */
+  SMOOTHER_JACOBI = 9,     /*!< \brief Jacobi smoother. */
+  SMOOTHER_ILU = 10,       /*!< \brief ILU smoother. */
+  SMOOTHER_LINELET = 11    /*!< \brief Linelet smoother. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1807,10 +1807,10 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
  * \brief types surface continuity at the intersection with the FFD
  */
 enum ENUM_FFD_CONTINUITY {
-  DERIVATIVE_NONE = 0,		/*!< \brief No derivative continuity. */
-  DERIVATIVE_1ST = 1,		/*!< \brief First derivative continuity. */
-  DERIVATIVE_2ND = 2,	/*!< \brief Second derivative continuity. */
-  USER_INPUT = 3			      /*!< \brief User input. */
+  DERIVATIVE_NONE = 0,	  /*!< \brief No derivative continuity. */
+  DERIVATIVE_1ST = 1,	  /*!< \brief First derivative continuity. */
+  DERIVATIVE_2ND = 2,	  /*!< \brief Second derivative continuity. */
+  USER_INPUT = 3		  /*!< \brief User input. */
 };
 static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string, ENUM_FFD_CONTINUITY>
 ("NO_DERIVATIVE", DERIVATIVE_NONE)

@@ -65,7 +65,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
   
-  /*--- Store MPI rank and size ---*/ 
+  /*--- Store MPI rank and size ---*/
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -99,7 +99,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
-  /*--- Store MPI rank and size ---*/ 
+  /*--- Store MPI rank and size ---*/
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -128,7 +128,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
-  /*--- Store MPI rank and size ---*/ 
+  /*--- Store MPI rank and size ---*/
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -172,78 +172,78 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
-    case SU2: {
+  case SU2: {
 
-      /*--- Local variables for reading the SU2 file. ---*/
-      string text_line;
-      ifstream mesh_file;
+    /*--- Local variables for reading the SU2 file. ---*/
+    string text_line;
+    ifstream mesh_file;
 
-      /*--- Check if the mesh file can be opened for reading. ---*/
-      mesh_file.open(val_mesh_filename.c_str(), ios::in);
-      if (mesh_file.fail())
-        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
-                              CURRENT_FUNCTION);
+    /*--- Check if the mesh file can be opened for reading. ---*/
+    mesh_file.open(val_mesh_filename.c_str(), ios::in);
+    if (mesh_file.fail())
+      SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
+                     CURRENT_FUNCTION);
 
-      /*--- Read the SU2 mesh file until the zone data is reached or
+    /*--- Read the SU2 mesh file until the zone data is reached or
             when it can be decided that it is not present. ---*/
-      while( getline (mesh_file, text_line) ) {
+    while( getline (mesh_file, text_line) ) {
 
-        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
-        if(text_line.find ("NZONE=",0) != string::npos) {
-          text_line.erase (0,6); nZone = atoi(text_line.c_str());
-          break;
-        }
-
-        /*--- If one of the keywords IZONE, NELEM or NPOIN, NMARK is encountered,
-              it can be assumed that the NZONE keyword is not present and the loop
-              can be terminated. ---*/
-        if(text_line.find ("IZONE=",0) != string::npos) break;
-        if(text_line.find ("NELEM=",0) != string::npos) break;
-        if(text_line.find ("NPOIN=",0) != string::npos) break;
-        if(text_line.find ("NMARK=",0) != string::npos) break;
+      /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+      if(text_line.find ("NZONE=",0) != string::npos) {
+        text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        break;
       }
 
-      mesh_file.close();
-      break;
+      /*--- If one of the keywords IZONE, NELEM or NPOIN, NMARK is encountered,
+              it can be assumed that the NZONE keyword is not present and the loop
+              can be terminated. ---*/
+      if(text_line.find ("IZONE=",0) != string::npos) break;
+      if(text_line.find ("NELEM=",0) != string::npos) break;
+      if(text_line.find ("NPOIN=",0) != string::npos) break;
+      if(text_line.find ("NMARK=",0) != string::npos) break;
     }
 
-    case CGNS: {
+    mesh_file.close();
+    break;
+  }
+
+  case CGNS: {
 
 #ifdef HAVE_CGNS
 
-      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-      int fn, nbases, file_type;
+    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+    int fn, nbases, file_type;
 
-      /*--- Check whether the supplied file is truly a CGNS file. ---*/
-      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK )
-        SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file"),
-                       CURRENT_FUNCTION);
+    /*--- Check whether the supplied file is truly a CGNS file. ---*/
+    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK )
+      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file"),
+                     CURRENT_FUNCTION);
 
-      /*--- Open the CGNS file for reading. The value of fn returned
+    /*--- Open the CGNS file for reading. The value of fn returned
             is the specific index number for this file and will be
             repeatedly used in the function calls. ---*/
-      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
+    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
 
-      /*--- Get the number of databases. This is the highest node
+    /*--- Get the number of databases. This is the highest node
             in the CGNS heirarchy. ---*/
-      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
+    if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
 
-      /*--- Check if there is more than one database. Throw an
+    /*--- Check if there is more than one database. Throw an
             error if there is because this reader can currently
             only handle one database. ---*/
-      if ( nbases > 1 )
-        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.",
-                       CURRENT_FUNCTION);
+    if ( nbases > 1 )
+      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.",
+                     CURRENT_FUNCTION);
 
-      /*--- Determine the number of zones present in the first base.
+    /*--- Determine the number of zones present in the first base.
             Note that the indexing starts at 1 in CGNS. Afterwards
             close the file again. ---*/
-      if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
-      if (cg_close(fn) != CG_OK) cg_error_exit();
+    if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
+    if (cg_close(fn) != CG_OK) cg_error_exit();
 #endif
 
-      break;
-    }
+    break;
+  }
   }
 
   return (unsigned short) nZone;
@@ -254,90 +254,90 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
   short nDim = -1;
 
   switch (val_format) {
-    case SU2: {
+  case SU2: {
 
-      /*--- Local variables for reading the SU2 file. ---*/
-      string text_line;
-      ifstream mesh_file;
+    /*--- Local variables for reading the SU2 file. ---*/
+    string text_line;
+    ifstream mesh_file;
 
-      /*--- Open grid file ---*/
-      mesh_file.open(val_mesh_filename.c_str(), ios::in);
-      if (mesh_file.fail()) {
-        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
-      }
-
-      /*--- Read the SU2 mesh file until the dimension data is reached
-            or when it can be decided that it is not present. ---*/
-      while( getline (mesh_file, text_line) ) {
-
-        /*--- Search for the "NDIME" keyword to determine the number
-              of dimensions.  ---*/
-        if(text_line.find ("NDIME=",0) != string::npos) {
-          text_line.erase (0,6); nDim = atoi(text_line.c_str());
-          break;
-        }
-
-        /*--- If one of the keywords NELEM or NPOIN, NMARK is encountered,
-              it can be assumed that the NZONE keyword is not present and
-              the loop can be terminated. ---*/
-        if(text_line.find ("NELEM=",0) != string::npos) break;
-        if(text_line.find ("NPOIN=",0) != string::npos) break;
-        if(text_line.find ("NMARK=",0) != string::npos) break;
-      }
-
-      mesh_file.close();
-
-      /*--- Throw an error if the dimension was not found. ---*/
-      if (nDim == -1) {
-        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
-                       CURRENT_FUNCTION);
-      }
-
-      break;
+    /*--- Open grid file ---*/
+    mesh_file.open(val_mesh_filename.c_str(), ios::in);
+    if (mesh_file.fail()) {
+      SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
     }
 
-    case CGNS: {
+    /*--- Read the SU2 mesh file until the dimension data is reached
+            or when it can be decided that it is not present. ---*/
+    while( getline (mesh_file, text_line) ) {
+
+      /*--- Search for the "NDIME" keyword to determine the number
+              of dimensions.  ---*/
+      if(text_line.find ("NDIME=",0) != string::npos) {
+        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+        break;
+      }
+
+      /*--- If one of the keywords NELEM or NPOIN, NMARK is encountered,
+              it can be assumed that the NZONE keyword is not present and
+              the loop can be terminated. ---*/
+      if(text_line.find ("NELEM=",0) != string::npos) break;
+      if(text_line.find ("NPOIN=",0) != string::npos) break;
+      if(text_line.find ("NMARK=",0) != string::npos) break;
+    }
+
+    mesh_file.close();
+
+    /*--- Throw an error if the dimension was not found. ---*/
+    if (nDim == -1) {
+      SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+                     CURRENT_FUNCTION);
+    }
+
+    break;
+  }
+
+  case CGNS: {
 
 #ifdef HAVE_CGNS
 
-      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-      int fn, nbases, file_type;
-      int cell_dim, phys_dim;
-      char basename[CGNS_STRING_SIZE];
+    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+    int fn, nbases, file_type;
+    int cell_dim, phys_dim;
+    char basename[CGNS_STRING_SIZE];
 
-      /*--- Check whether the supplied file is truly a CGNS file. ---*/
-      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-        SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
-                       CURRENT_FUNCTION);
-      }
+    /*--- Check whether the supplied file is truly a CGNS file. ---*/
+    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+      SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
+                     CURRENT_FUNCTION);
+    }
 
-      /*--- Open the CGNS file for reading. The value of fn returned
+    /*--- Open the CGNS file for reading. The value of fn returned
             is the specific index number for this file and will be
             repeatedly used in the function calls. ---*/
-      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
+    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
 
-      /*--- Get the number of databases. This is the highest node
+    /*--- Get the number of databases. This is the highest node
             in the CGNS heirarchy. ---*/
-      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
+    if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
 
-      /*--- Check if there is more than one database. Throw an
+    /*--- Check if there is more than one database. Throw an
             error if there is because this reader can currently
             only handle one database. ---*/
-      if ( nbases > 1 )
-        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
-                       CURRENT_FUNCTION);
+    if ( nbases > 1 )
+      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
+                     CURRENT_FUNCTION);
 
-      /*--- Read the database. Note that the indexing starts at 1.
+    /*--- Read the database. Note that the indexing starts at 1.
             Afterwards close the file again. ---*/
-      if (cg_base_read(fn, 1, basename, &cell_dim, &phys_dim) != CG_OK) cg_error_exit();
-      if (cg_close(fn) != CG_OK) cg_error_exit();
+    if (cg_base_read(fn, 1, basename, &cell_dim, &phys_dim) != CG_OK) cg_error_exit();
+    if (cg_close(fn) != CG_OK) cg_error_exit();
 
-      /*--- Set the problem dimension as read from the CGNS file ---*/
-      nDim = cell_dim;
+    /*--- Set the problem dimension as read from the CGNS file ---*/
+    nDim = cell_dim;
 #endif
 
-      break;
-    }
+    break;
+  }
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -398,7 +398,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface           = NULL; Marker_Damper         = NULL;
 
   
-    /*--- Boundary Condition settings ---*/
+  /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
@@ -482,16 +482,16 @@ void CConfig::SetPointersNull(void) {
   Inc_Velocity_Init   = NULL;
 
   RefOriginMoment     = NULL;
-  CFL_AdaptParam      = NULL;            
+  CFL_AdaptParam      = NULL;
   CFL                 = NULL;
   HTP_Axis = NULL;
   PlaneTag            = NULL;
-  Kappa_Flow          = NULL;    
+  Kappa_Flow          = NULL;
   Kappa_AdjFlow       = NULL;
   Kappa_Heat          = NULL;
   Stations_Bounds     = NULL;
-  ParamDV             = NULL;     
-  DV_Value            = NULL;    
+  ParamDV             = NULL;
+  DV_Value            = NULL;
   Design_Variable     = NULL;
 
   Hold_GridFixed_Coord      = NULL;
@@ -535,7 +535,7 @@ void CConfig::SetPointersNull(void) {
   /* Harmonic Balance Frequency pointer */
   
   Omega_HB = NULL;
-    
+
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf            = NULL;
@@ -576,7 +576,7 @@ void CConfig::SetPointersNull(void) {
   FFDTag                = NULL;
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
- 
+
   Kind_Data_Riemann        = NULL;
   Riemann_Var1             = NULL;
   Riemann_Var2             = NULL;
@@ -803,9 +803,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
   /* DESCRIPTION: Critical Density, default value for MDM */
-   addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
+  addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
-   /*--- Options related to Viscosity Model ---*/
+  /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
@@ -830,9 +830,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
   addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONSTANT_PRANDTL_TURB);
 
- /*--- Options related to Constant Thermal Conductivity Model ---*/
+  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
- /* DESCRIPTION: default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
   
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
@@ -873,7 +873,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Option to choose the density model used in the incompressible flow solver. */
   addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, CONSTANT);
-    /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
+  /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
@@ -890,7 +890,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
   addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
-    /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
+  /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
   /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
@@ -975,9 +975,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-	/*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
+  /*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
-	/* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
+  /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   /* DESCRIPTION: Type of mesh motion */
   addEnumOption("REF_DIMENSIONALIZATION", Ref_NonDim, NonDim_Map, DIMENSIONAL);
@@ -1098,7 +1098,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief RAMP_ROTATING_FRAME\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_ROTATING_FRAME", RampRotatingFrame, false);
   default_rampRotFrame_coeff[0] = 0; default_rampRotFrame_coeff[1] = 1.0; default_rampRotFrame_coeff[2] = 1000.0;
-      /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
+  /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
   addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_rampRotFrame_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
@@ -1220,7 +1220,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("ENGINE_INFLOW_TYPE", Kind_Engine_Inflow, Engine_Inflow_Map, FAN_FACE_MACH);
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
-    
+
   /* DESCRIPTION:  Compute buffet sensor */
   addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
   /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
@@ -1584,7 +1584,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
   /* DESCRIPTION: Use an inconsistent (primal/dual) discrete adjoint formulation */
   addBoolOption("INCONSISTENT_DISC", Inconsistent_Disc, false);
-   /* DESCRIPTION:  */
+  /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
    * \n DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n DEFAULT: NO \ingroup Config*/
@@ -1722,7 +1722,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
-    /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
+  /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
@@ -1874,15 +1874,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
-	// these options share nDV as their size in the option references; not a good idea
-	/*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
+  // these options share nDV as their size in the option references; not a good idea
+  /*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
   /*--- Options related to the grid deformation ---*/
 
-	/* DESCRIPTION: Kind of deformation */
-	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
-	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
+  /* DESCRIPTION: Kind of deformation */
+  addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+  /* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
-	/* DESCRIPTION: Parameters of the shape deformation
+  /* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_RADIUS_2D ( FFDBox ID )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
@@ -1902,7 +1902,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+  addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
@@ -1913,13 +1913,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("surface_sensitivity.dat"));
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("DV_SENSITIVITY_FORMAT", Sensitivity_FileFormat, Sensitivity_Map, SU2_NATIVE);
-	/* DESCRIPTION: Hold the grid fixed in a region */
+  /* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
-	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
-	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-	/* DESCRIPTION: Visualize the deformation (surface grid) */
+  default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
+  default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
+  /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
+  addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
+  /* DESCRIPTION: Visualize the deformation (surface grid) */
   addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
   /* DESCRIPTION: Visualize the deformation (volume grid) */
   addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
@@ -2172,7 +2172,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * Sets Kind_Interpolation \ingroup Config
    */
   addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
-    
+
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink
    * Sets Kind_RadialBasis \ingroup Config
@@ -2260,7 +2260,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
-	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
+  addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
@@ -2350,10 +2350,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
-    
+
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
-    
+
   /* DESCRIPTION: Writing surface solution file frequency for dual time */
   addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
 
@@ -2362,7 +2362,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
-    
+
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
@@ -2454,28 +2454,28 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       /*--- See if it's a python option ---*/
 
       if (option_map.find(option_name) == option_map.end()) {
-          string newString;
-          newString.append(option_name);
-          newString.append(": invalid option name");
-          newString.append(". Check current SU2 options in config_template.cfg.");
-          newString.append("\n");
-          if (!option_name.compare("AD_COEFF_FLOW")) newString.append("AD_COEFF_FLOW= (1st, 2nd, 4th) is now JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("AD_COEFF_ADJFLOW")) newString.append("AD_COEFF_ADJFLOW= (1st, 2nd, 4th) is now ADJ_JST_SENSOR_COEFF= (2nd, 4th).\n");
-          if (!option_name.compare("SPATIAL_ORDER_FLOW")) newString.append("SPATIAL_ORDER_FLOW is now the boolean MUSCL_FLOW and the appropriate SLOPE_LIMITER_FLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJFLOW")) newString.append("SPATIAL_ORDER_ADJFLOW is now the boolean MUSCL_ADJFLOW and the appropriate SLOPE_LIMITER_ADJFLOW.\n");
-          if (!option_name.compare("SPATIAL_ORDER_TURB")) newString.append("SPATIAL_ORDER_TURB is now the boolean MUSCL_TURB and the appropriate SLOPE_LIMITER_TURB.\n");
-          if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
-          if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
-          if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
-          if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
-          if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
-          if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
-          if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
-          if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
-          if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
+        string newString;
+        newString.append(option_name);
+        newString.append(": invalid option name");
+        newString.append(". Check current SU2 options in config_template.cfg.");
+        newString.append("\n");
+        if (!option_name.compare("AD_COEFF_FLOW")) newString.append("AD_COEFF_FLOW= (1st, 2nd, 4th) is now JST_SENSOR_COEFF= (2nd, 4th).\n");
+        if (!option_name.compare("AD_COEFF_ADJFLOW")) newString.append("AD_COEFF_ADJFLOW= (1st, 2nd, 4th) is now ADJ_JST_SENSOR_COEFF= (2nd, 4th).\n");
+        if (!option_name.compare("SPATIAL_ORDER_FLOW")) newString.append("SPATIAL_ORDER_FLOW is now the boolean MUSCL_FLOW and the appropriate SLOPE_LIMITER_FLOW.\n");
+        if (!option_name.compare("SPATIAL_ORDER_ADJFLOW")) newString.append("SPATIAL_ORDER_ADJFLOW is now the boolean MUSCL_ADJFLOW and the appropriate SLOPE_LIMITER_ADJFLOW.\n");
+        if (!option_name.compare("SPATIAL_ORDER_TURB")) newString.append("SPATIAL_ORDER_TURB is now the boolean MUSCL_TURB and the appropriate SLOPE_LIMITER_TURB.\n");
+        if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
+        if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
+        if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
+        if (!option_name.compare("DEFORM_TOL_FACTOR")) newString.append("DEFORM_TOL_FACTOR is no longer used.\n Set DEFORM_LINEAR_SOLVER_ERROR to define the minimum residual for grid deformation.\n");
+        if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
+        if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
+        if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
+        if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
+        if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
 
-          errorString.append(newString);
-          err_count++;
+        errorString.append(newString);
+        err_count++;
         continue;
       }
 
@@ -2509,13 +2509,13 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   }
 
   /*--- See if there were any errors parsing the config file ---*/
-      
+
   if (errorString.size() != 0) {
     SU2_MPI::Error(errorString, CURRENT_FUNCTION);
   }
 
   /*--- Set the default values for all of the options that weren't set ---*/
-      
+
   for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
     option_map[iter->first]->SetDefault();
   }
@@ -2636,7 +2636,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Wall_Functions = true;
       
       if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+          || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
 
         SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
@@ -2647,9 +2647,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Fixed_CM_Mode) {
     Grid_Movement= true;
-  	 nGridMovement = 1;
-  	 Kind_GridMovement = new unsigned short[nGridMovement];
-  	 Kind_GridMovement[0] = MOVING_HTP;
+    nGridMovement = 1;
+    Kind_GridMovement = new unsigned short[nGridMovement];
+    Kind_GridMovement[0] = MOVING_HTP;
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
@@ -2738,8 +2738,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         su2double wt=1.0;
         delete[] Kind_ObjFunc;
         if (Weight_ObjFunc!=NULL){
-         wt = Weight_ObjFunc[0];
-         delete[] Weight_ObjFunc;
+          wt = Weight_ObjFunc[0];
+          delete[] Weight_ObjFunc;
         }
         Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
         Weight_ObjFunc = new su2double[nMarker_Monitoring];
@@ -2778,31 +2778,31 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     unsigned short Obj_0 = Kind_ObjFunc[0];
     for (unsigned short iObj=1; iObj<nObj; iObj++){
       switch(Kind_ObjFunc[iObj]) {
-        case INVERSE_DESIGN_PRESSURE:
-        case INVERSE_DESIGN_HEATFLUX:
-        case THRUST_COEFFICIENT:
-        case TORQUE_COEFFICIENT:
-        case FIGURE_OF_MERIT:
-        case SURFACE_TOTAL_PRESSURE:
-        case SURFACE_STATIC_PRESSURE:
-        case SURFACE_MASSFLOW:
-        case SURFACE_UNIFORMITY:
-        case SURFACE_SECONDARY:
-        case SURFACE_MOM_DISTORTION:
-        case SURFACE_SECOND_OVER_UNIFORM:
-        case SURFACE_PRESSURE_DROP:
-        case CUSTOM_OBJFUNC:
-          if (Kind_ObjFunc[iObj] != Obj_0) {
-            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
-                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
-                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
-                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
-                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
-          }
-          break;
-        default:
-          break;
+      case INVERSE_DESIGN_PRESSURE:
+      case INVERSE_DESIGN_HEATFLUX:
+      case THRUST_COEFFICIENT:
+      case TORQUE_COEFFICIENT:
+      case FIGURE_OF_MERIT:
+      case SURFACE_TOTAL_PRESSURE:
+      case SURFACE_STATIC_PRESSURE:
+      case SURFACE_MASSFLOW:
+      case SURFACE_UNIFORMITY:
+      case SURFACE_SECONDARY:
+      case SURFACE_MOM_DISTORTION:
+      case SURFACE_SECOND_OVER_UNIFORM:
+      case SURFACE_PRESSURE_DROP:
+      case CUSTOM_OBJFUNC:
+        if (Kind_ObjFunc[iObj] != Obj_0) {
+          SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
+                         string("problem or as a single objective applied to multiple monitoring markers:\n")+
+                         string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
+                         string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
+                         string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
+                         string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+        }
+        break;
+      default:
+        break;
       }
     }
   }
@@ -2830,13 +2830,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (val_izone == 0) {Kind_Solver = Kind_Solver_Fluid_FSI; FSI_Problem = true;}
 
     else {Kind_Solver = Kind_Solver_Struc_FSI; FSI_Problem = true;
-    Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
-    Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
-    Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-    Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
-    // Discrete adjoint linear solver
-    Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
-    Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
+      Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
+      Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+      Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
+      Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
+      // Discrete adjoint linear solver
+      Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
+      Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
 
     Multizone_Residual = true;
   }
@@ -2878,13 +2878,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Unsteady_Simulation == STEADY ||
       Unsteady_Simulation == HARMONIC_BALANCE)
- { Wrt_Unsteady = false; }
+  { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
   if (Kind_Solver == FEM_ELASTICITY) {
 
-	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-	  else { Wrt_Dynamic = true; }
+    if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
+    else { Wrt_Dynamic = true; }
 
   } else {
     Wrt_Dynamic = false;
@@ -3089,7 +3089,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
   if (Kind_SU2 != SU2_DEF) {
-  	Opt_RelaxFactor = 1.0;
+    Opt_RelaxFactor = 1.0;
   }
 
   /*--- If it is not specified, set the mesh motion mach number
@@ -3397,26 +3397,26 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Setting Harmonic Balance period from the config file */
 
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
-  	HarmonicBalance_Period = GetHarmonicBalance_Period();
-  	if (HarmonicBalance_Period < 0)  {
+    HarmonicBalance_Period = GetHarmonicBalance_Period();
+    if (HarmonicBalance_Period < 0)  {
       SU2_MPI::Error("Not a valid value for time period!!", CURRENT_FUNCTION);
-  	}
-  	/* Initialize the Harmonic balance Frequency pointer */
-  	if (Omega_HB == NULL) {
-  		Omega_HB = new su2double[nOmega_HB];
-  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
-  			Omega_HB[iZone] = 0.0;
-  	}else {
-  		if (nOmega_HB != nTimeInstances) {
+    }
+    /* Initialize the Harmonic balance Frequency pointer */
+    if (Omega_HB == NULL) {
+      Omega_HB = new su2double[nOmega_HB];
+      for (iZone = 0; iZone < nOmega_HB; iZone++ )
+        Omega_HB[iZone] = 0.0;
+    }else {
+      if (nOmega_HB != nTimeInstances) {
         SU2_MPI::Error("Length of omega_HB  must match the number TIME_INSTANCES!!" , CURRENT_FUNCTION);
       }
-  	}
+    }
   }
 
-    /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
+  /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
      The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
-    
+
   /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
       if (!(GetGrid_Movement())) {
           // No grid movement - Time period from config file //
@@ -3435,7 +3435,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
               periods[0] = 2*PI_NUMBER/Omega_mag_rot;
           else
               periods[0] = 0.0;
-          
+
           //--- pitching: ---//
           
           su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
@@ -3443,7 +3443,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
               periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
           else
               periods[1] = 0.0;
-          
+
           //--- plunging: ---//
           
           su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
@@ -3451,7 +3451,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
               periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
           else
               periods[2] = 0.0;
-          
+
           //--- determine which period is largest ---//
           
           unsigned short iVar;
@@ -3463,12 +3463,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           
           delete periods;
       }
-    
+
   }*/
   
 
   
-    
+
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
@@ -3671,7 +3671,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     } else {
       
       /*--- Add additional elements equal to last element ---*/
-       
+
       for (unsigned int i = 0; i < nMG_PostSmooth; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
@@ -3865,39 +3865,39 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (nElasticityMod == 0) {
-  nElasticityMod = 1;
-  ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
+    nElasticityMod = 1;
+    ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
   }
 
   if (nPoissonRatio == 0) {
-  nPoissonRatio = 1;
-  PoissonRatio = new su2double[1]; PoissonRatio[0] = 0.30;
+    nPoissonRatio = 1;
+    PoissonRatio = new su2double[1]; PoissonRatio[0] = 0.30;
   }
 
   if (nMaterialDensity == 0) {
-  nMaterialDensity = 1;
-  MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
+    nMaterialDensity = 1;
+    MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
   }
 
   if (nElectric_Constant == 0) {
-  nElectric_Constant = 1;
-  Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;
+    nElectric_Constant = 1;
+    Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;
   }
 
   if (nElectric_Field == 0) {
-	nElectric_Field = 1;
-	Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
+    nElectric_Field = 1;
+    Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
   }
 
   if (nDim_RefNode == 0) {
-  nDim_RefNode = 3;
-  RefNode_Displacement = new su2double[3];
-  RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
+    nDim_RefNode = 3;
+    RefNode_Displacement = new su2double[3];
+    RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
   }
 
   if (nDim_Electric_Field == 0) {
-	nDim_Electric_Field = 2;
-	Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
+    nDim_Electric_Field = 2;
+    Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
@@ -3919,43 +3919,43 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (( Kind_Solver == TNE2_EULER             ) ||
       ( Kind_Solver == TNE2_NAVIER_STOKES     )  ) {
 
-      bool init_err;
-      unsigned short maxEl = 0;
-      unsigned short iSpecies, jSpecies, iEl;
-      su2double mf;
+    bool init_err;
+    unsigned short maxEl = 0;
+    unsigned short iSpecies, jSpecies, iEl;
+    su2double mf;
 
-      switch (Kind_GasModel) {
-        case ONESPECIES:
-          /*--- Define parameters of the gas model ---*/
-          nSpecies    = 1;
-          ionization  = false;
+    switch (Kind_GasModel) {
+    case ONESPECIES:
+      /*--- Define parameters of the gas model ---*/
+      nSpecies    = 1;
+      ionization  = false;
 
-          /*--- Allocate vectors for gas properties ---*/
-          Molar_Mass         = new su2double[nSpecies];
-          CharVibTemp        = new su2double[nSpecies];
-          RotationModes      = new su2double[nSpecies];
-          Enthalpy_Formation = new su2double[nSpecies];
-          Wall_Catalycity    = new su2double[nSpecies];
-          Ref_Temperature    = new su2double[nSpecies];
-          nElStates          = new unsigned short[nSpecies];
+      /*--- Allocate vectors for gas properties ---*/
+      Molar_Mass         = new su2double[nSpecies];
+      CharVibTemp        = new su2double[nSpecies];
+      RotationModes      = new su2double[nSpecies];
+      Enthalpy_Formation = new su2double[nSpecies];
+      Wall_Catalycity    = new su2double[nSpecies];
+      Ref_Temperature    = new su2double[nSpecies];
+      nElStates          = new unsigned short[nSpecies];
 
-          MassFrac_FreeStream = new su2double[nSpecies];
-          MassFrac_FreeStream[0] = 1.0;
+      MassFrac_FreeStream = new su2double[nSpecies];
+      MassFrac_FreeStream[0] = 1.0;
 
-          /*--- Assign gas properties ---*/
-          // Rotational modes of energy storage
-          RotationModes[0] = 2.0;
-          // Molar mass [kg/kmol]
-          Molar_Mass[0] = 14.0067+15.9994;
-          // Characteristic vibrational temperatures for calculating e_vib [K]
-          //CharVibTemp[0] = 3395.0;
-          CharVibTemp[0] = 1000.0;
-          // Formation enthalpy: (JANAF values, [KJ/Kmol])
-          Enthalpy_Formation[0] = 0.0;					//N2
-          // Reference temperature (JANAF values, [K])
-          Ref_Temperature[0] = 0.0;
+      /*--- Assign gas properties ---*/
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 14.0067+15.9994;
+      // Characteristic vibrational temperatures for calculating e_vib [K]
+      //CharVibTemp[0] = 3395.0;
+      CharVibTemp[0] = 1000.0;
+      // Formation enthalpy: (JANAF values, [KJ/Kmol])
+      Enthalpy_Formation[0] = 0.0;					//N2
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
 
-          /*        nElStates[0] = 0;
+      /*        nElStates[0] = 0;
            CharElTemp   = new double *[nSpecies];
            degen        = new double *[nSpecies];
 
@@ -3967,649 +3967,649 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
            CharElTemp[0] = OSPthetae;
            degen[0] = OSPg;*/
 
-          break;
+      break;
 
-        case N2:
+    case N2:
 
-          /*--- Check for errors in the initialization ---*/
-          init_err = false;
-          if (nSpecies != 2) {
-            cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
-            init_err = true;
-          }
-          mf = 0.0;
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            mf += Gas_Composition[iSpecies];
-          if (mf != 1.0) {
-            cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
-            init_err = true;
-          }
-
-          /*--- Define parameters of the gas model ---*/
-          nReactions  = 2;
-          ionization  = false;
-
-          /*--- Allocate vectors for gas properties ---*/
-          Wall_Catalycity      = new su2double[nSpecies];
-          Molar_Mass           = new su2double[nSpecies];
-          CharVibTemp          = new su2double[nSpecies];
-          RotationModes        = new su2double[nSpecies];
-          Enthalpy_Formation   = new su2double[nSpecies];
-          Ref_Temperature      = new su2double[nSpecies];
-          Diss                 = new su2double[nSpecies];
-          ArrheniusCoefficient = new su2double[nReactions];
-          ArrheniusEta         = new su2double[nReactions];
-          ArrheniusTheta       = new su2double[nReactions];
-          Tcf_a                = new su2double[nReactions];
-          Tcf_b                = new su2double[nReactions];
-          Tcb_a                = new su2double[nReactions];
-          Tcb_b                = new su2double[nReactions];
-          nElStates            = new unsigned short[nSpecies];
-          Reactions = new int**[nReactions];
-          for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-            Reactions[iRxn] = new int*[2];
-            for (unsigned short ii = 0; ii < 2; ii++)
-              Reactions[iRxn][ii] = new int[6];
-          }
-
-          Blottner  = new su2double*[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            Blottner[iSpecies] = new su2double[3];
-
-          // Omega[iSpecies][jSpecies][iCoeff]
-          Omega00 = new su2double**[nSpecies];
-          Omega11 = new su2double**[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            Omega00[iSpecies] = new su2double*[nSpecies];
-            Omega11[iSpecies] = new su2double*[nSpecies];
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-              Omega00[iSpecies][jSpecies] = new su2double[4];
-              Omega11[iSpecies][jSpecies] = new su2double[4];
-            }
-          }
-
-          MassFrac_FreeStream = new su2double[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
-
-          /*--- Assign gas properties ---*/
-
-          // Wall mass fractions for catalytic boundaries
-          Wall_Catalycity[0] = 0.999;
-          Wall_Catalycity[1] = 0.001;
-
-          // Rotational modes of energy storage
-          RotationModes[0] = 2.0;
-          RotationModes[1] = 0.0;
-
-          // Molar mass [kg/kmol]
-          Molar_Mass[0] = 2.0*14.0067;
-          Molar_Mass[1] = 14.0067;
-
-          // Characteristic vibrational temperatures
-          CharVibTemp[0] = 3395.0;
-          CharVibTemp[1] = 0.0;
-
-          // Formation enthalpy: (JANAF values [KJ/Kmol])
-          // J/kg - from Scalabrin
-          Enthalpy_Formation[0] = 0.0;					//N2
-          Enthalpy_Formation[1] = 3.36E7;		//N
-
-          // Reference temperature (JANAF values, [K])
-          Ref_Temperature[0] = 0.0;
-          Ref_Temperature[1] = 0.0;
-
-          // Blottner viscosity coefficients
-          // A                        // B                        // C
-          Blottner[0][0] = 2.68E-2;   Blottner[0][1] = 3.18E-1;   Blottner[0][2] = -1.13E1;  // N2
-          Blottner[1][0] = 1.16E-2;   Blottner[1][1] = 6.03E-1;   Blottner[1][2] = -1.24E1;  // N
-
-          // Number of electron states
-          nElStates[0] = 15;                    // N2
-          nElStates[1] = 3;                     // N
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            maxEl = max(maxEl, nElStates[iSpecies]);
-
-          /*--- Allocate electron data arrays ---*/
-          CharElTemp = new su2double*[nSpecies];
-          degen      = new su2double*[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            CharElTemp[iSpecies] = new su2double[maxEl];
-            degen[iSpecies]      = new su2double[maxEl];
-          }
-
-          /*--- Initialize the arrays ---*/
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (iEl = 0; iEl < maxEl; iEl++) {
-              CharElTemp[iSpecies][iEl] = 0.0;
-              degen[iSpecies][iEl] = 0.0;
-            }
-          }
-
-          /*--- Assign values to data structures ---*/
-          // N2: 15 states
-          CharElTemp[0][0]  = 0.000000000000000E+00;
-          CharElTemp[0][1]  = 7.223156514095200E+04;
-          CharElTemp[0][2]  = 8.577862640384000E+04;
-          CharElTemp[0][3]  = 8.605026716160000E+04;
-          CharElTemp[0][4]  = 9.535118627874400E+04;
-          CharElTemp[0][5]  = 9.805635702203200E+04;
-          CharElTemp[0][6]  = 9.968267656935200E+04;
-          CharElTemp[0][7]  = 1.048976467715200E+05;
-          CharElTemp[0][8]  = 1.116489555200000E+05;
-          CharElTemp[0][9]  = 1.225836470400000E+05;
-          CharElTemp[0][10] = 1.248856873600000E+05;
-          CharElTemp[0][11] = 1.282476158188320E+05;
-          CharElTemp[0][12] = 1.338060936000000E+05;
-          CharElTemp[0][13] = 1.404296391107200E+05;
-          CharElTemp[0][14] = 1.504958859200000E+05;
-          degen[0][0]  = 1;
-          degen[0][1]  = 3;
-          degen[0][2]  = 6;
-          degen[0][3]  = 6;
-          degen[0][4]  = 3;
-          degen[0][5]  = 1;
-          degen[0][6]  = 2;
-          degen[0][7]  = 2;
-          degen[0][8]  = 5;
-          degen[0][9]  = 1;
-          degen[0][10] = 6;
-          degen[0][11] = 6;
-          degen[0][12] = 10;
-          degen[0][13] = 6;
-          degen[0][14] = 6;
-          // N: 3 states
-          CharElTemp[1][0] = 0.000000000000000E+00;
-          CharElTemp[1][1] = 2.766469645581980E+04;
-          CharElTemp[1][2] = 4.149309313560210E+04;
-          degen[1][0] = 4;
-          degen[1][1] = 10;
-          degen[1][2] = 6;
-
-          /*--- Set Arrhenius coefficients for chemical reactions ---*/
-          // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
-          //       to (m^3/kmol-s) to be consistent with the rest of the code
-          // Pre-exponential factor
-          ArrheniusCoefficient[0]  = 7.0E21;
-          ArrheniusCoefficient[1]  = 3.0E22;
-          // Rate-controlling temperature exponent
-          ArrheniusEta[0]  = -1.60;
-          ArrheniusEta[1]  = -1.60;
-          // Characteristic temperature
-          ArrheniusTheta[0] = 113200.0;
-          ArrheniusTheta[1] = 113200.0;
-
-          /*--- Set reaction maps ---*/
-          // N2 + N2 -> 2N + N2
-          Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
-          Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
-          // N2 + N -> 2N + N
-          Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
-          Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
-
-          /*--- Set rate-controlling temperature exponents ---*/
-          //  -----------  Tc = Ttr^a * Tve^b  -----------
-          //
-          // Forward Reactions
-          //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-          //   Exchange:          a = 1,   b = 0
-          //   Impact ionization: a = 0,   b = 1
-          //
-          // Backward Reactions
-          //   Recomb ionization:      a = 0, b = 1
-          //   Impact ionization:      a = 0, b = 1
-          //   N2 impact dissociation: a = 0, b = 1
-          //   Others:                 a = 1, b = 0
-          Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
-          Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
-
-          /*--- Dissociation potential [KJ/kg] ---*/
-          Diss[0] = 3.36E4;
-          Diss[1] = 0.0;
-
-          /*--- Collision integral data ---*/
-          Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-          Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
-          Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
-          Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
-
-          Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-          Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
-          Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
-          Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
-
-          break;
-
-        case AIR5:
-
-          /*--- Check for errors in the initialization ---*/
-          init_err = false;
-          if (nSpecies != 5) {
-            cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
-            init_err = true;
-          }
-          mf = 0.0;
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            mf += Gas_Composition[iSpecies];
-          if (mf != 1.0) {
-            cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
-            init_err = true;
-          }
-
-          /*--- Define parameters of the gas model ---*/
-          nReactions  = 17;
-          ionization  = false;
-
-          /*--- Allocate vectors for gas properties ---*/
-          Wall_Catalycity      = new su2double[nSpecies];
-          Molar_Mass           = new su2double[nSpecies];
-          CharVibTemp          = new su2double[nSpecies];
-          RotationModes        = new su2double[nSpecies];
-          Enthalpy_Formation   = new su2double[nSpecies];
-          Ref_Temperature      = new su2double[nSpecies];
-          ArrheniusCoefficient = new su2double[nReactions];
-          ArrheniusEta         = new su2double[nReactions];
-          ArrheniusTheta       = new su2double[nReactions];
-          Tcf_a                = new su2double[nReactions];
-          Tcf_b                = new su2double[nReactions];
-          Tcb_a                = new su2double[nReactions];
-          Tcb_b                = new su2double[nReactions];
-          nElStates            = new unsigned short[nSpecies];
-          Reactions            = new int**[nReactions];
-          for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
-            Reactions[iRxn] = new int*[2];
-            for (unsigned short ii = 0; ii < 2; ii++)
-              Reactions[iRxn][ii] = new int[6];
-          }
-
-          Blottner  = new su2double*[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          Blottner[iSpecies] = new su2double[3];
-
-          // Omega[iSpecies][jSpecies][iCoeff]
-          Omega00 = new su2double**[nSpecies];
-          Omega11 = new su2double**[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            Omega00[iSpecies] = new su2double*[nSpecies];
-            Omega11[iSpecies] = new su2double*[nSpecies];
-            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-              Omega00[iSpecies][jSpecies] = new su2double[4];
-              Omega11[iSpecies][jSpecies] = new su2double[4];
-            }
-          }
-
-          // Wall mass fractions for catalytic boundaries
-          Wall_Catalycity[0] = 0.4;
-          Wall_Catalycity[1] = 0.4;
-          Wall_Catalycity[2] = 0.1;
-          Wall_Catalycity[3] = 0.05;
-          Wall_Catalycity[4] = 0.05;
-
-          // Free stream mass fractions
-          MassFrac_FreeStream = new su2double[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
-
-          /*--- Assign gas properties ---*/
-          // Rotational modes of energy storage
-          RotationModes[0] = 2.0;
-          RotationModes[1] = 2.0;
-          RotationModes[2] = 2.0;
-          RotationModes[3] = 0.0;
-          RotationModes[4] = 0.0;
-
-          // Molar mass [kg/kmol]
-          Molar_Mass[0] = 2.0*14.0067;
-          Molar_Mass[1] = 2.0*15.9994;
-          Molar_Mass[2] = 14.0067+15.9994;
-          Molar_Mass[3] = 14.0067;
-          Molar_Mass[4] = 15.9994;
-
-          //Characteristic vibrational temperatures
-          CharVibTemp[0] = 3395.0;
-          CharVibTemp[1] = 2239.0;
-          CharVibTemp[2] = 2817.0;
-          CharVibTemp[3] = 0.0;
-          CharVibTemp[4] = 0.0;
-
-          // Formation enthalpy: (Scalabrin values, J/kg)
-          Enthalpy_Formation[0] = 0.0;			//N2
-          Enthalpy_Formation[1] = 0.0;			//O2
-          Enthalpy_Formation[2] = 3.0E6;    //NO
-          Enthalpy_Formation[3] = 3.36E7;		//N
-          Enthalpy_Formation[4] = 1.54E7;		//O
-
-          // Reference temperature (JANAF values, [K])
-          Ref_Temperature[0] = 0.0;
-          Ref_Temperature[1] = 0.0;
-          Ref_Temperature[2] = 0.0;
-          Ref_Temperature[3] = 0.0;
-          Ref_Temperature[4] = 0.0;
-  //        Ref_Temperature[2] = 298.15;
-  //        Ref_Temperature[3] = 298.15;
-  //        Ref_Temperature[4] = 298.15;
-
-          // Blottner viscosity coefficients
-          // A                        // B                        // C
-          Blottner[0][0] = 2.68E-2;   Blottner[0][1] =  3.18E-1;  Blottner[0][2] = -1.13E1;  // N2
-          Blottner[1][0] = 4.49E-2;   Blottner[1][1] = -8.26E-2;  Blottner[1][2] = -9.20E0;  // O2
-          Blottner[2][0] = 4.36E-2;   Blottner[2][1] = -3.36E-2;  Blottner[2][2] = -9.58E0;  // NO
-          Blottner[3][0] = 1.16E-2;   Blottner[3][1] =  6.03E-1;  Blottner[3][2] = -1.24E1;  // N
-          Blottner[4][0] = 2.03E-2;   Blottner[4][1] =  4.29E-1;  Blottner[4][2] = -1.16E1;  // O
-
-          // Number of electron states
-          nElStates[0] = 15;                    // N2
-          nElStates[1] = 7;                     // O2
-          nElStates[2] = 16;                    // NO
-          nElStates[3] = 3;                     // N
-          nElStates[4] = 5;                     // O
-          /////
-
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            maxEl = max(maxEl, nElStates[iSpecies]);
-
-          /*--- Allocate electron data arrays ---*/
-          CharElTemp = new su2double*[nSpecies];
-          degen      = new su2double*[nSpecies];
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            CharElTemp[iSpecies] = new su2double[maxEl];
-            degen[iSpecies]      = new su2double[maxEl];
-          }
-
-          /*--- Initialize the arrays ---*/
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            for (iEl = 0; iEl < maxEl; iEl++) {
-              CharElTemp[iSpecies][iEl] = 0.0;
-              degen[iSpecies][iEl] = 0.0;
-            }
-          }
-
-          //N2: 15 states
-          CharElTemp[0][0]  = 0.000000000000000E+00;
-          CharElTemp[0][1]  = 7.223156514095200E+04;
-          CharElTemp[0][2]  = 8.577862640384000E+04;
-          CharElTemp[0][3]  = 8.605026716160000E+04;
-          CharElTemp[0][4]  = 9.535118627874400E+04;
-          CharElTemp[0][5]  = 9.805635702203200E+04;
-          CharElTemp[0][6]  = 9.968267656935200E+04;
-          CharElTemp[0][7]  = 1.048976467715200E+05;
-          CharElTemp[0][8]  = 1.116489555200000E+05;
-          CharElTemp[0][9]  = 1.225836470400000E+05;
-          CharElTemp[0][10] = 1.248856873600000E+05;
-          CharElTemp[0][11] = 1.282476158188320E+05;
-          CharElTemp[0][12] = 1.338060936000000E+05;
-          CharElTemp[0][13] = 1.404296391107200E+05;
-          CharElTemp[0][14] = 1.504958859200000E+05;
-          degen[0][0]  = 1;
-          degen[0][1]  = 3;
-          degen[0][2]  = 6;
-          degen[0][3]  = 6;
-          degen[0][4]  = 3;
-          degen[0][5]  = 1;
-          degen[0][6]  = 2;
-          degen[0][7]  = 2;
-          degen[0][8]  = 5;
-          degen[0][9]  = 1;
-          degen[0][10] = 6;
-          degen[0][11] = 6;
-          degen[0][12] = 10;
-          degen[0][13] = 6;
-          degen[0][14] = 6;
-
-          // O2: 7 states
-          CharElTemp[1][0] = 0.000000000000000E+00;
-          CharElTemp[1][1] = 1.139156019700800E+04;
-          CharElTemp[1][2] = 1.898473947826400E+04;
-          CharElTemp[1][3] = 4.755973576639200E+04;
-          CharElTemp[1][4] = 4.991242097343200E+04;
-          CharElTemp[1][5] = 5.092268575561600E+04;
-          CharElTemp[1][6] = 7.189863255967200E+04;
-          degen[1][0] = 3;
-          degen[1][1] = 2;
-          degen[1][2] = 1;
-          degen[1][3] = 1;
-          degen[1][4] = 6;
-          degen[1][5] = 3;
-          degen[1][6] = 3;
-
-          // NO: 16 states
-          CharElTemp[2][0]  = 0.000000000000000E+00;
-          CharElTemp[2][1]  = 5.467345760000000E+04;
-          CharElTemp[2][2]  = 6.317139627802400E+04;
-          CharElTemp[2][3]  = 6.599450342445600E+04;
-          CharElTemp[2][4]  = 6.906120960000000E+04;
-          CharElTemp[2][5]  = 7.049998480000000E+04;
-          CharElTemp[2][6]  = 7.491055017560000E+04;
-          CharElTemp[2][7]  = 7.628875293968000E+04;
-          CharElTemp[2][8]  = 8.676188537552000E+04;
-          CharElTemp[2][9]  = 8.714431182368000E+04;
-          CharElTemp[2][10] = 8.886077063728000E+04;
-          CharElTemp[2][11] = 8.981755614528000E+04;
-          CharElTemp[2][12] = 8.988445919208000E+04;
-          CharElTemp[2][13] = 9.042702132000000E+04;
-          CharElTemp[2][14] = 9.064283760000000E+04;
-          CharElTemp[2][15] = 9.111763341600000E+04;
-          degen[2][0]  = 4;
-          degen[2][1]  = 8;
-          degen[2][2]  = 2;
-          degen[2][3]  = 4;
-          degen[2][4]  = 4;
-          degen[2][5]  = 4;
-          degen[2][6]  = 4;
-          degen[2][7]  = 2;
-          degen[2][8]  = 4;
-          degen[2][9]  = 2;
-          degen[2][10] = 4;
-          degen[2][11] = 4;
-          degen[2][12] = 2;
-          degen[2][13] = 2;
-          degen[2][14] = 2;
-          degen[2][15] = 4;
-
-          // N: 3 states
-          CharElTemp[3][0] = 0.000000000000000E+00;
-          CharElTemp[3][1] = 2.766469645581980E+04;
-          CharElTemp[3][2] = 4.149309313560210E+04;
-          degen[3][0] = 4;
-          degen[3][1] = 10;
-          degen[3][2] = 6;
-
-          // O: 5 states
-          CharElTemp[4][0] = 0.000000000000000E+00;
-          CharElTemp[4][1] = 2.277077570280000E+02;
-          CharElTemp[4][2] = 3.265688785704000E+02;
-          CharElTemp[4][3] = 2.283028632262240E+04;
-          CharElTemp[4][4] = 4.861993036434160E+04;
-          degen[4][0] = 5;
-          degen[4][1] = 3;
-          degen[4][2] = 1;
-          degen[4][3] = 5;
-          degen[4][4] = 1;
-
-          /*--- Set reaction maps ---*/
-          // N2 dissociation
-          Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
-          Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
-          Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
-          Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
-          Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
-          // O2 dissociation
-          Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
-          Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
-          Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
-          Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
-          Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
-          // NO dissociation
-          Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
-          Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
-          Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
-          Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
-          Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
-          // N2 + O -> NO + N
-          Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
-          // NO + O -> O2 + N
-          Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
-
-          /*--- Set Arrhenius coefficients for reactions ---*/
-          // Pre-exponential factor
-          ArrheniusCoefficient[0]  = 7.0E21;
-          ArrheniusCoefficient[1]  = 7.0E21;
-          ArrheniusCoefficient[2]  = 7.0E21;
-          ArrheniusCoefficient[3]  = 3.0E22;
-          ArrheniusCoefficient[4]  = 3.0E22;
-          ArrheniusCoefficient[5]  = 2.0E21;
-          ArrheniusCoefficient[6]  = 2.0E21;
-          ArrheniusCoefficient[7]  = 2.0E21;
-          ArrheniusCoefficient[8]  = 1.0E22;
-          ArrheniusCoefficient[9]  = 1.0E22;
-          ArrheniusCoefficient[10] = 5.0E15;
-          ArrheniusCoefficient[11] = 5.0E15;
-          ArrheniusCoefficient[12] = 5.0E15;
-          ArrheniusCoefficient[13] = 1.1E17;
-          ArrheniusCoefficient[14] = 1.1E17;
-          ArrheniusCoefficient[15] = 6.4E17;
-          ArrheniusCoefficient[16] = 8.4E12;
-
-          // Rate-controlling temperature exponent
-          ArrheniusEta[0]  = -1.60;
-          ArrheniusEta[1]  = -1.60;
-          ArrheniusEta[2]  = -1.60;
-          ArrheniusEta[3]  = -1.60;
-          ArrheniusEta[4]  = -1.60;
-          ArrheniusEta[5]  = -1.50;
-          ArrheniusEta[6]  = -1.50;
-          ArrheniusEta[7]  = -1.50;
-          ArrheniusEta[8]  = -1.50;
-          ArrheniusEta[9]  = -1.50;
-          ArrheniusEta[10] = 0.0;
-          ArrheniusEta[11] = 0.0;
-          ArrheniusEta[12] = 0.0;
-          ArrheniusEta[13] = 0.0;
-          ArrheniusEta[14] = 0.0;
-          ArrheniusEta[15] = -1.0;
-          ArrheniusEta[16] = 0.0;
-
-          // Characteristic temperature
-          ArrheniusTheta[0]  = 113200.0;
-          ArrheniusTheta[1]  = 113200.0;
-          ArrheniusTheta[2]  = 113200.0;
-          ArrheniusTheta[3]  = 113200.0;
-          ArrheniusTheta[4]  = 113200.0;
-          ArrheniusTheta[5]  = 59500.0;
-          ArrheniusTheta[6]  = 59500.0;
-          ArrheniusTheta[7]  = 59500.0;
-          ArrheniusTheta[8]  = 59500.0;
-          ArrheniusTheta[9]  = 59500.0;
-          ArrheniusTheta[10] = 75500.0;
-          ArrheniusTheta[11] = 75500.0;
-          ArrheniusTheta[12] = 75500.0;
-          ArrheniusTheta[13] = 75500.0;
-          ArrheniusTheta[14] = 75500.0;
-          ArrheniusTheta[15] = 38400.0;
-          ArrheniusTheta[16] = 19450.0;
-
-          /*--- Set rate-controlling temperature exponents ---*/
-          //  -----------  Tc = Ttr^a * Tve^b  -----------
-          //
-          // Forward Reactions
-          //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-          //   Exchange:          a = 1,   b = 0
-          //   Impact ionization: a = 0,   b = 1
-          //
-          // Backward Reactions
-          //   Recomb ionization:      a = 0, b = 1
-          //   Impact ionization:      a = 0, b = 1
-          //   N2 impact dissociation: a = 0, b = 1
-          //   Others:                 a = 1, b = 0
-          Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
-          Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
-          Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
-          Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
-          Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
-
-          Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
-          Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
-          Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
-          Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
-          Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
-
-          Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
-          Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
-          Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
-          Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
-          Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
-
-          Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
-          Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
-
-          /*--- Collision integral data ---*/
-          // Omega(0,0) ----------------------
-          //N2
-          Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
-          Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
-          Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
-          Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
-          Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
-          //O2
-          Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
-          Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
-          Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
-          Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
-          Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
-          //NO
-          Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
-          Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
-          Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
-          Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
-          Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
-          //N
-          Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
-          Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
-          Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
-          Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
-          Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
-          //O
-          Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
-          Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
-          Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
-          Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
-          Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
-
-          // Omega(1,1) ----------------------
-          //N2
-          Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
-          Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
-          Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
-          Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
-          Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
-          //O2
-          Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
-          Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
-          Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
-          Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
-          Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
-          //NO
-          Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
-          Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
-          Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
-          Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
-          Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
-          //N
-          Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
-          Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
-          Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
-          Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
-          Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
-          //O
-          Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
-          Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
-          Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
-          Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
-          Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
-
-          break;
+      /*--- Check for errors in the initialization ---*/
+      init_err = false;
+      if (nSpecies != 2) {
+        cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+        init_err = true;
       }
+      mf = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        mf += Gas_Composition[iSpecies];
+      if (mf != 1.0) {
+        cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+        init_err = true;
+      }
+
+      /*--- Define parameters of the gas model ---*/
+      nReactions  = 2;
+      ionization  = false;
+
+      /*--- Allocate vectors for gas properties ---*/
+      Wall_Catalycity      = new su2double[nSpecies];
+      Molar_Mass           = new su2double[nSpecies];
+      CharVibTemp          = new su2double[nSpecies];
+      RotationModes        = new su2double[nSpecies];
+      Enthalpy_Formation   = new su2double[nSpecies];
+      Ref_Temperature      = new su2double[nSpecies];
+      Diss                 = new su2double[nSpecies];
+      ArrheniusCoefficient = new su2double[nReactions];
+      ArrheniusEta         = new su2double[nReactions];
+      ArrheniusTheta       = new su2double[nReactions];
+      Tcf_a                = new su2double[nReactions];
+      Tcf_b                = new su2double[nReactions];
+      Tcb_a                = new su2double[nReactions];
+      Tcb_b                = new su2double[nReactions];
+      nElStates            = new unsigned short[nSpecies];
+      Reactions = new int**[nReactions];
+      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+        Reactions[iRxn] = new int*[2];
+        for (unsigned short ii = 0; ii < 2; ii++)
+          Reactions[iRxn][ii] = new int[6];
+      }
+
+      Blottner  = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Blottner[iSpecies] = new su2double[3];
+
+      // Omega[iSpecies][jSpecies][iCoeff]
+      Omega00 = new su2double**[nSpecies];
+      Omega11 = new su2double**[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Omega00[iSpecies] = new su2double*[nSpecies];
+        Omega11[iSpecies] = new su2double*[nSpecies];
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          Omega00[iSpecies][jSpecies] = new su2double[4];
+          Omega11[iSpecies][jSpecies] = new su2double[4];
+        }
+      }
+
+      MassFrac_FreeStream = new su2double[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+
+      /*--- Assign gas properties ---*/
+
+      // Wall mass fractions for catalytic boundaries
+      Wall_Catalycity[0] = 0.999;
+      Wall_Catalycity[1] = 0.001;
+
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      RotationModes[1] = 0.0;
+
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 2.0*14.0067;
+      Molar_Mass[1] = 14.0067;
+
+      // Characteristic vibrational temperatures
+      CharVibTemp[0] = 3395.0;
+      CharVibTemp[1] = 0.0;
+
+      // Formation enthalpy: (JANAF values [KJ/Kmol])
+      // J/kg - from Scalabrin
+      Enthalpy_Formation[0] = 0.0;					//N2
+      Enthalpy_Formation[1] = 3.36E7;		//N
+
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
+      Ref_Temperature[1] = 0.0;
+
+      // Blottner viscosity coefficients
+      // A                        // B                        // C
+      Blottner[0][0] = 2.68E-2;   Blottner[0][1] = 3.18E-1;   Blottner[0][2] = -1.13E1;  // N2
+      Blottner[1][0] = 1.16E-2;   Blottner[1][1] = 6.03E-1;   Blottner[1][2] = -1.24E1;  // N
+
+      // Number of electron states
+      nElStates[0] = 15;                    // N2
+      nElStates[1] = 3;                     // N
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        maxEl = max(maxEl, nElStates[iSpecies]);
+
+      /*--- Allocate electron data arrays ---*/
+      CharElTemp = new su2double*[nSpecies];
+      degen      = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        CharElTemp[iSpecies] = new su2double[maxEl];
+        degen[iSpecies]      = new su2double[maxEl];
+      }
+
+      /*--- Initialize the arrays ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (iEl = 0; iEl < maxEl; iEl++) {
+          CharElTemp[iSpecies][iEl] = 0.0;
+          degen[iSpecies][iEl] = 0.0;
+        }
+      }
+
+      /*--- Assign values to data structures ---*/
+      // N2: 15 states
+      CharElTemp[0][0]  = 0.000000000000000E+00;
+      CharElTemp[0][1]  = 7.223156514095200E+04;
+      CharElTemp[0][2]  = 8.577862640384000E+04;
+      CharElTemp[0][3]  = 8.605026716160000E+04;
+      CharElTemp[0][4]  = 9.535118627874400E+04;
+      CharElTemp[0][5]  = 9.805635702203200E+04;
+      CharElTemp[0][6]  = 9.968267656935200E+04;
+      CharElTemp[0][7]  = 1.048976467715200E+05;
+      CharElTemp[0][8]  = 1.116489555200000E+05;
+      CharElTemp[0][9]  = 1.225836470400000E+05;
+      CharElTemp[0][10] = 1.248856873600000E+05;
+      CharElTemp[0][11] = 1.282476158188320E+05;
+      CharElTemp[0][12] = 1.338060936000000E+05;
+      CharElTemp[0][13] = 1.404296391107200E+05;
+      CharElTemp[0][14] = 1.504958859200000E+05;
+      degen[0][0]  = 1;
+      degen[0][1]  = 3;
+      degen[0][2]  = 6;
+      degen[0][3]  = 6;
+      degen[0][4]  = 3;
+      degen[0][5]  = 1;
+      degen[0][6]  = 2;
+      degen[0][7]  = 2;
+      degen[0][8]  = 5;
+      degen[0][9]  = 1;
+      degen[0][10] = 6;
+      degen[0][11] = 6;
+      degen[0][12] = 10;
+      degen[0][13] = 6;
+      degen[0][14] = 6;
+      // N: 3 states
+      CharElTemp[1][0] = 0.000000000000000E+00;
+      CharElTemp[1][1] = 2.766469645581980E+04;
+      CharElTemp[1][2] = 4.149309313560210E+04;
+      degen[1][0] = 4;
+      degen[1][1] = 10;
+      degen[1][2] = 6;
+
+      /*--- Set Arrhenius coefficients for chemical reactions ---*/
+      // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
+      //       to (m^3/kmol-s) to be consistent with the rest of the code
+      // Pre-exponential factor
+      ArrheniusCoefficient[0]  = 7.0E21;
+      ArrheniusCoefficient[1]  = 3.0E22;
+      // Rate-controlling temperature exponent
+      ArrheniusEta[0]  = -1.60;
+      ArrheniusEta[1]  = -1.60;
+      // Characteristic temperature
+      ArrheniusTheta[0] = 113200.0;
+      ArrheniusTheta[1] = 113200.0;
+
+      /*--- Set reaction maps ---*/
+      // N2 + N2 -> 2N + N2
+      Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+      Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+      // N2 + N -> 2N + N
+      Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+      Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
+
+      /*--- Set rate-controlling temperature exponents ---*/
+      //  -----------  Tc = Ttr^a * Tve^b  -----------
+      //
+      // Forward Reactions
+      //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+      //   Exchange:          a = 1,   b = 0
+      //   Impact ionization: a = 0,   b = 1
+      //
+      // Backward Reactions
+      //   Recomb ionization:      a = 0, b = 1
+      //   Impact ionization:      a = 0, b = 1
+      //   N2 impact dissociation: a = 0, b = 1
+      //   Others:                 a = 1, b = 0
+      Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
+      Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
+
+      /*--- Dissociation potential [KJ/kg] ---*/
+      Diss[0] = 3.36E4;
+      Diss[1] = 0.0;
+
+      /*--- Collision integral data ---*/
+      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+      Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+      Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+      Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+
+      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+      Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+      Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+      Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+
+      break;
+
+    case AIR5:
+
+      /*--- Check for errors in the initialization ---*/
+      init_err = false;
+      if (nSpecies != 5) {
+        cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+        init_err = true;
+      }
+      mf = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        mf += Gas_Composition[iSpecies];
+      if (mf != 1.0) {
+        cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+        init_err = true;
+      }
+
+      /*--- Define parameters of the gas model ---*/
+      nReactions  = 17;
+      ionization  = false;
+
+      /*--- Allocate vectors for gas properties ---*/
+      Wall_Catalycity      = new su2double[nSpecies];
+      Molar_Mass           = new su2double[nSpecies];
+      CharVibTemp          = new su2double[nSpecies];
+      RotationModes        = new su2double[nSpecies];
+      Enthalpy_Formation   = new su2double[nSpecies];
+      Ref_Temperature      = new su2double[nSpecies];
+      ArrheniusCoefficient = new su2double[nReactions];
+      ArrheniusEta         = new su2double[nReactions];
+      ArrheniusTheta       = new su2double[nReactions];
+      Tcf_a                = new su2double[nReactions];
+      Tcf_b                = new su2double[nReactions];
+      Tcb_a                = new su2double[nReactions];
+      Tcb_b                = new su2double[nReactions];
+      nElStates            = new unsigned short[nSpecies];
+      Reactions            = new int**[nReactions];
+      for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+        Reactions[iRxn] = new int*[2];
+        for (unsigned short ii = 0; ii < 2; ii++)
+          Reactions[iRxn][ii] = new int[6];
+      }
+
+      Blottner  = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Blottner[iSpecies] = new su2double[3];
+
+      // Omega[iSpecies][jSpecies][iCoeff]
+      Omega00 = new su2double**[nSpecies];
+      Omega11 = new su2double**[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Omega00[iSpecies] = new su2double*[nSpecies];
+        Omega11[iSpecies] = new su2double*[nSpecies];
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          Omega00[iSpecies][jSpecies] = new su2double[4];
+          Omega11[iSpecies][jSpecies] = new su2double[4];
+        }
+      }
+
+      // Wall mass fractions for catalytic boundaries
+      Wall_Catalycity[0] = 0.4;
+      Wall_Catalycity[1] = 0.4;
+      Wall_Catalycity[2] = 0.1;
+      Wall_Catalycity[3] = 0.05;
+      Wall_Catalycity[4] = 0.05;
+
+      // Free stream mass fractions
+      MassFrac_FreeStream = new su2double[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+
+      /*--- Assign gas properties ---*/
+      // Rotational modes of energy storage
+      RotationModes[0] = 2.0;
+      RotationModes[1] = 2.0;
+      RotationModes[2] = 2.0;
+      RotationModes[3] = 0.0;
+      RotationModes[4] = 0.0;
+
+      // Molar mass [kg/kmol]
+      Molar_Mass[0] = 2.0*14.0067;
+      Molar_Mass[1] = 2.0*15.9994;
+      Molar_Mass[2] = 14.0067+15.9994;
+      Molar_Mass[3] = 14.0067;
+      Molar_Mass[4] = 15.9994;
+
+      //Characteristic vibrational temperatures
+      CharVibTemp[0] = 3395.0;
+      CharVibTemp[1] = 2239.0;
+      CharVibTemp[2] = 2817.0;
+      CharVibTemp[3] = 0.0;
+      CharVibTemp[4] = 0.0;
+
+      // Formation enthalpy: (Scalabrin values, J/kg)
+      Enthalpy_Formation[0] = 0.0;			//N2
+      Enthalpy_Formation[1] = 0.0;			//O2
+      Enthalpy_Formation[2] = 3.0E6;    //NO
+      Enthalpy_Formation[3] = 3.36E7;		//N
+      Enthalpy_Formation[4] = 1.54E7;		//O
+
+      // Reference temperature (JANAF values, [K])
+      Ref_Temperature[0] = 0.0;
+      Ref_Temperature[1] = 0.0;
+      Ref_Temperature[2] = 0.0;
+      Ref_Temperature[3] = 0.0;
+      Ref_Temperature[4] = 0.0;
+      //        Ref_Temperature[2] = 298.15;
+      //        Ref_Temperature[3] = 298.15;
+      //        Ref_Temperature[4] = 298.15;
+
+      // Blottner viscosity coefficients
+      // A                        // B                        // C
+      Blottner[0][0] = 2.68E-2;   Blottner[0][1] =  3.18E-1;  Blottner[0][2] = -1.13E1;  // N2
+      Blottner[1][0] = 4.49E-2;   Blottner[1][1] = -8.26E-2;  Blottner[1][2] = -9.20E0;  // O2
+      Blottner[2][0] = 4.36E-2;   Blottner[2][1] = -3.36E-2;  Blottner[2][2] = -9.58E0;  // NO
+      Blottner[3][0] = 1.16E-2;   Blottner[3][1] =  6.03E-1;  Blottner[3][2] = -1.24E1;  // N
+      Blottner[4][0] = 2.03E-2;   Blottner[4][1] =  4.29E-1;  Blottner[4][2] = -1.16E1;  // O
+
+      // Number of electron states
+      nElStates[0] = 15;                    // N2
+      nElStates[1] = 7;                     // O2
+      nElStates[2] = 16;                    // NO
+      nElStates[3] = 3;                     // N
+      nElStates[4] = 5;                     // O
+      /////
+
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        maxEl = max(maxEl, nElStates[iSpecies]);
+
+      /*--- Allocate electron data arrays ---*/
+      CharElTemp = new su2double*[nSpecies];
+      degen      = new su2double*[nSpecies];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        CharElTemp[iSpecies] = new su2double[maxEl];
+        degen[iSpecies]      = new su2double[maxEl];
+      }
+
+      /*--- Initialize the arrays ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        for (iEl = 0; iEl < maxEl; iEl++) {
+          CharElTemp[iSpecies][iEl] = 0.0;
+          degen[iSpecies][iEl] = 0.0;
+        }
+      }
+
+      //N2: 15 states
+      CharElTemp[0][0]  = 0.000000000000000E+00;
+      CharElTemp[0][1]  = 7.223156514095200E+04;
+      CharElTemp[0][2]  = 8.577862640384000E+04;
+      CharElTemp[0][3]  = 8.605026716160000E+04;
+      CharElTemp[0][4]  = 9.535118627874400E+04;
+      CharElTemp[0][5]  = 9.805635702203200E+04;
+      CharElTemp[0][6]  = 9.968267656935200E+04;
+      CharElTemp[0][7]  = 1.048976467715200E+05;
+      CharElTemp[0][8]  = 1.116489555200000E+05;
+      CharElTemp[0][9]  = 1.225836470400000E+05;
+      CharElTemp[0][10] = 1.248856873600000E+05;
+      CharElTemp[0][11] = 1.282476158188320E+05;
+      CharElTemp[0][12] = 1.338060936000000E+05;
+      CharElTemp[0][13] = 1.404296391107200E+05;
+      CharElTemp[0][14] = 1.504958859200000E+05;
+      degen[0][0]  = 1;
+      degen[0][1]  = 3;
+      degen[0][2]  = 6;
+      degen[0][3]  = 6;
+      degen[0][4]  = 3;
+      degen[0][5]  = 1;
+      degen[0][6]  = 2;
+      degen[0][7]  = 2;
+      degen[0][8]  = 5;
+      degen[0][9]  = 1;
+      degen[0][10] = 6;
+      degen[0][11] = 6;
+      degen[0][12] = 10;
+      degen[0][13] = 6;
+      degen[0][14] = 6;
+
+      // O2: 7 states
+      CharElTemp[1][0] = 0.000000000000000E+00;
+      CharElTemp[1][1] = 1.139156019700800E+04;
+      CharElTemp[1][2] = 1.898473947826400E+04;
+      CharElTemp[1][3] = 4.755973576639200E+04;
+      CharElTemp[1][4] = 4.991242097343200E+04;
+      CharElTemp[1][5] = 5.092268575561600E+04;
+      CharElTemp[1][6] = 7.189863255967200E+04;
+      degen[1][0] = 3;
+      degen[1][1] = 2;
+      degen[1][2] = 1;
+      degen[1][3] = 1;
+      degen[1][4] = 6;
+      degen[1][5] = 3;
+      degen[1][6] = 3;
+
+      // NO: 16 states
+      CharElTemp[2][0]  = 0.000000000000000E+00;
+      CharElTemp[2][1]  = 5.467345760000000E+04;
+      CharElTemp[2][2]  = 6.317139627802400E+04;
+      CharElTemp[2][3]  = 6.599450342445600E+04;
+      CharElTemp[2][4]  = 6.906120960000000E+04;
+      CharElTemp[2][5]  = 7.049998480000000E+04;
+      CharElTemp[2][6]  = 7.491055017560000E+04;
+      CharElTemp[2][7]  = 7.628875293968000E+04;
+      CharElTemp[2][8]  = 8.676188537552000E+04;
+      CharElTemp[2][9]  = 8.714431182368000E+04;
+      CharElTemp[2][10] = 8.886077063728000E+04;
+      CharElTemp[2][11] = 8.981755614528000E+04;
+      CharElTemp[2][12] = 8.988445919208000E+04;
+      CharElTemp[2][13] = 9.042702132000000E+04;
+      CharElTemp[2][14] = 9.064283760000000E+04;
+      CharElTemp[2][15] = 9.111763341600000E+04;
+      degen[2][0]  = 4;
+      degen[2][1]  = 8;
+      degen[2][2]  = 2;
+      degen[2][3]  = 4;
+      degen[2][4]  = 4;
+      degen[2][5]  = 4;
+      degen[2][6]  = 4;
+      degen[2][7]  = 2;
+      degen[2][8]  = 4;
+      degen[2][9]  = 2;
+      degen[2][10] = 4;
+      degen[2][11] = 4;
+      degen[2][12] = 2;
+      degen[2][13] = 2;
+      degen[2][14] = 2;
+      degen[2][15] = 4;
+
+      // N: 3 states
+      CharElTemp[3][0] = 0.000000000000000E+00;
+      CharElTemp[3][1] = 2.766469645581980E+04;
+      CharElTemp[3][2] = 4.149309313560210E+04;
+      degen[3][0] = 4;
+      degen[3][1] = 10;
+      degen[3][2] = 6;
+
+      // O: 5 states
+      CharElTemp[4][0] = 0.000000000000000E+00;
+      CharElTemp[4][1] = 2.277077570280000E+02;
+      CharElTemp[4][2] = 3.265688785704000E+02;
+      CharElTemp[4][3] = 2.283028632262240E+04;
+      CharElTemp[4][4] = 4.861993036434160E+04;
+      degen[4][0] = 5;
+      degen[4][1] = 3;
+      degen[4][2] = 1;
+      degen[4][3] = 5;
+      degen[4][4] = 1;
+
+      /*--- Set reaction maps ---*/
+      // N2 dissociation
+      Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
+      Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
+      Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
+      Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
+      Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
+      // O2 dissociation
+      Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
+      Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
+      Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
+      Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
+      Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
+      // NO dissociation
+      Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
+      Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
+      Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
+      Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
+      Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
+      // N2 + O -> NO + N
+      Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
+      // NO + O -> O2 + N
+      Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
+
+      /*--- Set Arrhenius coefficients for reactions ---*/
+      // Pre-exponential factor
+      ArrheniusCoefficient[0]  = 7.0E21;
+      ArrheniusCoefficient[1]  = 7.0E21;
+      ArrheniusCoefficient[2]  = 7.0E21;
+      ArrheniusCoefficient[3]  = 3.0E22;
+      ArrheniusCoefficient[4]  = 3.0E22;
+      ArrheniusCoefficient[5]  = 2.0E21;
+      ArrheniusCoefficient[6]  = 2.0E21;
+      ArrheniusCoefficient[7]  = 2.0E21;
+      ArrheniusCoefficient[8]  = 1.0E22;
+      ArrheniusCoefficient[9]  = 1.0E22;
+      ArrheniusCoefficient[10] = 5.0E15;
+      ArrheniusCoefficient[11] = 5.0E15;
+      ArrheniusCoefficient[12] = 5.0E15;
+      ArrheniusCoefficient[13] = 1.1E17;
+      ArrheniusCoefficient[14] = 1.1E17;
+      ArrheniusCoefficient[15] = 6.4E17;
+      ArrheniusCoefficient[16] = 8.4E12;
+
+      // Rate-controlling temperature exponent
+      ArrheniusEta[0]  = -1.60;
+      ArrheniusEta[1]  = -1.60;
+      ArrheniusEta[2]  = -1.60;
+      ArrheniusEta[3]  = -1.60;
+      ArrheniusEta[4]  = -1.60;
+      ArrheniusEta[5]  = -1.50;
+      ArrheniusEta[6]  = -1.50;
+      ArrheniusEta[7]  = -1.50;
+      ArrheniusEta[8]  = -1.50;
+      ArrheniusEta[9]  = -1.50;
+      ArrheniusEta[10] = 0.0;
+      ArrheniusEta[11] = 0.0;
+      ArrheniusEta[12] = 0.0;
+      ArrheniusEta[13] = 0.0;
+      ArrheniusEta[14] = 0.0;
+      ArrheniusEta[15] = -1.0;
+      ArrheniusEta[16] = 0.0;
+
+      // Characteristic temperature
+      ArrheniusTheta[0]  = 113200.0;
+      ArrheniusTheta[1]  = 113200.0;
+      ArrheniusTheta[2]  = 113200.0;
+      ArrheniusTheta[3]  = 113200.0;
+      ArrheniusTheta[4]  = 113200.0;
+      ArrheniusTheta[5]  = 59500.0;
+      ArrheniusTheta[6]  = 59500.0;
+      ArrheniusTheta[7]  = 59500.0;
+      ArrheniusTheta[8]  = 59500.0;
+      ArrheniusTheta[9]  = 59500.0;
+      ArrheniusTheta[10] = 75500.0;
+      ArrheniusTheta[11] = 75500.0;
+      ArrheniusTheta[12] = 75500.0;
+      ArrheniusTheta[13] = 75500.0;
+      ArrheniusTheta[14] = 75500.0;
+      ArrheniusTheta[15] = 38400.0;
+      ArrheniusTheta[16] = 19450.0;
+
+      /*--- Set rate-controlling temperature exponents ---*/
+      //  -----------  Tc = Ttr^a * Tve^b  -----------
+      //
+      // Forward Reactions
+      //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+      //   Exchange:          a = 1,   b = 0
+      //   Impact ionization: a = 0,   b = 1
+      //
+      // Backward Reactions
+      //   Recomb ionization:      a = 0, b = 1
+      //   Impact ionization:      a = 0, b = 1
+      //   N2 impact dissociation: a = 0, b = 1
+      //   Others:                 a = 1, b = 0
+      Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
+      Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
+      Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
+      Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
+      Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
+
+      Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
+      Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
+      Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
+      Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
+      Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
+
+      Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
+      Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
+      Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
+      Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
+      Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
+
+      Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
+      Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
+
+      /*--- Collision integral data ---*/
+      // Omega(0,0) ----------------------
+      //N2
+      Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+      Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+      Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+      Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+      Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+      //O2
+      Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+      Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+      Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+      Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+      Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+      //NO
+      Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+      Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+      Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+      Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+      Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+      //N
+      Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+      Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+      Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+      Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+      Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+      //O
+      Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+      Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+      Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+      Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+      Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+
+      // Omega(1,1) ----------------------
+      //N2
+      Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+      Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+      Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+      Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+      Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+      //O2
+      Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+      Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+      Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+      Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+      Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+      //NO
+      Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+      Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+      Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+      Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+      Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+      //N
+      Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+      Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+      Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+      Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+      Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+      //O
+      Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+      Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+      Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+      Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+      Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+
+      break;
     }
+  }
 
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
@@ -4692,33 +4692,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_CFD) {
-        SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
-                       string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
-                       CURRENT_FUNCTION);
-      }
+    if (Kind_SU2 == SU2_CFD) {
+      SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
+                     string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
+                     CURRENT_FUNCTION);
+    }
 #endif
     /*--- Initialize the derivative values ---*/
     switch (DirectDiff) {
-      case D_MACH:
-        SU2_TYPE::SetDerivative(Mach, 1.0);
-        break;
-      case D_AOA:
-        SU2_TYPE::SetDerivative(AoA, 1.0);
-        break;
-      case D_SIDESLIP:
-        SU2_TYPE::SetDerivative(AoS, 1.0);
-        break;
-      case D_REYNOLDS:
-        SU2_TYPE::SetDerivative(Reynolds, 1.0);
-        break;
-      case D_TURB2LAM:
-       SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
-        break;
-      default:
-        /*--- All other cases are handled in the specific solver ---*/
-        break;
-      }
+    case D_MACH:
+      SU2_TYPE::SetDerivative(Mach, 1.0);
+      break;
+    case D_AOA:
+      SU2_TYPE::SetDerivative(AoA, 1.0);
+      break;
+    case D_SIDESLIP:
+      SU2_TYPE::SetDerivative(AoS, 1.0);
+      break;
+    case D_REYNOLDS:
+      SU2_TYPE::SetDerivative(Reynolds, 1.0);
+      break;
+    case D_TURB2LAM:
+      SU2_TYPE::SetDerivative(Turb2LamViscRatio_FreeStream, 1.0);
+      break;
+    default:
+      /*--- All other cases are handled in the specific solver ---*/
+      break;
+    }
   }
 
 #if defined CODI_REVERSE_TYPE
@@ -4769,35 +4769,35 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 
     switch(Kind_Solver) {
-      case EULER:
-        Kind_Solver = DISC_ADJ_EULER;
-        break;
-      case TNE2_EULER:
-        Kind_Solver = DISC_ADJ_TNE2_EULER;
-        break;
-      case RANS:
-        Kind_Solver = DISC_ADJ_RANS;
-        break;
-      case NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
-        break;
-      case TNE2_NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_TNE2_NAVIER_STOKES;
-        break;
-      case FEM_EULER :
-        Kind_Solver = DISC_ADJ_FEM_EULER;
-        break;
-      case FEM_RANS :
-        Kind_Solver = DISC_ADJ_FEM_RANS;
-        break;
-      case FEM_NAVIER_STOKES : 
-        Kind_Solver = DISC_ADJ_FEM_NS;
-        break;
-      case FEM_ELASTICITY:
-        Kind_Solver = DISC_ADJ_FEM;
-        break;
-      default:
-        break;
+    case EULER:
+      Kind_Solver = DISC_ADJ_EULER;
+      break;
+    case TNE2_EULER:
+      Kind_Solver = DISC_ADJ_TNE2_EULER;
+      break;
+    case RANS:
+      Kind_Solver = DISC_ADJ_RANS;
+      break;
+    case NAVIER_STOKES:
+      Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+      break;
+    case TNE2_NAVIER_STOKES:
+      Kind_Solver = DISC_ADJ_TNE2_NAVIER_STOKES;
+      break;
+    case FEM_EULER :
+      Kind_Solver = DISC_ADJ_FEM_EULER;
+      break;
+    case FEM_RANS :
+      Kind_Solver = DISC_ADJ_FEM_RANS;
+      break;
+    case FEM_NAVIER_STOKES :
+      Kind_Solver = DISC_ADJ_FEM_NS;
+      break;
+    case FEM_ELASTICITY:
+      Kind_Solver = DISC_ADJ_FEM;
+      break;
+    default:
+      break;
     }
 
     RampOutletPressure = false;
@@ -4812,7 +4812,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver == FEM_NAVIER_STOKES) ||
       (Kind_Solver == FEM_RANS)          ||
       (Kind_Solver == FEM_LES)) {
-     Kind_TimeIntScheme_Flow = Kind_TimeIntScheme_FEM_Flow;
+    Kind_TimeIntScheme_Flow = Kind_TimeIntScheme_FEM_Flow;
   }
 
   /*--- Set up the time stepping / unsteady CFL options. ---*/
@@ -4826,12 +4826,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
-  	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-    ConvCriteria = RESIDUAL;
-  		nExtIter += Iter_dCL_dAlpha;
-  		OrderMagResidual = 24;
-  		MinLogResidual = -24;
-  	}
+    if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
+      ConvCriteria = RESIDUAL;
+      nExtIter += Iter_dCL_dAlpha;
+      OrderMagResidual = 24;
+      MinLogResidual = -24;
+    }
   }
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
@@ -5076,23 +5076,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != DISC_ADJ_RANS)) {
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
-    
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
-  iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
-  iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic, iMarker_HeatFlux,
-  iMarker_HeatFluxCatalytic, iMarker_HeatFluxNoncatalytic, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
-  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
-  iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
-  iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
-  iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
+      iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
+      iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
+      iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
+      iMarker_IsothermalCatalytic, iMarker_IsothermalNonCatalytic, iMarker_HeatFlux,
+      iMarker_HeatFluxCatalytic, iMarker_HeatFluxNoncatalytic, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
+      iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
+      iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
+      iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+      iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
+      iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
+      iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
   
@@ -5104,15 +5104,15 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic + nMarker_IsothermalNonCatalytic +
-  nMarker_HeatFlux + nMarker_HeatFluxCatalytic + nMarker_HeatFluxNonCatalytic +
-  nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
-  nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
-  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
-  nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
+      nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
+      nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+      nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic + nMarker_IsothermalNonCatalytic +
+      nMarker_HeatFlux + nMarker_HeatFluxCatalytic + nMarker_HeatFluxNonCatalytic +
+      nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
+      nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
+      nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
+      nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
+      nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -5631,11 +5631,11 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface])
-            indexMarker = (int)(iMarker_ZoneInterface/2+1);
+        indexMarker = (int)(iMarker_ZoneInterface/2+1);
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
   }
 
-/*--- Identification of Turbomachinery markers and flag them---*/
+  /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     unsigned short indexMarker=0;
@@ -5658,11 +5658,11 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of MixingPlane interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-  	unsigned short indexMarker=0;
+    unsigned short indexMarker=0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
     for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
-      	indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
+        indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
 
@@ -5706,16 +5706,16 @@ void CConfig::SetMarkers(unsigned short val_software) {
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
-  iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
-  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,iMarker_IsothermalNonCatalytic,
-  iMarker_IsothermalCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
-  iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
-  iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
-  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
-  iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
-  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
+      iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
+      iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+      iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,iMarker_IsothermalNonCatalytic,
+      iMarker_IsothermalCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
+      iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
+      iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
+      iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
+      iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
+      iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+      iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
   
@@ -5729,12 +5729,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
-    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+  case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+  case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+  case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+  case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+  case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+  case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
@@ -5773,102 +5773,102 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
-	if (FSI_Problem) {
-	   cout << "Fluid-Structure Interaction." << endl;
-	}
-
-  if (nConfig_Files != 0) {
-    cout << "List of config files: ";
-    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
-      cout << Config_Filenames[iConfig];
-      if (iConfig < nConfig_Files-1) cout << ", ";
-      else cout <<".";
+    if (FSI_Problem) {
+      cout << "Fluid-Structure Interaction." << endl;
     }
-    cout<< endl;
-  }
 
-  if (DiscreteAdjoint) {
-     cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
-     cout <<"based on the physical case: ";
-  }
+    if (nConfig_Files != 0) {
+      cout << "List of config files: ";
+      for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
+        cout << Config_Filenames[iConfig];
+        if (iConfig < nConfig_Files-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<< endl;
+    }
+
+    if (DiscreteAdjoint) {
+      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
+      cout <<"based on the physical case: ";
+    }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
-        break;
-      case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
-        break;
-      case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
-        cout << "Turbulence model: ";
-        switch (Kind_Turb_Model) {
-          case SA:     cout << "Spalart Allmaras" << endl; break;
-          case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
-          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
-          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-        }
-        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
-        cout << "Hybrid RANS/LES: ";
-        switch (Kind_HybridRANSLES){
-          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
-          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
-          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
-          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-        }
-        if (using_uq){
-          cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-          if (uq_permute) cout << "Permuting eigenvectors" << endl;  
-        } 
-        break;
-      case FEM_LES:
-        if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
-        cout << "Subgrid Scale model: ";
-        switch (Kind_SGS_Model) {
-          case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
-          case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
-          case WALE:         cout << "WALE"         << endl; break;
-          case VREMAN:       cout << "VREMAN"         << endl; break;
-          default:
-            SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
+    case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+      if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
+      if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+      break;
+    case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
+      if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+      break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+      if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
+      if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+      break;
+    case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
+      if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+      break;
+    case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
+      if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
+      cout << "Turbulence model: ";
+      switch (Kind_Turb_Model) {
+      case SA:     cout << "Spalart Allmaras" << endl; break;
+      case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
+      case SST:    cout << "Menter's SST"     << endl; break;
+      case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+      case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+      case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+      }
+      if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+      cout << "Hybrid RANS/LES: ";
+      switch (Kind_HybridRANSLES){
+      case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+      case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
+      case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+      case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+      case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+      }
+      if (using_uq){
+        cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+        if (uq_permute) cout << "Permuting eigenvectors" << endl;
+      }
+      break;
+    case FEM_LES:
+      if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
+      if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
+      cout << "Subgrid Scale model: ";
+      switch (Kind_SGS_Model) {
+      case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
+      case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
+      case WALE:         cout << "WALE"         << endl; break;
+      case VREMAN:       cout << "VREMAN"         << endl; break;
+      default:
+        SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
 
-        }
-        break;
-      case FEM_ELASTICITY: case DISC_ADJ_FEM:
-    	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
-    	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
-    	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
-    	  if (Kind_Material == NEO_HOOKEAN) {
-    		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
-    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
-    	  }
-    	  break;
-      case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
-      case ADJ_NAVIER_STOKES:
-        if (Frozen_Visc_Cont)
-          cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
-        else
-          cout << "Continuous Navier-Stokes adjoint equations." << endl;
-        break;
-      case ADJ_RANS:
-        if (Frozen_Visc_Cont)
-          cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
-        else
-          cout << "Continuous RANS adjoint equations." << endl;
+      }
+      break;
+    case FEM_ELASTICITY: case DISC_ADJ_FEM:
+      if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
+      if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
+      if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+      if (Kind_Material == NEO_HOOKEAN) {
+        if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+        if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
+      }
+      break;
+    case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
+    case ADJ_NAVIER_STOKES:
+      if (Frozen_Visc_Cont)
+        cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
+      else
+        cout << "Continuous Navier-Stokes adjoint equations." << endl;
+      break;
+    case ADJ_RANS:
+      if (Frozen_Visc_Cont)
+        cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
+      else
+        cout << "Continuous RANS adjoint equations." << endl;
 
-        break;
+      break;
 
     }
 
@@ -5880,11 +5880,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES) )
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
-      	cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
+        cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       }
       if (Fixed_CM_Mode) {
-      		cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-      		cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
+        cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
+        cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
       }
     }
 
@@ -5897,16 +5897,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Grid_Movement) {
       cout << "Performing a dynamic mesh simulation: ";
       switch (Kind_GridMovement[ZONE_0]) {
-        case NO_MOVEMENT:     cout << "no movement." << endl; break;
-        case DEFORMING:       cout << "deforming mesh motion." << endl; break;
-        case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
-        case MOVING_WALL:     cout << "moving walls." << endl; break;
-        case MOVING_HTP:      cout << "HTP moving." << endl; break;
-        case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
-        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
-        case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
-        case AEROELASTIC_RIGID_MOTION:  cout << "rigid mesh motion plus aeroelastic motion." << endl; break;
+      case NO_MOVEMENT:     cout << "no movement." << endl; break;
+      case DEFORMING:       cout << "deforming mesh motion." << endl; break;
+      case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
+      case MOVING_WALL:     cout << "moving walls." << endl; break;
+      case MOVING_HTP:      cout << "HTP moving." << endl; break;
+      case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
+      case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
+      case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
+      case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
+      case AEROELASTIC_RIGID_MOTION:  cout << "rigid mesh motion plus aeroelastic motion." << endl; break;
       }
     }
 
@@ -5921,24 +5921,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-        if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
-        else cout << "No restart solution, use the values at infinity (freestream)." << endl;
+      if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
+      else cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
 
     if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-  
+
     if (!fea){
       if (Kind_Regime == COMPRESSIBLE) {
-      if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-      else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-      else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
-      else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    } else if (Kind_Regime == INCOMPRESSIBLE) {
-      if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-      else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
-      else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }
-    }
+        if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+        else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+        else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
+        else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+      } else if (Kind_Regime == INCOMPRESSIBLE) {
+        if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+        else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
+        else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }
+      }
       
       if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
       else { cout << "The reference area is " << RefArea;
@@ -5961,8 +5961,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
           if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
           else {
-          if (SystemMeasurements == US) cout <<" ft."<< endl;
-          else cout <<" m."<< endl;
+            if (SystemMeasurements == US) cout <<" ft."<< endl;
+            else cout <<" m."<< endl;
           }
 
         }
@@ -6065,40 +6065,40 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-	if (val_software == SU2_DOT) {
+  if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
     }else {
-		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
-	}
+      cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
+    }
   }
 
-	if (val_software == SU2_MSH) {
-		switch (Kind_Adaptation) {
-		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
-			break;
-		case GRAD_FLOW:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-			break;
-		case GRAD_ADJOINT:
-			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-			break;
-		case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-			break;
-		}
-	}
+  if (val_software == SU2_MSH) {
+    switch (Kind_Adaptation) {
+    case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
+      break;
+    case GRAD_FLOW:
+      cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      break;
+    case GRAD_ADJOINT:
+      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+      break;
+    case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
+      cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+      break;
+    }
+  }
 
-	if (val_software == SU2_DEF) {
-		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
-		cout << "Grid deformation using a linear elasticity method." << endl;
+  if (val_software == SU2_DEF) {
+    cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
+    cout << "Grid deformation using a linear elasticity method." << endl;
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
   if (val_software == SU2_DOT) {
-  cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
+    cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
   if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
@@ -6117,29 +6117,29 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Design variables definition (markers <-> value <-> param):" << endl;
         
         switch (Design_Variable[iDV]) {
-          case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
-          case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
-          case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-          case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
-          case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
-          case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
-          case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
-          case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
-          case TRANSLATION:           cout << "Translation design variable."; break;
-          case SCALE:                 cout << "Scale design variable."; break;
-          case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
-          case PARABOLIC:             cout << "Parabolic <-> "; break;
-          case AIRFOIL:               cout << "Airfoil <-> "; break;
-          case ROTATION:              cout << "Rotation <-> "; break;
-          case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
-          case FFD_NACELLE:           cout << "FFD (nacelle) <-> "; break;
-          case FFD_GULL:              cout << "FFD (gull) <-> "; break;
-          case FFD_TWIST:             cout << "FFD (twist) <-> "; break;
-          case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
-          case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
-          case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
-          case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
-          case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
+        case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+        case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
+        case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
+        case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
+        case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+        case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
+        case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
+        case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
+        case TRANSLATION:           cout << "Translation design variable."; break;
+        case SCALE:                 cout << "Scale design variable."; break;
+        case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
+        case PARABOLIC:             cout << "Parabolic <-> "; break;
+        case AIRFOIL:               cout << "Airfoil <-> "; break;
+        case ROTATION:              cout << "Rotation <-> "; break;
+        case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
+        case FFD_NACELLE:           cout << "FFD (nacelle) <-> "; break;
+        case FFD_GULL:              cout << "FFD (gull) <-> "; break;
+        case FFD_TWIST:             cout << "FFD (twist) <-> "; break;
+        case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
+        case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
+        case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
+        case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
+        case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -6258,70 +6258,70 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       else cout << endl;
 
-		}
-	}
+    }
+  }
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+  if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
-		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		if (nObj==1) {
+    cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
+    if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-        case DRAG_COEFFICIENT:           cout << "CD objective function";
-          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
-          else {                         cout << "." << endl; }
-          break;
-        case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
-        case MOMENT_X_COEFFICIENT:       cout << "CMx objective function" << endl;
-          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMx/dCL = " << dCMx_dCL << "." << endl; }
-          else {                         cout << "." << endl; }
-          break;
-        case MOMENT_Y_COEFFICIENT:       cout << "CMy objective function" << endl;
-          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMy/dCL = " << dCMy_dCL << "." << endl; }
-          else {                         cout << "." << endl; }
-          break;
-        case MOMENT_Z_COEFFICIENT:       cout << "CMz objective function" << endl;
-          if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMz/dCL = " << dCMz_dCL << "." << endl; }
-          else {                         cout << "." << endl; }
-          break;
-        case INVERSE_DESIGN_PRESSURE:    cout << "Inverse design (Cp) objective function." << endl; break;
-        case INVERSE_DESIGN_HEATFLUX:    cout << "Inverse design (Heat Flux) objective function." << endl; break;
-        case SIDEFORCE_COEFFICIENT:      cout << "Side force objective function." << endl; break;
-        case EFFICIENCY:                 cout << "CL/CD objective function." << endl; break;
-        case EQUIVALENT_AREA:            cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-        case NEARFIELD_PRESSURE:         cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-        case FORCE_X_COEFFICIENT:        cout << "X-force objective function." << endl; break;
-        case FORCE_Y_COEFFICIENT:        cout << "Y-force objective function." << endl; break;
-        case FORCE_Z_COEFFICIENT:        cout << "Z-force objective function." << endl; break;
-        case THRUST_COEFFICIENT:         cout << "Thrust objective function." << endl; break;
-        case TORQUE_COEFFICIENT:         cout << "Torque efficiency objective function." << endl; break;
-        case TOTAL_HEATFLUX:             cout << "Total heat flux objective function." << endl; break;
-        case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
-        case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
-        case BUFFET_SENSOR:              cout << "Buffet sensor objective function." << endl; break;
-        case SURFACE_TOTAL_PRESSURE:         cout << "Average total pressure objective function." << endl; break;
-        case SURFACE_STATIC_PRESSURE:        cout << "Average static pressure objective function." << endl; break;
-        case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
-        case SURFACE_MACH:             cout << "Mach number objective function." << endl; break;
-        case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
-        case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
-        case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
-        case VOLUME_FRACTION:           cout << "Volume fraction objective function." << endl; break;
+      case DRAG_COEFFICIENT:           cout << "CD objective function";
+        if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
+        else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
+        else {                         cout << "." << endl; }
+        break;
+      case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
+      case MOMENT_X_COEFFICIENT:       cout << "CMx objective function" << endl;
+        if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMx/dCL = " << dCMx_dCL << "." << endl; }
+        else {                         cout << "." << endl; }
+        break;
+      case MOMENT_Y_COEFFICIENT:       cout << "CMy objective function" << endl;
+        if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMy/dCL = " << dCMy_dCL << "." << endl; }
+        else {                         cout << "." << endl; }
+        break;
+      case MOMENT_Z_COEFFICIENT:       cout << "CMz objective function" << endl;
+        if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCMz/dCL = " << dCMz_dCL << "." << endl; }
+        else {                         cout << "." << endl; }
+        break;
+      case INVERSE_DESIGN_PRESSURE:    cout << "Inverse design (Cp) objective function." << endl; break;
+      case INVERSE_DESIGN_HEATFLUX:    cout << "Inverse design (Heat Flux) objective function." << endl; break;
+      case SIDEFORCE_COEFFICIENT:      cout << "Side force objective function." << endl; break;
+      case EFFICIENCY:                 cout << "CL/CD objective function." << endl; break;
+      case EQUIVALENT_AREA:            cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case NEARFIELD_PRESSURE:         cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+      case FORCE_X_COEFFICIENT:        cout << "X-force objective function." << endl; break;
+      case FORCE_Y_COEFFICIENT:        cout << "Y-force objective function." << endl; break;
+      case FORCE_Z_COEFFICIENT:        cout << "Z-force objective function." << endl; break;
+      case THRUST_COEFFICIENT:         cout << "Thrust objective function." << endl; break;
+      case TORQUE_COEFFICIENT:         cout << "Torque efficiency objective function." << endl; break;
+      case TOTAL_HEATFLUX:             cout << "Total heat flux objective function." << endl; break;
+      case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
+      case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
+      case BUFFET_SENSOR:              cout << "Buffet sensor objective function." << endl; break;
+      case SURFACE_TOTAL_PRESSURE:         cout << "Average total pressure objective function." << endl; break;
+      case SURFACE_STATIC_PRESSURE:        cout << "Average static pressure objective function." << endl; break;
+      case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
+      case SURFACE_MACH:             cout << "Mach number objective function." << endl; break;
+      case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
+      case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
+      case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
+      case VOLUME_FRACTION:           cout << "Volume fraction objective function." << endl; break;
       }
-		}
-		else {
-		  cout << "Weighted sum objective function." << endl;
-		}
+    }
+    else {
+      cout << "Weighted sum objective function." << endl;
+    }
 
-	}
+  }
 
-	if (val_software == SU2_CFD) {
-		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
+  if (val_software == SU2_CFD) {
+    cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
 
-		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
+    if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
@@ -6356,37 +6356,37 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == FDS)   cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
-          
+
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
-            case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
-            case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
-            case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
-            case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
-            case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
           }
         }
         
         if (MUSCL_Flow) {
           cout << "Second order integration in space, with slope limiter." << endl;
-            switch (Kind_SlopeLimit_Flow) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_Flow) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          }
         }
         else {
           cout << "First order integration in space." << endl;
@@ -6422,34 +6422,34 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
-            case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
-            case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
-            case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
-            case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
-            case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
           }
         }
 
         if (MUSCL_TNE2) {
           cout << "Second order integration in space, with slope limiter." << endl;
-            switch (Kind_SlopeLimit_TNE2) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_TNE2) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          }
         }
         else {
           cout << "First order integration in space." << endl;
@@ -6464,24 +6464,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
         if (MUSCL_Turb) {
           cout << "Second order integration in space with slope limiter." << endl;
-            switch (Kind_SlopeLimit_Turb) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_Turb) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          }
         }
         else {
           cout << "First order integration in space." << endl;
@@ -6495,7 +6495,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Centered_AdjFlow == JST) {
           cout << "Jameson-Schmidt-Turkel scheme for the adjoint inviscid terms."<< endl;
           cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
-          << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
+               << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
           cout << "Second order integration." << endl;
         }
@@ -6509,34 +6509,34 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
           cout << "Second order integration with slope limiter." << endl;
-            switch (Kind_SlopeLimit_AdjFlow) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-              case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_AdjFlow) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case WALL_DISTANCE:
+            cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          }
         }
         else {
           cout << "First order integration." << endl;
@@ -6552,34 +6552,34 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the adjoint turbulence model."<< endl;
         if (MUSCL_AdjTurb) {
           cout << "Second order integration with slope limiter." << endl;
-            switch (Kind_SlopeLimit_AdjTurb) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-              case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_AdjTurb) {
+          case NO_LIMITER:
+            cout << "No slope-limiting method. "<< endl;
+            break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case VENKATAKRISHNAN_WANG:
+            cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case BARTH_JESPERSEN:
+            cout << "Barth-Jespersen slope-limiting method." << endl;
+            break;
+          case VAN_ALBADA_EDGE:
+            cout << "Van Albada slope-limiting method implemented by edges." << endl;
+            break;
+          case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          case WALL_DISTANCE:
+            cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+            break;
+          }
         }
         else {
           cout << "First order integration." << endl;
@@ -6589,7 +6589,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
-        cout << "Average of gradients with correction (viscous flow terms)." << endl;
+      cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
@@ -6607,12 +6607,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if(Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES &&
        Kind_Solver != FEM_RANS  && Kind_Solver != FEM_LES &&
-       Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS && 
+       Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS &&
        Kind_Solver != DISC_ADJ_FEM_RANS) {
       if (!fea){
         switch (Kind_Gradient_Method) {
-          case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-          case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+        case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
+        case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
         }
       }
       else{
@@ -6628,10 +6628,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Discontinuous Galerkin Finite element solver" << endl;
 
         switch( Riemann_Solver_FEM ) {
-          case ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
-          case LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
-          case AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
-          case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+        case ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
+        case LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
+        case AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
+        case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
         }
 
         if(Kind_Solver != FEM_EULER && Kind_Solver != DISC_ADJ_FEM_EULER) {
@@ -6649,268 +6649,268 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
     if (!fea) {
-		switch (Unsteady_Simulation) {
-		  case NO:
-			cout << "Local time stepping (steady state simulation)." << endl; break;
-		  case TIME_STEPPING:
-			cout << "Unsteady simulation using a time stepping strategy."<< endl;
-			if (Unst_CFL != 0.0) {
-                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-                          if (Delta_UnstTime != 0.0) {
-                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
-                          }
-                        }
-			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-			break;
-		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-			if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-			if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
-			break;
-		}
-  }
-	else {
-		switch (Dynamic_Analysis) {
-		  case NO:
-			cout << "Static structural analysis." << endl; break;
-		  case YES:
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-			break;
-		}
-	}
+      switch (Unsteady_Simulation) {
+      case NO:
+        cout << "Local time stepping (steady state simulation)." << endl; break;
+      case TIME_STEPPING:
+        cout << "Unsteady simulation using a time stepping strategy."<< endl;
+        if (Unst_CFL != 0.0) {
+          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+          if (Delta_UnstTime != 0.0) {
+            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+          }
+        }
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        break;
+      case DT_STEPPING_1ST: case DT_STEPPING_2ND:
+        if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+        if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+        break;
+      }
+    }
+    else {
+      switch (Dynamic_Analysis) {
+      case NO:
+        cout << "Static structural analysis." << endl; break;
+      case YES:
+        cout << "Dynamic structural analysis."<< endl;
+        cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+        break;
+      }
+    }
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
+      case RUNGE_KUTTA_EXPLICIT:
+        cout << "Runge-Kutta explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << nRKStep << endl;
+        cout << "Alpha coefficients: ";
+        for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+          cout << "\t" << RK_Alpha_Step[iRKStep];
+        }
+        cout << endl;
+        break;
+      case EULER_EXPLICIT:
+        cout << "Euler explicit method for the flow equations." << endl;
+        break;
+      case EULER_IMPLICIT:
+        cout << "Euler implicit method for the flow equations." << endl;
+        switch (Kind_Linear_Solver) {
+        case BCGSTAB:
+          cout << "BCGSTAB is used for solving the linear system." << endl;
+          switch (Kind_Linear_Solver_Prec) {
+          case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+          case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+          case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+          case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
           }
-          cout << endl;
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case EULER_EXPLICIT:
-          cout << "Euler explicit method for the flow equations." << endl;
-          break;
-        case EULER_IMPLICIT:
-          cout << "Euler implicit method for the flow equations." << endl;
-          switch (Kind_Linear_Solver) {
-            case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
-            case FGMRES:
-            case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-               break;
-            case SMOOTHER_JACOBI:
-              cout << "A Jacobi method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_ILU:
-              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LUSGS:
-              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LINELET:
-              cout << "A Linelet method is used for smoothing the linear system." << endl;
-              break;
+        case FGMRES:
+        case RESTARTED_FGMRES:
+          cout << "FGMRES is used for solving the linear system." << endl;
+          switch (Kind_Linear_Solver_Prec) {
+          case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+          case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+          case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+          case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
           }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case CLASSICAL_RK4_EXPLICIT:
-          cout << "Classical RK4 explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << 4 << endl;
-          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
-          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+        case SMOOTHER_JACOBI:
+          cout << "A Jacobi method is used for smoothing the linear system." << endl;
           break;
+        case SMOOTHER_ILU:
+          cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
+          break;
+        case SMOOTHER_LUSGS:
+          cout << "A LU-SGS method is used for smoothing the linear system." << endl;
+          break;
+        case SMOOTHER_LINELET:
+          cout << "A Linelet method is used for smoothing the linear system." << endl;
+          break;
+        }
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        cout << "Classical RK4 explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << 4 << endl;
+        cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+        cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+        break;
       }
     }
 
-   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ||
-       (Kind_Solver == DISC_ADJ_TNE2_EULER) || (Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES)) {
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ||
+        (Kind_Solver == DISC_ADJ_TNE2_EULER) || (Kind_Solver == DISC_ADJ_TNE2_NAVIER_STOKES)) {
       switch (Kind_TimeIntScheme_TNE2) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
+      case RUNGE_KUTTA_EXPLICIT:
+        cout << "Runge-Kutta explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << nRKStep << endl;
+        cout << "Alpha coefficients: ";
+        for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+          cout << "\t" << RK_Alpha_Step[iRKStep];
+        }
+        cout << endl;
+        break;
+      case EULER_EXPLICIT:
+        cout << "Euler explicit method for the flow equations." << endl;
+        break;
+      case EULER_IMPLICIT:
+        cout << "Euler implicit method for the flow equations." << endl;
+        switch (Kind_Linear_Solver) {
+        case BCGSTAB:
+          cout << "BCGSTAB is used for solving the linear system." << endl;
+          switch (Kind_Linear_Solver_Prec) {
+          case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+          case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+          case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+          case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
           }
-          cout << endl;
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case EULER_EXPLICIT:
-          cout << "Euler explicit method for the flow equations." << endl;
-          break;
-        case EULER_IMPLICIT:
-          cout << "Euler implicit method for the flow equations." << endl;
-          switch (Kind_Linear_Solver) {
-            case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
-            case FGMRES:
-            case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-               break;
-            case SMOOTHER_JACOBI:
-              cout << "A Jacobi method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_ILU:
-              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LUSGS:
-              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LINELET:
-              cout << "A Linelet method is used for smoothing the linear system." << endl;
-              break;
+        case FGMRES:
+        case RESTARTED_FGMRES:
+          cout << "FGMRES is used for solving the linear system." << endl;
+          switch (Kind_Linear_Solver_Prec) {
+          case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+          case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+          case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+          case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
           }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case CLASSICAL_RK4_EXPLICIT:
-          cout << "Classical RK4 explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << 4 << endl;
-          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
-          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+        case SMOOTHER_JACOBI:
+          cout << "A Jacobi method is used for smoothing the linear system." << endl;
           break;
+        case SMOOTHER_ILU:
+          cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
+          break;
+        case SMOOTHER_LUSGS:
+          cout << "A LU-SGS method is used for smoothing the linear system." << endl;
+          break;
+        case SMOOTHER_LINELET:
+          cout << "A Linelet method is used for smoothing the linear system." << endl;
+          break;
+        }
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        cout << "Classical RK4 explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << 4 << endl;
+        cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+        cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+        break;
       }
     }
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
-        case CD_EXPLICIT:
-          cout << "Explicit time integration (NOT IMPLEMENTED YET)." << endl;
+      case CD_EXPLICIT:
+        cout << "Explicit time integration (NOT IMPLEMENTED YET)." << endl;
+        break;
+      case GENERALIZED_ALPHA:
+        cout << "Generalized-alpha method." << endl;
+        break;
+      case NEWMARK_IMPLICIT:
+        if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
+        switch (Kind_Linear_Solver) {
+        case BCGSTAB:
+          cout << "BCGSTAB is used for solving the linear system." << endl;
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case GENERALIZED_ALPHA:
-          cout << "Generalized-alpha method." << endl;
+        case FGMRES: case RESTARTED_FGMRES:
+          cout << "FGMRES is used for solving the linear system." << endl;
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
-        case NEWMARK_IMPLICIT:
-          if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
-          switch (Kind_Linear_Solver) {
-            case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
-            case FGMRES: case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
-            case CONJUGATE_GRADIENT:
-              cout << "A Conjugate Gradient method is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
-          }
+        case CONJUGATE_GRADIENT:
+          cout << "A Conjugate Gradient method is used for solving the linear system." << endl;
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
+        }
+        break;
       }
     }
 
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
       switch (Kind_TimeIntScheme_AdjFlow) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit method for the adjoint equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
-          }
-          cout << endl;
-          break;
-        case EULER_EXPLICIT: cout << "Euler explicit method for the adjoint equations." << endl; break;
-        case EULER_IMPLICIT: cout << "Euler implicit method for the adjoint equations." << endl; break;
+      case RUNGE_KUTTA_EXPLICIT:
+        cout << "Runge-Kutta explicit method for the adjoint equations." << endl;
+        cout << "Number of steps: " << nRKStep << endl;
+        cout << "Alpha coefficients: ";
+        for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+          cout << "\t" << RK_Alpha_Step[iRKStep];
+        }
+        cout << endl;
+        break;
+      case EULER_EXPLICIT: cout << "Euler explicit method for the adjoint equations." << endl; break;
+      case EULER_IMPLICIT: cout << "Euler implicit method for the adjoint equations." << endl; break;
       }
     }
 
     if(Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES ||
        Kind_Solver == FEM_RANS  || Kind_Solver == FEM_LES) {
       switch (Kind_TimeIntScheme_FEM_Flow) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
-          }
-          cout << endl;
-          break;
-        case CLASSICAL_RK4_EXPLICIT:
-          cout << "Classical RK4 explicit method for the flow equations." << endl;
-          cout << "Number of steps: " << 4 << endl;
-          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
-          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
-          break;
+      case RUNGE_KUTTA_EXPLICIT:
+        cout << "Runge-Kutta explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << nRKStep << endl;
+        cout << "Alpha coefficients: ";
+        for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+          cout << "\t" << RK_Alpha_Step[iRKStep];
+        }
+        cout << endl;
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        cout << "Classical RK4 explicit method for the flow equations." << endl;
+        cout << "Number of steps: " << 4 << endl;
+        cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+        cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+        break;
 
-        case ADER_DG:
-          if(nLevels_TimeAccurateLTS == 1)
-            cout << "ADER-DG for the flow equations with global time stepping." << endl;
-          else
-            cout << "ADER-DG for the flow equations with " << nLevels_TimeAccurateLTS
-                 << " levels for time accurate local time stepping." << endl;
+      case ADER_DG:
+        if(nLevels_TimeAccurateLTS == 1)
+          cout << "ADER-DG for the flow equations with global time stepping." << endl;
+        else
+          cout << "ADER-DG for the flow equations with " << nLevels_TimeAccurateLTS
+               << " levels for time accurate local time stepping." << endl;
 
-          switch( Kind_ADER_Predictor ) {
-            case ADER_ALIASED_PREDICTOR:
-              cout << "An aliased approach is used in the predictor step. " << endl;
-              break;
-            case ADER_NON_ALIASED_PREDICTOR:
-              cout << "A non-aliased approach is used in the predictor step. " << endl;
-              break;
-          }
-          cout << "Number of time DOFs ADER-DG predictor step: " << nTimeDOFsADER_DG << endl;
-          cout << "Location of time DOFs ADER-DG on the interval [-1,1]: ";
-          for (unsigned short iDOF=0; iDOF<nTimeDOFsADER_DG; iDOF++) {
-            cout << "\t" << TimeDOFsADER_DG[iDOF];
-          }
-          cout << endl;
-          cout << "Time quadrature factor for ADER-DG: " << Quadrature_Factor_Time_ADER_DG << endl;
-          cout << "Number of time integration points ADER-DG: " << nTimeIntegrationADER_DG << endl;
-          cout << "Location of time integration points ADER-DG on the interval [-1,1]: ";
-          for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
-            cout << "\t" << TimeIntegrationADER_DG[iDOF];
-          }
-          cout << endl;
-          cout << "Weights of time integration points ADER-DG on the interval [-1,1]: ";
-          for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
-            cout << "\t" << WeightsIntegrationADER_DG[iDOF];
-          }
-          cout << endl;
+        switch( Kind_ADER_Predictor ) {
+        case ADER_ALIASED_PREDICTOR:
+          cout << "An aliased approach is used in the predictor step. " << endl;
           break;
+        case ADER_NON_ALIASED_PREDICTOR:
+          cout << "A non-aliased approach is used in the predictor step. " << endl;
+          break;
+        }
+        cout << "Number of time DOFs ADER-DG predictor step: " << nTimeDOFsADER_DG << endl;
+        cout << "Location of time DOFs ADER-DG on the interval [-1,1]: ";
+        for (unsigned short iDOF=0; iDOF<nTimeDOFsADER_DG; iDOF++) {
+          cout << "\t" << TimeDOFsADER_DG[iDOF];
+        }
+        cout << endl;
+        cout << "Time quadrature factor for ADER-DG: " << Quadrature_Factor_Time_ADER_DG << endl;
+        cout << "Number of time integration points ADER-DG: " << nTimeIntegrationADER_DG << endl;
+        cout << "Location of time integration points ADER-DG on the interval [-1,1]: ";
+        for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
+          cout << "\t" << TimeIntegrationADER_DG[iDOF];
+        }
+        cout << endl;
+        cout << "Weights of time integration points ADER-DG on the interval [-1,1]: ";
+        for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
+          cout << "\t" << WeightsIntegrationADER_DG[iDOF];
+        }
+        cout << endl;
+        break;
       }
     }
 
@@ -6929,7 +6929,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+                <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
         PrintingToolbox::CTablePrinter MGTable(&std::cout);
@@ -6946,13 +6946,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         MGTable.PrintFooter();
       }
 
-			if (Unsteady_Simulation != TIME_STEPPING) {
-				cout << "Courant-Friedrichs-Lewy number:   ";
-				cout.precision(3);
-				cout.width(6); cout << CFL[0];
-				cout << endl;
-			}
-			
+      if (Unsteady_Simulation != TIME_STEPPING) {
+        cout << "Courant-Friedrichs-Lewy number:   ";
+        cout.precision(3);
+        cout.width(6); cout << CFL[0];
+        cout << endl;
+      }
+
 
     }
 
@@ -6978,22 +6978,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (ConvCriteria == CAUCHY) {
         if (!ContinuousAdjoint && !DiscreteAdjoint)
           switch (Cauchy_Func_Flow) {
-            case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-            case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
+                                      << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
+                                      << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
           }
 
         if (ContinuousAdjoint || DiscreteAdjoint)
           switch (Cauchy_Func_AdjFlow) {
-            case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-            case SENS_MACH: cout << "Cauchy criteria for Mach number sensitivity using "
-              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
+                                   << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          case SENS_MACH: cout << "Cauchy criteria for Mach number sensitivity using "
+                               << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
           }
 
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      
+
       }
 
 
@@ -7013,24 +7013,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
     else{
-        if (Kind_Struct_Solver == SMALL_DEFORMATIONS) {cout << "Convergence criteria determined by the linear solver." << endl;}
-        else if (Kind_Solver == DISC_ADJ_FEM){
+      if (Kind_Struct_Solver == SMALL_DEFORMATIONS) {cout << "Convergence criteria determined by the linear solver." << endl;}
+      else if (Kind_Solver == DISC_ADJ_FEM){
 
+      }
+      else{
+        if (Res_FEM_CRIT == RESFEM_ABSOLUTE){
+          cout << "Absolute convergence criteria" << endl;
+          cout << "Log10 of displacements (UTOL-A): " << Res_FEM_UTOL << "."<< endl;
+          cout << "Log10 of residual (RTOL-A): " << Res_FEM_RTOL << "."<< endl;
+          cout << "Log10 of energy (ETOL-A): " << Res_FEM_ETOL << "."<< endl;
         }
         else{
-          if (Res_FEM_CRIT == RESFEM_ABSOLUTE){
-              cout << "Absolute convergence criteria" << endl;
-              cout << "Log10 of displacements (UTOL-A): " << Res_FEM_UTOL << "."<< endl;
-              cout << "Log10 of residual (RTOL-A): " << Res_FEM_RTOL << "."<< endl;
-              cout << "Log10 of energy (ETOL-A): " << Res_FEM_ETOL << "."<< endl;
-          }
-          else{
-              cout << "Relative convergence criteria" << endl;
-              cout << "Displacements tolerance (UTOL): Reduce " << -Res_FEM_UTOL << " orders of magnitude."<< endl;
-              cout << "Residual tolerance (RTOL): Reduce " << -Res_FEM_RTOL << " orders of magnitude."<< endl;
-              cout << "Energy tolerance (ETOL): Reduce " << -Res_FEM_ETOL << " orders of magnitude."<< endl;
-          }
+          cout << "Relative convergence criteria" << endl;
+          cout << "Displacements tolerance (UTOL): Reduce " << -Res_FEM_UTOL << " orders of magnitude."<< endl;
+          cout << "Residual tolerance (RTOL): Reduce " << -Res_FEM_RTOL << " orders of magnitude."<< endl;
+          cout << "Energy tolerance (ETOL): Reduce " << -Res_FEM_ETOL << " orders of magnitude."<< endl;
         }
+      }
     }
 
 
@@ -7040,26 +7040,26 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"----------------------- Grid adaptation strategy ------------------------" << endl;
 
     switch (Kind_Adaptation) {
-      case NONE: break;
-      case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
-      case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
-      case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
-      case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
-      case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
-      case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
-      case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
-      case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
-      case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
-      case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
-      case SUPERSONIC_SHOCK: cout << "Grid adaptation for a supersonic shock at Mach: " << Mach <<"."<< endl; break;
+    case NONE: break;
+    case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
+    case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
+    case WAKE: cout << "Grid adaptation of the wake." << endl; break;
+    case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
+    case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
+    case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
+    case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
+    case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
+    case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
+    case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
+    case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
+    case SUPERSONIC_SHOCK: cout << "Grid adaptation for a supersonic shock at Mach: " << Mach <<"."<< endl; break;
     }
 
     switch (Kind_Adaptation) {
-      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
-        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
-        break;
+    case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
+      cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
+      cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
+      break;
     }
 
     if (Analytical_Surface != NONE)
@@ -7080,13 +7080,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+    case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+    case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
+    case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+    case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+    case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
+    case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
+    case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -7130,13 +7130,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
-      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
-      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+    case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+    case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
+    case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+    case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+    case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
+    case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
+    case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
   }
@@ -7147,15 +7147,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
     else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
-      case INVERSE_VOLUME:
-        cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
-        break;
-      case SOLID_WALL_DISTANCE:
-        cout << "Cell stiffness scaled by distance to nearest solid surface." << endl;
-        break;
-      case CONSTANT_STIFFNESS:
-        cout << "Imposing constant cell stiffness." << endl;
-        break;
+    case INVERSE_VOLUME:
+      cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
+      break;
+    case SOLID_WALL_DISTANCE:
+      cout << "Cell stiffness scaled by distance to nearest solid surface." << endl;
+      break;
+    case CONSTANT_STIFFNESS:
+      cout << "Imposing constant cell stiffness." << endl;
+      break;
     }
   }
 
@@ -7191,7 +7191,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
   BoundaryTable.PrintHeader();
   
-  if (nMarker_Euler != 0) {   
+  if (nMarker_Euler != 0) {
     BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
       BoundaryTable << Marker_Euler[iMarker_Euler];
@@ -7288,7 +7288,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Inlet < nMarker_Inlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Riemann != 0) {
     BoundaryTable << "Riemann boundary";
@@ -7297,7 +7297,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Riemann < nMarker_Riemann-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Giles != 0) {
     BoundaryTable << "Giles boundary";
@@ -7306,7 +7306,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Giles < nMarker_Giles-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_MixingPlaneInterface != 0) {
     BoundaryTable << "MixingPlane boundary";
@@ -7315,7 +7315,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_EngineInflow != 0) {
     BoundaryTable << "Engine inflow boundary";
@@ -7324,7 +7324,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_EngineInflow < nMarker_EngineInflow-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_EngineExhaust != 0) {
     BoundaryTable << "Engine exhaust boundary";
@@ -7333,7 +7333,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_EngineExhaust < nMarker_EngineExhaust-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Supersonic_Inlet != 0) {
     BoundaryTable << "Supersonic inlet boundary";
@@ -7342,7 +7342,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Supersonic_Outlet != 0) {
     BoundaryTable << "Supersonic outlet boundary";
@@ -7351,7 +7351,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Outlet != 0) {
     BoundaryTable << "Outlet boundary";
@@ -7360,7 +7360,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Outlet < nMarker_Outlet-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
+  }
   
   if (nMarker_Isothermal != 0) {
     BoundaryTable << "Isothermal wall";
@@ -7369,8 +7369,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_Isothermal < nMarker_Isothermal-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
-  } 
- 
+  }
+
   if (nMarker_IsothermalCatalytic != 0) {
     BoundaryTable << "Catalytic Isothermal wall";
     for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
@@ -7389,7 +7389,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_HeatFlux != 0) {  
+  if (nMarker_HeatFlux != 0) {
     BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       BoundaryTable << Marker_HeatFlux[iMarker_HeatFlux];
@@ -7416,7 +7416,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Clamped != 0) {  
+  if (nMarker_Clamped != 0) {
     BoundaryTable << "Clamped boundary";
     for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
       BoundaryTable << Marker_Clamped[iMarker_Clamped];
@@ -7425,7 +7425,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Displacement != 0) {  
+  if (nMarker_Displacement != 0) {
     BoundaryTable << "Displacement boundary";
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
       BoundaryTable << Marker_Displacement[iMarker_Displacement];
@@ -7434,7 +7434,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Load != 0) {  
+  if (nMarker_Load != 0) {
     BoundaryTable << "Normal load boundary";
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
       BoundaryTable << Marker_Load[iMarker_Load];
@@ -7443,7 +7443,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Damper != 0) {  
+  if (nMarker_Damper != 0) {
     BoundaryTable << "Damper boundary";
     for (iMarker_Damper = 0; iMarker_Damper < nMarker_Damper; iMarker_Damper++) {
       BoundaryTable << Marker_Damper[iMarker_Damper];
@@ -7452,7 +7452,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Load_Dir != 0) {  
+  if (nMarker_Load_Dir != 0) {
     BoundaryTable << "Load boundary";
     for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++) {
       BoundaryTable << Marker_Load_Dir[iMarker_Load_Dir];
@@ -7461,7 +7461,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Disp_Dir != 0) {  
+  if (nMarker_Disp_Dir != 0) {
     BoundaryTable << "Disp boundary";
     for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++) {
       BoundaryTable << Marker_Disp_Dir[iMarker_Disp_Dir];
@@ -7470,7 +7470,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Load_Sine != 0) {  
+  if (nMarker_Load_Sine != 0) {
     BoundaryTable << "Sine-Wave boundary";
     for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
       BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
@@ -7479,7 +7479,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Neumann != 0) {  
+  if (nMarker_Neumann != 0) {
     BoundaryTable << "Neumann boundary";
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
       BoundaryTable << Marker_Neumann[iMarker_Neumann];
@@ -7488,7 +7488,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_Custom != 0) {  
+  if (nMarker_Custom != 0) {
     BoundaryTable << "Custom boundary";
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
       BoundaryTable << Marker_Custom[iMarker_Custom];
@@ -7497,7 +7497,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_ActDiskInlet != 0) {  
+  if (nMarker_ActDiskInlet != 0) {
     BoundaryTable << "Actuator disk (inlet) boundary";
     for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
       BoundaryTable << Marker_ActDiskInlet[iMarker_ActDiskInlet];
@@ -7506,7 +7506,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
   
-  if (nMarker_ActDiskOutlet != 0) {  
+  if (nMarker_ActDiskOutlet != 0) {
     BoundaryTable << "Actuator disk (outlet) boundary";
     for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
       BoundaryTable << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
@@ -7543,8 +7543,8 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   pos = str.find("=");
   if (pos == string::npos) {
     cerr << "Error in TokenizeString(): "
-    << "line in the configuration file with no \"=\" sign."
-    << endl;
+         << "line in the configuration file with no \"=\" sign."
+         << endl;
     cout << "Look for: " << str << endl;
     cout << "str.length() = " << str.length() << endl;
     throw(-1);
@@ -7559,8 +7559,8 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   pos = name_part.find_first_of(delimiters, last_pos);
   if ( (name_part.length() == 0) || (last_pos == string::npos) ) {
     cerr << "Error in CConfig::TokenizeString(): "
-    << "line in the configuration file with no name before the \"=\" sign."
-    << endl;
+         << "line in the configuration file with no name before the \"=\" sign."
+         << endl;
     throw(-1);
   }
   if (pos == string::npos) pos = name_part.length();
@@ -7568,8 +7568,8 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   last_pos = name_part.find_first_not_of(delimiters, pos);
   if (last_pos != string::npos) {
     cerr << "Error in TokenizeString(): "
-    << "two or more options before an \"=\" sign in the configuration file."
-    << endl;
+         << "two or more options before an \"=\" sign in the configuration file."
+         << endl;
     throw(-1);
   }
   StringToUpperCase(option_name);
@@ -7591,8 +7591,8 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   }
   if (option_value.size() == 0) {
     cerr << "Error in TokenizeString(): "
-    << "option " << option_name << " in configuration file with no value assigned."
-    << endl;
+         << "option " << option_name << " in configuration file with no value assigned."
+         << endl;
     throw(-1);
   }
 
@@ -7786,21 +7786,21 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 int CConfig::GetMarker_ZoneInterface(string val_marker) {	
-	  unsigned short iMarker_CfgFile;
-	  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     
-		  if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
-				return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
-    return 0;
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
+      return  Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
+  return 0;
 }
 
 
 CConfig::~CConfig(void) {
-	
+
   unsigned long iDV, iMarker, iPeriodic, iFFD;
 
   /*--- Delete all of the option objects in the global option map ---*/
-    
+
   for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
     delete itr->second;
   }
@@ -7821,11 +7821,11 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
- if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
+  if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
- /*--- Free memory for airfoil sections ---*/
+  /*--- Free memory for airfoil sections ---*/
 
- if (LocationStations   != NULL) delete [] LocationStations;
+  if (LocationStations   != NULL) delete [] LocationStations;
 
   /*--- motion origin: ---*/
   
@@ -7884,9 +7884,9 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
-    
+
   if (Omega_HB != NULL) delete [] Omega_HB;
-    
+
   /*--- Marker pointers ---*/
   
   if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
@@ -7963,7 +7963,7 @@ CConfig::~CConfig(void) {
 
   if (DoubleInfo_WallFunctions != NULL) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != NULL) 
+      if (DoubleInfo_WallFunctions[iMarker] != NULL)
         delete[] DoubleInfo_WallFunctions[iMarker];
     }
     delete[] DoubleInfo_WallFunctions;
@@ -8303,56 +8303,56 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
 
 string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
-    
-    if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
-        SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
-    }
-    return multizone_filename;
+  string multizone_filename = val_filename;
+  char buffer[50];
+
+  if (GetnZone() > 1 ) {
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+    multizone_filename.append(string(buffer));
+  }
+  return multizone_filename;
 }
 
 string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone) {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    if (GetnZone() > 1 ) {
-        unsigned short lastindex = multizone_filename.find_last_of(".");
-        multizone_filename = multizone_filename.substr(0, lastindex);
-        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
-    }
-    return multizone_filename;
+  if (GetnZone() > 1 ) {
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+    multizone_filename.append(string(buffer));
+  }
+  return multizone_filename;
 }
 
 string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
 string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
 string CConfig::GetObjFunc_Extension(string val_filename) {
@@ -8368,50 +8368,50 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 
     if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-        case DRAG_COEFFICIENT:            AdjExt = "_cd";       break;
-        case LIFT_COEFFICIENT:            AdjExt = "_cl";       break;
-        case SIDEFORCE_COEFFICIENT:       AdjExt = "_csf";      break;
-        case INVERSE_DESIGN_PRESSURE:     AdjExt = "_invpress"; break;
-        case INVERSE_DESIGN_HEATFLUX:     AdjExt = "_invheat";  break;
-        case MOMENT_X_COEFFICIENT:        AdjExt = "_cmx";      break;
-        case MOMENT_Y_COEFFICIENT:        AdjExt = "_cmy";      break;
-        case MOMENT_Z_COEFFICIENT:        AdjExt = "_cmz";      break;
-        case EFFICIENCY:                  AdjExt = "_eff";      break;
-        case EQUIVALENT_AREA:             AdjExt = "_ea";       break;
-        case NEARFIELD_PRESSURE:          AdjExt = "_nfp";      break;
-        case FORCE_X_COEFFICIENT:         AdjExt = "_cfx";      break;
-        case FORCE_Y_COEFFICIENT:         AdjExt = "_cfy";      break;
-        case FORCE_Z_COEFFICIENT:         AdjExt = "_cfz";      break;
-        case THRUST_COEFFICIENT:          AdjExt = "_ct";       break;
-        case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
-        case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
-        case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
-        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
-        case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
-        case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
-        case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-        case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
-        case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
-        case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
-        case SURFACE_SECONDARY:           AdjExt = "_second";   break;
-        case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
-        case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
-        case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
-        case SURFACE_MACH:                AdjExt = "_mach";     break;
-        case CUSTOM_OBJFUNC:        		  AdjExt = "_custom";   break;
-        case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
-        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
-        case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
-        case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
-        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
-        case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
-        case EULERIAN_WORK:               AdjExt = "_ew";       break;
-        case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
-        case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
-        case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
-        case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
-        case REFERENCE_NODE:              AdjExt = "_refnode";  break;
-        case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
+      case DRAG_COEFFICIENT:            AdjExt = "_cd";       break;
+      case LIFT_COEFFICIENT:            AdjExt = "_cl";       break;
+      case SIDEFORCE_COEFFICIENT:       AdjExt = "_csf";      break;
+      case INVERSE_DESIGN_PRESSURE:     AdjExt = "_invpress"; break;
+      case INVERSE_DESIGN_HEATFLUX:     AdjExt = "_invheat";  break;
+      case MOMENT_X_COEFFICIENT:        AdjExt = "_cmx";      break;
+      case MOMENT_Y_COEFFICIENT:        AdjExt = "_cmy";      break;
+      case MOMENT_Z_COEFFICIENT:        AdjExt = "_cmz";      break;
+      case EFFICIENCY:                  AdjExt = "_eff";      break;
+      case EQUIVALENT_AREA:             AdjExt = "_ea";       break;
+      case NEARFIELD_PRESSURE:          AdjExt = "_nfp";      break;
+      case FORCE_X_COEFFICIENT:         AdjExt = "_cfx";      break;
+      case FORCE_Y_COEFFICIENT:         AdjExt = "_cfy";      break;
+      case FORCE_Z_COEFFICIENT:         AdjExt = "_cfz";      break;
+      case THRUST_COEFFICIENT:          AdjExt = "_ct";       break;
+      case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
+      case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
+      case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
+      case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
+      case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
+      case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
+      case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+      case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
+      case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
+      case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
+      case SURFACE_SECONDARY:           AdjExt = "_second";   break;
+      case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
+      case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
+      case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
+      case SURFACE_MACH:                AdjExt = "_mach";     break;
+      case CUSTOM_OBJFUNC:        		  AdjExt = "_custom";   break;
+      case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
+      case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
+      case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
+      case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
+      case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
+      case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
+      case EULERIAN_WORK:               AdjExt = "_ew";       break;
+      case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
+      case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
+      case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+      case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
+      case REFERENCE_NODE:              AdjExt = "_refnode";  break;
+      case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
       }
     }
     else{
@@ -8430,18 +8430,18 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
   switch (val_eqsystem) {
-    case RUNTIME_FLOW_SYS:      return FLOW_SOL;
-    case RUNTIME_TURB_SYS:      return TURB_SOL;
-    case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_TNE2_SYS:      return TNE2_SOL;
-    case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
-    case RUNTIME_HEAT_SYS:      return HEAT_SOL;
-    case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
-    case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
-    case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
-    case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
-    case RUNTIME_MULTIGRID_SYS: return 0;
+  case RUNTIME_FLOW_SYS:      return FLOW_SOL;
+  case RUNTIME_TURB_SYS:      return TURB_SOL;
+  case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+  case RUNTIME_TNE2_SYS:      return TNE2_SOL;
+  case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
+  case RUNTIME_HEAT_SYS:      return HEAT_SOL;
+  case RUNTIME_FEA_SYS:       return FEA_SOL;
+  case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
+  case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
+  case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
+  case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
+  case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;
 }
@@ -8472,160 +8472,160 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   /*--- Set the solver methods ---*/
   
   switch (val_solver) {
-    case EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      break;
-    case TNE2_EULER:
-      if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
-                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
-                              MUSCL_TNE2, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
-      }
-      break;
-    case NAVIER_STOKES:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
-      break;
-    case TNE2_NAVIER_STOKES:
-      if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
-                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
-                              MUSCL_TNE2, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
-      }
-        break;
-    case RANS:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_TURB_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
-                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              MUSCL_Turb, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
-      }
-      if (val_system == RUNTIME_TRANS_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
-                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              MUSCL_Turb, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
-      }
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
-      break;
-    case FEM_EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, Kind_FEM_Flow);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
-      }
-      break;
-    case FEM_NAVIER_STOKES:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, Kind_FEM_Flow);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
-      }
-      break;
-    case FEM_LES:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, Kind_FEM_Flow);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
-      }
-      break;
-    case ADJ_EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
-                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              MUSCL_AdjFlow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
-      }
-      break;
-    case ADJ_NAVIER_STOKES:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
-                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              MUSCL_AdjFlow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
-      }
-      break;
-    case ADJ_RANS:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
-                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              MUSCL_AdjFlow, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
-      }
-      if (val_system == RUNTIME_TURB_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
-                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              MUSCL_Turb, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
-      }
-      if (val_system == RUNTIME_ADJTURB_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
-                              Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
-                              MUSCL_AdjTurb, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
-      }
-      break;
-    case HEAT_EQUATION_FVM:
-      if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
-      }
-      break;
+  case EULER:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    break;
+  case TNE2_EULER:
+    if (val_system == RUNTIME_TNE2_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                            Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                            MUSCL_TNE2, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
+    }
+    break;
+  case NAVIER_STOKES:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+    }
+    break;
+  case TNE2_NAVIER_STOKES:
+    if (val_system == RUNTIME_TNE2_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                            Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                            MUSCL_TNE2, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
+    }
+    break;
+  case RANS:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    if (val_system == RUNTIME_TURB_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                            Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                            MUSCL_Turb, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+    }
+    if (val_system == RUNTIME_TRANS_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                            Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                            MUSCL_Turb, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+    }
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+    }
+    break;
+  case FEM_EULER:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, Kind_FEM_Flow);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
+    }
+    break;
+  case FEM_NAVIER_STOKES:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, Kind_FEM_Flow);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
+    }
+    break;
+  case FEM_LES:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, Kind_FEM_Flow);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
+    }
+    break;
+  case ADJ_EULER:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    if (val_system == RUNTIME_ADJFLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                            Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                            MUSCL_AdjFlow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
+    }
+    break;
+  case ADJ_NAVIER_STOKES:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    if (val_system == RUNTIME_ADJFLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                            Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                            MUSCL_AdjFlow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
+    }
+    break;
+  case ADJ_RANS:
+    if (val_system == RUNTIME_FLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                            Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                            MUSCL_Flow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+    }
+    if (val_system == RUNTIME_ADJFLOW_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                            Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                            MUSCL_AdjFlow, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
+    }
+    if (val_system == RUNTIME_TURB_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                            Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                            MUSCL_Turb, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+    }
+    if (val_system == RUNTIME_ADJTURB_SYS) {
+      SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
+                            Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
+                            MUSCL_AdjTurb, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
+    }
+    break;
+  case HEAT_EQUATION_FVM:
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+    }
+    break;
 
-    case FEM_ELASTICITY:
+  case FEM_ELASTICITY:
 
-      Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
+    Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
 
-      if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
-      }
-      break;
+    if (val_system == RUNTIME_FEA_SYS) {
+      SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
+    }
+    break;
   }
 }
 
@@ -9153,13 +9153,13 @@ su2double CConfig::GetFlowAngleIn_BC() {
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-  		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
-  	}
+    if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+      alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
+    }
   }
 
   if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
-  	alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
+    alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
   }
 
   return alpha_in;
@@ -9195,7 +9195,7 @@ su2double CConfig::GetIncTemperature_BC() {
   su2double val_out = 0.0;
 
   if (nMarker_Inlet > 0) {
-      val_out = Inlet_Ttotal[0]/Temperature_Ref;
+    val_out = Inlet_Ttotal[0]/Temperature_Ref;
   }
 
   return val_out;
@@ -9204,7 +9204,7 @@ su2double CConfig::GetIncTemperature_BC() {
 void CConfig::SetIncTemperature_BC(su2double val_temperature) {
 
   if (nMarker_Inlet > 0) {
-      Inlet_Ttotal[0] = val_temperature*Temperature_Ref;
+    Inlet_Ttotal[0] = val_temperature*Temperature_Ref;
   }
   
 }
@@ -9248,8 +9248,8 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   unsigned short iMarker_HeatFlux = 0;
 
   if (nMarker_HeatFlux > 0) {
-  for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
-    if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
+    for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
+      if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
   }
 
   return Heat_Flux[iMarker_HeatFlux];
@@ -9288,8 +9288,8 @@ su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
     if(Marker_WallFunctions[iMarker] == val_marker) {
       doubleInfo = DoubleInfo_WallFunctions[iMarker];
       break;
-    } 
-  } 
+    }
+  }
 
   return doubleInfo;
 }
@@ -10034,7 +10034,7 @@ void CConfig::GEMMProfilingCSV(void) {
     /* Not the master node. Create the send buffer for the MNK data. */
     vector<long> sendBufMNK(3*GEMM_Profile_NCalls.size());
     for(map<CLong3T, int>::iterator MI =GEMM_Profile_MNK.begin();
-                                    MI!=GEMM_Profile_MNK.end(); ++MI) {
+        MI!=GEMM_Profile_MNK.end(); ++MI) {
 
       const int ind = 3*MI->second;
       sendBufMNK[ind]   = MI->first.long0;
@@ -10065,7 +10065,7 @@ void CConfig::GEMMProfilingCSV(void) {
     const unsigned int nItems = GEMM_Profile_MNK.size();
     vector<long> M(nItems), N(nItems), K(nItems);
     for(map<CLong3T, int>::iterator MI =GEMM_Profile_MNK.begin();
-                                    MI!=GEMM_Profile_MNK.end(); ++MI) {
+        MI!=GEMM_Profile_MNK.end(); ++MI) {
 
       const int ind = MI->second;
       M[ind] = MI->first.long0;
@@ -10098,7 +10098,7 @@ void CConfig::GEMMProfilingCSV(void) {
        written first. As sortedTime is sorted in increasing order, the sequence of
        sortedTime must be reversed. */
     for(vector<pair<double, unsigned int> >::reverse_iterator rit =sortedTime.rbegin();
-                                                              rit!=sortedTime.rend(); ++rit) {
+        rit!=sortedTime.rend(); ++rit) {
       /* Determine the original index in the profiling vectors. */
       const unsigned int ind = rit->second;
       const double AvgTime = GEMM_Profile_TotTime[ind]/GEMM_Profile_NCalls[ind];
@@ -10129,7 +10129,55 @@ void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned 
 
   switch (Kind_GasModel) {
 
-    case O2:
+  case O2:
+
+    //O2 + M -> 2O + M
+    RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
+    RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
+    RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
+    RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
+    RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
+    RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
+
+    break;
+
+  case N2:
+
+    //N2 + M -> 2N + M
+    RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+    RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+    RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+    RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+    RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+    RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    break;
+
+  case ARGON_SID:
+
+    //N2 + M -> 2N + M
+    RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+    RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+    RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+    RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+    RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+    RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    break;
+
+  case AIR5:
+
+    if (iReaction <= 4) {
+
+      //N2 + M -> 2N + M
+      RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
+      RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
+      RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
+      RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
+      RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
+      RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+
+    } else if (iReaction > 4 && iReaction <= 9) {
 
       //O2 + M -> 2O + M
       RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
@@ -10139,9 +10187,42 @@ void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned 
       RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
       RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
 
-      break;
+    } else if (iReaction > 9 && iReaction <= 14) {
 
-    case N2:
+      //NO + M -> N + O + M
+      RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
+      RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
+      RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
+      RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
+      RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
+      RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
+
+    } else if (iReaction == 15) {
+
+      //N2 + O -> NO + N
+      RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
+      RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
+      RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
+      RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
+      RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
+      RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
+
+    } else if (iReaction == 16) {
+
+      //NO + O -> O2 + N
+      RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
+      RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
+      RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
+      RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
+      RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
+      RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
+    }
+
+    break;
+
+  case AIR7:
+
+    if (iReaction <= 6) {
 
       //N2 + M -> 2N + M
       RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
@@ -10151,138 +10232,57 @@ void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned 
       RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
       RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
 
-      break;
+    } else if (iReaction > 6 && iReaction <= 13) {
 
-    case ARGON_SID:
+      //O2 + M -> 2O + M
+      RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
+      RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
+      RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
+      RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
+      RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
+      RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
 
-      //N2 + M -> 2N + M
-      RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
-      RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
-      RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
-      RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
-      RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
-      RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+    } else if (iReaction > 13 && iReaction <= 20) {
 
-      break;
+      //NO + M -> N + O + M
+      RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
+      RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
+      RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
+      RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
+      RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
+      RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
 
-    case AIR5:
+    } else if (iReaction == 21) {
 
-      if (iReaction <= 4) {
+      //N2 + O -> NO + N
+      RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
+      RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
+      RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
+      RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
+      RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
+      RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
 
-        //N2 + M -> 2N + M
-        RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
-        RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
-        RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
-        RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
-        RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
-        RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
+    } else if (iReaction == 22) {
 
-      } else if (iReaction > 4 && iReaction <= 9) {
+      //NO + O -> O2 + N
+      RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
+      RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
+      RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
+      RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
+      RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
+      RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
 
-        //O2 + M -> 2O + M
-        RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
-        RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
-        RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
-        RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
-        RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
-        RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
+    } else if (iReaction == 23) {
 
-      } else if (iReaction > 9 && iReaction <= 14) {
-
-        //NO + M -> N + O + M
-        RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
-        RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
-        RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
-        RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
-        RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
-        RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
-
-      } else if (iReaction == 15) {
-
-        //N2 + O -> NO + N
-        RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
-        RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
-        RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
-        RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
-        RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
-        RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
-
-      } else if (iReaction == 16) {
-
-        //NO + O -> O2 + N
-        RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
-        RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
-        RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
-        RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
-        RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
-        RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
-      }
-
-      break;
-
-    case AIR7:
-
-      if (iReaction <= 6) {
-
-        //N2 + M -> 2N + M
-        RxnConstantTable[0][0] = 3.4907;  RxnConstantTable[0][1] = 0.83133; RxnConstantTable[0][2] = 4.0978;  RxnConstantTable[0][3] = -12.728; RxnConstantTable[0][4] = 0.07487;   //n = 1E14
-        RxnConstantTable[1][0] = 2.0723;  RxnConstantTable[1][1] = 1.38970; RxnConstantTable[1][2] = 2.0617;  RxnConstantTable[1][3] = -11.828; RxnConstantTable[1][4] = 0.015105;  //n = 1E15
-        RxnConstantTable[2][0] = 1.6060;  RxnConstantTable[2][1] = 1.57320; RxnConstantTable[2][2] = 1.3923;  RxnConstantTable[2][3] = -11.533; RxnConstantTable[2][4] = -0.004543; //n = 1E16
-        RxnConstantTable[3][0] = 1.5351;  RxnConstantTable[3][1] = 1.60610; RxnConstantTable[3][2] = 1.2993;  RxnConstantTable[3][3] = -11.494; RxnConstantTable[3][4] = -0.00698;  //n = 1E17
-        RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
-        RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
-
-      } else if (iReaction > 6 && iReaction <= 13) {
-
-        //O2 + M -> 2O + M
-        RxnConstantTable[0][0] = 1.8103;  RxnConstantTable[0][1] = 1.9607;  RxnConstantTable[0][2] = 3.5716;  RxnConstantTable[0][3] = -7.3623;   RxnConstantTable[0][4] = 0.083861;
-        RxnConstantTable[1][0] = 0.91354; RxnConstantTable[1][1] = 2.3160;  RxnConstantTable[1][2] = 2.2885;  RxnConstantTable[1][3] = -6.7969;   RxnConstantTable[1][4] = 0.046338;
-        RxnConstantTable[2][0] = 0.64183; RxnConstantTable[2][1] = 2.4253;  RxnConstantTable[2][2] = 1.9026;  RxnConstantTable[2][3] = -6.6277;   RxnConstantTable[2][4] = 0.035151;
-        RxnConstantTable[3][0] = 0.55388; RxnConstantTable[3][1] = 2.4600;  RxnConstantTable[3][2] = 1.7763;  RxnConstantTable[3][3] = -6.5720;   RxnConstantTable[3][4] = 0.031445;
-        RxnConstantTable[4][0] = 0.52455; RxnConstantTable[4][1] = 2.4715;  RxnConstantTable[4][2] = 1.7342;  RxnConstantTable[4][3] = -6.55534;  RxnConstantTable[4][4] = 0.030209;
-        RxnConstantTable[5][0] = 0.50989; RxnConstantTable[5][1] = 2.4773;  RxnConstantTable[5][2] = 1.7132;  RxnConstantTable[5][3] = -6.5441;   RxnConstantTable[5][4] = 0.029591;
-
-      } else if (iReaction > 13 && iReaction <= 20) {
-
-        //NO + M -> N + O + M
-        RxnConstantTable[0][0] = 2.1649;  RxnConstantTable[0][1] = 0.078577;  RxnConstantTable[0][2] = 2.8508;  RxnConstantTable[0][3] = -8.5422; RxnConstantTable[0][4] = 0.053043;
-        RxnConstantTable[1][0] = 1.0072;  RxnConstantTable[1][1] = 0.53545;   RxnConstantTable[1][2] = 1.1911;  RxnConstantTable[1][3] = -7.8098; RxnConstantTable[1][4] = 0.004394;
-        RxnConstantTable[2][0] = 0.63817; RxnConstantTable[2][1] = 0.68189;   RxnConstantTable[2][2] = 0.66336; RxnConstantTable[2][3] = -7.5773; RxnConstantTable[2][4] = -0.011025;
-        RxnConstantTable[3][0] = 0.55889; RxnConstantTable[3][1] = 0.71558;   RxnConstantTable[3][2] = 0.55396; RxnConstantTable[3][3] = -7.5304; RxnConstantTable[3][4] = -0.014089;
-        RxnConstantTable[4][0] = 0.5150;  RxnConstantTable[4][1] = 0.73286;   RxnConstantTable[4][2] = 0.49096; RxnConstantTable[4][3] = -7.5025; RxnConstantTable[4][4] = -0.015938;
-        RxnConstantTable[5][0] = 0.50765; RxnConstantTable[5][1] = 0.73575;   RxnConstantTable[5][2] = 0.48042; RxnConstantTable[5][3] = -7.4979; RxnConstantTable[5][4] = -0.016247;
-
-      } else if (iReaction == 21) {
-
-        //N2 + O -> NO + N
-        RxnConstantTable[0][0] = 1.3261;  RxnConstantTable[0][1] = 0.75268; RxnConstantTable[0][2] = 1.2474;  RxnConstantTable[0][3] = -4.1857; RxnConstantTable[0][4] = 0.02184;
-        RxnConstantTable[1][0] = 1.0653;  RxnConstantTable[1][1] = 0.85417; RxnConstantTable[1][2] = 0.87093; RxnConstantTable[1][3] = -4.0188; RxnConstantTable[1][4] = 0.010721;
-        RxnConstantTable[2][0] = 0.96794; RxnConstantTable[2][1] = 0.89131; RxnConstantTable[2][2] = 0.7291;  RxnConstantTable[2][3] = -3.9555; RxnConstantTable[2][4] = 0.006488;
-        RxnConstantTable[3][0] = 0.97646; RxnConstantTable[3][1] = 0.89043; RxnConstantTable[3][2] = 0.74572; RxnConstantTable[3][3] = -3.9642; RxnConstantTable[3][4] = 0.007123;
-        RxnConstantTable[4][0] = 0.96188; RxnConstantTable[4][1] = 0.89617; RxnConstantTable[4][2] = 0.72479; RxnConstantTable[4][3] = -3.955;  RxnConstantTable[4][4] = 0.006509;
-        RxnConstantTable[5][0] = 0.96921; RxnConstantTable[5][1] = 0.89329; RxnConstantTable[5][2] = 0.73531; RxnConstantTable[5][3] = -3.9596; RxnConstantTable[5][4] = 0.006818;
-
-      } else if (iReaction == 22) {
-
-        //NO + O -> O2 + N
-        RxnConstantTable[0][0] = 0.35438;   RxnConstantTable[0][1] = -1.8821; RxnConstantTable[0][2] = -0.72111;  RxnConstantTable[0][3] = -1.1797;   RxnConstantTable[0][4] = -0.030831;
-        RxnConstantTable[1][0] = 0.093613;  RxnConstantTable[1][1] = -1.7806; RxnConstantTable[1][2] = -1.0975;   RxnConstantTable[1][3] = -1.0128;   RxnConstantTable[1][4] = -0.041949;
-        RxnConstantTable[2][0] = -0.003732; RxnConstantTable[2][1] = -1.7434; RxnConstantTable[2][2] = -1.2394;   RxnConstantTable[2][3] = -0.94952;  RxnConstantTable[2][4] = -0.046182;
-        RxnConstantTable[3][0] = 0.004815;  RxnConstantTable[3][1] = -1.7443; RxnConstantTable[3][2] = -1.2227;   RxnConstantTable[3][3] = -0.95824;  RxnConstantTable[3][4] = -0.045545;
-        RxnConstantTable[4][0] = -0.009758; RxnConstantTable[4][1] = -1.7386; RxnConstantTable[4][2] = -1.2436;   RxnConstantTable[4][3] = -0.949;    RxnConstantTable[4][4] = -0.046159;
-        RxnConstantTable[5][0] = -0.002428; RxnConstantTable[5][1] = -1.7415; RxnConstantTable[5][2] = -1.2331;   RxnConstantTable[5][3] = -0.95365;  RxnConstantTable[5][4] = -0.04585;
-
-      } else if (iReaction == 23) {
-
-        //N + O -> NO+ + e-
-        RxnConstantTable[0][0] = -2.1852;   RxnConstantTable[0][1] = -6.6709; RxnConstantTable[0][2] = -4.2968; RxnConstantTable[0][3] = -2.2175; RxnConstantTable[0][4] = -0.050748;
-        RxnConstantTable[1][0] = -1.0276;   RxnConstantTable[1][1] = -7.1278; RxnConstantTable[1][2] = -2.637;  RxnConstantTable[1][3] = -2.95;   RxnConstantTable[1][4] = -0.0021;
-        RxnConstantTable[2][0] = -0.65871;  RxnConstantTable[2][1] = -7.2742; RxnConstantTable[2][2] = -2.1096; RxnConstantTable[2][3] = -3.1823; RxnConstantTable[2][4] = 0.01331;
-        RxnConstantTable[3][0] = -0.57924;  RxnConstantTable[3][1] = -7.3079; RxnConstantTable[3][2] = -1.9999; RxnConstantTable[3][3] = -3.2294; RxnConstantTable[3][4] = 0.016382;
-        RxnConstantTable[4][0] = -0.53538;  RxnConstantTable[4][1] = -7.3252; RxnConstantTable[4][2] = -1.937;  RxnConstantTable[4][3] = -3.2572; RxnConstantTable[4][4] = 0.01823;
-        RxnConstantTable[5][0] = -0.52801;  RxnConstantTable[5][1] = -7.3281; RxnConstantTable[5][2] = -1.9264; RxnConstantTable[5][3] = -3.2618; RxnConstantTable[5][4] = 0.01854;
-      }
-      break;
+      //N + O -> NO+ + e-
+      RxnConstantTable[0][0] = -2.1852;   RxnConstantTable[0][1] = -6.6709; RxnConstantTable[0][2] = -4.2968; RxnConstantTable[0][3] = -2.2175; RxnConstantTable[0][4] = -0.050748;
+      RxnConstantTable[1][0] = -1.0276;   RxnConstantTable[1][1] = -7.1278; RxnConstantTable[1][2] = -2.637;  RxnConstantTable[1][3] = -2.95;   RxnConstantTable[1][4] = -0.0021;
+      RxnConstantTable[2][0] = -0.65871;  RxnConstantTable[2][1] = -7.2742; RxnConstantTable[2][2] = -2.1096; RxnConstantTable[2][3] = -3.1823; RxnConstantTable[2][4] = 0.01331;
+      RxnConstantTable[3][0] = -0.57924;  RxnConstantTable[3][1] = -7.3079; RxnConstantTable[3][2] = -1.9999; RxnConstantTable[3][3] = -3.2294; RxnConstantTable[3][4] = 0.016382;
+      RxnConstantTable[4][0] = -0.53538;  RxnConstantTable[4][1] = -7.3252; RxnConstantTable[4][2] = -1.937;  RxnConstantTable[4][3] = -3.2572; RxnConstantTable[4][4] = 0.01823;
+      RxnConstantTable[5][0] = -0.52801;  RxnConstantTable[5][1] = -7.3281; RxnConstantTable[5][2] = -1.9264; RxnConstantTable[5][3] = -3.2618; RxnConstantTable[5][4] = 0.01854;
+    }
+    break;
   }
 }
 
