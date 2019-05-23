@@ -1,11 +1,14 @@
 su2_def_src = ['SU2_DEF.cpp']
 su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
-                                       'output_structure.cpp',
-				       'output_cgns.cpp',
-				       'output_tecplot.cpp',
-				       'output_fieldview.cpp',
-				       'output_su2.cpp',
-				       'output_paraview.cpp',
+                                       'output/output_structure.cpp',
+                                       'output/output_mesh.cpp',
+                                       'output/output_structure_legacy.cpp',
+                                       'output/output_csv.cpp',
+				       'output/output_cgns.cpp',
+				       'output/output_tecplot.cpp',
+				       'output/output_fieldview.cpp',
+				       'output/output_su2.cpp',
+				       'output/output_paraview.cpp',
 				       'variable_structure.cpp'])
 
 
