@@ -450,6 +450,8 @@ void CElement::ComputeGrad_2D(const FrameType mode) {
   su2double detJac, GradNi_Xj;
   unsigned short iNode, iDim, jDim, iGauss;
 
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -511,6 +513,8 @@ void CElement::ComputeGrad_3D(const FrameType mode) {
   su2double detJac, GradNi_Xj;
   unsigned short iNode, iDim, jDim, iGauss;
 
+  /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+        for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   su2double **Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
