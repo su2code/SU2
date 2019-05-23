@@ -5,7 +5,7 @@ project('SU2', 'c', 'cpp',
 
 
 pymod = import('python')
-pymod.find_installation('python3')
+python = pymod.find_installation('python3')
 
 su2_cpp_args = []
 su2_deps     = []
@@ -83,6 +83,10 @@ subdir('SU2_MSH/src')
 subdir('SU2_SOL/src')
 # install python scripts
 subdir('SU2_PY')
+
+if get_option('enable-pywrapper')
+  subdir('SU2_PY/pySU2')
+endif
 
 ninja = find_program('ninja', required : false)
 if ninja.found() == false
