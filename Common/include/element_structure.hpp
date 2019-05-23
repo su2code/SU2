@@ -72,7 +72,6 @@ protected:
 	su2double **Mab;                /*!< \brief Structure for the nodal components of the mass matrix. */
 	su2double ***Kab;               /*!< \brief Structure for the constitutive component of the tangent matrix. */
 	su2double **Ks_ab;              /*!< \brief Structure for the stress component of the tangent matrix. */
-	su2double ***Kk_ab;             /*!< \brief Structure for the pressure component of the tangent matrix. */
 	su2double **Kt_a;               /*!< \brief Structure for the nodal stress term for the residual computation. */
 	su2double **FDL_a;              /*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;          /*!< \brief Pressure in the element. */
@@ -86,11 +85,9 @@ public:
 protected:
 	/*!
 	 * \brief Allocate element matrices and vectors, to be called by constructors of children classes.
-	 * \param[in] elasticity  - If we need stiffness/mass matrices, nodal stress, etc.
-	 * \param[in] incomp      - If we need Kk the pressure component of the stiffness matrix.
 	 * \param[in] body_forces - If we need dead loads.
 	 */
-	void AllocateStructures(const bool elasticity, const bool incomp, const bool body_forces);
+	void AllocateStructures(const bool body_forces);
 	
 	/*!
 	 * \brief Compute gradients for 2D elements.
@@ -149,12 +146,6 @@ public:
 	 * \param[in] iDim - Dimension
 	 */
 	void SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim);
-
-	/*!
-	 * \brief Set the value of the pressure in the element for incompressible materials.
-	 * \param[in] val_ElPressure - Value of the pressure.
-	 */
-	void SetElement_Pressure(su2double val_ElPressure);
 
 	/*!
 	 * \brief Set the value of the coordinate of the nodes in the reference configuration.
@@ -247,14 +238,6 @@ public:
 	 * \param[in] val_FDL_a - value of the term that will constitute the diagonal of the stress contribution.
 	 */
 	void Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA);
-
-	/*!
-	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
-	 * \param[in] nodeA - index of Node a.
-	 * \param[in] nodeB - index of Node b.
-	 * \param[in] val_Kab - value of the matrix K.
-	 */
-	void Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB);
 
 	/*!
 	 * \brief Restarts the values in the element.
@@ -525,38 +508,6 @@ public:
 };
 
 /*!
- * \class CQUAD1
- * \brief Quadrilateral element with 1 Gauss Point
- * \author R. Sanchez
- */
-
-class CQUAD1 : public CElement {
-
-protected:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CQUAD1(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_fea - Values of the fea solution (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CQUAD1(unsigned short val_nDim, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CQUAD1(void);
-
-};
-
-/*!
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
@@ -711,37 +662,5 @@ public:
   su2double ComputeVolume(const FrameType mode = REFERENCE);
 
 };
-
-/*!
- * \class CHEXA1
- * \brief Hexahedral element with 1 Gauss Point for pressure subintegration
- * \author R. Sanchez
- */
-
-class CHEXA1 : public CElement {
-
-protected:
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHEXA1(void);
-
-  /*!
-   * \overload
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CHEXA1(unsigned short val_nDim, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHEXA1(void);
-
-};
-
 
 #include "element_structure.inl"
