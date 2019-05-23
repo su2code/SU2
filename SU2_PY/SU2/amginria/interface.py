@@ -49,7 +49,7 @@ def amg_call_met(config):
     cmd = "amg -in %s -met %s -p 2 \
          -c %f -hgrad %.2f -hmin %le -hmax %le -out %s \
         -itp  %s  -nordg " \
-        % (config['mesh_in'], config['met_in'],  \
+        % (config['mesh_in'], config['metric_in'],  \
         config['size'],  config['hgrad'], config['hmin'], config['hmax'], \
         config['mesh_out'], config['itp_sol_in'])
         

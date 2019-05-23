@@ -323,9 +323,9 @@ def amg ( config , kind='' ):
 
                     #--- Use metric computed from SU2 to drive the adaptation
 
-                    config_amg['metric_in']   = 'metr.solb'
+                    config_amg['metric_in']   = 'current.metr.solb'
                     config_amg['sol_in']      = ''
-                    config_amg['itp_sol_in']  = 'current.solb'
+                    config_amg['itp_sol_in']  = 'current.restart.solb'
 
                     # mesh.pop('sensor',None)
 
@@ -341,7 +341,7 @@ def amg ( config , kind='' ):
                     if not os.path.exists(config_amg['mesh_out']):
                         raise RuntimeError , "\n##ERROR : Mesh adaptation failed.\n"
                     
-                    if not os.path.exists("current.itp.solb"):
+                    if not os.path.exists("current.restart.itp.solb"):
                         raise RuntimeError , "\n##ERROR AMG: Solution interpolation failed.\n"
 
                     #--- Convert output from Inria mesh format to su2
@@ -351,7 +351,7 @@ def amg ( config , kind='' ):
                     del mesh
                     
                     # Read Inria mesh
-                    mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.itp.solb")
+                    mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.restart.itp.solb")
                     mesh['markers'] = save_markers
                     
                     current_mesh = "ite%d.su2" % global_iter
@@ -462,7 +462,7 @@ def amg ( config , kind='' ):
             sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
             
             
-            to_remove = ["current.itp.solb", config_amg['mesh_in'], config_amg['mesh_out'], config_amg['sol_in'],config_amg['itp_sol_in']]
+            to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
             for fil in to_remove:
                 if os.path.exists(fil) : os.remove(fil)
             
