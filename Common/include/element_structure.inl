@@ -45,8 +45,6 @@ inline void CElement::SetRef_Coord(su2double val_CoordRef, unsigned short iNode,
 
 inline void CElement::SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim) { CurrentCoord[iNode][iDim] = val_CoordCurr;}
 
-inline void CElement::SetElement_Pressure(su2double val_ElPressure) {el_Pressure = val_ElPressure;}
-
 inline su2double CElement::GetRef_Coord(unsigned short iNode, unsigned short iDim) { return RefCoord[iNode][iDim];}
 
 inline su2double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iDim) { return CurrentCoord[iNode][iDim];}
@@ -62,8 +60,6 @@ inline su2double CElement::GetElement_Pressure(void) { return el_Pressure;}
 inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 
 inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB) { return Kab[nodeA][nodeB];}
-
-inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB) { return Kk_ab[nodeA][nodeB];}
 
 inline su2double *CElement::Get_Kt_a(unsigned short nodeA) { return Kt_a[nodeA];}
 
