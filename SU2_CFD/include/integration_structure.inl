@@ -86,7 +86,7 @@ inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem
                          CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
 
   
-inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow) { }
+inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow, CConfig *config) { }
 
 inline void CIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
                       CConfig *config, unsigned short iMesh) { }

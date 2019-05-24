@@ -345,11 +345,19 @@ inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double eddy_visc, su
 
 inline su2double CVariable::GetPrimitive(unsigned short val_var) { return 0; }
 
+inline su2double CVariable::GetPrimitiveMGCorr(unsigned short val_var) { return 0; }
+
 inline su2double *CVariable::GetPrimitive(void) { return NULL; }
+
+inline su2double *CVariable::GetPrimitiveMGCorr(void) { return NULL; }
 
 inline void CVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { }
 
+inline void CVariable::SetPrimitiveMGCorr(unsigned short val_var, su2double val_prim) { }
+
 inline void CVariable::SetPrimitive(su2double *val_prim) { }
+
+inline void CVariable::SetPrimitiveMGCorr(su2double *val_prim_new) { }
 
 inline su2double CVariable::GetSecondary(unsigned short val_var) { return 0; }
 
@@ -729,6 +737,8 @@ inline void CVariable::Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short v
   
 inline void CVariable::Set_Mom_Coeff_nbZero() { }
 
+inline void CVariable::Set_Mom_CoeffZero() { }
+
 inline void CVariable::SetSourceTerm(su2double val_SourceTerm) {  }
   
 inline su2double CVariable::GetSourceTerm() {  }
@@ -1101,14 +1111,25 @@ inline void CPBIncEulerVariable::SetVelocity(void) {
 
 inline su2double CPBIncEulerVariable::GetPrimitive(unsigned short val_var) { return Primitive[val_var]; }
 
+inline su2double CPBIncEulerVariable::GetPrimitiveMGCorr(unsigned short val_var) { return PrimitiveMGCorr[val_var]; }
+
 inline void CPBIncEulerVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { Primitive[val_var] = val_prim; }
+
+inline void CPBIncEulerVariable::SetPrimitiveMGCorr(unsigned short val_var, su2double val_prim) { PrimitiveMGCorr[val_var] = val_prim; }
 
 inline void CPBIncEulerVariable::SetPrimitive(su2double *val_prim) {
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
     Primitive[iVar] = val_prim[iVar];
 }
 
+inline void CPBIncEulerVariable::SetPrimitiveMGCorr(su2double *val_prim_new) {
+  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+    PrimitiveMGCorr[iVar] = val_prim_new[iVar];
+}
+
 inline su2double *CPBIncEulerVariable::GetPrimitive(void) { return Primitive; }
+
+inline su2double *CPBIncEulerVariable::GetPrimitiveMGCorr(void) { return PrimitiveMGCorr; }
 
 inline void CPBIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1166,6 +1187,10 @@ inline void CPBIncEulerVariable::Set_Mom_Coeff_nbZero(void)  {
       Mom_Coeff_nb[iDim] = 0.0;
 }
 
+inline void CPBIncEulerVariable::Set_Mom_CoeffZero(void)  {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Mom_Coeff[iDim] = 0.0;
+}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------//
 

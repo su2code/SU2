@@ -882,7 +882,7 @@ inline su2double CSolver::GetDirichlet_BC(CGeometry*, CConfig*, unsigned long) {
 
 inline void CSolver::Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-inline void CSolver::SetPoissonSourceTerm(CGeometry*, CSolver**, CConfig*) { }
+inline void CSolver::SetPoissonSourceTerm(CGeometry*, CSolver**, CConfig*, bool mg) { }
 
 inline void CSolver::SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
 
@@ -2182,7 +2182,6 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
-//---------------------------------------------------------------------------------------------------------------------------------
 inline void CPBIncEulerSolver::SetResMassFlux(su2double val_ResMassFlux) { ResMassFlux = val_ResMassFlux; }
   
 inline su2double CPBIncEulerSolver::GetResMassFlux() { return ResMassFlux; }
@@ -2210,8 +2209,10 @@ inline void CPBIncEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p
 
 inline void CPBIncEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
 
+inline su2double CPBIncEulerSolver::GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
 
-// -----------------  New additions -----------------------------------------//
+inline su2double CPBIncEulerSolver::GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ptotal[val_marker][val_vertex]; }
+
 inline su2double CPBIncEulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
 
 inline su2double CPBIncEulerSolver::GetSurface_CL(unsigned short val_marker) { return Surface_CL[val_marker]; }

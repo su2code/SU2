@@ -4331,7 +4331,7 @@ public:
    * \brief A virtual member
    * Set source term for pressure correction.
    */
-  virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
+  virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg); 
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -8505,42 +8505,6 @@ public:
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
   /*!
-   * \brief Compute the max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Parallelization of the Max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
-    
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Set the fluid solver nondimensionalization.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -8630,6 +8594,24 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
+  
+  
+  /*!
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
+   */
+  su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
+  /*!
+   * \brief Value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
+   */
+  su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -8782,7 +8764,7 @@ public:
    *        on the residuals from the solution of momentum equation.
    * 
    */
-  void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg);
   
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.

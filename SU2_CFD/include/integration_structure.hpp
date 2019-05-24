@@ -399,7 +399,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] flow - Flow solution.
    */
-  virtual void SetResidual_Term(CGeometry *geometry, CSolver *flow);
+  virtual void SetResidual_Term(CGeometry *geometry, CSolver *flow, CConfig *config);
   
   /*! 
    * \brief A virtual member.
@@ -705,7 +705,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] flow - Flow solution.
    */
-  void SetResidual_Term(CGeometry *geometry, CSolver *flow);
+  void SetResidual_Term(CGeometry *geometry, CSolver *flow, CConfig *config);
   
   /*! 
    * \brief Compute the forcing term. 

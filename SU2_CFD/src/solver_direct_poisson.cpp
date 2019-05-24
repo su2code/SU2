@@ -816,11 +816,18 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   su2double Src_Term;
+  ofstream Coarse_GridFile, Fine_GridFile;
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
 	  Residual[iVar] = 0.0;
   }
+  
+  /*if (iMesh == MESH_0 + 1) {
+	  Coarse_GridFile.open("coarse_src.txt", ios::out);
+  		//cout<<"Writing the _src.txt file."<<endl;
+  }
+  if (iMesh == MESH_0 ) Fine_GridFile.open("fine_src.txt", ios::out);*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -830,8 +837,15 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Compute the source term ---*/
         
-    if ((config->GetKind_Incomp_System() == PRESSURE_BASED)&&(iMesh == MESH_0)) {
-		node[iPoint]->SetSourceTerm(solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux());
+    if ((config->GetKind_Incomp_System() == PRESSURE_BASED)) {
+		
+		Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux() ;
+		
+		if (Src_Term != Src_Term)Src_Term = 0.0;
+		
+		if (iMesh == MESH_0 + 1) Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError();
+		
+		node[iPoint]->SetSourceTerm(Src_Term);
     }
     numerics->SetSourcePoisson(node[iPoint]->GetSourceTerm());
     
@@ -844,7 +858,20 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     LinSysRes.AddBlock(iPoint, Residual);
     
     //Source term is constant ==> jacobian is zero
+    
+    /*if (iMesh == MESH_0) {
+		Fine_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+        Fine_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
+    }
+    if (iMesh == MESH_0 + 1) {
+		Coarse_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+        Coarse_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
+    }*/
   }
+  
+  
+  /*if (iMesh == MESH_0 + 1) Coarse_GridFile.close();
+  if (iMesh == MESH_0) Fine_GridFile.close();*/
 }
 
 void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -873,7 +900,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  
 	 /*--- Read the residual ---*/
-     if (config->GetnMGLevels() > 0) local_Res_TruncError = node[iPoint]->GetResTruncError();
+     local_Res_TruncError = node[iPoint]->GetResTruncError();
 
 	/*--- Read the volume ---*/
 
@@ -903,7 +930,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-      //cout<<"Point: "<<iPoint<<"\t"<<LinSysRes[total_index]<<endl;
     }
   }
   
@@ -1216,34 +1242,12 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
        
        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
        
-       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      /*--- Multiply the normal with the coefficients of the momentum equation
-         *    and use it instead of the normal during the projection operation ---*/
-       for (iDim = 0; iDim < nDim; iDim++) {
-		   Coeff_Mean = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_i/delT_i;
-           Coeff_Mean = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Coeff_Mean;
-
-	       MomCoeffxNormal[iDim] = Coeff_Mean*Normal[iDim];
-       }
-
-       /*--- Compute vector going from iPoint to jPoint ---*/
-
-       dist_ij_2 = 0; proj_vector_ij = 0;
-       for (iDim = 0; iDim < nDim; iDim++) {
-           Edge_Vector[iDim] = geometry->node[Point_Normal]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
-           dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-           proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
-       }
-       if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-       else proj_vector_ij = proj_vector_ij/dist_ij_2;
-       
        
        for (iVar = 0; iVar < nVar; iVar++) {
 		   Residual[iVar] = 0.0;
 	   }
        
-		MassFlux_Part = 0.0;
+		/*MassFlux_Part = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
            MassFlux_Part -= solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*(solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim))*Normal[iDim];
 		} 
@@ -1251,11 +1255,11 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 			 LinSysRes.SubtractBlock(iPoint, Residual);
 				 
 		    if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
-			   Jacobian_i[0][0] = -proj_vector_ij;
+			   Jacobian_i[0][0] = 0.0;
 			   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 		    }			    
-		}
-		else {
+		}*/
+		//else {
 			 for (iVar = 0; iVar < nVar; iVar++) {
 			   LinSysRes.SetBlock_Zero(iPoint, iVar);
 			   Residual[iVar] = 0.0;
@@ -1267,7 +1271,7 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		     if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
 				 Jacobian.DeleteValsRowi(iPoint);
 		     }
-		 }
+		//}
    }
   }
    delete [] Normal;

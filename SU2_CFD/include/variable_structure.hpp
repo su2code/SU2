@@ -1235,7 +1235,17 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual su2double GetPrimitiveMGCorr(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetPrimitive(unsigned short val_var, su2double val_prim);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPrimitiveMGCorr(unsigned short val_var, su2double val_prim);
   
   /*!
    * \brief A virtual member.
@@ -1245,7 +1255,17 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void SetPrimitiveMGCorr(su2double *val_prim_new);
+   
+  /*!
+   * \brief A virtual member.
+   */
   virtual su2double *GetPrimitive(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *GetPrimitiveMGCorr(void);
   
   /*!
    * \brief A virtual member.
@@ -2451,6 +2471,8 @@ public:
   virtual void Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var);
   
   virtual void Set_Mom_Coeff_nbZero();
+  
+  virtual void Set_Mom_CoeffZero();
   
   virtual su2double GetMassFlux();
   
@@ -3870,7 +3892,7 @@ protected:
   su2double MassFlux;   /*!< \brief Massflux associated with each CV */
   su2double *Mom_Coeff;
   su2double *Mom_Coeff_nb;
-  
+  su2double *PrimitiveMGCorr;
 
 public:
   
@@ -3989,6 +4011,13 @@ public:
   su2double GetPrimitive(unsigned short val_var);
   
   /*!
+   * \brief Get the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variable for the index <i>val_var</i>.
+   */
+  su2double GetPrimitiveMGCorr(unsigned short val_var);
+  
+  /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_var - Index of the variable.
@@ -3998,16 +4027,37 @@ public:
   
   /*!
    * \brief Set the value of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
+   */
+  void SetPrimitiveMGCorr(unsigned short val_var, su2double val_prim);
+  
+  /*!
+   * \brief Set the value of the primitive variables.
    * \param[in] val_prim - Primitive variables.
    * \return Set the value of the primitive variable for the index <i>val_var</i>.
    */
   void SetPrimitive(su2double *val_prim);
   
   /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
+   */
+  void SetPrimitiveMGCorr(su2double *val_prim_new);
+  
+  /*!
    * \brief Get the primitive variables of the problem.
    * \return Pointer to the primitive variable vector.
    */
   su2double *GetPrimitive(void);
+  
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  su2double *GetPrimitiveMGCorr(void);
   
   /*!
    * \brief Set the value of the density for the incompressible flows.
@@ -4099,6 +4149,9 @@ public:
 
 
   void Set_Mom_Coeff(su2double *val_Mom_Coeff);
+  
+  
+  void Set_Mom_CoeffZero();
   
 
   su2double Get_Mom_Coeff_nb(unsigned short val_Var);

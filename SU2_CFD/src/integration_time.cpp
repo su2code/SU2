@@ -207,7 +207,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
     Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
-    SetResidual_Term(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh][SolContainer_Position]);
+    SetResidual_Term(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone]);
     
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
     
@@ -559,11 +559,18 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   delete [] Residual;
 }
 
-void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
+void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver, CConfig *config) {
   unsigned long iPoint;
   
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) 
     solver->LinSysRes.AddBlock(iPoint, solver->node[iPoint]->GetResTruncError());
+
+  
+  if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
+	  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	       solver->node[iPoint]->AddMassFlux(solver->node[iPoint]->GetMassTruncError());
+	   }
+  }  
   
 }
 
@@ -1187,6 +1194,8 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
   unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
     
   bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
+  //bool piso = true;
+  bool piso = (config[iZone]->GetKind_PBIter() == PISO);
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
@@ -1204,73 +1213,161 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 		  
 		  case RANS:
 		  config[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, Iteration); break;
-      }
-      CurrentGridIteration(geometry, solver_container, numerics_container, config,
+     }
+     
+     config[iZone]->SetKind_TimeIntScheme(EULER_IMPLICIT);
+     
+     CurrentGridIteration(geometry, solver_container, numerics_container, config,
                   iMesh, RUNTIME_FLOW_SYS,
                   Iteration, iZone, iInst);
       
-      
-      /*--- Set source term for pressure correction equation based on current flow solution ---*/
-	
-      solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone]);
+     /*--- Set source term for pressure correction equation based on current flow solution ---*/
+     solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false);
 	
 
      /*--- Solve the poisson equation (pressure correction) ---*/
      config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, Iteration);
      CurrentGridIteration(geometry, solver_container, numerics_container, config,
                   iMesh, RUNTIME_POISSON_SYS,
-                  Iteration, iZone, iInst);
-     
+                  Iteration, iZone, iInst);     
      
      /*--- Correct pressure and velocities ---*/
-	
       solver_container[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone]);
+      
+      solver_container[iZone][iInst][iMesh][FLOW_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
+      
+     if (piso) {
+		 config[iZone]->SetKind_TimeIntScheme(EULER_EXPLICIT);
+		 
+		 /*--- Momentum solve (Predict velocities using existing pressure field)---*/
+		 switch( config[iZone]->GetKind_Solver() ) {
+			 case EULER: 
+			 config[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, Iteration); break;
+			 
+			 case NAVIER_STOKES:
+			 config[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, Iteration); break;
+			 
+			 case RANS:
+			 config[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, Iteration); break;
+		}
+		
+		CurrentGridIteration(geometry, solver_container, numerics_container, config,
+                  iMesh, RUNTIME_FLOW_SYS,
+                  Iteration, iZone, iInst);
+		
+		config[iZone]->SetKind_TimeIntScheme(EULER_IMPLICIT);
+
+		/*--- Set source term for pressure correction equation based on current flow solution ---*/
+		solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false);
+		 
+		/*--- Solve the poisson equation (pressure correction) ---*/
+		config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, Iteration);
+		 
+		CurrentGridIteration(geometry, solver_container, numerics_container, config,
+                  iMesh, RUNTIME_POISSON_SYS,
+                  Iteration, iZone, iInst);
+         
+        /*--- Correct pressure and velocities ---*/
+        solver_container[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone]); 
+	}
     
   }
-  
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
   if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
 	  
-	  /* Find Residual for momentum equation - SpaceIntegration(imesh) with momentum eq, R_k
-	   * Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], 
-	   *                   iMesh, NO_RK_ITER, RunTime_EqSystem);
-	   * 
-	   * Find Mass imbalance - SetPoissonSourceterm(imesh) - Sets ResMassFlux m_k
-	   * solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone]);
-	   * 
-	   * Set Residuals - R_k = R_k + P_k^m and m_k = m_k + P_k^c
-	   * 
-	   *  
-	   * RestrictVars - Restrict the primitive variables - Find U_k+1 and p_k+1 from U_k and p_k
-	   * SetRestricted_Variables(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], solver_container[iZone][iInst][iMesh+1][FLOW_SOL]
-	   *                        ,geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone])
-	   * 
-	   * Find Residual for momentum equation - SpaceIntegration(imesh+1) with momentum eq, R_k+1
-	   * Space_Integration(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], numerics_container[iZone][iInst][iMesh+1][SolContainer_Position], config[iZone],
-	   *                  iMesh+1, NO_RK_ITER, RunTime_EqSystem);
-	   * 
-	   * Find Mass imbalance - SetPoissonSourceterm(imesh+1) - Sets ResMassFlux m_k+1
-	   * solver_container[iZone][iInst][iMesh+1][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], config[iZone]);
-	   * 
-	   * SetForcingTerm(imesh+1,imesh) P_(k+1)^m = I^(k+1)_k R_k - R_(k+1), P_(k+1)^c = I^(k+1)_k m_k - m_k+1
-	   * SetPBForcing_Term(solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], 
-	   *                   geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone], iMesh+1);
-	   * 
-	   * Multigrid_CyclePB(imesh+1) Find the solution at new iteration level (Only V cycle for now)
-	   * MultiGrid_CyclePB(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone, iInst);
-       * 
-	   * Get the prolongated correction to the variables - Find the update on the coarse grid level and prolongate to current grid (Have to prolongate primitive variables and not solutions)
-	   * GetProlongated_Correction(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
-       *                       geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
-	   *  
-	   * Smooth the prolongated correction to the primitive variables (error) using weighted averages of the neighbors
-	   * SmoothProlongated_Correction(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], geometry[iZone][iInst][iMesh],
-                                 config[iZone]->GetMG_CorrecSmooth(iMesh), 1.25, config[iZone]);
-	   * 
-	   * SetProlongated_VarCorrection - Apply the smoothed correction to the variables
-	   * SetProlongated_Correction(solver_container[iZone][iInst][iMesh][FLOW_SOL], geometry[iZone][iInst][iMesh], config[iZone], iMesh);
-	   */
+	  cout<<"Check MG"<<endl;
+	   //cout<<"Find flow res on "<<iMesh<<endl;
+	  /* Find Residual for momentum equation - SpaceIntegration(imesh) with momentum eq, R_k*/
+	    Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], 
+	                      iMesh, NO_RK_ITER, RunTime_EqSystem);
+	    
+	   //cout<<"Find massflux on "<<iMesh<<endl;
+	   /* Find Mass imbalance - SetPoissonSourceterm(imesh) - Sets ResMassFlux m_k*/
+	    solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], true);
+	    
+	   //cout<<"Update R and M with trun errors on "<<iMesh<<endl;
+	   /* Set Residuals - R_k = R_k + P_k^m and m_k = m_k + P_k^c*/
+	    SetResidual_Term(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone]);
+	     
+	   //cout<<"Restrict Vars from "<<iMesh<<" to "<<iMesh+1<<endl;
+	   /* RestrictVars - Restrict the primitive variables - Find U_k+1 and p_k+1 from U_k and p_k*/
+	    SetRestricted_Variables(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], solver_container[iZone][iInst][iMesh+1][FLOW_SOL]
+	                           ,geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
+	   
+	   //cout<<"Find gradients on "<<iMesh+1<<endl;
+	   /* Call Postprocessing routine to compute gradients of the restricted primitive varibales. Need pressure gradients during mass flux computation. */ 
+	    solver_container[iZone][iInst][iMesh+1][FLOW_SOL]->Postprocessing(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], config[iZone], iMesh+1);
+	    
+	   //cout<<"Find flow residuals on "<<iMesh+1<<endl;
+	   /* Find Residual for momentum equation - SpaceIntegration(imesh+1) with momentum eq, R_k+1*/
+	    Space_Integration(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], numerics_container[iZone][iInst][iMesh+1][SolContainer_Position], config[iZone],
+	                     iMesh+1, NO_RK_ITER, RunTime_EqSystem);
+	    
+	    //cout<<"Find massflux on "<<iMesh+1<<endl;
+	   /* Find Mass imbalance - SetPoissonSourceterm(imesh+1) - Sets ResMassFlux m_k+1*/
+	    solver_container[iZone][iInst][iMesh+1][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], config[iZone], true);
+	    
+	   //cout<<"Find trunc errors based on restricted vars and restricted residuals on "<<iMesh+1<<endl;
+	   /* SetForcingTerm(imesh+1,imesh) P_(k+1)^m = I^(k+1)_k R_k - R_(k+1), P_(k+1)^c = I^(k+1)_k m_k - m_k+1*/
+	    SetPBForcing_Term(solver_container[iZone][iInst][iMesh][SolContainer_Position], solver_container[iZone][iInst][iMesh+1][SolContainer_Position], 
+	                      geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone], iMesh+1);
+	    
+	   //cout<<"Call MGCycle with "<<iMesh+1<<endl;
+	   /* Multigrid_CyclePB(imesh+1) Find the solution at new iteration level (Only V cycle for now)*/
+	    MultiGrid_CyclePB(geometry, solver_container, numerics_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone, iInst);
+        
+        //cout<<"Get corrections from "<<iMesh+1<<" and interpolate back to "<<iMesh<<endl;
+	   /* Get the prolongated correction to the variables - Find the update on the coarse grid level and prolongate to current grid (Have to prolongate primitive variables and not solutions)*/
+	    GetProlongated_VarCorrection(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], solver_container[iZone][iInst][iMesh+1][SolContainer_Position],
+                              geometry[iZone][iInst][iMesh], geometry[iZone][iInst][iMesh+1], config[iZone]);
+	    
+	    
+	   /* Smooth the prolongated correction to the primitive variables (error) using weighted averages of the neighbors
+	    SmoothProlongated_VarCorrection(RunTime_EqSystem, solver_container[iZone][iInst][iMesh][FLOW_SOL], geometry[iZone][iInst][iMesh],
+                                 config[iZone]->GetMG_CorrecSmooth(iMesh), 1.25, config[iZone]);*/
+	    
+	    //cout<<"Set corrections on "<<iMesh<<endl;
+	   /* SetProlongated_VarCorrection - Apply the smoothed correction to the variables*/
+	    SetProlongated_VarCorrection(solver_container[iZone][iInst][iMesh][FLOW_SOL], geometry[iZone][iInst][iMesh], config[iZone], iMesh);
+	   
+	   
+	   /*--- Solution postsmoothing in the prolongated grid ---*/
+    
+       for (iPostSmooth = 0; iPostSmooth < config[iZone]->GetMG_PostSmooth(iMesh); iPostSmooth++) {
+		   
+		   /*--- Momentum solve (Predict velocities using existing pressure field)---*/
+		   switch( config[iZone]->GetKind_Solver() ) {
+			   case EULER: 
+			   config[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, Iteration); break;
+			   
+			   case NAVIER_STOKES:
+			   config[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, Iteration); break;
+			   
+			   case RANS:
+			   config[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, Iteration); break;
+			   
+		    }
+		    
+		    CurrentGridIteration(geometry, solver_container, numerics_container, config,
+                  iMesh, RUNTIME_FLOW_SYS,
+                  Iteration, iZone, iInst);
+      
+            /*--- Set source term for pressure correction equation based on current flow solution ---*/
+            solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false);
+	
+
+           /*--- Solve the poisson equation (pressure correction) ---*/
+           config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, Iteration);
+     
+           CurrentGridIteration(geometry, solver_container, numerics_container, config,
+                  iMesh, RUNTIME_POISSON_SYS,
+                  Iteration, iZone, iInst);
+     
+     
+           /*--- Correct pressure and velocities ---*/
+           solver_container[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone]);
+       }
 
   }
   												
@@ -1304,7 +1401,7 @@ void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
     /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
     solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
       
-    /*--- Space integration ---*/      
+    /*--- Space integration ---*/
     Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
       
     /*--- Time integration, update solution using the old solution plus the solution increment ---*/
@@ -1336,8 +1433,6 @@ void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
     }
   }
     
-    
-      
 }
 
 
@@ -1345,17 +1440,21 @@ void CMultiGridIntegration::SetRestricted_Variables(unsigned short RunTime_EqSys
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iVar, iChildren, iMarker, iDim;
   su2double Area_Parent, Area_Children, P_Outlet, *Var_Fine, *Var_Coarse, *Grid_Vel, Vector[3];
+  su2double Flow_Dir[3], Flow_Dir_Mag, UnitFlowDir[3], Vel_Mag;
   
   const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short nPrimVar = sol_coarse->GetnPrimVar();
   const unsigned short nDim = geo_fine->GetnDim();
   string Marker_Tag;
   const bool grid_movement  = config->GetGrid_Movement();
+  ofstream Coarse_GridFile, Fine_GridFile;
+  
+  /*Coarse_GridFile.open("coarse_grid.txt", ios::out);
+  Fine_GridFile.open("fine_grid.txt", ios::out);*/
   
   Var_Coarse = new su2double[nPrimVar];
   
   /*--- Compute coarse solution from fine solution ---*/
-  
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
     
@@ -1366,12 +1465,12 @@ void CMultiGridIntegration::SetRestricted_Variables(unsigned short RunTime_EqSys
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
       Area_Children = geo_fine->node[Point_Fine]->GetVolume();
       Var_Fine = sol_fine->node[Point_Fine]->GetPrimitive();
-      for (iVar = 0; iVar < nPrimVar; iVar++)
+      for (iVar = 0; iVar < nPrimVar; iVar++) {
         Var_Coarse[iVar] += Var_Fine[iVar]*Area_Children/Area_Parent;
+	  }
+	  
     }
-    
     sol_coarse->node[Point_Coarse]->SetPrimitive(Var_Coarse);
-    
   }
   
   
@@ -1416,77 +1515,158 @@ void CMultiGridIntegration::SetRestricted_Variables(unsigned short RunTime_EqSys
 		 
 		 for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 			 Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-			 sol_coarse->node[Point_Coarse]->SetPressure_val(P_Outlet);
+			 sol_coarse->node[Point_Coarse]->SetPrimitive(0,P_Outlet);
 		 }
-	 }    
+	 }  
+	 if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW)) {
+			 
+		 for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+			Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+			
+			Vel_Mag  = sol_coarse->GetInlet_Ptotal(iMarker,iVertex)/config->GetVelocity_Ref();
+			
+			Flow_Dir_Mag = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Flow_Dir[iDim] = sol_coarse->GetInlet_FlowDir(iMarker,iVertex,iDim);
+				Flow_Dir_Mag += Flow_Dir[iDim]*Flow_Dir[iDim];
+				
+			}
+			Flow_Dir_Mag = sqrt(Flow_Dir_Mag);
+			
+      
+			/*--- Store the unit flow direction vector. ---*/
+      
+			for (iDim = 0; iDim < nDim; iDim++)
+				UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+			
+			
+			 
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Vector[iDim] = Vel_Mag*UnitFlowDir[iDim];
+              sol_coarse->node[Point_Coarse]->SetPrimitive(iDim+1,Vector[iDim]);
+		    }
+		 }
+	 }  
   }
+  
+   /*--- Compute coarse solution from fine solution ---*/
+ /* for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
+    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {     
+      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Var_Fine = sol_fine->node[Point_Fine]->GetPrimitive();
+
+      Fine_GridFile<<geo_fine->node[Point_Fine]->GetCoord(0)<<"\t"<<geo_fine->node[Point_Fine]->GetCoord(1)<<"\t";
+      Fine_GridFile<<Var_Fine[0]<<"\t"<<Var_Fine[1]<<"\t"<<Var_Fine[2]<<endl;
+    }
+
+    for (iVar = 0; iVar < nPrimVar; iVar++) Var_Coarse[iVar] = sol_coarse->node[Point_Coarse]->GetPrimitive(iVar);
+    Coarse_GridFile<<geo_coarse->node[Point_Coarse]->GetCoord(0)<<"\t"<<geo_coarse->node[Point_Coarse]->GetCoord(1)<<"\t";
+    Coarse_GridFile<<Var_Coarse[0]<<"\t"<<Var_Coarse[1]<<"\t"<<Var_Coarse[2]<<endl;
+  }
+  
+  
+  Coarse_GridFile.close();
+  Fine_GridFile.close();*/
   delete [] Var_Coarse;
   
 }
 
 void CMultiGridIntegration::SetPBForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
   unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short iMarker, iVar, iChildren;
-  su2double *Residual_Fine;
+  unsigned short iMarker, iVar, iChildren, iDim;
+  su2double *Residual_Fine, Area_Children, Area_Parent;
   
   const unsigned short nVar = sol_coarse->GetnVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
   su2double factor = config->GetDamp_Res_Restric(); //pow(config->GetDamp_Res_Restric(), iMesh);
+  su2double factor2 = 0.0;
   
   su2double *Residual = new su2double[nVar];
   su2double MassFlux, MassFlux_Fine;
+  
+  ofstream Coarse_GridFile, Fine_GridFile;
+  
+  Coarse_GridFile.open("coarse_mass.txt", ios::out);
+  Fine_GridFile.open("fine_mass.txt", ios::out);
 
   /*--- Momentum equation forcing term. ---*/  
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SetRes_TruncErrorZero();
+    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
     
     /*--- Interpolation of fine grid residual (I^(k+1)_k R_k). ---*/
     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+    
     for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
+      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      
       for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] += factor*Residual_Fine[iVar];
+        Residual[iVar] += factor*(Area_Children/Area_Parent)*Residual_Fine[iVar];
+      /*for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] += factor*Residual_Fine[iVar];*/
     }
     sol_coarse->node[Point_Coarse]->AddRes_TruncError(Residual);
-  }
-  
-  /*--- Reset dirichlet conditions. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
-      }
-    }
   }
   
   /*--- Find truncation error P_(k+1) = I^(k+1)_k R_k - R_(k+1) ---*/
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SubtractRes_TruncError(sol_coarse->LinSysRes.GetBlock(Point_Coarse));
   }
+  
+  /*--- Reset dirichlet conditions. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW             )) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++) sol_coarse->node[Point_Coarse]->SetVal_ResTruncError_Zero(iDim);
+      }
+    }
+  }
 
   /*--- Continuity equation forcing term. ---*/
+  
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SetMass_TruncErrorZero();
+    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
     
     MassFlux = 0.0;
     for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
       MassFlux_Fine = sol_fine->node[Point_Fine]->GetMassFlux();
-      MassFlux += factor*MassFlux_Fine;
+      MassFlux += factor*(Area_Children/Area_Parent)*MassFlux_Fine;
+      //MassFlux += factor*MassFlux_Fine;
+      Fine_GridFile<<Point_Fine<<"\t"<<geo_fine->node[Point_Fine]->GetCoord(0)<<"\t"<<geo_fine->node[Point_Fine]->GetCoord(1)<<"\t"<<MassFlux_Fine<<endl;
     }
     sol_coarse->node[Point_Coarse]->AddMass_TruncError(MassFlux);
+    Coarse_GridFile<<Point_Coarse<<"\t"<<geo_coarse->node[Point_Coarse]->GetCoord(0)<<"\t"<<geo_coarse->node[Point_Coarse]->GetCoord(1)<<"\t";
+    Coarse_GridFile<<MassFlux<<"\t"<<sol_coarse->node[Point_Coarse]->GetMassFlux()<<endl;
   }
-    
+  
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->node[Point_Coarse]->SubtractMass_TruncError(sol_coarse->node[Point_Coarse]->GetMassFlux());
+  }
+  
+  /*--- Reset dirichlet conditions. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) {
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        sol_coarse->node[Point_Coarse]->SetMass_TruncErrorZero();
+      }
+    }
   }
 
 
   
   delete [] Residual;
+  Coarse_GridFile.close();
+  Fine_GridFile.close();
 }
 
 
@@ -1494,10 +1674,11 @@ void CMultiGridIntegration::SetPBForcing_Term(CSolver *sol_fine, CSolver *sol_co
 void CMultiGridIntegration::GetProlongated_VarCorrection(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
                                                       CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short Boundary, iMarker, iChildren, iVar;
+  unsigned short Boundary, iMarker, iChildren, iVar, iDim;
   su2double Area_Parent, Area_Children, *PrimVar_Fine, *PrimVar_Coarse;
   
   const unsigned short nVar = sol_coarse->GetnPrimVar();
+  const unsigned short nDim = geo_coarse->GetnDim();
   
   su2double *PrimVar_Temp = new su2double[nVar];
   
@@ -1522,40 +1703,54 @@ void CMultiGridIntegration::GetProlongated_VarCorrection(unsigned short RunTime_
     
     /*--- Here I have to set the updated primitive var back to coarse grid nodes. ---*/
     /*--- Note that the update primvar is actually I^(k+1)_k V_k -V_(k+1) i.e. the correction
-     * on the primitive variables and not the actual value itself. This correction value needs
-     * to be stored somewhere so the next routine can prolongate it to fine grid. ---*/
-    
+     * on the primitive variables and not the actual value itself. This correction value is
+     * stored in the primitive variable vector of the coarse mesh. ---*/
+     
+    sol_coarse->node[Point_Coarse]->SetPrimitiveMGCorr(PrimVar_Temp);
   }
   
-  /*--- Remove any contributions from no-slip walls. ---*/
-  
+  /*--- Reset updates to zero at dirichlet boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    if ((Boundary == HEAT_FLUX             ) ||
-        (Boundary == ISOTHERMAL            )) {
+	
+    /*--- Velocity update is zero. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL  ) ||
+        (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         
-        /*--- For dirichlet boundary condtions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
-        
-        sol_coarse->node[Point_Coarse]->SetVelSolutionOldZero();
-        
+       for (iDim = 0; iDim < nDim; iDim++) 
+            sol_coarse->node[Point_Coarse]->SetPrimitiveMGCorr(iDim+1,0.0);
+
       }
-      
     }
+    /*--- Pressure update is zero. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW)) {
+
+	   for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+		   Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+		   sol_coarse->node[Point_Coarse]->SetPrimitiveMGCorr(0,0.0);
+	   }
+	}  
   }
   
-  /*--- MPI the set solution old ---*/
+  /*--- Add MPI routine here. ---*/
   
-  //sol_coarse->Set_MPI_Solution_Old(geo_coarse, config);
-  
+  /*--- The update to primitive must be set to a central location that will be smoothed in the next routine. 
+   * Here the code copied from the earlier routine saves the update in the residual vector. ---*/
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+	  Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    
     for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
       Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-      sol_fine->LinSysRes.SetBlock(Point_Fine, sol_coarse->node[Point_Coarse]->GetSolution_Old());
+      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) {
+		  PrimVar_Temp[iVar] = sol_coarse->node[Point_Coarse]->GetPrimitiveMGCorr(iVar);
+		  PrimVar_Temp[iVar] = (Area_Children/Area_Parent)*PrimVar_Temp[iVar];
+		  sol_fine->node[Point_Fine]->SetPrimitiveMGCorr(iVar,PrimVar_Temp[iVar]);
+	  }
+      
     }
   }
   
@@ -1570,7 +1765,6 @@ void CMultiGridIntegration::SmoothProlongated_VarCorrection (unsigned short RunT
   unsigned long iEdge, iPoint, jPoint, iVertex;
   
   const unsigned short nVar = solver->GetnPrimVar();
-  
   if (val_nSmooth > 0) {
     
     Residual = new su2double [nVar];
@@ -1634,26 +1828,41 @@ void CMultiGridIntegration::SmoothProlongated_VarCorrection (unsigned short RunT
 void CMultiGridIntegration::SetProlongated_VarCorrection(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) {
   unsigned long Point_Fine;
   unsigned short iVar;
-  su2double *Solution_Fine, *Residual_Fine;
+  su2double *PrimVar_Fine, *MGCorrec_Fine;
   
-  const unsigned short nVar = sol_fine->GetnPrimVar();
+  const unsigned short nPrimVar = sol_fine->GetnPrimVar();
+  const unsigned short nVar = sol_fine->GetnVar();
   su2double factor = config->GetDamp_Correc_Prolong(); //pow(config->GetDamp_Correc_Prolong(), iMesh+1);
+  //su2double factor = 0.0;
   
+  su2double *PrimVar_New = new su2double [nPrimVar];
   su2double *Solution = new su2double [nVar];
-  
   for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
-    Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
-    Solution_Fine = sol_fine->node[Point_Fine]->GetSolution();
-    for (iVar = 0; iVar < nVar; iVar++) {
+	  
+	/*--- Update to primitive variables prolongated from coarse grid. ---*/  
+    MGCorrec_Fine = sol_fine->node[Point_Fine]->GetPrimitiveMGCorr();
+    
+    /*--- Current primitive variables on the fine grid. ---*/
+    PrimVar_Fine = sol_fine->node[Point_Fine]->GetPrimitive();
+    
+    for (iVar = 0; iVar < nPrimVar; iVar++) {
+      
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
-      if (Residual_Fine[iVar] != Residual_Fine[iVar]) Residual_Fine[iVar] = 0.0;
-      Solution[iVar] = Solution_Fine[iVar]+factor*Residual_Fine[iVar];
+      if (MGCorrec_Fine[iVar] != MGCorrec_Fine[iVar]) MGCorrec_Fine[iVar] = 0.0;
+      
+      PrimVar_New[iVar] = PrimVar_Fine[iVar] + factor*MGCorrec_Fine[iVar];
     }
+    sol_fine->node[Point_Fine]->SetPrimitive(PrimVar_New);
+    
+    for (iVar = 0; iVar < nVar; iVar++) 
+       Solution[iVar] = PrimVar_New[iVar+1]*PrimVar_New[nVar+1];
+    
     sol_fine->node[Point_Fine]->SetSolution(Solution);
   }
   
   /*--- MPI the new interpolated solution ---*/
-  //sol_fine->Set_MPI_Solution(geo_fine, config);
+  //Add MPI routine here.
   
   delete [] Solution;
 }
+

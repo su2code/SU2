@@ -42,6 +42,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(void) : CVariable() {
   /*--- Array initialization ---*/
   
   Primitive = NULL;
+  PrimitiveMGCorr = NULL;
   
   Gradient_Primitive = NULL;
   
@@ -75,6 +76,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   /*--- Array initialization ---*/
   
   Primitive = NULL;
+  PrimitiveMGCorr = NULL;
   
   Gradient_Primitive = NULL;
   
@@ -114,6 +116,9 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
+  if (config->GetnMGLevels() > 0)
+      PrimitiveMGCorr = new su2double [nPrimVar];
+     
   
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   
@@ -198,6 +203,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
   /*--- Array initialization ---*/
   
   Primitive = NULL;
+  PrimitiveMGCorr = NULL;
   
   Gradient_Primitive = NULL;
   
@@ -224,6 +230,8 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
     Res_TruncError[iVar] = 0.0;
   }
   
+  Mass_TruncError = 0.0;
+  
   /*--- Only for residual smoothing (multigrid) ---*/
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
@@ -232,6 +240,9 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
+  
+    if (config->GetnMGLevels() > 0)
+      PrimitiveMGCorr = new su2double [nPrimVar];
   
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
@@ -308,6 +319,7 @@ CPBIncEulerVariable::~CPBIncEulerVariable(void) {
   unsigned short iVar;
 
   if (Primitive         != NULL) delete [] Primitive;
+  if (PrimitiveMGCorr     != NULL) delete [] PrimitiveMGCorr;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
   if (WindGust          != NULL) delete [] WindGust;
   if (WindGustDer       != NULL) delete [] WindGustDer;

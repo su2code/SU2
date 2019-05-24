@@ -348,6 +348,19 @@ enum ENUM_INCOMP_SYSTEM {
 static const map<string, ENUM_INCOMP_SYSTEM> Incomp_Map = CCreateMap<string, ENUM_INCOMP_SYSTEM>
 ("DENSITY_BASED", DENSITY_BASED)
 ("PRESSURE_BASED", PRESSURE_BASED);
+
+/*!
+ * \brief Type of iteration
+ */
+enum ENUM_PBITER {
+  SIMPLE = 0,		/*!< \brief SIMPLE algorithm. */
+  PISO = 1,         /*!< \brief PISO algorithm. */
+};
+static const map<string, ENUM_PBITER> PBIter_Map = CCreateMap<string, ENUM_PBITER>
+("SIMPLE", SIMPLE)
+("PISO", PISO);
+
+
 /*------New option for pressure-based system-------*/
 
 

@@ -525,7 +525,8 @@ private:
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
-  Kind_Incomp_System;  /*!< \brief Pressure-based solver for incompressible flows. */
+  Kind_Incomp_System,  /*!< \brief Pressure-based solver for incompressible flows. */
+  Kind_PBIter;        /*!< \brief Pressure-based solver for incompressible flows. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -3728,7 +3729,21 @@ public:
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
    */
+  unsigned short GetKind_PBIter(void);
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
   void SetIncomp_System(unsigned short val_system);
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  void SetPBIter(unsigned short val_PBIter);
   
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).

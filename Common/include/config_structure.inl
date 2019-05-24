@@ -859,7 +859,11 @@ inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = v
 
 inline unsigned short CConfig::GetKind_Incomp_System(void) { return Kind_Incomp_System; }
 
+inline unsigned short CConfig::GetKind_PBIter(void) { return Kind_PBIter; }
+
 inline void CConfig::SetIncomp_System(unsigned short val_system) { Kind_Incomp_System = val_system; }
+
+inline void CConfig::SetPBIter(unsigned short val_PBIter) { Kind_PBIter = val_PBIter; }
 
 inline unsigned short CConfig::GetKind_MZSolver(void) { return Kind_MZSolver; }
 
