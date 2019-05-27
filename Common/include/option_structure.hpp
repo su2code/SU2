@@ -1950,6 +1950,73 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
 ("CUSTOM", CUSTOM_REF);
 
 /*!
+ * \brief Vertex-based quantities exchanged during periodic marker communications.
+ */
+enum PERIODIC_QUANTITIES {
+  PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
+  PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
+  PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
+  PERIODIC_LAPLACIAN  =  4,  /*!< \brief Undivided Laplacian communication for JST (periodic only). */
+  PERIODIC_MAX_EIG    =  5,  /*!< \brief Maximum eigenvalue communication (periodic only). */
+  PERIODIC_SENSOR     =  6,  /*!< \brief Dissipation sensor communication (periodic only). */
+  PERIODIC_SOL_GG     =  7,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_PRIM_GG    =  8,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for Least Squares (periodic only). */
+  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for Least Squares (periodic only). */
+  PERIODIC_LIM_SOL_1  = 11,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_IMPLICIT   = 15   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+};
+
+/*!
+ * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
+ */
+enum MPI_QUANTITIES {
+  SOLUTION             =  0,  /*!< \brief Conservative solution communication. */
+  SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
+  SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
+  SOLUTION_DISPONLY    =  4,  /*!< \brief Solution displacement only communication. */
+  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
+  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
+  SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
+  PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
+  PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
+  UNDIVIDED_LAPLACIAN  = 10,  /*!< \brief Undivided Laplacian communication. */
+  MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
+  SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
+  AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
+  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
+  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
+  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
+  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
+  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
+  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
+};
+
+/*!
+ * \brief MPI communication level
+ */
+enum COMM_LEVEL {
+  COMM_NONE    = 0,   /*!< \brief Disable all MPI comms. Purely for testing, as results are incorrect. */
+  COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
+  COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
+};
+static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
+("NONE",    COMM_NONE)
+("MINIMAL", COMM_MINIMAL)
+("FULL",    COMM_FULL);
+
+/*
  * \brief types of filter kernels, initially intended for structural topology optimization applications
  */
 enum ENUM_FILTER_KERNEL {
