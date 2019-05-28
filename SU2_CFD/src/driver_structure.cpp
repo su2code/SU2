@@ -4171,12 +4171,9 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
-    unsigned short val_nZone,
-    unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
-        val_nZone,
-        val_nDim,
-        MPICommunicator) { }
+CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
+                                             unsigned short val_nDim, SU2_Comm MPICommunicator):
+                                             CFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
