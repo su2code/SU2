@@ -543,9 +543,6 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
-  if (RHOS_INDEX != 0){
-    cout << "delete me:  " << RHOS_INDEX << endl;
-  }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];

@@ -7908,8 +7908,10 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Calculate the gradient of temperature ---*/
       Ti   = node[iPoint]->GetTemperature();
       Tj   = node[jPoint]->GetTemperature();
-      Tvei = node[iPoint]->GetTemperature_ve();
-      Tvej = node[jPoint]->GetTemperature_ve();
+      //Tvei = node[iPoint]->GetTemperature_ve();
+      //Tvej = node[jPoint]->GetTemperature_ve();
+      Tvei = 300.0;
+      Tvej = 300.0;
 
       /*--- Rename variables for convenience ---*/
       ktr     = node[iPoint]->GetThermalConductivity();

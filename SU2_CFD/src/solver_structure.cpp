@@ -4224,7 +4224,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
-
   Restart_Vars[1] = (int)config->fields.size() - 1;
 
   /*--- Allocate memory for the restart data. ---*/
