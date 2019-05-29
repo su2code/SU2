@@ -56,7 +56,6 @@ def main():
   parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
-  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions", metavar="PERIODIC")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
@@ -73,7 +72,6 @@ def main():
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
-  options.periodic = options.periodic.upper() == 'TRUE'
   options.fsi = options.fsi.upper() == 'TRUE'
   options.fem = options.fem.upper() == 'TRUE'
   options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
@@ -93,13 +91,13 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, options.nDim, comm);
     elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, comm);
     elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CMultizoneDriver(options.filename, options.nZone, options.nDim, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
+      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
