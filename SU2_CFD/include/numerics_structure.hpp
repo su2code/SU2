@@ -2637,13 +2637,13 @@ protected:
   bool grid_movement;              /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
 
-  su2double *Velocity_i,   *Velocity_j,    *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
-  su2double ProjVelocity_i, ProjVelocity_j, ProjVelocity; /*!< \brief Velocities in the face normal direction. */
-  su2double sq_vel_i,  sq_vel_j;                          /*!< \brief Squared norm of the velocity vectors. */
-  su2double Density_i, Density_j, MeanDensity;            /*!< \brief Density at nodes i and j and mean. */
-  su2double Energy_i,  Energy_j,  MeanEnergy;             /*!< \brief Energy at nodes i and j and mean. */
-  su2double MeanPressure, MeanEnthalpy;                   /*!< \brief Mean pressure and enthalpy. */
-  su2double *ProjFlux;                                    /*!< \brief Projected inviscid flux. */
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
+  su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
+  su2double sq_vel_i,  sq_vel_j;                     /*!< \brief Squared norm of the velocity vectors. */
+  su2double Density_i, Density_j, MeanDensity;       /*!< \brief Density at nodes i and j and mean. */
+  su2double Energy_i,  Energy_j,  MeanEnergy;        /*!< \brief Energy at nodes i and j and mean. */
+  su2double MeanPressure, MeanEnthalpy;              /*!< \brief Mean pressure and enthalpy. */
+  su2double *ProjFlux;                               /*!< \brief Projected inviscid flux. */
 
   su2double *Diff_U, *Diff_Lapl;                        /*!< \brief Differences of conservatives and undiv. Laplacians. */
   su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eingenvalues. */
