@@ -42,11 +42,9 @@
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
                                                           val_nDim,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
