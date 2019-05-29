@@ -1295,7 +1295,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   Ms         = config->GetMolar_Mass();         // Species molar mass
   Tref       = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
   hf         = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-  ionization = config->GetIonization();
+  ionization = config->GetIonization();         // Molecule Ionization
 
   /*--- Rename variables for convenience ---*/
   RuSI   = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(mol*K)]
@@ -1306,7 +1306,6 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
-
 
   /*--- Assign species & mixture density ---*/
   // Note: if any species densities are < 0, these values are re-assigned
