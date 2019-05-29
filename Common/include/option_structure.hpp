@@ -1396,7 +1396,8 @@ enum ENUM_OBJECTIVE {
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION=62,             /*!<\brief Volume average physical density, for material-based topology optimization applications. */
-  TOPOL_DISCRETENESS=63           /*!<\brief Measure of the discreteness of the current topology. */
+  TOPOL_DISCRETENESS=63,          /*!<\brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE=64             /*!<\brief Measure of the discreteness of the current topology. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1446,7 +1447,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE)
 ("VOLUME_FRACTION", VOLUME_FRACTION)
-("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS);
+("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
+("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE);
 
 /*!
  * \brief types of residual criteria equations

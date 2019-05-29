@@ -4838,6 +4838,68 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
+void CFEASolver::Compute_OFCompliance(CGeometry *geometry, CSolver **solver_container, CConfig *config)
+{
+  unsigned long iPoint;
+  unsigned short iVar;
+  su2double nodalForce[3];
+
+  /*--- Types of loads to consider ---*/
+  bool fsi = config->GetFSI_Simulation();
+  bool body_forces = config->GetDeadLoad();
+
+  /*--- If the loads are being applied incrementaly ---*/
+  bool incremental_load = config->GetIncrementalLoad();
+
+  /*--- Computation (compliance = sum(f dot u) ) ---*/
+  /*--- Cannot be computed as u^T K u as the problem may not be linear ---*/
+
+  Total_OFCompliance = 0.0;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Initialize with loads speficied through config ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      nodalForce[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+
+    /*--- Add contributions due to body forces ---*/
+    if (body_forces)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] += node[iPoint]->Get_BodyForces_Res(iVar);
+
+    /*--- Add contributions due to fluid loads---*/
+    if (fsi)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] += node[iPoint]->Get_FlowTraction(iVar);
+
+    /*--- Correct for incremental loading ---*/
+    if (incremental_load)
+      for (iVar = 0; iVar < nVar; iVar++)
+        nodalForce[iVar] *= loadIncrement;
+
+    /*--- Add work contribution from this node ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Total_OFCompliance += nodalForce[iVar]*node[iPoint]->GetSolution(iVar);
+  }
+
+#ifdef HAVE_MPI
+  su2double tmp;
+  SU2_MPI::Allreduce(&Total_OFCompliance,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  Total_OFCompliance = tmp;
+#endif
+
+  // TODO: Temporary output file for the objective function. Will be integrated in the output once refurbished.
+  if (rank == MASTER_NODE) {
+    cout << "Objective function: " << Total_OFCompliance << "." << endl;
+
+    ofstream file;
+    file.open("of_topcomp.dat");
+    file.precision(15);
+    file << scientific << Total_OFCompliance << endl;
+    file.close();
+  }
+}
+
 void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem;

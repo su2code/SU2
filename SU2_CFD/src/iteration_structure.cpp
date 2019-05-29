@@ -1693,6 +1693,9 @@ void CFEAIteration::Iterate(COutput *output,
     case TOPOL_DISCRETENESS:
       solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFVolFrac(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
       break;
+    case TOPOL_COMPLIANCE:
+      solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFCompliance(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+      break;
   }
 
 }
@@ -2871,6 +2874,9 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
     case VOLUME_FRACTION:
     case TOPOL_DISCRETENESS:
       myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
+      break;
+    case TOPOL_COMPLIANCE:
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFCompliance() << "\t";
       break;
     }
 

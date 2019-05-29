@@ -678,6 +678,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
   case TOPOL_DISCRETENESS:
       ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
       break;
+  case TOPOL_COMPLIANCE:
+      ObjFunc_Value = direct_solver->GetTotal_OFCompliance();
+      break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
       break;
