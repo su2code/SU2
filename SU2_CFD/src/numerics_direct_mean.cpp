@@ -54,7 +54,14 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
   Velocity_j = new su2double [nDim];
   MeanVelocity = new su2double [nDim];
   ProjFlux = new su2double [nVar];
-  
+
+  /*--- Default values for preacc. vars. that are not allways used ---*/
+  Sensor_i = 0.0; Sensor_j = 0.0;
+  for (iVar=0; iVar<nVar; ++iVar) {
+    Und_Lapl_i[iVar] = 0.0;
+    Und_Lapl_j[iVar] = 0.0;
+  }
+
 }
 
 CCentBase_Flow::~CCentBase_Flow(void) {
@@ -84,7 +91,7 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
-  Density_i = V_i[nDim+2];                        Density_j = V_j[nDim+2];
+  Density_i  = V_i[nDim+2];                       Density_j  = V_j[nDim+2];
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   SoundSpeed_i = V_i[nDim+4];                     SoundSpeed_j = V_j[nDim+4];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
@@ -135,14 +142,15 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   /*--- Adjustment due to grid motion ---*/
   
   if (grid_movement) {
-    ProjVelocity = 0.0;
+    ProjGridVel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+      ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar] + U_j[iVar]);
+      val_residual[iVar] -= ProjGridVel * 0.5*(U_i[iVar] + U_j[iVar]);
       if (implicit) {
-        val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
-        val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+        val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel;
+        val_Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel;
       }
     }
   }
@@ -160,9 +168,6 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   /*--- Adjustment due to mesh motion ---*/
   
   if (grid_movement) {
-    ProjGridVel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
     ProjVelocity_i -= ProjGridVel;
     ProjVelocity_j -= ProjGridVel;
   }
@@ -215,13 +220,14 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
 
 }
 
-CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CCentBase_Flow(val_nDim, val_nVar, config) {
-  
-  /*--- Artifical dissipation part ---*/
+CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+               CCentBase_Flow(val_nDim, val_nVar, config) {
+
+  /*--- Artifical dissipation parameters ---*/
   Param_p = 0.3;
   Param_Kappa_2 = config->GetKappa_2nd_Flow();
   Param_Kappa_4 = config->GetKappa_4th_Flow();
-  
+
 }
 
 CCentJST_Flow::~CCentJST_Flow(void) {
@@ -229,13 +235,15 @@ CCentJST_Flow::~CCentJST_Flow(void) {
 }
 
 void CCentJST_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
-  
-  /*--- Computes differences btw. Laplacians ---*/
+
+  /*--- Compute differences btw. Laplacians ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
   }
-  
+
+  /*--- Compute dissipation coefficients ---*/
+
   sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
   
@@ -260,9 +268,10 @@ void CCentJST_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
 
 }
 
-CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CCentBase_Flow(val_nDim, val_nVar, config) {
+CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                  CCentBase_Flow(val_nDim, val_nVar, config) {
 
-  /*--- Artifical dissipation part ---*/
+  /*--- Artifical dissipation parameters ---*/
   Param_p = 0.3;
   Param_Kappa_2 = config->GetKappa_2nd_Flow();
 
@@ -274,8 +283,9 @@ CCentJST_KE_Flow::~CCentJST_KE_Flow(void) {
 
 void CCentJST_KE_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
-  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+  /*--- Compute dissipation coefficient ---*/
 
+  sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
 
   /*--- Compute viscous part of the residual ---*/
@@ -296,13 +306,13 @@ void CCentJST_KE_Flow::DissipationTerm(su2double *val_residual, su2double **val_
 
 }
 
+CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+               CCentBase_Flow(val_nDim, val_nVar, config) {
 
-CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CCentBase_Flow(val_nDim, val_nVar, config) {
-  
-  /*--- Artifical dissipation part ---*/
+  /*--- Artifical dissipation parameters ---*/
   Param_p = 0.3;
   Param_Kappa_0 = config->GetKappa_1st_Flow();
-  
+
 }
 
 CCentLax_Flow::~CCentLax_Flow(void) {
@@ -310,7 +320,9 @@ CCentLax_Flow::~CCentLax_Flow(void) {
 }
 
 void CCentLax_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
-  
+
+  /*--- Compute dissipation coefficient ---*/
+
   sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
   
@@ -329,7 +341,7 @@ void CCentLax_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
     
   }
-  
+
 }
 
 CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
