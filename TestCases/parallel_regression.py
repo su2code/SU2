@@ -1060,7 +1060,7 @@ def main():
     # FSI, 2d
     pywrapper_fsi2d           = TestCase('pywrapper_fsi2d')
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-    pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
+    pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
