@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
@@ -712,7 +712,7 @@ void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
 
 bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
   
-    unsigned short iVar;
+  unsigned short iVar;
   su2double density, staticEnergy;
   bool check_dens = false, check_press = false, check_sos = false,
   check_temp = false, RightVol = true;

@@ -1278,10 +1278,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 50.0;
-  Tvemin = 50.0;
-  Tmax   = 8E4;
-  Tvemax = 8E4;
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Set temperature algorithm paramters ---*/
   NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
@@ -1315,7 +1313,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
-      //nonPhys                = true;
+      nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];
@@ -2318,29 +2316,6 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     SetThermalConductivity_GuptaYos(config);
     break;
   }
-
-  //  unsigned short iSpecies;
-  //  cout << "T: " << Primitive[T_INDEX] << endl;
-  //  cout << "Tve: " << Primitive[TVE_INDEX] << endl;
-  //
-  //  SetTransportCoefficients_WBE(config);
-  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //    cout << "Ds[" << iSpecies << "]: " << DiffusionCoeff[iSpecies] << endl;
-  //  cout << "mu: " << LaminarViscosity << endl;
-  //  cout << "ktr: " << ThermalCond << endl;
-  //  cout << "kve: " << ThermalCond_ve << endl;
-  //
-  //  cout << endl << endl;
-  //
-  //  SetDiffusionCoeff_GuptaYos(config);
-  //  SetLaminarViscosity_GuptaYos(config);              // Requires temperature computation.
-  //  SetThermalConductivity_GuptaYos(config);
-  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //    cout << "Ds[" << iSpecies << "]: " << DiffusionCoeff[iSpecies] << endl;
-  //  cout << "mu: " << LaminarViscosity << endl;
-  //  cout << "ktr: " << ThermalCond << endl;
-  //  cout << "kve: " << ThermalCond_ve << endl;
-  //  cin.get();
 
   return nonPhys;
 }

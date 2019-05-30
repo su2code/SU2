@@ -3109,18 +3109,23 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   unsigned short iSpecies, iEl;
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
-      Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
-      Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-      Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
-      Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
-      Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
-      Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
-      Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
-      Temperature_FreeStreamND = 0.0, Gas_Constant = 0.0, Gas_ConstantND = 0.0,
-      Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
-      Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0, Mass = 0.0,
-      Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, GasConstant_Inf = 0.0,
-      denom = 0.0, num = 0.0, conc = 0.0, rhoCvtr = 0.0, soundspeed = 0.0, rhoE= 0.0, sqvel = 0.0;
+            Energy_FreeStream      = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
+            Omega_FreeStream       = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+            Density_FreeStream     = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
+
+  su2double Length_Ref       = 0.0, Density_Ref   = 0.0, Pressure_Ref     = 0.0, Velocity_Ref = 0.0,
+            Temperature_Ref  = 0.0, Time_Ref      = 0.0, Omega_Ref        = 0.0, Force_Ref    = 0.0,
+            Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref   = 0.0;
+
+  su2double Pressure_FreeStreamND    = 0.0, Density_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
+            Temperature_FreeStreamND = 0.0, Gas_Constant         = 0.0, Gas_ConstantND      = 0.0,
+            Viscosity_FreeStreamND   = 0.0, Tke_FreeStreamND     = 0.0,
+            Total_UnstTimeND         = 0.0, Delta_UnstTimeND     = 0.0,
+            Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
+
+  su2double Mass    = 0.0, soundspeed = 0.0, GasConstant_Inf = 0.0, Froude = 0.0,
+            rhoCvtr = 0.0, rhoE       = 0.0, sqvel           = 0.0,
+            denom   = 0.0, num        = 0.0, conc            = 0.0;
 
   unsigned short iDim,nEl,nHeavy,*nElStates;
 
@@ -3136,9 +3141,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
-  bool aeroelastic        = config->GetAeroelastic_Simulation();
   bool ionization         = config->GetIonization();
 
   su2double *Ms, *xi, *Tref, *hf, *thetav, **thetae, **g, rhos, Ef, Ee, Ev;
@@ -3160,16 +3163,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
-
-  /*--- Set temperature via the flutter speed index ---*/
-  if (aeroelastic) {
-    su2double vf          = config->GetAeroelastic_Flutter_Speed_Index();
-    su2double w_alpha     = config->GetAeroelastic_Frequency_Pitch();
-    su2double b           = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
-    su2double mu          = config->GetAeroelastic_Airfoil_Mass_Ratio();
-    // The temperature times gamma times the gas constant. Depending on the FluidModel temp is calculated below.
-    TgammaR = ((vf*vf)*(b*b)*(w_alpha*w_alpha)*mu) / (Mach*Mach);
-  }
 
   /*--- Compressible non dimensionalization ---*/
 
@@ -3254,11 +3247,9 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     config->SetMu_RefND(config->GetMu_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
     config->SetMu_SND(config->GetMu_S());
-
     config->SetMu_ConstantND(config->GetMu_Constant());
 
     /*--- Reynolds based initialization ---*/
-
     if (reynolds_init) {
 
       /*--- First, check if there is mesh motion. If yes, use the Mach
@@ -3272,16 +3263,21 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
             from the dimensional version of Sutherland's law or the constant
             viscosity, depending on the input option.---*/
 
+      // THIS NEEDS TO BE REVISITED
+      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
+      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
+      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
 
+      config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetPressure_FreeStream(Pressure_FreeStream);
     }
 
     /*--- Thermodynamics quantities based initialization ---*/
-
     else {
-
       Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-      Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
+      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
       Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
     }
 
@@ -3320,8 +3316,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   }
   else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
     Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
-    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
-    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+    Density_Ref       = Density_FreeStream;                  // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;              // Temp_FreeStream = 1.0
   }
   config->SetPressure_Ref(Pressure_Ref);
   config->SetDensity_Ref(Density_Ref);
@@ -3347,9 +3343,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   }
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-
-  Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-
+  Gas_ConstantND           = config->GetGas_Constant()/Gas_Constant_Ref;          config->SetGas_ConstantND(Gas_ConstantND);
 
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
@@ -3501,7 +3495,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       }
     }
 
-
     cout << "Free-stream static pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
@@ -3636,11 +3629,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
       cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
     }
-
     cout << endl;
-
   }
-
 }
 
 void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
@@ -6036,7 +6026,6 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Mach_Inf           = config->GetMach();
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
-  Mach_Inf           = config->GetMach();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
 
@@ -7908,10 +7897,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Calculate the gradient of temperature ---*/
       Ti   = node[iPoint]->GetTemperature();
       Tj   = node[jPoint]->GetTemperature();
-      //Tvei = node[iPoint]->GetTemperature_ve();
-      //Tvej = node[jPoint]->GetTemperature_ve();
-      Tvei = 300.0;
-      Tvej = 300.0;
+      Tvei = node[iPoint]->GetTemperature_ve();
+      Tvej = node[jPoint]->GetTemperature_ve();
 
       /*--- Rename variables for convenience ---*/
       ktr     = node[iPoint]->GetThermalConductivity();
