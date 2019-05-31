@@ -35,7 +35,19 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/output/filewriter/CFVMDataSorter.hpp"
+#include "../../include/output/filewriter/CFEMDataSorter.hpp"
+#include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
+
+#include "../../include/output/filewriter/CParaviewFileWriter.hpp"
+#include "../../include/output/filewriter/CTecplotFileWriter.hpp"
+#include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
+#include "../../include/output/filewriter/CCSVFileWriter.hpp"
+#include "../../include/output/filewriter/CSU2FileWriter.hpp"
+#include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
+
+
 
 COutput::COutput(CConfig *config) {
   
