@@ -7832,6 +7832,12 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     /*--- Read the name of the output file ---*/
     
     str = config[ZONE_0]->GetMesh_Out_FileName();
+    
+    unsigned short lastindex = str.find_last_of(".");
+    str = str.substr(0, lastindex);
+    
+    str += ".su2";
+    
     strcpy (mesh_file, str.c_str());
     strcpy (cstr, mesh_file);
     
