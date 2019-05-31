@@ -1684,56 +1684,6 @@ void CGeometry::TestGeometry(void) {
   
 }
 
-void CGeometry::SetElemVolume(CConfig *config)
-{
-  CElement *elements[4] = {NULL, NULL, NULL, NULL}, *element = NULL;
-
-  /*--- Create a bank of elements to avoid instantiating inside loop ---*/
-  if (nDim==2) {
-    elements[0] = new CTRIA1(nDim,config);
-    elements[1] = new CQUAD4(nDim,config);
-  } else {
-    elements[0] = new CTETRA1(nDim,config);
-    elements[1] = new CPYRAM5(nDim,config);
-    elements[2] = new CPRISM6(nDim,config);
-    elements[3] = new CHEXA8(nDim,config);
-  }
-
-  /*--- Compute and store the volume of each "elem" ---*/
-  for (unsigned long iElem=0; iElem<nElem; ++iElem)
-  {
-    /*--- Get the appropriate type of element ---*/
-    switch (elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      element = elements[0]; break;
-      case QUADRILATERAL: element = elements[1]; break;
-      case TETRAHEDRON:   element = elements[0]; break;
-      case PYRAMID:       element = elements[1]; break;
-      case PRISM:         element = elements[2]; break;
-      case HEXAHEDRON:    element = elements[3]; break;
-      default:
-        SU2_MPI::Error("Cannot compute the area/volume of a 1D element.",CURRENT_FUNCTION);
-    }
-    /*--- Set the nodal coordinates of the element ---*/
-    for (unsigned short iNode=0; iNode<elem[iElem]->GetnNodes(); ++iNode) {
-      unsigned long node_idx = elem[iElem]->GetNode(iNode);
-      for (unsigned short iDim=0; iDim<nDim; ++iDim) {
-        su2double coord = node[node_idx]->GetCoord(iDim);
-        element->SetRef_Coord(coord, iNode, iDim);
-      }
-    }
-    /*--- Compute ---*/
-    if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
-    else        elem[iElem]->SetVolume(element->ComputeVolume());
-  }
-
-  delete elements[0];
-  delete elements[1];
-  if (nDim==3) {
-    delete elements[2];
-    delete elements[3];
-  }
-}
-
 void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
   unsigned long i, k;
   su2double p, qn, sig, un, *u;
@@ -3550,19 +3500,30 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
 
 void CGeometry::SetElemVolume(CConfig *config)
 {
+  CElement *elements[4] = {NULL, NULL, NULL, NULL}, *element = NULL;
+
+  /*--- Create a bank of elements to avoid instantiating inside loop ---*/
+  if (nDim==2) {
+    elements[0] = new CTRIA1(nDim,config);
+    elements[1] = new CQUAD4(nDim,config);
+  } else {
+    elements[0] = new CTETRA1(nDim,config);
+    elements[1] = new CPYRAM5(nDim,config);
+    elements[2] = new CPRISM6(nDim,config);
+    elements[3] = new CHEXA8(nDim,config);
+  }
+
   /*--- Compute and store the volume of each "elem" ---*/
   for (unsigned long iElem=0; iElem<nElem; ++iElem)
   {
-    CElement *element = NULL;
-
     /*--- Get the appropriate type of element ---*/
     switch (elem[iElem]->GetVTK_Type()) {
-      case TRIANGLE:      element = new CTRIA1( nDim,config); break;
-      case QUADRILATERAL: element = new CQUAD4( nDim,config); break;
-      case TETRAHEDRON:   element = new CTETRA1(nDim,config); break;
-      case PYRAMID:       element = new CPYRAM5(nDim,config); break;
-      case PRISM:         element = new CPRISM6(nDim,config); break;
-      case HEXAHEDRON:    element = new CHEXA8( nDim,config); break;
+      case TRIANGLE:      element = elements[0]; break;
+      case QUADRILATERAL: element = elements[1]; break;
+      case TETRAHEDRON:   element = elements[0]; break;
+      case PYRAMID:       element = elements[1]; break;
+      case PRISM:         element = elements[2]; break;
+      case HEXAHEDRON:    element = elements[3]; break;
       default:
         SU2_MPI::Error("Cannot compute the area/volume of a 1D element.",CURRENT_FUNCTION);
     }
@@ -3577,8 +3538,13 @@ void CGeometry::SetElemVolume(CConfig *config)
     /*--- Compute ---*/
     if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
     else        elem[iElem]->SetVolume(element->ComputeVolume());
+  }
 
-    delete element;
+  delete elements[0];
+  delete elements[1];
+  if (nDim==3) {
+    delete elements[2];
+    delete elements[3];
   }
 }
 
