@@ -506,24 +506,6 @@ protected:
   void SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
-   * \brief Write a Paraview ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-  /*!
-   * \brief Write a Paraview ASCII solution file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
-
-  /*!
    * \brief Write a Paraview ASCII solution file with parallel output.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
