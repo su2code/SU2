@@ -78,6 +78,8 @@ class COutput {
 
 protected:
   
+  CParallelDataSorter* data_sorter;
+  
   COutputLegacy *output_legacy;
 
   unsigned long nGlobal_Poin;   // Global number of nodes with halos

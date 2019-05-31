@@ -449,18 +449,28 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
     cout << endl << "Loading solution output data locally on each rank." << endl;
   
   CollectVolumeData(config, geometry, solver_container);
+ 
+  /*---- Construct a data sorter object to partition and distribute
+   *  the local data into linear chunks across the processors ---*/
+  
+  if (fem_output){
+  
+    data_sorter = new CFEMDataSorter(config, geometry, GlobalField_Counter, Local_Data);
+
+  }  else {
+    
+    data_sorter = new CFVMDataSorter(config, geometry, GlobalField_Counter, Local_Data);
+    
+  }
   
   /*--- Sort the data, needed for volume and surface output ---*/
   
   if (rank == MASTER_NODE) 
     cout << "Sorting output data across all ranks." << endl;
   
-  if (fem_output){
-    SortOutputData_FEM(config, geometry);
-  }
-  else {
-    SortOutputData(config, geometry);
-  }
+  data_sorter->SortOutputData(config, geometry);
+  
+//  SortOutputData(config, geometry);
 }
 
 void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
@@ -564,6 +574,10 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
    
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
+  
+  unsigned short nDim = geometry->GetnDim();
+  
+  CFileWriter* filewriter;
 
   /*--- Write files depending on the format --- */
   
@@ -574,9 +588,9 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     if (rank == MASTER_NODE) {
         cout << "Writing SU2 ASCII restart file." << endl;     
     }
-   
-    WriteRestart_Parallel_ASCII(config, geometry);
-    
+       
+    filewriter = new CSU2FileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+        
     break;
     
   case SU2_RESTART_BINARY:
@@ -585,8 +599,8 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing SU2 binary restart file." << endl;   
     }
 
-    WriteRestart_Parallel_Binary(config, geometry);
-    
+    filewriter = new CSU2BinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+        
     break;
   
   case SU2_MESH:
@@ -594,7 +608,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Load and sort the output data and connectivity.
      *  Note that the solver container is not need in this case. ---*/
     
-    SortConnectivity(config, geometry, false, true);
+    data_sorter->SortConnectivity(config, geometry, true);
     
     /*--- Set the mesh ASCII format ---*/
     
@@ -602,7 +616,8 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing SU2 mesh file." << endl;
     }
     
-    SetSU2_MeshASCII(config, geometry);
+    filewriter = new CSU2MeshFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, config->GetiZone(), config->GetnZone());
+    
     
     break;    
     
@@ -610,7 +625,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    SortConnectivity(config, geometry, false, false);
+     data_sorter->SortConnectivity(config, geometry, false);
     
     /*--- Write tecplot binary ---*/
     
@@ -618,7 +633,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing Tecplot binary file volume solution file." << endl;
     }
     
-    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), false);
+    filewriter = new CTecplotBinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
       
     break;
     
@@ -626,7 +641,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    SortConnectivity(config, geometry, false, true);
+    data_sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write tecplot binary ---*/
     
@@ -634,7 +649,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing Tecplot ASCII file volume solution file." << endl;
     }
     
-    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), false);
+    filewriter = new CTecplotFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
 
     break;
     
@@ -642,14 +657,14 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    SortConnectivity(config, geometry, false, true);
+    data_sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write paraview binary ---*/
     if (rank == MASTER_NODE) {
       cout << "Writing Paraview binary file volume solution file." << endl;
     }
     
-    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, false);
+    filewriter = new CParaviewBinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
     
     break;
     
@@ -657,14 +672,14 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    SortConnectivity(config, geometry, false, true);
+    data_sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write paraview binary ---*/
     if (rank == MASTER_NODE) {
         cout << "Writing Paraview ASCII file volume solution file." << endl;      
     }
     
-    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, false);
+    filewriter = new CParaviewFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
 
     break;
     
@@ -672,11 +687,10 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     SU2_MPI::Error("Requested volume output format not available.", CURRENT_FUNCTION);
     break;
   } 
-
-  /*--- Clean up the surface data that was only needed for output. ---*/
   
-  if (format != SU2_RESTART_ASCII && format != SU2_RESTART_BINARY)
-    DeallocateConnectivity_Parallel(false);
+  filewriter->Write_Data(data_sorter);
+
+  delete filewriter;
   
 }
 
@@ -4472,29 +4486,31 @@ void COutput::DeallocateConnectivity_Parallel(bool surf_sol) {
 
 void COutput::DeallocateData_Parallel() {
   
-  /*--- Deallocate memory for solution data ---*/
   
-  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
-  }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;
+  if (data_sorter != NULL) delete data_sorter;
+//  /*--- Deallocate memory for solution data ---*/
+  
+//  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
+//    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+//  }
+//  if (Parallel_Data != NULL) delete [] Parallel_Data;
 
 }
 
 void COutput::DeallocateSurfaceData_Parallel() {
   
-  if (Parallel_Surf_Data != NULL) {
+//  if (Parallel_Surf_Data != NULL) {
     
-    Global2Renumber.clear();
-    Renumber2Global.clear();
+//    Global2Renumber.clear();
+//    Renumber2Global.clear();
     
-    /*--- Deallocate memory for surface solution data ---*/
+//    /*--- Deallocate memory for surface solution data ---*/
     
-    for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
-      if (Parallel_Surf_Data[iVar] != NULL) delete [] Parallel_Surf_Data[iVar];
-    }
-    delete [] Parallel_Surf_Data;
-  }
+//    for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
+//      if (Parallel_Surf_Data[iVar] != NULL) delete [] Parallel_Surf_Data[iVar];
+//    }
+//    delete [] Parallel_Surf_Data;
+//  }
   
 }
 
