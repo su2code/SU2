@@ -1,5 +1,5 @@
 /*!
- * \file output_mesh.hpp
+ * \file output_fea_discadj.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,31 +38,43 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "COutput.hpp"
 
-/*! \class CMeshOutput
- *  \brief Output class for mesh solution.
+/*! \class CDiscAdjFEAOutput
+ *  \brief Output class for elasticity discrete adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CMeshOutput : public COutput {
+class CAdjElasticityOutput : public COutput {
+private:
+  unsigned short nVar_FEM, nDim;
 
 public:
+
+  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CMeshOutput(void);
+  virtual ~CAdjElasticityOutput(void);
+
+  void SetHistoryOutputFields(CConfig *config);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
 
   /*!
    * \brief SetVolumeOutputFields
-   * \param config
+   * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields(CConfig *config);
 

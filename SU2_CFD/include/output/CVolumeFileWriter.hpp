@@ -1,0 +1,4 @@
+#ifndef CFILEWRITER_HPP
+#define CFILEWRITER_HPP
+
+#endif // CFILEWRITER_HPP

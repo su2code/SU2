@@ -36,7 +36,7 @@
  */
 
 
-#include "../../include/output/output_flow_comp_fem.hpp"
+#include "../../include/output/CFlowCompFEMOutput.hpp"
 
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
 

@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_fem.hpp
+ * \file output_heat.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,37 +38,31 @@
 
 #pragma once
 
-#include "output_flow.hpp"
+#include "COutput.hpp"
 
 
-/*! \class CFlowFEMOutput
- *  \brief Output class for compressible Flow problems.
+/*! \class CHeatOutput
+ *  \brief Output class for heat problems.
  *  \author R. Sanchez, T. Albring.
- *  \date May 30, 2018.
+ *  \date June 5, 2018.
  */
-class CFlowCompFEMOutput : public CFlowOutput {
+class CHeatOutput : public COutput {
 private:
-  
-  unsigned short nVar;
-
-  unsigned short turb_model;
-  
-  bool grid_movement;
-  
-  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+  bool multizone;
 
 public:
+
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowCompFEMOutput(void);
+  virtual ~CHeatOutput(void);
 
   /*!
    * \brief Set the history file header
@@ -77,16 +71,11 @@ public:
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
   
   /*!
-   * \brief LoadSurfaceData
+   * \brief SetHistoryOutputFields
    * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
-   * \param iMarker
-   * \param iVertex
    */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
-  
+  void SetHistoryOutputFields(CConfig *config);
+   
   /*!
    * \brief SetVolumeOutputFields
    * \param config
@@ -94,44 +83,12 @@ public:
   void SetVolumeOutputFields(CConfig *config);
   
   /*!
-   * \brief LoadVolumeDataFEM
+   * \brief LoadVolumeData
    * \param config
    * \param geometry
    * \param solver
-   * \param iElem
-   * \param index
-   * \param dof
+   * \param iPoint
    */
-  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
-  
-  /*!
-   * \brief SetHistoryOutputFields
-   * \param config
-   */
-  void SetHistoryOutputFields(CConfig *config);
-
-  /*!
-   * \brief GetQ_Criterion
-   * \param config
-   * \param geometry
-   * \param node_flow
-   * \return 
-   */
-  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
-  
-  /*!
-   * \brief SetInit_Residuals
-   * \param config
-   * \return 
-   */
-  bool SetInit_Residuals(CConfig *config);
-  
-  /*!
-   * \brief SetUpdate_Averages
-   * \param config
-   * \param dualtime
-   * \return 
-   */
-  bool SetUpdate_Averages(CConfig *config);
-  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+ 
 };

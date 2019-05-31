@@ -1,8 +1,7 @@
 /*!
- * \file output_baseline.hpp
- * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \file output_mesh.cpp
+ * \brief Main subroutines for the heat solver output
+ * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -19,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -36,43 +35,50 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../include/output/CMeshOutput.hpp"
 
-#include "output.hpp"
+CMeshOutput::CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
-/*! \class CBaselineOutput
- *  \brief Output class for baseline solver output.
- *  \author R. Sanchez, T. Albring.
- *  \date June 5, 2018.
- */
-class CBaselineOutput : public COutput {
+  nDim = geometry->GetnDim();
 
-public:
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+  
+  RequestedVolumeFields.push_back("COORDINATES");
+  nRequestedVolumeFields = RequestedVolumeFields.size();
+    
+  /*--- Set the volume filename --- */
+  
+  VolumeFilename = config->GetMesh_Out_FileName();
+  
+  /*--- Set the surface filename ---*/
+  
+  SurfaceFilename = "surface_mesh";
+  
+}
 
-  /*!
-   * \brief Constructor of the class
-   * \param[in] config - Definition of the particular problem.
-   */
-  CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short iZone);
+CMeshOutput::~CMeshOutput(void) {
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CBaselineOutput(void);
 
-  /*!
-   * \brief SetVolumeOutputFields
-   * \param config
-   */
-  void SetVolumeOutputFields(CConfig *config);
+}
 
-  /*!
-   * \brief LoadVolumeData
-   * \param config
-   * \param geometry
-   * \param solver
-   * \param iPoint
-   */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 
-};
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+
+  
+}
+
+void CMeshOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+
+  CPoint*    Node_Geo  = geometry->node[iPoint];
+ 
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+  
+}

@@ -1,5 +1,5 @@
 /*!
- * \file output_flow.hpp
+ * \file output_mesh.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,33 +38,41 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "COutput.hpp"
 
-class CFlowOutput : public COutput{
-  
-  
+/*! \class CMeshOutput
+ *  \brief Output class for mesh solution.
+ *  \author R. Sanchez, T. Albring.
+ *  \date June 5, 2018.
+ */
+class CMeshOutput : public COutput {
+
 public:
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config);
+  CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFlowOutput(void);
-  
-  void AddAnalyzeSurfaceOutput(CConfig *config);
-  
-  void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  void AddAerodynamicCoefficients(CConfig *config);
-  
-  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
-  
-  void Add_CpInverseDesignOutput(CConfig *config);
-  
-  void Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config);
-  
+  virtual ~CMeshOutput(void);
+
+  /*!
+   * \brief SetVolumeOutputFields
+   * \param config
+   */
+  void SetVolumeOutputFields(CConfig *config);
+
+  /*!
+   * \brief LoadVolumeData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   */
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+
 };

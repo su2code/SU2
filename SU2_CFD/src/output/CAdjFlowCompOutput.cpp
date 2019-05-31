@@ -35,9 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_adj_flow_comp.hpp"
+#include "../../include/output/CAdjFlowOutput.hpp"
 
-CAdjFlowOutput::CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
   nDim = geometry->GetnDim();
  
@@ -98,7 +98,7 @@ CAdjFlowOutput::CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned sh
   
 }
 
-CAdjFlowOutput::~CAdjFlowOutput(void) {
+CAdjFlowCompOutput::~CAdjFlowCompOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -106,7 +106,7 @@ CAdjFlowOutput::~CAdjFlowOutput(void) {
 
 }
 
-void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
+void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint density.
@@ -209,7 +209,7 @@ void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){ 
+void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){ 
  
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];  
@@ -293,7 +293,7 @@ void CAdjFlowOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
+void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: COORDINATES, DESCRIPTION: Coordinates of the mesh nodes.
   /// DESCRIPTION: x coordinates of the mesh nodes.
@@ -389,7 +389,7 @@ void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
  
 }
 
-void CAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
   CVariable* Node_AdjTurb = NULL;
@@ -465,21 +465,21 @@ void CAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   
 }
 
-void CAdjFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
   
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
   
 }
 
 
-bool CAdjFlowOutput::SetInit_Residuals(CConfig *config){
+bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
         (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
   
 }
 
-bool CAdjFlowOutput::SetUpdate_Averages(CConfig *config){
+bool CAdjFlowCompOutput::SetUpdate_Averages(CConfig *config){
   return false;
   
 //  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);

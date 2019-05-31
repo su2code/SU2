@@ -125,26 +125,26 @@ libSU2Core_sources = \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output/output_cgns.cpp \
-  ../src/output/output_structure.cpp \
+  ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/output_tecplot.cpp \
   ../src/output/output_fieldview.cpp \
   ../src/output/output_su2.cpp \
   ../src/output/output_paraview.cpp \
   ../src/output/output_csv.cpp \
-  ../src/output/output_mesh.cpp \
-  ../src/output/output_elasticity.cpp \
-  ../src/output/output_flow.cpp \
-  ../src/output/output_flow_comp.cpp \
-  ../src/output/output_flow_comp_fem.cpp \
-  ../src/output/output_flow_inc.cpp \
-  ../src/output/output_heat.cpp \
-  ../src/output/output_baseline.cpp \
-  ../src/output/output_adj_elasticity.cpp \
-  ../src/output/output_adj_heat.cpp \
-  ../src/output/output_adj_flow_comp.cpp \
-  ../src/output/output_adj_flow_inc.cpp \
-  ../src/output/output_driver.cpp \
+  ../src/output/CMeshOutput.cpp \
+  ../src/output/CElasticityOutput.cpp \
+  ../src/output/CFlowOutput.cpp \
+  ../src/output/CFlowCompOutput.cpp \
+  ../src/output/CFlowCompFEMOutput.cpp \
+  ../src/output/CFlowIncOutput.cpp \
+  ../src/output/CHeatOutput.cpp \
+  ../src/output/CBaselineOutput.cpp \
+  ../src/output/CAdjElasticityOutput.cpp \
+  ../src/output/CAdjHeatOutput.cpp \
+  ../src/output/CAdjFlowCompOutput.cpp \
+  ../src/output/CAdjFlowIncOutput.cpp \
+  ../src/output/CDriverOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \

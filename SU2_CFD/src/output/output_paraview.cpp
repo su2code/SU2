@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output.hpp"
+#include "../../include/output/COutput.hpp"
 
 /*--- Subroutine to swap bytes, in case we need to convert to
  big endian, which is expected for ParaView binary legacy format. ---*/

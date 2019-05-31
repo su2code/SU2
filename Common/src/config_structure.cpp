@@ -3170,6 +3170,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (!Time_Domain){
     nTimeIter = 1;
+    Time_Step = 0;
   } 
   
   if (Time_Domain){
