@@ -63,28 +63,82 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort){}
+  virtual void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort = true){}
  
+  /*!
+   * \brief Get the number of points the local rank owns.
+   * \return local number of points.
+   */
   unsigned long GetnPoints(){return nParallel_Poin;}
   
+  /*!
+   * \brief Get the global number of points (accumulated from all ranks)
+   * \return Global number of points.
+   */
   unsigned long GetnPointsGlobal(){return nGlobal_Poin_Par;}
   
+  /*!
+   * \brief Get the global of elements (accumulated from all ranks and element types)
+   * \return Global number elements.
+   */
   unsigned long GetnElem(){return nGlobal_Elem_Par;}
-    
+   
+  /*!
+   * \brief Get the local number of elements of a specific type that the current rank owns
+   * \input type - The type of element, ref GEO_TYPE
+   * \return Local number of elements of a specific type.
+   */
   unsigned long GetnElem(GEO_TYPE type);
     
+  /*!
+   * \brief Get the connectivity of specific element.
+   * \input type - The type of element, ref GEO_TYPE
+   * \input iElem - The element ID
+   * \input iNode - The node ID
+   * \return the connected node.
+   */
   unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode);
   
+  /*!
+   * \brief Beginning node ID of the linear partition owned by a specific processor.
+   * \input rank - the processor rank.
+   * \return The beginning node ID.
+   */
   unsigned long GetNodeBegin(unsigned short rank){return beg_node[rank];}
   
+  /*!
+   * \brief Ending node ID of the linear partition owned by a specific processor.
+   * \input rank - the processor rank.
+   * \return The ending node ID.
+   */
   unsigned long GetNodeEnd(unsigned short rank){return end_node[rank];}
   
+  /*!
+   * \brief Get the value of the linear partitioned data.
+   * \input iField - the output field ID.
+   * \input iPoint - the point ID.
+   * \return the value of the data field at a point.
+   */
   su2double GetData(unsigned short iField, unsigned long iPoint) {return Parallel_Data[iField][iPoint];}
   
+  /*!
+   * \brief Get the global index of a point.
+   * \input iPoint - the point ID.
+   * \return Global index of a specific point.
+   */
   virtual unsigned long GetGlobalIndex(unsigned long iPoint){return 0;}
   
+  /*!
+   * \brief Get the cumulated number of points
+   * \input rank - the processor rank.
+   * \return The cumulated number of points up to certain processor rank.
+   */
   unsigned long GetnPointCumulative(){return nPoint_Cum[rank];}
   
+  /*!
+   * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
+   * \return <TRUE> if the connectivity is sorted.
+   */  
   bool GetConnectivitySorted(){return connectivity_sorted;}
 
   /*!
