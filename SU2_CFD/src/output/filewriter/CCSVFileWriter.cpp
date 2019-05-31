@@ -1,6 +1,6 @@
 #include "../../../include/output/filewriter/CCSVFileWriter.hpp"
 
-CCSVFileWriter::CCSVFileWriter(string filename, vector<string> fields, unsigned short nDim) : 
+CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){
 
   file_ext = ".csv";

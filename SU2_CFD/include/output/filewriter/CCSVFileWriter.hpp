@@ -6,7 +6,7 @@ class CCSVFileWriter : public CFileWriter{
 
 public:
   
-  CCSVFileWriter(string filename, vector<string> fields, unsigned short nDim);
+  CCSVFileWriter(vector<string> fields, unsigned short nDim);
   
   ~CCSVFileWriter();
   
