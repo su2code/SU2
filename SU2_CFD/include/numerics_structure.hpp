@@ -2640,9 +2640,8 @@ protected:
   su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
   su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
   su2double sq_vel_i,  sq_vel_j;                     /*!< \brief Squared norm of the velocity vectors. */
-  su2double Density_i, Density_j, MeanDensity;       /*!< \brief Density at nodes i and j and mean. */
   su2double Energy_i,  Energy_j,  MeanEnergy;        /*!< \brief Energy at nodes i and j and mean. */
-  su2double MeanPressure, MeanEnthalpy;              /*!< \brief Mean pressure and enthalpy. */
+  su2double MeanDensity, MeanPressure, MeanEnthalpy; /*!< \brief Mean density, pressure, and enthalpy. */
   su2double *ProjFlux;                               /*!< \brief Projected inviscid flux. */
 
   su2double *Diff_U, *Diff_Lapl;                        /*!< \brief Differences of conservatives and undiv. Laplacians. */
@@ -2651,6 +2650,12 @@ protected:
   su2double cte_0, cte_1;                               /*!< \brief Constants for the scalar dissipation Jacobian. */
 
   su2double ProjGridVel; /*!< \brief Projected grid velocity. */
+
+  /*!
+   * \brief Hook method for derived classes to define preaccumulated variables, optional to implement.
+   * \return true if any variable was set as preacc. input, in which case the residual will be output.
+   */
+  virtual bool SetPreaccInVars(void) {return false;}
 
   /*!
    * \brief Derived classes must implement this method, called in ComputeResidual after inviscid part.
@@ -2713,6 +2718,12 @@ private:
    */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
 
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
 
   /*!
@@ -2751,6 +2762,12 @@ private:
    */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
 
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
 
   /*!
@@ -2788,6 +2805,12 @@ private:
    * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
 
 public:
 
