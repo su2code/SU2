@@ -89,7 +89,8 @@ su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
 		      'output/filewriter/CTecplotBinaryFileWriter.cpp',
 		      'output/filewriter/CCSVFileWriter.cpp',
 		      'output/filewriter/CSU2FileWriter.cpp',
-		      'output/filewriter/CSU2BinaryFileWriter.cpp'])
+		      'output/filewriter/CSU2BinaryFileWriter.cpp',
+		      'output/filewriter/CSU2MeshFileWriter.cpp'])
 
 
 su2_cfd = executable('SU2_CFD',

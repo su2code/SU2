@@ -457,6 +457,7 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
   SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
+  connectivity_sorted = true;
   
 }
 
