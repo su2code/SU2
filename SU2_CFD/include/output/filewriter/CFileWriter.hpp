@@ -5,7 +5,6 @@
 class CFileWriter{
 protected:
 
-  string filename;
   vector<string> fieldnames;
   unsigned short nDim;
   
@@ -15,11 +14,11 @@ protected:
   
 public:
   
-  CFileWriter(string filename, vector<string> fields, unsigned short nDim);
+  CFileWriter(vector<string> fields, unsigned short nDim);
   
   virtual ~CFileWriter();
   
-  virtual void Write_Data(CParallelDataSorter* data_sorter){}
+  virtual void Write_Data(string filename, CParallelDataSorter* data_sorter){}
   
 };
 

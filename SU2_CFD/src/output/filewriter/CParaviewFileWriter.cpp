@@ -1,13 +1,11 @@
 #include "../../../include/output/filewriter/CParaviewFileWriter.hpp"
 
 
-CParaviewFileWriter::CParaviewFileWriter(string filename, vector<string> fields, unsigned short nDim) : 
-  CFileWriter(filename, fields, nDim){
+CParaviewFileWriter::CParaviewFileWriter(vector<string> fields, unsigned short nDim) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".vtk";
-  
-  this->filename += file_ext;
-  
+    
 }
 
 
@@ -15,7 +13,9 @@ CParaviewFileWriter::~CParaviewFileWriter(){
   
 }
 
-void CParaviewFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   if (!data_sorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);

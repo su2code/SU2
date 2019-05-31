@@ -9,11 +9,11 @@ class CTecplotBinaryFileWriter : public CFileWriter{
   
 public:
   
-  CTecplotBinaryFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep);
+  CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep);
   
   ~CTecplotBinaryFileWriter();
   
-  void Write_Data(CParallelDataSorter* data_sorter);
+  void Write_Data(string filename, CParallelDataSorter* data_sorter);
   
   /*!
    * \brief Calculate the partitioning of nodes to determine:

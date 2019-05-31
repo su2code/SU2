@@ -4,13 +4,11 @@
 
 
 
-CSU2MeshFileWriter::CSU2MeshFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone) : 
-  CFileWriter(filename, fields, nDim){
+CSU2MeshFileWriter::CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".su2";
-  
-  this->filename += file_ext;
-  
+    
   this->iZone = iZone;
   this->nZone = nZone;
   
@@ -22,7 +20,9 @@ CSU2MeshFileWriter::~CSU2MeshFileWriter(){
 }
 
 
-void CSU2MeshFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, offset, nElem;
   unsigned short iMarker, iDim, iChar, VTK_Type, nMarker_;

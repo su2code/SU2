@@ -1,15 +1,10 @@
 #include "../../../include/output/filewriter/CCSVFileWriter.hpp"
 
-
-
-
 CCSVFileWriter::CCSVFileWriter(string filename, vector<string> fields, unsigned short nDim) : 
-  CFileWriter(filename, fields, nDim){
+  CFileWriter(fields, nDim){
 
   file_ext = ".csv";
-  
-  this->filename += file_ext;
-  
+    
 }
 
 
@@ -17,7 +12,9 @@ CCSVFileWriter::~CCSVFileWriter(){
   
 }
 
-void CCSVFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   /*--- Routine to write the surface CSV files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the

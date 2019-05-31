@@ -9,11 +9,11 @@ class CTecplotFileWriter : public CFileWriter{
   
 public:
   
-  CTecplotFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep);
+  CTecplotFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep);
   
   ~CTecplotFileWriter();
   
-  void Write_Data(CParallelDataSorter* data_sorter);
+  void Write_Data(string filename, CParallelDataSorter* data_sorter);
   
 };
 
