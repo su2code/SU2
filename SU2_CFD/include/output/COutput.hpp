@@ -62,7 +62,8 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
-#include "filewriter/CParallelDataSorter.hpp"
+class CFileWriter;
+class CParallelDataSorter;
 
 #include "COutputLegacy.hpp"
 
@@ -465,6 +466,16 @@ protected:
   
   /*----------------------------- Protected member functions ----------------------------*/  
 
+  /*!
+   * \brief Allocates the appropriate file writer based on the chosen format.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] sorter - The parallel file sorter.
+   * \param[out] filewriter - The allocated filewriter.
+   * \param[in] format - The output format.
+   */
+  void SetFileWriter(CConfig *config, CGeometry *geomery, CParallelDataSorter *sorter, CFileWriter* filewriter, unsigned short format);  
+  
   /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.
    * \param[in] config - Definition of the particular problem.

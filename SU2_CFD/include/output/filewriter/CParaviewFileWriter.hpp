@@ -6,11 +6,11 @@ class CParaviewFileWriter : public CFileWriter{
   
 public:
   
-  CParaviewFileWriter(string filename, vector<string> fields, unsigned short nDim);
+  CParaviewFileWriter(vector<string> fields, unsigned short nDim);
   
   ~CParaviewFileWriter();
   
-  void Write_Data(CParallelDataSorter* data_sorter);
+  void Write_Data(string filename, CParallelDataSorter* data_sorter);
   
 };
 

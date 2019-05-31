@@ -6,11 +6,11 @@ class CSU2FileWriter : public CFileWriter{
 
 public:
   
-  CSU2FileWriter(string filename, vector<string> fields, unsigned short nDim);
+  CSU2FileWriter(vector<string> fields, unsigned short nDim);
   
   ~CSU2FileWriter();
   
-  void Write_Data(CParallelDataSorter* data_sorter);
+  void Write_Data(string filename, CParallelDataSorter* data_sorter);
   
 };
 

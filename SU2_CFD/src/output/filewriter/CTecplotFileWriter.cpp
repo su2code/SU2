@@ -1,13 +1,11 @@
 #include "../../../include/output/filewriter/CTecplotFileWriter.hpp"
 
 
-CTecplotFileWriter::CTecplotFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
-  CFileWriter(filename, fields, nDim){
+CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".dat";
-  
-  this->filename += file_ext;
-  
+    
   this->time_iter = time_iter;
   
   this->timestep = timestep;
@@ -19,7 +17,9 @@ CTecplotFileWriter::~CTecplotFileWriter(){
   
 }
 
-void CTecplotFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   if (!data_sorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);

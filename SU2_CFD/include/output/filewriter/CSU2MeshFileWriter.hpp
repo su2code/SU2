@@ -8,11 +8,11 @@ private:
 
 public:
   
-  CSU2MeshFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone);
+  CSU2MeshFileWriter(vector<string> fields, unsigned short nDim, unsigned short iZone, unsigned short nZone);
   
   ~CSU2MeshFileWriter();
   
-  void Write_Data(CParallelDataSorter* data_sorter);
+  void Write_Data(string filename, CParallelDataSorter* data_sorter);
   
 };
 

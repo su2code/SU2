@@ -39,7 +39,7 @@
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
-
+#include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
 #include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
@@ -470,115 +470,11 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   
   data_sorter->SortOutputData(config, geometry);
   
-//  SortOutputData(config, geometry);
 }
 
-void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
-  
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
 
-  /*--- Write files depending on the format --- */
+void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataSorter *sorter, CFileWriter* filewriter, unsigned short format){
   
-  switch (format) {
-  
-  case CSV:
-    
-    SortConnectivity(config, geometry, true, true);
-    
-    if (rank == MASTER_NODE) {
-        cout << "Writing surface CSV file." << endl;
-    }
-    
-    WriteSurface_CSV(config, geometry);
-  
-    break;  
-    
-  case TECPLOT_BINARY:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    SortConnectivity(config, geometry, true, false);
-    
-    /*--- Write tecplot binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot binary file surface solution file." << endl;  
-    }
-    
-    WriteTecplotBinary_Parallel(config, geometry, iZone, config->GetnZone(), true);
-      
-    break;
-    
-  case TECPLOT:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    SortConnectivity(config, geometry, true, true);
-    
-    /*--- Write tecplot binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot ASCII file surface solution file." << endl;
-    }
-    
-    WriteTecplotASCII_Parallel(config, geometry, iZone, config->GetnZone(), true);
-
-    break;
-    
-  case PARAVIEW_BINARY:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    SortConnectivity(config, geometry, true, true);
-    
-    /*--- Write paraview binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Paraview binary file surface solution file." << endl;
-    }
-    
-    WriteParaViewBinary_Parallel(config, geometry, iZone, nZone, true);
-    
-    break;
-    
-  case PARAVIEW:
-    
-    /*--- Load and sort the output data and connectivity. ---*/
-    
-    SortConnectivity(config, geometry, true, true);
-    
-    /*--- Write paraview binary ---*/
-    
-    if (rank == MASTER_NODE) {
-      cout << "Writing Paraview ASCII file surface solution file." << endl;
-    }
-
-    WriteParaViewASCII_Parallel(config, geometry, iZone, nZone, true);
-
-    break;
-  default:
-    SU2_MPI::Error("Requested surface output format not available.", CURRENT_FUNCTION);
-    break;
-  } 
-
-  /*--- Clean up the surface data that was only needed for output. ---*/
- 
-  DeallocateConnectivity_Parallel(true);
-  
-  DeallocateSurfaceData_Parallel();
-  
-}
-
-void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
-   
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-  
-  unsigned short nDim = geometry->GetnDim();
-  
-  CFileWriter* filewriter;
-
   /*--- Write files depending on the format --- */
   
   switch (format) {
@@ -589,7 +485,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
         cout << "Writing SU2 ASCII restart file." << endl;     
     }
        
-    filewriter = new CSU2FileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+    filewriter = new CSU2FileWriter(Variable_Names, nDim);
         
     break;
     
@@ -599,7 +495,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing SU2 binary restart file." << endl;   
     }
 
-    filewriter = new CSU2BinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+    filewriter = new CSU2BinaryFileWriter(Variable_Names, nDim);
         
     break;
   
@@ -608,7 +504,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Load and sort the output data and connectivity.
      *  Note that the solver container is not need in this case. ---*/
     
-    data_sorter->SortConnectivity(config, geometry, true);
+    sorter->SortConnectivity(config, geometry, true);
     
     /*--- Set the mesh ASCII format ---*/
     
@@ -616,7 +512,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
       cout << "Writing SU2 mesh file." << endl;
     }
     
-    filewriter = new CSU2MeshFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, config->GetiZone(), config->GetnZone());
+    filewriter = new CSU2MeshFileWriter(Variable_Names, nDim, config->GetiZone(), config->GetnZone());
     
     
     break;    
@@ -625,15 +521,15 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-     data_sorter->SortConnectivity(config, geometry, false);
+     sorter->SortConnectivity(config, geometry, false);
     
     /*--- Write tecplot binary ---*/
     
     if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot binary file volume solution file." << endl;
+      cout << "Writing Tecplot binary file solution file." << endl;
     }
     
-    filewriter = new CTecplotBinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotBinaryFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
       
     break;
     
@@ -641,15 +537,15 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    data_sorter->SortConnectivity(config, geometry, true);
+    sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write tecplot binary ---*/
     
     if (rank == MASTER_NODE) {
-      cout << "Writing Tecplot ASCII file volume solution file." << endl;
+      cout << "Writing Tecplot ASCII file solution file." << endl;
     }
     
-    filewriter = new CTecplotFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
 
     break;
     
@@ -657,14 +553,14 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    data_sorter->SortConnectivity(config, geometry, true);
+    sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write paraview binary ---*/
     if (rank == MASTER_NODE) {
-      cout << "Writing Paraview binary file volume solution file." << endl;
+      cout << "Writing Paraview binary file solution file." << endl;
     }
     
-    filewriter = new CParaviewBinaryFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+    filewriter = new CParaviewBinaryFileWriter(Variable_Names, nDim);
     
     break;
     
@@ -672,14 +568,14 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Load and sort the output data and connectivity. ---*/
     
-    data_sorter->SortConnectivity(config, geometry, true);
+    sorter->SortConnectivity(config, geometry, true);
     
     /*--- Write paraview binary ---*/
     if (rank == MASTER_NODE) {
         cout << "Writing Paraview ASCII file volume solution file." << endl;      
     }
     
-    filewriter = new CParaviewFileWriter(config->GetFilename(VolumeFilename,""), Variable_Names, nDim);
+    filewriter = new CParaviewFileWriter(Variable_Names, nDim);
 
     break;
     
@@ -687,10 +583,45 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
     SU2_MPI::Error("Requested volume output format not available.", CURRENT_FUNCTION);
     break;
   } 
-  
-  filewriter->Write_Data(data_sorter);
+}
 
-  delete filewriter;
+void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+  
+  CParallelDataSorter* surface_sort;
+  CFileWriter*         file_writer;
+  
+  if (fem_output){
+    surface_sort = new CSurfaceFEMDataSorter(config, GlobalField_Counter, dynamic_cast<CFEMDataSorter*>(data_sorter));
+  } else {
+    surface_sort = new CSurfaceFVMDataSorter(config, GlobalField_Counter, dynamic_cast<CFVMDataSorter*>(data_sorter));    
+  }
+  
+  /*--- Set the file writer --- */
+  
+  SetFileWriter(config, geometry, surface_sort, file_writer, format);
+  
+  /*--- Write data to file --- */
+  
+  file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+  
+  delete file_writer;
+  delete surface_sort;
+  
+}
+
+void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+  
+  CFileWriter* file_writer;
+
+  /*--- Set the file writer --- */
+  
+  SetFileWriter(config, geometry, data_sorter, file_writer, format);
+  
+  /*--- Write data to file --- */
+  
+  file_writer->Write_Data(config->GetFilename(VolumeFilename, ""), data_sorter);
+
+  delete file_writer;
   
 }
 

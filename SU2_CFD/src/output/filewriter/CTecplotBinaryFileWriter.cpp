@@ -4,13 +4,11 @@
 #endif
 #include <set>
 
-CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string filename, vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
-  CFileWriter(filename, fields, nDim){
+CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".szplt";
-  
-  this->filename += file_ext;
-  
+    
   this->time_iter = time_iter;
   
   this->timestep = timestep;
@@ -23,7 +21,9 @@ CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){
 }
 
 
-void CTecplotBinaryFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   if (!data_sorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);

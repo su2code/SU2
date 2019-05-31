@@ -3,13 +3,11 @@
 
 
 
-CSU2BinaryFileWriter::CSU2BinaryFileWriter(string filename, vector<string> fields, unsigned short nDim) : 
-  CFileWriter(filename, fields, nDim){
+CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".su2s";
-  
-  this->filename += file_ext;
-  
+    
 }
 
 
@@ -17,8 +15,9 @@ CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
   
 }
 
-void CSU2BinaryFileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
   
+  filename += file_ext;
   
   /*--- Local variables ---*/
 

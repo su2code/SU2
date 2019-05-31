@@ -3,13 +3,11 @@
 
 
 
-CSU2FileWriter::CSU2FileWriter(string filename, vector<string> fields, unsigned short nDim) : 
-  CFileWriter(filename, fields, nDim){
+CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim) : 
+  CFileWriter(fields, nDim){
 
   file_ext = ".su2s";
-  
-  this->filename += file_ext;
-  
+    
 }
 
 
@@ -17,7 +15,9 @@ CSU2FileWriter::~CSU2FileWriter(){
   
 }
 
-void CSU2FileWriter::Write_Data(CParallelDataSorter *data_sorter){
+void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorter){
+  
+  filename += file_ext;
   
   /*--- Local variables ---*/
   
