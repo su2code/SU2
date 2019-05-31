@@ -354,12 +354,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -368,7 +362,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -583,12 +577,6 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -597,7 +585,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -851,12 +839,6 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -865,7 +847,7 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
