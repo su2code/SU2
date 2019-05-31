@@ -62,7 +62,9 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
-#include "output_structure_legacy.hpp"
+#include "filewriter/CParallelDataSorter.hpp"
+
+#include "COutputLegacy.hpp"
 
 using namespace std;
 

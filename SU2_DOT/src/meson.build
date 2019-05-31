@@ -1,7 +1,7 @@
 su2_dot_src = ['SU2_DOT.cpp']
 su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
-                                       'output/output_structure.cpp',
-				       'output/output_baseline.cpp',
+                                       'output/COutput.cpp',
+				       'output/CBaselineOutput.cpp',
 				       'output/output_csv.cpp',
 				       'output/output_structure_legacy.cpp',
 				       'output/output_cgns.cpp',

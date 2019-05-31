@@ -1,7 +1,8 @@
 /*!
- * \file output_mesh.cpp
- * \brief Main subroutines for the heat solver output
- * \author R. Sanchez
+ * \file output_flow.hpp
+ * \brief Headers of the main subroutines for generating the file outputs.
+ *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ * \author F. Palacios, T. Economon, M. Colonno
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -18,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -35,50 +36,35 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_mesh.hpp"
+#pragma once
 
-CMeshOutput::CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+#include "COutput.hpp"
 
-  nDim = geometry->GetnDim();
-
-  /*--- Set the default history fields if nothing is set in the config file ---*/
+class CFlowOutput : public COutput{
   
-  RequestedVolumeFields.push_back("COORDINATES");
-  nRequestedVolumeFields = RequestedVolumeFields.size();
-    
-  /*--- Set the volume filename --- */
   
-  VolumeFilename = config->GetMesh_Out_FileName();
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFlowOutput(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFlowOutput(void);
   
-  /*--- Set the surface filename ---*/
+  void AddAnalyzeSurfaceOutput(CConfig *config);
   
-  SurfaceFilename = "surface_mesh";
+  void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
-}
-
-CMeshOutput::~CMeshOutput(void) {
-
-
-}
-
-void CMeshOutput::SetVolumeOutputFields(CConfig *config){
-
-  // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
-
+  void AddAerodynamicCoefficients(CConfig *config);
   
-}
-
-void CMeshOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
-
-  CPoint*    Node_Geo  = geometry->node[iPoint];
- 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
   
-}
+  void Add_CpInverseDesignOutput(CConfig *config);
+  
+  void Set_CpInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  
+};

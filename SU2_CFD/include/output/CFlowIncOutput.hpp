@@ -1,5 +1,5 @@
 /*!
- * \file output_fea.hpp
+ * \file output_flow_inc.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,22 +38,20 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "CFlowOutput.hpp"
 
-/*! \class CFEAOutput
- *  \brief Output class for FEA problems.
+/*! \class CIncFlowOutput
+ *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.
- *  \date May 24, 2018.
+ *  \date May 30, 2018.
  */
-class CElasticityOutput : public COutput {
+class CFlowIncOutput : public CFlowOutput {
 private:
 
-protected:
-
-  unsigned short nVar_FEM;
-  bool linear_analysis,
-       nonlinear_analysis,
-       dynamic;
+  unsigned short turb_model;
+  bool heat, weakly_coupled_heat;
+    
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
 
 public:
 
@@ -61,13 +59,13 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CElasticityOutput(void);
-
+  virtual ~CFlowIncOutput(void);
+  
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
@@ -79,24 +77,17 @@ public:
    * \param config
    */
   void SetHistoryOutputFields(CConfig *config);
-
-  /*!
-   * \brief Determines if the history file output.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteHistoryFile_Output(CConfig *config);
   
   /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
+   * \brief LoadSurfaceData
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   * \param iMarker
+   * \param iVertex
    */
-  bool WriteScreen_Header(CConfig *config);
-  
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Output(CConfig *config);
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   
   /*!
    * \brief SetVolumeOutputFields
@@ -112,5 +103,29 @@ public:
    * \param iPoint
    */
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  /*!
+   * \brief GetQ_Criterion
+   * \param config
+   * \param geometry
+   * \param node_flow
+   * \return 
+   */
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
 
+  /*!
+   * \brief SetInit_Residuals
+   * \param config
+   * \return 
+   */
+  bool SetInit_Residuals(CConfig *config);
+  
+  /*!
+   * \brief SetUpdate_Averages
+   * \param config
+   * \param dualtime
+   * \return 
+   */
+  bool SetUpdate_Averages(CConfig *config);
+  
 };

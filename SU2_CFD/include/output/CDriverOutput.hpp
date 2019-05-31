@@ -50,7 +50,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "output.hpp"
+#include "COutput.hpp"
 #include "../../../Common/include/config_structure.hpp"
 
 using namespace std;

@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_adj_flow_inc.hpp"
+#include "../../include/output/CAdjFlowIncOutput.hpp"
 
 CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   

@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_driver.hpp"
+#include "../../include/output/CDriverOutput.hpp"
 
 CDriverOutput::CDriverOutput(CConfig* driver_config, CConfig** config) : COutput(driver_config) {
 

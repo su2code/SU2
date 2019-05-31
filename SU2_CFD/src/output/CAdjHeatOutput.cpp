@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output_adj_heat.hpp"
+#include "../../include/output/CAdjHeatOutput.hpp"
 
 CAdjHeatOutput::CAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   

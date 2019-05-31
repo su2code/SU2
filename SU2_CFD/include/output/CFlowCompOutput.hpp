@@ -1,5 +1,5 @@
 /*!
- * \file output_heat.hpp
+ * \file output_flow.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
@@ -38,31 +38,32 @@
 
 #pragma once
 
-#include "output.hpp"
+#include "CFlowOutput.hpp"
 
-
-/*! \class CHeatOutput
- *  \brief Output class for heat problems.
+/*! \class CFlowOutput
+ *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.
- *  \date June 5, 2018.
+ *  \date May 30, 2018.
  */
-class CHeatOutput : public COutput {
+class CFlowCompOutput : public CFlowOutput {
 private:
-  bool multizone;
+  
+  unsigned short turb_model;
+    
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
 
 public:
-
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CFlowCompOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CHeatOutput(void);
+  virtual ~CFlowCompOutput(void);
 
   /*!
    * \brief Set the history file header
@@ -71,11 +72,16 @@ public:
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver);
   
   /*!
-   * \brief SetHistoryOutputFields
+   * \brief LoadSurfaceData
    * \param config
+   * \param geometry
+   * \param solver
+   * \param iPoint
+   * \param iMarker
+   * \param iVertex
    */
-  void SetHistoryOutputFields(CConfig *config);
-   
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
   /*!
    * \brief SetVolumeOutputFields
    * \param config
@@ -89,6 +95,36 @@ public:
    * \param solver
    * \param iPoint
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
- 
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint); 
+  
+  /*!
+   * \brief SetHistoryOutputFields
+   * \param config
+   */
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief GetQ_Criterion
+   * \param config
+   * \param geometry
+   * \param node_flow
+   * \return 
+   */
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+  
+  /*!
+   * \brief SetInit_Residuals
+   * \param config
+   * \return 
+   */
+  bool SetInit_Residuals(CConfig *config);
+  
+  /*!
+   * \brief SetUpdate_Averages
+   * \param config
+   * \param dualtime
+   * \return 
+   */
+  bool SetUpdate_Averages(CConfig *config);
+  
 };
