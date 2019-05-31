@@ -38,30 +38,22 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
+CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                CNumerics(val_nDim, val_nVar, config) {
+
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
+  grid_movement = config->GetGrid_Movement();
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
-  grid_movement = config->GetGrid_Movement();
-  
-  /*--- Allocate some structures ---*/
+
+  /*--- Allocate required structures ---*/
   Diff_U = new su2double [nVar];
   Diff_Lapl = new su2double [nVar];
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
   MeanVelocity = new su2double [nDim];
   ProjFlux = new su2double [nVar];
-
-  /*--- Default values for preacc. vars. that are not allways used ---*/
-  Sensor_i = 0.0; Sensor_j = 0.0;
-  for (iVar=0; iVar<nVar; ++iVar) {
-    Und_Lapl_i[iVar] = 0.0;
-    Und_Lapl_j[iVar] = 0.0;
-  }
-
 }
 
 CCentBase_Flow::~CCentBase_Flow(void) {
@@ -75,17 +67,18 @@ CCentBase_Flow::~CCentBase_Flow(void) {
 
 void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                     CConfig *config) {
-  
+
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
-  AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
-  AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
-  AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
-  if (grid_movement) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  bool preacc = SetPreaccInVars();
+
+  if (preacc) {
+    AD::SetPreaccIn(Normal, nDim);
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+    AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
+    if (grid_movement) {
+      AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    }
   }
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
@@ -191,8 +184,10 @@ void CCentBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   DissipationTerm(val_residual, val_Jacobian_i, val_Jacobian_j);
 
-  AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();
+  if (preacc) {
+    AD::SetPreaccOut(val_residual, nVar);
+    AD::EndPreacc();
+  }
 }
 
 void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
@@ -263,9 +258,14 @@ void CCentJST_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
     cte_1 = (Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
     
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
-    
   }
+}
 
+bool CCentJST_Flow::SetPreaccInVars(void) {
+  AD::StartPreacc();
+  AD::SetPreaccIn(Sensor_i);  AD::SetPreaccIn(Und_Lapl_i, nVar);
+  AD::SetPreaccIn(Sensor_j);  AD::SetPreaccIn(Und_Lapl_j, nVar);
+  return true;
 }
 
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
@@ -301,9 +301,13 @@ void CCentJST_KE_Flow::DissipationTerm(su2double *val_residual, su2double **val_
     cte_1 = cte_0;
 
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
-
   }
+}
 
+bool CCentJST_KE_Flow::SetPreaccInVars(void) {
+  AD::StartPreacc();
+  AD::SetPreaccIn(Sensor_i);  AD::SetPreaccIn(Sensor_j);
+  return true;
 }
 
 CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
@@ -339,9 +343,12 @@ void CCentLax_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jac
     cte_1 = cte_0;
     
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
-    
   }
+}
 
+bool CCentLax_Flow::SetPreaccInVars(void) {
+  AD::StartPreacc();
+  return true;
 }
 
 CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
