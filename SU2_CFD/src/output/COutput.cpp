@@ -41,11 +41,13 @@
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
+#include "../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CCSVFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
+#include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
 
 
