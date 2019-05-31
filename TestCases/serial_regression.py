@@ -981,6 +981,17 @@ def main():
     statbeam3d.tol       = 0.00001
     test_list.append(statbeam3d)
 
+    # Mix elem, 3d beam, Knowles
+    knowlesbeam           = TestCase('mixelemknowles')
+    knowlesbeam.cfg_dir   = "fea_fsi/MixElemKnowles"
+    knowlesbeam.cfg_file  = "config.cfg"
+    knowlesbeam.test_iter = 0
+    knowlesbeam.test_vals = [-14.51360, -13.57735, -28.12642, 9.7306] #last 4 columns
+    knowlesbeam.su2_exec  = "SU2_CFD"
+    knowlesbeam.timeout   = 1600
+    knowlesbeam.tol       = 0.0001
+    test_list.append(knowlesbeam)
+
     # Dynamic beam, 2d
     dynbeam2d           = TestCase('dynbeam2d')
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
