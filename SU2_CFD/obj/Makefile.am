@@ -124,6 +124,19 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
+  ../src/output/filewriter/CCSVFileWriter.cpp \
+  ../src/output/filewriter/CFEMDataSorter.cpp \
+  ../src/output/filewriter/CFVMDataSorter.cpp \
+  ../src/output/filewriter/CParallelDataSorter.cpp \
+  ../src/output/filewriter/CParallelFileWriter.cpp \
+  ../src/output/filewriter/CParaviewBinaryFileWriter.cpp \
+  ../src/output/filewriter/CParaviewFileWriter.cpp \
+  ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
+  ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
+  ../src/output/filewriter/CSU2BinaryFileWriter.cpp \
+  ../src/output/filewriter/CSU2FileWriter.cpp \
+  ../src/output/filewriter/CTecplotFileWriter.cpp \
+  ../src/output/filewriter/CTecplotFileWriter.cpp \
   ../src/output/output_cgns.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
