@@ -508,21 +508,6 @@ public:
   void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Apply Jacobi as a classical iterative smoother
-   * \param[in] b - CSysVector containing the residual (b)
-   * \param[in] x - CSysVector containing the solution (x^k)
-   * \param[in] mat_vec - object that defines matrix-vector product
-   * \param[in] tol - tolerance with which to solve the system
-   * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
-   */
-  unsigned long Jacobi_Smoother(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x, CMatrixVectorProduct<ScalarType> & mat_vec, ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Build the ILU preconditioner.
    * \param[in] transposed - Flag to use the transposed matrix to construct the preconditioner.
    */
@@ -538,41 +523,11 @@ public:
   void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Apply ILU as a classical iterative smoother
-   * \param[in] b - CSysVector containing the residual (b)
-   * \param[in] x - CSysVector containing the solution (x^k)
-   * \param[in] mat_vec - object that defines matrix-vector product
-   * \param[in] tol - tolerance with which to solve the system
-   * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
-   */
-  unsigned long ILU_Smoother(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x, CMatrixVectorProduct<ScalarType> & mat_vec, ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
   void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Apply LU_SGS as a classical iterative smoother
-   * \param[in] b - CSysVector containing the residual (b)
-   * \param[in] x - CSysVector containing the solution (x^k)
-   * \param[in] mat_vec - object that defines matrix-vector product
-   * \param[in] tol - tolerance with which to solve the system
-   * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
-   */
-  unsigned long LU_SGS_Smoother(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x, CMatrixVectorProduct<ScalarType> & mat_vec, ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Build the Linelet preconditioner.
