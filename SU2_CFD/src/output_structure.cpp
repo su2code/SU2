@@ -6192,8 +6192,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
@@ -6244,11 +6244,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case ADJ_RANS : case DISC_ADJ_RANS:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
+            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
-              ConvHist_file[0] << adj_turb_resid;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+              config[val_iZone]->GetHistFile()[0] << adj_turb_resid;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
