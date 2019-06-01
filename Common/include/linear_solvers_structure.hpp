@@ -85,6 +85,7 @@ private:
   bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
   bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
+  bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
   VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
   VectorType A_x;    /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
@@ -211,7 +212,7 @@ public:
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
@@ -226,12 +227,12 @@ public:
   /*!
    * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
+   * \param[in] residual - norm of final residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
    */
@@ -242,18 +243,34 @@ public:
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
+   * \param[in] residual - norm of final residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                   PrecondType & precond, ScalarType tol, unsigned long m,
                                   ScalarType *residual, bool monitoring, CConfig *config);
+  
+  /*!
+   * \brief Generic smoother (modified Richardson iteration with preconditioner)
+   * \param[in] b - the right hand size vector
+   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] precond - object that defines preconditioner
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum number of iterations
+   * \param[in] residual - norm of final residual
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
+                                   PrecondType & precond, ScalarType tol, unsigned long m,
+                                   ScalarType *residual, bool monitoring, CConfig *config);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method

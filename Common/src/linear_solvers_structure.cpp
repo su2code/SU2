@@ -39,8 +39,8 @@
 #include "../include/linear_solvers_structure_b.hpp"
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false), gmres_ready(false) {
-
+CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
+                                                                gmres_ready(false), smooth_ready(false) {
   mesh_deform = mesh_deform_mode;
   LinSysRes_ptr = NULL;
   LinSysSol_ptr = NULL;
@@ -396,6 +396,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     /*---  System is already solved ---*/
     
     if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    (*residual) = beta;
     return 0;
   }
   
@@ -651,6 +652,95 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   return (unsigned long) i;
 }
 
+template<class ScalarType>
+unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
+                                                        CMatrixVectorProduct<ScalarType> & mat_vec, CPreconditioner<ScalarType> & precond,
+                                                        ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
+
+  int rank = SU2_MPI::GetRank();
+  ScalarType norm_r = 0.0, norm0 = 0.0, omega = 1.0; // hardcoded relaxation factor
+  unsigned long i = 0;
+
+  if (m < 1) {
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  }
+
+  /*--- Allocate/initialize vectors for residual (r), solution increment (z), and matrix-vector product (A_x). ---*/
+
+  if (!smooth_ready) {
+    z = b;
+    A_x = b;
+    smooth_ready = true;
+  }
+
+  mat_vec(x, A_x);
+  r = b; r -= A_x;
+
+  /*--- Only compute the residuals in full communication mode. ---*/
+
+  if (config->GetComm_Level() == COMM_FULL) {
+
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
+      return 0;
+    }
+
+    /*--- Set the norm to the initial initial residual value. ---*/
+
+    norm0 = norm_r;
+
+    /*--- Output header information including initial residual. ---*/
+
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+
+  }
+
+  /*--- Smoothing Iterations ---*/
+
+  for (i=0; i<m; i++) {
+
+    /*--- Compute the solution increment, or "search" direction. ---*/
+
+    precond(r, z);
+
+    /*--- Action of matrix on direction. ---*/
+
+    mat_vec(z, A_x);
+
+    /*--- Update solution and residual. ---*/
+
+    x.Plus_AX(omega, z);
+    r.Plus_AX(-omega, A_x);
+
+    /*--- Only compute the residuals in full communication mode. ---*/
+    /*--- Check if solution has converged, else output the relative residual if necessary. ---*/
+
+    if (config->GetComm_Level() == COMM_FULL) {
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+  }
+  
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
+    cout << "# Smoother final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+  }
+
+  (*residual) = norm_r;
+  return i;
+}
+
 template<>
 void CSysSolve<su2double>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
@@ -738,7 +828,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
     ScreenOutput = config->GetDeform_Output();
   }
 
-  CMatrixVectorProduct<ScalarType> *mat_vec = NULL;
+  /*--- For smoother-type solvers set the associated preconditioner type. ---*/
+
+  switch (KindSolver) {
+    case SMOOTHER_LINELET: KindPrecond = LINELET; break;
+    case SMOOTHER_JACOBI: KindPrecond = JACOBI; break;
+    case SMOOTHER_LUSGS: KindPrecond = LU_SGS; break;
+    case SMOOTHER_ILU:  KindPrecond = ILU; break;
+    default: break; // whatever was obtained from config above
+  }
+
+  /*--- Stop the recording for the linear solver ---*/
 
   bool TapeActive = NO;
 
@@ -751,101 +851,68 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
 
     AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
 
-    /*--- Stop the recording for the linear solver ---*/
-
     AD::StopRecording();
 #endif
   }
 
-  /*--- Solve the linear system using a Krylov subspace method ---*/
+  /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
-  if (KindSolver == BCGSTAB || KindSolver == CONJUGATE_GRADIENT ||
-      KindSolver == FGMRES  || KindSolver == RESTARTED_FGMRES ) {
-    
-    mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-    CPreconditioner<ScalarType>* precond = NULL;
-    
-    switch (KindPrecond) {
-      case JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
-        break;
-      case ILU:
-        Jacobian.BuildILUPreconditioner();
-        precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config);
-        break;
-      case LU_SGS:
-        precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
-        break;
-      case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
-        break;
-      default:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
-        break;
-    }
-    
-    switch (KindSolver) {
-      case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
-        break;
-      case FGMRES:
-        IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
-        break;
-      case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
-        break;
-      case RESTARTED_FGMRES:
-        IterLinSol = 0;
-        Norm0 = LinSysRes_ptr->norm();
-        while (IterLinSol < MaxIter) {
-          /*--- Enforce a hard limit on total number of iterations ---*/
-          unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-          IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, config);
-          if ( Residual < SolverTol*Norm0 ) break;
-        }
-        break;
-    }
-    
-    /*--- Dealocate memory of the Krylov subspace method ---*/
-    
-    delete mat_vec;
-    delete precond;
-    
+  CMatrixVectorProduct<ScalarType>* mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
+  CPreconditioner<ScalarType>* precond = NULL;
+
+  switch (KindPrecond) {
+    case JACOBI:
+      Jacobian.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
+    case ILU:
+      Jacobian.BuildILUPreconditioner();
+      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
+    case LU_SGS:
+      precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
+    case LINELET:
+      Jacobian.BuildJacobiPreconditioner();
+      precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
+    default:
+      Jacobian.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
   }
   
-  /*--- Smooth the linear system. ---*/
-  
-  else {
-    switch (KindSolver) {
-      case SMOOTHER_LUSGS:
-        mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-        IterLinSol = Jacobian.LU_SGS_Smoother(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, SolverTol, MaxIter, &Residual, ScreenOutput, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_JACOBI:
-        mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-        Jacobian.BuildJacobiPreconditioner();
-        IterLinSol = Jacobian.Jacobi_Smoother(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, SolverTol, MaxIter, &Residual, ScreenOutput, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_ILU:
-        mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-        Jacobian.BuildILUPreconditioner();
-        IterLinSol = Jacobian.ILU_Smoother(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, SolverTol, MaxIter, &Residual, ScreenOutput, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeLineletPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
-        IterLinSol = 1;
-        break;
-    }
+  switch (KindSolver) {
+    case BCGSTAB:
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
+      break;
+    case FGMRES:
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
+      break;
+    case CONJUGATE_GRADIENT:
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
+      break;
+    case RESTARTED_FGMRES:
+      IterLinSol = 0;
+      Norm0 = LinSysRes_ptr->norm();
+      while (IterLinSol < MaxIter) {
+        /*--- Enforce a hard limit on total number of iterations ---*/
+        unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
+        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput, config);
+        if ( Residual < SolverTol*Norm0 ) break;
+      }
+      break;
+    case SMOOTHER_LINELET: case SMOOTHER_JACOBI: case SMOOTHER_LUSGS: case SMOOTHER_ILU:
+      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
+      break;
+    default:
+      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
   }
+
+  delete mat_vec;
+  delete precond;
 
   HandleTemporariesOut(LinSysSol);
 
