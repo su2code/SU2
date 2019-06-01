@@ -2384,6 +2384,10 @@ public:
   
   virtual su2double *GetDirTanWM();
 
+  virtual void SetkOverCv(su2double val_kOverCv);
+  
+  virtual su2double GetkOverCv();
+
   virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
 
   virtual su2double GetVortex_Tilting();
@@ -3855,6 +3859,7 @@ private:
   su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   su2double Heat_Flux;       /*!< \brief Heat Flux calculated from the wall model. */
   su2double DirTanWM[3];     /*!< \brief Tangential direction of wall model. */
+  su2double kOverCv;         /*!< \brief Thermal Conductivity of wall model. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
   su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -4028,7 +4033,18 @@ public:
    * \return Value of the heat flux computed by the model
    */
   su2double GetHeatFlux(void);
+
+  /*!
+   * \brief Set the value of the thermal conductivity computed by the wall model.
+   */
+  void SetkOverCv(su2double val_kOverCv);
   
+  /*!
+   * \brief Get the value of the thermal conductivity computed by the model
+   * \return Value of the thermal conductivity computed by the model
+   */
+  su2double GetkOverCv(void);
+
   /*!
    * \brief Set the value of the heat flux computed by the wall model.
    */

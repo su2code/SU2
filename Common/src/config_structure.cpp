@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -3826,9 +3826,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                 (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION))
           SU2_MPI::Error(string("For ILES problems, use EQUILIBRIUM_WALL_MODEL or LOGARITHMIC_WALL_MODEL.\n"), CURRENT_FUNCTION);
       }
-      else{
-        SU2_MPI::Error(string("Please check the correct use of Wall Functions/Models.\n"), CURRENT_FUNCTION);
-      }
+//      else{
+//        SU2_MPI::Error(string("Please check the correct use of Wall Functions/Models.\n"), CURRENT_FUNCTION);
+//      }
     }
   }
 

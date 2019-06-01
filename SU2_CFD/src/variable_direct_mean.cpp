@@ -632,6 +632,7 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
   Vortex_Tilting  = 0.0;
   Tau_Wall        = -1.0;
   Heat_Flux       = 0.0;
+  kOverCv         = 0.0;
   for (unsigned short iDim=0; iDim < nDim; iDim++) DirTanWM[iDim] = 0.0;
   
 }
@@ -650,6 +651,7 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
   Vortex_Tilting  = 0.0;
   Tau_Wall        = -1.0;
   Heat_Flux       = 0.0;
+  kOverCv         = 0.0;
   for (unsigned short iDim=0; iDim < nDim; iDim++) DirTanWM[iDim] = 0.0;
 }
 
