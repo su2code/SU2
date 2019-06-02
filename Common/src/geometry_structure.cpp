@@ -3532,6 +3532,42 @@ void CGeometry::SetElemVolume(CConfig *config)
   }
 }
 
+void CGeometry::UpdateBoundaries(CConfig *config){
+  
+  unsigned short iMarker;
+  unsigned long iElem_Surface, iNode_Surface, Point_Surface;
+  
+  for (iMarker = 0; iMarker <config->GetnMarker_All(); iMarker++){
+    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+        
+        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+        
+        node[Point_Surface]->SetPhysicalBoundary(false);
+        node[Point_Surface]->SetSolidBoundary(false);
+        
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetSolid_Wall(iMarker))
+          node[Point_Surface]->SetSolidBoundary(true);
+      }
+    }
+  }
+  
+  /*--- Update the normal neighbors ---*/
+  
+  FindNormal_Neighbor(config);
+  
+  /*--- Compute wall distance ---- */
+  
+  ComputeWall_Distance(config);
+    
+}
+
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   
   size = SU2_MPI::GetSize();
@@ -3570,6 +3606,7 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
 }
 
@@ -3611,6 +3648,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
