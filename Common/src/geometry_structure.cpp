@@ -7249,9 +7249,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+        if (config->GetSolid_Wall(iMarker))
           node[Point_Surface]->SetSolidBoundary(true);
         
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
@@ -11292,9 +11290,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
 
     /* Check for a viscous wall. */
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-      (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if( config->GetViscous_Wall(iMarker)) {
 
       /* Loop over the surface elements of this marker. */
       for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {

@@ -1699,6 +1699,11 @@ public:
    */
   void SetElemVolume(CConfig *config);
 
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void UpdateBoundaries(CConfig *config);
 };
 
 /*!
@@ -2109,12 +2114,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchActuator_Disk(CConfig *config);
-
-	/*! 
-	 * \brief Mach the interface boundary condition.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void MatchInterface(CConfig *config);
   
   /*!
    * \brief Mach the periodic boundary conditions.

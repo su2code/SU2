@@ -829,8 +829,6 @@ inline void CSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geom
 
 inline void CSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) { }
@@ -2350,6 +2348,8 @@ inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned lo
 inline void CIncEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
 }
+
+inline void CSolver::InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker) {}
 
 inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
 

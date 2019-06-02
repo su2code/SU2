@@ -198,6 +198,9 @@ public:
    */
   void Interface_Preprocessing();
 
+  
+  void SetTransferTypes();
+
   /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
