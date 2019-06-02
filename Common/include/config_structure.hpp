@@ -204,7 +204,6 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -247,7 +246,6 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -2948,12 +2946,6 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void);
-  
-  /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
-   */
-  unsigned short GetnMarker_InterfaceBound(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -6168,6 +6160,21 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void);
+
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a solid boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool GetSolid_Wall(unsigned short iMarker);
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
+   */
+  bool GetViscous_Wall(unsigned short iMarker);
 
   /*!
    * \brief Determines if problem is adjoint
