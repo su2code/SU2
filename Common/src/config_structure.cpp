@@ -5252,14 +5252,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
 	if (val_software == SU2_DEF) {
-		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
+		cout << endl <<"---------------- Grid deformation parameters ( Zone "  << iZone << " )  ----------------" << endl;
 		cout << "Grid deformation using a linear elasticity method." << endl;
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
   if (val_software == SU2_DOT) {
-  cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
+  cout << endl <<"-------------- Surface deformation parameters ( Zone "  << iZone << " ) ----------------" << endl;
   }
 
   if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
@@ -5424,7 +5424,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
-		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
+		cout << endl <<"---------------- Design problem definition  ( Zone "  << iZone << " ) ------------------" << endl;
 		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:           cout << "CD objective function";
@@ -5477,7 +5477,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
 	if (val_software == SU2_CFD) {
-		cout << endl <<"---------------------- Space Numerical Integration ----------------------" << endl;
+		cout << endl <<"--------------- Space Numerical Integration ( Zone "  << iZone << " ) ------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
@@ -5744,7 +5744,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Padded matrix size for optimal performance: " << sizeMatMulPadding << endl;
     }
 
-    cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
+    cout << endl <<"--------------- Time Numerical Integration  ( Zone "  << iZone << " ) ------------------" << endl;
 
     if (!fea) {
 		switch (Unsteady_Simulation) {
@@ -5997,7 +5997,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_CFD) {
 
-    cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
+    cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
     if (SinglezoneDriver){
       cout << "Maximum number of solver subiterations: " << Iter <<"."<< endl;
@@ -6071,7 +6071,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_MSH) {
-    cout << endl <<"----------------------- Grid adaptation strategy ------------------------" << endl;
+    cout << endl <<"----------------- Grid adaptation strategy ( Zone "  << iZone << " ) -------------------" << endl;
 
     switch (Kind_Adaptation) {
       case NONE: break;
@@ -6101,7 +6101,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  cout << endl <<"-------------------------- Output Information ---------------------------" << endl;
+  cout << endl <<"-------------------- Output Information ( Zone "  << iZone << " ) ----------------------" << endl;
 
   if (val_software == SU2_CFD) {
 
@@ -6217,11 +6217,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
+  cout << endl <<"------------- Config File Boundary Information ( Zone "  << iZone << " ) ---------------" << endl;
 
   PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
-  BoundaryTable.AddColumn("Marker Type", 20);
-  BoundaryTable.AddColumn("Marker Name", 20);
+  BoundaryTable.AddColumn("Marker Type", 35);
+  BoundaryTable.AddColumn("Marker Name", 35);
   
   BoundaryTable.PrintHeader();
   

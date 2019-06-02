@@ -3637,7 +3637,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
+    cout << endl <<"---------------- Read Grid File Information ( ZONE "  << config->GetiZone() << " ) ------------------" << endl;
 
   if( fem_solver ) {
     switch (val_format) {
@@ -9008,7 +9008,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         iMarker=0;
         PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
         BoundaryTable.AddColumn("Index", 6);
-        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Marker", 35);
         BoundaryTable.AddColumn("Elements", 14);
         if (rank == MASTER_NODE){
           BoundaryTable.PrintHeader();
