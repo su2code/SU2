@@ -598,15 +598,23 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement   = NULL;    LocationStations   = NULL;
-  Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z     = NULL;
-  Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
-  Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
-  Pitching_Omega_X    = NULL;    Pitching_Omega_Y    = NULL;    Pitching_Omega_Z    = NULL;
-  Pitching_Ampl_X     = NULL;    Pitching_Ampl_Y     = NULL;    Pitching_Ampl_Z     = NULL;
-  Pitching_Phase_X    = NULL;    Pitching_Phase_Y    = NULL;    Pitching_Phase_Z    = NULL;
-  Plunging_Omega_X    = NULL;    Plunging_Omega_Y    = NULL;    Plunging_Omega_Z    = NULL;
-  Plunging_Ampl_X     = NULL;    Plunging_Ampl_Y     = NULL;    Plunging_Ampl_Z     = NULL;
+  LocationStations   = NULL;
+  Motion_Origin     = NULL;   
+  Translation_Rate       = NULL;  
+  Rotation_Rate     = NULL;   
+  Pitching_Omega    = NULL;   
+  Pitching_Ampl     = NULL;    
+  Pitching_Phase    = NULL;    
+  Plunging_Omega    = NULL;   
+  Plunging_Ampl     = NULL; 
+  MarkerMotion_Origin     = NULL;   
+  MarkerTranslation_Rate       = NULL;  
+  MarkerRotation_Rate     = NULL;   
+  MarkerPitching_Omega    = NULL;   
+  MarkerPitching_Ampl     = NULL;    
+  MarkerPitching_Phase    = NULL;    
+  MarkerPlunging_Omega    = NULL;   
+  MarkerPlunging_Ampl     = NULL;    
   RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
   MoveMotion_Origin   = NULL;
 
@@ -669,7 +677,6 @@ void CConfig::SetPointersNull(void) {
   RelaxFactorAverage       = NULL;
   RelaxFactorFourier       = NULL;
   nSpan_iZones             = NULL;
-  FinalRotation_Rate_Z     = NULL;
   ExtraRelFacGiles         = NULL;
   Mixedout_Coeff           = NULL;
   RampRotatingFrame_Coeff  = NULL;
@@ -705,7 +712,6 @@ void CConfig::SetPointersNull(void) {
   nMarker_PerBound = 0;
   nPeriodic_Index  = 0;
 
-  Grid_Movement = false;
   Aeroelastic_Simulation = false;
   ZoneSpecific_Problem = false;
 
@@ -1773,62 +1779,47 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
 
-  /* DESCRIPTION: Mesh motion for unsteady simulations */
-  addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
   /* DESCRIPTION: Type of mesh motion */
-  addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  addEnumOption("GRID_MOVEMENT", Kind_GridMovement, GridMovement_Map, NO_MOVEMENT);
+  /* DESCRIPTION: Type of surface motion */
+  addEnumListOption("SURFACE_MOVEMENT",nKind_SurfaceMovement, Kind_SurfaceMovement, SurfaceMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
+  default_vel_inf[0] = 0.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;  
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
+  addDoubleArrayOption("MOTION_ORIGIN", 3, Motion_Origin, default_vel_inf);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+  addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate, default_vel_inf); 
+  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate, default_vel_inf);
+  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega, default_vel_inf);
+  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleArrayOption("PITCHING_AMPL", 3, Pitching_Ampl, default_vel_inf); 
+  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleArrayOption("PITCHING_PHASE", 3, Pitching_Phase, default_vel_inf);
+  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleArrayOption("PLUNGING_OMEGA", 3, Plunging_Omega, default_vel_inf);
+  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleArrayOption("PLUNGING_AMPL", 3, Plunging_Ampl, default_vel_inf);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
-  /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  addDoubleListOption("SURFACE_MOTION_ORIGIN", nMarkerMotion_Origin, MarkerMotion_Origin);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (DEFORMING only) */
+  addDoubleListOption("SURFACE_TRANSLATION_RATE", nMarkerTranslation, MarkerTranslation_Rate); 
+  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (DEFORMING only) */
+  addDoubleListOption("SURFACE_ROTATION_RATE", nMarkerRotation_Rate, MarkerRotation_Rate);
+  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (DEFORMING only) */
+  addDoubleListOption("SURFACE_PITCHING_OMEGA", nMarkerPitching_Omega, MarkerPitching_Omega);
+  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (DEFORMING only) */
+  addDoubleListOption("SURFACE_PITCHING_AMPL", nMarkerPitching_Ampl, MarkerPitching_Ampl); 
+  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (DEFORMING only) */
+  addDoubleListOption("SURFACE_PITCHING_PHASE", nMarkerPitching_Phase, MarkerPitching_Phase);
+  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (DEFORMING only) */
+  addDoubleListOption("SURFACE_PLUNGING_OMEGA", nMarkerPlunging_Omega, MarkerPlunging_Omega);
+  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (DEFORMING only) */
+  addDoubleListOption("SURFACE_PLUNGING_AMPL", nMarkerPlunging_Ampl, MarkerPlunging_Ampl);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
 
@@ -2790,7 +2781,7 @@ void CConfig::SetnZone(){
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iMarker;
+  unsigned short iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
@@ -2829,10 +2820,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
-    Grid_Movement= true;
-  	 nGridMovement = 1;
-  	 Kind_GridMovement = new unsigned short[nGridMovement];
-  	 Kind_GridMovement[0] = MOVING_HTP;
+    Kind_GridMovement = MOVING_HTP;
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
@@ -3168,98 +3156,34 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Force number of span-wise section to 1 if 2D case ---*/
-  if(val_nDim ==2){
-    nSpanWiseSections_User=1;
-    Kind_SpanWise= EQUISPACED;
+  if (nKind_SurfaceMovement > 1 && (GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);    
   }
 
-  /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery > 0){
-    if(nMarker_Turbomachinery > 1){
-      nMarker_TurboPerformance = nMarker_Turbomachinery + SU2_TYPE::Int(nMarker_Turbomachinery/2) + 1;
-    }else{
-      nMarker_TurboPerformance = nMarker_Turbomachinery;
-    }
-  } else {
-    nMarker_TurboPerformance = 0;
-    nSpanWiseSections =1;
-  }
-
-  /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery != 0){
-    nSpan_iZones = new unsigned short[nZone];
-  }
-
-  /*--- Set number of TurboPerformance markers ---*/
-  if(RampRotatingFrame && !DiscreteAdjoint){
-    FinalRotation_Rate_Z = new su2double[nZone];
-    for(iZone=0; iZone <nZone; iZone ++){
-      FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
-      if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
-        Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
-      }
-    }
-  }
-
-  if(RampOutletPressure && !DiscreteAdjoint){
-    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
-      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
-        FinalOutletPressure   = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
-      }
-    }
-    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
-      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
-        FinalOutletPressure      = Riemann_Var1[iMarker];
-        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
-      }
-    }
-  }
-
-  /*--- Check on extra Relaxation factor for Giles---*/
-  if(ExtraRelFacGiles[1] > 0.5){
-    ExtraRelFacGiles[1] = 0.5;
-  }
-
-
-  /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. We initialize to the
-   number of zones here, because we are guaranteed to at least have one. ---*/
-  
-  if (Kind_GridMovement == NULL) {
-    Kind_GridMovement = new unsigned short[nZone];
-    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
-      Kind_GridMovement[iZone] = NO_MOVEMENT;
-    if (Grid_Movement == true) {
-      SU2_MPI::Error("GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  /*--- If only one Grid_Movement kind is specified, it is assumed it's the same for all zones. ---*/
-  /*--- TODO: Kind_Grid_Movement should not be an array but rather only one short. ---*/
-  /*--- The distinction comes as each zone has one config container. ---*/
-  if (nGridMovement != nZone){
-    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
-      Kind_GridMovement[iZone] = Kind_GridMovement[ZONE_0];
+  if (nKind_SurfaceMovement != nMarker_Moving && !(GetSurface_Movement(FLUID_STRUCTURE) || GetSurface_Movement(FLUID_STRUCTURE_STATIC))){
+    SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-      (Unsteady_Simulation == STEADY) &&
-      ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
-       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
-       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
-    Grid_Movement = false;
-  
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-      (Unsteady_Simulation == STEADY) &&
-      ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
-    Grid_Movement = true;
+  if (GetGrid_Movement()){
+    if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+        (Unsteady_Simulation == STEADY && !Time_Domain)){
+      
+      if((Kind_GridMovement != ROTATING_FRAME) &&
+         (Kind_GridMovement != STEADY_TRANSLATION) &&
+         (Kind_GridMovement != NONE)){
+        SU2_MPI::Error("Unsupported kind of grid movement for steady state problems.", CURRENT_FUNCTION);      
+      }
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        if (Kind_SurfaceMovement[iMarker] != MOVING_WALL){
+          SU2_MPI::Error("Unsupported kind of surface movement for steady state problems.", CURRENT_FUNCTION);                
+        }
+      }  
+    } 
+  }
 
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
@@ -3270,302 +3194,128 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
   
-  if (Grid_Movement && Mach_Motion == 0.0)
+  if (GetGrid_Movement() && Mach_Motion == 0.0)
     Mach_Motion = Mach;
   
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
   
-  if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
+  if (Kind_GridMovement == ROTATING_FRAME)
     Rotating_Frame = true;
   else
     Rotating_Frame = false;
-  
-  /*--- Check the number of moving markers against the number of grid movement
-   types provided (should be equal, except that rigid motion and rotating frame
-   do not depend on surface specification). ---*/
-  
-  if (Grid_Movement &&
-      (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
-      (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-      (Kind_GridMovement[ZONE_0] != MOVING_HTP) &&
-      (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
-      (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE) &&
-      (Kind_GridMovement[ZONE_0] != GUST) &&
-      (nGridMovement != nMarker_Moving)) {
-    SU2_MPI::Error("Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!", CURRENT_FUNCTION);
-  }
   
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
   
-  unsigned short nMoving;
-  if (nGridMovement > nZone) nMoving = nGridMovement;
-  else nMoving = nZone;
-
-  /*--- Motion Origin: ---*/
-  
-  if (Motion_Origin_X == NULL) {
-    Motion_Origin_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
-      SU2_MPI::Error("Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+  if (nMarker_Moving > 0){
+    unsigned short iDim;
+    if (nMarkerMotion_Origin == 0){
+      nMarkerMotion_Origin = 3*nMarker_Moving;
+      MarkerMotion_Origin = new su2double[nMarkerMotion_Origin];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerMotion_Origin[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (Motion_Origin_Y == NULL) {
-    Motion_Origin_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerMotion_Origin/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_MOTION_ORIGIN must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerTranslation == 0){
+      nMarkerTranslation = 3*nMarker_Moving;
+      MarkerTranslation_Rate = new su2double[nMarkerTranslation];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerTranslation_Rate[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (Motion_Origin_Z == NULL) {
-    Motion_Origin_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Motion_Origin_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerTranslation/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_TRANSLATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerRotation_Rate == 0){
+      nMarkerRotation_Rate = 3*nMarker_Moving;
+      MarkerRotation_Rate = new su2double[nMarkerRotation_Rate];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerRotation_Rate[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (MoveMotion_Origin == NULL) {
-    MoveMotion_Origin = new unsigned short[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      MoveMotion_Origin[iZone] = 0;
-  } else {
-    if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
-      SU2_MPI::Error("Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerRotation_Rate/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_ROTATION_RATE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerPlunging_Ampl == 0){
+      nMarkerPlunging_Ampl = 3*nMarker_Moving;
+      MarkerPlunging_Ampl = new su2double[nMarkerPlunging_Ampl];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerPlunging_Ampl[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  /*--- Translation: ---*/
-  
-  if (Translation_Rate_X == NULL) {
-    Translation_Rate_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
-      SU2_MPI::Error("Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerPlunging_Ampl/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_PLUNGING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerPlunging_Omega == 0){
+      nMarkerPlunging_Omega = 3*nMarker_Moving;
+      MarkerPlunging_Omega = new su2double[nMarkerPlunging_Omega];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerPlunging_Omega[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (Translation_Rate_Y == NULL) {
-    Translation_Rate_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerPlunging_Omega/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_PLUNGING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerPitching_Ampl == 0){
+      nMarkerPitching_Ampl = 3*nMarker_Moving;
+      MarkerPitching_Ampl = new su2double[nMarkerPitching_Ampl];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerPitching_Ampl[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (Translation_Rate_Z == NULL) {
-    Translation_Rate_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Translation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerPitching_Ampl/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_PITCHING_AMPL must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerPitching_Omega == 0){
+      nMarkerPitching_Omega = 3*nMarker_Moving;
+      MarkerPitching_Omega = new su2double[nMarkerPitching_Omega];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerPitching_Omega[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  /*--- Rotation: ---*/
-  
-  if (Rotation_Rate_X == NULL) {
-    Rotation_Rate_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
-      SU2_MPI::Error("Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    }
+    if (nMarkerPitching_Omega/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_PITCHING_OMEGA must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
+  }
+    if (nMarkerPitching_Phase == 0){
+      nMarkerPitching_Phase = 3*nMarker_Moving;
+      MarkerPitching_Phase = new su2double[nMarkerPitching_Phase];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+        for (iDim = 0; iDim < 3; iDim++){
+          MarkerPitching_Phase[3*iMarker+iDim] = 0.0;
     }
   }
-  
-  if (Rotation_Rate_Y == NULL) {
-    Rotation_Rate_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
+    if (nMarkerPitching_Phase/3 != nMarker_Moving){
+      SU2_MPI::Error("Number of SURFACE_PITCHING_PHASE must be three times the number of MARKER_MOVING, (x,y,z) per marker.", CURRENT_FUNCTION);
   }
   
-  if (Rotation_Rate_Z == NULL) {
-    Rotation_Rate_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Rotation_Rate_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    if (nMoveMotion_Origin == 0){
+      nMoveMotion_Origin = nMarker_Moving;
+      MoveMotion_Origin = new unsigned short[nMoveMotion_Origin];
+      for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+          MoveMotion_Origin[iMarker] = NO;
     }
   }
-  
-  /*--- Pitching: ---*/
-  
-  if (Pitching_Omega_X == NULL) {
-    Pitching_Omega_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Omega_Y == NULL) {
-    Pitching_Omega_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Omega_Z == NULL) {
-    Pitching_Omega_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  /*--- Pitching Amplitude: ---*/
-  
-  if (Pitching_Ampl_X == NULL) {
-    Pitching_Ampl_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Ampl_Y == NULL) {
-    Pitching_Ampl_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Ampl_Z == NULL) {
-    Pitching_Ampl_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  /*--- Pitching Phase: ---*/
-  
-  if (Pitching_Phase_X == NULL) {
-    Pitching_Phase_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Phase_Y == NULL) {
-    Pitching_Phase_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Pitching_Phase_Z == NULL) {
-    Pitching_Phase_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Pitching_Phase_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  /*--- Plunging: ---*/
-  
-  if (Plunging_Omega_X == NULL) {
-    Plunging_Omega_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_PHASE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Plunging_Omega_Y == NULL) {
-    Plunging_Omega_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_PHASE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Plunging_Omega_Z == NULL) {
-    Plunging_Omega_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Omega_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_PHASE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  /*--- Plunging Amplitude: ---*/
-  
-  if (Plunging_Ampl_X == NULL) {
-    Plunging_Ampl_X = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_X[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Plunging_Ampl_Y == NULL) {
-    Plunging_Ampl_Y = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Y[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
-    }
-  }
-  
-  if (Plunging_Ampl_Z == NULL) {
-    Plunging_Ampl_Z = new su2double[nMoving];
-    for (iZone = 0; iZone < nMoving; iZone++ )
-      Plunging_Ampl_Z[iZone] = 0.0;
-  } else {
-    if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
-      SU2_MPI::Error("Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
+    if (nMoveMotion_Origin != nMarker_Moving){
+      SU2_MPI::Error("Number of MOVE_MOTION_ORIGIN must match number of MARKER_MOVING.", CURRENT_FUNCTION);
     }
   }
   
@@ -3579,15 +3329,66 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	/* Initialize the Harmonic balance Frequency pointer */
   	if (Omega_HB == NULL) {
   		Omega_HB = new su2double[nOmega_HB];
-  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  		for (unsigned short iZone = 0; iZone < nOmega_HB; iZone++ )
   			Omega_HB[iZone] = 0.0;
-  	}else {
+  } else {
   		if (nOmega_HB != nTimeInstances) {
         SU2_MPI::Error("Length of omega_HB  must match the number TIME_INSTANCES!!" , CURRENT_FUNCTION);
       }
-  	}
+    }
   }
+  
+  /*--- Force number of span-wise section to 1 if 2D case ---*/
+  if(val_nDim ==2){
+    nSpanWiseSections_User=1;
+    Kind_SpanWise= EQUISPACED;
+  }
+  
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery > 0){
+    if(nMarker_Turbomachinery > 1){
+      nMarker_TurboPerformance = nMarker_Turbomachinery + SU2_TYPE::Int(nMarker_Turbomachinery/2) + 1;
+  } else {
+      nMarker_TurboPerformance = nMarker_Turbomachinery;
+    }
+  } else {
+    nMarker_TurboPerformance = 0;
+    nSpanWiseSections =1;
+  }
+  
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery != 0){
+    nSpan_iZones = new unsigned short[nZone];
+  }
+  
+  /*--- Set number of TurboPerformance markers ---*/
+  if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
+      FinalRotation_Rate_Z = Rotation_Rate[2];
+      if(abs(FinalRotation_Rate_Z) > 0.0){
+        Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
+  }
+  
+  }
+  
+  if(RampOutletPressure && !DiscreteAdjoint){
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
+      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
+        FinalOutletPressure   = Giles_Var1[iMarker];
+        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
+    }
+  }
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
+      if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+        FinalOutletPressure      = Riemann_Var1[iMarker];
+        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
+  	}
+      }
+  	}
 
+  /*--- Check on extra Relaxation factor for Giles---*/
+  if(ExtraRelFacGiles[1] > 0.5){
+    ExtraRelFacGiles[1] = 0.5;
+  }
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
      The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
@@ -3723,13 +3524,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
   
-  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION)) Aeroelastic_Simulation = true;
+  if (GetGrid_Movement() && (GetSurface_Movement(AEROELASTIC) || GetSurface_Movement(AEROELASTIC_RIGID_MOTION))) Aeroelastic_Simulation = true;
   else Aeroelastic_Simulation = false;
   
   /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
   
   
-  if (Grid_Movement && Aeroelastic_Simulation) {
+  if (GetGrid_Movement() && Aeroelastic_Simulation) {
     Aeroelastic_np1.resize(nMarker_Monitoring);
     Aeroelastic_n.resize(nMarker_Monitoring);
     Aeroelastic_n1.resize(nMarker_Monitoring);
@@ -3752,7 +3553,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
   
-  if (Grid_Movement && Aeroelastic_Simulation) {
+  if (GetGrid_Movement() && Aeroelastic_Simulation) {
     Aeroelastic_pitch = new su2double[nMarker_Monitoring];
     Aeroelastic_plunge = new su2double[nMarker_Monitoring];
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
@@ -3761,19 +3562,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Fluid-Structure Interaction problems ---*/
-
-  if (FSI_Problem) {
-    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
-      Kind_GridMovement[val_izone] = FLUID_STRUCTURE_STATIC;
-      Grid_Movement = false;
-    }
-    else{
-      Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
-      Grid_Movement = true;
-    }
-  }
-  
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
   else FinestMesh = MESH_0;
   
@@ -4117,10 +3905,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
     
-    for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
-      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
-      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
+    for (iMarker = 0; iMarker < nMarker_Moving; iMarker++){
+      for (unsigned short iDim = 0; iDim < 3; iDim++){
+        MarkerMotion_Origin[3*iMarker+iDim] /= 12.0;
+      }
     }
     
     RefLength = RefLength/12.0;
@@ -4223,7 +4011,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
-      if (Grid_Movement) {
+      if (GetGrid_Movement()) {
         SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
       }
 
@@ -4445,7 +4233,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Grid motion is not yet supported with the incompressible solver. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Grid_Movement)) {
+  if ((Kind_Regime == INCOMPRESSIBLE) && (GetGrid_Movement())) {
     SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
   }
 
@@ -5269,19 +5057,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<< endl;
     }
 
-    if (Grid_Movement) {
+    if (GetGrid_Movement()) {
       cout << "Performing a dynamic mesh simulation: ";
-      switch (Kind_GridMovement[ZONE_0]) {
-        case NO_MOVEMENT:     cout << "no movement." << endl; break;
-        case DEFORMING:       cout << "deforming mesh motion." << endl; break;
+      switch (Kind_GridMovement) {
+        case NO_MOVEMENT:     cout << "no direct movement." << endl; break;
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
-        case MOVING_WALL:     cout << "moving walls." << endl; break;
         case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
         case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
-        case AEROELASTIC_RIGID_MOTION:  cout << "rigid mesh motion plus aeroelastic motion." << endl; break;
       }
     }
 
@@ -5328,6 +5112,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "The reference length is " << RefLength;
       if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
 
+      if (nMarker_Monitoring != 0){
       if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
         cout << "Surface(s) where the force coefficients are evaluated and \n";
         cout << "their reference origin for moment computation: \n";
@@ -5352,6 +5137,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         cout<< endl;
       }
+    }
     }
     
     if (nMarker_Designing != 0) {
@@ -5414,7 +5200,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout<< endl;
     }
 
-    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL) || (Kind_GridMovement[ZONE_0] == FLUID_STRUCTURE)) {
+    if (nMarker_Moving != 0) {
       cout << "Surface(s) in motion: ";
       for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
         cout << Marker_Moving[iMarker_Moving];
@@ -7021,6 +6807,32 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker){
   return false;
 }
 
+void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement){
+  
+  unsigned short* new_surface_movement = new unsigned short[nMarker_Moving + 1];
+  string* new_marker_moving = new string[nMarker_Moving+1];
+  
+  for (unsigned short iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++){
+    new_surface_movement[iMarker_Moving] = Kind_SurfaceMovement[iMarker_Moving];
+    new_marker_moving[iMarker_Moving] = Marker_Moving[iMarker_Moving];
+  }
+  
+  if (nKind_SurfaceMovement > 0){
+    delete [] Marker_Moving;
+    delete [] Kind_SurfaceMovement;
+  }
+  
+  Kind_SurfaceMovement = new_surface_movement;
+  Marker_Moving        = new_marker_moving;
+  
+  Kind_SurfaceMovement[nMarker_Moving] = kind_movement;
+  cout << "SETTING BOUNDMARKER " << Marker_All_TagBound[iMarker] <<  endl;
+  Marker_Moving[nMarker_Moving] = Marker_All_TagBound[iMarker];
+  
+  nMarker_Moving++;
+  nKind_SurfaceMovement++;
+  
+}
 CConfig::~CConfig(void) {
 	
   unsigned long iDV, iMarker, iPeriodic, iFFD;
@@ -7040,67 +6852,48 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
-  if (Grid_Movement && Aeroelastic_Simulation) {
+  if (GetGrid_Movement() && Aeroelastic_Simulation) {
     if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
     if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
   }
-
-  /*--- Free memory for unspecified grid motion parameters ---*/
-
- if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
-
+  
  /*--- Free memory for airfoil sections ---*/
 
  if (LocationStations   != NULL) delete [] LocationStations;
 
   /*--- motion origin: ---*/
   
-  if (Motion_Origin_X   != NULL) delete [] Motion_Origin_X;
-  if (Motion_Origin_Y   != NULL) delete [] Motion_Origin_Y;
-  if (Motion_Origin_Z   != NULL) delete [] Motion_Origin_Z;
+  if (MarkerMotion_Origin   != NULL) delete [] MarkerMotion_Origin;
+  
   if (MoveMotion_Origin != NULL) delete [] MoveMotion_Origin;
 
   /*--- translation: ---*/
   
-  if (Translation_Rate_X != NULL) delete [] Translation_Rate_X;
-  if (Translation_Rate_Y != NULL) delete [] Translation_Rate_Y;
-  if (Translation_Rate_Z != NULL) delete [] Translation_Rate_Z;
+  if (MarkerTranslation_Rate != NULL) delete [] MarkerTranslation_Rate;
 
   /*--- rotation: ---*/
   
-  if (Rotation_Rate_X != NULL) delete [] Rotation_Rate_X;
-  if (Rotation_Rate_Y != NULL) delete [] Rotation_Rate_Y;
-  if (Rotation_Rate_Z != NULL) delete [] Rotation_Rate_Z;
+  if (MarkerRotation_Rate != NULL) delete [] MarkerRotation_Rate;
 
   /*--- pitching: ---*/
   
-  if (Pitching_Omega_X != NULL) delete [] Pitching_Omega_X;
-  if (Pitching_Omega_Y != NULL) delete [] Pitching_Omega_Y;
-  if (Pitching_Omega_Z != NULL) delete [] Pitching_Omega_Z;
+  if (MarkerPitching_Omega != NULL) delete [] MarkerPitching_Omega;
 
   /*--- pitching amplitude: ---*/
   
-  if (Pitching_Ampl_X != NULL) delete [] Pitching_Ampl_X;
-  if (Pitching_Ampl_Y != NULL) delete [] Pitching_Ampl_Y;
-  if (Pitching_Ampl_Z != NULL) delete [] Pitching_Ampl_Z;
+  if (MarkerPitching_Ampl != NULL) delete [] MarkerPitching_Ampl;
 
   /*--- pitching phase: ---*/
   
-  if (Pitching_Phase_X != NULL) delete [] Pitching_Phase_X;
-  if (Pitching_Phase_Y != NULL) delete [] Pitching_Phase_Y;
-  if (Pitching_Phase_Z != NULL) delete [] Pitching_Phase_Z;
+  if (MarkerPitching_Phase != NULL) delete [] MarkerPitching_Phase;
 
   /*--- plunging: ---*/
   
-  if (Plunging_Omega_X != NULL) delete [] Plunging_Omega_X;
-  if (Plunging_Omega_Y != NULL) delete [] Plunging_Omega_Y;
-  if (Plunging_Omega_Z != NULL) delete [] Plunging_Omega_Z;
+  if (MarkerPlunging_Omega != NULL) delete [] MarkerPlunging_Omega;
 
   /*--- plunging amplitude: ---*/
   
-  if (Plunging_Ampl_X != NULL) delete [] Plunging_Ampl_X;
-  if (Plunging_Ampl_Y != NULL) delete [] Plunging_Ampl_Y;
-  if (Plunging_Ampl_Z != NULL) delete [] Plunging_Ampl_Z;
+  if (MarkerPlunging_Ampl != NULL) delete [] MarkerPlunging_Ampl;
 
   /*--- reference origin for moments ---*/
   
@@ -7473,7 +7266,6 @@ CConfig::~CConfig(void) {
   if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
   if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
   if (nSpan_iZones != NULL) delete [] nSpan_iZones;
-  if (FinalRotation_Rate_Z != NULL) delete [] FinalRotation_Rate_Z;
   if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
 
   if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
@@ -8050,6 +7842,35 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
     Periodic_Translate[i] = new su2double[3];
   }
   
+}
+
+bool CConfig::GetVolumetric_Movement(){
+  bool volumetric_movement = false;
+  
+  if (GetSurface_Movement(AEROELASTIC) || 
+      GetSurface_Movement(DEFORMING) ||
+      GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
+      GetSurface_Movement(FLUID_STRUCTURE) ||
+      GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
+      GetSurface_Movement(EXTERNAL) || 
+      GetSurface_Movement(EXTERNAL_ROTATION)){
+    volumetric_movement = true;
+  }
+  
+  if (Kind_SU2 == SU2_DEF || 
+      Kind_SU2 == SU2_DOT || 
+      DirectDiff)
+  { volumetric_movement = true;}
+  return volumetric_movement;
+}
+
+bool CConfig::GetSurface_Movement(unsigned short kind_movement){
+  for (unsigned short iMarkerMoving = 0; iMarkerMoving < nKind_SurfaceMovement; iMarkerMoving++){
+    if (Kind_SurfaceMovement[iMarkerMoving] == kind_movement){
+      return true;
+    }
+  }
+  return false;
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {

@@ -446,9 +446,10 @@ CDriver::CDriver(char* confFile,
       }
     }
 
-    if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
+    if (config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
+        config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE)){
       if (rank == MASTER_NODE)
-        cout << "Setting moving mesh structure for static FSI problems." << endl;
+        cout << "Setting moving mesh structure for FSI problems." << endl;
       /*--- Instantiate the container for the grid movement structure ---*/
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
         grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
@@ -472,9 +473,14 @@ CDriver::CDriver(char* confFile,
        Not for the FEM solver, because this is handled later, because
        the integration points must be known. ---*/
   if( !fem_solver ) {
-    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+    
+    initStaticMovement = false;
+    
+    for (iZone = 0; iZone < nZone; iZone ++){
+      Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
+      initStaticMovement = (config_container[iZone]->GetGrid_Movement() && (config_container[iZone]->GetSurface_Movement(MOVING_WALL)
                           || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
+    }
 
 
     if(initStaticMovement){
@@ -1198,7 +1204,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
       DGMesh->CoordinatesSolDOFs();
 
       /*--- Initialize the static mesh movement, if necessary. ---*/
-      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
       const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
                                       (Kind_Grid_Movement == MOVING_WALL    ||
                                        Kind_Grid_Movement == ROTATING_FRAME ||
@@ -3850,75 +3856,87 @@ void CDriver::Interface_Preprocessing() {
   delete [] Buffer_Recv_mark;
 #endif
 
+  /*--- Update boundary information since some kind BCs have changed ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++){
+    for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+      geometry_container[iZone][INST_0][iMesh]->UpdateBoundaries(config_container[iZone]);
+    }
+  }
+  
 }
 
 void CDriver::InitStaticMeshMovement(){
-
+  
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
-
+  
   for (iZone = 0; iZone < nZone; iZone++) {
-    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
-
+    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
+    
     switch (Kind_Grid_Movement) {
-
-    case MOVING_WALL:
-
-      /*--- Fixed wall velocities: set the grid velocities only one time
+      
+      case ROTATING_FRAME:
+        
+        /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
-        cout << endl << " Setting the moving wall velocities." << endl;
-
-      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
-          config_container[iZone], iZone, 0);
-
-      /*--- Update the grid velocities on the coarser multigrid levels after
-           setting the moving wall velocities for the finest mesh. ---*/
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
-      break;
-
-
-    case ROTATING_FRAME:
-
-      /*--- Steadily rotating frame: set the grid velocities just once
-         before the first iteration flow solver. ---*/
-
-      if (rank == MASTER_NODE) {
-        cout << endl << " Setting rotating frame grid velocities";
-        cout << " for zone " << iZone << "." << endl;
-      }
-
-      /*--- Set the grid velocities on all multigrid levels for a steadily
+        
+        if (rank == MASTER_NODE) {
+          cout << endl << " Setting rotating frame grid velocities";
+          cout << " for zone " << iZone << "." << endl;
+        }
+        
+        /*--- Set the grid velocities on all multigrid levels for a steadily
            rotating reference frame. ---*/
-
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-        geometry_container[iZone][INST_0][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
-        geometry_container[iZone][INST_0][iMGlevel]->SetShroudVelocity(config_container[iZone]);
-      }
-
-      break;
-
-    case STEADY_TRANSLATION:
-
-      /*--- Set the translational velocity and hold the grid fixed during
+        
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
+          geometry_container[iZone][INST_0][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+          geometry_container[iZone][INST_0][iMGlevel]->SetShroudVelocity(config_container[iZone]);
+        }
+        
+        break;
+        
+      case STEADY_TRANSLATION:
+        
+        /*--- Set the translational velocity and hold the grid fixed during
          the calculation (similar to rotating frame, but there is no extra
          source term for translation). ---*/
-
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+        
+        /*--- Set the translational velocity on all grid levels. ---*/
+        
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iZone, true);
+        
+        
+        
+        break;
+        
+      default:
+        break;
+    }
+    
+    if (config_container[iZone]->GetnMarker_Moving() > 0){
+      
+      /*--- Fixed wall velocities: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
       if (rank == MASTER_NODE)
-        cout << endl << " Setting translational grid velocities." << endl;
-
-      /*--- Set the translational velocity on all grid levels. ---*/
-
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-        geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iZone, true);
-
-
-
-      break;
+        cout << endl << " Setting the moving wall velocities." << endl;
+      
+      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
+                                            config_container[iZone], iZone, 0);
+      
+      /*--- Update the grid velocities on the coarser multigrid levels after
+         setting the moving wall velocities for the finest mesh. ---*/
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
+      
     }
   }
 }
+
 
 void CDriver::TurbomachineryPreprocessing(){
 
@@ -4564,10 +4582,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
-        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
+        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          config_container[iZone]->GetRotation_Rate()[2] = rot_z;
           if(rank == MASTER_NODE && print && ExtIter > 0) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
