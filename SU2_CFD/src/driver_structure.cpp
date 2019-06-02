@@ -44,8 +44,7 @@
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
+                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false) {
 
 
   unsigned short jZone, iSol;
@@ -212,6 +211,8 @@ CDriver::CDriver(char* confFile,
     }
 
   }
+
+  nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
@@ -810,7 +811,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, false);
+  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -822,12 +823,15 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (driver_config->GetKind_Solver() == MULTIZONE){
+    if (driver_config->GetnConfigFiles() > 0){
+      if (rank == MASTER_NODE){
+        cout  << endl << "Parsing sub-config file for zone " << iZone << endl;
+      }
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, false);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, false);
     }
 
     /*--- Set the MPI communicator ---*/
@@ -837,12 +841,17 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
     }
   }
+  
+  /*--- Definition of the geometry class to store the primal grid in the
+ partitioning process. ---*/
+
+  CGeometry **geometry_aux = new CGeometry*[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -862,14 +871,12 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
 
     geometry_container[iZone] = new CGeometry** [nInst[iZone]];
 
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-      config_container[iZone]->SetiInst(iInst);
+    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-      /*--- Definition of the geometry class to store the primal grid in the
-     partitioning process. ---*/
+    geometry_aux[iZone] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
-      CGeometry *geometry_aux = NULL;
+    nDim = geometry_aux[iZone]->GetnDim();
 
       /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
@@ -877,14 +884,15 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
       CSolver *solver_aux = NULL;
       if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
 
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    if ( fem_solver ) geometry_aux[iZone]->SetColorFEMGrid_Parallel(config_container[iZone]);
+    else              geometry_aux[iZone]->SetColorGrid_Parallel(config_container[iZone]);
 
-      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
-      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      config_container[iZone]->SetiInst(iInst);
+      
 
       /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
@@ -4068,7 +4076,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -4172,8 +4180,8 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 }
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
-                                             unsigned short val_nDim, SU2_Comm MPICommunicator):
-                                             CFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+                                             SU2_Comm MPICommunicator):
+                                             CFluidDriver(confFile, val_nZone, MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
@@ -4394,10 +4402,8 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
-    unsigned short val_nDim,
     SU2_Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
-        val_nDim,
         MPICommunicator) {
   unsigned short kInst;
 
@@ -4946,10 +4952,8 @@ void CHBDriver::ComputeHB_Operator() {
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                            val_nZone,
-                                                           val_nDim,
                                                            MPICommunicator) {
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -5442,10 +5446,8 @@ void CFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     unsigned short val_nDim,
                                      SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                             val_nZone,
-                                                                            val_nDim,
                                                                             MPICommunicator) {
 
   unsigned short iVar;
@@ -7008,10 +7010,8 @@ void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned sh
 
 CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   unsigned short val_nDim,
                                                    SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                                        val_nZone,
-                                                                                       val_nDim,
                                                                                        MPICommunicator) { }
 
 CMultiphysicsZonalDriver::~CMultiphysicsZonalDriver(void) { }

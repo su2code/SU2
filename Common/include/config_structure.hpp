@@ -72,6 +72,7 @@ class CConfig {
 private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;
+  bool base_config;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Ref_Inc_NonDim; /*!< \brief Kind of non dimensionalization.*/
@@ -1100,6 +1101,11 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  
+  void SetDefaultFromConfig(CConfig *config);
+  
+  void SetDefault();
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1399,7 +1405,12 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  
+  /*!
+   * \brief Constructor of the class which reads the input file and uses default options from another config.
+   */
+  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1416,6 +1427,11 @@ public:
    */
   ~CConfig(void);
   
+ void SetnZone();
+ 
+ void SetnDim();
+ 
+ void SetHeader(unsigned short val_software);
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
@@ -1432,10 +1448,9 @@ public:
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
    * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] config - Definition of the particular problem.
    * \return Total number of zones in the grid file.
    */
-  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format);
   
   /*!
    * \brief Gets the number of dimensions in the mesh file
@@ -8072,7 +8087,7 @@ public:
   /*!
    * \brief Set the config options.
    */
-  void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
+  void SetConfig_Options();
   
   /*!
    * \brief Set the config options.

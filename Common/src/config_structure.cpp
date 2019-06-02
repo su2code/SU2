@@ -63,12 +63,17 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high) {
+  
+  base_config = true;
   
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+  
+  iZone = val_nZone;
+  nZone = val_nZone;
 
   /*--- Initialize pointers to Null---*/
 
@@ -76,11 +81,68 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Reading config options  ---*/
 
-  SetConfig_Options(val_iZone, val_nZone);
+  SetConfig_Options();
 
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
+  
+  /*--- Set the default values for all of the options that weren't set ---*/
+      
+  SetDefault();
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, iZone, 0);
+
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
+  /*--- Configuration file output ---*/
+
+  if ((rank == MASTER_NODE) && verb_high)
+    SetOutput(val_software, iZone);
+
+}
+
+CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
+  
+  unsigned short val_nDim;
+  
+  base_config = false;
+  
+  /*--- Store MPI rank and size ---*/ 
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  iZone = val_iZone;
+  nZone = val_nZone;
+  
+  /*--- Initialize pointers to Null---*/
+
+  SetPointersNull();
+
+  /*--- Reading config options  ---*/
+
+  SetConfig_Options();
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+  
+  /*--- Set default options from base config ---*/
+  
+  SetDefaultFromConfig(config);
+  
+  /*--- Set the default values for all of the options that weren't set ---*/
+      
+  SetDefault();
+  
+  /*--- Get the dimension --- */
+  
+  val_nDim = GetnDim(Mesh_FileName, Mesh_FileFormat);
 
   /*--- Configuration file postprocessing ---*/
 
@@ -92,12 +154,17 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && verb_high && (val_iZone == 0))
+  if ((rank == MASTER_NODE) && verb_high)
     SetOutput(val_software, val_iZone);
 
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
+
+  base_config = true;
+  
+  nZone = 1;
+  iZone = 0;
 
   /*--- Store MPI rank and size ---*/ 
 
@@ -110,11 +177,19 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Reading config options  ---*/
 
-  SetConfig_Options(0, 1);
+  SetConfig_Options();
 
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
+  
+  /*--- Set the default values for all of the options that weren't set ---*/
+      
+  SetDefault();
+  
+  /*--- Set number of zones --- */
+  
+  SetnZone();
 
   /*--- Configuration file postprocessing ---*/
 
@@ -124,10 +199,16 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   SetMarkers(val_software);
 
+  /*--- Print the header --- */
+  
+  SetHeader(val_software);
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
+  base_config = true;
+  
   /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
@@ -146,6 +227,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Parsing the config file  ---*/
 
   runtime_file = SetRunTime_Parsing(case_filename);
+
+  /*--- Set the default values for all of the options that weren't set ---*/
+      
+  SetDefault();
 
   /*--- Update original config file ---*/
 
@@ -167,7 +252,7 @@ void CConfig::SetMPICommunicator(SU2_MPI::Comm Communicator) {
 
 }
 
-unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format) {
 
   int nZone = 1; /* Default value if nothing is specified. */
 
@@ -638,10 +723,8 @@ void CConfig::SetRunTime_Options(void) {
 
 }
 
-void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
+void CConfig::SetConfig_Options() {
   
-  nZone = val_nZone;
-  iZone = val_iZone;
 
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
   
@@ -703,9 +786,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Regime type \n OPTIONS: see \link Regime_Map \endlink \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-  
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
+  /*!\brief MULTIZONE \n DESCRIPTION: Enable multizone mode \ingroup Config*/  
+  addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
@@ -2466,14 +2550,35 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
     SU2_MPI::Error(errorString, CURRENT_FUNCTION);
   }
 
+  case_file.close();
+  
+}
+
+void CConfig::SetDefaultFromConfig(CConfig *config){
+  
+  map<string, bool> noInheritance = CCreateMap<string, bool>
+      ("SCREEN_OUTPUT", true)
+      ("HISTORY_OUTPUT", true);
+  
+  map<string, bool>::iterator iter = all_options.begin(), curr_iter;
+  
+  while (iter != all_options.end()){
+    curr_iter = iter++;   
+    if (config->option_map[curr_iter->first]->GetValue().size() > 0 && !noInheritance[curr_iter->first]){
+      option_map[curr_iter->first]->SetValue(config->option_map[curr_iter->first]->GetValue());
+      all_options.erase(curr_iter);      
+    }
+  }
+}
+
+void CConfig::SetDefault(){
+  
   /*--- Set the default values for all of the options that weren't set ---*/
       
   for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
+    if (option_map[iter->first]->GetValue().size() == 0)
     option_map[iter->first]->SetDefault();
   }
-
-  case_file.close();
-  
 }
 
 bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
@@ -2549,6 +2654,12 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
     }
   }
   
+  /*--- Set the default values for all of the options that weren't set ---*/
+      
+  for (map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter) {
+    option_map[iter->first]->SetDefault();
+  }
+  
   /*--- See if there were any errors parsing the runtime file ---*/
   
   if (errorString.size() != 0) {
@@ -2561,6 +2672,124 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   
 }
 
+void CConfig::SetHeader(unsigned short val_software){
+  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
+   the two lines below that use the dt variable. ---*/
+  //time_t now = time(0);
+  //string dt = ctime(&now); dt[24] = '.';
+  if ((iZone == 0) && (rank == MASTER_NODE)){
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << "|    ___ _   _ ___                                                      |" << endl;
+    cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
+    cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
+    switch (val_software) {
+    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    }
+    
+    cout << "|                                                                       |" << endl;
+    //cout << "|   Local date and time: " << dt << "                      |" << endl;
+    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "| The current SU2 release has been coordinated by the                   |" << endl;
+    cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
+    cout << "| with selected contributions from the open-source community.           |" << endl;
+    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "| The main research teams contributing to the current release are:      |" << endl;
+    cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
+    cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
+    cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
+    cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
+    cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+    cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
+    cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+    cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
+    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
+    cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
+    cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
+    cout << "| License as published by the Free Software Foundation; either          |" << endl;
+    cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
+    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
+    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
+    cout << "| Lesser General Public License for more details.                       |" << endl;
+    cout << "|                                                                       |" << endl;
+    cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
+    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
+    cout <<"-------------------------------------------------------------------------" << endl;
+  }
+  
+}
+
+void CConfig::SetnZone(){
+  
+  /*--- Just as a clarification --- */
+  
+  if (Multizone_Problem == NO && Kind_Solver != MULTIPHYSICS){
+    nZone = 1;
+  }
+  
+  if (Kind_Solver == MULTIPHYSICS){
+    Multizone_Problem = YES;
+    if (nConfig_Files == 0){
+      SU2_MPI::Error("CONFIG_LIST must be provided if PHYSICAL_PROBLEM=MULTIPHYSICS", CURRENT_FUNCTION);
+    }
+  }
+  
+  if (Multizone_Problem == YES){
+    
+    /*--- Some basic multizone checks ---*/
+    
+    if (nMarker_ZoneInterface % 2 != 0){
+      SU2_MPI::Error("Number of markers in MARKER_ZONE_INTERFACE must be a multiple of 2", CURRENT_FUNCTION);
+    }
+    
+    SinglezoneDriver  = NO;
+    
+    if (Multizone_Mesh){
+      
+      /*--- Get the number of zones from the mesh file --- */
+      
+      nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
+      
+      /*--- If config list is set, make sure number matches number of zones in mesh file --- */
+      
+      if (nConfig_Files != 0 && (nZone != nConfig_Files)){
+        SU2_MPI::Error("Number of CONFIG_LIST must match number of zones in mesh file.", CURRENT_FUNCTION);
+      }
+    } else {
+      
+      /*--- Number of zones is determined from the number of config files provided --- */
+      
+      if (nConfig_Files == 0){
+        SU2_MPI::Error("If MULTIZONE_MESH is set to YES, you must provide a list of config files using CONFIG_LIST option", CURRENT_FUNCTION);
+      }
+      nZone = nConfig_Files;
+      
+    }
+    
+    /*--- Check if subconfig files exist --- */
+    
+    if (nConfig_Files != 0){
+      for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++){
+        ifstream f(Config_Filenames[iConfig].c_str());
+        if (!f.good()){
+          SU2_MPI::Error("Config file " + Config_Filenames[iConfig] + " defined in CONFIG_FILES does not exist", CURRENT_FUNCTION);
+        }
+      }
+    }
+    
+  }
+  
+}
+
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
   unsigned short iZone, iCFL, iMarker;
@@ -2570,6 +2799,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
+  
+  if (nZone > 1){
+    Multizone_Problem = YES;
+  }
   
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
@@ -2792,13 +3025,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Multizone_Residual = true;
   }
   else { FSI_Problem = false; }
-
-  if (Kind_Solver == MULTIZONE) {
-    Multizone_Problem = true;
-  }
-  else{
-    Multizone_Problem = false;
-  }
 
 
   if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
@@ -4939,72 +5165,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
   
-  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-   the two lines below that use the dt variable. ---*/
-  //time_t now = time(0);
-  //string dt = ctime(&now); dt[24] = '.';
 
-  cout << endl << "-------------------------------------------------------------------------" << endl;
-  cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 6.2.0  \"Falcon\"                           |" << endl;
-  cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
-  switch (val_software) {
-    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
-    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
-  }
-
-  cout << "|                                                                       |" << endl;
-  //cout << "|   Local date and time: " << dt << "                      |" << endl;
-  cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| The current SU2 release has been coordinated by the                   |" << endl;
-  cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
-  cout << "| with selected contributions from the open-source community.           |" << endl;
-  cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| The main research teams contributing to the current release are:      |" << endl;
-  cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
-  cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
-  cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
-  cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
-  cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-  cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
-  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
-  cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
-  cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
-  cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
-  cout << "|                                                                       |" << endl;
-  cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
-  cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
-  cout << "| License as published by the Free Software Foundation; either          |" << endl;
-  cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
-  cout << "|                                                                       |" << endl;
-  cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
-  cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-  cout << "| Lesser General Public License for more details.                       |" << endl;
-  cout << "|                                                                       |" << endl;
-  cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
-  cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
-  cout <<"-------------------------------------------------------------------------" << endl;
-
-  cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
+  cout << endl <<"----------------- Physical Case Definition ( Zone "  << iZone << " ) -------------------" << endl;
   if (val_software == SU2_CFD) {
 	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
-	}
-
-  if (nConfig_Files != 0) {
-    cout << "List of config files: ";
-    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
-      cout << Config_Filenames[iConfig];
-      if (iConfig < nConfig_Files-1) cout << ", ";
-      else cout <<".";
-    }
-    cout<< endl;
   }
 
   if (DiscreteAdjoint) {
