@@ -617,6 +617,10 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
+  for (iVar =0; iVar < nVar; iVar++){
+    if (val_residual[iVar] != val_residual[iVar])
+      cout << "delete me" << endl;
+  }
   if (implicit) {
 
     /*--- Initialize the Jacobians ---*/
@@ -2500,7 +2504,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
-  T_min   = 800.0;
+  T_min   = 1800.0;
   epsilon = 80;
 
   /*--- Define preferential dissociation coefficient ---*/

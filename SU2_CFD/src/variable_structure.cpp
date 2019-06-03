@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
@@ -240,7 +240,7 @@ void CVariable::Set_OldSolution_Adj(void) {
 
 
 void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
-  
+
   Solution[val_var] = Solution_Old[val_var] + val_solution;
   
 }
