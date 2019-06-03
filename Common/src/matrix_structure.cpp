@@ -758,32 +758,17 @@ void CSysMatrix<ScalarType>::Gauss_Elimination_ILUMatrix(unsigned long block_i, 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::ProdBlockVector(unsigned long block_i, unsigned long block_j, const CSysVector<ScalarType> & vec) {
+void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
-  unsigned long j = block_j*nVar;
-  unsigned short iVar, jVar;
-  
-  ScalarType *block = GetBlock(block_i, block_j);
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    prod_block_vector[iVar] = 0;
-    for (jVar = 0; jVar < nVar; jVar++)
-      prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::UpperProduct(CSysVector<ScalarType> & vec, unsigned long row_i) {
-  
-  unsigned long iVar, index;
+  unsigned long iVar, index, col_j;
   
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] > row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
+    col_j = col_ind[index];
+    if (col_j > row_i) {
+      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }
@@ -792,16 +777,17 @@ void CSysMatrix<ScalarType>::UpperProduct(CSysVector<ScalarType> & vec, unsigned
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::LowerProduct(CSysVector<ScalarType> & vec, unsigned long row_i) {
+void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
-  unsigned long iVar, index;
+  unsigned long iVar, index, col_j;
   
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] < row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
+    col_j = col_ind[index];
+    if (col_j < row_i) {
+      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }
@@ -810,18 +796,12 @@ void CSysMatrix<ScalarType>::LowerProduct(CSysVector<ScalarType> & vec, unsigned
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::DiagonalProduct(CSysVector<ScalarType> & vec, unsigned long row_i) {
+void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
-  unsigned long iVar, index;
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
-  
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+  for (unsigned long index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     if (col_ind[index] == row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod_row_vector[iVar] += prod_block_vector[iVar];
+      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[row_i*nVar], prod_row_vector);
+      break;
     }
   }
   
@@ -1009,13 +989,14 @@ void CSysMatrix<ScalarType>::SendReceive_SolutionTransposed(CSysVector<ScalarTyp
 template<class ScalarType>
 void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
-  unsigned long iVar, index;
+  unsigned long iVar, index, col_j;
   
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    ProdBlockVector(row_i, col_ind[index], vec);
+    col_j = col_ind[index];
+    MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
     for (iVar = 0; iVar < nVar; iVar++)
       prod_row_vector[iVar] += prod_block_vector[iVar];
   }
@@ -1271,12 +1252,10 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    LowerProduct(prod, iPoint);                                        // Compute L.x*
+    LowerProduct(prod, iPoint);                                               // Compute L.x*
     for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
-    Gauss_Elimination(iPoint, aux_vector);                            // Solve D.x* = aux_vector
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
+      prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
+    Gauss_Elimination(iPoint, &prod[iPoint*nVar]);                            // Solve D.x* = aux_vector
   }
   
   /*--- MPI Parallelization ---*/
@@ -1287,15 +1266,13 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
   for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-    DiagonalProduct(prod, iPoint);                 // Compute D.x*
+    DiagonalProduct(prod, iPoint);                                        // Compute D.x*
     for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
-    UpperProduct(prod, iPoint);                    // Compute U.x_(n+1)
+      aux_vector[iVar] = prod_row_vector[iVar];                           // Compute aux_vector = D.x*
+    UpperProduct(prod, iPoint);                                           // Compute U.x_(n+1)
     for (iVar = 0; iVar < nVar; iVar++)
-      aux_vector[iVar] -= prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
-    Gauss_Elimination(iPoint, aux_vector);        // Solve D.x* = aux_vector
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
+      prod[iPoint*nVar+iVar] = aux_vector[iVar] - prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
+    Gauss_Elimination(iPoint, &prod[iPoint*nVar]);                        // Solve D.x* = aux_vector
   }
   
   /*--- MPI Parallelization ---*/
