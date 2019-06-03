@@ -4,7 +4,7 @@
 dist: trusty
 sudo: required
 
-language: python
+language: c
 
 cache: 
     ccache: true
@@ -80,7 +80,7 @@ install:
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
     - touch Common/src/config_structure.cpp
-    - echo $PATCH
+    - echo $PATH
     - ninja -v -C build install
 
     # Add environmental variables according to the configure step
