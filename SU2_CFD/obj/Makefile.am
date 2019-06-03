@@ -135,16 +135,11 @@ libSU2Core_sources = \
   ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
   ../src/output/filewriter/CSU2BinaryFileWriter.cpp \
   ../src/output/filewriter/CSU2FileWriter.cpp \
+  ../src/output/filewriter/CSU2MeshFileWriter.cpp \
   ../src/output/filewriter/CTecplotFileWriter.cpp \
-  ../src/output/filewriter/CTecplotFileWriter.cpp \
-  ../src/output/output_cgns.cpp \
+  ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
   ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
-  ../src/output/output_tecplot.cpp \
-  ../src/output/output_fieldview.cpp \
-  ../src/output/output_su2.cpp \
-  ../src/output/output_paraview.cpp \
-  ../src/output/output_csv.cpp \
   ../src/output/CMeshOutput.cpp \
   ../src/output/CElasticityOutput.cpp \
   ../src/output/CFlowOutput.cpp \
