@@ -67,7 +67,8 @@ install:
     - cd externals/ninja
     - python configure.py --bootstrap
     - cd $TRAVIS_BUILD_DIR
-    
+    - export PATH=externals/ninja:$PATH
+
     # Configure, make, and install SU2
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
