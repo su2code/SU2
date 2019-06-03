@@ -1104,41 +1104,22 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
 template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
-  unsigned long iPoint, iVar, jVar;
-
-  /*--- Compute Jacobi Preconditioner ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    /*--- Compute the inverse of the diagonal block ---*/
-    InverseDiagonalBlock(iPoint, block_inverse, transpose);
-
-    /*--- Set the inverse of the matrix to the invM structure (which is a vector) ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        invM[iPoint*nVar*nVar+iVar*nVar+jVar] = block_inverse[iVar*nVar+jVar];
-  }
+  /*--- Build Jacobi Preconditioner, compute and store the inverses of the diagonal blocks ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iPoint, iVar, jVar;
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
-      for (jVar = 0; jVar < nVar; jVar++)
-        prod[(unsigned long)(iPoint*nVar+iVar)] +=
-        invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
-    }
-  }
-  
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+
   /*--- MPI Parallelization ---*/
-  
   InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-  
+
 }
 
 template<class ScalarType>
@@ -1233,14 +1214,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   long iPoint, jPoint;
   unsigned short iVar;
   
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm---*/
+  /*--- Copy vector to then work on prod in place ---*/
   
-  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar];
-    }
-  }
+  for (iPoint = 0; iPoint < long(nPointDomain*nVar); iPoint++)
+    prod[iPoint] = vec[iPoint];
   
   /*--- Forward solve the system using the lower matrix entries that
    were computed and stored during the ILU preprocessing. Note
@@ -1254,21 +1231,17 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
         for (iVar = 0; iVar < nVar; iVar++)
           prod[iPoint*nVar+iVar] -= aux_vector[iVar];
-        
       }
     }
   }
   
   /*--- Backwards substitution (starts at the last row) ---*/
-  
-  InverseDiagonalBlock_ILUMatrix((nPointDomain-1), block_inverse);
-  MatrixVectorProduct(block_inverse, &prod[(nPointDomain-1)*nVar], aux_vector);
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    prod[ (nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
-  
-  for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
-    for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
+
+  for (iPoint = nPointDomain-1; iPoint >= 0; iPoint--) {
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      sum_vector[iVar] = 0.0;
+
     for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
       jPoint = col_ind_ilu[index];
       if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
@@ -1277,11 +1250,11 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
         for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
       }
     }
-    for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = (prod[iPoint*nVar+iVar]-sum_vector[iVar]);
-    InverseDiagonalBlock_ILUMatrix(iPoint, block_inverse);
-    MatrixVectorProduct(block_inverse, &prod[iPoint*nVar], aux_vector);
-    for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = aux_vector[iVar];
-    if (iPoint == 0) break;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      prod[iPoint*nVar+iVar] -= sum_vector[iVar];
+
+    Gauss_Elimination_ILUMatrix(iPoint, &prod[iPoint*nVar]);
   }
   
   /*--- MPI Parallelization ---*/
@@ -1537,16 +1510,9 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     
     /*--- Jacobi preconditioning if there is no linelet ---*/
     
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!LineletBool[iPoint]) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
-          for (jVar = 0; jVar < nVar; jVar++)
-            prod[(unsigned long)(iPoint*nVar+iVar)] +=
-            invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
-        }
-      }
-    }
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      if (!LineletBool[iPoint])
+        MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
     
     /*--- MPI Parallelization ---*/
     
