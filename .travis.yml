@@ -6,6 +6,11 @@ sudo: required
 
 language: python
 
+cache: 
+    ccache: true
+    directories:
+        - build
+
 compiler:
     - gcc
 
