@@ -53,7 +53,7 @@ before_install:
 
     # Install the necessary packages using apt-get with sudo
     - sudo apt-get update -qq
-    - sudo apt-get install -qq build-essential libopenmpi-dev
+    - sudo apt-get install -qq build-essential libopenmpi-dev swig
  
 
     - pip install --upgrade pip
