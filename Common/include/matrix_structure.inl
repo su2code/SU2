@@ -180,6 +180,51 @@ inline void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType
 }
 
 template<class ScalarType>
+inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) {
+
+  short iVar, jVar, kVar;
+  ScalarType weight, sum;
+
+  if (nVar == 1) {
+    vec[0] /= matrix[0];
+  }
+  else {
+
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+    if (useMKL) {
+      // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+      lapack_int * ipiv = new lapack_int [ nVar ];
+      LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+      LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
+
+      delete [] ipiv;
+      return;
+    }
+#endif
+
+    /*--- Transform system in Upper Matrix ---*/
+    for (iVar = 1; iVar < (short)nVar; iVar++) {
+      for (jVar = 0; jVar < iVar; jVar++) {
+        weight = matrix[iVar*nVar+jVar] / matrix[jVar*nVar+jVar];
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
+          matrix[iVar*nVar+kVar] -= weight*matrix[jVar*nVar+kVar];
+        vec[iVar] -= weight*vec[jVar];
+      }
+    }
+
+    /*--- Backwards substitution ---*/
+    vec[nVar-1] = vec[nVar-1] / matrix[nVar*nVar-1];
+    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
+      sum = 0.0;
+      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
+        sum += matrix[iVar*nVar+jVar]*vec[jVar];
+      vec[iVar] = (vec[iVar]-sum) / matrix[iVar*nVar+iVar];
+    }
+  }
+
+}
+
+template<class ScalarType>
 inline CSysMatrixVectorProduct<ScalarType>::CSysMatrixVectorProduct(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;

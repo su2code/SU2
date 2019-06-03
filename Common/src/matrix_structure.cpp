@@ -945,67 +945,39 @@ void CSysMatrix<ScalarType>::MatrixTranspose(ScalarType **a, unsigned long n) {
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed) {
-  
-  short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  ScalarType weight, aux;
-  
+
+  short iVar, jVar;
   ScalarType *Block = GetBlock(block_i, block_i);
-  
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm---*/
-  
+
+  /*--- Copy block, as the algorithm modifies the matrix ---*/
+
   if (!transposed) {
-    for (iVar = 0; iVar < (short)nVar; iVar++)
-      for (jVar = 0; jVar < (short)nVar; jVar++)
-        block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+    // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
+    memcpy( block, Block, nVar*nVar*sizeof(ScalarType) );
+
+//    for (iVar = 0; iVar < (short)nVar; iVar++)
+//      for (jVar = 0; jVar < (short)nVar; jVar++)
+//        block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+
   } else {
     for (iVar = 0; iVar < (short)nVar; iVar++)
       for (jVar = 0; jVar < (short)nVar; jVar++)
         block[iVar*nVar+jVar] = Block[jVar*nVar+iVar];
   }
-  /*--- Gauss elimination ---*/
-  
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
-    
-    /*--- Transform system in Upper Matrix ---*/
-    
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
-    
-    /*--- Backwards substitution ---*/
-    
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
-  
+
+  /*--- Solve system ---*/
+
+  Gauss_Elimination(block, rhs);
+
 }
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination_ILUMatrix(unsigned long block_i, ScalarType* rhs) {
   
-  short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  ScalarType weight, aux;
-  
+//  short iVar, jVar;
   ScalarType *Block = GetBlock_ILUMatrix(block_i, block_i);
   
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm---*/
-
+  /*--- Copy block, as the algorithm modifies the matrix ---*/
 
   // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
   memcpy( block, Block, (nVar * nVar * sizeof(ScalarType)) );
@@ -1013,90 +985,11 @@ void CSysMatrix<ScalarType>::Gauss_Elimination_ILUMatrix(unsigned long block_i, 
   //for (iVar = 0; iVar < (short)nVar; iVar++)
   //  for (jVar = 0; jVar < (short)nVar; jVar++)
   //    block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-  
-  /*--- Gauss elimination ---*/
 
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
+  /*--- Solve system ---*/
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL) {
-      // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-      lapack_int * ipiv = new lapack_int [ nVar ];
-      LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
-      LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
+  Gauss_Elimination(block, rhs);
 
-      delete [] ipiv;
-      return;
-  }
-#endif
-    
-    /*--- Transform system in Upper Matrix ---*/
-    
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
-    
-    /*--- Backwards substitution ---*/
-    
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* Block, ScalarType* rhs) {
-  
-  short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  ScalarType weight, aux;
-  
-  /*--- Copy block matrix, note that the original matrix
-   is modified by the algorithm---*/
-  
-  for (iVar = 0; iVar < (short)nVar; iVar++)
-    for (jVar = 0; jVar < (short)nVar; jVar++)
-      block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-  
-  
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
-    /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
-    
-    /*--- Backwards substitution ---*/
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
-  
 }
 
 template<class ScalarType>
