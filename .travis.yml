@@ -4,12 +4,14 @@
 dist: trusty
 sudo: required
 
-language: c
+language: cpp
 
 cache: 
     ccache: true
+    pip: true
     directories:
         - build
+        - miniconda
 
 compiler:
     - gcc
@@ -54,15 +56,11 @@ before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq build-essential libopenmpi-dev
  
-    # Install Python dependencies
-    # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PATH"
-    - hash -r
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
+
+    - pip install --upgrade pip
+    - pip install numpy
+    - pip install mpi4py
+    - pip install swig
 
     # to avoid interference with MPI
     - test -n $CC  && unset CC
