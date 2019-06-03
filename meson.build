@@ -78,9 +78,3 @@ subdir('SU2_PY')
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
 endif
-
-ninja = find_program('ninja', required : false)
-if ninja.found() == false
-  message('Bootstrapping Ninja ...')
-  run_config = run_command('externals/ninja/configure.py','--bootstrap')
-endif
