@@ -59,7 +59,6 @@ before_install:
     - pip install --upgrade pip
     - pip install numpy
     - pip install mpi4py
-    - pip install swig
 
     # to avoid interference with MPI
     - test -n $CC  && unset CC
