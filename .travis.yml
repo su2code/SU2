@@ -34,23 +34,19 @@ env:
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="meson build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false"
-          #TEST_SCRIPT=serial_regression.py
-	  TEST_SCRIPT="echo script"
+          TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
         - CONFIGURE_COMMAND="meson build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
-          #TEST_SCRIPT=parallel_regression.py
-	  TEST_SCRIPT="echo script"
+          TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
         - CONFIGURE_COMMAND="meson build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false -Denable-autodiff=true -Denable-directdiff=true"
-          #TEST_SCRIPT=serial_regression_AD.py
-	  TEST_SCRIPT="echo script"
+          TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
         - CONFIGURE_COMMAND="meson build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-directdiff=true"
-          #TEST_SCRIPT=parallel_regression_AD.py
-	  TEST_SCRIPT="echo script"
+          TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
@@ -110,4 +106,5 @@ before_script:
 
 script: 
     # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    #- python $TEST_SCRIPT
+    - echo "Test"
