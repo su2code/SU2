@@ -1,7 +1,10 @@
 project('SU2', 'c', 'cpp', 
         version: '6.2.0', 
 	license: 'LGPL2',
-	default_options: ['buildtype=release', 'warning_level=0'])
+	default_options: ['buildtype=release', 
+                          'warning_level=0', 
+                          'c_std=c11',
+                          'cpp_std=c++11'])
 
 
 pymod = import('python')
