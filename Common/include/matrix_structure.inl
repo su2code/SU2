@@ -297,88 +297,144 @@ inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(ScalarType *matrix_a, Sc
 }
 
 template<class ScalarType>
-inline void CSysMatrix<ScalarType>::GetSubsBlock(ScalarType *c, ScalarType *a, ScalarType *b) {
-  
-  unsigned long iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
-      c[iVar*nVar+jVar] = a[iVar*nVar+jVar] - b[iVar*nVar+jVar];
-  
+inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+
+  for(unsigned long iVar = 0; iVar < nVar; iVar++)
+    c[iVar] = a[iVar] - b[iVar];
 }
 
 template<class ScalarType>
-inline void CSysMatrix<ScalarType>::GetSubsVector(ScalarType *c, ScalarType *a, ScalarType *b) {
-  
-  unsigned long iVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++)
+inline void CSysMatrix<ScalarType>::MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+
+  for(unsigned long iVar = 0; iVar < nVar*nVar; iVar++)
     c[iVar] = a[iVar] - b[iVar];
-  
 }
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) {
 
-  short iVar, jVar, kVar;
-  ScalarType weight, sum;
-
-  if (nVar == 1) {
-    vec[0] /= matrix[0];
-  }
-  else {
+  if (nVar==1) {vec[0] /= matrix[0]; return;}
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-    if (useMKL) {
-      // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-      lapack_int * ipiv = new lapack_int [ nVar ];
-      LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
-      LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
+  if (useMKL) {
+    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+    lapack_int * ipiv = new lapack_int [ nVar ];
+    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&matrix[0], nVar, ipiv );
+    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&matrix[0], nVar, ipiv, vec, 1 );
 
-      delete [] ipiv;
-      return;
-    }
+    delete [] ipiv;
+    return;
+  }
 #endif
 
-    /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = matrix[iVar*nVar+jVar] / matrix[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          matrix[iVar*nVar+kVar] -= weight*matrix[jVar*nVar+kVar];
-        vec[iVar] -= weight*vec[jVar];
-      }
-    }
+  unsigned long iVar, jVar, kVar;
+  ScalarType weight;
 
-    /*--- Backwards substitution ---*/
-    vec[nVar-1] = vec[nVar-1] / matrix[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      sum = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        sum += matrix[iVar*nVar+jVar]*vec[jVar];
-      vec[iVar] = (vec[iVar]-sum) / matrix[iVar*nVar+iVar];
+  /*--- Transform system in Upper Matrix ---*/
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < iVar; jVar++) {
+      weight = matrix[iVar*nVar+jVar] / matrix[jVar*nVar+jVar];
+      for (kVar = jVar; kVar < nVar; kVar++)
+        matrix[iVar*nVar+kVar] -= weight*matrix[jVar*nVar+kVar];
+      vec[iVar] -= weight*vec[jVar];
     }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (iVar = nVar-1; iVar >= 0; iVar--) {
+    for (jVar = iVar+1; jVar < nVar; jVar++)
+      vec[iVar] -= matrix[iVar*nVar+jVar]*vec[jVar];
+    vec[iVar] /= matrix[iVar*nVar+iVar];
   }
 
 }
 
 template<class ScalarType>
-inline void CSysMatrix<ScalarType>::InverseBlock(ScalarType *Block, ScalarType *invBlock) {
-  
+inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, ScalarType *inverse) {
+
+  /*---
+   This is a generalization of Gaussian elimination for multiple rhs' (the basis vectors).
+   We could call "Gauss_Elimination" multiple times or fully generalize it for multiple rhs,
+   the performance of both routines would suffer in both cases without the use of exotic templating.
+   And so it feels reasonable to have some duplication here.
+  ---*/
+
+  if (nVar==1) {inverse[0] = 1.0/matrix[0]; return;}
+
   unsigned long iVar, jVar;
-  
+
+  /*--- Initialize the inverse and make a copy of the matrix ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
-    
-    /*--- Compute the i-th column of the inverse matrix ---*/
-    Gauss_Elimination(Block, aux_vector);
-    
-    for (jVar = 0; jVar < nVar; jVar++)
-      invBlock[jVar*nVar+iVar] = aux_vector[jVar];
+    for (jVar = 0; jVar < nVar; jVar++) {
+      block[iVar*nVar+jVar] = matrix[iVar*nVar+jVar];
+      inverse[iVar*nVar+jVar] = ScalarType(iVar==jVar); // identity
+    }
   }
+
+  /*--- Inversion ---*/
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+  if (useMKL) {
+    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+    lapack_int * ipiv = new lapack_int [ nVar ];
+    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, (double *)&block[0], nVar, ipiv, inverse, nVar );
+
+    delete [] ipiv;
+    return;
+  }
+#endif
+
+  unsigned long kVar;
+  ScalarType weight;
+
+  /*--- Transform system in Upper Matrix ---*/
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < iVar; jVar++)
+    {
+      weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+
+      for (kVar = jVar; kVar < nVar; kVar++)
+        block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+
+      /*--- at this stage "inverse" is lower triangular so not all cols need updating ---*/
+      for (kVar = 0; kVar <= jVar; kVar++)
+        inverse[iVar*nVar+kVar] -= weight*inverse[jVar*nVar+kVar];
+    }
+  }
+
+  /*--- Backwards substitution ---*/
+  for (iVar = nVar-1; iVar >= 0; iVar--)
+  {
+    for (jVar = iVar+1; jVar < nVar; jVar++)
+      for (kVar = 0; kVar < nVar; kVar++)
+        inverse[iVar*nVar+kVar] -= block[iVar*nVar+jVar] * inverse[jVar*nVar+kVar];
+
+    for (kVar = 0; kVar < nVar; kVar++)
+      inverse[iVar*nVar+kVar] /= block[iVar*nVar+iVar];
+  }
+
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose) {
   
+  const ScalarType* mat = GetBlock(block_i, block_i);
+  MatrixInverse(mat, invBlock);
+  
+  if (transpose) // swap off-diag
+    for (unsigned long iVar = 0; iVar < nVar-1; ++iVar)
+      for (unsigned long jVar = iVar+1; jVar < nVar; ++jVar) {
+        ScalarType tmp = invBlock[iVar*nVar+jVar];
+        invBlock[iVar*nVar+jVar] = invBlock[jVar*nVar+iVar];
+        invBlock[jVar*nVar+iVar] = tmp;
+      }
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock) {
+
+  const ScalarType* mat = GetBlock_ILUMatrix(block_i, block_i);
+  MatrixInverse(mat, invBlock);
 }
 
 template<class ScalarType>

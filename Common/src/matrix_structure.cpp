@@ -1102,44 +1102,6 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose) {
-  
-  unsigned long iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
-    
-    /*--- Compute the i-th column of the inverse matrix ---*/
-    
-    Gauss_Elimination(block_i, aux_vector, transpose);
-    for (jVar = 0; jVar < nVar; jVar++)
-      invBlock[jVar*nVar+iVar] = aux_vector[jVar];
-  }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock) {
-  
-  unsigned long iVar, jVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
-    
-    /*--- Compute the i-th column of the inverse matrix ---*/
-    
-    Gauss_Elimination_ILUMatrix(block_i, aux_vector);
-    for (jVar = 0; jVar < nVar; jVar++)
-      invBlock[jVar*nVar+iVar] = aux_vector[jVar];
-  }
-
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
   unsigned long iPoint, iVar, jVar;
@@ -1622,28 +1584,28 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
         im1Point = LineletPoint[iLinelet][iElem-1];
         iPoint = LineletPoint[iLinelet][iElem];
         
-        InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
+        MatrixInverse(UBlock[iElem-1], invUBlock[iElem-1]);
         block = GetBlock(iPoint, im1Point); MatrixMatrixProduct(block, invUBlock[iElem-1], LBlock[iElem]);
         block = GetBlock(im1Point, iPoint); MatrixMatrixProduct(LBlock[iElem], block, LFBlock);
-        block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
+        block = GetBlock(iPoint, iPoint); MatrixSubtraction(block, LFBlock, UBlock[iElem]);
         
         /*--- Forward substituton ---*/
         
         MatrixVectorProduct(LBlock[iElem], yVector[iElem-1], LyVector);
-        GetSubsVector(yVector[iElem], rVector[iElem], LyVector);
+        VectorSubtraction(rVector[iElem], LyVector, yVector[iElem]);
         
       }
       
       /*--- Backward substituton ---*/
       
-      InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
+      MatrixInverse(UBlock[nElem-1], invUBlock[nElem-1]);
       MatrixVectorProduct(invUBlock[nElem-1], yVector[nElem-1], zVector[nElem-1]);
       
       for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
         iPoint = LineletPoint[iLinelet][iElemLoop];
         ip1Point = LineletPoint[iLinelet][iElemLoop+1];
         block = GetBlock(iPoint, ip1Point); MatrixVectorProduct(block, zVector[iElemLoop+1], FzVector);
-        GetSubsVector(aux_vector, yVector[iElemLoop], FzVector);
+        VectorSubtraction(yVector[iElemLoop], FzVector, aux_vector);
         MatrixVectorProduct(invUBlock[iElemLoop], aux_vector, zVector[iElemLoop]);
       }
       

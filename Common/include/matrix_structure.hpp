@@ -161,14 +161,14 @@ private:
   void MatrixMatrixProduct(ScalarType *matrix_a, ScalarType *matrix_b, ScalarType *product);
   
   /*!
-   * \brief Performs the subtraction of two matrices.
+   * \brief Subtract b from a and store the result in c.
    */
-  void GetSubsBlock(ScalarType *c, ScalarType *a, ScalarType *b);
+  void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
   
   /*!
-   * \brief Performs the subtraction of two vectors.
+   * \brief Subtract b from a and store the result in c.
    */
-  void GetSubsVector(ScalarType *c, ScalarType *a, ScalarType *b);
+  void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
   
   /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
@@ -178,11 +178,11 @@ private:
   void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
   
   /*!
-   * \brief Inverse a block.
-   * \param[in] Block - block matrix.
-   * \param[out] invBlock - Inverse block.
+   * \brief Invert a small dense matrix.
+   * \param[in] matrix - the matrix.
+   * \param[out] inverse - the matrix inverse.
    */
-  void InverseBlock(ScalarType *Block, ScalarType *invBlock);
+  void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
   
   /*!
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
