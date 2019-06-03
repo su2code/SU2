@@ -62,8 +62,8 @@ before_install:
  
     # Install Python dependencies
     # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
-    - if [ ! -d "$HOME/miniconda" ]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh fi
-    - if [ ! -d "$HOME/miniconda" ]; then bash miniconda.sh -b -p $HOME/miniconda fi
+    - if [ ! -d "$HOME/miniconda" ]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
+    - if [ ! -d "$HOME/miniconda" ]; then bash miniconda.sh -b -p $HOME/miniconda; fi
     - export PATH="$HOME/miniconda/bin:$PATH"
     - conda install --yes -q python=$TRAVIS_PYTHON_VERSION
 
