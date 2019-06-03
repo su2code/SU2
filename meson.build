@@ -47,24 +47,15 @@ if mpi_dep[0].found() and mpi_dep[1].found() and get_option('enable-mpi')
   # add parmetis dependency
   su2_deps     += parmetis_dep
   su2_cpp_args += '-DHAVE_PARMETIS' 
-  if get_option('enable-tecio')
-    subdir('externals/tecio/teciompisrc')
-    su2_deps += teciompi_dep
-    su2_cpp_args += ['-DHAVE_TECIO', '-DTECIOMPI']
-  endif
   
   # add medi dependency
   if get_option('enable-autodiff')
     codi_dep += declare_dependency(include_directories: ['externals/medi/include', 'externals/medi/src'])
   endif
+endif
 
-else
-  if get_option('enable-tecio')
-    subdir('externals/tecio/teciosrc')
-    pthread_dep = dependency('threads')
-    su2_deps += [tecio_dep, pthread_dep]
-    su2_cpp_args += '-DHAVE_TECIO'
-  endif
+if get_option('enable-tecio')
+  subdir('externals/tecio')
 endif
 
 # compile common library
