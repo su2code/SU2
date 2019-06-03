@@ -252,13 +252,14 @@ inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_
 }
 
 template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProduct(ScalarType *matrix, ScalarType *vector, ScalarType *product) {
+inline void CSysMatrix<ScalarType>::MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
   if (useMKL) 
   {
-    MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product );
+    MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
+                                      const_cast<ScalarType*>(matrix), product );
     return;
   }
 #endif
@@ -274,12 +275,13 @@ inline void CSysMatrix<ScalarType>::MatrixVectorProduct(ScalarType *matrix, Scal
 }
 
 template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(ScalarType *matrix_a, ScalarType *matrix_b, ScalarType *product) {
+inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   if (useMKL)
   {
-    MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+    MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
+                              const_cast<ScalarType*>(matrix_b), product );
     return;
   }
 #endif
@@ -313,6 +315,11 @@ inline void CSysMatrix<ScalarType>::MatrixSubtraction(const ScalarType *a, const
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) {
 
+  /*---
+   This is a relatively large method to inline but maybe better
+   code will be generated for the special case nVar=1 this way.
+  ---*/
+
   if (nVar==1) {vec[0] /= matrix[0]; return;}
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
@@ -327,24 +334,24 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
   }
 #endif
 
-  unsigned long iVar, jVar, kVar;
+  int iVar, jVar, kVar, nvar = int(nVar);
   ScalarType weight;
 
   /*--- Transform system in Upper Matrix ---*/
-  for (iVar = 1; iVar < nVar; iVar++) {
+  for (iVar = 1; iVar < nvar; iVar++) {
     for (jVar = 0; jVar < iVar; jVar++) {
-      weight = matrix[iVar*nVar+jVar] / matrix[jVar*nVar+jVar];
-      for (kVar = jVar; kVar < nVar; kVar++)
-        matrix[iVar*nVar+kVar] -= weight*matrix[jVar*nVar+kVar];
+      weight = matrix[iVar*nvar+jVar] / matrix[jVar*nvar+jVar];
+      for (kVar = jVar; kVar < nvar; kVar++)
+        matrix[iVar*nvar+kVar] -= weight*matrix[jVar*nvar+kVar];
       vec[iVar] -= weight*vec[jVar];
     }
   }
 
   /*--- Backwards substitution ---*/
-  for (iVar = nVar-1; iVar >= 0; iVar--) {
-    for (jVar = iVar+1; jVar < nVar; jVar++)
-      vec[iVar] -= matrix[iVar*nVar+jVar]*vec[jVar];
-    vec[iVar] /= matrix[iVar*nVar+iVar];
+  for (iVar = nvar-1; iVar >= 0; iVar--) {
+    for (jVar = iVar+1; jVar < nvar; jVar++)
+      vec[iVar] -= matrix[iVar*nvar+jVar]*vec[jVar];
+    vec[iVar] /= matrix[iVar*nvar+iVar];
   }
 
 }
@@ -361,13 +368,13 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
 
   if (nVar==1) {inverse[0] = 1.0/matrix[0]; return;}
 
-  unsigned long iVar, jVar;
+  int iVar, jVar, nvar = int(nVar);
 
   /*--- Initialize the inverse and make a copy of the matrix ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      block[iVar*nVar+jVar] = matrix[iVar*nVar+jVar];
-      inverse[iVar*nVar+jVar] = ScalarType(iVar==jVar); // identity
+  for (iVar = 0; iVar < nvar; iVar++) {
+    for (jVar = 0; jVar < nvar; jVar++) {
+      block[iVar*nvar+jVar] = matrix[iVar*nvar+jVar];
+      inverse[iVar*nvar+jVar] = ScalarType(iVar==jVar); // identity
     }
   }
 
@@ -384,33 +391,33 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
   }
 #endif
 
-  unsigned long kVar;
+  int kVar;
   ScalarType weight;
 
   /*--- Transform system in Upper Matrix ---*/
-  for (iVar = 1; iVar < nVar; iVar++) {
+  for (iVar = 1; iVar < nvar; iVar++) {
     for (jVar = 0; jVar < iVar; jVar++)
     {
-      weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+      weight = block[iVar*nvar+jVar] / block[jVar*nvar+jVar];
 
-      for (kVar = jVar; kVar < nVar; kVar++)
-        block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+      for (kVar = jVar; kVar < nvar; kVar++)
+        block[iVar*nvar+kVar] -= weight*block[jVar*nvar+kVar];
 
       /*--- at this stage "inverse" is lower triangular so not all cols need updating ---*/
       for (kVar = 0; kVar <= jVar; kVar++)
-        inverse[iVar*nVar+kVar] -= weight*inverse[jVar*nVar+kVar];
+        inverse[iVar*nvar+kVar] -= weight*inverse[jVar*nvar+kVar];
     }
   }
 
   /*--- Backwards substitution ---*/
-  for (iVar = nVar-1; iVar >= 0; iVar--)
+  for (iVar = nvar-1; iVar >= 0; iVar--)
   {
-    for (jVar = iVar+1; jVar < nVar; jVar++)
-      for (kVar = 0; kVar < nVar; kVar++)
-        inverse[iVar*nVar+kVar] -= block[iVar*nVar+jVar] * inverse[jVar*nVar+kVar];
+    for (jVar = iVar+1; jVar < nvar; jVar++)
+      for (kVar = 0; kVar < nvar; kVar++)
+        inverse[iVar*nvar+kVar] -= block[iVar*nvar+jVar] * inverse[jVar*nvar+kVar];
 
-    for (kVar = 0; kVar < nVar; kVar++)
-      inverse[iVar*nVar+kVar] /= block[iVar*nVar+iVar];
+    for (kVar = 0; kVar < nvar; kVar++)
+      inverse[iVar*nvar+kVar] /= block[iVar*nvar+iVar];
   }
 
 }

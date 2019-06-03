@@ -150,7 +150,7 @@ private:
    * \param[in] vector
    * \param[out] product
    */
-  void MatrixVectorProduct(ScalarType *matrix, ScalarType *vector, ScalarType *product);
+  void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
   
   /*!
    * \brief Calculates the matrix-matrix product
@@ -158,7 +158,7 @@ private:
    * \param[in] matrix_b
    * \param[out] product
    */
-  void MatrixMatrixProduct(ScalarType *matrix_a, ScalarType *matrix_b, ScalarType *product);
+  void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product);
   
   /*!
    * \brief Subtract b from a and store the result in c.
