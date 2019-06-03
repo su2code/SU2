@@ -68,17 +68,36 @@ inline DstType CSysMatrix<ScalarType>::PassiveAssign(const SrcType & val) const 
 }
 
 template<class ScalarType>
+inline ScalarType *CSysMatrix<ScalarType>::GetBlock(unsigned long block_i, unsigned long block_j) {
+
+  for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+    if (col_ind[index] == block_j)
+      return &(matrix[index*nVar*nEqn]);
+
+  return NULL;
+}
+
+template<class ScalarType>
+inline ScalarType CSysMatrix<ScalarType>::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
+
+  for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+    if (col_ind[index] == block_j)
+      return matrix[index*nVar*nEqn+iVar*nEqn+jVar];
+
+  return 0;
+}
+
+template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+          matrix[index*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -89,14 +108,13 @@ template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar*nVar+jVar]);
+          matrix[index*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar*nVar+jVar]);
       break;
     }
   }
@@ -107,14 +125,13 @@ template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+          matrix[index*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -125,14 +142,13 @@ template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+          matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
       break;
     }
   }
@@ -143,13 +159,12 @@ template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
   
-  unsigned long step = 0, iVar, index;
+  unsigned long iVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_i) {	// Only elements on the diagonal
       for (iVar = 0; iVar < nVar; iVar++)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += PassiveAssign<ScalarType,OtherType>(val_matrix);
+        matrix[index*nVar*nVar+iVar*nVar+iVar] += PassiveAssign<ScalarType,OtherType>(val_matrix);
       break;
     }
   }
@@ -160,22 +175,145 @@ template<class ScalarType>
 template<class OtherType>
 inline void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
   
-  unsigned long step = 0, iVar, jVar, index;
+  unsigned long iVar, jVar, index;
   
   for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
     if (col_ind[index] == block_i) {	// Only elements on the diagonal
       
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
+          matrix[index*nVar*nVar+iVar*nVar+jVar] = 0.0;
       
       for (iVar = 0; iVar < nVar; iVar++)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = PassiveAssign<ScalarType,OtherType>(val_matrix);
+        matrix[index*nVar*nVar+iVar*nVar+iVar] = PassiveAssign<ScalarType,OtherType>(val_matrix);
       
       break;
     }
   }
+  
+}
+
+template<class ScalarType>
+inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
+
+  for (unsigned long index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++)
+    if (col_ind_ilu[index] == block_j)
+      return &(ILU_matrix[index*nVar*nEqn]);
+
+  return NULL;
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
+  
+  unsigned long iVar, jVar, index;
+  
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+    if (col_ind_ilu[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
+
+  unsigned long iVar, jVar, index;
+
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+    if (col_ind_ilu[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
+      break;
+    }
+  }
+
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
+  
+  unsigned long iVar, jVar, index;
+  
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+    if (col_ind_ilu[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar*nVar+jVar];
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixVectorProduct(ScalarType *matrix, ScalarType *vector, ScalarType *product) {
+
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+  // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
+  if (useMKL) 
+  {
+    MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product );
+    return;
+  }
+#endif
+  
+  unsigned short iVar, jVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    product[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];
+    }
+  }
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(ScalarType *matrix_a, ScalarType *matrix_b, ScalarType *product) {
+
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+  if (useMKL)
+  {
+    MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+    return;
+  }
+#endif
+  
+  unsigned short iVar, jVar, kVar;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      product[iVar*nVar+jVar] = 0.0;
+      for (kVar = 0; kVar < nVar; kVar++) {
+        product[iVar*nVar+jVar] += matrix_a[iVar*nVar+kVar]*matrix_b[kVar*nVar+jVar];
+      }
+    }
+  }
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::GetSubsBlock(ScalarType *c, ScalarType *a, ScalarType *b) {
+  
+  unsigned long iVar, jVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      c[iVar*nVar+jVar] = a[iVar*nVar+jVar] - b[iVar*nVar+jVar];
+  
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::GetSubsVector(ScalarType *c, ScalarType *a, ScalarType *b) {
+  
+  unsigned long iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    c[iVar] = a[iVar] - b[iVar];
   
 }
 
@@ -222,6 +360,25 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
     }
   }
 
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::InverseBlock(ScalarType *Block, ScalarType *invBlock) {
+  
+  unsigned long iVar, jVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++)
+      aux_vector[jVar] = 0.0;
+    aux_vector[iVar] = 1.0;
+    
+    /*--- Compute the i-th column of the inverse matrix ---*/
+    Gauss_Elimination(Block, aux_vector);
+    
+    for (jVar = 0; jVar < nVar; jVar++)
+      invBlock[jVar*nVar+iVar] = aux_vector[jVar];
+  }
+  
 }
 
 template<class ScalarType>
