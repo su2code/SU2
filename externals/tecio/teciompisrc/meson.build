@@ -1,4 +1,4 @@
-tec_cxx_flags = ['-DUSEENUM','-DTECIOMPI', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS', '-DTP_PROJECT_USES_BOOST', '-DBOOST_ALL_NO_LIB']
+tec_cxx_flags = ['-fpermissive', '-DUSEENUM','-DTECIOMPI', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS', '-DTP_PROJECT_USES_BOOST', '-DBOOST_ALL_NO_LIB']
 
 if (build_machine.system() == 'darwin')
   tec_cxx_flags += ['-DDARWIN', '-DMAC64']

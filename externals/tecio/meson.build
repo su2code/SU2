@@ -6,3 +6,13 @@ else
   message('Boost sources found.')
 endif
 
+if get_option('enable-mpi')
+  subdir('teciompisrc')
+  su2_deps += teciompi_dep
+  su2_cpp_args += ['-DHAVE_TECIO', '-DTECIOMPI']
+else
+  subdir('teciosrc')
+  pthread_dep = dependency('threads')
+  su2_deps += [tecio_dep, pthread_dep]
+  su2_cpp_args += '-DHAVE_TECIO'
+endif
