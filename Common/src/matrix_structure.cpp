@@ -1365,19 +1365,6 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsi
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod) {
-  
-  unsigned long iPoint, iVar;
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    RowProduct(vec, iPoint);
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] = prod_row_vector[iVar];
-  }
-  
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
@@ -1453,33 +1440,6 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
 
   InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::GetMultBlockBlock(ScalarType *c, ScalarType *a, ScalarType *b) {
-  
-  unsigned long iVar, jVar, kVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++) {
-      c[iVar*nVar+jVar] = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
-        c[iVar*nVar+jVar] += a[iVar*nVar+kVar] * b[kVar*nVar+jVar];
-    }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::GetMultBlockVector(ScalarType *c, ScalarType *a, ScalarType *b) {
-  
-  unsigned long iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    c[iVar] =  0.0;
-    for (jVar = 0; jVar < nVar; jVar++)
-      c[iVar] += a[iVar*nVar+jVar] * b[jVar];
-  }
   
 }
 
@@ -2109,13 +2069,13 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
         iPoint = LineletPoint[iLinelet][iElem];
         
         InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
-        block = GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
-        block = GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
+        block = GetBlock(iPoint, im1Point); MatrixMatrixProduct(block, invUBlock[iElem-1], LBlock[iElem]);
+        block = GetBlock(im1Point, iPoint); MatrixMatrixProduct(LBlock[iElem], block, LFBlock);
         block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
         
         /*--- Forward substituton ---*/
         
-        GetMultBlockVector(LyVector, LBlock[iElem], yVector[iElem-1]);
+        MatrixVectorProduct(LBlock[iElem], yVector[iElem-1], LyVector);
         GetSubsVector(yVector[iElem], rVector[iElem], LyVector);
         
       }
@@ -2123,14 +2083,14 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
       /*--- Backward substituton ---*/
       
       InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
-      GetMultBlockVector(zVector[nElem-1], invUBlock[nElem-1], yVector[nElem-1]);
+      MatrixVectorProduct(invUBlock[nElem-1], yVector[nElem-1], zVector[nElem-1]);
       
       for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
         iPoint = LineletPoint[iLinelet][iElemLoop];
         ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-        block = GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
+        block = GetBlock(iPoint, ip1Point); MatrixVectorProduct(block, zVector[iElemLoop+1], FzVector);
         GetSubsVector(aux_vector, yVector[iElemLoop], FzVector);
-        GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], aux_vector);
+        MatrixVectorProduct(invUBlock[iElemLoop], aux_vector, zVector[iElemLoop]);
       }
       
       /*--- Copy zVector to the prod vector ---*/

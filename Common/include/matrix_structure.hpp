@@ -427,14 +427,6 @@ public:
   void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
   
   /*!
-   * \brief Performs the product of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the sparse matrix A.
-   * \param[out] prod - Result of the product.
-   * \return Result of the product A*vec.
-   */
-  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod);
-  
-  /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
    * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -451,16 +443,6 @@ public:
    * \param[out] prod - Result of the product.
    */
   void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Performs the product of two block matrices.
-   */
-  void GetMultBlockBlock(ScalarType *c, ScalarType *a, ScalarType *b);
-  
-  /*!
-   * \brief Performs the product of a block matrices by a vector.
-   */
-  void GetMultBlockVector(ScalarType *c, ScalarType *a, ScalarType *b);
   
   /*!
    * \brief Performs the subtraction of two matrices.
