@@ -121,6 +121,13 @@ private:
   template<class DstType, class SrcType>
   DstType PassiveAssign(const SrcType & val) const;
 
+  /*!
+   * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
+   * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
+   * \param[in,out] vec - On entry the rhs, on exit the solution.
+   */
+  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
+
 public:
   
   /*!
@@ -350,14 +357,6 @@ public:
    * \return Solution of the linear system (overwritten on rhs).
    */
   void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false);
-  
-  /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] Block - matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination(ScalarType* Block, ScalarType* rhs);
   
   /*!
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
