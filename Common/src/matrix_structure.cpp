@@ -846,104 +846,6 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 }
 
 template<class ScalarType>
-ScalarType CSysMatrix<ScalarType>::MatrixDeterminant(ScalarType **a, unsigned long n) {
-  
-  unsigned long i, j, j1, j2;
-  ScalarType det = 0;
-  ScalarType **m = NULL;
-  
-  if (n < 1) { }
-  else if (n == 1) { det = a[0][0]; }
-  else if (n == 2) { det = a[0][0] * a[1][1] - a[1][0] * a[0][1]; }
-  else {
-    det = 0.0;
-
-    for (j1=0;j1<n;j1++) {
-      m = new ScalarType*[n-1];
-      for (i=0;i<n-1;i++)
-        m[i] = new ScalarType[n-1];
-      
-      for (i=1;i<n;i++) {
-        j2 = 0;
-        for (j=0;j<n;j++) {
-          if (j == j1)
-          continue;
-          m[i-1][j2] = a[i][j];
-          j2++;
-        }
-      }
-      
-      det += pow(-1.0,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
-      for (i=0;i<n-1;i++)
-      delete [] m[i];
-      delete [] m;
-    }
-    
-  }
-  
-  return(det);
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixCoFactor(ScalarType **a, unsigned long n, ScalarType **b) {
-  
-  unsigned long i,j,ii,jj,i1,j1;
-  ScalarType det;
-  ScalarType **c;
-  
-  c = new ScalarType*[n-1];
-  for (i=0;i<n-1;i++)
-    c[i] = new ScalarType[n-1];
-  
-  for (j=0;j<n;j++) {
-    for (i=0;i<n;i++) {
-      
-      /*--- Form the adjoint a_ij ---*/
-      i1 = 0;
-      for (ii=0;ii<n;ii++) {
-        if (ii == i)
-        continue;
-        j1 = 0;
-        for (jj=0;jj<n;jj++) {
-          if (jj == j)
-          continue;
-          c[i1][j1] = a[ii][jj];
-          j1++;
-        }
-        i1++;
-      }
-      
-      /*--- Calculate the determinate ---*/
-      det = MatrixDeterminant(c,n-1);
-      
-      /*--- Fill in the elements of the cofactor ---*/
-      b[i][j] = pow(-1.0,i+j+2.0) * det;
-    }
-  }
-  for (i=0;i<n-1;i++)
-    delete [] c[i];
-  delete [] c;
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixTranspose(ScalarType **a, unsigned long n) {
-  
-  unsigned long i, j;
-  ScalarType tmp;
-  
-  for (i=1;i<n;i++) {
-    for (j=0;j<i;j++) {
-      tmp = a[i][j];
-      a[i][j] = a[j][i];
-      a[j][i] = tmp;
-    }
-  }
-  
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed) {
 
   short iVar, jVar;
@@ -1392,39 +1294,7 @@ void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarT
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
-  
-  //  ScalarType Det, **Matrix, **CoFactor;
-  //  ScalarType *Block = GetBlock(block_i, block_i);
-  //
-  //  Matrix = new ScalarType*[nVar];
-  //  CoFactor = new ScalarType*[nVar];
-  //  for (iVar=0;iVar<nVar;iVar++) {
-  //    Matrix[iVar] = new ScalarType[nVar];
-  //    CoFactor[iVar] = new ScalarType[nVar];
-  //  }
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    for (jVar = 0; jVar < nVar; jVar++)
-  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
-  //  }
-  //
-  //  Det =  MatrixDeterminant(Matrix, nVar);
-  //  MatrixCoFactor(Matrix, nVar, CoFactor);
-  //  MatrixTranspose(CoFactor, nVar);
-  //
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    for (jVar = 0; jVar < nVar; jVar++)
-  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
-  //  }
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    delete [] Matrix[iVar];
-  //    delete [] CoFactor[iVar];
-  //  }
-  //  delete [] Matrix;
-  //  delete [] CoFactor;
-  
+
 }
 
 template<class ScalarType>
@@ -1443,39 +1313,7 @@ void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
-  
-  //  ScalarType Det, **Matrix, **CoFactor;
-  //  ScalarType *Block = GetBlock_ILUMatrix(block_i, block_i);
-  //
-  //  Matrix = new ScalarType*[nVar];
-  //  CoFactor = new ScalarType*[nVar];
-  //  for (iVar=0;iVar<nVar;iVar++) {
-  //    Matrix[iVar] = new ScalarType[nVar];
-  //    CoFactor[iVar] = new ScalarType[nVar];
-  //  }
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    for (jVar = 0; jVar < nVar; jVar++)
-  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
-  //  }
-  //
-  //  Det =  MatrixDeterminant(Matrix, nVar);
-  //  MatrixCoFactor(Matrix, nVar, CoFactor);
-  //  MatrixTranspose(CoFactor, nVar);
-  //
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    for (jVar = 0; jVar < nVar; jVar++)
-  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
-  //  }
-  //
-  //  for (iVar = 0; iVar < nVar; iVar++) {
-  //    delete [] Matrix[iVar];
-  //    delete [] CoFactor[iVar];
-  //  }
-  //  delete [] Matrix;
-  //  delete [] CoFactor;
-  
+
 }
 
 template<class ScalarType>
