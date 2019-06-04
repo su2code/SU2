@@ -925,7 +925,7 @@ unsigned long iPoint, ErrorCounter = 0;
 
   /*--- Set the current estimate of velocity as a primitive variable, needed for momentum interpolation.
    * -- This does not change the pressure, it remains the same as the old value .i.e. previous (pseudo)time step. ---*/
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, true);
+  if (iMesh == MESH_0) ErrorCounter = SetPrimitive_Variables(solver_container, config, true);
   
   
   /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
@@ -3380,7 +3380,7 @@ void CPBIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 }
 
 
-void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg) {
+void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh) {
 	
 	
   unsigned short iVar, jVar, iDim, jDim, nGradVar,KindBC;
@@ -3450,12 +3450,12 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
      
 	MassFlux_Part = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-		Vel_Avg = 0.5*(Vel_i[iDim]+Vel_j[iDim]);                                  // --> No weighting
-		//Vel_Avg = (Vel_i[iDim]*Vol_i + Vel_j[iDim]*Vol_j)/(Vol_i+Vol_j);            // --> Area (or Volume) weighted average
+		//Vel_Avg = 0.5*(Vel_i[iDim]+Vel_j[iDim]);                                  // --> No weighting
+		Vel_Avg = (Vel_i[iDim]*Vol_i + Vel_j[iDim]*Vol_j)/(Vol_i+Vol_j);            // --> Area (or Volume) weighted average
 		MassFlux_Part += MeanDensity*Vel_Avg*Normal[iDim];
     }
 	
-	
+if (iMesh == MESH_0) {
 	/*------- Rhie-Chow interpolation ---------*/
 	
 	dist_ij = 0; proj_vector_ij = 0; dist_ij_2 = 0.0;
@@ -3482,8 +3482,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
     /*--- Interpolate the pressure gradient based on node values ---*/
     for (iDim = 0; iDim < nDim; iDim++) {
-		Grad_Avg = 0.5*(node[iPoint]->GetGradient_Primitive(0,iDim) + node[jPoint]->GetGradient_Primitive(0,iDim)) ;   // --> No weighting.
-		//Grad_Avg = (Vol_i*node[iPoint]->GetGradient_Primitive(0,iDim) + Vol_j*node[jPoint]->GetGradient_Primitive(0,iDim))/(Vol_i + Vol_j) ;   // --> No weighting.
+		//Grad_Avg = 0.5*(node[iPoint]->GetGradient_Primitive(0,iDim) + node[jPoint]->GetGradient_Primitive(0,iDim)) ;   // --> No weighting.
+		Grad_Avg = (Vol_i*node[iPoint]->GetGradient_Primitive(0,iDim) + Vol_j*node[jPoint]->GetGradient_Primitive(0,iDim))/(Vol_i + Vol_j) ;   // --> No weighting.
 		GradP_in[iDim] = Grad_Avg;
 	}
 		
@@ -3507,7 +3507,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     for (iDim = 0; iDim < nDim; iDim++) {
 		MassFlux_Part -= 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
 	}
-	
+}
 	FaceVelocity[iEdge] = MassFlux_Part/(MeanDensity*Area);
 	
 	if (geometry->node[iPoint]->GetDomain())
@@ -3719,6 +3719,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   string Marker_Tag;
   unsigned short Kind_Outlet;
   Normal = new su2double [nDim];	
+  
   /*--- Allocate corrections ---*/
   Pressure_Correc = new su2double [nPoint];
   /*--- Velocity Corrections ---*/

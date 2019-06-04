@@ -356,10 +356,17 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 //  BC Transition Model variables
   su2double vmag, rey, re_theta, re_theta_t, re_v;
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            
+		  Laminar_Viscosity_i = V_i[nDim+2];  
+	  }
+	  else {
+		  Density_i = V_i[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];
+	  }
   }
   else {
     Density_i = V_i[nDim+2];
@@ -526,10 +533,18 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
-    if (incompressible) {
-      Density_i = V_i[nDim+2];
-      Laminar_Viscosity_i = V_i[nDim+4];
-    }
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+
+  if (incompressible) {
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            
+		  Laminar_Viscosity_i = V_i[nDim+2];  
+	  }
+	  else {
+		  Density_i = V_i[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];
+	  }
+  }
     else {
         Density_i = V_i[nDim+2];
         Laminar_Viscosity_i = V_i[nDim+5];
@@ -670,10 +685,18 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
     //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
-    if (incompressible) {
-      Density_i = V_i[nDim+2];
-      Laminar_Viscosity_i = V_i[nDim+4];
-    }
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+
+  if (incompressible) {
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            
+		  Laminar_Viscosity_i = V_i[nDim+2];  
+	  }
+	  else {
+		  Density_i = V_i[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];
+	  }
+  }
     else {
         Density_i = V_i[nDim+2];
         Laminar_Viscosity_i = V_i[nDim+5];
@@ -807,10 +830,18 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
-    if (incompressible) {
-      Density_i = V_i[nDim+2];
-      Laminar_Viscosity_i = V_i[nDim+4];
-    }
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+
+  if (incompressible) {
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            
+		  Laminar_Viscosity_i = V_i[nDim+2];  
+	  }
+	  else {
+		  Density_i = V_i[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];
+	  }
+  }
     else {
         Density_i = V_i[nDim+2];
         Laminar_Viscosity_i = V_i[nDim+5];
@@ -964,9 +995,17 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+
   if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
+	  if (pressure_based) {
+		  Density_i = V_i[nDim+1];            
+		  Laminar_Viscosity_i = V_i[nDim+2];  
+	  }
+	  else {
+		  Density_i = V_i[nDim+2];
+		  Laminar_Viscosity_i = V_i[nDim+4];
+	  }
   }
   else {
     Density_i = V_i[nDim+2];

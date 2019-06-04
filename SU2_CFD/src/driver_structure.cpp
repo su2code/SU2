@@ -1337,7 +1337,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       if (incompressible) {
         if (pressure_based) {
 			solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CPBIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
-			solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+			//solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 			solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[val_iInst][iMGlevel], config);
 			solver_container[val_iInst][iMGlevel][POISSON_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     	}

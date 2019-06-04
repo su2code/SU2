@@ -823,11 +823,11 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 	  Residual[iVar] = 0.0;
   }
   
-  /*if (iMesh == MESH_0 + 1) {
+  if (iMesh == MESH_0 + 1) {
 	  Coarse_GridFile.open("coarse_src.txt", ios::out);
   		//cout<<"Writing the _src.txt file."<<endl;
   }
-  if (iMesh == MESH_0 ) Fine_GridFile.open("fine_src.txt", ios::out);*/
+  if (iMesh == MESH_0 ) Fine_GridFile.open("fine_src.txt", ios::out);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -843,7 +843,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 		
 		if (Src_Term != Src_Term)Src_Term = 0.0;
 		
-		if (iMesh == MESH_0 + 1) Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError();
+		if (iMesh == MESH_0 + 1) Src_Term += solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError();
 		
 		node[iPoint]->SetSourceTerm(Src_Term);
     }
@@ -859,19 +859,19 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     
     //Source term is constant ==> jacobian is zero
     
-    /*if (iMesh == MESH_0) {
+    if (iMesh == MESH_0) {
 		Fine_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         Fine_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
     }
     if (iMesh == MESH_0 + 1) {
 		Coarse_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         Coarse_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
-    }*/
+    }
   }
   
   
-  /*if (iMesh == MESH_0 + 1) Coarse_GridFile.close();
-  if (iMesh == MESH_0) Fine_GridFile.close();*/
+  if (iMesh == MESH_0 + 1) Coarse_GridFile.close();
+  if (iMesh == MESH_0) Fine_GridFile.close();
 }
 
 void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

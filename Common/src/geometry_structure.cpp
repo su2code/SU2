@@ -19444,6 +19444,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
         
         if (counter > 2) agglomerate_seed = false;
         
+        agglomerate_seed = false;
+        
         /*--- If the seed can be agglomerated, we try to agglomerate more points ---*/
         
         if (agglomerate_seed) {
