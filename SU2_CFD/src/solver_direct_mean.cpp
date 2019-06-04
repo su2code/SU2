@@ -15781,9 +15781,10 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[jPoint]->GetTauWall());
     numerics->SetDirTan(node[iPoint]->GetDirTanWM(), node[jPoint]->GetDirTanWM());
+    numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[jPoint]->GetDirNormalWM());
 
     /*--- Compute and update residual ---*/
-   // cout << iPoint << " " << jPoint << " " << geometry->node[iPoint]->GetCoord(1) <<  " " << geometry->node[jPoint]->GetCoord(1) <<  " "<< geometry->node[iPoint]->GetPhysicalBoundary() << " " << geometry->node[jPoint]->GetPhysicalBoundary() << " " ;
+    //cout << " Pi: " << iPoint << " Pj: " << jPoint << " Xi: " << geometry->node[iPoint]->GetCoord(0) << " Yi: " << geometry->node[iPoint]->GetCoord(1) << " Zi: " << geometry->node[iPoint]->GetCoord(2) << " Xj: " << geometry->node[jPoint]->GetCoord(0) << " Yj: " << geometry->node[jPoint]->GetCoord(1) << " Zj: " << geometry->node[jPoint]->GetCoord(2) <<  " PBi: "<< geometry->node[iPoint]->GetPhysicalBoundary() << " PBj: " << geometry->node[jPoint]->GetPhysicalBoundary() << " " ;
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -17014,8 +17015,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         /*--- TODO: Check if the heat flux from the WM needs to be multiplied by the Area.
          If the WM already took it in account.---*/
         su2double heatflux_WM = node[iPoint]->GetHeatFlux();
-        Res_Visc[nDim+1] = heatflux_WM * Area;
-        //Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
+        //Res_Visc[nDim+1] = heatflux_WM * Area;
+        Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
         //cout << heatflux_WM << " " << thermal_conductivity << " " << Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb) << " " <<  laminar_viscosity << " " << eddy_viscosity << endl;
         /*--- Form Jacobians for implicit computations ---*/
         
@@ -18155,6 +18156,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           node[iPoint]->SetLaminarViscosity(LaminarViscosity);
           node[iPoint]->SetEddyViscosity(0.0);
           node[iPoint]->SetkOverCv(kOverCvWall);
+          node[iPoint]->SetDirNormalWM(Unit_Normal);
           
           //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
           //cout << iPoint << " " << tauWall << " " << qWall << " " << kOverCvWall << " " << ViscosityWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << " " << Temperature << " " << velTan << " " << LaminarViscosity << " " << Pressure << endl;

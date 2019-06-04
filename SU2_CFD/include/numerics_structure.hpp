@@ -1433,11 +1433,18 @@ public:
   virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 
   /*!
-   * \brief Set the value of the Tauwall
-   * \param[in] val_tauwall_i - Tauwall at point i
-   * \param[in] val_tauwall_j - Tauwall at point j
+   * \brief Set the value tangent direction of the Tauwall
+   * \param[in] val_dirtan_i - Tangent direction at point i
+   * \param[in] val_dirtan_j - Tangent direction at point j
    */
   virtual void SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j);
+
+    /*!
+   * \brief Set the value of normal direction of the Tauwall
+   * \param[in] val_dirnormal_i - Normal direction at point i
+   * \param[in] val_dirnormal_j - Normal direction at point j
+   */
+  virtual void SetDirNormal(su2double *val_dirnormal_i, su2double *val_dirnormal_j);
 
   
   /*!
@@ -3070,8 +3077,10 @@ class CAvgGrad_Base : public CNumerics {
   Mean_turb_ke,                /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
-  *DirTan_i, *DirTan_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
-  Mean_DirTan[3],              /*!< \brief Wall shear stress at point i and j (wall functions). */
+  *DirTan_i, *DirTan_j,        /*!< \brief Tangent direction of the Wall shear stress at point i and j (wall functions). */
+  Mean_DirTan[3],              /*!< \brief Mean of the tangent direction. */
+  *DirNormal_i, *DirNormal_j,  /*!< \brief Normal direction of the Wall shear stress at point i and j (wall functions). */
+  Mean_DirNormal[3],              /*!< \brief Mean of the normal direction. */
   dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
   *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Edge_Vector;                /*!< \brief Vector from point i to point j. */
@@ -3245,11 +3254,18 @@ class CAvgGrad_Base : public CNumerics {
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 
   /*!
-   * \brief Set the value of the wall shear stress at point i and j (wall functions).
+   * \brief Set the value of the tangent direction of the wall shear stress at point i and j (wall functions).
    * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
   void SetDirTan(su2double *val_dirtan_i, su2double *val_dirtan_j);
+
+    /*!
+   * \brief Set the value of the normal direction of the wall shear stress at point i and j (wall functions).
+   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+   */
+  void SetDirNormal(su2double *val_dirnormal_i, su2double *val_dirnormal_j);
   
   /*!
    * \brief Calculate the viscous + turbulent stress tensor

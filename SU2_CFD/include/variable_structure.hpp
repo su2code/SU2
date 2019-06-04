@@ -2384,6 +2384,10 @@ public:
   
   virtual su2double *GetDirTanWM();
 
+  virtual void SetDirNormalWM(su2double  *val_dir_normal_wm);
+  
+  virtual su2double *GetDirNormalWM();
+
   virtual void SetkOverCv(su2double val_kOverCv);
   
   virtual su2double GetkOverCv();
@@ -3859,6 +3863,7 @@ private:
   su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   su2double Heat_Flux;       /*!< \brief Heat Flux calculated from the wall model. */
   su2double DirTanWM[3];     /*!< \brief Tangential direction of wall model. */
+  su2double DirNormalWM[3];  /*!< \brief Normal direction of wall model. */
   su2double kOverCv;         /*!< \brief Thermal Conductivity of wall model. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
@@ -4046,15 +4051,27 @@ public:
   su2double GetkOverCv(void);
 
   /*!
-   * \brief Set the value of the heat flux computed by the wall model.
+   * \brief Set the value of the tangent direction of the shear stress computed by the wall model.
    */
   void SetDirTanWM(su2double *val_dir_tan_wm);
   
   /*!
-   * \brief Get the value of the heat flux computed by the model
-   * \return Value of the heat flux computed by the model
+   * \brief Get the value of the tangent direction of the shear stress computed by the wall model.
+   * \return Value.
    */
   su2double *GetDirTanWM(void);
+
+
+  /*!
+   * \brief Set the value of the normal direction of the shear stress computed by the wall model.
+   */
+  void SetDirNormalWM(su2double *val_dir_normal_wm);
+  
+  /*!
+   * \brief Set the value of the normal direction of the shear stress computed by the wall model.
+   * \return Value.
+   */
+  su2double *GetDirNormalWM(void);
   
   /*!
    * \brief Get the DES length scale

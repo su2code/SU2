@@ -4957,21 +4957,39 @@ void CAvgGrad_Base::ReplaceTauWall(const su2double *val_normal,
   /*--- ---*/
   unsigned short iDim,jDim;
   su2double Area, norm;
+  su2double Transpose[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += val_normal[iDim]*val_normal[iDim];
   Area = sqrt(Area);
   
-  norm = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
-  norm = sqrt(norm);
+  // norm = 0.0;
+  // for (iDim = 0 ; iDim < nDim; iDim++)
+  //   for (jDim = 0 ; jDim < nDim; jDim++)
+  //     norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
+  // norm = sqrt(norm);
+
+  // for (iDim = 0 ; iDim < nDim; iDim++)
+  //   for (jDim = 0 ; jDim < nDim; jDim++)
+  //     tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
 
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
-      tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
+      tau[iDim][jDim] = - val_tau_wall * val_dir_tan[iDim] * val_normal[jDim] * Area;
+
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      Transpose[iDim][jDim] = tau[jDim][iDim];
+
+  /*--- Shear Stress must be symmetric ---*/
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      tau[iDim][jDim] = Transpose[iDim][jDim] + tau[iDim][jDim];
+
+  //cout << " Replace Tau Wall: " << val_normal[0] << " " << val_normal[1] << "  " << val_normal[2] << " "<< val_dir_tan[0] << " " << val_dir_tan[1] << "  " << val_dir_tan[2]  << endl;
 }
 
 
@@ -5400,11 +5418,39 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Wall shear stress values (wall functions) ---*/
   /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
   
-  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
-  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
-  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
-  else Mean_TauWall = -1.0;
-  
+  if (TauWall_i > 0.0 && TauWall_j > 0.0){
+    
+    Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
+      Mean_DirNormal[iDim] = 0.5 * (DirNormal_i[iDim] + DirNormal_j[iDim]);
+    }
+
+  }
+  else if (TauWall_i > 0.0){
+    Mean_TauWall = TauWall_i;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = DirTan_i[iDim];
+      Mean_DirNormal[iDim] = DirNormal_i[iDim];
+    }
+
+  } 
+  else if (TauWall_j > 0.0){
+    Mean_TauWall = TauWall_j;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = DirTan_j[iDim];
+      Mean_DirNormal[iDim] = DirNormal_j[iDim];
+    }
+  }
+  else{
+    Mean_TauWall = -1.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Mean_DirTan[iDim] = 0.0;
+      Mean_DirNormal[iDim] = 0.0;
+    }
+  }
+   
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
@@ -5416,14 +5462,13 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
+  
   //if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
-  if (Mean_TauWall > 0){
-    for (iDim = 0; iDim < nDim; iDim++)
-      Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
-
-    ReplaceTauWall(Normal, Mean_DirTan, Mean_TauWall);
-  }
+  
+  if (Mean_TauWall > 0) ReplaceTauWall(Mean_DirNormal, Mean_DirTan, Mean_TauWall);
+  
 
   //cout << tau[0][0] << " " << tau[0][1] << " " << tau[0][2] << " "  << tau[1][0] << " " << tau[1][1] << " " << tau[1][2] << " " << tau[2][0] << " " << tau[2][1] << " " << tau[2][2] << " " << endl;
   
