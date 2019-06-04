@@ -326,8 +326,8 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
   if (useMKL) {
     // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
     lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&matrix[0], nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&matrix[0], nVar, ipiv, vec, 1 );
+    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv );
+    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1 );
 
     delete [] ipiv;
     return;
@@ -383,8 +383,8 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
   if (useMKL) {
     // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
     lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, (double *)&block[0], nVar, ipiv, inverse, nVar );
+    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, ipiv );
+    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, ipiv, inverse, nVar );
 
     delete [] ipiv;
     return;

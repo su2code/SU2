@@ -374,8 +374,8 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     
-    invM = new ScalarType [nPoint*nVar*nEqn];
-    for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+    invM = new ScalarType [nPointDomain*nVar*nEqn];
+    for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
 
   }
 
@@ -995,13 +995,13 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
       if (useMKL) 
       {
-        MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
+        MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(&vec[vec_begin]), &matrix[mat_begin], &prod[prod_begin] );
         continue;
       }
 #endif
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
+          prod[prod_begin+iVar] += matrix[mat_begin+iVar*nVar+jVar]*vec[vec_begin+jVar];
         }
       }
     }
@@ -1035,7 +1035,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-            prod[(unsigned long)(prod_begin+jVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+iVar)];
+          prod[prod_begin+jVar] += matrix[mat_begin+iVar*nVar+jVar]*vec[vec_begin+iVar];
         }
       }
     }
@@ -1052,7 +1052,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
   /*--- Build Jacobi Preconditioner, compute and store the inverses of the diagonal blocks ---*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
 }
