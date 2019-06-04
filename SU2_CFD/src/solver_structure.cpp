@@ -2164,8 +2164,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
-    if (log10(sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())) > 12 ){
-      SU2_MPI::Error("SU2 has diverged. (Residual > 10^12 detected)", CURRENT_FUNCTION);
+    if (log10(sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())) > 20 ){
+      SU2_MPI::Error("SU2 has diverged. (Residual > 10^20 detected)", CURRENT_FUNCTION);
     }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
@@ -2208,7 +2208,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
       SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
-    
+	  
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
     
   }
