@@ -182,7 +182,9 @@ void CMMSNSTwoHalfSpheresSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double y = val_coords[1];
   const su2double z = val_coords[2];
 
-  /*--- The source code for the source terms is generated in Maple. ---*/
+  /*--- The source code for the source terms is generated in Maple.
+        See the file CMMSNSTwoHalfSpheresSolution.mw in the directory
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double t1 = rho_0 * u_0;
   const su2double t2 = x * x;
   const su2double t3 = y * y;

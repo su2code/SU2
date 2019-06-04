@@ -178,7 +178,9 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double *val_coords,
                                               const su2double val_t,
                                               su2double       *val_source) {
 
-  /*--- The source code for the source terms is generated in Maple. ---*/
+  /*--- The source code for the source terms is generated in Maple.
+        See the file CMMSNSUnitQuadSolution.mw in the directory
+       	CreateMMSSourceTerms for the details how to do this. ---*/
   const su2double Pi = PI_NUMBER;
   const su2double fourThird = 4.0/3.0;
   const su2double x = val_coords[0];
