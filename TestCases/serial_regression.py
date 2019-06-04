@@ -1065,6 +1065,39 @@ def main():
     mms_fvm_inc_ns.timeout   = 1600
     mms_fvm_inc_ns.tol       = 0.0001
     test_list.append(mms_fvm_inc_ns)
+
+    # DG, compressible, euler
+    ringleb_dg_euler           = TestCase('ringleb_dg_euler')
+    ringleb_dg_euler.cfg_dir   = "mms/dg_ringleb"
+    ringleb_dg_euler.cfg_file  = "ringleb_dg.cfg"
+    ringleb_dg_euler.test_iter = 100
+    ringleb_dg_euler.test_vals = [-5.136652, -4.724941, 0.000000, 0.000000] #last 4 columns
+    ringleb_dg_euler.su2_exec  = "SU2_CFD"
+    ringleb_dg_euler.timeout   = 1600
+    ringleb_dg_euler.tol       = 0.0001
+    test_list.append(ringleb_dg_euler)
+
+    # DG, compressible, laminar N-S
+    mms_dg_ns           = TestCase('mms_dg_ns')
+    mms_dg_ns.cfg_dir   = "mms/dg_navierstokes"
+    mms_dg_ns.cfg_file  = "lam_mms_dg.cfg"
+    mms_dg_ns.test_iter = 100
+    mms_dg_ns.test_vals = [-1.845393, 3.520699, 0.000000, 0.000000] #last 4 columns
+    mms_dg_ns.su2_exec  = "SU2_CFD"
+    mms_dg_ns.timeout   = 1600
+    mms_dg_ns.tol       = 0.0001
+    test_list.append(mms_dg_ns)
+
+    # DG, compressible, laminar N-S 3D
+    mms_dg_ns_3d           = TestCase('mms_dg_ns_3d')
+    mms_dg_ns_3d.cfg_dir   = "mms/dg_navierstokes_3d"
+    mms_dg_ns_3d.cfg_file  = "lam_mms_dg_3d.cfg"
+    mms_dg_ns_3d.test_iter = 100
+    mms_dg_ns_3d.test_vals = [-0.146826, 5.356413, 0.000000, 0.000000] #last 4 columns
+    mms_dg_ns_3d.su2_exec  = "SU2_CFD"
+    mms_dg_ns_3d.timeout   = 1600
+    mms_dg_ns_3d.tol       = 0.0001
+    test_list.append(mms_dg_ns_3d)
     
     ######################################
     ### RUN TESTS                      ###
