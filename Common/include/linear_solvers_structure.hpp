@@ -67,10 +67,41 @@ using namespace std;
  * matrix-vector products and preconditioners to different problems
  * that may arise in a hierarchical solver (i.e. multigrid).
  */
+template<class ScalarType>
 class CSysSolve {
-  
+
+public:
+  /*--- Some typedefs for simplicity ---*/
+  typedef CSysVector<ScalarType> VectorType;
+  typedef CSysMatrix<ScalarType> MatrixType;
+  typedef CMatrixVectorProduct<ScalarType> ProductType;
+  typedef CPreconditioner<ScalarType> PrecondType;
+
 private:
-  
+
+  bool mesh_deform;    /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  ScalarType Residual; /*!< \brief Residual at the end of a call to Solve. */
+
+  bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
+  bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
+  bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
+
+  VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
+  VectorType A_x;    /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
+  VectorType p;      /*!< \brief Direction in CG and BCGSTAB. */
+  VectorType z;      /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
+
+  VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+
+  vector<VectorType> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  vector<VectorType> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+
+  VectorType  LinSysRes_tmp;  /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
+  VectorType  LinSysSol_tmp;  /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
+  VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
+  VectorType* LinSysSol_ptr;  /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
+
   /*!
    * \brief sign transfer function
    * \param[in] x - value having sign prescribed
@@ -80,28 +111,28 @@ private:
    * so, feel free to delete this and replace it as needed with the
    * appropriate global function
    */
-  su2double Sign(const su2double & x, const su2double & y) const;
+  ScalarType Sign(const ScalarType & x, const ScalarType & y) const;
   
   /*!
    * \brief applys a Givens rotation to a 2-vector
    * \param[in] s - sine of the Givens rotation angle
    * \param[in] c - cosine of the Givens rotation angle
-   * \param[in, out] h1 - first element of 2x1 vector being transformed
-   * \param[in, out] h2 - second element of 2x1 vector being transformed
+   * \param[in,out] h1 - first element of 2x1 vector being transformed
+   * \param[in,out] h2 - second element of 2x1 vector being transformed
    */
-  void ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2);
+  void ApplyGivens(const ScalarType & s, const ScalarType & c, ScalarType & h1, ScalarType & h2);
   
   /*!
    * \brief generates the Givens rotation matrix for a given 2-vector
-   * \param[in, out] dx - element of 2x1 vector being transformed
-   * \param[in, out] dy - element of 2x1 vector being set to zero
-   * \param[in, out] s - sine of the Givens rotation angle
-   * \param[in, out] c - cosine of the Givens rotation angle
+   * \param[in,out] dx - element of 2x1 vector being transformed
+   * \param[in,out] dy - element of 2x1 vector being set to zero
+   * \param[in,out] s - sine of the Givens rotation angle
+   * \param[in,out] c - cosine of the Givens rotation angle
    *
    * Based on givens() of SPARSKIT, which is based on p.202 of
    * "Matrix Computations" by Golub and van Loan.
    */
-  void GenerateGivens(su2double & dx, su2double & dy, su2double & s, su2double & c);
+  void GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c);
   
   /*!
    * \brief finds the solution of the upper triangular system Hsbg*x = rhs
@@ -114,8 +145,8 @@ private:
    * \pre the upper Hessenberg matrix has been transformed into a
    * triangular matrix.
    */
-  void SolveReduced(const int & n, const vector<vector<su2double> > & Hsbg,
-                    const vector<su2double> & rhs, vector<su2double> & x);
+  void SolveReduced(const int & n, const vector<vector<ScalarType> > & Hsbg,
+                    const vector<ScalarType> & rhs, vector<ScalarType> & x);
   
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
@@ -135,7 +166,7 @@ private:
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w);
+  void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w);
   
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -145,7 +176,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(const string & solver, const su2double & restol, const su2double & resinit);
+  void WriteHeader(const string & solver, const ScalarType & restol, const ScalarType & resinit);
   
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -155,9 +186,28 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHistory(const int & iter, const su2double & res, const su2double & resinit);
+  void WriteHistory(const int & iter, const ScalarType & res, const ScalarType & resinit);
   
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in,out] LinSysSol - Linear system solution
+   */
+  void HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol);
+  
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \param[out] LinSysSol - Linear system solution
+   */
+  void HandleTemporariesOut(CSysVector<su2double> & LinSysSol);
+
 public:
+  
+  /*!
+   * \brief default constructor of the class.
+   * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
+   */
+  CSysSolve(const bool mesh_deform_mode = false);
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
@@ -167,10 +217,11 @@ public:
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
-  unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, su2double tol,
-                                  unsigned long m, su2double *residual, bool monitoring);
+  unsigned long CG_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
+                             PrecondType & precond, ScalarType tol, unsigned long m,
+                             ScalarType *residual, bool monitoring, CConfig *config);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -182,10 +233,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
-  unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                      CPreconditioner & precond, su2double tol,
-                      unsigned long m, su2double *residual, bool monitoring);
+  unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
+                                 PrecondType & precond, ScalarType tol, unsigned long m,
+                                 ScalarType *residual, bool monitoring, CConfig *config);
 	
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -197,10 +249,11 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
    */
-  unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                        CPreconditioner & precond, su2double tol,
-                        unsigned long m, su2double *residual, bool monitoring);
+  unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
+                                  PrecondType & precond, ScalarType tol, unsigned long m,
+                                  ScalarType *residual, bool monitoring, CConfig *config);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -210,29 +263,25 @@ public:
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+  unsigned long Solve(MatrixType & Jacobian, CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
+                      CGeometry *geometry, CConfig *config);
   
-
   /*!
-   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
+   * \brief Solve the adjoint linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system
    * \param[in] LinSysRes - Linear system residual
    * \param[in] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
-
+  unsigned long Solve_b(MatrixType & Jacobian, CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
+                        CGeometry *geometry, CConfig *config);
+  
   /*!
-   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
-   * \param[in] Jacobian - Jacobian Matrix for the linear system
-   * \param[in] LinSysRes - Linear system residual
-   * \param[in] LinSysSol - Linear system solution
-   * \param[in] geometry -  Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Get the final residual.
+   * \return The residual at the end of Solve
    */
-  void SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
-
+  ScalarType GetResidual(void) const;
 
 };
 

@@ -6,7 +6,7 @@
  #if !defined __STDC_FORMAT_MACROS
  #define __STDC_FORMAT_MACROS
  #endif
- #if defined _WIN32 && _MSC_VER < 1700 
+ #if defined _WIN32 && _MSC_VER < 1800 
  #ifndef _MSC_VER 
  #error "Use this header only with Microsoft Visual C++ compilers!"
  #endif 
