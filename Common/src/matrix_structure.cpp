@@ -1321,12 +1321,14 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
     
     /*--- Define the basic linelets, starting from each vertex ---*/
     
+    iLinelet = 0;
+    
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
           (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
           (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-        iLinelet = 0;
+          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
+      {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           LineletPoint[iLinelet].push_back(iPoint);
