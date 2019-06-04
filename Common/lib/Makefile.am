@@ -96,6 +96,7 @@ lib_sources = \
   ../include/wall_model.inl \
   ../include/toolboxes/printing_toolbox.hpp \
   ../include/toolboxes/MMS/CVerificationSolution.hpp \
+  ../include/toolboxes/MMS/CVerificationSolution.inl \
   ../include/toolboxes/MMS/CIncTGVSolution.hpp \
   ../include/toolboxes/MMS/CInviscidVortexSolution.hpp \
   ../include/toolboxes/MMS/CMMSIncEulerSolution.hpp \

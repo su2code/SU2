@@ -3165,7 +3165,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
         su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-      
+
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
         VerificationSolution->GetInitialCondition(coor, solDOF);
       }
     }
@@ -7377,8 +7380,8 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
       /*--- Reset the global error measures to zero. ---*/
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        SetError_RMS(iVar, 0.0);
-        SetError_Max(iVar, 0.0, 0);
+        VerificationSolution->SetError_RMS(iVar, 0.0);
+        VerificationSolution->SetError_Max(iVar, 0.0, 0);
       }
 
       /*--- Loop over the owned elements. It is not possible to loop directly over the owned
@@ -7401,14 +7404,14 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
           /* Increment the global error measures */
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-            AddError_RMS(iVar, error[iVar]*error[iVar]);
-            AddError_Max(iVar, fabs(error[iVar]), globalIndex, coor);
+            VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
+            VerificationSolution->AddError_Max(iVar, fabs(error[iVar]), globalIndex, coor);
           }
         }
       }
 
       /* Finalize the calculation of the global error measures. */
-      SetVerificationError(nDOFsGlobal, config);
+      VerificationSolution->SetVerificationError(nDOFsGlobal, config);
 
       /*--- Screen output of the error metrics. This can be improved
        once the new output classes are in place. ---*/
@@ -7422,26 +7425,26 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
           cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
 
-          cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << GetError_RMS(0) << "     | ";
-          cout << setw(20) << "Max Error  [Rho]: " << setw(12) << GetError_Max(0);
+          cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
+          cout << setw(20) << "Max Error  [Rho]: " << setw(12) << VerificationSolution->GetError_Max(0);
           cout << endl;
 
-          cout << setw(20) << "RMS Error [RhoU]: " << setw(12) << GetError_RMS(1) << "     | ";
-          cout << setw(20) << "Max Error [RhoU]: " << setw(12) << GetError_Max(1);
+          cout << setw(20) << "RMS Error [RhoU]: " << setw(12) << VerificationSolution->GetError_RMS(1) << "     | ";
+          cout << setw(20) << "Max Error [RhoU]: " << setw(12) << VerificationSolution->GetError_Max(1);
           cout << endl;
 
-          cout << setw(20) << "RMS Error [RhoV]: " << setw(12) << GetError_RMS(2) << "     | ";
-          cout << setw(20) << "Max Error [RhoV]: " << setw(12) << GetError_Max(2);
+          cout << setw(20) << "RMS Error [RhoV]: " << setw(12) << VerificationSolution->GetError_RMS(2) << "     | ";
+          cout << setw(20) << "Max Error [RhoV]: " << setw(12) << VerificationSolution->GetError_Max(2);
           cout << endl;
 
           if (nDim == 3) {
-            cout << setw(20) << "RMS Error [RhoW]: " << setw(12) << GetError_RMS(3) << "     | ";
-            cout << setw(20) << "Max Error [RhoW]: " << setw(12) << GetError_Max(3);
+            cout << setw(20) << "RMS Error [RhoW]: " << setw(12) << VerificationSolution->GetError_RMS(3) << "     | ";
+            cout << setw(20) << "Max Error [RhoW]: " << setw(12) << VerificationSolution->GetError_Max(3);
             cout << endl;
           }
 
-          cout << setw(20) << "RMS Error [RhoE]: " << setw(12) << GetError_RMS(nDim+1) << "     | ";
-          cout << setw(20) << "Max Error [RhoE]: " << setw(12) << GetError_Max(nDim+1);
+          cout << setw(20) << "RMS Error [RhoE]: " << setw(12) << VerificationSolution->GetError_RMS(nDim+1) << "     | ";
+          cout << setw(20) << "Max Error [RhoE]: " << setw(12) << VerificationSolution->GetError_Max(nDim+1);
           cout << endl;
 
           cout << "-------------------------------------------------------------------------" << endl << endl;
