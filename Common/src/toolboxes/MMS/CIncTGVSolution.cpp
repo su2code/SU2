@@ -45,6 +45,11 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
                                  CConfig*       config)
 : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
   
+  /*--- Disable this solution for now, as it has not been tested. ---*/
+  
+  SU2_MPI::Error("CIncTGVSolution not yet fully implemented/tested.",
+                 CURRENT_FUNCTION);
+  
   /*--- Write a message that the solution is initialized for the
    Taylor-Green vortex test case. ---*/
   
