@@ -62,21 +62,6 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
   block_weight      = NULL;
   block_inverse     = NULL;
 
-  /*--- Linelet preconditioner ---*/
-  
-  LineletBool     = NULL;
-  LineletPoint    = NULL;
-  UBlock          = NULL;
-  invUBlock       = NULL;
-  LBlock          = NULL;
-  yVector         = NULL;
-  zVector         = NULL;
-  rVector         = NULL;
-  LFBlock         = NULL;
-  LyVector        = NULL;
-  FzVector        = NULL;
-  max_nElem       = 0;
-
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   MatrixMatrixProductJitter 		= NULL;
   MatrixVectorProductJitterBetaOne 	= NULL;
@@ -88,8 +73,6 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix(void) {
-  
-  unsigned long iElem;
 
   /*--- Memory deallocation ---*/
   
@@ -112,27 +95,6 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
   if (aux_vector != NULL)         delete [] aux_vector;
   if (sum_vector != NULL)         delete [] sum_vector;
   if (invM != NULL)               delete [] invM;
-  if (LineletBool != NULL)        delete [] LineletBool;
-  if (LineletPoint != NULL)       delete [] LineletPoint;
-  
-  for (iElem = 0; iElem < max_nElem; iElem++) {
-    if (UBlock[iElem] != NULL)      delete [] UBlock[iElem];
-    if (invUBlock[iElem] != NULL)   delete [] invUBlock[iElem];
-    if (LBlock[iElem] != NULL)      delete [] LBlock[iElem];
-    if (yVector[iElem] != NULL)     delete [] yVector[iElem];
-    if (zVector[iElem] != NULL)     delete [] zVector[iElem];
-    if (rVector[iElem] != NULL)     delete [] rVector[iElem];
-  }
-  if (UBlock != NULL)     delete [] UBlock;
-  if (invUBlock != NULL)  delete [] invUBlock;
-  if (LBlock != NULL)     delete [] LBlock;
-  if (yVector != NULL)    delete [] yVector;
-  if (zVector != NULL)    delete [] zVector;
-  if (rVector != NULL)    delete [] rVector;
-
-  if (LFBlock != NULL)    delete [] LFBlock;
-  if (LyVector != NULL)   delete [] LyVector;
-  if (FzVector != NULL)   delete [] FzVector;
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   if ( MatrixMatrixProductJitter != NULL ) 		mkl_jit_destroy( MatrixMatrixProductJitter );
@@ -1285,21 +1247,17 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 template<class ScalarType>
 unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
   
-  bool *check_Point, add_point;
+  bool add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
+  unsigned short iMarker, iNode, MeanPoints;
   su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
-  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
+  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets, max_nElem;
   
   /*--- Memory allocation --*/
   
-  check_Point = new bool [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    check_Point[iPoint] = true;
+  vector<bool> check_Point(nPoint,true);
   
-  LineletBool = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-    LineletBool[iPoint] = false;
+  LineletBool.resize(nPoint,false);
   
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1317,7 +1275,7 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
     
     /*--- Basic initial allocation ---*/
     
-    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
+    LineletPoint.resize(nLinelet);
     
     /*--- Define the basic linelets, starting from each vertex ---*/
     
@@ -1450,28 +1408,9 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
   
   /*--- Memory allocation --*/
   
-  UBlock = new ScalarType* [max_nElem];
-  invUBlock = new ScalarType* [max_nElem];
-  LBlock = new ScalarType* [max_nElem];
-  yVector = new ScalarType* [max_nElem];
-  zVector = new ScalarType* [max_nElem];
-  rVector = new ScalarType* [max_nElem];
-  for (iElem = 0; iElem < max_nElem; iElem++) {
-    UBlock[iElem] = new ScalarType [nVar*nVar];
-    invUBlock[iElem] = new ScalarType [nVar*nVar];
-    LBlock[iElem] = new ScalarType [nVar*nVar];
-    yVector[iElem] = new ScalarType [nVar];
-    zVector[iElem] = new ScalarType [nVar];
-    rVector[iElem] = new ScalarType [nVar];
-  }
-  
-  LFBlock = new ScalarType [nVar*nVar];
-  LyVector = new ScalarType [nVar];
-  FzVector = new ScalarType [nVar];
-  
-  /*--- Memory deallocation --*/
-  
-  delete [] check_Point;
+  LineletUpper.resize(max_nElem,NULL);
+  LineletInvDiag.resize(max_nElem*nVar*nVar,0.0);
+  LineletVector.resize(max_nElem*nVar,0.0);
   
   return MeanPoints;
   
@@ -1480,100 +1419,108 @@ unsigned short CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geo
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                               CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
-  long iElemLoop;
-  ScalarType *block;
-  
-  if (size == SINGLE_NODE) {
-    
-    /*--- Jacobi preconditioning if there is no linelet ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      if (!LineletBool[iPoint])
-        MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
-    
-    /*--- MPI Parallelization ---*/
-    
-    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-    
-    /*--- Solve linelet using a Thomas' algorithm ---*/
-    
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      
-      nElem = LineletPoint[iLinelet].size();
-      
-      /*--- Copy vec vector to the new structure ---*/
-      
-      for (iElem = 0; iElem < nElem; iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        for (iVar = 0; iVar < nVar; iVar++)
-          rVector[iElem][iVar] = vec[(unsigned long)(iPoint*nVar+iVar)];
-      }
-      
-      /*--- Initialization (iElem = 0) ---*/
-      
-      iPoint = LineletPoint[iLinelet][0];
-      block = GetBlock(iPoint, iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        yVector[0][iVar] = rVector[0][iVar];
-        for (jVar = 0; jVar < nVar; jVar++)
-          UBlock[0][iVar*nVar+jVar] = block[iVar*nVar+jVar];
-      }
-      
-      /*--- Main loop (without iElem = 0) ---*/
-      
-      for (iElem = 1; iElem < nElem; iElem++) {
-        
-        im1Point = LineletPoint[iLinelet][iElem-1];
-        iPoint = LineletPoint[iLinelet][iElem];
-        
-        MatrixInverse(UBlock[iElem-1], invUBlock[iElem-1]);
-        block = GetBlock(iPoint, im1Point); MatrixMatrixProduct(block, invUBlock[iElem-1], LBlock[iElem]);
-        block = GetBlock(im1Point, iPoint); MatrixMatrixProduct(LBlock[iElem], block, LFBlock);
-        block = GetBlock(iPoint, iPoint); MatrixSubtraction(block, LFBlock, UBlock[iElem]);
-        
-        /*--- Forward substituton ---*/
-        
-        MatrixVectorProduct(LBlock[iElem], yVector[iElem-1], LyVector);
-        VectorSubtraction(rVector[iElem], LyVector, yVector[iElem]);
-        
-      }
-      
-      /*--- Backward substituton ---*/
-      
-      MatrixInverse(UBlock[nElem-1], invUBlock[nElem-1]);
-      MatrixVectorProduct(invUBlock[nElem-1], yVector[nElem-1], zVector[nElem-1]);
-      
-      for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
-        iPoint = LineletPoint[iLinelet][iElemLoop];
-        ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-        block = GetBlock(iPoint, ip1Point); MatrixVectorProduct(block, zVector[iElemLoop+1], FzVector);
-        VectorSubtraction(yVector[iElemLoop], FzVector, aux_vector);
-        MatrixVectorProduct(invUBlock[iElemLoop], aux_vector, zVector[iElemLoop]);
-      }
-      
-      /*--- Copy zVector to the prod vector ---*/
-      
-      for (iElem = 0; iElem < nElem; iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        for (iVar = 0; iVar < nVar; iVar++)
-          prod[(unsigned long)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
-      }
-      
+
+  unsigned long iVar, iElem, nElem, iLinelet, iPoint, im1Point;
+  /*--- Pointers to lower, upper, and diagonal blocks ---*/
+  const ScalarType *l = NULL, *u = NULL, *d = NULL;
+  /*--- Inverse of d_{i-1}, modified d_i, modified b_i (rhs) ---*/
+  ScalarType *inv_dm1 = NULL, *d_prime = NULL, *b_prime = NULL;
+
+//  if (size != SINGLE_NODE)
+//    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
+
+  /*--- Jacobi preconditioning where there is no linelet ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    if (!LineletBool[iPoint])
+      MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+
+  /*--- MPI Parallelization ---*/
+
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+
+  /*--- Solve linelet using the Thomas algorithm ---*/
+
+  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+
+    nElem = LineletPoint[iLinelet].size();
+
+    /*--- Initialize the solution vector with the rhs ---*/
+
+    for (iElem = 0; iElem < nElem; iElem++) {
+      iPoint = LineletPoint[iLinelet][iElem];
+      for (iVar = 0; iVar < nVar; iVar++)
+        LineletVector[iElem*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
-    
-    /*--- MPI Parallelization ---*/
-        
-    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
-    
+
+    /*--- Forward pass, eliminate lower entries, modify diagonal and rhs ---*/
+
+    iPoint = LineletPoint[iLinelet][0];
+    d = GetBlock(iPoint, iPoint);
+    for (iVar = 0; iVar < nVar*nVar; ++iVar)
+      LineletInvDiag[iVar] = d[iVar];
+
+    for (iElem = 1; iElem < nElem; iElem++) {
+
+      /*--- Setup pointers to required matrices and vectors ---*/
+      im1Point = LineletPoint[iLinelet][iElem-1];
+      iPoint = LineletPoint[iLinelet][iElem];
+
+      d = GetBlock(iPoint, iPoint);
+      l = GetBlock(iPoint, im1Point);
+      u = GetBlock(im1Point, iPoint);
+
+      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
+      d_prime = &LineletInvDiag[iElem*nVar*nVar];
+      b_prime = &LineletVector[iElem*nVar];
+
+      /*--- Invert previous modified diagonal ---*/
+      MatrixInverse(inv_dm1, inv_dm1);
+
+      /*--- Left-multiply by lower block to obtain the weight ---*/
+      MatrixMatrixProduct(l, inv_dm1, block_weight);
+
+      /*--- Multiply weight by upper block to modify current diagonal ---*/
+      MatrixMatrixProduct(block_weight, u, d_prime);
+      MatrixSubtraction(d, d_prime, d_prime);
+
+      /*--- Update the rhs ---*/
+      MatrixVectorProduct(block_weight, &LineletVector[(iElem-1)*nVar], aux_vector);
+      VectorSubtraction(b_prime, aux_vector, b_prime);
+
+      /*--- Cache upper block pointer for the backward substitution phase ---*/
+      LineletUpper[iElem-1] = u;
+    }
+
+    /*--- Backwards substitution, LineletVector becomes the solution ---*/
+
+    /*--- x_n = d_n^{-1} * b_n ---*/
+    Gauss_Elimination(&LineletInvDiag[(nElem-1)*nVar*nVar], &LineletVector[(nElem-1)*nVar]);
+
+    /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
+    for (iElem = nElem-1; iElem > 0; --iElem) {
+      inv_dm1 = &LineletInvDiag[(iElem-1)*nVar*nVar];
+      MatrixVectorProduct(LineletUpper[iElem-1], &LineletVector[iElem*nVar], aux_vector);
+      VectorSubtraction(&LineletVector[(iElem-1)*nVar], aux_vector, aux_vector);
+      MatrixVectorProduct(inv_dm1, aux_vector, &LineletVector[(iElem-1)*nVar]);
+    }
+
+    /*--- Copy results to product vector ---*/
+
+    for (iElem = 0; iElem < nElem; iElem++) {
+      iPoint = LineletPoint[iLinelet][iElem];
+      for (iVar = 0; iVar < nVar; iVar++)
+        prod[iPoint*nVar+iVar] = LineletVector[iElem*nVar+iVar];
+    }
+
   }
-  else {
-    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
-  }
-  
+
+  /*--- MPI Parallelization ---*/
+
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+
 }
 
 template<class ScalarType>

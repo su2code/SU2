@@ -91,13 +91,12 @@ private:
   ScalarType *sum_vector;         /*!< \brief Auxiliary array to store intermediate results. */
   ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
   
-  bool *LineletBool;                          /*!< \brief Identify if a point belong to a linelet. */
-  vector<unsigned long> *LineletPoint;        /*!< \brief Linelet structure. */
-  unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
-  ScalarType **UBlock, **invUBlock, **LBlock,
-  **yVector, **zVector, **rVector, *LFBlock,
-  *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
-  unsigned long max_nElem;
+  unsigned long nLinelet;                       /*!< \brief Number of Linelets in the system. */
+  vector<bool> LineletBool;                     /*!< \brief Identify if a point belong to a Linelet. */
+  vector<vector<unsigned long> > LineletPoint;  /*!< \brief Linelet structure. */
+  vector<const ScalarType*> LineletUpper;       /*!< \brief Pointers to the upper blocks of the tri-diag system. */
+  vector<ScalarType> LineletInvDiag;            /*!< \brief Inverse of the diagonal blocks of the tri-diag system. */
+  vector<ScalarType> LineletVector;             /*!< \brief Solution and RHS of the tri-diag system. */
 
 #if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   void * MatrixMatrixProductJitter;                   		/*!< \brief Jitter handle for MKL JIT based GEMM. */
