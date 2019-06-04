@@ -1069,7 +1069,8 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
   
   unsigned long index, index_, iVar;
-  ScalarType *Block_ij, *Block_jk;
+  ScalarType *Block_ij;
+  const ScalarType *Block_jk;
   long iPoint, jPoint, kPoint;
   
 
@@ -1108,12 +1109,12 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
       
       /*--- Check that this column is in the lower triangular portion ---*/
       
-      if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
+      if (jPoint < iPoint) {
         
         /*--- If we're in the lower triangle, get the pointer to this block,
          invert it, and then right multiply against the original block ---*/
         
-        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+        Block_ij = &ILU_matrix[index*nVar*nEqn];
         InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
         MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
         
@@ -1129,9 +1130,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
            upper triangular part, then multiply and modify the matrix.
            Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
           
-          if ((kPoint >= jPoint) && (jPoint < (long)nPointDomain)) {
+          if (kPoint >= jPoint) {
             
-            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+            Block_jk = &ILU_matrix[index_*nVar*nEqn];
             MatrixMatrixProduct(block_weight, Block_jk, block);
             SubtractBlock_ILUMatrix(iPoint, kPoint, block);
             
@@ -1141,7 +1142,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
         /*--- Lastly, store block_weight in the lower triangular part, which
          will be reused during the forward solve in the precon/smoother. ---*/
         
-        SetBlock_ILUMatrix(iPoint, jPoint, block_weight);
+        for (iVar = 0; iVar < nVar*nEqn; ++iVar)
+          Block_ij[iVar] = block_weight[iVar];
         
       }
     }
@@ -1153,7 +1155,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
-  ScalarType *Block_ij;
+  const ScalarType *Block_ij;
   long iPoint, jPoint;
   unsigned short iVar;
   
@@ -1169,8 +1171,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
       jPoint = col_ind_ilu[index];
-      if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
-        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+      if (jPoint < iPoint) {
+        Block_ij = &ILU_matrix[index*nVar*nEqn];
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
         for (iVar = 0; iVar < nVar; iVar++)
           prod[iPoint*nVar+iVar] -= aux_vector[iVar];
@@ -1188,7 +1190,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
     for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
       jPoint = col_ind_ilu[index];
       if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
-        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+        Block_ij = &ILU_matrix[index*nVar*nEqn];
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
         for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
       }
