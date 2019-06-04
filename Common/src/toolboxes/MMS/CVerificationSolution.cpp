@@ -37,7 +37,14 @@
 
 #include "../../../include/toolboxes/MMS/CVerificationSolution.hpp"
 
-CVerificationSolution::CVerificationSolution(void) { }
+CVerificationSolution::CVerificationSolution(void) {
+
+  /*--- Initialize the pointers to NULL. ---*/
+  Error_RMS             = NULL;
+  Error_Max             = NULL;
+  Error_Point_Max       = NULL;
+  Error_Point_Max_Coord = NULL;
+}
 
 CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
                                              unsigned short val_nVar,
@@ -53,10 +60,38 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
   
   nDim = val_nDim;
   nVar = val_nVar;
-  
+
+  /*--- Allocate space for global error metrics for verification. ---*/
+  Error_RMS = new su2double[nVar];
+  Error_Max = new su2double[nVar];
+
+  Error_Point_Max = new unsigned long[nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Error_Point_Max[iVar] = 0;
+
+  Error_Point_Max_Coord = new su2double*[nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Error_Point_Max_Coord[iVar] = new su2double[nDim];
+    for (unsigned short  iDim = 0; iDim < nDim; iDim++)
+      Error_Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 }
 
-CVerificationSolution::~CVerificationSolution(void) { }
+CVerificationSolution::~CVerificationSolution(void) {
+
+  /*--- Release the memory of the pointers, if allocated. ---*/
+  if (Error_RMS != NULL) delete [] Error_RMS;
+  if (Error_Max != NULL) delete [] Error_Max;
+
+  if (Error_Point_Max != NULL) delete [] Error_Point_Max;
+
+  if (Error_Point_Max_Coord != NULL) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete [] Error_Point_Max_Coord[iVar];
+    }
+    delete [] Error_Point_Max_Coord;
+  }
+}
 
 void CVerificationSolution::GetSolution(const su2double *val_coords,
                                         const su2double val_t,
@@ -109,4 +144,50 @@ void CVerificationSolution::GetLocalError(const su2double *val_coords,
   for (unsigned short iVar=0; iVar<nVar; ++iVar)
     val_error[iVar] = val_solution[iVar] - val_error[iVar];
   
+}
+
+void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal,
+                                                 CConfig       *config) {
+
+  /* Disable the reduce for the error to avoid overhead if requested. */
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+
+    /*--- Get the number of ranks and the MPI communicator. ---*/
+    int size = SU2_MPI::GetSize();
+    SU2_MPI::Comm comm = SU2_MPI::GetComm();
+
+    /*--- The local L2 norms must be added to obtain the global value. ---*/
+    vector<su2double> rbufError(nVar,0.0);
+    SU2_MPI::Allreduce(Error_RMS, rbufError.data(), nVar,
+                       MPI_DOUBLE, MPI_SUM, comm);
+
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      SetError_RMS(iVar, max(EPS*EPS, sqrt(rbufError[iVar]/nDOFsGlobal)));
+    }
+
+    /*--- The global maximum norms must be obtained. ---*/
+    rbufError.resize(nVar*size,0.0);
+    SU2_MPI::Allgather(Error_Max, nVar, MPI_DOUBLE, rbufError.data(),
+                       nVar, MPI_DOUBLE, comm);
+
+    vector<unsigned long> rbufPoint(nVar*size);
+    SU2_MPI::Allgather(Error_Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+                       nVar, MPI_UNSIGNED_LONG, comm);
+
+    vector<su2double> sbufCoor(nDim*nVar,0.0);
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        sbufCoor[iVar*nDim+iDim] = Error_Point_Max_Coord[iVar][iDim];
+    }
+
+    vector<su2double> rbufCoor(nDim*nVar*size,0.0);
+    SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
+                       nVar*nDim, MPI_DOUBLE, comm);
+
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(int proc=0; proc<size; ++proc)
+        AddError_Max(iVar, rbufError[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
+                     &rbufCoor[proc*nVar*nDim+iVar*nDim]);
+    }
+  }
 }

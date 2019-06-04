@@ -929,32 +929,6 @@ inline su2double CSolver::GetRes_Max_BGS(unsigned short val_var) { return Residu
 
 inline su2double CSolver::GetRes_FEM(unsigned short val_var) { return 0.0; }
 
-inline void CSolver::SetError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] = val_error; }
-
-inline void CSolver::AddError_RMS(unsigned short val_var, su2double val_error) { Error_RMS[val_var] += val_error; }
-
-inline su2double CSolver::GetError_RMS(unsigned short val_var) { return Error_RMS[val_var]; }
-
-inline void CSolver::SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point) {
-  Error_Max[val_var]       = val_error;
-  Error_Point_Max[val_var] = val_point;
-}
-
-inline void CSolver::AddError_Max(unsigned short val_var, su2double val_error, unsigned long val_point, su2double* val_coord) {
-  if (val_error > Error_Max[val_var]) {
-    Error_Max[val_var] = val_error;
-    Error_Point_Max[val_var] = val_point;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Error_Point_Max_Coord[val_var][iDim] = val_coord[iDim];
-  }
-}
-
-inline su2double CSolver::GetError_Max(unsigned short val_var) { return Error_Max[val_var]; }
-
-inline unsigned long CSolver::GetError_Point_Max(unsigned short val_var) { return Error_Point_Max[val_var]; }
-
-inline su2double* CSolver::GetError_Point_Max_Coord(unsigned short val_var) { return Error_Point_Max_Coord[val_var]; }
-
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
 
 inline su2double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }

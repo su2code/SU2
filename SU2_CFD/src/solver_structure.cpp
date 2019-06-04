@@ -114,10 +114,6 @@ CSolver::CSolver(void) {
 
   /*--- Initialize pointer for any verification solution. ---*/
   VerificationSolution  = NULL;
-  Error_RMS             = NULL;
-  Error_Max             = NULL;
-  Error_Point_Max       = NULL;
-  Error_Point_Max_Coord = NULL;
   
   /*--- Flags for the periodic BC communications. ---*/
   
@@ -244,18 +240,6 @@ CSolver::~CSolver(void) {
   if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
 
   if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
-  
-  if (Error_RMS != NULL) delete [] Error_RMS;
-  if (Error_Max != NULL) delete [] Error_Max;
-  
-  if (Error_Point_Max != NULL) delete [] Error_Point_Max;
-  
-  if (Error_Point_Max_Coord != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      delete [] Error_Point_Max_Coord[iVar];
-    }
-    delete [] Error_Point_Max_Coord;
-  }
   
 }
 
@@ -5413,73 +5397,6 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
     case USER_DEFINED_SOLUTION:
       VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
   }
-  
-  /*--- Allocate space for global error metrics for verification. ---*/
-  
-  if (VerificationSolution) {
-    
-    Error_RMS = new su2double[nVar];
-    Error_Max = new su2double[nVar];
-    
-    /*--- Define some structures for locating max error ---*/
-    
-    Error_Point_Max = new unsigned long[nVar];
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Error_Point_Max[iVar] = 0;
-    
-    Error_Point_Max_Coord = new su2double*[nVar];
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Error_Point_Max_Coord[iVar] = new su2double[nDim];
-      for (unsigned short  iDim = 0; iDim < nDim; iDim++)
-        Error_Point_Max_Coord[iVar][iDim] = 0.0;
-    }
-    
-  }
-  
-}
-
-void CSolver::SetVerificationError(unsigned long nDOFsGlobal,
-                                   CConfig       *config) {
-  unsigned short iVar;
-  
-  /* Disable the reduce for the error to avoid overhead if requested. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-    
-    /*--- The local L2 norms must be added to obtain the global value. ---*/
-    vector<su2double> rbufError(nVar,0.0);
-    SU2_MPI::Allreduce(Error_RMS, rbufError.data(), nVar,
-                       MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
-    for(iVar=0; iVar<nVar; ++iVar) {
-      SetError_RMS(iVar, max(EPS*EPS, sqrt(rbufError[iVar]/nDOFsGlobal)));
-    }
-    
-    /*--- The global maximum norms must be obtained. ---*/
-    rbufError.resize(nVar*size,0.0);
-    SU2_MPI::Allgather(Error_Max, nVar, MPI_DOUBLE, rbufError.data(),
-                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-    
-    vector<unsigned long> rbufPoint(nVar*size);
-    SU2_MPI::Allgather(Error_Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
-                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    
-    vector<su2double> sbufCoor(nDim*nVar,0.0);
-    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        sbufCoor[iVar*nDim+iDim] = Error_Point_Max_Coord[iVar][iDim];
-    }
-    
-    vector<su2double> rbufCoor(nDim*nVar*size,0.0);
-    SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
-                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
-    
-    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-      for(int proc=0; proc<size; ++proc)
-        AddError_Max(iVar, rbufError[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
-                   &rbufCoor[proc*nVar*nDim+iVar*nDim]);
-    }
-  }
-  
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
