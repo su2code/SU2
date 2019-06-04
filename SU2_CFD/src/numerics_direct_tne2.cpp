@@ -2504,7 +2504,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
-  T_min   = 1800.0;
+  T_min   = 800.0;
   epsilon = 80;
 
   /*--- Define preferential dissociation coefficient ---*/
