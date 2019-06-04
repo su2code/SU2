@@ -246,6 +246,38 @@ private:
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
   void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  
+  /*!
+   * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
+   */
+  void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
+   */
+  void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
+   */
+  void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return Result of the product (stored at *prod_row_vector).
+   */
+  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
 
 public:
   
@@ -390,38 +422,6 @@ public:
    * \param[in] i - Index of the row.
    */
   void DeleteValsRowi(unsigned long i);
-  
-  /*!
-   * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
-   */
-  void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
-   */
-  void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
-   */
-  void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of i-th row of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return Result of the product (stored at *prod_row_vector).
-   */
-  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i);
   
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
