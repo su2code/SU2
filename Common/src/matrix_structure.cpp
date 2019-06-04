@@ -353,6 +353,10 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
       ILU_matrix = new ScalarType [nnz_ilu*nVar*nEqn];
       for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
       
+      invM = new ScalarType [nPointDomain*nVar*nEqn];
+      for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+      
+      DiagInverted.resize(nPointDomain,false);
     }
     
   }
@@ -1073,6 +1077,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
   const ScalarType *Block_jk;
   long iPoint, jPoint, kPoint;
   
+  fill(DiagInverted.begin(), DiagInverted.end(), false);
 
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm, so that we have the factorization stored
@@ -1114,9 +1119,12 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
         /*--- If we're in the lower triangle, get the pointer to this block,
          invert it, and then right multiply against the original block ---*/
         
+        if (!DiagInverted[jPoint]) {
+          InverseDiagonalBlock_ILUMatrix(jPoint, &invM[jPoint*nVar*nVar]);
+          DiagInverted[jPoint] = true;
+        }
         Block_ij = &ILU_matrix[index*nVar*nEqn];
-        InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
-        MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
+        MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], block_weight);
         
         /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
         
@@ -1148,7 +1156,13 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
       }
     }
   }
-  
+
+  /*--- On coarse grids we are not guaranteed to have gone through all diagonal blocks above ---*/
+
+  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++)
+    if (!DiagInverted[iPoint])
+      InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint*nVar*nVar]);
+
 }
 
 template<class ScalarType>
@@ -1185,21 +1199,18 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   for (iPoint = nPointDomain-1; iPoint >= 0; iPoint--) {
 
     for (iVar = 0; iVar < nVar; iVar++)
-      sum_vector[iVar] = 0.0;
+      sum_vector[iVar] = prod[iPoint*nVar+iVar];
 
     for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
       jPoint = col_ind_ilu[index];
       if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
         Block_ij = &ILU_matrix[index*nVar*nEqn];
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
-        for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
+        for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] -= aux_vector[iVar];
       }
     }
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod[iPoint*nVar+iVar] -= sum_vector[iVar];
-
-    Gauss_Elimination_ILUMatrix(iPoint, &prod[iPoint*nVar]);
+    MatrixVectorProduct(&invM[iPoint*nVar*nVar], sum_vector, &prod[iPoint*nVar]);
   }
   
   /*--- MPI Parallelization ---*/
