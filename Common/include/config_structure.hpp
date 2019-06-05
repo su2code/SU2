@@ -405,6 +405,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  su2double PhysicalTime;                       /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
   unsigned short nLevels_TimeAccurateLTS;       /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;              /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;                   /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
@@ -1082,6 +1083,7 @@ private:
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
+  unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -3125,6 +3127,18 @@ public:
    * \return Current internal iteration.
    */
   unsigned long GetIntIter(void);
+
+  /*!
+   * \brief Set the current physical time.
+   * \param[in] val_t - Current physical time.
+   */
+  void SetPhysicalTime(su2double val_t);
+  
+  /*!
+   * \brief Get the current physical time.
+   * \return Current physical time.
+   */
+  su2double GetPhysicalTime(void);
   
   /*!
    * \brief Get the frequency for writing the solution file.
@@ -9029,6 +9043,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+
+  /*!
+   * \brief Get the verification solution.
+   * \return The verification solution to be used.
+   */
+  unsigned short GetVerification_Solution(void);
   
   /*!
    * \brief Get topology optimization.
