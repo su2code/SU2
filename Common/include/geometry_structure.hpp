@@ -3002,51 +3002,6 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 };
 
 /*! 
- * \class CPeriodicGeometry
- * \brief Class for defining a periodic boundary condition.
- * \author T. Economon, F. Palacios
- */
-class CPeriodicGeometry : public CGeometry {
-	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
-	unsigned long *nNewElem_BoundPer;			/*!< \brief Number of new periodic elements of the boundary. */
-
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPeriodicGeometry(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CPeriodicGeometry(void);
-
-	/*! 
-	 * \brief Set the periodic boundaries of the grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Tecplot 
-	 *            information is going to be stored.
-	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
-
-	/*! 
-	 * \brief Write the .su2 file.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
-};
-
-/*! 
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
