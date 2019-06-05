@@ -352,7 +352,7 @@ bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
 
   /*--- Store the density from the previous iteration. ---*/
   
-  Density_Old = FluidModel->GetDensity();
+  Density_Old = GetDensity();
   
   /*--- Set the value of the pressure ---*/
 
@@ -491,7 +491,7 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
 
   /*--- Store the density from the previous iteration. ---*/
   
-  Density_Old = FluidModel->GetDensity();
+  Density_Old = GetDensity();
   
   /*--- Set the value of the pressure ---*/
   
