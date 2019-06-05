@@ -94,6 +94,21 @@ lib_sources = \
   ../include/adt_structure.inl \
   ../include/wall_model.hpp \
   ../include/wall_model.inl \
+  ../include/toolboxes/printing_toolbox.hpp \
+  ../include/toolboxes/MMS/CVerificationSolution.hpp \
+  ../include/toolboxes/MMS/CVerificationSolution.inl \
+  ../include/toolboxes/MMS/CIncTGVSolution.hpp \
+  ../include/toolboxes/MMS/CInviscidVortexSolution.hpp \
+  ../include/toolboxes/MMS/CMMSIncEulerSolution.hpp \
+  ../include/toolboxes/MMS/CMMSIncNSSolution.hpp \
+  ../include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp \
+  ../include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp \
+  ../include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp \
+  ../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp \
+  ../include/toolboxes/MMS/CNSUnitQuadSolution.hpp \
+  ../include/toolboxes/MMS/CRinglebSolution.hpp \
+  ../include/toolboxes/MMS/CTGVSolution.hpp \
+  ../include/toolboxes/MMS/CUserDefinedSolution.hpp \
   ../src/fem_cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/blas_structure.cpp \
@@ -122,7 +137,20 @@ lib_sources = \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
-  ../src/toolboxes/printing_toolbox.cpp 
+  ../src/toolboxes/printing_toolbox.cpp \
+  ../src/toolboxes/MMS/CVerificationSolution.cpp \
+  ../src/toolboxes/MMS/CIncTGVSolution.cpp \
+  ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \
+  ../src/toolboxes/MMS/CMMSIncEulerSolution.cpp \
+  ../src/toolboxes/MMS/CMMSIncNSSolution.cpp \
+  ../src/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.cpp \
+  ../src/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.cpp \
+  ../src/toolboxes/MMS/CMMSNSUnitQuadSolution.cpp \
+  ../src/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.cpp \
+  ../src/toolboxes/MMS/CNSUnitQuadSolution.cpp \
+  ../src/toolboxes/MMS/CRinglebSolution.cpp \
+  ../src/toolboxes/MMS/CTGVSolution.cpp \
+  ../src/toolboxes/MMS/CUserDefinedSolution.cpp
 
 lib_cxxflags = -fPIC
 lib_ldadd =
