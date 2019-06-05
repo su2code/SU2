@@ -15930,7 +15930,7 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iDim, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], angles[3] = {0.0,0.0,0.0}, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Coord = NULL, *Buffer_Send_Coord = NULL, *Coord = NULL, *newCoord = NULL;
   su2double translation[3] = {0.0,0.0,0.0};
@@ -15995,7 +15995,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         /*--- Find point and its type of transformation ---*/
         
         iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+        //iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
         
         /*--- Retrieve the supplied periodic information. ---*/
         
@@ -16063,7 +16063,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
 
 void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
   
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iDim, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], angles[3] = {0.0,0.0,0.0}, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_GridVel = NULL, *Buffer_Send_GridVel = NULL, *GridVel = NULL, *newGridVel = NULL;
   
@@ -16128,7 +16128,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
         /*--- Find point and its type of transformation ---*/
         
         iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+        //iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
         
         /*--- Retrieve the supplied periodic information. ---*/
         
@@ -16192,7 +16192,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 
 void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iDim, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], angles[3] = {0.0,0.0,0.0}, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
 
@@ -16259,7 +16259,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
         /*--- Find point and its type of transformation ---*/
 
         iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+        //iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
 
         /*--- Retrieve the supplied periodic information. ---*/
 
@@ -16384,7 +16384,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 				  /*--- Find point and its type of transformation ---*/
 
 				  iPoint = vertex[MarkerR][iVertex]->GetNode();
-				  iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+				  //iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
 
 				  /*--- Retrieve the supplied periodic information. ---*/
 
