@@ -36,11 +36,28 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
+#include "../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+
 
 CSolver::CSolver(void) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  /*--- Set the multigrid level to the finest grid. This can be
+        overwritten in the constructors of the derived classes. ---*/
+  MGLevel = MESH_0;
   
   /*--- Array initialization ---*/
   
@@ -94,6 +111,9 @@ CSolver::CSolver(void) {
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
   
   IterLinSolver = 0;
+
+  /*--- Initialize pointer for any verification solution. ---*/
+  VerificationSolution  = NULL;
   
   /*--- Flags for the periodic BC communications. ---*/
   
@@ -219,6 +239,8 @@ CSolver::~CSolver(void) {
   if (nCol_InletFile    != NULL) {delete [] nCol_InletFile;    nCol_InletFile    = NULL;}
   if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
 
+  if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
+  
 }
 
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
@@ -2209,7 +2231,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
     
   }
-  
+
   delete [] sbuf_residual;
   delete [] rbuf_residual;
   
@@ -5338,6 +5360,43 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (Inlet_Fine   != NULL) delete [] Inlet_Fine;
   delete [] Normal;
   
+}
+
+void CSolver::SetVerificationSolution(unsigned short nDim,
+                                      unsigned short nVar,
+                                      CConfig        *config) {
+
+  /*--- Determine the verification solution to be set and
+        allocate memory for the corresponding class. ---*/
+  switch( config->GetVerification_Solution() ) {
+
+    case NO_VERIFICATION_SOLUTION:
+      VerificationSolution = NULL; break;
+    case INVISCID_VORTEX:
+      VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
+    case RINGLEB:
+      VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
+    case NS_UNIT_QUAD:
+      VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
+    case TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
+    case INC_TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_UNIT_QUAD:
+      VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_UNIT_QUAD_WALL_BC:
+      VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_TWO_HALF_CIRCLES:
+      VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_TWO_HALF_SPHERES:
+      VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_INC_EULER:
+      VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_INC_NS:
+      VerificationSolution = new CMMSIncNSSolution(nDim, nVar, MGLevel, config); break;
+    case USER_DEFINED_SOLUTION:
+      VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
+  }
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
