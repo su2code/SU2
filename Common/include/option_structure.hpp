@@ -175,19 +175,6 @@ enum ANSWER {
 };
 
 /*!
- * \brief Verbosity level
- */
-enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
-  VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
-  VERB_HIGH = 2			/*!< \brief High level of verbosity. */
-};
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
-
-/*!
  * \brief Average method for marker analyze
  */
 enum AVERAGE_TYPE {
