@@ -1,6 +1,6 @@
 ﻿/*!
  * \file solver_structure.cpp
- * \brief Main subrotuines for solving direct, adjoint and linearized problems.
+ * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
