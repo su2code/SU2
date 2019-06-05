@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -4322,7 +4322,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != DISC_ADJ_RANS)) {
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
-    
+  
+  /*--- Check for running SU2_MSH for periodic preprocessing, and throw
+   an error to report that this is no longer necessary. ---*/
+  
+  if ((Kind_SU2 == SU2_MSH) &&
+      (Kind_Adaptation == PERIODIC)) {
+    SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
+                   string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
+                   string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -7859,24 +7869,6 @@ unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
     if (Marker_EngineExhaust[iMarker_Engine] == Marker_CfgFile_TagBound[kMarker_All]) break;
   
   return kMarker_All;
-}
-
-void CConfig::SetnPeriodicIndex(unsigned short val_index) {
-
-  /*--- Store total number of transformations. ---*/
-  nPeriodic_Index = val_index;
-
-  /*--- Allocate memory for centers, angles, translations. ---*/
-  Periodic_Center    = new su2double*[nPeriodic_Index];
-  Periodic_Rotation  = new su2double*[nPeriodic_Index];
-  Periodic_Translate = new su2double*[nPeriodic_Index];
-  
-  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
-    Periodic_Center[i]    = new su2double[3];
-    Periodic_Rotation[i]  = new su2double[3];
-    Periodic_Translate[i] = new su2double[3];
-  }
-  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
