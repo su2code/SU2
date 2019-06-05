@@ -389,6 +389,10 @@ inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker,
 
 inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
 
+inline void CGeometry::SetMGLevel(unsigned short val_iMesh) { MGLevel = val_iMesh; }
+
+inline unsigned short CGeometry::GetMGLevel(void) { return MGLevel; }
+
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
