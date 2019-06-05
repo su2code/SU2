@@ -215,13 +215,13 @@ inline su2double *CPoint::GetCoord_n1 (void) { return Coord_n1; }
 
 inline su2double *CPoint::GetCoord_p1 (void) { return Coord_p1; }
 
-inline void CPoint::SetColor(unsigned short val_color) { color = val_color; }
+inline void CPoint::SetColor(unsigned long val_color) { color = val_color; }
 
 inline void CPoint::SetnNeighbor(unsigned short val_nneighbor) { nNeighbor = val_nneighbor; }
 
 inline unsigned short CPoint::GetnNeighbor(void) { return nNeighbor; }
 
-inline unsigned short CPoint::GetColor(void) { return color; }
+inline unsigned long CPoint::GetColor(void) { return color; }
 
 inline unsigned long CPoint::GetGlobalIndex(void) { return GlobalIndex; }
 
