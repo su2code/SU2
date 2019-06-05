@@ -2046,6 +2046,39 @@ static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCr
 ("HEAVISIDE_UP"  , HEAVISIDE_UP)
 ("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
 
+/*!
+ * \brief the different validation solution
+ */
+enum ENUM_VERIFICATION_SOLUTIONS {
+  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+};
+static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
+("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
+("INVISCID_VORTEX",          INVISCID_VORTEX)
+("RINGLEB",                  RINGLEB)
+("NS_UNIT_QUAD",             NS_UNIT_QUAD)
+("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
+("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
+("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
+("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
+("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
+("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
+("MMS_INC_EULER",            MMS_INC_EULER)
+("MMS_INC_NS",               MMS_INC_NS)
+("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {
