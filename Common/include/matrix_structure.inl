@@ -445,6 +445,46 @@ inline void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long
 }
 
 template<class ScalarType>
+template<class OtherType>
+inline void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b) {
+
+  /*--- Both row and column associated with node i are eliminated (Block_ii = I and all else 0) to preserve eventual symmetry. ---*/
+  /*--- The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
+
+  unsigned long iPoint, iVar, jVar, index, mat_begin;
+
+  ScalarType* block_ii = GetBlock(node_i, node_i);
+
+  /*--- Delete whole row first. ---*/
+  for (index = row_ptr[node_i]*nVar*nVar; index < row_ptr[node_i+1]*nVar*nVar; ++index)
+    matrix[index] = 0.0;
+
+  /*--- Set diagonal of block to 1. ---*/
+  if (block_ii != NULL)
+    for (iVar = 0; iVar < nVar; ++iVar) block_ii[iVar*(nVar+1)] = 1.0;
+
+  /*--- Update b with the column product and delete column. ---*/
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; ++index) {
+      if (col_ind[index] == node_i)
+      {
+        mat_begin = index*nVar*nVar;
+
+        for(iVar = 0; iVar < nVar; ++iVar)
+          for(jVar = 0; jVar < nVar; ++jVar)
+            b[iPoint*nVar+iVar] -= matrix[mat_begin+iVar*nVar+jVar] * x_i[jVar];
+
+        for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
+      }
+    }
+  }
+
+  /*--- Set know solution in rhs vector. ---*/
+  for (iVar = 0; iVar < nVar; iVar++) b[iPoint*nVar+iVar] = x_i[iVar];
+
+}
+
+template<class ScalarType>
 inline CSysMatrixVectorProduct<ScalarType>::CSysMatrixVectorProduct(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;

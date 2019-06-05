@@ -424,6 +424,15 @@ public:
   void DeleteValsRowi(unsigned long i);
   
   /*!
+   * \brief Modifies this matrix (A) and a rhs vector (b) such that (A^-1 * b)_i = x_i.
+   * \param[in] node_i - Index of the node for which to enforce the solution of all DOF's.
+   * \param[in] x_i - Values to enforce (nVar sized).
+   * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
+   */
+  template<class OtherType>
+  void EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+  
+  /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
    * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
    * \param[in] geometry - Geometrical definition of the problem.
