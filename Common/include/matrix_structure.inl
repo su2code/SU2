@@ -453,15 +453,9 @@ inline void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long no
 
   unsigned long iPoint, iVar, jVar, index, mat_begin;
 
-  ScalarType* block_ii = GetBlock(node_i, node_i);
-
   /*--- Delete whole row first. ---*/
   for (index = row_ptr[node_i]*nVar*nVar; index < row_ptr[node_i+1]*nVar*nVar; ++index)
     matrix[index] = 0.0;
-
-  /*--- Set diagonal of block to 1. ---*/
-  if (block_ii != NULL)
-    for (iVar = 0; iVar < nVar; ++iVar) block_ii[iVar*(nVar+1)] = 1.0;
 
   /*--- Update b with the column product and delete column. ---*/
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -474,13 +468,17 @@ inline void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long no
           for(jVar = 0; jVar < nVar; ++jVar)
             b[iPoint*nVar+iVar] -= matrix[mat_begin+iVar*nVar+jVar] * x_i[jVar];
 
-        for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
+        /*--- If on diagonal, set diagonal of block to 1, else delete block. ---*/
+        if (iPoint == node_i)
+          for (iVar = 0; iVar < nVar; ++iVar) matrix[mat_begin+iVar*(nVar+1)] = 1.0;
+        else
+          for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
       }
     }
   }
 
   /*--- Set know solution in rhs vector. ---*/
-  for (iVar = 0; iVar < nVar; iVar++) b[iPoint*nVar+iVar] = x_i[iVar];
+  for (iVar = 0; iVar < nVar; iVar++) b[node_i*nVar+iVar] = x_i[iVar];
 
 }
 
