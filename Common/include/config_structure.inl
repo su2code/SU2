@@ -327,6 +327,10 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline void CConfig::SetPhysicalTime(su2double val_t) { PhysicalTime = val_t; }
+
+inline su2double CConfig::GetPhysicalTime(void) { return PhysicalTime; }
+
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
@@ -1989,6 +1993,8 @@ inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
+
+inline unsigned short CConfig::GetVerification_Solution(void) {return Kind_Verification_Solution;}
 
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
