@@ -2801,9 +2801,15 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         thisFace.CreateUniqueNumberingWithOrientation();
 
         /* Search for thisFace in localFaces. It must be found. */
-        if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-          vector<CFaceOfElement>::iterator low;
-          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        vector<CFaceOfElement>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( thisFaceFound ) {
           low->faceIndicator = iMarker;
 
           /* A few additional checks. */

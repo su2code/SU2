@@ -300,6 +300,7 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
+  unsigned short MGLevel;         /*!< \brief The mesh level index for the current geometry container. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
   /* --- Custom boundary variables --- */
@@ -1698,6 +1699,18 @@ public:
    * \param[in] config - Problem configuration.
    */
   void SetElemVolume(CConfig *config);
+  
+  /*!
+   * \brief Set the multigrid index for the current geometry object.
+   * \param[in] val_iMesh - Multigrid index for current geometry object.
+   */
+  void SetMGLevel(unsigned short val_iMesh);
+  
+  /*!
+   * \brief Get the multigrid index for the current geometry object.
+   * \return Multigrid index for current geometry object.
+   */
+  unsigned short GetMGLevel(void);
 
 };
 
