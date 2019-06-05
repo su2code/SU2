@@ -6815,9 +6815,9 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
   unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long  iPoint, jPoint, iElem;
+  unsigned long  iPoint, jPoint, iElem, nDomain, iDomain, jDomain;
   unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
-  unsigned short nDomain, iNode, iDomain, jDomain, jNode, iProc;
+  unsigned short iNode, jNode, iProc;
   vector<unsigned long>::iterator it;
   
   vector<vector<unsigned long> > SendTransfLocal;	/*!< \brief Vector to store the type of transformation for this send point. */
@@ -6863,7 +6863,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
       iPoint  = elem[iElem]->GetNode(iNode);
       iDomain = node[iPoint]->GetColor();
       
-      if (iDomain == rank) {
+      if (iDomain == (unsigned long) rank) {
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
 
           jPoint  = elem[iElem]->GetNode(jNode);
@@ -6898,7 +6898,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     for (iProc = 0; iProc < elem[iElem]->GetNProcElemIsOnlyInterpolDonor(); iProc++) {
       iDomain = elem[iElem]->GetProcElemIsOnlyInterpolDonor(iProc);
   
-      if(iDomain == rank) {
+      if(iDomain == (unsigned long) rank) {
   
         /*--- This is a halo element that only serves as a donor for interpolation
               on this processor. This means that all its points are halo points as
@@ -6920,7 +6920,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
           jPoint  = elem[iElem]->GetNode(jNode);
           jDomain = node[jPoint]->GetColor();
   
-          if(jDomain == rank)
+          if(jDomain == (unsigned long) rank)
             SendDomainLocal[iDomain].push_back(Local_to_Global_Point[jPoint]);
         }
       }

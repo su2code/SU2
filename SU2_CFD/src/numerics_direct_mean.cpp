@@ -4956,7 +4956,7 @@ void CAvgGrad_Base::ReplaceTauWall(const su2double *val_normal,
   
   /*--- ---*/
   unsigned short iDim,jDim;
-  su2double Area, norm;
+  su2double Area;
   su2double Transpose[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   
   Area = 0.0;
