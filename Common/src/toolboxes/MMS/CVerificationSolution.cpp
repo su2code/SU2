@@ -150,7 +150,7 @@ void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal,
                                                  CConfig       *config) {
 
   /* Disable the reduce for the error to avoid overhead if requested. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 
     /*--- Get the number of ranks and the MPI communicator. ---*/
     int size = SU2_MPI::GetSize();
