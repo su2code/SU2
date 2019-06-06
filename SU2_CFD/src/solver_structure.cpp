@@ -1,6 +1,6 @@
-/*!
+﻿/*!
  * \file solver_structure.cpp
- * \brief Main subrotuines for solving direct, adjoint and linearized problems.
+ * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
@@ -2185,6 +2185,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
+    }
+    if (log10(sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())) > 20 ){
+      SU2_MPI::Error("SU2 has diverged. (Residual > 10^20 detected)", CURRENT_FUNCTION);
     }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
