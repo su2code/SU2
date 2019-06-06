@@ -658,8 +658,11 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
                                                         ScalarType tol, unsigned long m, ScalarType *residual, bool monitoring, CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
-  ScalarType norm_r = 0.0, norm0 = 0.0, omega = 1.0; // hardcoded relaxation factor
+  ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
+  
+  /*--- Relaxation factor, see comments inside the loop over the smoothing iterations. ---*/
+  ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
   if (m < 1) {
     char buf[100];
@@ -667,13 +670,16 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
-  /*--- Allocate/initialize vectors for residual (r), solution increment (z), and matrix-vector product (A_x). ---*/
+  /*--- Allocate vectors for residual (r), solution increment (z), and matrix-vector
+   product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
     z = b;
     A_x = b;
     smooth_ready = true;
   }
+
+  /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
 
   mat_vec(x, A_x);
   r = b; r -= A_x;
@@ -708,15 +714,23 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   for (i=0; i<m; i++) {
 
-    /*--- Compute the solution increment, or "search" direction. ---*/
+    /*--- Compute the solution increment (z), or "search" direction, by applying
+     the preconditioner to the residual, i.e. z = M^{-1} * r. ---*/
 
     precond(r, z);
 
-    /*--- Action of matrix on direction. ---*/
+    /*--- The increment will be added to the solution (with relaxation omega)
+     to update the residual, needed to compute the next increment, we get the
+     product of the matrix with the direction (into A_x) and subtract from the
+     current residual, the system is linear so this saves some computation
+     compared to re-evaluating r = b-A*x. ---*/
 
     mat_vec(z, A_x);
 
-    /*--- Update solution and residual. ---*/
+    /*--- Update solution and residual with relaxation omega. Mathematically this
+     is a modified Richardson iteration for the left-preconditioned system
+     M^{-1}(b-A*x) which converges if ||I-w*M^{-1}*A|| < 1. Combining this method
+     with a Gauss-Seidel preconditioner and w>1 is NOT equivalent to SOR. ---*/
 
     x.Plus_AX(omega, z);
     r.Plus_AX(-omega, A_x);
