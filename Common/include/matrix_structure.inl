@@ -206,13 +206,12 @@ inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long bloc
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
   
-  unsigned long iVar, jVar, index;
+  unsigned long iVar, index;
   
   for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
+      for (iVar = 0; iVar < nVar*nEqn; iVar++)
+        ILU_matrix[index*nVar*nEqn+iVar] = val_block[iVar];
       break;
     }
   }
@@ -238,13 +237,9 @@ inline void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long b
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
   
-  unsigned long iVar, jVar, index;
-  
-  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+  for (unsigned long index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar*nVar+jVar];
+      MatrixSubtraction(&ILU_matrix[index*nVar*nEqn], val_block, &ILU_matrix[index*nVar*nEqn]);
       break;
     }
   }
@@ -253,50 +248,139 @@ inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
+  /*---
+   For compatibility with MKL in discrete adjoint these functions need specialized versions where only the
+   naive implementation is called, these macros avoid copy-pasting the implementation without more templates.
+  ---*/
+#define IMPLEMENTATION                                         \
+  unsigned long iVar, jVar;                                    \
+  for (iVar = 0; iVar < nVar; iVar++) {                        \
+    product[iVar] = 0.0;                                       \
+    for (jVar = 0; jVar < nVar; jVar++)                        \
+      product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];  \
+  }                                                            \
+//#enddef
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
-  if (useMKL) 
-  {
-    MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
-                                      const_cast<ScalarType*>(matrix), product );
-    return;
-  }
+#ifdef USE_MKL
+  /*--- NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup. ---*/
+  MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
+                                    const_cast<ScalarType*>(matrix), product );
+#else
+  IMPLEMENTATION
 #endif
-  
-  unsigned short iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    product[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
-      product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];
-    }
-  }
 }
+#if defined(USE_MKL) && defined(CODI_REVERSE_TYPE)
+template<>
+inline void CSysMatrix<su2double>::MatrixVectorProduct(const su2double *matrix, const su2double *vector, su2double *product) {
+  IMPLEMENTATION
+}
+#endif
+#undef IMPLEMENTATION
+
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
+#define IMPLEMENTATION                                         \
+  unsigned long iVar, jVar;                                    \
+  for (iVar = 0; iVar < nVar; iVar++)                          \
+    for (jVar = 0; jVar < nVar; jVar++)                        \
+      product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];  \
+//#enddef
+
+#ifdef USE_MKL
+  MatrixVectorProductKernelBetaOne(MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(vector),
+                                   const_cast<ScalarType*>(matrix), product );
+#else
+  IMPLEMENTATION
+#endif
+}
+#if defined(USE_MKL) && defined(CODI_REVERSE_TYPE)
+template<>
+inline void CSysMatrix<su2double>::MatrixVectorProductAdd(const su2double *matrix, const su2double *vector, su2double *product) {
+  IMPLEMENTATION
+}
+#endif
+#undef IMPLEMENTATION
+
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
+#define IMPLEMENTATION                                         \
+  unsigned long iVar, jVar;                                    \
+  for (iVar = 0; iVar < nVar; iVar++)                          \
+    for (jVar = 0; jVar < nVar; jVar++)                        \
+      product[iVar] -= matrix[iVar*nVar+jVar] * vector[jVar];  \
+//#enddef
+
+#ifdef USE_MKL
+  MatrixVectorProductKernelAlphaMinusOne(MatrixVectorProductJitterAlphaMinusOne, const_cast<ScalarType*>(vector),
+                                         const_cast<ScalarType*>(matrix), product );
+#else
+  IMPLEMENTATION
+#endif
+}
+#if defined(USE_MKL) && defined(CODI_REVERSE_TYPE)
+template<>
+inline void CSysMatrix<su2double>::MatrixVectorProductSub(const su2double *matrix, const su2double *vector, su2double *product) {
+  IMPLEMENTATION
+}
+#endif
+#undef IMPLEMENTATION
+
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
+#define IMPLEMENTATION                                         \
+  unsigned long iVar, jVar;                                    \
+  for (iVar = 0; iVar < nVar; iVar++)                          \
+    for (jVar = 0; jVar < nVar; jVar++)                        \
+      product[jVar] += matrix[iVar*nVar+jVar] * vector[iVar];  \
+//#enddef
+
+#ifdef USE_MKL
+  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
+                                         const_cast<ScalarType*>(vector), product );
+#else
+  IMPLEMENTATION
+#endif
+}
+#if defined(USE_MKL) && defined(CODI_REVERSE_TYPE)
+template<>
+inline void CSysMatrix<su2double>::MatrixVectorProductTransp(const su2double *matrix, const su2double *vector, su2double *product) {
+  IMPLEMENTATION
+}
+#endif
+#undef IMPLEMENTATION
+
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
+#define IMPLEMENTATION                                                                \
+  unsigned long iVar, jVar, kVar;                                                     \
+  for (iVar = 0; iVar < nVar; iVar++) {                                               \
+    for (jVar = 0; jVar < nVar; jVar++) {                                             \
+      product[iVar*nVar+jVar] = 0.0;                                                  \
+      for (kVar = 0; kVar < nVar; kVar++)                                             \
+        product[iVar*nVar+jVar] += matrix_a[iVar*nVar+kVar]*matrix_b[kVar*nVar+jVar]; \
+    }                                                                                 \
+  }                                                                                   \
+//#enddef
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL)
-  {
-    MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
-                              const_cast<ScalarType*>(matrix_b), product );
-    return;
-  }
+#ifdef USE_MKL
+  MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
+                            const_cast<ScalarType*>(matrix_b), product );
+#else
+  IMPLEMENTATION
 #endif
-  
-  unsigned short iVar, jVar, kVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      product[iVar*nVar+jVar] = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++) {
-        product[iVar*nVar+jVar] += matrix_a[iVar*nVar+kVar]*matrix_b[kVar*nVar+jVar];
-      }
-    }
-  }
 }
+#if defined(USE_MKL) && (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+template<>
+inline void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) {
+  IMPLEMENTATION
+}
+#endif
+#undef IMPLEMENTATION
+
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
@@ -308,7 +392,7 @@ inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
 
-  for(unsigned long iVar = 0; iVar < nVar*nVar; iVar++)
+  for(unsigned long iVar = 0; iVar < nVar*nEqn; iVar++)
     c[iVar] = a[iVar] - b[iVar];
 }
 
@@ -322,18 +406,11 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
 
   if (nVar==1) {vec[0] /= matrix[0]; return;}
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL) {
-    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-    lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1 );
-
-    delete [] ipiv;
-    return;
-  }
-#endif
-
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, mkl_ipiv, vec, 1 );
+#else
   int iVar, jVar, kVar, nvar = int(nVar);
   ScalarType weight;
 
@@ -353,7 +430,7 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
       vec[iVar] -= matrix[iVar*nvar+jVar]*vec[jVar];
     vec[iVar] /= matrix[iVar*nvar+iVar];
   }
-
+#endif
 }
 
 template<class ScalarType>
@@ -379,18 +456,11 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
   }
 
   /*--- Inversion ---*/
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL) {
-    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-    lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, ipiv, inverse, nVar );
-
-    delete [] ipiv;
-    return;
-  }
-#endif
-
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, mkl_ipiv, inverse, nVar );
+#else
   int kVar;
   ScalarType weight;
 
@@ -419,7 +489,7 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
     for (kVar = 0; kVar < nvar; kVar++)
       inverse[iVar*nvar+kVar] /= block[iVar*nvar+iVar];
   }
-
+#endif
 }
 
 template<class ScalarType>
