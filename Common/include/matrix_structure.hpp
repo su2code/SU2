@@ -358,42 +358,29 @@ public:
                      CGeometry *geometry,
                      CConfig *config,
                      unsigned short commType);
-
+  
   /*!
-   * \brief Send receive the solution using MPI.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  template<class OtherType>
-  void SendReceive_Solution(CSysVector<OtherType> & x, CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SendReceive_SolutionTransposed(CSysVector<ScalarType> & x, CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \brief Get a pointer to the start of block "ij"
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \return Pointer to location in memory where the block starts.
    */
   ScalarType *GetBlock(unsigned long block_i, unsigned long block_j);
   
   /*!
-   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \brief Gets the value of a particular entry in block "ij".
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] iVar - Row of the block.
+   * \param[in] jVar - Column of the block.
+   * \return Value of the block entry.
    */
   ScalarType GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar);
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
    * \param[in] **val_block - Block to set to A(i, j).
    */
   template<class OtherType>
@@ -401,17 +388,17 @@ public:
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] *val_block - Block to set to A(i, j).
    */
   template<class OtherType>
   void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block);
   
   /*!
    * \brief Adds the specified block to the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
    * \param[in] **val_block - Block to add to A(i, j).
    */
   template<class OtherType>
@@ -419,8 +406,8 @@ public:
   
   /*!
    * \brief Subtracts the specified block to the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
@@ -429,7 +416,7 @@ public:
   /*!
    * \brief Adds the specified value to the diagonal of the (i, i) subblock
    *        of the matrix-by-blocks structure.
-   * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
   template<class OtherType>
@@ -438,7 +425,7 @@ public:
   /*!
    * \brief Sets the specified value to the diagonal of the (i, i) subblock
    *        of the matrix-by-blocks structure.
-   * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
   template<class OtherType>
