@@ -705,27 +705,6 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::Gauss_Elimination_ILUMatrix(unsigned long block_i, ScalarType* rhs) {
-  
-//  short iVar, jVar;
-  ScalarType *Block = GetBlock_ILUMatrix(block_i, block_i);
-  
-  /*--- Copy block, as the algorithm modifies the matrix ---*/
-
-  // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
-  memcpy( block, Block, (nVar * nVar * sizeof(ScalarType)) );
-
-  //for (iVar = 0; iVar < (short)nVar; iVar++)
-  //  for (jVar = 0; jVar < (short)nVar; jVar++)
-  //    block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-
-  /*--- Solve system ---*/
-
-  Gauss_Elimination(block, rhs);
-
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index, col_j;

@@ -263,79 +263,6 @@ inline void gemv_impl(const unsigned long n, const T *a, const T *b, T *c) {
   }
 }
 
-template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
-#if !defined(USE_MKL)
-  /*--- Without MKL (default) picture copying the body of gemv_impl here and resolving the conditionals at compilation. ---*/
-  gemv_impl<ScalarType,true,false,false>(nVar, matrix, vector, product);
-}
-#else
-  /*--- NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup. ---*/
-  MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
-                                    const_cast<ScalarType*>(matrix), product );
-}
-#ifdef CODI_REVERSE_TYPE
-/*--- WHEN using MKL, AND compiling for AD, we need to specialize for su2double to avoid mixing incompatible types. ---*/
-template<>
-inline void CSysMatrix<su2double>::MatrixVectorProduct(const su2double *matrix, const su2double *vector, su2double *product) {
-  gemv_impl<su2double,true,false,false>(nVar, matrix, vector, product);
-}
-#endif // CODI_REVERSE_TYPE
-#endif // USE_MKL
-
-template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
-#if !defined(USE_MKL)
-  gemv_impl<ScalarType,true,true,false>(nVar, matrix, vector, product);
-}
-#else
-  MatrixVectorProductKernelBetaOne(MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(vector),
-                                   const_cast<ScalarType*>(matrix), product );
-}
-#ifdef CODI_REVERSE_TYPE
-template<>
-inline void CSysMatrix<su2double>::MatrixVectorProductAdd(const su2double *matrix, const su2double *vector, su2double *product) {
-  gemv_impl<su2double,true,true,false>(nVar, matrix, vector, product);
-}
-#endif // CODI_REVERSE_TYPE
-#endif // USE_MKL
-
-template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
-#if !defined(USE_MKL)
-  gemv_impl<ScalarType,false,true,false>(nVar, matrix, vector, product);
-}
-#else
-  MatrixVectorProductKernelAlphaMinusOne(MatrixVectorProductJitterAlphaMinusOne, const_cast<ScalarType*>(vector),
-                                         const_cast<ScalarType*>(matrix), product );
-}
-#ifdef CODI_REVERSE_TYPE
-template<>
-inline void CSysMatrix<su2double>::MatrixVectorProductSub(const su2double *matrix, const su2double *vector, su2double *product) {
-  gemv_impl<su2double,false,true,false>(nVar, matrix, vector, product);
-}
-#endif // CODI_REVERSE_TYPE
-#endif // USE_MKL
-
-template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
-#if !defined(USE_MKL)
-  gemv_impl<ScalarType,true,true,true>(nVar, matrix, vector, product);
-}
-#else
-  /*--- NOTE: matrix/vector NOT swapped because on this one we want the transpose product. ---*/
-  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
-                                         const_cast<ScalarType*>(vector), product );
-}
-#ifdef CODI_REVERSE_TYPE
-template<>
-inline void CSysMatrix<su2double>::MatrixVectorProductTransp(const su2double *matrix, const su2double *vector, su2double *product) {
-  gemv_impl<su2double,true,true,true>(nVar, matrix, vector, product);
-}
-#endif // CODI_REVERSE_TYPE
-#endif // USE_MKL
-
-
 template<class T>
 inline void gemm_impl(const unsigned long n, const T *a, const T *b, T *c) {
   /*--- Same deal as for GEMV but here only the type is templated. ---*/
@@ -349,22 +276,92 @@ inline void gemm_impl(const unsigned long n, const T *a, const T *b, T *c) {
   }
 }
 
+#define __MATVECPROD_SIGNATURE__(TYPE,NAME) \
+inline void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product)
+
+#define MATVECPROD_SIGNATURE(NAME) template<class ScalarType> __MATVECPROD_SIGNATURE__(ScalarType,NAME)
+
+#if !defined(USE_MKL)
+MATVECPROD_SIGNATURE( MatrixVectorProduct ) {
+  /*---
+   Without MKL (default) picture copying the body of gemv_impl
+   here and resolving the conditionals at compilation.
+  ---*/
+  gemv_impl<ScalarType,true,false,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
+  gemv_impl<ScalarType,true,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
+  gemv_impl<ScalarType,false,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
+  gemv_impl<ScalarType,true,true,true>(nVar, matrix, vector, product);
+}
+
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
-#if !defined(USE_MKL)
   gemm_impl<ScalarType>(nVar, matrix_a, matrix_b, product);
 }
 #else
+MATVECPROD_SIGNATURE( MatrixVectorProduct ) {
+  /*--- With MKL we use the just-in-time kernels instead of the naive implementation. ---*/
+  MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
+                                    const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
+  MatrixVectorProductKernelBetaOne(MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(vector),
+                                   const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
+  MatrixVectorProductKernelAlphaMinusOne(MatrixVectorProductJitterAlphaMinusOne, const_cast<ScalarType*>(vector),
+                                         const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
+  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
+                                         const_cast<ScalarType*>(vector), product );
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
   MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
                             const_cast<ScalarType*>(matrix_b), product );
 }
 #ifdef CODI_REVERSE_TYPE
+/*--- WHEN using MKL, AND compiling for AD, we need to specialize for su2double to avoid mixing incompatible types. ---*/
+#define MATVECPROD_SPECIALIZATION(NAME) template<> __MATVECPROD_SIGNATURE__(su2double,NAME)
+MATVECPROD_SPECIALIZATION( MatrixVectorProduct ) {
+  gemv_impl<su2double,true,false,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductAdd ) {
+  gemv_impl<su2double,true,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductSub ) {
+  gemv_impl<su2double,false,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductTransp ) {
+  gemv_impl<su2double,true,true,true>(nVar, matrix, vector, product);
+}
+
 template<>
 inline void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) {
   gemm_impl<su2double>(nVar, matrix_a, matrix_b, product);
 }
+#undef MATVECPROD_SPECIALIZATION
 #endif // CODI_REVERSE_TYPE
 #endif // USE_MKL
+
+#undef MATVECPROD_SIGNATURE
+#undef __MATVECPROD_SIGNATURE__
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
