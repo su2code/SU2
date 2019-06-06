@@ -15782,9 +15782,12 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[jPoint]->GetTauWall());
     numerics->SetDirTan(node[iPoint]->GetDirTanWM(), node[jPoint]->GetDirTanWM());
     numerics->SetDirNormal(node[iPoint]->GetDirNormalWM(), node[jPoint]->GetDirNormalWM());
-
+    numerics->SetqWall(node[iPoint]->GetHeatFlux(), node[jPoint]->GetHeatFlux());
+    
     /*--- Compute and update residual ---*/
     //cout << " Pi: " << iPoint << " Pj: " << jPoint << " Xi: " << geometry->node[iPoint]->GetCoord(0) << " Yi: " << geometry->node[iPoint]->GetCoord(1) << " Zi: " << geometry->node[iPoint]->GetCoord(2) << " Xj: " << geometry->node[jPoint]->GetCoord(0) << " Yj: " << geometry->node[jPoint]->GetCoord(1) << " Zj: " << geometry->node[jPoint]->GetCoord(2) <<  " PBi: "<< geometry->node[iPoint]->GetPhysicalBoundary() << " PBj: " << geometry->node[jPoint]->GetPhysicalBoundary() << " " ;
+    //cout << " Pi: " << iPoint << " Pj: " << jPoint << " Xi: " << geometry->node[iPoint]->GetCoord(0) << " Yi: " << geometry->node[iPoint]->GetCoord(1) << " Xj: " << geometry->node[jPoint]->GetCoord(0) << " Yj: " << geometry->node[jPoint]->GetCoord(1) <<  " PBi: "<< geometry->node[iPoint]->GetPhysicalBoundary() << " PBj: " << geometry->node[jPoint]->GetPhysicalBoundary() << " " ;
+
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -16592,6 +16595,12 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
             ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
           Res_Conv[nVar-1] += Pressure_b*ProjGridVel*Area;
         }
+        else{
+          ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel += Velocity_b[iDim]*UnitNormal[iDim];
+          Res_Conv[nVar-1] += Pressure_b*ProjGridVel*Area;
+        }
         
         /*--- Apply a weak boundary condition for the energy equation.
          Compute the residual due to the prescribed heat flux. ---*/
@@ -16878,8 +16887,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  //cout << "Isothermal Wall val_marker: " << val_marker << " Marker_Tag: " << Marker_Tag << endl;
-  
   bool wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
   //bool wall_model = false;
   
@@ -16945,6 +16952,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
       eddy_viscosity       = node[iPoint]->GetEddyViscosity();
       
+      thermal_conductivity = Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+      
       if (wall_model){
         
         /*--- Wall functions are used to model the lower part of the boundary
@@ -16958,8 +16967,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         su2double Density_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, ProjGridVel = 0.0, turb_ke = 0.0;
         su2double Velocity_i[3] = {0.0,0.0,0.0}, Velocity_b[3] = {0.0,0.0,0.0};
         su2double Kappa_b, Chi_b, TauWall;
-        
-        thermal_conductivity = node[iPoint]->GetkOverCv() * Cv;
         
         /*--- Get the state i ---*/
         
@@ -17209,8 +17216,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         }
       }
       else{
-        
-        thermal_conductivity = Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
         
         /*--- Store the corrected velocity at the wall which will
          be zero (v = 0), unless there is grid motion (v = u_wall)---*/
@@ -18000,8 +18005,8 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     /* Length Scale can be precompute from DES LengthScale.
      I would like to test the Shear Layer Adapted one*/
     //lenScale    = node[iPoint]->GetDES_LengthScale();
-    //lenScale = pow(geometry->node[iPoint]->GetVolume(),1./3.);
-    lenScale = geometry->node[iPoint]->GetMaxLength();
+    lenScale = pow(geometry->node[iPoint]->GetVolume(),1./3.);
+    //lenScale = geometry->node[iPoint]->GetMaxLength();
 
     /* Compute the eddy viscosity. */
     if (nDim == 2){
@@ -18155,7 +18160,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           node[iPoint]->SetDirTanWM(dirTan);
           node[iPoint]->SetLaminarViscosity(LaminarViscosity);
           node[iPoint]->SetEddyViscosity(0.0);
-          node[iPoint]->SetkOverCv(kOverCvWall);
           node[iPoint]->SetDirNormalWM(Unit_Normal);
           
           //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;

@@ -1445,6 +1445,8 @@ public:
    * \param[in] val_dirnormal_j - Normal direction at point j
    */
   virtual void SetDirNormal(su2double *val_dirnormal_i, su2double *val_dirnormal_j);
+  
+  virtual void SetqWall(su2double val_qWall_i, su2double val_qWall_j);
 
   
   /*!
@@ -3075,12 +3077,14 @@ class CAvgGrad_Base : public CNumerics {
   Mean_Laminar_Viscosity,      /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions). */
-  TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
-  *DirTan_i, *DirTan_j,        /*!< \brief Tangent direction of the Wall shear stress at point i and j (wall functions). */
+  Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions/models). */
+  TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions/models). */
+  *DirTan_i, *DirTan_j,        /*!< \brief Tangent direction of the Wall shear stress at point i and j (wall functions/models). */
   Mean_DirTan[3],              /*!< \brief Mean of the tangent direction. */
   *DirNormal_i, *DirNormal_j,  /*!< \brief Normal direction of the Wall shear stress at point i and j (wall functions). */
-  Mean_DirNormal[3],              /*!< \brief Mean of the normal direction. */
+  Mean_DirNormal[3],           /*!< \brief Mean of the normal direction. */
+  qWall_i, qWall_j,            /*!< \brief Heat Flux at point i and j (wall functions/models). */
+  Mean_qWall,                  /*!< \brief Mean heat flux (wall functions/models). */
   dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
   *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Edge_Vector;                /*!< \brief Vector from point i to point j. */
@@ -3120,9 +3124,12 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_dir_tan - Tangential vector at the exchange location.
    * \param[in] val_tau_wall - The wall stress
    */
-  void ReplaceTauWall(const su2double *val_normal,
+  void ReplaceTauWall(const su2double *val_primvar,
+                      const su2double *val_normal,
                       const su2double *val_dir_tan,
-                      const su2double val_tau_wall);
+                      const su2double *val_dir_normal,
+                      const su2double val_tau_wall,
+                      const su2double val_q_wall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
@@ -3266,6 +3273,8 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
   void SetDirNormal(su2double *val_dirnormal_i, su2double *val_dirnormal_j);
+  
+  void SetqWall(su2double val_qWall_i, su2double val_qWall_j);
   
   /*!
    * \brief Calculate the viscous + turbulent stress tensor

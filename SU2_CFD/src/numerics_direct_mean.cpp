@@ -4950,46 +4950,68 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 }
 
 
-void CAvgGrad_Base::ReplaceTauWall(const su2double *val_normal,
+void CAvgGrad_Base::ReplaceTauWall(const su2double *val_primvar,
+                                   const su2double *val_normal,
                                    const su2double *val_dir_tan,
-                                   const su2double val_tau_wall) {
+                                   const su2double *val_dir_normal,
+                                   const su2double val_tau_wall,
+                                   const su2double val_q_Wall) {
   
   /*--- ---*/
-  unsigned short iDim,jDim;
-  su2double Area, norm;
-  su2double Transpose[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  unsigned short iDim;
+  su2double Area, velWall_tan, Sign;
   
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += val_normal[iDim]*val_normal[iDim];
   Area = sqrt(Area);
   
-  // norm = 0.0;
-  // for (iDim = 0 ; iDim < nDim; iDim++)
-  //   for (jDim = 0 ; jDim < nDim; jDim++)
-  //     norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
-  // norm = sqrt(norm);
-
-  // for (iDim = 0 ; iDim < nDim; iDim++)
-  //   for (jDim = 0 ; jDim < nDim; jDim++)
-  //     tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
-
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      tau[iDim][jDim] = - val_tau_wall * val_dir_tan[iDim] * val_normal[jDim] * Area;
-
-
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      Transpose[iDim][jDim] = tau[jDim][iDim];
-
-  /*--- Shear Stress must be symmetric ---*/
-
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      tau[iDim][jDim] = Transpose[iDim][jDim] + tau[iDim][jDim];
-
-  //cout << " Replace Tau Wall: " << val_normal[0] << " " << val_normal[1] << "  " << val_normal[2] << " "<< val_dir_tan[0] << " " << val_dir_tan[1] << "  " << val_dir_tan[2]  << endl;
+  Sign = 1.0;
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    Sign += val_dir_normal[iDim];
+//  
+//  if (Sign > 0.0) Sign = 1.0;
+//  else Sign = -1.0;
+    
+//  // norm = 0.0;
+//  // for (iDim = 0 ; iDim < nDim; iDim++)
+//  //   for (jDim = 0 ; jDim < nDim; jDim++)
+//  //     norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
+//  // norm = sqrt(norm);
+//
+//  // for (iDim = 0 ; iDim < nDim; iDim++)
+//  //   for (jDim = 0 ; jDim < nDim; jDim++)
+//  //     tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
+//
+//  for (iDim = 0 ; iDim < nDim; iDim++)
+//    for (jDim = 0 ; jDim < nDim; jDim++)
+//      tau[iDim][jDim] = - val_tau_wall * val_dir_tan[iDim] * val_normal[jDim] * Area;
+//
+//
+//  for (iDim = 0 ; iDim < nDim; iDim++)
+//    for (jDim = 0 ; jDim < nDim; jDim++)
+//      Transpose[iDim][jDim] = tau[jDim][iDim];
+//
+//  /*--- Shear Stress must be symmetric ---*/
+//
+//  for (iDim = 0 ; iDim < nDim; iDim++)
+//    for (jDim = 0 ; jDim < nDim; jDim++)
+//      tau[iDim][jDim] = Transpose[iDim][jDim] + tau[iDim][jDim];
+//
+  //cout << " ReplaceTauWall: " << val_tau_wall << " " <<  Area << " " << val_normal[0] << " " << val_normal[1] << " "<< val_dir_tan[0] << " " << val_dir_tan[1] << " " << Sign << endl;
+  
+  /*--- primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  
+  velWall_tan = 0.;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    velWall_tan +=  val_primvar[iDim+1] * val_dir_tan[iDim];
+  
+  Proj_Flux_Tensor[0] = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Proj_Flux_Tensor[iDim+1] = - val_tau_wall * val_dir_tan[iDim] * Sign * Area;
+  Proj_Flux_Tensor[nVar-1] = ( + val_q_Wall - val_tau_wall * Sign * velWall_tan) * Area;
+  
+  //cout << velWall_tan << " " << val_q_Wall << " " << val_tau_wall << endl;
 }
 
 
@@ -5419,9 +5441,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- TODO: - Fix this Mean values of shear stress when using wall functions. ---*/
   
   if (TauWall_i > 0.0 && TauWall_j > 0.0){
-    
     Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
-
+    Mean_qWall   = 0.5*(qWall_i + qWall_j);
     for (iDim = 0; iDim < nDim; iDim++){
       Mean_DirTan[iDim] = 0.5 * (DirTan_i[iDim] + DirTan_j[iDim]);
       Mean_DirNormal[iDim] = 0.5 * (DirNormal_i[iDim] + DirNormal_j[iDim]);
@@ -5430,14 +5451,15 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
   else if (TauWall_i > 0.0){
     Mean_TauWall = TauWall_i;
+    Mean_qWall = qWall_i;
     for (iDim = 0; iDim < nDim; iDim++){
       Mean_DirTan[iDim] = DirTan_i[iDim];
       Mean_DirNormal[iDim] = DirNormal_i[iDim];
     }
-
   } 
   else if (TauWall_j > 0.0){
     Mean_TauWall = TauWall_j;
+    Mean_qWall = qWall_j;
     for (iDim = 0; iDim < nDim; iDim++){
       Mean_DirTan[iDim] = DirTan_j[iDim];
       Mean_DirNormal[iDim] = DirNormal_j[iDim];
@@ -5445,6 +5467,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
   else{
     Mean_TauWall = -1.0;
+    Mean_qWall = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
       Mean_DirTan[iDim] = 0.0;
       Mean_DirNormal[iDim] = 0.0;
@@ -5467,16 +5490,20 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   //if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
   
-  if (Mean_TauWall > 0) ReplaceTauWall(Mean_DirNormal, Mean_DirTan, Mean_TauWall);
-  
-
   //cout << tau[0][0] << " " << tau[0][1] << " " << tau[0][2] << " "  << tau[1][0] << " " << tau[1][1] << " " << tau[1][2] << " " << tau[2][0] << " " << tau[2][1] << " " << tau[2][2] << " " << endl;
   
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
-  GetViscousProjFlux(Mean_PrimVar, Normal);
+  //cout << "Proj_Flux_Tensor: ";
+  if (Mean_TauWall > 0) ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+  else GetViscousProjFlux(Mean_PrimVar, Normal);
 
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    cout << Proj_Flux_Tensor[iVar] << " " ;
+//  cout << endl;
+
+  
   /*--- Update viscous residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
