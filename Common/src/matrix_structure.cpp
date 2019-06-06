@@ -54,7 +54,6 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
   row_ptr_ilu       = NULL;
   col_ind_ilu       = NULL;
   block             = NULL;
-  prod_block_vector = NULL;
   prod_row_vector   = NULL;
   aux_vector        = NULL;
   sum_vector        = NULL;
@@ -62,11 +61,13 @@ CSysMatrix<ScalarType>::CSysMatrix(void) {
   block_weight      = NULL;
   block_inverse     = NULL;
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  MatrixMatrixProductJitter 		= NULL;
-  MatrixVectorProductJitterBetaOne 	= NULL;
-  MatrixVectorProductJitterBetaZero 	= NULL;
-  useMKL 				= false;
+#ifdef USE_MKL
+  MatrixMatrixProductJitter              = NULL;
+  MatrixVectorProductJitterBetaOne       = NULL;
+  MatrixVectorProductJitterBetaZero      = NULL;
+  MatrixVectorProductJitterAlphaMinusOne = NULL;
+  MatrixVectorProductTranspJitterBetaOne = NULL;
+  mkl_ipiv = NULL;
 #endif
   
 }
@@ -90,16 +91,18 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
   if (block_weight != NULL)       delete [] block_weight;
   if (block_inverse != NULL)      delete [] block_inverse;
   
-  if (prod_block_vector != NULL)  delete [] prod_block_vector;
   if (prod_row_vector != NULL)    delete [] prod_row_vector;
   if (aux_vector != NULL)         delete [] aux_vector;
   if (sum_vector != NULL)         delete [] sum_vector;
   if (invM != NULL)               delete [] invM;
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if ( MatrixMatrixProductJitter != NULL ) 		mkl_jit_destroy( MatrixMatrixProductJitter );
-  if ( MatrixVectorProductJitterBetaZero != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
-  if ( MatrixVectorProductJitterBetaOne != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
+#ifdef USE_MKL
+  if ( MatrixMatrixProductJitter != NULL )              mkl_jit_destroy( MatrixMatrixProductJitter );
+  if ( MatrixVectorProductJitterBetaZero != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
+  if ( MatrixVectorProductJitterBetaOne  != NULL )      mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
+  if ( MatrixVectorProductJitterAlphaMinusOne != NULL ) mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
+  if ( MatrixVectorProductTranspJitterBetaOne != NULL ) mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
+  if ( mkl_ipiv != NULL ) delete [] mkl_ipiv;
 #endif
   
 }
@@ -193,22 +196,23 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long nPoint, unsigned long nPoi
 
   /*--- Generate MKL Kernels ---*/
   
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  /*--- Create MKL JIT kernels if not using adjoint solvers ---*/
-  if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-  {
-    useMKL = true;
+#ifdef USE_MKL
+  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
 
-    mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
-    MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
 
-    mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
-    MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
 
-    mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
-    MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
-  }
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar, -1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelAlphaMinusOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterAlphaMinusOne );
 
+  mkl_jit_create_dgemm( &MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, 1, nVar,  1.0, nVar, nVar, 1.0, nVar );
+  MatrixVectorProductTranspKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductTranspJitterBetaOne );
+
+  mkl_ipiv = new lapack_int [ nVar ];
 #endif
   
   /*--- Initialization matrix to zero ---*/
@@ -320,7 +324,6 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
   block_weight      = new ScalarType [nVar*nEqn];
   block_inverse     = new ScalarType [nVar*nEqn];
 
-  prod_block_vector = new ScalarType [nEqn];
   prod_row_vector   = new ScalarType [nVar];
   aux_vector        = new ScalarType [nVar];
   sum_vector        = new ScalarType [nVar];
@@ -332,7 +335,6 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
   for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.0;
   for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.0;
 
-  for (iVar = 0; iVar < nEqn; iVar++)          prod_block_vector[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
@@ -734,9 +736,7 @@ void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, un
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     col_j = col_ind[index];
     if (col_j > row_i) {
-      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod_row_vector[iVar] += prod_block_vector[iVar];
+      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
     }
   }
   
@@ -753,9 +753,7 @@ void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarType> & vec, un
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     col_j = col_ind[index];
     if (col_j < row_i) {
-      MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod_row_vector[iVar] += prod_block_vector[iVar];
+      MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
     }
   }
 
@@ -962,9 +960,7 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsi
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     col_j = col_ind[index];
-    MatrixVectorProduct(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_block_vector);
-    for (iVar = 0; iVar < nVar; iVar++)
-      prod_row_vector[iVar] += prod_block_vector[iVar];
+    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod_row_vector);
   }
   
 }
@@ -972,7 +968,7 @@ void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec, unsi
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
   
-  unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
+  unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
   
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
@@ -992,18 +988,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
       vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-      if (useMKL) 
-      {
-        MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(&vec[vec_begin]), &matrix[mat_begin], &prod[prod_begin] );
-        continue;
-      }
-#endif
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          prod[prod_begin+iVar] += matrix[mat_begin+iVar*nVar+jVar]*vec[vec_begin+jVar];
-        }
-      }
+      MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
   
@@ -1017,7 +1002,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
 
-  unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar , row_i;
+  unsigned long prod_begin, vec_begin, mat_begin, index, row_i;
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
@@ -1033,11 +1018,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
       prod_begin = col_ind[index]*nVar; // offset to beginning of block row_i
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          prod[prod_begin+jVar] += matrix[mat_begin+iVar*nVar+jVar]*vec[vec_begin+iVar];
-        }
-      }
+      MatrixVectorProductTransp(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
 
@@ -1168,10 +1149,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
   
-  unsigned long index;
+  unsigned long index, iVar;
   const ScalarType *Block_ij;
   long iPoint, jPoint;
-  unsigned short iVar;
   
   /*--- Copy vector to then work on prod in place ---*/
   
@@ -1187,9 +1167,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       jPoint = col_ind_ilu[index];
       if (jPoint < iPoint) {
         Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
-        for (iVar = 0; iVar < nVar; iVar++)
-          prod[iPoint*nVar+iVar] -= aux_vector[iVar];
+        MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], &prod[iPoint*nVar]);
       }
     }
   }
@@ -1205,8 +1183,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       jPoint = col_ind_ilu[index];
       if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
         Block_ij = &ILU_matrix[index*nVar*nEqn];
-        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
-        for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] -= aux_vector[iVar];
+        MatrixVectorProductSub(Block_ij, &prod[jPoint*nVar], sum_vector);
       }
     }
 
@@ -1539,13 +1516,9 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res) {
   
-  unsigned long iPoint, iVar;
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     RowProduct(sol, iPoint);
-    for (iVar = 0; iVar < nVar; iVar++) {
-      res[iPoint*nVar+iVar] = prod_row_vector[iVar] - f[iPoint*nVar+iVar];
-    }
+    VectorSubtraction(prod_row_vector, &f[iPoint*nVar], &res[iPoint*nVar]);
   }
   
 }
