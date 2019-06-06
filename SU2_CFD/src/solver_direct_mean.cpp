@@ -190,6 +190,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -373,11 +376,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) 
     nVertex[iMarker] = geometry->nVertex[iMarker];
- 
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
   SetNondimensionalization(config, iMesh);
+  
+  /*--- Check if we are executing a verification case. If so, the
+   VerificationSolution object will be instantiated for a particular
+   option from the available library of verification solutions. Note
+   that this is done after SetNondim(), as problem-specific initial
+   parameters are needed by the solution constructors. ---*/
+  
+  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Allocate the node variables ---*/
   
@@ -2853,7 +2864,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   
   /*--- Write output to the console if this is the master node and first domain ---*/
   
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+  if ((rank == MASTER_NODE) && (MGLevel == MESH_0)) {
     
     cout.precision(6);
     
@@ -3080,6 +3091,28 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
   bool calculate_average = config->GetCompute_Average();
 
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution)  && (ExtIter == 0) && !restart) {
+
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      
+      /*--- Loop over all grid points. ---*/
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
+        
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
+        VerificationSolution->GetInitialCondition(coor, solDOF);
+        
+      }
+    }
+  }
+  
   /*--- Set subsonic initial condition for engine intakes ---*/
   
   if (SubsonicEngine) {
@@ -3499,7 +3532,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-    bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -4190,6 +4223,40 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
+    }
+  }
+  
+  /*--- Check if a verification solution is to be computed. ---*/
+  
+  if ( VerificationSolution ) {
+    if ( VerificationSolution->IsManufacturedSolution() ) {
+      
+      /*--- Get the physical time. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      
+      /*--- Loop over points ---*/
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        
+        /*--- Get control volume size. ---*/
+        su2double Volume = geometry->node[iPoint]->GetVolume();
+        
+        /*--- Get the current point coordinates. ---*/
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the MMS source term. ---*/
+        vector<su2double> sourceMan(nVar,0.0);
+        VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
+        
+        /*--- Compute the residual for this control volume. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] = sourceMan[iVar]*Volume;
+        }
+        
+        /*--- Subtract Residual ---*/
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+      }
     }
   }
   
@@ -5339,6 +5406,9 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   
   SetResidual_RMS(geometry, config);
   
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -5402,6 +5472,10 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   SetResidual_RMS(geometry, config);
 
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
+  
 }
 
 void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -5444,6 +5518,10 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -5554,6 +5632,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -12710,7 +12792,76 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
 
-void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+void CEulerSolver::BC_Custom(CGeometry      *geometry,
+                             CSolver        **solver_container,
+                             CNumerics      *conv_numerics,
+                             CNumerics      *visc_numerics,
+                             CConfig        *config,
+                             unsigned short val_marker) {
+  
+  /* Check for a verification solution. */
+  
+  if (VerificationSolution) {
+    
+    unsigned short iVar;
+    unsigned long iVertex, iPoint, total_index;
+    
+    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    
+    /*--- Get the physical time. ---*/
+    
+    su2double time = 0.0;
+    if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      
+      /*--- Get the point index for the current node. ---*/
+      
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+      
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      
+      if (geometry->node[iPoint]->GetDomain()) {
+        
+        /*--- Get the coordinates for the current node. ---*/
+        
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the conservative state from the verification solution. ---*/
+        
+        VerificationSolution->GetBCState(coor, time, Solution);
+        
+        /*--- For verification cases, we will apply a strong Dirichlet
+         condition by setting the solution values at the boundary nodes
+         directly and setting the residual to zero at those nodes. ---*/
+        
+        node[iPoint]->SetSolution_Old(Solution);
+        node[iPoint]->SetSolution(Solution);
+        node[iPoint]->SetRes_TruncErrorZero();
+        LinSysRes.SetBlock_Zero(iPoint);
+        
+        /*--- Adjust rows of the Jacobian (includes 1 in the diagonal) ---*/
+        
+        if (implicit){
+          for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
+        
+      }
+    }
+    
+  } else {
+    
+    /* The user must specify the custom BC's here. */
+    SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+    
+  }
+  
+}
 
 void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -12949,6 +13100,105 @@ void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
   }
 
+}
+
+void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
+                                            CConfig   *config) {
+
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
+
+  /*--- If this is a verification case, we can compute the global
+   error metrics by using the difference between the local error
+   and the known solution at each DOF. This is then collected into
+   RMS (L2) and maximum (Linf) global error norms. From these
+   global measures, one can compute the order of accuracy. ---*/
+  
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
+                      || (config->GetExtIter() == 1));
+  if( !write_heads ) return;  
+
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
+  if (VerificationSolution) {
+    if (VerificationSolution->ExactSolutionKnown()) {
+
+      /*--- Get the physical time if necessary. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+      /*--- Reset the global error measures to zero. ---*/
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        VerificationSolution->SetError_RMS(iVar, 0.0);
+        VerificationSolution->SetError_Max(iVar, 0.0, 0);
+      }
+    
+      /*--- Loop over all owned points. ---*/
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        su2double *solDOF     = node[iPoint]->GetSolution();
+      
+        /* Get local error from the verification solution class. */
+        vector<su2double> error(nVar,0.0);
+        VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
+      
+        /* Increment the global error measures */
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
+          VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
+                                             geometry->node[iPoint]->GetGlobalIndex(),
+                                             geometry->node[iPoint]->GetCoord());
+        }
+      }
+    
+      /* Finalize the calculation of the global error measures. */
+      VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
+    
+      /*--- Screen output of the error metrics. This can be improved
+       once the new output classes are in place. ---*/
+    
+      if ((rank == MASTER_NODE) && (geometry->GetMGLevel() == MESH_0)) {
+
+        cout.precision(5);
+        cout.setf(ios::scientific, ios::floatfield);
+      
+        if (!config->GetDiscrete_Adjoint()) {
+        
+          cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
+        
+          cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
+          cout << setw(20) << "Max Error  [Rho]: " << setw(12) << VerificationSolution->GetError_Max(0);
+          cout << endl;
+        
+          cout << setw(20) << "RMS Error [RhoU]: " << setw(12) << VerificationSolution->GetError_RMS(1) << "     | ";
+          cout << setw(20) << "Max Error [RhoU]: " << setw(12) << VerificationSolution->GetError_Max(1);
+          cout << endl;
+        
+          cout << setw(20) << "RMS Error [RhoV]: " << setw(12) << VerificationSolution->GetError_RMS(2) << "     | ";
+          cout << setw(20) << "Max Error [RhoV]: " << setw(12) << VerificationSolution->GetError_Max(2);
+          cout << endl;
+        
+          if (nDim == 3) {
+            cout << setw(20) << "RMS Error [RhoW]: " << setw(12) << VerificationSolution->GetError_RMS(3) << "     | ";
+            cout << setw(20) << "Max Error [RhoW]: " << setw(12) << VerificationSolution->GetError_Max(3);
+            cout << endl;
+          }
+        
+          cout << setw(20) << "RMS Error [RhoE]: " << setw(12) << VerificationSolution->GetError_RMS(nDim+1) << "     | ";
+          cout << setw(20) << "Max Error [RhoE]: " << setw(12) << VerificationSolution->GetError_Max(nDim+1);
+          cout << endl;
+        
+          cout << "-------------------------------------------------------------------------" << endl << endl;
+          cout.unsetf(ios_base::floatfield);
+        
+        }
+      }
+    }
+  }
+  
 }
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
@@ -14431,6 +14681,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -14555,11 +14808,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
- 
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
   SetNondimensionalization(config, iMesh);
+  
+  /*--- Check if we are executing a verification case. If so, the
+   VerificationSolution object will be instantiated for a particular
+   option from the available library of verification solutions. Note
+   that this is done after SetNondim(), as problem-specific initial
+   parameters are needed by the solution constructors. ---*/
+  
+  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -15840,7 +16101,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
-  bool wall_model = false;
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -15892,7 +16152,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
+    //  wall_model = (config->GetWall_Functions() && ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) || (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)));
         if (Marker_Tag == Monitoring_Tag)
           Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
@@ -16542,7 +16802,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         su2double Density_b, StaticEnergy_b, Enthalpy_b, Energy_b, VelMagnitude2_b, Pressure_b;
         su2double Density_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, ProjGridVel = 0.0, turb_ke = 0.0;
         su2double Velocity_i[3] = {0.0,0.0,0.0}, Velocity_b[3] = {0.0,0.0,0.0};
-        su2double Kappa_b, Chi_b, TauWall;
+        su2double Kappa_b, Chi_b;
         
         /*--- Get the state i ---*/
         
@@ -17021,7 +17281,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- TODO: Check if the heat flux from the WM needs to be multiplied by the Area.
          If the WM already took it in account.---*/
-        su2double heatflux_WM = node[iPoint]->GetHeatFlux();
+        // su2double heatflux_WM = node[iPoint]->GetHeatFlux();
         //Res_Visc[nDim+1] = heatflux_WM * Area;
         Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
         //cout << heatflux_WM << " " << thermal_conductivity << " " << Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb) << " " <<  laminar_viscosity << " " << eddy_viscosity << endl;
