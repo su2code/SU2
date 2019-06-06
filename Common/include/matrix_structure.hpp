@@ -236,14 +236,6 @@ private:
   void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose = false);
   
   /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination_ILUMatrix(unsigned long block_i, ScalarType* rhs);
-  
-  /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
