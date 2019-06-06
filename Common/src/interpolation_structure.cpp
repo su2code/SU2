@@ -39,7 +39,9 @@
 
 #if defined(HAVE_MKL)
 #include "mkl.h"
+#ifndef HAVE_LAPACK
 #define HAVE_LAPACK
+#endif
 #elif defined(HAVE_LAPACK)
 /*--- Lapack / Blas routines used in RBF interpolation. ---*/
 extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
