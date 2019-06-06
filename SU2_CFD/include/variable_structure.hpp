@@ -2388,10 +2388,6 @@ public:
   
   virtual su2double *GetDirNormalWM();
 
-  virtual void SetkOverCv(su2double val_kOverCv);
-  
-  virtual su2double GetkOverCv();
-
   virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
 
   virtual su2double GetVortex_Tilting();
@@ -4038,17 +4034,6 @@ public:
    * \return Value of the heat flux computed by the model
    */
   su2double GetHeatFlux(void);
-
-  /*!
-   * \brief Set the value of the thermal conductivity computed by the wall model.
-   */
-  void SetkOverCv(su2double val_kOverCv);
-  
-  /*!
-   * \brief Get the value of the thermal conductivity computed by the model
-   * \return Value of the thermal conductivity computed by the model
-   */
-  su2double GetkOverCv(void);
 
   /*!
    * \brief Set the value of the tangent direction of the shear stress computed by the wall model.
