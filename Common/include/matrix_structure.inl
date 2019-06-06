@@ -206,13 +206,12 @@ inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long bloc
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
   
-  unsigned long iVar, jVar, index;
+  unsigned long iVar, index;
   
   for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
+      for (iVar = 0; iVar < nVar*nEqn; iVar++)
+        ILU_matrix[index*nVar*nEqn+iVar] = val_block[iVar];
       break;
     }
   }
@@ -238,65 +237,131 @@ inline void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long b
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
   
-  unsigned long iVar, jVar, index;
-  
-  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
+  for (unsigned long index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar*nVar+jVar];
+      MatrixSubtraction(&ILU_matrix[index*nVar*nEqn], val_block, &ILU_matrix[index*nVar*nEqn]);
       break;
     }
   }
   
 }
 
-template<class ScalarType>
-inline void CSysMatrix<ScalarType>::MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) {
-
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
-  if (useMKL) 
-  {
-    MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
-                                      const_cast<ScalarType*>(matrix), product );
-    return;
-  }
-#endif
-  
-  unsigned short iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    product[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
-      product[iVar] += matrix[iVar*nVar+jVar] * vector[jVar];
+template<class T, bool alpha, bool beta, bool transp>
+inline void gemv_impl(const unsigned long n, const T *a, const T *b, T *c) {
+  /*---
+   This is a templated version of GEMV with the constants as boolean
+   template parameters so that they can be optimized away at compilation.
+   This is still the traditional "row dot vector" method.
+  ---*/
+  unsigned long i, j;
+  for (i = 0; i < n; i++) {
+    if (!beta) c[i] = 0.0;
+    for (j = 0; j < n; j++) {
+      if (alpha) c[transp? j:i] += a[i*n+j] * b[transp? i:j];
+      else       c[transp? j:i] -= a[i*n+j] * b[transp? i:j];
     }
   }
+}
+
+template<class T>
+inline void gemm_impl(const unsigned long n, const T *a, const T *b, T *c) {
+  /*--- Same deal as for GEMV but here only the type is templated. ---*/
+  unsigned long i, j, k;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      c[i*n+j] = 0.0;
+      for (k = 0; k < n; k++)
+        c[i*n+j] += a[i*n+k] * b[k*n+j];
+    }
+  }
+}
+
+#define __MATVECPROD_SIGNATURE__(TYPE,NAME) \
+inline void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product)
+
+#define MATVECPROD_SIGNATURE(NAME) template<class ScalarType> __MATVECPROD_SIGNATURE__(ScalarType,NAME)
+
+#if !defined(USE_MKL)
+MATVECPROD_SIGNATURE( MatrixVectorProduct ) {
+  /*---
+   Without MKL (default) picture copying the body of gemv_impl
+   here and resolving the conditionals at compilation.
+  ---*/
+  gemv_impl<ScalarType,true,false,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
+  gemv_impl<ScalarType,true,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
+  gemv_impl<ScalarType,false,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
+  gemv_impl<ScalarType,true,true,true>(nVar, matrix, vector, product);
 }
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
-
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL)
-  {
-    MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
-                              const_cast<ScalarType*>(matrix_b), product );
-    return;
-  }
-#endif
-  
-  unsigned short iVar, jVar, kVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      product[iVar*nVar+jVar] = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++) {
-        product[iVar*nVar+jVar] += matrix_a[iVar*nVar+kVar]*matrix_b[kVar*nVar+jVar];
-      }
-    }
-  }
+  gemm_impl<ScalarType>(nVar, matrix_a, matrix_b, product);
 }
+#else
+MATVECPROD_SIGNATURE( MatrixVectorProduct ) {
+  /*--- With MKL we use the just-in-time kernels instead of the naive implementation. ---*/
+  MatrixVectorProductKernelBetaZero(MatrixVectorProductJitterBetaZero, const_cast<ScalarType*>(vector),
+                                    const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
+  MatrixVectorProductKernelBetaOne(MatrixVectorProductJitterBetaOne, const_cast<ScalarType*>(vector),
+                                   const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
+  MatrixVectorProductKernelAlphaMinusOne(MatrixVectorProductJitterAlphaMinusOne, const_cast<ScalarType*>(vector),
+                                         const_cast<ScalarType*>(matrix), product );
+}
+
+MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
+  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
+                                         const_cast<ScalarType*>(vector), product );
+}
+
+template<class ScalarType>
+inline void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) {
+  MatrixMatrixProductKernel(MatrixMatrixProductJitter, const_cast<ScalarType*>(matrix_a),
+                            const_cast<ScalarType*>(matrix_b), product );
+}
+#ifdef CODI_REVERSE_TYPE
+/*--- WHEN using MKL, AND compiling for AD, we need to specialize for su2double to avoid mixing incompatible types. ---*/
+#define MATVECPROD_SPECIALIZATION(NAME) template<> __MATVECPROD_SIGNATURE__(su2double,NAME)
+MATVECPROD_SPECIALIZATION( MatrixVectorProduct ) {
+  gemv_impl<su2double,true,false,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductAdd ) {
+  gemv_impl<su2double,true,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductSub ) {
+  gemv_impl<su2double,false,true,false>(nVar, matrix, vector, product);
+}
+
+MATVECPROD_SPECIALIZATION( MatrixVectorProductTransp ) {
+  gemv_impl<su2double,true,true,true>(nVar, matrix, vector, product);
+}
+
+template<>
+inline void CSysMatrix<su2double>::MatrixMatrixProduct(const su2double *matrix_a, const su2double *matrix_b, su2double *product) {
+  gemm_impl<su2double>(nVar, matrix_a, matrix_b, product);
+}
+#undef MATVECPROD_SPECIALIZATION
+#endif // CODI_REVERSE_TYPE
+#endif // USE_MKL
+
+#undef MATVECPROD_SIGNATURE
+#undef __MATVECPROD_SIGNATURE__
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
@@ -308,7 +373,7 @@ inline void CSysMatrix<ScalarType>::VectorSubtraction(const ScalarType *a, const
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
 
-  for(unsigned long iVar = 0; iVar < nVar*nVar; iVar++)
+  for(unsigned long iVar = 0; iVar < nVar*nEqn; iVar++)
     c[iVar] = a[iVar] - b[iVar];
 }
 
@@ -322,18 +387,11 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
 
   if (nVar==1) {vec[0] /= matrix[0]; return;}
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL) {
-    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-    lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1 );
-
-    delete [] ipiv;
-    return;
-  }
-#endif
-
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, mkl_ipiv, vec, 1 );
+#else
   int iVar, jVar, kVar, nvar = int(nVar);
   ScalarType weight;
 
@@ -353,7 +411,7 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, Scalar
       vec[iVar] -= matrix[iVar*nvar+jVar]*vec[jVar];
     vec[iVar] /= matrix[iVar*nvar+iVar];
   }
-
+#endif
 }
 
 template<class ScalarType>
@@ -379,18 +437,11 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
   }
 
   /*--- Inversion ---*/
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  if (useMKL) {
-    // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-    lapack_int * ipiv = new lapack_int [ nVar ];
-    LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, ipiv );
-    LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, ipiv, inverse, nVar );
-
-    delete [] ipiv;
-    return;
-  }
-#endif
-
+#ifdef USE_MKL_LAPACK
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, block, nVar, mkl_ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, nVar, block, nVar, mkl_ipiv, inverse, nVar );
+#else
   int kVar;
   ScalarType weight;
 
@@ -419,7 +470,7 @@ inline void CSysMatrix<ScalarType>::MatrixInverse(const ScalarType *matrix, Scal
     for (kVar = 0; kVar < nvar; kVar++)
       inverse[iVar*nvar+kVar] /= block[iVar*nvar+iVar];
   }
-
+#endif
 }
 
 template<class ScalarType>

@@ -48,8 +48,16 @@
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
+#define USE_MKL
+/*---
+ Lapack direct calls only seem to be created for Intel compilers, and it is not worthwhile
+ making "getrf" and "getrs" compatible with AD since they are not used as often as "gemm".
+---*/
+#if defined(__INTEL_COMPILER) && defined(MKL_DIRECT_CALL_SEQ) && !defined(CODI_REVERSE_TYPE)
+  #define USE_MKL_LAPACK
+#endif
 #endif
 
 using namespace std;
@@ -84,13 +92,12 @@ private:
   vector<bool> DiagInverted;         /*!< \brief Mark if ILU diagonal entries have been inverted and stored in invM. */
 
   ScalarType *block;             /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *block_inverse;             /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *block_weight;             /*!< \brief Internal array to store a subblock of the matrix. */
-  ScalarType *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
+  ScalarType *block_inverse;     /*!< \brief Internal array to store a subblock of the matrix. */
+  ScalarType *block_weight;      /*!< \brief Internal array to store a subblock of the matrix. */
   ScalarType *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
-  ScalarType *aux_vector;         /*!< \brief Auxiliary array to store intermediate results. */
-  ScalarType *sum_vector;         /*!< \brief Auxiliary array to store intermediate results. */
-  ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
+  ScalarType *aux_vector;        /*!< \brief Auxiliary array to store intermediate results. */
+  ScalarType *sum_vector;        /*!< \brief Auxiliary array to store intermediate results. */
+  ScalarType *invM;              /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
   
   unsigned long nLinelet;                       /*!< \brief Number of Linelets in the system. */
   vector<bool> LineletBool;                     /*!< \brief Identify if a point belong to a Linelet. */
@@ -99,14 +106,18 @@ private:
   vector<ScalarType> LineletInvDiag;            /*!< \brief Inverse of the diagonal blocks of the tri-diag system. */
   vector<ScalarType> LineletVector;             /*!< \brief Solution and RHS of the tri-diag system. */
 
-#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  void * MatrixMatrixProductJitter;                   		/*!< \brief Jitter handle for MKL JIT based GEMM. */
-  dgemm_jit_kernel_t MatrixMatrixProductKernel;               	/*!< \brief MKL JIT based GEMM kernel. */
-  void * MatrixVectorProductJitterBetaZero;           		/*!< \brief Jitter handle for MKL JIT based GEMV. */
-  dgemm_jit_kernel_t MatrixVectorProductKernelBetaZero;       	/*!< \brief MKL JIT based GEMV kernel. */
-  void * MatrixVectorProductJitterBetaOne;            		/*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
-  dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;        	/*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
-  bool useMKL;
+#ifdef USE_MKL
+  void * MatrixMatrixProductJitter;                            /*!< \brief Jitter handle for MKL JIT based GEMM. */
+  dgemm_jit_kernel_t MatrixMatrixProductKernel;                /*!< \brief MKL JIT based GEMM kernel. */
+  void * MatrixVectorProductJitterBetaZero;                    /*!< \brief Jitter handle for MKL JIT based GEMV. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaZero;        /*!< \brief MKL JIT based GEMV kernel. */
+  void * MatrixVectorProductJitterBetaOne;                     /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;         /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+  void * MatrixVectorProductJitterAlphaMinusOne;               /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelAlphaMinusOne;   /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
+  void * MatrixVectorProductTranspJitterBetaOne;               /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
+  dgemm_jit_kernel_t MatrixVectorProductTranspKernelBetaOne;   /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
+  lapack_int * mkl_ipiv;
 #endif
 
   /*!
@@ -145,12 +156,36 @@ private:
   void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
   
   /*!
-   * \brief Calculates the matrix-vector product
+   * \brief Calculates the matrix-vector product: product = matrix*vector
    * \param[in] matrix
    * \param[in] vector
    * \param[out] product
    */
-  void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  inline void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  
+  /*!
+   * \brief Calculates the matrix-vector product: product += matrix*vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[in,out] product
+   */
+  inline void MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  
+  /*!
+   * \brief Calculates the matrix-vector product: product -= matrix*vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[in,out] product
+   */
+  inline void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
+  
+  /*!
+   * \brief Calculates the matrix-vector product: product += matrix^T * vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[in,out] product
+   */
+  inline void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product);
   
   /*!
    * \brief Calculates the matrix-matrix product
@@ -158,17 +193,17 @@ private:
    * \param[in] matrix_b
    * \param[out] product
    */
-  void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product);
+  inline void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product);
   
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
+  inline void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
   
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
+  inline void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
   
   /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
@@ -199,14 +234,6 @@ private:
    * \param[out] invBlock - Inverse block.
    */
   void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose = false);
-  
-  /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination_ILUMatrix(unsigned long block_i, ScalarType* rhs);
   
   /*!
    * \brief Inverse diagonal block.
