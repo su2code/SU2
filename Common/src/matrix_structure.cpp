@@ -832,7 +832,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
 template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
-  /*--- Build Jacobi Preconditioner, compute and store the inverses of the diagonal blocks ---*/
+  /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
@@ -841,6 +841,7 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config) {
 
+  /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
