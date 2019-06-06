@@ -3811,6 +3811,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   bool FV_SteadyRANS = ((Unsteady_Simulation == STEADY) && (Kind_Solver == RANS));
   bool FV_LES = ((Unsteady_Simulation == DT_STEPPING_2ND) && (Kind_Solver == NAVIER_STOKES) && (Kind_Turb_Model == NONE));
   Wall_Functions = false;
+  Wall_Models = false;
   if (nMarker_WallFunctions > 0) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
       if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
@@ -3822,6 +3823,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION.\n"), CURRENT_FUNCTION);
       }
       else if (FV_LES || (Kind_Solver == FEM_LES)){
+        Wall_Models = true;
        if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker]==NONEQUILIBRIUM_WALL_MODEL) ||
                 (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION))
           SU2_MPI::Error(string("For ILES problems, use EQUILIBRIUM_WALL_MODEL or LOGARITHMIC_WALL_MODEL.\n"), CURRENT_FUNCTION);
