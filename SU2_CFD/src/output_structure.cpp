@@ -12649,6 +12649,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average    = (config->GetCompute_Average());
+  bool wall_model           = config->GetWall_Models();
   
   int *Local_Halo = NULL;
   
@@ -12996,8 +12997,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("GradW_y");
       nVar_Par +=1;
       Variable_Names.push_back("GradW_z");
-      nVar_Par +=1;
-      Variable_Names.push_back("Max_Length");
+      
+      if(wall_model){
+        nVar_Par +=1;
+        Variable_Names.push_back("lenScale");
+        nVar_Par +=1;
+        Variable_Names.push_back("TauWall");
+      }
       
     }
     
@@ -13390,8 +13396,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = Grad_Vel[2][1]  ; iVar++;
           Local_Data[jPoint][iVar] = Grad_Vel[2][2]  ; iVar++;
           
-          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetMaxLength(); iVar++;
-
+          if(wall_model){
+            Local_Data[jPoint][iVar] = pow(geometry->node[iPoint]->GetVolume(),1./3.); iVar++;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
+          }
         }
         
       }
