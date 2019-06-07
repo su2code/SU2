@@ -137,19 +137,7 @@ inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short 
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
-inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
+inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
