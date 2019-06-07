@@ -4778,6 +4778,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   TauWall_i = 0; TauWall_j = 0;
 
+  qWall_i = 0; qWall_j = 0.;
+
   PrimVar_i = new su2double [nPrimVar];
   PrimVar_j = new su2double [nPrimVar];
   Mean_PrimVar = new su2double [nPrimVar];
@@ -5008,8 +5010,9 @@ void CAvgGrad_Base::ReplaceTauWall(const su2double *val_primvar,
   
   Proj_Flux_Tensor[0] = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Proj_Flux_Tensor[iDim+1] = - val_tau_wall * val_dir_tan[iDim] * Sign * Area;
-  Proj_Flux_Tensor[nVar-1] = ( + val_q_Wall - val_tau_wall * Sign * velWall_tan) * Area;
+    Proj_Flux_Tensor[iDim+1] = - val_tau_wall * val_dir_tan[iDim] * Area;
+  
+  Proj_Flux_Tensor[nVar-1] = ( val_q_Wall - val_tau_wall * velWall_tan) * Area;
   
   //cout << velWall_tan << " " << val_q_Wall << " " << val_tau_wall << endl;
 }
@@ -5488,20 +5491,17 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   
-  //if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
-  
-  //cout << tau[0][0] << " " << tau[0][1] << " " << tau[0][2] << " "  << tau[1][0] << " " << tau[1][1] << " " << tau[1][2] << " " << tau[2][0] << " " << tau[2][1] << " " << tau[2][2] << " " << endl;
-  
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
-  //cout << "Proj_Flux_Tensor: ";
-  if (Mean_TauWall > 0) ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+  if (Mean_TauWall > 0)
+    if (config->GetWall_Models())
+      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+    else if (config->GetWall_Functions())
+      AddTauWall(Normal, Mean_TauWall);
+    else
+      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
   else GetViscousProjFlux(Mean_PrimVar, Normal);
-
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << Proj_Flux_Tensor[iVar] << " " ;
-//  cout << endl;
 
   
   /*--- Update viscous residual ---*/

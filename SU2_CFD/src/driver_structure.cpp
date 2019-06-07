@@ -938,7 +938,7 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
-  bool wall_functions = config_container[ZONE_0]->GetWall_Functions();
+  bool wall_models = config_container[ZONE_0]->GetWall_Models();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -972,7 +972,7 @@ void CDriver::Geometrical_Preprocessing() {
             already been done. ---*/
 
       geometry_container[iZone][iInst][MESH_0]->SetBoundVolume();
-      if( !wall_functions ) {
+      if( !wall_models ) {
         if (config_container[iZone]->GetReorientElements()) {
           if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
           geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
@@ -999,7 +999,7 @@ void CDriver::Geometrical_Preprocessing() {
 
       /*--- Interpolate the donor information for the wall model, if needed. ---*/
 
-      if( wall_functions ) {
+      if( wall_models ) {
         if (rank == MASTER_NODE) cout << "Preprocessing for the wall models." << endl;
         geometry_container[iZone][iInst][MESH_0]->WallModelPreprocessing(config_container[iZone]);
       }
