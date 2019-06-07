@@ -1017,6 +1017,7 @@ void CDriver::Geometrical_Preprocessing() {
       if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
       geometry_container[iZone][iInst][MESH_0]->Check_Periodicity(config_container[iZone]);
 
+      geometry_container[iZone][iInst][MESH_0]->SetMGLevel(MESH_0);
       if ((config_container[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
         cout << "Setting the multigrid structure." << endl;
 
@@ -1058,6 +1059,10 @@ void CDriver::Geometrical_Preprocessing() {
         /*--- Find closest neighbor to a surface point ---*/
 
         geometry_container[iZone][iInst][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
+
+        /*--- Store our multigrid index. ---*/
+        
+        geometry_container[iZone][iInst][iMGlevel]->SetMGLevel(iMGlevel);
 
         /*--- Protect against the situation that we were not able to complete
        the agglomeration for this level, i.e., there weren't enough points.
@@ -2743,14 +2748,12 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
           case NEO_HOOKEAN :
             switch (config->GetMaterialCompressibility()) {
               case COMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-              case INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
               default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
           case KNOWLES:
             switch (config->GetMaterialCompressibility()) {
               case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
-              case INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
               default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
@@ -2788,7 +2791,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       if (!(properties_file.fail())) {
 
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_NHCOMP]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
-          numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_NHINC]   = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_IDEALDE] = new CFEM_IdealDE(nDim, nVar_FEM, config);
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_KNOWLES] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
 
@@ -3854,9 +3856,17 @@ void CDriver::StartSolver(){
 
 void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
-  /*--- Set the value of the external iteration. ---*/
+  /*--- Set the value of the external iteration and physical time. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetExtIter(ExtIter);
+  
+    if (config_container[iZone]->GetUnsteady_Simulation())
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(ExtIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+  
+  }
   
 
   /*--- Read the target pressure ---*/

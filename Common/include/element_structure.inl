@@ -37,10 +37,6 @@
  
 #pragma once
 
-inline void CElement::ComputeGrad_Linear(void) { }
-
-inline void CElement::ComputeGrad_NonLinear(void) { }
-
 inline unsigned short CElement::GetnNodes(void) { return nNodes;}
 
 inline unsigned short CElement::GetnGaussPoints(void) { return nGaussPoints;}
@@ -48,8 +44,6 @@ inline unsigned short CElement::GetnGaussPoints(void) { return nGaussPoints;}
 inline void CElement::SetRef_Coord(su2double val_CoordRef, unsigned short iNode, unsigned short iDim) { RefCoord[iNode][iDim] = val_CoordRef;}
 
 inline void CElement::SetCurr_Coord(su2double val_CoordCurr, unsigned short iNode, unsigned short iDim) { CurrentCoord[iNode][iDim] = val_CoordCurr;}
-
-inline void CElement::SetElement_Pressure(su2double val_ElPressure) {el_Pressure = val_ElPressure;}
 
 inline su2double CElement::GetRef_Coord(unsigned short iNode, unsigned short iDim) { return RefCoord[iNode][iDim];}
 
@@ -61,17 +55,11 @@ inline su2double CElement::GetJ_X(unsigned short iGauss) { return GaussPoint[iGa
 
 inline su2double CElement::GetJ_x(unsigned short iGauss) { return GaussPoint[iGauss]->GetJ_x();}
 
-inline su2double CElement::GetJ_X_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_X();}
-
-inline su2double CElement::GetJ_x_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_x();}
-
 inline su2double CElement::GetElement_Pressure(void) { return el_Pressure;}
 
 inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 
 inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB) { return Kab[nodeA][nodeB];}
-
-inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB) { return Kk_ab[nodeA][nodeB];}
 
 inline su2double *CElement::Get_Kt_a(unsigned short nodeA) { return Kt_a[nodeA];}
 
@@ -91,25 +79,17 @@ inline su2double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGau
 
 inline su2double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
 
-inline su2double CElement::GetGradNi_X_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_Xj(iNode,iDim);}
-
-inline su2double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
-
 inline su2double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }
 
 inline su2double CElement::Get_NodalStress(unsigned short iNode, unsigned short iVar) { return NodalStress[iNode][iVar]; }
 
-inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
+inline su2double CElement::ComputeArea(const FrameType mode) { return 0.0;}
 
-inline su2double CElement::ComputeArea(void) { return 0.0;}
+inline su2double CElement::ComputeVolume(const FrameType mode) { return 0.0;}
 
-inline su2double CElement::ComputeVolume(void) { return 0.0;}
+inline su2double CElement::ComputeCurrentArea(void) { return ComputeArea(CURRENT);}
 
-inline su2double CElement::ComputeCurrentArea(void) { return 0.0;}
-
-inline su2double CElement::ComputeCurrentVolume(void) { return 0.0;}
-
-inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
+inline su2double CElement::ComputeCurrentVolume(void) { return ComputeVolume(CURRENT);}
 
 inline void CElement::Set_iDe(unsigned short val_iDe) { iDe = val_iDe;}
 
@@ -119,13 +99,6 @@ inline unsigned long CElement::Get_iDV(void) { return iDV;}
 
 inline unsigned long CElement::Get_iProp(void) { return iProp;}
 
-inline void CElement::ComputeGrad_Pressure(void){ }
-
 inline void CElement::SetPreaccIn_Coords(void) { AD::SetPreaccIn(RefCoord,nNodes,nDim); AD::SetPreaccIn(CurrentCoord,nNodes,nDim); }
 
 inline void CElement::SetPreaccOut_Kt_a(void) { AD::SetPreaccOut(Kt_a,nNodes,nDim); }
-
-inline void CQUAD4::ComputeGrad_Pressure(void) { }
-
-inline void CHEXA8::ComputeGrad_Pressure(void) { }
-
