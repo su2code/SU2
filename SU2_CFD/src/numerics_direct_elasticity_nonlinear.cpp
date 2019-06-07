@@ -41,7 +41,6 @@
 CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
 
   unsigned short iVar;
@@ -355,12 +354,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -369,7 +362,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -515,108 +508,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 
 }
 
-void CFEANonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config) {
-
-  unsigned short iVar, jVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
-  su2double Weight, Jac_X, Jac_x;
-  unsigned short iDim ;
-
-  su2double GradNi_Mat_Term;
-  su2double Vol_current = 0.0, Vol_reference;
-  su2double Avg_kappa = 0.0;
-  su2double el_Pressure;
-
-  /*--- TODO: Initialize values for the material model considered ---*/
-  SetElement_Properties(element, config);
-  if (maxwell_stress) SetElectric_Properties(element, config);
-  /*-----------------------------------------------------------*/
-
-  /*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
-  element->clearElement();          /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_NonLinear(); // Check if we can take this out!
-
-  /*--- nGauss is here the number of Gaussian Points for the pressure term ---*/
-  nGauss = element->GetnGaussPoints();
-  nNode = element->GetnNodes();
-
-  /*--- Initialize the Gradient auxiliary Matrix ---*/
-  for (iNode = 0; iNode < nNode; iNode++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      GradNi_Curr_Mat[iNode][iDim] = 0.0;
-    }
-  }
-
-  Vol_current = 0.0;
-  Vol_reference = 0.0;
-
-  /*--------------------------------------------------------------------------------*/
-  /*-------------------------- INCOMPRESSIBLE TERM ---------------------------------*/
-  /*--------------------------------------------------------------------------------*/
-
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
-
-    Weight = element->GetWeight(iGauss);
-    Jac_X = element->GetJ_X(iGauss);
-    Jac_x = element->GetJ_x(iGauss);
-
-    /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
-    /*--- This avoids repeated operations ---*/
-
-    /*--- We compute the average gradient ---*/
-    for (iNode = 0; iNode < nNode; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradNi_Mat_Term = element->GetGradNi_x(iNode,iGauss,iDim);
-        GradNi_Curr_Mat[iNode][iDim] += Weight * GradNi_Mat_Term * Jac_x;
-      }
-    }
-
-    Vol_reference += Weight * Jac_X;
-    Vol_current += Weight * Jac_x;
-
-  }
-
-  if ((Vol_current > 0.0) && (Vol_reference > 0.0)) {
-
-    /*--- It is necessary to divide over the current volume to obtain the averaged gradients ---*/
-    for (iNode = 0; iNode < nNode; iNode++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradNi_Curr_Mat[iNode][iDim] = GradNi_Curr_Mat[iNode][iDim] / Vol_current;
-      }
-    }
-
-    Avg_kappa = Kappa * Vol_current / Vol_reference;
-
-    el_Pressure = Kappa * ((Vol_current / Vol_reference) - 1);
-
-    element->SetElement_Pressure(el_Pressure);
-
-  }
-  else {
-    SU2_MPI::Error(" Negative volume computed during FE structural analysis.", CURRENT_FUNCTION);
-  }
-
-  for (iNode = 0; iNode < nNode; iNode++) {
-
-    for (jNode = 0; jNode < nNode; jNode++) {
-
-      /*--- KAux_P_ab is the term for the incompressibility part of the tangent matrix ---*/
-      for (iVar = 0; iVar < nDim; iVar++) {
-        for (jVar = 0; jVar < nDim; jVar++) {
-          KAux_P_ab[iVar][jVar] = Avg_kappa * Vol_current * GradNi_Curr_Mat[iNode][iVar] * GradNi_Curr_Mat[jNode][jVar];
-        }
-      }
-
-      element->Set_Kk_ab(KAux_P_ab,iNode, jNode);
-
-    }
-
-  }
-
-}
-
-
 void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
@@ -686,12 +577,6 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -700,7 +585,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -954,12 +839,6 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
           F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
         }
       }
-
-      /*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-      if (nDim == 2) {
-        F_Mat[2][2] = 1.0;
-      }
-
     }
 
     if (nDim == 2) {
@@ -968,7 +847,7 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CC
         Compute_Plane_Stress_Term(element, config);
         F_Mat[2][2] = f33;
       }
-      else {
+      else { // plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -1125,146 +1004,6 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *con
 
 }
 
-CFEM_NeoHookean_Incomp::CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
-
-
-}
-
-CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
-
-}
-
-void CFEM_NeoHookean_Incomp::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
-
-}
-
-void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
-
-  unsigned short iVar;
-  su2double el_P;
-  su2double Ib = 0.0, Jft;
-
-  /*--- First invariant of b -> Ib = tr(b) ---*/
-  for (iVar = 0; iVar < 3; iVar++) {
-    Ib += b_Mat[iVar][iVar];
-  }
-
-  /*--- Retrieve element pressure ---*/
-
-  el_P = element->GetElement_Pressure();
-
-  /*--- J^(-5/3) ---*/
-  Jft = pow(J_F, -1.666666666666667);
-
-  if (nDim == 2) {
-
-    /*--- Diagonal terms ---*/
-    D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
-    D_Mat[1][1] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[1][1]) - el_P;
-
-    D_Mat[2][2] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
-
-    /*--- Q2 off diagonal terms (and symmetric) ---*/
-
-    D_Mat[0][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-    D_Mat[1][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-
-    D_Mat[0][2] = 0.0;
-    D_Mat[2][0] = 0.0;
-
-  }
-  else if (nDim == 3) {
-
-    /*--- Diagonal terms ---*/
-    D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
-    D_Mat[1][1] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[1][1]) - el_P;
-    D_Mat[2][2] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[2][2]) - el_P;
-
-    D_Mat[3][3] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
-    D_Mat[4][4] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
-    D_Mat[5][5] = (1.0 / 3.0) * Mu * Jft * Ib - el_P;
-
-    /*--- Q1 off diagonal terms (and symmetric) ---*/
-
-    D_Mat[0][1] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[1][1]) + el_P;
-    D_Mat[0][2] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
-    D_Mat[1][2] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[1][1] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
-
-    D_Mat[1][0] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[1][1]) + el_P;
-    D_Mat[2][0] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[0][0] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
-    D_Mat[2][1] = 2.0 * Mu * Jft * ((1.0 / 9.0) * Ib - (1.0 / 3.0) * b_Mat[1][1] - (1.0 / 3.0) * b_Mat[2][2]) + el_P;
-
-    /*--- Q2 off diagonal terms (and symmetric) ---*/
-
-    D_Mat[0][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-    D_Mat[1][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-    D_Mat[2][3] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-
-    D_Mat[0][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-    D_Mat[1][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-    D_Mat[2][4] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-
-    D_Mat[0][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-    D_Mat[1][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-    D_Mat[2][5] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-
-
-    D_Mat[3][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-    D_Mat[3][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-    D_Mat[3][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][1];
-
-    D_Mat[4][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-    D_Mat[4][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-    D_Mat[4][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[0][2];
-
-    D_Mat[5][0] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-    D_Mat[5][1] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-    D_Mat[5][2] = (-2.0 / 3.0) * Mu * Jft * b_Mat[1][2];
-
-    /*--- Q3 off diagonal terms (and symmetric) are all zeros ---*/
-
-    D_Mat[3][4] = 0.0;
-    D_Mat[3][5] = 0.0;
-    D_Mat[4][5] = 0.0;
-
-    D_Mat[4][3] = 0.0;
-    D_Mat[5][3] = 0.0;
-    D_Mat[5][4] = 0.0;
-
-  }
-
-}
-
-void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
-
-  unsigned short iDim,jDim;
-  su2double dij = 0.0, el_P;
-  su2double Ib = 0.0, Jft;
-
-  /*--- First invariant of b -> Ib = tr(b) ---*/
-  for (iDim = 0; iDim < 3; iDim++) {
-    Ib += b_Mat[iDim][iDim];
-  }
-
-  /*--- Retrieve element pressure ---*/
-
-  el_P = element->GetElement_Pressure();
-
-  /*--- J^(-5/3) ---*/
-  Jft = pow(J_F, -1.666666666666667);
-
-  for (iDim = 0; iDim < 3; iDim++) {
-    for (jDim = 0; jDim < 3; jDim++) {
-      if (iDim == jDim) dij = 1.0;
-      else if (iDim != jDim) dij = 0.0;
-      Stress_Tensor[iDim][jDim] = Mu *  Jft * (b_Mat[iDim][jDim] - ((1.0 / 3.0) * Ib * dij )) + el_P * dij;
-    }
-  }
-
-
-}
-
 
 CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
@@ -1294,7 +1033,7 @@ CFEM_Knowles_NearInc::~CFEM_Knowles_NearInc(void) {
 
 void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
 
-  cout << "This material model cannot (yet) be used for plane stress." << endl;
+  SU2_MPI::Error("This material model cannot (yet) be used for plane stress.",CURRENT_FUNCTION);
 
 }
 
@@ -1389,7 +1128,7 @@ CFEM_IdealDE::~CFEM_IdealDE(void) {
 
 void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
 
-  cout << "This material model cannot be used for plane stress." << endl;
+  SU2_MPI::Error("This material model cannot (yet) be used for plane stress.",CURRENT_FUNCTION);
 
 }
 
