@@ -5079,7 +5079,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
     	  if (Kind_Material == NEO_HOOKEAN) {
     		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
-    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
     	  }
     	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
