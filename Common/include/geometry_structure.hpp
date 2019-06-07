@@ -904,12 +904,6 @@ public:
 
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	virtual void SetPeriodicBoundary(CConfig *config);
-
-	/*! 
-	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
@@ -1001,13 +995,6 @@ public:
 	 */
 	virtual void SetBoundSensitivity(CConfig *config);
 
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Set the data containers for customized boundary conditions.
    * \param[in] config - Definition of the particular problem.
@@ -1040,30 +1027,6 @@ public:
     * \param[in] iter - Current physical time step.
     */
    virtual void SetGridVelocity(CConfig *config, unsigned long iter);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_Coord(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_GridVel(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-  virtual void Set_MPI_OldCoord(CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_MaxLength(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -2273,36 +2236,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetGridVelocity(CConfig *config, unsigned long iter);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Coord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid velocities.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_GridVel(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_OldCoord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the max grid spacing.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_MaxLength(CConfig *config);
-
-  /*!
-   * \brief Set the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPeriodicBoundary(CConfig *config);
 
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
