@@ -4303,7 +4303,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       nElStates[2] = 16;                    // NO
       nElStates[3] = 3;                     // N
       nElStates[4] = 5;                     // O
-      /////
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         maxEl = max(maxEl, nElStates[iSpecies]);

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon

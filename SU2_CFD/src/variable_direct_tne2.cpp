@@ -42,23 +42,12 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
 
   /*--- Array initialization ---*/
   Primitive          = NULL;
-  //Secondary          = NULL;
-
   Gradient_Primitive = NULL;
-  //Gradient_Secondary = NULL;
-
   Limiter_Primitive  = NULL;
   Limiter            = NULL;
-  //Limiter_Secondary  = NULL;
-
   nPrimVar           = 0;
   nPrimVarGrad       = 0;
-
-  //nSecondaryVar      = 0;
-  //nSecondaryVarGrad  = 0;
-
   //Undivided_Laplacian = NULL;
-  //Solution_New        = NULL;
 
   dPdU   = NULL;   dTdU   = NULL;
   dTvedU = NULL;   eves   = NULL;
@@ -99,16 +88,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
 
   /*--- Array initialization ---*/
   Primitive          = NULL;
-  //Secondary          = NULL;
-
   Gradient_Primitive = NULL;
-  //Gradient_Secondary = NULL;
-
   Limiter_Primitive  = NULL;
   Limiter            = NULL;
-  //Limiter_Secondary  = NULL;
-
-  //Solution_New       = NULL;
 
   dPdU   = NULL;   dTdU   = NULL;
   dTvedU = NULL;   eves   = NULL;
@@ -172,16 +154,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
 
   /*--- Array initialization ---*/
   Primitive          = NULL;
-  //Secondary          = NULL;
-
   Gradient_Primitive = NULL;
-  //Gradient_Secondary = NULL;
-
   Limiter_Primitive  = NULL;
   Limiter            = NULL;
-  //Limiter_Secondary  = NULL;
-
-  //Solution_New = NULL;
 
   /*--- Allocate & initialize residual vectors ---*/
   Res_TruncError = new su2double [nVar];
@@ -381,16 +356,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
 
   /*--- Array initialization ---*/
   Primitive          = NULL;
-  //Secondary          = NULL;
-
   Gradient_Primitive = NULL;
-  //Gradient_Secondary = NULL;
-
   Limiter_Primitive  = NULL;
   Limiter            = NULL;
-  //Limiter_Secondary  = NULL;
-
-  //Solution_New        = NULL;
 
   /*--- Allocate & initialize residual vectors ---*/
   Res_TruncError = new su2double [nVar];
@@ -411,10 +379,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
-
-  //Limiter_Secondary = new su2double [nSecondaryVarGrad];
-  //for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-  //  Limiter_Secondary[iVar] = 0.0;
 
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -437,13 +401,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
-
-  //Gradient_Secondary = new su2double* [nSecondaryVarGrad];
-  //for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-  //  Gradient_Secondary[iVar] = new su2double [nDim];
-  //  for (iDim = 0; iDim < nDim; iDim++)
-  //    Gradient_Secondary[iVar][iDim] = 0.0;
-  //}
 
   /*--- Allocate partial derivative vectors ---*/
   dPdU   = new su2double [nVar];
@@ -474,22 +431,13 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   unsigned short iVar;
 
   if (Primitive          != NULL) delete [] Primitive;
-  //if (Secondary          != NULL) delete [] Secondary;
   if (Limiter_Primitive  != NULL) delete [] Limiter_Primitive;
-  //if (Limiter            != NULL) delete [] Limiter;
-  //if (Limiter_Secondary  != NULL) delete [] Limiter_Secondary;
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-
-  //if (Gradient_Secondary != NULL) {
-  //  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-  //    if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
-  //  delete [] Gradient_Secondary;
-  //}
 
   if (dPdU   != NULL) delete [] dPdU;
   if (dTdU   != NULL) delete [] dTdU;
@@ -506,14 +454,6 @@ void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
 }
-
-//void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
-//    unsigned short iVar, iDim;
-//
-//    for (iVar = 0; iVar < val_secondaryvar; iVar++)
-//        for (iDim = 0; iDim < nDim; iDim++)
-//            Gradient_Secondary[iVar][iDim] = 0.0;
-//}
 
 su2double CTNE2EulerVariable::GetProjVel(su2double *val_vector) {
 
@@ -1044,9 +984,6 @@ su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double val_T,
   hs = Ru/Ms[val_Species]*T
       + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]*T
       + hf[val_Species] + eve;
-
-  //  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
-  //   + eve + ef;
 
   return hs;
 }
