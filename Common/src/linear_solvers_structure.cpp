@@ -38,9 +38,10 @@
 #include "../include/linear_solvers_structure.hpp"
 #include "../include/linear_solvers_structure_b.hpp"
 
-CSysSolve::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false), gmres_ready(false) {
+CSysSolve::CSysSolve(const bool mesh_deform_mode, const bool gradient_smooth_mode) : cg_ready(false), bcg_ready(false), gmres_ready(false) {
 
   mesh_deform = mesh_deform_mode;
+  gradient_mode = gradient_smooth_mode;
 }
 
 void CSysSolve::ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2) {
@@ -622,6 +623,18 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     MaxIter      = config->GetLinear_Solver_Iter();
     RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = config->GetLinear_Solver_Error();
+    ScreenOutput = false;
+  }
+
+  /*--- gradient smoothing mode ---*/
+
+  else if (gradient_mode) {
+
+    KindSolver   = config->GetKind_Grad_Linear_Solver();
+    KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+    MaxIter      = config->GetGrad_Linear_Solver_Iter();
+    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
+    SolverTol    = config->GetGrad_Linear_Solver_Error();
     ScreenOutput = false;
   }
 

@@ -498,7 +498,7 @@ const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in 
 
 const int MESH_SOL = 9;   /*!< \brief Position of the mesh solver. */
 
-
+const int GRADIENT_SMOOTHING = 10; /*!< \brief Position of the gradient smoothing equation in the solution solver array. */
 
 /*!
  * \brief types of finite elements (in 2D or 3D)

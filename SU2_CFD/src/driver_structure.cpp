@@ -1386,6 +1386,11 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
   MeshSolver_Preprocessing(solver_container, geometry, config, val_iInst);
 
+  /*--- Add a gradient smoothing solver if necessary ---*/
+  if (config->GetSmoothGradient()) {
+    solver_container[val_iInst][MESH_0][GRADIENT_SMOOTHING] = new CGradientSmoothingSolver(geometry[val_iInst][MESH_0], config);
+  }
+
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
   bool update_geo = true;
@@ -4625,7 +4630,9 @@ void CDiscAdjFluidDriver::Run() {
 
     if (config_container[ZONE_0]->GetSmoothGradient()) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SmoothGradient(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
+
+        solver_container[iZone][INST_0][MESH_0][GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], config_container[iZone]);
+
       }
     }
 

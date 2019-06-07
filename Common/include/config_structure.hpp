@@ -472,6 +472,8 @@ private:
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
+  Kind_Grad_Linear_Solver, /*!< Numerical method to smoothen the gradient */
+  Kind_Grad_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
   Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
@@ -554,10 +556,12 @@ private:
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Grad_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Grad_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
@@ -3980,7 +3984,25 @@ public:
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void);
-  
+
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void);
+
+  /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void);
+
+  /*!
+   * \brief Set the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec);
+
   /*!
    * \brief Set the kind of preconditioner for the implicit solver.
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
@@ -4004,7 +4026,13 @@ public:
    * \return Min error of the linear solver for the implicit formulation.
    */
   su2double GetDeform_Linear_Solver_Error(void);
-  
+
+  /*!
+   * \brief Get min error of the linear solver for the implicit formulation.
+   * \return Min error of the linear solver for the implicit formulation.
+   */
+  su2double GetGrad_Linear_Solver_Error(void);
+
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
@@ -4016,6 +4044,12 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetDeform_Linear_Solver_Iter(void);
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation.
+   * \return Max number of iterations of the linear solver for the implicit formulation.
+   */
+  unsigned long GetGrad_Linear_Solver_Iter(void);
   
   /*!
    * \brief Get the ILU fill-in level for the linear solver.

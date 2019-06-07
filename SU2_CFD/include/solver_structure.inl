@@ -1183,6 +1183,8 @@ inline void CSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CCon
 
 inline void CSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config) { }
 
+inline void CSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CConfig *config) { }
+
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
@@ -2531,6 +2533,17 @@ inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+
+#ifdef SOMEBIZAREFLAG
+inline void CGradientSmoothingSolver::SetDisplacement_Old(void){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetDisplacement_Old();
+}
+
+inline su2double CGradientSmoothingSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetMesh_Coord(iDim);}
+
+inline su2double CGradientSmoothingSolver::Get_ValSol(unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetDisplacement(iDim);}
+#endif
 
 inline void CMeshSolver::SetDisplacement_Old(void){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

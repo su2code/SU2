@@ -72,6 +72,7 @@ class CSysSolve {
 private:
 
   bool mesh_deform;  /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  bool gradient_mode;  /*!< \brief Operate in gradient smoothing mode, changes the source of solver options. */
   su2double Residual;/*!< \brief Residual at the end of a call to Solve. */
 
   bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
@@ -181,7 +182,7 @@ public:
    * \brief default constructor of the class.
    * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
    */
-  CSysSolve(const bool mesh_deform_mode = false);
+  CSysSolve(const bool mesh_deform_mode = false, const bool gradient_smooth_mode = false);
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector

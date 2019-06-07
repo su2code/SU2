@@ -3025,7 +3025,7 @@ public:
 
 class CGradientSmoothingVariable : public CVariable {
 protected:
-  su2double* Sensitivity;
+  su2double *Sensitivity;
 
 public:
 
@@ -3063,6 +3063,7 @@ public:
   su2double GetSensitivity(unsigned short iDim);
 
   };
+
 
 /*!
  * \class CEulerVariable

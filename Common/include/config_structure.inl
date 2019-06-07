@@ -1017,6 +1017,10 @@ inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_
 
 inline void CConfig::SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
 
+inline unsigned short CConfig::GetKind_Grad_Linear_Solver(void) { return Kind_Grad_Linear_Solver; }
+
+inline void CConfig::SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
+
 inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; }
 
 inline void CConfig::SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
@@ -1025,9 +1029,13 @@ inline su2double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Er
 
 inline su2double CConfig::GetDeform_Linear_Solver_Error(void) { return Deform_Linear_Solver_Error; }
 
+inline su2double CConfig::GetGrad_Linear_Solver_Error(void) { return Grad_Linear_Solver_Error; }
+
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
 inline unsigned long CConfig::GetDeform_Linear_Solver_Iter(void) { return Deform_Linear_Solver_Iter; }
+
+inline unsigned long CConfig::GetGrad_Linear_Solver_Iter(void) { return Grad_Linear_Solver_Iter; }
 
 inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solver_ILU_n; }
 
@@ -1054,6 +1062,8 @@ inline unsigned short CConfig::GetKind_DiscAdj_Linear_Solver(void) { return Kind
 inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_DiscAdj_Linear_Prec; }
 
 inline unsigned short CConfig::GetKind_Deform_Linear_Solver_Prec(void) { return Kind_Deform_Linear_Solver_Prec; }
+
+inline unsigned short CConfig::GetKind_Grad_Linear_Solver_Prec(void) { return Kind_Grad_Linear_Solver_Prec; }
 
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
