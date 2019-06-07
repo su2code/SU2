@@ -90,6 +90,10 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
+  if (grid_movement) {
+    AD::SetPreaccIn(GridVel_i, nDim);
+    AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Face area (norm or the normal vector) ---*/
   
