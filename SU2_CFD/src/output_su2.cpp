@@ -224,7 +224,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
   /*--- Get the total number of periodic transformations ---*/
   
   nPeriodic = config->GetnPeriodicIndex();
-  output_file << "NPERIODIC= " << nPeriodic << endl;
+  //output_file << "NPERIODIC= " << nPeriodic << endl;
   
   /*--- From iPeriodic obtain the iMarker ---*/
   
