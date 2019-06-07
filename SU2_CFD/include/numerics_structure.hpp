@@ -1307,12 +1307,6 @@ public:
   virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
   /*!
-   * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
-   * \param[in] element_container - Definition of the particular element integrated.
-   */
-  virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
-
-  /*!
    * \brief A virtual member to compute the nodal stress term in non-linear structural problems
    * \param[in] element_container - Definition of the particular element integrated.
    */
@@ -4135,8 +4129,6 @@ public:
 
   virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
-  virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
-
   virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
   virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
@@ -4218,7 +4210,6 @@ protected:
   su2double f33;                 /*!< \brief Plane stress term for non-linear 2D plane stress analysis */
 
   bool nearly_incompressible;    /*!< \brief Boolean to consider nearly_incompressible effects */
-  bool incompressible;           /*!< \brief Boolean to consider Hu-Washizu incompressible effects */
 
   su2double **F_Mat_Iso;         /*!< \brief Isocoric component of the deformation gradient. */
   su2double **b_Mat_Iso;         /*!< \brief Isocoric component of the left Cauchy-Green tensor. */
@@ -4258,8 +4249,6 @@ public:
   virtual ~CFEANonlinearElasticity(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
-
-  void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
 
   void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
@@ -4317,39 +4306,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CFEM_NeoHookean_Comp(void);
-
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
-
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
-  using CNumerics::Compute_Constitutive_Matrix;
-
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
-
-};
-
-/*!
- * \class CFEM_NeoHookean_Incomp
- * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
- * \ingroup FEM_Discr
- * \author R.Sanchez
- * \version 6.2.0 "Falcon"
- */
-class CFEM_NeoHookean_Incomp : public CFEANonlinearElasticity {
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_NeoHookean_Incomp(void);
 
   void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
