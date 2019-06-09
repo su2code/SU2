@@ -943,7 +943,7 @@ inline su2double* CConfig::GetMarkerMotion_Origin(unsigned short iMarkerMoving){
 
 inline void CConfig::SetMarkerMotion_Origin(su2double* val, unsigned short iMarkerMoving){
   for (unsigned short iDim = 0; iDim < 3; iDim++){
-    MarkerMotion_Origin[iDim*iMarkerMoving] = val[iDim];
+    MarkerMotion_Origin[3*iMarkerMoving + iDim] = val[iDim];
   }
 }
 
