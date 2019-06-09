@@ -11444,7 +11444,6 @@ private:
   
   su2double **Jacobian_c_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
   su2double **Jacobian_s_ij;      /*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
-  su2double **Jacobian_k_ij;      /*!< \brief Submatrix to store the pressure contribution of node ij. */
   su2double **MassMatrix_ij;      /*!< \brief Submatrix to store the term ij of the mass matrix. */
   su2double *Res_Stress_i;      /*!< \brief Submatrix to store the nodal stress contribution of node i. */
   
