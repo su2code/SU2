@@ -2657,34 +2657,54 @@ public:
 
 /*!
  * \class CCentBase_Flow
- * \brief Class for centered scheme - JST.
+ * \brief Intermediate class to define centered schemes.
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
 class CCentBase_Flow : public CNumerics {
-  
+
 protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Param_p, Phi_i, Phi_j, StretchingFactor, /*!< \brief Streching parameters. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  ProjGridVel;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
-  
+  bool grid_movement;              /*!< \brief Consider grid movement. */
+  bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
+
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
+  su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
+  su2double sq_vel_i,  sq_vel_j;                     /*!< \brief Squared norm of the velocity vectors. */
+  su2double Energy_i,  Energy_j,  MeanEnergy;        /*!< \brief Energy at nodes i and j and mean. */
+  su2double MeanDensity, MeanPressure, MeanEnthalpy; /*!< \brief Mean density, pressure, and enthalpy. */
+  su2double *ProjFlux;                               /*!< \brief Projected inviscid flux. */
+
+  su2double *Diff_U, *Diff_Lapl;                        /*!< \brief Differences of conservatives and undiv. Laplacians. */
+  su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eingenvalues. */
+  su2double Param_p, Phi_i, Phi_j, StretchingFactor;    /*!< \brief Streching parameters. */
+  su2double cte_0, cte_1;                               /*!< \brief Constants for the scalar dissipation Jacobian. */
+
+  su2double ProjGridVel; /*!< \brief Projected grid velocity. */
+
+  /*!
+   * \brief Hook method for derived classes to define preaccumulated variables, optional to implement.
+   * \return true if any variable was set as preacc. input, in which case the residual will be output.
+   */
+  virtual bool SetPreaccInVars(void) {return false;}
+
+  /*!
+   * \brief Derived classes must implement this method, called in ComputeResidual after inviscid part.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
   virtual void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) = 0;
-  
+
+  /*!
+   * \brief Add the contribution of a scalar dissipation term to the Jacobians.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i.
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j.
+   */
   void ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2692,22 +2712,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CCentBase_Flow(void);
-  
+
   /*!
-   * \brief Compute the flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \brief Compute the flow residual using a centered method with artificial dissipation.
+   * \param[out] val_residual - Pointer to the convective flux contribution to the residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2718,14 +2737,26 @@ public:
  */
 class CCentLax_Flow : public CCentBase_Flow {
 private:
-  su2double Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-  sc0, /*!< \brief Streching parameters. */
-  Epsilon_0; /*!< \brief Artificial dissipation values. */
-  
+  su2double Param_Kappa_0; /*!< \brief Artificial dissipation parameter. */
+  su2double sc0;           /*!< \brief Streching parameter. */
+  su2double Epsilon_0;     /*!< \brief Artificial dissipation coefficient. */
+
+  /*!
+   * \brief Lax-Friedrich first order dissipation term.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2733,31 +2764,43 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentLax_Flow(void);
-  
+
 };
 
 /*!
- * \class CCentJST_Flow
- * \brief Class for centered shceme - JST.
+ * \class CCentJST_KE_Flow
+ * \brief Class for centered scheme - JST_KE (no 4th dissipation order term).
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
 class CCentJST_KE_Flow : public CCentBase_Flow {
-  
+
 private:
-  su2double Param_Kappa_2, /*!< \brief Artificial dissipation parameters. */
-  sc2, /*!< \brief Streching parameters. */
-  Epsilon_2; /*!< \brief Artificial dissipation values. */
-  
+  su2double Param_Kappa_2; /*!< \brief Artificial dissipation parameter. */
+  su2double sc2;           /*!< \brief Streching parameter. */
+  su2double Epsilon_2;     /*!< \brief Artificial dissipation coefficient. */
+
+  /*!
+   * \brief JST_KE second order dissipation term.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2765,12 +2808,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJST_KE_Flow(void);
-  
+
 };
 
 /*!
@@ -2782,14 +2825,26 @@ public:
 class CCentJST_Flow : public CCentBase_Flow {
   
 private:
-  su2double Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  sc2, sc4, /*!< \brief Streching parameters. */
-  Epsilon_2, Epsilon_4; /*!< \brief Artificial dissipation values. */  
-  
+  su2double Param_Kappa_2, Param_Kappa_4; /*!< \brief Artificial dissipation parameters. */
+  su2double sc2, sc4;                     /*!< \brief Streching parameters. */
+  su2double Epsilon_2, Epsilon_4;         /*!< \brief Artificial dissipation coefficients. */
+
+  /*!
+   * \brief JST second and forth order dissipation terms.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
   void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
-  
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2797,12 +2852,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJST_Flow(void);
-  
+
 };
 
 /*!
