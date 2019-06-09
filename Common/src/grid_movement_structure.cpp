@@ -5766,8 +5766,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
       for (iDim = 0; iDim < 3; iDim++){
         Center[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -5878,8 +5878,8 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
       for (iDim = 0; iDim < 3; iDim++){
         Center[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -6212,8 +6212,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       
       for (iDim = 0; iDim < 3; iDim++){
         Center_Aux[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center_Aux, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center_Aux, jMarker);      
     }
   }
 
