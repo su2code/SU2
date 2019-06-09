@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_mz_config
 
 python:
     - 2.7
