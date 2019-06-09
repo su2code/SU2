@@ -717,7 +717,7 @@ inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                   CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                      CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
@@ -1149,6 +1149,8 @@ inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, C
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
+
+inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
 
