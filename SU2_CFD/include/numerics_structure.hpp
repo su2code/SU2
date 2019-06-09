@@ -1988,13 +1988,13 @@ public:
 };
 
 /*!
- * \class CUpwAUSMPLUSUP_Flow
- * \brief Class for solving an approximate Riemann AUSM+ -up.
+ * \class CUpwAUSMPLUS_SLAU_Base_Flow
+ * \brief Base class for AUSM+up(2) and SLAU(2) convective schemes.
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP_Flow : public CNumerics {
-private:
+class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
+protected:
   bool implicit;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
@@ -2010,6 +2010,46 @@ private:
   su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, Pu, fa;
   su2double Kp, Ku, sigma, alpha, beta, param1, mfP, mfM;
   
+  virtual void ComputeMassAndPressureFluxes(sudouble &mdot, su2double &pressure) = 0;
+  
+  void RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
+  
+  /*!
+   * \brief Compute the AUSM+ -up flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwAUSMPLUSUP_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ -up.
+ * \ingroup ConvDiscr
+ * \author Amit Sachdeva
+ */
+class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+private:
+  
+  void ComputeMassAndPressureFluxes(sudouble &mdot, su2double &pressure);
+  
 public:
   
   /*!
@@ -2024,15 +2064,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwAUSMPLUSUP_Flow(void);
-  
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
