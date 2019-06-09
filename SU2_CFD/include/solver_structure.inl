@@ -39,36 +39,6 @@
 
 inline void CSolver::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
-inline void CSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
-
-//inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_RefGeom(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
-
-//inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
@@ -133,8 +103,6 @@ inline su2double CSolver::GetPsiE_Inf(void) { return 0; }
 inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
@@ -731,6 +699,9 @@ inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config) { }
+
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                       CConfig *config, unsigned short val_marker) { }
 
@@ -746,7 +717,7 @@ inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                   CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                      CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
@@ -852,11 +823,7 @@ inline void CSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig
 
 inline void CSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) { }
 
@@ -865,8 +832,6 @@ inline void CSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -1184,6 +1149,12 @@ inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, C
 inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
 
 inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
+
+inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_periodic = val_implicit_periodic; }
+
+inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 

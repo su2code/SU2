@@ -2801,9 +2801,15 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         thisFace.CreateUniqueNumberingWithOrientation();
 
         /* Search for thisFace in localFaces. It must be found. */
-        if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-          vector<CFaceOfElement>::iterator low;
-          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        vector<CFaceOfElement>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( thisFaceFound ) {
           low->faceIndicator = iMarker;
 
           /* A few additional checks. */
@@ -5679,7 +5685,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
             const su2double JacInv = 1.0/metric[0];
             const su2double drdx   = JacInv*metric[1], drdy = JacInv*metric[2], drdz = JacInv*metric[3];
             const su2double dsdx   = JacInv*metric[4], dsdy = JacInv*metric[5], dsdz = JacInv*metric[6];
-            const su2double dtdx   = JacInv*metric[7], dtdy = JacInv*metric[5], dtdz = JacInv*metric[9];
+            const su2double dtdx   = JacInv*metric[7], dtdy = JacInv*metric[8], dtdz = JacInv*metric[9];
 
             const su2double ddrdx_dr = rDerMetric[0], ddrdy_dr = rDerMetric[1], ddrdz_dr = rDerMetric[2];
             const su2double ddsdx_dr = rDerMetric[3], ddsdy_dr = rDerMetric[4], ddsdz_dr = rDerMetric[5];
@@ -6299,14 +6305,14 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
-              boundaries[iMarker].wallModel = new CWallModel1DEQ;
+              boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
             case LOGARITHMIC_WALL_MODEL: {
               if(rank == MASTER_NODE)
-                cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
+                cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
               
-              boundaries[iMarker].wallModel = new CWallModelLogLaw;
+              boundaries[iMarker].wallModel = new CWallModelLogLaw(config, Marker_Tag);
               break;
             }
             default: {
@@ -6314,14 +6320,9 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
             }
           }
 
-          /* Retrieve the integer and floating point information for this
-             boundary marker. The exchange location is the first element of
-             the floating point array. */
-          const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
-          const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
-
-          /* Initialize the wall model. */
-          boundaries[iMarker].wallModel->Initialize(intInfo, doubleInfo);
+          /* Retrieve the double information for this wall model. The height
+             of the exchange location is the first element of this array. */
+          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
 
           /* Easier storage of the surface elements and loop over them. */
           vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
