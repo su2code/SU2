@@ -12650,6 +12650,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average    = (config->GetCompute_Average());
   bool wall_model           = config->GetWall_Models();
+  bool wall_function        = config->GetWall_Functions();
   
   int *Local_Halo = NULL;
   
@@ -13016,7 +13017,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
       if(wall_model){
         nVar_Par +=1;
-        Variable_Names.push_back("lenScale");
+        Variable_Names.push_back("lenScale");        
+      }
+      if(wall_model || wall_function){
         nVar_Par +=1;
         Variable_Names.push_back("TauWall");
       }
@@ -13445,6 +13448,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
           if(wall_model){
             Local_Data[jPoint][iVar] = pow(geometry->node[iPoint]->GetVolume(),1./3.); iVar++;
+          }
+
+          if(wall_model || wall_function){
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
           }
         }
