@@ -1996,21 +1996,18 @@ public:
 class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
   bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, Pu, fa;
-  su2double Kp, Ku, sigma, alpha, beta, param1, mfP, mfM;
   
-  virtual void ComputeMassAndPressureFluxes(sudouble &mdot, su2double &pressure) = 0;
+  su2double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j;
+  
+  
+  // Roe variables
+  su2double *Lambda, *Epsilon, *RoeVelocity;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double Energy_i, Energy_j;
+  
+  
+  virtual void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure) = 0;
   
   void RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
   
@@ -2047,8 +2044,9 @@ public:
  */
 class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
+  su2double Kp, Ku, sigma;
   
-  void ComputeMassAndPressureFluxes(sudouble &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2072,22 +2070,11 @@ public:
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP2_Flow : public CNumerics {
+class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
-  bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double sq_veli, sq_velj, mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
-  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+  su2double Kp, sigma;
+  
+  void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2104,14 +2091,6 @@ public:
    */
   ~CUpwAUSMPLUSUP2_Flow(void);
   
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!

@@ -720,17 +720,12 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  Minf = config->GetMach();
-  Kp = 0.25; Ku = 0.75; sigma = 1.0;
-
-  Diff_U = new su2double [nVar];
+  
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
+  
+  
   RoeVelocity = new su2double [nDim];
-  delta_vel  = new su2double [nDim];
-  delta_wave = new su2double [nVar];
-  ProjFlux_i = new su2double [nVar];
-  ProjFlux_j = new su2double [nVar];
   Lambda = new su2double [nVar];
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
@@ -743,14 +738,11 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
 
 CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   
-  delete [] Diff_U;
   delete [] Velocity_i;
   delete [] Velocity_j;
+  
+  
   delete [] RoeVelocity;
-  delete [] delta_vel;
-  delete [] delta_wave;
-  delete [] ProjFlux_i;
-  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -764,56 +756,57 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
-//  /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
-//  if (implicit) {
-//    
-//    /*--- Mean Roe variables iPoint and jPoint ---*/
-//    R = sqrt(fabs(Density_j/Density_i));
-//    RoeDensity = R*Density_i;
-//    sq_vel = 0.0;
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
-//      sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
-//    }
-//    RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-//    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
-//    
-//    /*--- Compute P and Lambda (do it with the Normal) ---*/
-//    GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-//    
-//    ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
-//      ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-//      ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-//    }
-//    
-//    /*--- Flow eigenvalues and Entropy correctors ---*/
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      Lambda[iDim] = ProjVelocity;
-//    Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
-//    Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-//    
-//    /*--- Compute inverse P ---*/
-//    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-//    
-//    /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-//    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-//    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
-//    
-//    /*--- Roe's Flux approximation ---*/
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        Proj_ModJac_Tensor_ij = 0.0;
-//        /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-//        for (kVar = 0; kVar < nVar; kVar++)
-//          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
-//        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-//        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
-//      }
-//    }
-//  }
+  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel;
+  
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
+  /*--- Mean Roe variables iPoint and jPoint ---*/
+  
+  R = sqrt(fabs(Density_j/Density_i));
+  RoeDensity = R*Density_i;
+  sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+  }
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+  
+  /*--- Compute P and Lambda (do it with the Normal) ---*/
+  
+  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+  
+  ProjVelocity = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
+  
+  /*--- Flow eigenvalues and Entropy correctors ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    Lambda[iDim] = ProjVelocity;
+  Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
+  Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
+  
+  /*--- Compute inverse P ---*/
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  
+  /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
+  GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+  
+  /*--- Roe's Flux approximation ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      su2double Proj_ModJac_Tensor_ij = 0.0;
+      /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
+      val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+      val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+    }
+  }
 
 }
 
@@ -868,20 +861,29 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
 
   for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
-  
+
+
+  /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
+
+  if (implicit) RoeJacobian(val_Jacobian_i, val_Jacobian_j);
+
 }
 
 
 CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
+  Minf = config->GetMach();
+  Kp = 0.25;
+  Ku = 0.75;
+  sigma = 1.0;
 }
 
 CUpwAUSMPLUSUP_Flow::~CUpwAUSMPLUSUP_Flow(void) {
 
 }
 
-void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(sudouble &mdot, su2double &pressure) {
+void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure) {
 
   /*--- Extract primitives ---*/
 
@@ -903,27 +905,29 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(sudouble &mdot, su2double
 
   /*--- Compute interface speed of sound (aF) ---*/ 
 
-  astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
-  astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
+  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
+  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
 
-  ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
-  ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
+  su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
+  su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
 
-  aF = min(ahatL,ahatR);
+  su2double aF = min(ahatL,ahatR);
 
   /*--- Left and right pressures and Mach numbers ---*/
+  
+  su2double mLP, pLP, mRM, pRM;
 
-  mL = ProjVelocity_i/aF;
-  mR = ProjVelocity_j/aF;
+  su2double mL = ProjVelocity_i/aF;
+  su2double mR = ProjVelocity_j/aF;
 
-  MFsq = 0.5*(mL*mL+mR*mR);
-  param1 = max(MFsq, Minf*Minf);
-  Mrefsq = (min(1.0, param1));
+  su2double MFsq = 0.5*(mL*mL+mR*mR);
+  su2double param1 = max(MFsq, Minf*Minf);
+  su2double Mrefsq = min(1.0, param1);
 
-  fa = 2.0*sqrt(Mrefsq)-Mrefsq;
+  su2double fa = 2.0*sqrt(Mrefsq)-Mrefsq;
 
-  alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
-  beta = 1.0/8.0;
+  su2double alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
+  su2double beta = 1.0/8.0;
 
   if (fabs(mL) <= 1.0) {
     su2double p1 = 0.25*(mL+1.0)*(mL+1.0);
@@ -949,233 +953,129 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(sudouble &mdot, su2double
     pRM = Pressure_j*mRM/mR;
   }
 
-  /*--- Pressure and velocity diffusion term ---*/
+  /*--- Pressure and velocity diffusion terms ---*/
 
-  rhoF = 0.5*(Density_i+Density_j);
-  Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
+  su2double rhoF = 0.5*(Density_i+Density_j);
+  su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
 
-  Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*(Density_i+Density_j)*aF*(ProjVelocity_j-ProjVelocity_i);
+  su2double Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*(Density_i+Density_j)*aF*(ProjVelocity_j-ProjVelocity_i);
 
   /*--- Finally the fluxes ---*/
 
-  mF = mLP + mRM + Mp;
+  su2double mF = mLP + mRM + Mp;
   mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
 
   pressure = pLP + pRM + Pu;
 
 }
 
-
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
   
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
   Minf = config->GetMach();
-  Kp = 0.25; sigma = 1.0;
-
-  Diff_U = new su2double [nVar];
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  RoeVelocity = new su2double [nDim];
-  delta_vel  = new su2double [nDim];
-  delta_wave = new su2double [nVar];
-  ProjFlux_i = new su2double [nVar];
-  ProjFlux_j = new su2double [nVar];
-  Lambda = new su2double [nVar];
-  Epsilon = new su2double [nVar];
-  P_Tensor = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
-  }
+  Kp = 0.25;
+  sigma = 1.0;
 }
 
 CUpwAUSMPLUSUP2_Flow::~CUpwAUSMPLUSUP2_Flow(void) {
-  
-  delete [] Diff_U;
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-  delete [] RoeVelocity;
-  delete [] delta_vel;
-  delete [] delta_wave;
-  delete [] ProjFlux_i;
-  delete [] ProjFlux_j;
-  delete [] Lambda;
-  delete [] Epsilon;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] P_Tensor[iVar];
-    delete [] invP_Tensor[iVar];
-  }
-  delete [] P_Tensor;
-  delete [] invP_Tensor;
-  
+
 }
 
-void CUpwAUSMPLUSUP2_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
-  /*--- Face area (norm or the normal vector) ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
-  
-  /*-- Unit Normal ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = Normal[iDim]/Area;
-  
-  /*--- Primitive variables at point i ---*/
-  sq_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];
-    sq_vel += Velocity_i[iDim]*Velocity_i[iDim];
-  }
-  sq_veli=sq_vel; 
-  
-  Pressure_i = V_i[nDim+1];
-  Density_i = V_i[nDim+2];
-  Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel)));
-  
-  /*--- Primitive variables at point j ---*/
-  sq_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_j[iDim] = V_j[iDim+1];
-    sq_vel += Velocity_j[iDim]*Velocity_j[iDim];
-  }
-  sq_velj=sq_vel; 
+void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure) {
 
-  Pressure_j = V_j[nDim+1];
-  Density_j = V_j[nDim+2];
-  Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel)));
-  
-  /*--- Projected velocities ---*/
+  /*--- Extract primitives ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[iDim+1];   Velocity_j[iDim] = V_j[iDim+1];
+  }
+
+  Pressure_i = V_i[nDim+1];   Pressure_j = V_j[nDim+1];
+  Density_i  = V_i[nDim+2];   Density_j  = V_j[nDim+2];
+  Enthalpy_i = V_i[nDim+3];   Enthalpy_j = V_j[nDim+3];
+
+  /*--- Projected velocities and squared magnitude ---*/
+
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+  su2double sq_veli = 0.0, sq_velj = 0.0;
+
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
+    
+    sq_veli += Velocity_i[iDim]*Velocity_i[iDim];
+    sq_velj += Velocity_j[iDim]*Velocity_j[iDim];
   }
-  
-  astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i); astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
 
- // ahatL = astarL*astarL/max(astarL,fabs(ProjVelocity_i));
- // ahatR = astarR*astarR/max(astarR,fabs(ProjVelocity_j));
+  /*--- Compute interface speed of sound (aF) ---*/ 
 
-  ahatL = astarL*astarL/max(astarL,ProjVelocity_i);
-  ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
- 
-  /*--- Interface speed of sound ---*/ 
-  aF = min(ahatL,ahatR);
+  su2double astarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_i);
+  su2double astarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*Enthalpy_j);
 
-  mL  = ProjVelocity_i/aF;
-  mR  = ProjVelocity_j/aF;
-  
-  rhoF = 0.5*(Density_i+Density_j);
-  MFsq = 0.5*(mL*mL+mR*mR);
+  su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
+  su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
 
-  param1 = max(MFsq, Minf*Minf);
-  Mrefsq = (min(1.0, param1));
-  fa = 2.0*sqrt(Mrefsq)-Mrefsq;
+  su2double aF = min(ahatL,ahatR);
 
-  alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
-  beta = 1.0/8.0;
+  /*--- Left and right pressures and Mach numbers ---*/
 
-  /*--- Pressure diffusion term ---*/
-  Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
+  su2double mLP, pLP, mRM, pRM;
 
-  if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0)+beta*(mL*mL-1.0)*(mL*mL-1.0);
-  else mLP = 0.5*(mL+fabs(mL));
-  
-  if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0)-beta*(mR*mR-1.0)*(mR*mR-1.0);
-  else mRM = 0.5*(mR-fabs(mR));
-  
-  mF = mLP + mRM + Mp;
-  
-  if (fabs(mL) <= 1.0) pLP = (0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
-  else pLP = 0.5*(mL+fabs(mL))/mL;
-  
-  if (fabs(mR) <= 1.0) pRM = (0.25*(mR-1.0)*(mR-1.0)*(2.0+mR)-alpha*mR*(mR*mR-1.0)*(mR*mR-1.0));  
-  else pRM = 0.5*(mR-fabs(mR))/mR;
-  
-  /*... Modified pressure flux ...*/
+  su2double mL = ProjVelocity_i/aF;
+  su2double mR = ProjVelocity_j/aF;
+
+  su2double MFsq = 0.5*(mL*mL+mR*mR);
+  su2double param1 = max(MFsq, Minf*Minf);
+  su2double Mrefsq = min(1.0, param1);
+
+  su2double fa = 2.0*sqrt(Mrefsq)-Mrefsq;
+
+  su2double alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
+  su2double beta = 1.0/8.0;
+
+  if (fabs(mL) <= 1.0) {
+    su2double p1 = 0.25*(mL+1.0)*(mL+1.0);
+    su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
+
+    mLP = p1 + beta*p2;
+    pLP = p1*(2.0-mL)*Pressure_i + alpha*mL*p2;
+  }
+  else {
+    mLP = 0.5*(mL+fabs(mL));
+    pLP = Pressure_i*mLP/mL;
+  }
+
+  if (fabs(mR) <= 1.0) {
+    su2double p1 = 0.25*(mR-1.0)*(mR-1.0);
+    su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
+
+    mRM = -p1 - beta*p2;
+    pRM =  p1*(2.0+mR)*Pressure_j - alpha*mR*p2;
+  }
+  else {
+    mRM = 0.5*(mR-fabs(mR));
+    pRM = Pressure_j*mRM/mR;
+  }
+
+  /*--- Mass flux with pressure diffusion term ---*/
+
+  su2double rhoF = 0.5*(Density_i+Density_j);
+  su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
+
+  su2double mF = mLP + mRM + Mp;
+  mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
+
+  /*--- Modified pressure flux ---*/
+
   //Use this definition
-  pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;
+  su2double pFi = sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;
   //pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Pressure_i+Pressure_j)/aF;  
-  pF=0.5*(Pressure_j+Pressure_i)+0.5*(pLP-pRM)*(Pressure_i-Pressure_j)+pFi;  
+  pressure = 0.5*(Pressure_j+Pressure_i) + 0.5*(pLP-pRM)*(Pressure_i-Pressure_j) + pFi;  
 
-  Phi = fabs(mF);
- 
-  mfP=0.5*(mF+Phi);
-  mfM=0.5*(mF-Phi);
- 
-  val_residual[0] = aF*(mfP*Density_i+mfM*Density_j);  
-  
-  for (iDim = 0; iDim < nDim; iDim++)
-  	val_residual[iDim+1] = aF*(mfP*Density_i*Velocity_i[iDim]+mfM*Density_j*Velocity_j[iDim])+UnitNormal[iDim]*pF;
-  val_residual[nVar-1] = aF*(mfP*Density_i*Enthalpy_i+mfM*Density_j*Enthalpy_j);
-  
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] *= Area;
-  
-  /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
-  if (implicit) {
-    
-    /*--- Mean Roe variables iPoint and jPoint ---*/
-    R = sqrt(fabs(Density_j/Density_i));
-    RoeDensity = R*Density_i;
-    sq_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
-      sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
-    }
-    RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
-    
-    /*--- Compute P and Lambda (do it with the Normal) ---*/
-    GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-    
-    ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
-      ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-      ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-    }
-    
-    /*--- Flow eigenvalues and Entropy correctors ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Lambda[iDim] = ProjVelocity;
-    Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
-    Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-    
-    /*--- Compute inverse P ---*/
-    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-    
-    /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
-    
-    /*--- Roe's Flux approximation ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Proj_ModJac_Tensor_ij = 0.0;
-        /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-        for (kVar = 0; kVar < nVar; kVar++)
-          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
-        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
-      }
-    }
-  }
 }
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 
 CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
   
