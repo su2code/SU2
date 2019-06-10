@@ -18072,7 +18072,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0, Tau_Wall_Old = 0.0;
   su2double *Coord, *Coord_Normal;
-  su2double diff, Delta;
+  su2double diff, Delta, grad_diff;
   su2double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
   su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
@@ -18227,10 +18227,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
            iteratively solve for a new wall shear stress. Use the current wall
            shear stress as a starting guess for the wall function. ---*/
           
-          counter = 0; f = 1.0;
+          counter = 0; diff = 1.0;
           U_Tau = sqrt(WallShearStress/Density_Wall);
           
-          while (f > tol) {
+          while (diff > tol) {
             
             /*--- Friction velocity and u+ ---*/
             U_Plus = VelTangMod/U_Tau;
@@ -18254,17 +18254,17 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
                                                kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
             /* --- Define function for Newton method to zero --- */
-            f = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
+            diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
             /* --- Gradient of function defined above --- */
-            grad_f = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / U_Tau * U_Tau +
+            grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / U_Tau * U_Tau +
                       kappa / (U_Tau * sqrt(Gam)) * exp(-1.0 * B * kappa) * 
                       exp(kappa / sqrt(Gam) * asin(sqrt(Gam) * U_Plus)) -
                       exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
                       pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa) / U_Tau;
 
             /* --- Newton Step --- */
-            U_Tau = U_Tau - f / f_grad
+            U_Tau = U_Tau - diff / grad_diff;
 
             
             /*--- Calculate an updated value for the wall shear stress
@@ -18278,14 +18278,18 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             // diff = fabs(Tau_Wall-Tau_Wall_Old);
             // Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
             
-            // counter++;
-            // if (counter == max_iter) {
-            //   cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
-            //   cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
-            //   break;
-            // }
+            counter++;
+            if (counter == max_iter) {
+              cout << "WARNING: Y_Plus evaluation has not converged in solver_direct_mean.cpp" << endl;
+              cout << Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall << " " << Y_Plus << " " << diff << endl;
+              break;
+            }
             
           }
+
+          /*--- Calculate an updated value for the wall shear stress
+            using the y+ value, the definition of y+, and the definition of
+            the friction velocity. ---*/
 
           Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
