@@ -4945,7 +4945,6 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    to the computed representation of the shear stress ---*/
-
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
@@ -5497,8 +5496,10 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   if (Mean_TauWall > 0)
     if (config->GetWall_Models())
       ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
-    else if (config->GetWall_Functions())
+    else if (config->GetWall_Functions()){
       AddTauWall(Normal, Mean_TauWall);
+      GetViscousProjFlux(Mean_PrimVar, Normal);
+    }
     else
       SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
   else GetViscousProjFlux(Mean_PrimVar, Normal);

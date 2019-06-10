@@ -16979,8 +16979,11 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
   su2double *UnitNormal = new su2double[nDim];
   
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient;
-  
+  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad;
+  su2double *Tangential      = new su2double[nDim];
+  su2double *GradNormVel     = new su2double[nDim];
+  su2double *GradTangVel     = new su2double[nDim];
+
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -17009,7 +17012,8 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
       /*-------------------------------------------------------------------------------*/
       /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
       /*---         Primitive variables by copying all interior values to the       ---*/
-      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
+      /*---         reflected. Only the velocity is mirrored for the wall model     ---*/
+      /*---         and negative for wall functions (weakly impose v = 0)           ---*/
       /*---         axis. Based on the Upwind_Residual routine.                     ---*/
       /*-------------------------------------------------------------------------------*/
       
@@ -17021,6 +17025,28 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
       
       for (iDim = 0; iDim < nDim; iDim++) {
         UnitNormal[iDim] = -Normal[iDim]/Area;
+      }
+      
+      switch( nDim ) {
+        case 2: {
+          Tangential[0] = -UnitNormal[1];
+          Tangential[1] =  UnitNormal[0];
+          break;
+        }
+        case 3: {
+          /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
+          unsigned short Largest, Arbitrary, Zero;
+          if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) &&
+                  abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
+          else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) &&
+                  abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
+          else                                              {Largest=2;Arbitrary=1;Zero=0;}
+          
+          Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+          Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+          Tangential[Zero] =  0.0;
+          break;
+        }
       }
       
       /*--- Allocate the reflected state at the symmetry boundary. ---*/
@@ -17057,6 +17083,7 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
           V_reflected[iDim+1] = node[iPoint]->GetVelocity(iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
       }
       else{
+        /*--- Force the velocity to be 0 ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           V_reflected[iDim+1] = - V_domain[iDim+1];
       }
@@ -17098,31 +17125,68 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
        1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
        2. The gradients of the velocity components need more attention, i.e. the gradient of the
        normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-       normal direction is mirrored. ---*/
+       normal direction is mirrored. TODO: Need to check if it is necessary---*/
       
       /*--- Get gradients of primitives of boundary cell ---*/
       for (iVar = 0; iVar < nPrimVarGrad; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
           Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-
       
-      /*--- Reflect the gradients for all scalars including the velocity components. ---*/
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        if (config->GetWall_Models()){
-          /*--- Compute projected part of the gradient in a dot product ---*/
-          ProjGradient = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
+      if (config->GetWall_Models()){
+        
+        /*--- Reflect the gradients for all scalars including the velocity components.
+         The gradients of the velocity components are set later with the
+         correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          if(iVar == 0 || iVar > nDim) { // Exclude velocity component gradients
+            
+            /*--- Compute projected part of the gradient in a dot product ---*/
+            ProjGradient = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
+          }
         }
-        else{
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = - Grad_Reflected[iVar][iDim];
+        
+        /*--- Compute gradients of normal and tangential velocity:
+         grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
+         grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
+        for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+          GradNormVel[iVar] = 0.0;
+          GradTangVel[iVar] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+            GradNormVel[iVar] += Grad_Reflected[iDim+1][iVar] * UnitNormal[iDim];
+            GradTangVel[iVar] += Grad_Reflected[iDim+1][iVar] * Tangential[iDim];
+          }
         }
+        
+        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
+         component twice, just as done with velocity above.
+         grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+         grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+        ProjNormVelGrad = 0.0;
+        ProjTangVelGrad = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([v*n])*t
+          ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([v*t])*n
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+        }
+        
+        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+         grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+         grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+         ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+        for (iVar = 0; iVar < nDim; iVar++) // loops over the velocity component gradients
+          for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
+            Grad_Reflected[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
       }
-    
+     
       /*--- Set the primitive gradients of the boundary and reflected state. ---*/
       visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
       
@@ -17152,7 +17216,10 @@ void CNSSolver::BC_HeatFlux_WallModel(CGeometry      *geometry,
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
   delete [] UnitNormal;
-  
+  delete [] Tangential;
+  delete [] GradNormVel;
+  delete [] GradTangVel;
+
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     delete [] Grad_Reflected[iVar];
   delete [] Grad_Reflected;
@@ -18229,7 +18296,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           counter = 0; diff = 1.0;
           U_Tau = sqrt(WallShearStress/Density_Wall);
+          Y_Plus = 0.0; // to avoid warning
           
+          su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
           while (diff > tol) {
             
             /*--- Friction velocity and u+ ---*/
@@ -18257,11 +18326,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
             /* --- Gradient of function defined above --- */
-            grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / U_Tau * U_Tau +
+            grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
                       kappa / (U_Tau * sqrt(Gam)) * exp(-1.0 * B * kappa) * 
                       exp(kappa / sqrt(Gam) * asin(sqrt(Gam) * U_Plus)) -
                       exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                      pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa) / U_Tau;
+                      pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
             /* --- Newton Step --- */
             U_Tau = U_Tau - diff / grad_diff;
@@ -18295,7 +18364,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
           
           /*--- Store this value for the wall shear stress at the node.  ---*/
-          
+          cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
           node[iPoint]->SetTauWall(Tau_Wall);
           
         }
