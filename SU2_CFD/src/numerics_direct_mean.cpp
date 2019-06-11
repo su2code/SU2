@@ -765,22 +765,20 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2dou
   
   R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
+  ProjVelocity = 0.0;
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
   
   /*--- Compute P and Lambda (do it with the Normal) ---*/
-  
+
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-  
-  ProjVelocity = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
-  
+
   /*--- Flow eigenvalues and Entropy correctors ---*/
   
   for (iDim = 0; iDim < nDim; iDim++)
@@ -812,44 +810,43 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2dou
 
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
   /*--- Space for preaccumulation ---*/
-  
-  
+
+
   /*--- Variables for the general form. ---*/
-  
+
   su2double mdot, phi, pressure;
   su2double psi_i[5] = {1.0, 0.0, 0.0, 0.0, 0.0};
   su2double psi_j[5] = {1.0, 0.0, 0.0, 0.0, 0.0};
-  
+
   for (iDim = 0; iDim < nDim; iDim++) {
     /*--- Velocities ---*/
-    psi_i[iDim] = V_i[iDim+1];
-    psi_j[iDim] = V_j[iDim+1];
+    psi_i[iDim+1] = V_i[iDim+1];
+    psi_j[iDim+1] = V_j[iDim+1];
   }
-  
+
   /*--- Enthalpy ---*/
   psi_i[nVar-1] = V_i[nDim+3];
   psi_j[nVar-1] = V_j[nDim+3];
-  
+
   /*--- Face area (norm or the normal vector) ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
-  
+
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
-  
+
   /*--- Mass and pressure fluxes defined by derived classes ---*/
-  
+
   ComputeMassAndPressureFluxes(mdot, pressure);
   phi = fabs(mdot);
 
-  val_residual[0] = 0.5*mdot*(psi_i[0]+psi_j[0]) +
-                    0.5*phi *(psi_i[0]-psi_j[0]);
+  val_residual[0] = mdot;
 
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[iDim+1] = 0.5*mdot*(psi_i[iDim+1]+psi_j[iDim+1]) +
@@ -858,7 +855,6 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   val_residual[nVar-1] = 0.5*mdot*(psi_i[nVar-1]+psi_j[nVar-1]) +
                          0.5*phi *(psi_i[nVar-1]-psi_j[nVar-1]);
-  
 
   for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
 
@@ -934,7 +930,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doubl
     su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
 
     mLP = p1 + beta*p2;
-    pLP = p1*(2.0-mL)*Pressure_i + alpha*mL*p2;
+    pLP = Pressure_i * (p1*(2.0-mL) + alpha*mL*p2);
   }
   else {
     mLP = 0.5*(mL+fabs(mL));
@@ -946,7 +942,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doubl
     su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
 
     mRM = -p1 - beta*p2;
-    pRM =  p1*(2.0+mR)*Pressure_j - alpha*mR*p2;
+    pRM =  Pressure_j * (p1*(2.0+mR) - alpha*mR*p2);
   }
   else {
     mRM = 0.5*(mR-fabs(mR));
@@ -958,7 +954,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doubl
   su2double rhoF = 0.5*(Density_i+Density_j);
   su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
 
-  su2double Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*(Density_i+Density_j)*aF*(ProjVelocity_j-ProjVelocity_i);
+  su2double Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
 
   /*--- Finally the fluxes ---*/
 
@@ -996,14 +992,13 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doub
   /*--- Projected velocities and squared magnitude ---*/
 
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-  su2double sq_veli = 0.0, sq_velj = 0.0;
+  su2double sq_vel = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-    
-    sq_veli += Velocity_i[iDim]*Velocity_i[iDim];
-    sq_velj += Velocity_j[iDim]*Velocity_j[iDim];
+
+    sq_vel += 0.5*(Velocity_i[iDim]*Velocity_i[iDim] + Velocity_j[iDim]*Velocity_j[iDim]);
   }
 
   /*--- Compute interface speed of sound (aF) ---*/ 
@@ -1016,7 +1011,7 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doub
 
   su2double aF = min(ahatL,ahatR);
 
-  /*--- Left and right pressures and Mach numbers ---*/
+  /*--- Left and right pressure functions and Mach numbers ---*/
 
   su2double mLP, pLP, mRM, pRM;
 
@@ -1037,11 +1032,11 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doub
     su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
 
     mLP = p1 + beta*p2;
-    pLP = p1*(2.0-mL)*Pressure_i + alpha*mL*p2;
+    pLP = p1*(2.0-mL) + alpha*mL*p2;
   }
   else {
     mLP = 0.5*(mL+fabs(mL));
-    pLP = Pressure_i*mLP/mL;
+    pLP = mLP/mL;
   }
 
   if (fabs(mR) <= 1.0) {
@@ -1049,11 +1044,11 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doub
     su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
 
     mRM = -p1 - beta*p2;
-    pRM =  p1*(2.0+mR)*Pressure_j - alpha*mR*p2;
+    pRM =  p1*(2.0+mR) - alpha*mR*p2;
   }
   else {
     mRM = 0.5*(mR-fabs(mR));
-    pRM = Pressure_j*mRM/mR;
+    pRM = mRM/mR;
   }
 
   /*--- Mass flux with pressure diffusion term ---*/
@@ -1066,10 +1061,7 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(su2double &mdot, su2doub
 
   /*--- Modified pressure flux ---*/
 
-  //Use this definition
-  su2double pFi = sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;
-  //pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Pressure_i+Pressure_j)/aF;  
-  pressure = 0.5*(Pressure_j+Pressure_i) + 0.5*(pLP-pRM)*(Pressure_i-Pressure_j) + pFi;  
+  pressure = 0.5*(Pressure_j+Pressure_i) + 0.5*(pLP-pRM)*(Pressure_i-Pressure_j) + sqrt(sq_vel)*(pLP+pRM-1.0)*rhoF*aF;
 
 }
 
