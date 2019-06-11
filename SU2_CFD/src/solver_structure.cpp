@@ -1,6 +1,6 @@
-/*!
+﻿/*!
  * \file solver_structure.cpp
- * \brief Main subrotuines for solving direct, adjoint and linearized problems.
+ * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
@@ -2186,6 +2186,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
+    if (log10(sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())) > 20 ){
+      SU2_MPI::Error("SU2 has diverged. (Residual > 10^20 detected)", CURRENT_FUNCTION);
+    }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
     
@@ -3548,91 +3551,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, SOLUTION_LIMITER);
   CompleteComms(geometry, config, SOLUTION_LIMITER);
 
-}
-
-void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian) {
-  
-  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
-  unsigned short iMarker, iVar;
-  su2double DualArea, Partial_Res, *Normal;
-  su2double **UxVar_Gradient, **UyVar_Gradient;
-  
-  UxVar_Gradient = new su2double* [geometry->GetnPoint()];
-  UyVar_Gradient = new su2double* [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    UxVar_Gradient[iPoint] = new su2double [2];
-    UyVar_Gradient[iPoint] = new su2double [2];
-  }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    for (iVar = 0; iVar < 2; iVar++) {
-      UxVar_Gradient[iPoint][iVar] = 0.0;
-      UyVar_Gradient[iPoint][iVar] = 0.0;
-    }
-  
-  /*---  Loop interior edges ---*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    Normal = geometry->edge[iEdge]->GetNormal();
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(1) + node[jPoint]->GetSolution(1)) * Normal[0];
-    UxVar_Gradient[iPoint][0] += Partial_Res;
-    UxVar_Gradient[jPoint][0] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(1) + node[jPoint]->GetSolution(1)) * Normal[1];
-    UxVar_Gradient[iPoint][1] += Partial_Res;
-    UxVar_Gradient[jPoint][1] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(2) + node[jPoint]->GetSolution(2)) * Normal[0];
-    UyVar_Gradient[iPoint][0] += Partial_Res;
-    UyVar_Gradient[jPoint][0] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(2) + node[jPoint]->GetSolution(2)) * Normal[1];
-    UyVar_Gradient[iPoint][1] += Partial_Res;
-    UyVar_Gradient[jPoint][1] -= Partial_Res;
-    
-  }
-  
-  /*---  Loop boundary edges ---*/
-  
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      Point = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      
-      Partial_Res =  node[Point]->GetSolution(1) * Normal[0];
-      UxVar_Gradient[Point][0] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(1) * Normal[1];
-      UxVar_Gradient[Point][1] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(2) * Normal[0];
-      UyVar_Gradient[Point][0] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(2) * Normal[1];
-      UyVar_Gradient[Point][1] -= Partial_Res;
-    }
-    }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    DualArea = geometry->node[iPoint]->GetVolume();
-    PressureLaplacian[iPoint] = (UxVar_Gradient[iPoint][0]*UxVar_Gradient[iPoint][0] + UyVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][1] +
-                                 UxVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][0] + UxVar_Gradient[iPoint][0]*UyVar_Gradient[iPoint][1])/DualArea ;
-    
-  }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    delete[] UxVar_Gradient[iPoint];
-    delete[] UyVar_Gradient[iPoint];
-  }
-  
-  delete[] UxVar_Gradient;
-  delete[] UyVar_Gradient;
-  
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {

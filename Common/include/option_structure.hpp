@@ -175,19 +175,6 @@ enum ANSWER {
 };
 
 /*!
- * \brief Verbosity level
- */
-enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
-  VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
-  VERB_HIGH = 2			/*!< \brief High level of verbosity. */
-};
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
-
-/*!
  * \brief Average method for marker analyze
  */
 enum AVERAGE_TYPE {
@@ -327,12 +314,10 @@ static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, 
 enum ENUM_MAT_COMPRESS {
   COMPRESSIBLE_MAT = 0,		/*!< \brief Definition of compressible material. */
   NEARLY_INCOMPRESSIBLE_MAT = 1,	/*!< \brief Definition of nearly incompressible material. */
-  INCOMPRESSIBLE_MAT = 2			/*!< \brief Definition of incompressible material. */
 };
 static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
 ("COMPRESSIBLE", COMPRESSIBLE_MAT)
-("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
-("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
+("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT);
 
 
 
@@ -487,15 +472,8 @@ const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis te
 const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
 
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
-const int MAT_NHINC   = 3;   /*!< \brief Position of the Neo-Hookean incompressible material model. */
-const int MAT_IDEALDE = 4;   /*!< \brief Position of the Ideal-DE material model. */
-const int MAT_KNOWLES = 5;   /*!< \brief Position of the Knowles material model. */
-
-const int INC_TERM = 2;      /*!< \brief Position of the incompressible term in the element container array. */
-
-const int FEA_ADJ = 6;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
-const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
-
+const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
+const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 
 /*!
