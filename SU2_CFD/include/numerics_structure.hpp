@@ -2007,7 +2007,7 @@ protected:
   su2double Energy_i, Energy_j;
   
   
-  virtual void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure) = 0;
+  virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
   
   void RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
   
@@ -2046,7 +2046,7 @@ class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, Ku, sigma;
   
-  void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2074,7 +2074,7 @@ class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, sigma;
   
-  void ComputeMassAndPressureFluxes(su2double &mdot, su2double &pressure);
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2099,21 +2099,12 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_diss;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+class CUpwSLAU_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+protected:
+  bool slau_low_diss;
+  bool slau2;
+  
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2129,15 +2120,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2146,24 +2129,8 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU2_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_dissipation;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
-  
+class CUpwSLAU2_Flow : public CUpwSLAU_Flow {
 public:
-  
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -2176,15 +2143,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU2_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
