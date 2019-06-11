@@ -719,6 +719,8 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
+  Primitives_i = new su2double [nDim+3];
+  Primitives_j = new su2double [nDim+3];
   
   
   RoeVelocity = new su2double [nDim];
@@ -736,6 +738,8 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   
   delete [] Velocity_i;
   delete [] Velocity_j;
+  delete [] Primitives_i;
+  delete [] Primitives_j;
   
   
   delete [] RoeVelocity;
@@ -818,13 +822,17 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   for (iDim = 0; iDim < nDim; iDim++) {
     /*--- Velocities ---*/
-    psi_i[iDim+1] = V_i[iDim+1];
-    psi_j[iDim+1] = V_j[iDim+1];
+    Primitives_i[iDim] = psi_i[iDim+1] = V_i[iDim+1];
+    Primitives_j[iDim] = psi_j[iDim+1] = V_j[iDim+1];
   }
 
+  /*--- Pressure and Density ---*/
+  Primitives_i[ nDim ] = V_i[nDim+1];  Primitives_j[ nDim ] = V_j[nDim+1];
+  Primitives_i[nDim+1] = V_i[nDim+2];  Primitives_j[nDim+1] = V_j[nDim+2];
+
   /*--- Enthalpy ---*/
-  psi_i[nVar-1] = V_i[nDim+3];
-  psi_j[nVar-1] = V_j[nDim+3];
+  Primitives_i[nDim+2] = psi_i[nVar-1] = V_i[nDim+3];
+  Primitives_j[nDim+2] = psi_j[nVar-1] = V_j[nDim+3];
 
   /*--- Face area (norm or the normal vector) ---*/
 
@@ -853,8 +861,124 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
                          0.5*phi *(psi_i[nVar-1]-psi_j[nVar-1]);
 
   for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
+  
+  /*--- Data for flux jacobians ---*/
+  
+  su2double psi_hat[5];
+  for (iVar = 0; iVar < 5; ++iVar) {
+    /*--- Valid for phi = |mdot| ---*/
+    psi_hat[iVar] = Area * (mdot > 0.0 ? psi_i[iVar] : psi_j[iVar]);
+  }
+  
+  /*--- Numerical differentiation of fluxes wrt primitives, forward FD ---*/
+  
+  su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
+  
+  for (iVar = 0; iVar < 6; ++iVar) {
+    dmdot_dVi[iVar] = -mdot;  dpres_dVi[iVar] = -pressure;
+    dmdot_dVj[iVar] = -mdot;  dpres_dVj[iVar] = -pressure;
+  }
+  
+  for (iVar = 0; iVar < nDim+3; ++iVar) {
+    /*--- Perturb side i ---*/
+    su2double epsilon = 1e-5 * max(1.0, fabs(Primitives_i[iVar]));
+    Primitives_i[iVar] += epsilon;
+    ComputeMassAndPressureFluxes(config, mdot, pressure);
+    dmdot_dVi[iVar] += mdot;     dpres_dVi[iVar] += pressure;
+    dmdot_dVi[iVar] /= epsilon;  dpres_dVi[iVar] /= epsilon;
+    Primitives_i[iVar] -= epsilon;
+    
+    /*--- Perturb side j ---*/
+    epsilon = 1e-5 * max(1.0, fabs(Primitives_j[iVar]));
+    Primitives_j[iVar] += epsilon;
+    ComputeMassAndPressureFluxes(config, mdot, pressure);
+    dmdot_dVj[iVar] += mdot;     dpres_dVj[iVar] += pressure;
+    dmdot_dVj[iVar] /= epsilon;  dpres_dVj[iVar] /= epsilon;
+    Primitives_j[iVar] -= epsilon;
+  }
 
+  /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
+  
+  su2double dmdot_dUi[5], dmdot_dUj[5], dpres_dUi[5], dpres_dUj[5];
+  
+  for (jVar = 0; jVar < nVar; ++jVar) {
 
+    /*--- Partial derivatives of the primitives wrt conservative "jVar" ---*/
+    su2double dVi_dUi[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, sq_veli = 0.0;
+    su2double dVj_dUj[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, sq_velj = 0.0;
+    
+    if (jVar == 0) { // Density
+      for (iDim = 0; iDim < nDim; ++iDim) {
+        // -u,v,w / rho
+        dVi_dUi[iDim] = -Primitives_i[iDim]/Primitives_i[nDim+1];
+        dVj_dUj[iDim] = -Primitives_j[iDim]/Primitives_j[nDim+1];
+        // ||V||^2
+        sq_veli += Primitives_i[iDim]*Primitives_i[iDim];
+        sq_velj += Primitives_j[iDim]*Primitives_j[iDim];
+      }
+      dVi_dUi[nDim] = 0.5*Gamma_Minus_One*sq_veli;
+      dVj_dUj[nDim] = 0.5*Gamma_Minus_One*sq_velj;
+      
+      dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
+      
+      dVi_dUi[nDim+2] = (-Gamma*Primitives_i[nDim+2] / ((Gamma-1.0)*Primitives_i[nDim+1]) +
+                          0.5*(Gamma-2.0)*sq_veli ) / Primitives_i[nDim+1];
+      dVj_dUj[nDim+2] = (-Gamma*Primitives_j[nDim+2] / ((Gamma-1.0)*Primitives_j[nDim+1]) +
+                          0.5*(Gamma-2.0)*sq_velj ) / Primitives_j[nDim+1];
+    }
+    else if (jVar == nVar-1) { // rho*Energy
+      dVi_dUi[nDim] = dVj_dUj[nDim] = Gamma_Minus_One;
+      dVi_dUi[nDim+2] = Gamma / Primitives_i[nDim+1];
+      dVj_dUj[nDim+2] = Gamma / Primitives_j[nDim+1];
+    }
+    else { // Momentum
+      dVi_dUi[jVar-1] = 1.0 / Primitives_i[nDim+1];
+      dVj_dUj[jVar-1] = 1.0 / Primitives_j[nDim+1];
+      
+      dVi_dUi[nDim] = -Gamma_Minus_One*Primitives_i[jVar-1];
+      dVj_dUj[nDim] = -Gamma_Minus_One*Primitives_j[jVar-1];
+      
+      dVi_dUi[nDim+2] = dVi_dUi[nDim] / Primitives_i[nDim+1];
+      dVj_dUj[nDim+2] = dVj_dUj[nDim] / Primitives_j[nDim+1];
+    }
+    
+    /*--- Dot product to complete chain rule ---*/
+    dmdot_dUi[jVar] = 0.0;  dpres_dUi[jVar] = 0.0;
+    dmdot_dUj[jVar] = 0.0;  dpres_dUj[jVar] = 0.0;
+    for (iVar = 0; iVar < 6; ++iVar) {
+      dmdot_dUi[jVar] += dmdot_dVi[iVar]*dVi_dUi[iVar];
+      dpres_dUi[jVar] += dpres_dVi[iVar]*dVi_dUi[iVar];
+      dmdot_dUj[jVar] += dmdot_dVj[iVar]*dVj_dUj[iVar];
+      dpres_dUj[jVar] += dpres_dVj[iVar]*dVj_dUj[iVar];
+    }
+  }
+  
+  /*--- Assemble Jacobians ---*/
+  
+  su2double mi = 0.5*(mdot+phi), mj = 0.5*(mdot-phi);
+  
+  for (iVar = 0; iVar < nVar; ++iVar) {
+    for (jVar = 0; jVar < nVar; ++jVar) {
+      val_Jacobian_i[iVar][jVar] = psi_hat[iVar] * dmdot_dUi[jVar];
+      val_Jacobian_j[iVar][jVar] = psi_hat[iVar] * dmdot_dUj[jVar];
+    }
+  }
+  
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jVar = 0; jVar < nVar; ++jVar) {
+      val_Jacobian_i[iDim+1][jVar] += Normal[iDim] * dpres_dUi[jVar];
+      val_Jacobian_j[iDim+1][jVar] += Normal[iDim] * dpres_dUj[jVar];
+    }
+  
+    val_Jacobian_i[iDim+1][0] -= mi*Primitives_i[iDim]/Primitives_i[nDim+1];
+    val_Jacobian_j[iDim+1][0] -= mj*Primitives_j[iDim]/Primitives_j[nDim+1];
+    
+    val_Jacobian_i[iDim+1][iDim+1] += mi / Primitives_i[nDim+1];
+    val_Jacobian_j[iDim+1][iDim+1] += mj / Primitives_j[nDim+1];
+  }
+
+  
+  
   /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
 
   if (implicit) RoeJacobian(val_Jacobian_i, val_Jacobian_j);
@@ -880,12 +1004,13 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   /*--- Extract primitives ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];   Velocity_j[iDim] = V_j[iDim+1];
+    Velocity_i[iDim] = Primitives_i[iDim];
+    Velocity_j[iDim] = Primitives_j[iDim];
   }
 
-  Pressure_i = V_i[nDim+1];   Pressure_j = V_j[nDim+1];
-  Density_i  = V_i[nDim+2];   Density_j  = V_j[nDim+2];
-  Enthalpy_i = V_i[nDim+3];   Enthalpy_j = V_j[nDim+3];
+  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
+  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
+  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
 
   /*--- Projected velocities ---*/
 
@@ -978,12 +1103,13 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doub
   /*--- Extract primitives ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];   Velocity_j[iDim] = V_j[iDim+1];
+    Velocity_i[iDim] = Primitives_i[iDim];
+    Velocity_j[iDim] = Primitives_j[iDim];
   }
 
-  Pressure_i = V_i[nDim+1];   Pressure_j = V_j[nDim+1];
-  Density_i  = V_i[nDim+2];   Density_j  = V_j[nDim+2];
-  Enthalpy_i = V_i[nDim+3];   Enthalpy_j = V_j[nDim+3];
+  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
+  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
+  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
 
   /*--- Projected velocities and squared magnitude ---*/
 
@@ -1077,12 +1203,13 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
   /*--- Extract primitives ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];   Velocity_j[iDim] = V_j[iDim+1];
+    Velocity_i[iDim] = Primitives_i[iDim];
+    Velocity_j[iDim] = Primitives_j[iDim];
   }
 
-  Pressure_i = V_i[nDim+1];   Pressure_j = V_j[nDim+1];
-  Density_i  = V_i[nDim+2];   Density_j  = V_j[nDim+2];
-  Enthalpy_i = V_i[nDim+3];   Enthalpy_j = V_j[nDim+3];
+  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
+  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
+  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
 
   /*--- Project velocities and speed of sound ---*/
 

@@ -2001,6 +2001,8 @@ protected:
   su2double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j;
   
   
+  su2double *Primitives_i, *Primitives_j;
+  
   // Roe variables
   su2double *Lambda, *Epsilon, *RoeVelocity;
   su2double **P_Tensor, **invP_Tensor;
