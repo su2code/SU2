@@ -2033,21 +2033,21 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
-  if (body_force || streamwise_periodic) {
-    
+  if (streamwise_periodic) {
+
     /*--- Loop over all points ---*/
-    
+
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
+
       /*--- Load the conservative variables ---*/
 
       numerics->SetConservative(node[iPoint]->GetSolution(),
                                 node[iPoint]->GetSolution());
-                                
+
       numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
-      
+
       /*--- Set incompressible density  ---*/
-      
+
       numerics->SetDensity(node[iPoint]->GetDensity(),
                            node[iPoint]->GetDensity());
 
@@ -2060,13 +2060,43 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->ComputeResidual(Residual, Jacobian_i, config);
 
       /*--- Add the source residual to the total ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Add the implicit Jacobian contribution ---*/
+
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  if (body_force) {
+
+    /*--- Loop over all points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Load the conservative variables ---*/
+
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Set incompressible density  ---*/
+      
+      numerics->SetDensity(node[iPoint]->GetDensity(),
+                           node[iPoint]->GetDensity());
+
+      /*--- Load the volume of the dual mesh cell ---*/
+
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the body force source residual ---*/
+
+      numerics->ComputeResidual(Residual, config);
+
+      /*--- Add the source residual to the total ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Add the implicit Jacobian contribution ---*/
-      
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
     }
   }
 
