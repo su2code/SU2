@@ -19,7 +19,6 @@ branches:
         - feature_periodic_streamwise
 
 python:
-    - 2.7
     - 3.6
 
 env:
