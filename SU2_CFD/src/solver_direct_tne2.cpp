@@ -1533,7 +1533,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
-    //numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
 
     /*--- Check for errors before applying source to the linear system ---*/
     err = false;
@@ -4770,7 +4770,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   thetav                  = config->GetCharVibTemp();
   thetae                  = config->GetCharElTemp();
   g                       = config->GetElDegeneracy();
-
+  cout << "This doesnt work" << endl;
   su2double denom = 0.0, conc   = 0.0, rhoCvtr = 0.0, num = 0.0,
       rhoE  = 0.0, rhoEve = 0.0;
   su2double RuSI  = UNIVERSAL_GAS_CONSTANT;
@@ -4965,12 +4965,25 @@ void CTNE2EulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
+  su2double *U_outlet, *U_domain;
 
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
+
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
@@ -4985,9 +4998,11 @@ void CTNE2EulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
       /*--- Current solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimVar();
+      U_domain = node[iPoint]->GetSolution();
 
       /*--- Allocate the value at the outlet ---*/
       V_outlet = V_domain;
+      U_outlet = U_domain;
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -4996,6 +5011,12 @@ void CTNE2EulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetConservative(U_domain, U_outlet);
+
+      /*--- Pass supplementary information to CNumerics ---*/
+      conv_numerics->SetdPdU(   node[iPoint]->GetdPdU(),   node[iPoint]->GetdPdU());
+      conv_numerics->SetdTdU(   node[iPoint]->GetdTdU(),   node[iPoint]->GetdTdU());
+      conv_numerics->SetdTvedU( node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
 
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
