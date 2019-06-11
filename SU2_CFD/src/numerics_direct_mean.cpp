@@ -864,6 +864,9 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
   /*--- Data for flux jacobians ---*/
   
+  su2double mi = 0.5*Area*(mdot+phi)/Primitives_i[nDim+1],
+            mj = 0.5*Area*(mdot-phi)/Primitives_j[nDim+1];
+  
   su2double psi_hat[5];
   for (iVar = 0; iVar < 5; ++iVar) {
     /*--- Valid for phi = |mdot| ---*/
@@ -900,12 +903,13 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
   
   su2double dmdot_dUi[5], dmdot_dUj[5], dpres_dUi[5], dpres_dUj[5];
+  su2double sq_veli = 0.0, sq_velj = 0.0;
   
   for (jVar = 0; jVar < nVar; ++jVar) {
 
     /*--- Partial derivatives of the primitives wrt conservative "jVar" ---*/
-    su2double dVi_dUi[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, sq_veli = 0.0;
-    su2double dVj_dUj[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, sq_velj = 0.0;
+    su2double dVi_dUi[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    su2double dVj_dUj[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     
     if (jVar == 0) { // Density
       for (iDim = 0; iDim < nDim; ++iDim) {
@@ -921,9 +925,9 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
       
       dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
       
-      dVi_dUi[nDim+2] = (-Gamma*Primitives_i[nDim+2] / ((Gamma-1.0)*Primitives_i[nDim+1]) +
+      dVi_dUi[nDim+2] = (-Gamma*Primitives_i[nDim] / ((Gamma-1.0)*Primitives_i[nDim+1]) +
                           0.5*(Gamma-2.0)*sq_veli ) / Primitives_i[nDim+1];
-      dVj_dUj[nDim+2] = (-Gamma*Primitives_j[nDim+2] / ((Gamma-1.0)*Primitives_j[nDim+1]) +
+      dVj_dUj[nDim+2] = (-Gamma*Primitives_j[nDim] / ((Gamma-1.0)*Primitives_j[nDim+1]) +
                           0.5*(Gamma-2.0)*sq_velj ) / Primitives_j[nDim+1];
     }
     else if (jVar == nVar-1) { // rho*Energy
@@ -955,8 +959,6 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
   /*--- Assemble Jacobians ---*/
   
-  su2double mi = 0.5*(mdot+phi), mj = 0.5*(mdot-phi);
-  
   for (iVar = 0; iVar < nVar; ++iVar) {
     for (jVar = 0; jVar < nVar; ++jVar) {
       val_Jacobian_i[iVar][jVar] = psi_hat[iVar] * dmdot_dUi[jVar];
@@ -970,18 +972,29 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
       val_Jacobian_j[iDim+1][jVar] += Normal[iDim] * dpres_dUj[jVar];
     }
   
-    val_Jacobian_i[iDim+1][0] -= mi*Primitives_i[iDim]/Primitives_i[nDim+1];
-    val_Jacobian_j[iDim+1][0] -= mj*Primitives_j[iDim]/Primitives_j[nDim+1];
+    val_Jacobian_i[iDim+1][0] -= mi*Primitives_i[iDim];
+    val_Jacobian_j[iDim+1][0] -= mj*Primitives_j[iDim];
     
-    val_Jacobian_i[iDim+1][iDim+1] += mi / Primitives_i[nDim+1];
-    val_Jacobian_j[iDim+1][iDim+1] += mj / Primitives_j[nDim+1];
+    val_Jacobian_i[iDim+1][iDim+1] += mi;
+    val_Jacobian_j[iDim+1][iDim+1] += mj;
   }
 
+  val_Jacobian_i[nVar-1][0] += mi*(0.5*(Gamma-2.0)*sq_veli - 
+    Gamma*Primitives_i[nDim] / ((Gamma-1.0)*Primitives_i[nDim+1]));
+    
+  val_Jacobian_j[nVar-1][0] += mj*(0.5*(Gamma-2.0)*sq_velj -
+    Gamma*Primitives_j[nDim] / ((Gamma-1.0)*Primitives_j[nDim+1]));
   
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    val_Jacobian_i[nVar-1][iDim+1] -= mi*Gamma_Minus_One*Primitives_i[iDim]; 
+    val_Jacobian_j[nVar-1][iDim+1] -= mj*Gamma_Minus_One*Primitives_j[iDim]; 
+  }
+  val_Jacobian_i[nVar-1][nVar-1] += mi*Gamma;
+  val_Jacobian_j[nVar-1][nVar-1] += mj*Gamma;
   
   /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
 
-  if (implicit) RoeJacobian(val_Jacobian_i, val_Jacobian_j);
+//  if (implicit) RoeJacobian(val_Jacobian_i, val_Jacobian_j);
 
 }
 
