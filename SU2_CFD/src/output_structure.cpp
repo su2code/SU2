@@ -12914,6 +12914,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       }
     }
     
+    nVar_Par +=1;
+    Variable_Names.push_back("Orthogonality");
+    nVar_Par +=1;
+    Variable_Names.push_back("Aspect_Ratio");
+    nVar_Par +=1;
+    Variable_Names.push_back("Volume_Ratio");
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13222,6 +13228,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           }
         }
         
+        Local_Data[jPoint][iVar] = geometry->Orthogonality[iPoint]; iVar++;
+        Local_Data[jPoint][iVar] = geometry->Aspect_Ratio[iPoint];  iVar++;
+        Local_Data[jPoint][iVar] = geometry->Volume_Ratio[iPoint];  iVar++;
+
       }
       
       /*--- Increment the point counter, as there may have been halos we
@@ -13538,6 +13548,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- New variables get registered here before the end of the loop. ---*/
 
+    nVar_Par +=1;
+    Variable_Names.push_back("Orthogonality");
+    nVar_Par +=1;
+    Variable_Names.push_back("Aspect_Ratio");
+    nVar_Par +=1;
+    Variable_Names.push_back("Volume_Ratio");
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13836,6 +13852,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
 
+        Local_Data[jPoint][iVar] = geometry->Orthogonality[iPoint]; iVar++;
+        Local_Data[jPoint][iVar] = geometry->Aspect_Ratio[iPoint];  iVar++;
+        Local_Data[jPoint][iVar] = geometry->Volume_Ratio[iPoint];  iVar++;
       }
 
       /*--- Increment the point counter, as there may have been halos we

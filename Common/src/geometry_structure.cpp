@@ -15746,49 +15746,296 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
-  unsigned long jPoint, Point_2, Point_3, iElem;
-  su2double *Coord_j, *Coord_2, *Coord_3;
-  unsigned short iDim;
+void CPhysicalGeometry::GetQualityStatistics(CConfig *config) {
+  unsigned long iPoint, jPoint, Point_2, Point_3, iElem, iEdge, iVertex;
+  unsigned long GlobalIndex_i, GlobalIndex_j;
+  su2double *Coord_i, *Coord_j, *Coord_2, *Coord_3, *Normal;
+  su2double Area, Volume_i, Volume_j, UnitNormal[3] = {0.0,0.0,0.0};
+  su2double dist_ij, Edge_Vector[3] = {0.0,0.0,0.0}, Unit_Edge_Vector[3] = {0.0,0.0,0.0}, dot_prod, ortho_min = 1e6, ortho_max = 0.0;
+  unsigned short iDim, iMarker;
   
-  statistics[0] = 1e06;
-  statistics[1] = 0;
+  /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
   
-  /*--- Loop interior edges ---*/
-  for (iElem = 0; iElem < this->GetnElem(); iElem++) {
+//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      node[iPoint]->SetSolution_Max(iVar, -EPS);
+//      node[iPoint]->SetSolution_Min(iVar, EPS);
+//      node[iPoint]->SetLimiter(iVar, 2.0);
+//    }
+//  }
+  
+  vector<su2double> SurfaceArea(nPoint,0.0);
+  //vector<su2double> Orthogonality(nPoint,0.0);
+
+  vector<su2double> Area_Max(nPoint,0.0);
+  vector<su2double> Area_Min(nPoint,1e6);
+  //vector<su2double> Aspect_Ratio(nPoint,0.0);
+
+  vector<su2double> SubVolume_Max(nPoint,0.0);
+  vector<su2double> SubVolume_Min(nPoint,1e6);
+  //vector<su2double> SubVolume_Ratio(nPoint,0.0);
+  
+  Orthogonality.resize(nPoint,0.0);
+  Aspect_Ratio.resize(nPoint,0.0);
+  Volume_Ratio.resize(nPoint,0.0);
+
+  /*--- Loop interior edges. ---*/
+  
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
     
-    if ((this->GetnDim() == 2) && (elem[iElem]->GetVTK_Type() == TRIANGLE)) {
+    /*--- Point identification, Normal vector and area ---*/
+    
+    iPoint = edge[iEdge]->GetNode(0);
+    jPoint = edge[iEdge]->GetNode(1);
+    
+    Normal = edge[iEdge]->GetNormal();
+
+    GlobalIndex_i = node[iPoint]->GetGlobalIndex();
+    GlobalIndex_j = node[iPoint]->GetGlobalIndex();
+    
+    /*--- Face area (norm or the normal vector) ---*/
+    
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt(Area);
+    
+    /*--- Check to store the area as the min or max for point i or j. ---*/
+    
+    if (Area < Area_Min[iPoint]) Area_Min[iPoint] = Area;
+    if (Area > Area_Max[iPoint]) Area_Max[iPoint] = Area;
+
+    if (Area < Area_Min[jPoint]) Area_Min[jPoint] = Area;
+    if (Area > Area_Max[jPoint]) Area_Max[jPoint] = Area;
+
+    if (Area == 0.0) {
+      char buf[200];
+      SPRINTF(buf, "Zero-area CV face found for edge (%lu,%lu).",
+              GlobalIndex_i, GlobalIndex_j);
+      SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+    }
+    
+    /*-- Unit Normal ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
+    
+    /*--- Get the conserved variables ---*/
+    
+    Coord_i    = node[iPoint]->GetCoord();
+    Coord_j    = node[jPoint]->GetCoord();
+    
+    /*--- Compute vector going from iPoint to jPoint ---*/
+    
+    dist_ij = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+      dist_ij += Edge_Vector[iDim]*Edge_Vector[iDim];
+    }
+    dist_ij = sqrt(dist_ij);
+    
+    /*-- Unit edge vector ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      Unit_Edge_Vector[iDim] = Edge_Vector[iDim]/dist_ij;
+    
+    /*--- Compute the angle between the unit normal associated
+     with the edge and the unit vector pointing from iPoint to jPoint. ---*/
+    
+    dot_prod = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      dot_prod += UnitNormal[iDim]*Unit_Edge_Vector[iDim];
+    
+    Orthogonality[iPoint] += Area*(90.0 - acos(dot_prod)*180.0/PI_NUMBER);
+    Orthogonality[jPoint] += Area*(90.0 - acos(dot_prod)*180.0/PI_NUMBER);
+
+    SurfaceArea[iPoint] += Area;
+    SurfaceArea[jPoint] += Area;
+
+    Volume_i = node[iPoint]->GetVolume();
+    Volume_j = node[jPoint]->GetVolume();
+
+    if (Volume_i == 0.0) {
+      char buf[200];
+      SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_i);
+      SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+    }
+    
+    if (Volume_j == 0.0) {
+      char buf[200];
+      SPRINTF(buf, "Zero-area CV face found for point %lu.", GlobalIndex_j);
+      SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+    }
+    
+    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+    
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      du = (Solution_j[iVar] - Solution_i[iVar]);
+//      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+//      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+//      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+//      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+//    }
+    
+  }
+
+  /*--- Loop boundary edges ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) ){
+      //}&&
+      //  (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       
-      jPoint = elem[iElem]->GetNode(0); Coord_j = node[jPoint]->GetCoord();
-      Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
-      Point_3 = elem[iElem]->GetNode(2); Coord_3 = node[Point_3]->GetCoord();
+      // check periodicity
       
-      /*--- Compute sides of the triangle ---*/
-      su2double a = 0, b = 0, c = 0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a += (Coord_2[iDim]-Coord_j[iDim])*(Coord_2[iDim]-Coord_j[iDim]);
-        b += (Coord_3[iDim]-Coord_j[iDim])*(Coord_3[iDim]-Coord_j[iDim]);
-        c += (Coord_3[iDim]-Coord_2[iDim])*(Coord_3[iDim]-Coord_2[iDim]);
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        Normal = vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Face area (norm or the normal vector) ---*/
+        
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+        
+        /*--- Check to store the area as the min or max for point i or j. ---*/
+        
+        if (Area < Area_Min[iPoint]) Area_Min[iPoint] = Area;
+        if (Area > Area_Max[iPoint]) Area_Max[iPoint] = Area;
+
       }
-      a = sqrt(a); b = sqrt(b); c = sqrt(c);
-      
-      /*--- Compute semiperimeter (s) and area ---*/
-      su2double s = 0.5*(a + b + c);
-      su2double Area = sqrt(s*(s-a)*(s-b)*(s-c));
-      
-      /*--- Compute radius of the circumcircle (R) and of the incircle (r) ---*/
-      su2double R = (a*b*c) / (4.0*Area);
-      su2double r = Area / s;
-      su2double roR = r / R;
-      
-      /*--- Update statistics ---*/
-      if (roR < statistics[0])
-        statistics[0] = roR;
-      statistics[1] += roR;
-      
     }
   }
-  statistics[1] /= this->GetnElem();
+  
+  unsigned long face_iPoint = 0, face_jPoint = 0;
+  unsigned short nEdgesFace = 1, iFace, iEdgesFace;
+  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint,
+  Volume, my_DomainVolume;
+  bool change_face_orientation;
+  
+  Coord_Edge_CG     = new su2double[nDim];
+  Coord_FaceElem_CG = new su2double[nDim];
+  Coord_Elem_CG     = new su2double[nDim];
+  Coord_FaceiPoint  = new su2double[nDim];
+  Coord_FacejPoint  = new su2double[nDim];
+  
+  my_DomainVolume = 0.0;
+  for (iElem = 0; iElem < nElem; iElem++)
+    for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+      
+      /*--- In 2D all the faces have only one edge ---*/
+      
+      if (nDim == 2) nEdgesFace = 1;
+      
+      /*--- In 3D the number of edges per face is the same as the number of point per face ---*/
+      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+      
+      /*-- Loop over the edges of a face ---*/
+      for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+        
+        /*--- In 2D only one edge (two points) per edge ---*/
+        if (nDim == 2) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
+        }
+        
+        /*--- In 3D there are several edges in each face ---*/
+        if (nDim == 3) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
+          if (iEdgesFace != nEdgesFace-1)
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
+          else
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        }
+        
+        /*--- We define a direction (from the smallest index to the greatest) --*/
+        change_face_orientation = false;
+        if (face_iPoint > face_jPoint) change_face_orientation = true;
+        iEdge = FindEdge(face_iPoint, face_jPoint);
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Coord_Edge_CG[iDim]     = edge[iEdge]->GetCG(iDim);
+          Coord_Elem_CG[iDim]     = elem[iElem]->GetCG(iDim);
+          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
+          Coord_FaceiPoint[iDim]  = node[face_iPoint]->GetCoord(iDim);
+          Coord_FacejPoint[iDim]  = node[face_jPoint]->GetCoord(iDim);
+        }
+        
+        switch (nDim) {
+          case 2:
+            /*--- Two dimensional problem ---*/
+            //if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG);
+            //else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG);
+            Area = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+            
+            /*--- Check to store the volume as the min or max for point i or j. ---*/
+            
+            if (Area < SubVolume_Min[face_iPoint]) SubVolume_Min[face_iPoint] = Area;
+            if (Area > SubVolume_Max[face_iPoint]) SubVolume_Max[face_iPoint] = Area;
+
+            
+            //node[face_iPoint]->AddVolume(Area); my_DomainVolume +=Area;
+            Area = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
+            
+            /*--- Check to store the volume as the min or max for point i or j. ---*/
+            
+            if (Area < SubVolume_Min[face_jPoint]) SubVolume_Min[face_jPoint] = Area;
+            if (Area > SubVolume_Max[face_jPoint]) SubVolume_Max[face_jPoint] = Area;
+            
+            //node[face_jPoint]->AddVolume(Area); my_DomainVolume +=Area;
+            break;
+          case 3:
+            /*--- Three dimensional problem ---*/
+            //if (change_face_orientation) edge[iEdge]->SetNodes_Coord(Coord_FaceElem_CG, Coord_Edge_CG, Coord_Elem_CG);
+            //else edge[iEdge]->SetNodes_Coord(Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            Volume = edge[iEdge]->GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            
+            /*--- Check to store the volume as the min or max for point i or j. ---*/
+            
+            if (Volume < SubVolume_Min[face_iPoint]) SubVolume_Min[face_iPoint] = Volume;
+            if (Volume > SubVolume_Max[face_iPoint]) SubVolume_Max[face_iPoint] = Volume;
+            
+            //node[face_iPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
+            Volume = edge[iEdge]->GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+            
+            /*--- Check to store the volume as the min or max for point i or j. ---*/
+            
+            if (Volume < SubVolume_Min[face_iPoint]) SubVolume_Min[face_iPoint] = Volume;
+            if (Volume > SubVolume_Max[face_iPoint]) SubVolume_Max[face_iPoint] = Volume;
+            
+            //node[face_jPoint]->AddVolume(Volume); my_DomainVolume +=Volume;
+            break;
+        }
+      }
+    }
+  
+  
+  su2double ar_min = 1e6, ar_max = 0.0, vr_min = 1e6, vr_max = 0.0;
+  for (iPoint= 0; iPoint < nPoint; iPoint++) {
+    Orthogonality[iPoint] = Orthogonality[iPoint]/SurfaceArea[iPoint];
+    if (Orthogonality[iPoint] > ortho_max) ortho_max = Orthogonality[iPoint];
+    if (Orthogonality[iPoint] < ortho_min) ortho_min = Orthogonality[iPoint];
+    
+    Aspect_Ratio[iPoint] = Area_Max[iPoint]/Area_Min[iPoint];
+    if (Aspect_Ratio[iPoint] > ar_max) ar_max = Aspect_Ratio[iPoint];
+    if (Aspect_Ratio[iPoint] < ar_min) ar_min = Aspect_Ratio[iPoint];
+    
+    Volume_Ratio[iPoint] = SubVolume_Max[iPoint]/SubVolume_Min[iPoint];
+    if (Volume_Ratio[iPoint] > vr_max) vr_max = Volume_Ratio[iPoint];
+    if (Volume_Ratio[iPoint] < vr_min) vr_min = Volume_Ratio[iPoint];
+  }
+  cout << " Ortho Min: " << ortho_min << " deg.  Ortho Max: " << ortho_max << " deg." << endl;
+  cout << " AR Min: " << ar_min << " deg.  AR Max: " << ar_max << " deg." << endl;
+  cout << " VolR Min: " << vr_min << " deg.  VolR Max: " << vr_max << " deg." << endl;
+  
+  // need any special communication here for MPI or for periodic?
+  
+  delete[] Coord_Edge_CG;
+  delete[] Coord_FaceElem_CG;
+  delete[] Coord_Elem_CG;
+  delete[] Coord_FaceiPoint;
+  delete[] Coord_FacejPoint;
   
 }
 
