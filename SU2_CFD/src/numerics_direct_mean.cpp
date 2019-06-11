@@ -734,7 +734,7 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   if ((Beta < 0.0) && ((-1.0 < Mach) && (Mach < 0.0))) Nu_c = (1.0-Beta)*LamdaPos;
   if (fabs(Mach) >= 1) Nu_c = 0.0;
   
-  /*--- Compute viscous part of the residual ---*/
+  /*--- Compute the residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (0.5*Nu_c*Diff_U[iVar] + 0.5*Beta*Diff_Flux[iVar])*Area;
@@ -753,14 +753,14 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     
     /*--- Last row of Jacobian_i (solution difference contribution) ---*/
     
-    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*sq_vel_i;
+    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*0.5*sq_vel_i;
     for (iDim = 0; iDim < nDim; iDim++)
       val_Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
     val_Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
     
     /*--- Last row of Jacobian_j (solution difference contribution) ---*/
     
-    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*sq_vel_j;
+    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*0.5*sq_vel_j;
     for (iDim = 0; iDim < nDim; iDim++)
       val_Jacobian_j[nVar-1][iDim+1] += cte_0*Gamma_Minus_One*Velocity_j[iDim];
     val_Jacobian_j[nVar-1][nVar-1] -= cte_0*Gamma;
