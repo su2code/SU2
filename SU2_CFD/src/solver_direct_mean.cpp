@@ -18145,7 +18145,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
-  unsigned short max_iter = 10;
+  unsigned short max_iter = 50;
   su2double tol = 1e-6;
   
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
@@ -18162,8 +18162,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Typical constants from boundary layer theory ---*/
   
-  su2double kappa = 0.4;
-  su2double B = 5.5;
+  su2double kappa = 0.41;
+  su2double B = 5.0;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -18299,7 +18299,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           Y_Plus = 0.0; // to avoid warning
           
           su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
-          while (diff > tol) {
+          while (abs(diff) > tol) {
             
             /*--- Friction velocity and u+ ---*/
             U_Plus = VelTangMod/U_Tau;
@@ -18345,6 +18345,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             
             // diff = fabs(Tau_Wall-Tau_Wall_Old);
             // Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
+            // if (Coord[0] < 0.01){
+            //   if (counter == 0) cout<<"x= "<< Coord[0] << " y= " << Coord[1]<< endl;
+            //   cout<< "Iteration= " << counter << " U_Tau= "<< U_Tau << " Gam= " << Gam << " Phi= "<< Phi << " Y_Plus_White= "<< Y_Plus_White << " Y_Plus= " << Y_Plus << " diff= " << diff << " grad_diff= "<< grad_diff<< endl;
+            // }
             
             counter++;
             if (counter == max_iter) {
@@ -18363,7 +18367,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
           
           /*--- Store this value for the wall shear stress at the node.  ---*/
-          cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
+          // cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
           node[iPoint]->SetTauWall(Tau_Wall);
           
         }

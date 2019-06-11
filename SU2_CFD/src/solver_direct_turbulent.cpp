@@ -2865,7 +2865,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         counter = 0; diff = 1.0;
         U_Tau = sqrt(WallShearStress/Density_Wall);
         
-        while (diff > tol) {
+        while (abs(diff) > tol) {
           
           /*--- Friction velocity and u+ ---*/          
           U_Plus = VelTangMod/U_Tau;
@@ -2885,20 +2885,19 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
            outer velocity form of White & Christoph above. ---*/
           
           Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)*
-                                            (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
-                                             kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+                                              (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 +
+                                              kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
 
-          /* --- Define function for Newton method to zero --- */
+            /* --- Define function for Newton method to zero --- */
           diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-          /* --- Gradient of function defined above --- */
-          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / U_Tau * U_Tau +
-                    kappa / (U_Tau * sqrt(Gam)) * exp(-1.0 * B * kappa) * 
-                    exp(kappa / sqrt(Gam) * asin(sqrt(Gam) * U_Plus)) -
+            /* --- Gradient of function defined above --- */
+          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                    kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
                     exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa) / U_Tau;
+                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
-          /* --- Newton Step --- */
+            /* --- Newton Step --- */
           U_Tau = U_Tau - diff / grad_diff;
 
           /*--- Calculate an updated value for the wall shear stress
@@ -2932,7 +2931,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         Density_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetDensity();
         Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
-        dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)/sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
         Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                              (1.0 + kappa*U_Plus
                                               + kappa*kappa*U_Plus*U_Plus/2.0)
