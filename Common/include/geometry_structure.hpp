@@ -416,6 +416,11 @@ public:
   SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
   
+  vector<su2double> Orthogonality;
+  vector<su2double> Aspect_Ratio;
+  vector<su2double> Volume_Ratio;
+
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -1675,6 +1680,8 @@ public:
    */
   unsigned short GetMGLevel(void);
 
+  virtual void GetQualityStatistics(CConfig *config);
+
 };
 
 /*!
@@ -2256,7 +2263,7 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \brief Compute some parameters about the grid quality.
 	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 
 	 */	
-	void GetQualityStatistics(su2double *statistics);
+	void GetQualityStatistics(CConfig *config);
 
 	/*!
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
