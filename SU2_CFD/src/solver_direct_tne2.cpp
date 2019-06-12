@@ -2727,7 +2727,6 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
 
-
   /*--- Inizialization of variables ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
@@ -5648,6 +5647,9 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   nVar         = nSpecies+nDim+2;
   nPrimVar     = nSpecies+nDim+8;
   nPrimVarGrad = nSpecies+nDim+8;
+
+  /*--- Initialize nVarGrad for deallocation ---*/
+  nVarGrad     = nPrimVarGrad;
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex = new unsigned long[nMarker];
