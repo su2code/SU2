@@ -12470,7 +12470,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((Wrt_Vol || Wrt_Srf) && !fem_solver) {
+    if (Wrt_Vol || Wrt_Srf) {
       
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
@@ -12875,6 +12875,22 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Roe_Dissipation");
     }
     
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Density");
+        Variable_Names.push_back("Verification_Momentum_x");
+        Variable_Names.push_back("Verification_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Momentum_z");
+        Variable_Names.push_back("Verification_Energy");
+        Variable_Names.push_back("Error_Density");
+        Variable_Names.push_back("Error_Momentum_x");
+        Variable_Names.push_back("Error_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Momentum_z");
+        Variable_Names.push_back("Error_Energy");
+      }
+    }
+    
     /*--- New variables get registered here before the end of the loop. ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -13126,6 +13142,36 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
+        }
+        
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+          
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+          
+            /* Set the pointers to the coordinates and solution of this DOF. */
+            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+            su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
+            su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+          
+            /* Get the verification solution. */
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+          
+            /* Get local error from the verification solution class. */
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
+
+          }
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -13464,11 +13510,27 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Thermal_Conductivity");
     }
     
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Pressure");
+        Variable_Names.push_back("Verification_Velocity_x");
+        Variable_Names.push_back("Verification_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Velocity_z");
+        if (energy || weakly_coupled_heat) Variable_Names.push_back("Verification_Temperature");
+        Variable_Names.push_back("Error_Pressure");
+        Variable_Names.push_back("Error_Velocity_x");
+        Variable_Names.push_back("Error_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Velocity_z");
+        if (energy || weakly_coupled_heat) Variable_Names.push_back("Error_Temperature");
+      }
+    }
+    
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       nVar_Par += 2;
       Variable_Names.push_back("Vorticity_x");
       Variable_Names.push_back("Vorticity_y");
-        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
       
       nVar_Par +=1;
       Variable_Names.push_back("Q_Criterion");
@@ -13710,9 +13772,36 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
         }
         
-        /*--- New variables can be loaded to the Local_Data structure here,
-         assuming they were registered above correctly. ---*/
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+          
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+          
+            /* Set the pointers to the coordinates and solution of this DOF. */
+            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+            su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
+            su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+          
+            /* Get the verification solution. */
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+          
+            /* Get local error from the verification solution class. */
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
 
+          }
+        }
+        
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
@@ -13743,6 +13832,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = Q; iVar++;
           
         }
+        
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
 
       }
 
@@ -15839,15 +15931,15 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
-      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_Elem;
+      Conn_BoundLine_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nElem_Total;
-      if (nParallel_BoundTria > 0) Conn_BoundTria_Par = Conn_Elem;
+      Conn_BoundTria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
       nParallel_BoundQuad = nElem_Total;
-      if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_Elem;
+      Conn_BoundQuad_Par = Conn_Elem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
@@ -18366,20 +18458,17 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_BoundLine_Par      != NULL)
-      delete [] Conn_BoundLine_Par;
-    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
-      delete [] Conn_BoundTria_Par;
-    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)
-      delete [] Conn_BoundQuad_Par;
+    if (Conn_BoundLine_Par != NULL) delete [] Conn_BoundLine_Par;
+    if (Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
+    if (Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
   }
   else {
-    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
@@ -20628,6 +20717,16 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
               DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
               break;
 
+            case PARAVIEW_BINARY:
+
+              /*--- Write a ParaView ASCII file instead for now. ---*/
+
+              if (rank == MASTER_NODE) cout << "ParaView binary volume files not available in this mode." << endl;
+              if (rank == MASTER_NODE) cout << " Writing ParaView ASCII volume solution file instead." << endl;
+              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+              break;
+
             default:
               break;
           }
@@ -20661,6 +20760,16 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
               /*--- Write a Paraview ASCII file ---*/
 
               if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+              SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+              DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+              break;
+
+            case PARAVIEW_BINARY:
+
+              /*--- Write a ParaView ASCII file instead for now. ---*/
+
+              if (rank == MASTER_NODE) cout << "ParaView binary surface files not available in this mode." << endl;
+              if (rank == MASTER_NODE) cout << " Writing ParaView ASCII surface solution file instead." << endl;
               SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
               break;
@@ -20785,6 +20894,16 @@ void COutput::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geomet
               DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
               break;
 
+            case PARAVIEW_BINARY:
+
+              /*--- Write a ParaView ASCII file instead for now. ---*/
+
+              if (rank == MASTER_NODE) cout << "ParaView binary (volume grid) files not available in this mode." << endl;
+              if (rank == MASTER_NODE) cout << " Writing ParaView ASCII file instead." << endl;
+              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
+              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
+              break;
+
             default:
               break;
           }
@@ -20818,6 +20937,16 @@ void COutput::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geomet
               /*--- Write a Paraview ASCII file ---*/
 
               if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
+              SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
+              DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
+              break;
+
+            case PARAVIEW_BINARY:
+
+              /*--- Write a ParaView ASCII file instead for now. ---*/
+
+              if (rank == MASTER_NODE) cout << "ParaView binary (surface grid) files not available in this mode." << endl;
+              if (rank == MASTER_NODE) cout << " Writing ParaView ASCII file instead." << endl;
               SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
               DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
               break;
@@ -20920,9 +21049,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
     }
     Variable_Names.push_back("Mach");
 
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
-    if (Kind_Solver == FEM_NAVIER_STOKES){
+    if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
       nVar_Par += 1;
       Variable_Names.push_back("Laminar_Viscosity");
     }
@@ -20930,6 +21057,24 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       nVar_Par += 1;
       Variable_Names.push_back("Eddy_Viscosity");
     }
+
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Density");
+        Variable_Names.push_back("Verification_Momentum_x");
+        Variable_Names.push_back("Verification_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Momentum_z");
+        Variable_Names.push_back("Verification_Energy");
+        Variable_Names.push_back("Error_Density");
+        Variable_Names.push_back("Error_Momentum_x");
+        Variable_Names.push_back("Error_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Momentum_z");
+        Variable_Names.push_back("Error_Energy");
+      }
+    }
+
+    /*--- New variables get registered here before the end of the loop. ---*/
   }
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
@@ -21001,33 +21146,62 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
         iVar++;
       }
 
-      /*--- Prepare the primitive states. ---*/
+      if (!config->GetLow_MemoryOutput()) {
 
-      const su2double DensityInv = 1.0/U[0];
-      su2double vel[3], Velocity2 = 0.0;
-      for(iDim=0; iDim<nDim; ++iDim) {
-        vel[iDim] = U[iDim+1]*DensityInv;
-        Velocity2 += vel[iDim]*vel[iDim];
-      }
-      su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
-      DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
+        /*--- Prepare the primitive states. ---*/
 
-      /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
+        const su2double DensityInv = 1.0/U[0];
+        su2double vel[3], Velocity2 = 0.0;
+        for(iDim=0; iDim<nDim; ++iDim) {
+          vel[iDim] = U[iDim+1]*DensityInv;
+          Velocity2 += vel[iDim]*vel[iDim];
+        }
+        su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
+        DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
 
-      Local_Data[jPoint][iVar] = DGFluidModel->GetPressure(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetTemperature(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
-      Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
+        /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
 
-      /*--- New variables can be loaded to the Local_Data structure here,
-       assuming they were registered above correctly. ---*/
+        Local_Data[jPoint][iVar] = DGFluidModel->GetPressure(); iVar++;
+        Local_Data[jPoint][iVar] = DGFluidModel->GetTemperature(); iVar++;
+        Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
+        Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
 
-      if (Kind_Solver == FEM_NAVIER_STOKES){
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-        // todo: Export Eddy instead of Laminar viscosity
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
+          Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        }
+        if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+          // todo: Export Eddy instead of Laminar viscosity
+          Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        }
+
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+
+            /* Get the verification solution. */
+            su2double mmsSol[5];
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+
+            /* Get local error from the verification solution class. */
+            su2double error[5];
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, U, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
+          }
+        }
+
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
+
       }
 
       /*--- Increment the point counter. ---*/
@@ -21240,10 +21414,245 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
 
 void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
+  /* Determine the number of nodes for this element type. */
+  unsigned short NODES_PER_ELEMENT = 0;
+  switch (Elem_Type) {
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    case TETRAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+      break;
+    case HEXAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+      break;
+    case PRISM:
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
+      break;
+    case PYRAMID:
+      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+  }
+
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+        geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
+
+  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
+
+  /*--- Determine the number of sub-elements on this rank. ---*/
+  unsigned long nSubElem_Local = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Determine the necessary data from the corresponding standard elem. */
+    const unsigned short ind       = volElem[i].indStandardElement;
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+
+     /* Only store the linear sub elements if they are of
+        the current type that we are storing. */
+     if(Elem_Type == VTK_Type1) nSubElem_Local += standardElementsSol[ind].GetNSubElemsType1();
+     if(Elem_Type == VTK_Type2) nSubElem_Local += standardElementsSol[ind].GetNSubElemsType2();
+  }
+
+  /* Allocate the memory to store the connectivity if the size is
+     larger than zero. */
+  int *Conn_SubElem = NULL;
+  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
+
+  /*--- Loop again over the local volume elements and store the global
+        connectivities of the sub-elements. Note one is added to the
+        index value, because visualization softwares typically use
+        1-based indexing. ---*/
+  unsigned long kNode = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Determine the necessary data from the corresponding standard elem. */
+    const unsigned short ind       = volElem[i].indStandardElement;
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+
+    /* Check if the first sub-element is of the required type. */
+    if(Elem_Type == VTK_Type1) {
+
+      /* Get the number of sub-elements and the local connectivity of
+         the sub-elements. */
+      const unsigned short nSubElems     = standardElementsSol[ind].GetNSubElemsType1();
+      const unsigned short *connSubElems = standardElementsSol[ind].GetSubConnType1();
+
+      /* Store the global connectivities. */
+      const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
+      for(unsigned short k=0; k<kk; ++k, ++kNode)
+        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
+    }
+
+    /* Check if the second sub-element is of the required type. */
+    if(Elem_Type == VTK_Type2) {
+
+      /* Get the number of sub-elements and the local connectivity of
+         the sub-elements. */
+      const unsigned short nSubElems     = standardElementsSol[ind].GetNSubElemsType2();
+      const unsigned short *connSubElems = standardElementsSol[ind].GetSubConnType2();
+
+      /* Store the global connectivities. */
+      const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
+      for(unsigned short k=0; k<kk; ++k, ++kNode)
+        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
+    }
+  }
+
+  /*--- Store the particular global element count in the class data,
+        and set the class data pointer to the connectivity array. ---*/
+  switch (Elem_Type) {
+    case TRIANGLE:
+      nParallel_Tria = nSubElem_Local;
+      Conn_Tria_Par = Conn_SubElem;
+      break;
+    case QUADRILATERAL:
+      nParallel_Quad = nSubElem_Local;
+      Conn_Quad_Par = Conn_SubElem;
+      break;
+    case TETRAHEDRON:
+      nParallel_Tetr = nSubElem_Local;
+      Conn_Tetr_Par = Conn_SubElem;
+      break;
+    case HEXAHEDRON:
+      nParallel_Hexa = nSubElem_Local;
+      Conn_Hexa_Par = Conn_SubElem;
+      break;
+    case PRISM:
+      nParallel_Pris = nSubElem_Local;
+      Conn_Pris_Par = Conn_SubElem;
+      break;
+    case PYRAMID:
+      nParallel_Pyra = nSubElem_Local;
+      Conn_Pyra_Par = Conn_SubElem;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
+  }
 }
 
 void COutput::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
+  /* Determine the number of nodes for this element type. */
+  unsigned short NODES_PER_ELEMENT = 0;
+  switch (Elem_Type) {
+    case LINE:
+      NODES_PER_ELEMENT = N_POINTS_LINE;
+      break;
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+  }
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+        geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
+
+  const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
+  const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+
+  /*--- Create the map from the global DOF ID to the local index.
+        Note one is added to the index value, because visualization
+        softwares typically use 1-based indexing. ---*/
+  vector<unsigned long> globalID;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j + 1;
+      globalID.push_back(globalIndex);
+    }
+  }
+
+  /*--- Determine the number of sub-elements on this rank by looping
+        over the surface elements of the boundary markers that must
+        be plotted. ---*/
+  unsigned long nSubElem_Local = 0;
+  for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+        for(unsigned long i=0; i<surfElem.size(); ++i) {
+          const unsigned short ind      = surfElem[i].indStandardElement;
+          const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
+          if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubFaces();
+        }
+      }
+    }
+  }
+
+  /* Allocate the memory to store the connectivity if the size is
+     larger than zero. */
+  int *Conn_SubElem = NULL;
+  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
+
+  /*--- Repeat the loop over the surface elements of the boundary markers
+        that must be plotted, but now store the connectivity. ---*/
+  unsigned long kNode = 0;
+  for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+        /* Loop over the surface elements of this boundary marker. */
+        for(unsigned long i=0; i<surfElem.size(); ++i) {
+
+          /* Check if this is the element type to be stored. */
+          const unsigned short ind      = surfElem[i].indStandardElement;
+          const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
+          if(Elem_Type == VTK_Type) {
+
+            /* Get the number of sub-elements and the local connectivity of
+               the sub-elements. */
+            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
+            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
+
+            /* Store the global connectivities. */
+            const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;
+            for(unsigned short k=0; k<kk; ++k, ++kNode)
+              Conn_SubElem[kNode] = globalID[surfElem[i].DOFsSolFace[connSubFaces[k]]];
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Store the particular global element count in the class data,
+        and set the class data pointer to the connectivity array. ---*/
+  switch (Elem_Type) {
+    case LINE:
+      nParallel_Line = nSubElem_Local;
+      Conn_BoundLine_Par = Conn_SubElem;
+      break;
+    case TRIANGLE:
+      nParallel_BoundTria = nSubElem_Local;
+      Conn_BoundTria_Par = Conn_SubElem;
+      break;
+    case QUADRILATERAL:
+      nParallel_BoundQuad = nSubElem_Local;
+      Conn_BoundQuad_Par = Conn_SubElem;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
+  }
 }
 
 void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
@@ -21586,4 +21995,258 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
 void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
 
+  const int VARS_PER_POINT = nVar_Par;
+
+  /*---------------------------------------------------*/
+  /*--- Step 1: Determine the global DOF ID's of the   */
+  /*---         locally stored surface connectivities. */
+  /*---------------------------------------------------*/
+
+  /* Loop over the surface connectivities and store global
+     DOF ID's in a vector. Subtract 1, because the stored
+     connectivities are 1 based. */
+  std::vector<unsigned long> globalSurfaceDOFIDs;
+  globalSurfaceDOFIDs.reserve(nParallel_Line*N_POINTS_LINE +
+                              nParallel_BoundTria*N_POINTS_TRIANGLE +
+                              nParallel_BoundQuad*N_POINTS_QUADRILATERAL);
+
+  for(unsigned long i=0; i<(nParallel_Line*N_POINTS_LINE); ++i) {
+    const unsigned long globalID = Conn_BoundLine_Par[i]-1;
+    globalSurfaceDOFIDs.push_back(globalID);
+  }
+
+  for(unsigned long i=0; i<(nParallel_BoundTria*N_POINTS_TRIANGLE); ++i) {
+    const unsigned long globalID = Conn_BoundTria_Par[i]-1;
+    globalSurfaceDOFIDs.push_back(globalID);
+  }
+
+  for(unsigned long i=0; i<(nParallel_BoundQuad*N_POINTS_QUADRILATERAL); ++i) {
+    const unsigned long globalID = Conn_BoundQuad_Par[i]-1;
+    globalSurfaceDOFIDs.push_back(globalID);
+  }
+
+  /* Sort globalSurfaceDOFIDs in increasing order and remove the
+     multiple entries. */
+  sort(globalSurfaceDOFIDs.begin(), globalSurfaceDOFIDs.end());
+  vector<unsigned long>::iterator lastEntry;
+  lastEntry = unique(globalSurfaceDOFIDs.begin(), globalSurfaceDOFIDs.end());
+  globalSurfaceDOFIDs.erase(lastEntry, globalSurfaceDOFIDs.end());
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 2: Communicate the information of globalSurfaceDOFIDs  ---*/
+  /*---         to the ranks, which actually store this information ---*/
+  /*---         in Parallel_Data.                                   ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Allocate the memory for the first index of the communication buffers. */
+  vector<vector<unsigned long> > sendBuf(size, vector<unsigned long>(0));
+
+  /* Loop over the entries of globalSurfaceDOFIDs and fill the
+     communication buffers accordingly. */
+  for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
+
+    /* Search for the processor that owns this point. */
+    unsigned long iProcessor = globalSurfaceDOFIDs[i]/nPoint_Lin[0];
+    if (iProcessor >= (unsigned long)size)
+      iProcessor = (unsigned long)size-1;
+    if (globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor])
+      while(globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor+1]) ++iProcessor;
+    else
+      while(globalSurfaceDOFIDs[i] <  nPoint_Cum[iProcessor])   --iProcessor;
+
+    /* Store the global ID in the send buffer for iProcessor. */
+    sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
+  }
+
+  /* Determine the number of DOFs to be sent to each processor. */
+  int nRankSend = 0;
+  vector<unsigned long> nDOFSend(size);
+  for(int i=0; i<size; ++i) {
+    nDOFSend[i] = sendBuf[i].size();
+    if(nDOFSend[i] && (i != rank)) ++nRankSend;
+  }
+
+  /* Communicate nDOFSend using Alltoall. */
+  vector<unsigned long> nDOFRecv(size);
+
+#ifdef HAVE_MPI
+  SU2_MPI::Alltoall(nDOFSend.data(), 1, MPI_UNSIGNED_LONG,
+                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  nDOFRecv[rank] = nDOFSend[rank];
+#endif
+
+  /* Determine the number of messages this rank will receive. */
+  int nRankRecv = 0;
+  for(int i=0; i<size; ++i) {
+    if(nDOFRecv[i] && (i != rank)) ++nRankRecv;
+  }
+
+  /* Define the receive buffers. */
+  vector<vector<unsigned long> > recvBuf(size, vector<unsigned long>(0));
+
+#ifdef HAVE_MPI
+  /* Launch the non-blocking sends. Do not send anything to myself. */
+  vector<SU2_MPI::Request> sendReq(nRankSend);
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if(nDOFSend[i] && (i != rank)) {
+      SU2_MPI::Isend(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
+                     i, rank, MPI_COMM_WORLD, &sendReq[nRankSend]);
+      ++nRankSend;
+    }
+  }
+
+  /* Launch the non-blocking receives. Do not receive anything from myself. */
+  vector<SU2_MPI::Request> recvReq(nRankRecv);
+  nRankRecv = 0;
+  for(int i=0; i<size; ++i) {
+    if(nDOFRecv[i] && (i != rank)) {
+      recvBuf[i].resize(nDOFRecv[i]);
+      SU2_MPI::Irecv(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
+                     i, i, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+      ++nRankRecv;
+    }
+  }
+
+#endif
+
+  /* Copy my own data. */
+  recvBuf[rank] = sendBuf[rank];
+
+#ifdef HAVE_MPI
+  /* Complete the non-blocking communication. */
+  SU2_MPI::Waitall(nRankSend, sendReq.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nRankRecv, recvReq.data(), MPI_STATUSES_IGNORE);
+#endif
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 2: Determine the number of locally stored surface DOFs ---*/
+  /*---         and store the data in Parallel_Surf_Data.           ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Store all received surface ID in one vector and sort it. */
+  globalSurfaceDOFIDs.resize(0);
+  for(int i=0; i<size; ++i) {
+    if( nDOFRecv[i] )
+      globalSurfaceDOFIDs.insert(globalSurfaceDOFIDs.end(),
+                                  recvBuf[i].begin(), recvBuf[i].end());
+  }
+
+  sort(globalSurfaceDOFIDs.begin(), globalSurfaceDOFIDs.end());
+  lastEntry = unique(globalSurfaceDOFIDs.begin(), globalSurfaceDOFIDs.end());
+  globalSurfaceDOFIDs.erase(lastEntry, globalSurfaceDOFIDs.end());
+
+  /* Allocate the memory for Parallel_Surf_Data. */
+  nSurf_Poin_Par = globalSurfaceDOFIDs.size();
+
+  Parallel_Surf_Data = new su2double*[VARS_PER_POINT];
+  for(int jj=0; jj<VARS_PER_POINT; jj++)
+    Parallel_Surf_Data[jj] = new su2double[nSurf_Poin_Par];
+
+  /* Determine the local index of the global surface DOFs and
+     copy the data into Parallel_Surf_Data. */
+  for(unsigned long i=0; i<nSurf_Poin_Par; ++i) {
+    const unsigned long ii = globalSurfaceDOFIDs[i] - nPoint_Cum[rank];
+
+    for(int jj=0; jj<VARS_PER_POINT; jj++)
+      Parallel_Surf_Data[jj][i] = Parallel_Data[jj][ii];
+  }
+
+  /*--- Reduce the total number of surf points we have. This will be
+        needed for writing the surface solution files later. ---*/
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nSurf_Poin_Par, &nGlobal_Surf_Poin, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nGlobal_Surf_Poin = nSurf_Poin_Par;
+#endif
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 3: Modify the surface connectivities, such that only   ---*/
+  /*---         the data of surface DOFs needs to be written.       ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Determine the offset for my surface DOFs. */
+  unsigned long offsetSurfaceDOFs = 0;
+#ifdef HAVE_MPI
+  vector<unsigned long> nSurfaceDOFsRanks(size);
+
+  SU2_MPI::Allgather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG,
+                     nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,
+                     MPI_COMM_WORLD);
+
+  for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
+#endif
+
+  /* Create the map from the global volume numbering to the new global
+     surface numbering. */
+  map<unsigned long, unsigned long> mapGlobalVol2Surf;
+  for(unsigned long i=0; i<nSurf_Poin_Par; ++i)
+    mapGlobalVol2Surf[globalSurfaceDOFIDs[i]] = offsetSurfaceDOFs + i;
+
+  /* Fill the receive buffers with the modified global surface DOF numbers,
+     such that this information can be returned to the original ranks. */
+  for(int i=0; i<size; ++i) {
+    for(unsigned long j=0; j<nDOFRecv[i]; ++j)
+      recvBuf[i][j] = mapGlobalVol2Surf.find(recvBuf[i][j])->second;
+  }
+
+  /* Copy the original send buffers, because that information is
+     still needed. */
+  vector<vector<unsigned long> > originalSendBuf = sendBuf;
+
+#ifdef HAVE_MPI
+  /* Launch the non-blocking sends for the reverse communication, where the
+     receive buffers must be used for sending. Do not send anything to myself. */
+  nRankRecv = 0;
+  for(int i=0; i<size; ++i) {
+    if(nDOFRecv[i] && (i != rank)) {
+      SU2_MPI::Isend(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
+                     i, rank+1, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+      ++nRankRecv;
+    }
+  }
+
+  /* Launch the non-blocking receives for the reverse communication, where the
+     send buffers must be used for receiving.  Do not receive anything from myself. */
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if(nDOFSend[i] && (i != rank)) {
+      SU2_MPI::Irecv(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
+                     i, i+1, MPI_COMM_WORLD, &sendReq[nRankSend]);
+      ++nRankSend;
+    }
+  }
+
+#endif
+
+  /* Copy my own data. */
+  sendBuf[rank] = recvBuf[rank];
+
+#ifdef HAVE_MPI
+  /* Complete the non-blocking communication. */
+  SU2_MPI::Waitall(nRankRecv, recvReq.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nRankSend, sendReq.data(), MPI_STATUSES_IGNORE);
+#endif
+
+  /* Clear the map mapGlobalVol2Surf and fill it with the data
+     needed to modify the surface connectivity. Note that 1 is added,
+     because the visualization softwares typically use 1 based indexing. */
+  mapGlobalVol2Surf.clear();
+
+  for(int i=0; i<size; ++i) {
+    for(unsigned long j=0; j<nDOFSend[i]; ++j)
+      mapGlobalVol2Surf[originalSendBuf[i][j]+1] = sendBuf[i][j]+1;
+  }
+
+  /* Modify the locally stored surface connectivities. */
+  for(unsigned long i=0; i<(nParallel_Line*N_POINTS_LINE); ++i)
+    Conn_BoundLine_Par[i] = mapGlobalVol2Surf.find(Conn_BoundLine_Par[i])->second;
+
+  for(unsigned long i=0; i<(nParallel_BoundTria*N_POINTS_TRIANGLE); ++i)
+    Conn_BoundTria_Par[i] = mapGlobalVol2Surf.find(Conn_BoundTria_Par[i])->second;
+
+  for(unsigned long i=0; i<(nParallel_BoundQuad*N_POINTS_QUADRILATERAL); ++i)
+    Conn_BoundQuad_Par[i] = mapGlobalVol2Surf.find(Conn_BoundQuad_Par[i])->second;
 }
