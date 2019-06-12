@@ -2278,6 +2278,13 @@ public:
   virtual void SetBound_Disp(su2double *val_BoundDisp);
 
   /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  virtual void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
+
+  /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
@@ -5419,6 +5426,13 @@ public:
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
 
   /*!
    * \brief Determine whether the node is a moving vertex.

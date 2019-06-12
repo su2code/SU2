@@ -517,6 +517,20 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
 
+  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   is not maintained. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+  /*--- In the same way, communicate the displacements in the solver to make sure the halo
+   nodes receive the correct value of the displacement. ---*/
+  InitiateComms(geometry[MESH_0], config, SOLUTION);
+  CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
@@ -574,11 +588,13 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    Hence we still need a communication of the transformed coordinates, otherwise periodicity
    is not maintained. ---*/
-  geometry->Set_MPI_Coord(config);
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
 
   /*--- In the same way, communicate the displacements in the solver to make sure the halo
    nodes receive the correct value of the displacement. ---*/
-  Set_MPI_Displacement(geometry,config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
 }
 
@@ -706,32 +722,32 @@ void CMeshSolver::ComputeBoundary_Displacements(CGeometry *geometry, CConfig *co
 
   su2double VarCoord[3] = {0.0, 0.0, 0.0};
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_Moving(iMarker) == YES) {
 
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        /*--- Get node index ---*/
-        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
+//        /*--- Get node index ---*/
+//        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Get the displacement on the vertex ---*/
-        VarDisp = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+//        /*--- Get the displacement on the vertex ---*/
+//        VarDisp = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 
-        /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
-        }
+//        /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
+//        for (iDim = 0; iDim < nDim; iDim++){
+//          VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
+//        }
 
-        if (geometry->node[iNode]->GetDomain()) {
+//        if (geometry->node[iNode]->GetDomain()) {
 
-          node[iNode]->SetBound_Disp(VarCoord);
+//          node[iNode]->SetBound_Disp(VarCoord);
 
-        }
+//        }
 
-      }
+//      }
 
-    }
-  }
+//    }
+//  }
 
 }
 
