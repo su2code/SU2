@@ -120,10 +120,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
   
-  if (config_container[iZone]->GetUnsteady_Simulation())
-    config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
   else
-    config_container[iZone]->SetPhysicalTime(0.0);
+    config_container[ZONE_0]->SetPhysicalTime(0.0);
   
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
