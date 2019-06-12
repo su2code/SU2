@@ -853,12 +853,6 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
     }
   }
 
-
-//  /*--- Set the transfer types and update some surface markers
-//   *  depending on the actual type of interface ---*/
-  
-//  SetTransferTypes();
-  
   /*--- Definition of the geometry class to store the primal grid in the
  partitioning process. ---*/
 
