@@ -1997,20 +1997,28 @@ class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
   bool implicit;
   unsigned short iDim, iVar, jVar, kVar;
+  su2double FinDiffStep;
   
-  su2double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j;
-  
-  
+  su2double *Velocity_i, *Velocity_j;
   su2double *Primitives_i, *Primitives_j;
+  su2double ProjVelocity_i, ProjVelocity_j;
   
-  // Roe variables
-  su2double *Lambda, *Epsilon, *RoeVelocity;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double Energy_i, Energy_j;
+  /*--- Roe variables (for approximate Jacobian) ---*/
+  su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
   
-  
+  /*!
+   * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
   virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
   
+  /*!
+   * \brief Compute the flux Jacobians of the Roe scheme to use as an approximation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
   void RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
   
 public:
@@ -2029,7 +2037,7 @@ public:
   ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
   
   /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
+   * \brief Compute the AUSM+ and SLAU family of schemes.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -2048,6 +2056,12 @@ class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, Ku, sigma;
   
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
   void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
@@ -2076,6 +2090,12 @@ class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
   su2double Kp, sigma;
   
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up2 scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
   void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
@@ -2106,6 +2126,12 @@ protected:
   bool slau_low_diss;
   bool slau2;
   
+  /*!
+   * \brief Mass flux and pressure for the SLAU and SLAU2 schemes.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
   void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
