@@ -68,9 +68,9 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
     /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
     if (config->GetVolumetric_Movement()){
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+      LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+      LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+      StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
     }
 }
 

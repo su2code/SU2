@@ -112,12 +112,12 @@ int main(int argc, char *argv[]) {
     else
        driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
 
-//  }
-//  else if (config->GetMultizone_Problem() && !turbo) {
+  }
+  else if (config->GetMultizone_Problem() && !turbo) {
 
-//    /*--- Multizone Driver. ---*/
+    /*--- Multizone Driver. ---*/
 
-//    driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
