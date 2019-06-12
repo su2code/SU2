@@ -713,6 +713,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
                              CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  FinDiffStep = 1e-4;
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -721,7 +722,6 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   Velocity_j = new su2double [nDim];
   Primitives_i = new su2double [nDim+3];
   Primitives_j = new su2double [nDim+3];
-  
   
   RoeVelocity = new su2double [nDim];
   Lambda = new su2double [nVar];
@@ -756,7 +756,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
-  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel;
+  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
   
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
@@ -789,7 +789,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2dou
   /*--- Compute inverse P ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
   
-  /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
   GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
   
@@ -811,7 +811,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2dou
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  /*--- Space for preaccumulation ---*/
+  /*--- Space to start preaccumulation ---*/
 
 
   /*--- Variables for the general form. ---*/
@@ -862,7 +862,17 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
   
-  /*--- Data for flux jacobians ---*/
+  /*--- Space to end preaccumulation ---*/
+  
+  
+  
+  if (!implicit) return;
+  
+  /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
+  
+  RoeJacobian(val_Jacobian_i, val_Jacobian_j); return;
+  
+  /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
   
   su2double mi = 0.5*Area*(mdot+phi)/Primitives_i[nDim+1],
             mj = 0.5*Area*(mdot-phi)/Primitives_j[nDim+1];
@@ -884,7 +894,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
   for (iVar = 0; iVar < nDim+3; ++iVar) {
     /*--- Perturb side i ---*/
-    su2double epsilon = 1e-5 * max(1.0, fabs(Primitives_i[iVar]));
+    su2double epsilon = FinDiffStep * max(1.0, fabs(Primitives_i[iVar]));
     Primitives_i[iVar] += epsilon;
     ComputeMassAndPressureFluxes(config, mdot, pressure);
     dmdot_dVi[iVar] += mdot;     dpres_dVi[iVar] += pressure;
@@ -892,7 +902,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
     Primitives_i[iVar] -= epsilon;
     
     /*--- Perturb side j ---*/
-    epsilon = 1e-5 * max(1.0, fabs(Primitives_j[iVar]));
+    epsilon = FinDiffStep * max(1.0, fabs(Primitives_j[iVar]));
     Primitives_j[iVar] += epsilon;
     ComputeMassAndPressureFluxes(config, mdot, pressure);
     dmdot_dVj[iVar] += mdot;     dpres_dVj[iVar] += pressure;
@@ -957,8 +967,9 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
     }
   }
   
-  /*--- Assemble Jacobians ---*/
+  /*--- Assemble final Jacobians ---*/
   
+  /*--- Contribution from the mass flux derivatives ---*/
   for (iVar = 0; iVar < nVar; ++iVar) {
     for (jVar = 0; jVar < nVar; ++jVar) {
       val_Jacobian_i[iVar][jVar] = psi_hat[iVar] * dmdot_dUi[jVar];
@@ -967,11 +978,13 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   }
   
   for (iDim = 0; iDim < nDim; ++iDim) {
+    /*--- Contribution from the pressure derivatives ---*/
     for (jVar = 0; jVar < nVar; ++jVar) {
       val_Jacobian_i[iDim+1][jVar] += Normal[iDim] * dpres_dUi[jVar];
       val_Jacobian_j[iDim+1][jVar] += Normal[iDim] * dpres_dUj[jVar];
     }
   
+    /*--- Contributions from the derivatives of PSI wrt the conservatives (velocity part) ---*/
     val_Jacobian_i[iDim+1][0] -= mi*Primitives_i[iDim];
     val_Jacobian_j[iDim+1][0] -= mj*Primitives_j[iDim];
     
@@ -979,9 +992,10 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
     val_Jacobian_j[iDim+1][iDim+1] += mj;
   }
 
+  /*--- Continue dPSI/dU (energy part, last row) ---*/
   val_Jacobian_i[nVar-1][0] += mi*(0.5*(Gamma-2.0)*sq_veli - 
     Gamma*Primitives_i[nDim] / ((Gamma-1.0)*Primitives_i[nDim+1]));
-    
+  
   val_Jacobian_j[nVar-1][0] += mj*(0.5*(Gamma-2.0)*sq_velj -
     Gamma*Primitives_j[nDim] / ((Gamma-1.0)*Primitives_j[nDim+1]));
   
@@ -991,10 +1005,6 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   }
   val_Jacobian_i[nVar-1][nVar-1] += mi*Gamma;
   val_Jacobian_j[nVar-1][nVar-1] += mj*Gamma;
-  
-  /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
-
-//  if (implicit) RoeJacobian(val_Jacobian_i, val_Jacobian_j);
 
 }
 
@@ -1237,10 +1247,10 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
     sq_velj += Velocity_j[iDim]*Velocity_j[iDim];
   }
 
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  su2double Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_veli)));
 
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  su2double Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_velj)));
 
   /*--- Compute interface speed of sound (aF), and left/right Mach number ---*/
