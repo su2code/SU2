@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - filipeabperes@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_pytorch
 
 python:
     #- 2.7
