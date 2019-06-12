@@ -475,7 +475,9 @@ const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressibl
 const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
-const int MESH_SOL = 9;   /*!< \brief Position of the mesh solver. */
+const int MESH_SOL = 8;      /*!< \brief Position of the mesh solver. */
+const int ADJMESH_SOL = 9;   /*!< \brief Position of the adjoint of the mesh solver. */
+
 
 /*!
  * \brief types of finite elements (in 2D or 3D)

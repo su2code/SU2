@@ -15693,13 +15693,6 @@ public:
   void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Impose the send-receive boundary condition for displacements in mesh deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Displacement(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Store the old displacement before a new deformation is done.
    */
   void SetSolution_Old(void);
