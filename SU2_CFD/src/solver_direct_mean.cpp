@@ -16080,6 +16080,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
+  su2double TauWall = 0;
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CoPx_Visc, MyAllBound_CoPy_Visc, MyAllBound_CoPz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL, *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL, *MySurface_HF_Visc = NULL, *MySurface_MaxHF_Visc;
@@ -16101,6 +16102,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
+  bool wall_function        = config->GetWall_Functions();
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -16267,7 +16269,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
         TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        
+
         WallShearStress = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
@@ -16275,6 +16277,30 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
         WallShearStress = sqrt(WallShearStress);
+
+        if (wall_function){
+          TauWall = node[iPoint]->GetTauWall();
+          for (iDim = 0 ; iDim < nDim; iDim++)
+            for (jDim = 0 ; jDim < nDim; jDim++)
+              Tau[iDim][jDim] = Tau[iDim][jDim]*(TauWall/WallShearStress);
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++) {
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+            }
+          }
+        
+          /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
+        
+          TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+          WallShearStress = TauWall;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+            CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          }
+        }
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
