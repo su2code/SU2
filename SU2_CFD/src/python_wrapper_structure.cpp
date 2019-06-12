@@ -932,7 +932,7 @@ void CFluidDriver::BoundaryConditionsUpdate(){
   }
 }
 
-void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
+void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
 
   unsigned long iPoint;
   PyWrapVarCoord[0] = DispX;
@@ -940,7 +940,17 @@ void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex
   PyWrapVarCoord[2] = DispZ;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->node[iPoint]->SetSolution(PyWrapVarCoord);
+
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->node[iPoint]->SetBound_Disp(PyWrapVarCoord);
+
+}
+
+void CDriver::CommunicateMeshDisplacement(void) {
+
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                    config_container[ZONE_0], MESH_DISPLACEMENTS);
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                    config_container[ZONE_0], MESH_DISPLACEMENTS);
 
 }
 

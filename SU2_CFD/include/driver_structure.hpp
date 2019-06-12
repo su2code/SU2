@@ -686,7 +686,12 @@ public:
    * \param[in] DispY - Value of the mesh displacement in the direction Y.
    * \param[in] DispZ - Value of the mesh displacement in the direction Z.
    */
-  void SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+  void SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+
+  /*!
+   * \brief Communicate the boundary mesh displacements in a python call
+   */
+  void CommunicateMeshDisplacement(void);
 
   /*!
    * \brief Return the sensitivities of the mesh boundary vertices.

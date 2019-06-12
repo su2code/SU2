@@ -663,6 +663,8 @@ inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
 
 inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
 
+inline void CVariable::SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) { }
+
 inline su2double *CVariable::GetBoundDisp_Direct(void) { return NULL; }
 
 inline void CVariable::SetBoundDisp_Direct(su2double *val_BoundDisp) { }
@@ -1728,6 +1730,10 @@ inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return
 
 inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
+}
+
+inline void CMeshBoundVariable::SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) {
+  Boundary_Displacement[iDim] = val_BoundDisp;
 }
 
 inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }
