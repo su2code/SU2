@@ -1166,7 +1166,7 @@ void CPBFluidIteration::Iterate(COutput *output,
   //solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
   
   integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_CyclePB(geometry_container, solver_container, numerics_container,
-                                                                  config_container, FinestMesh, 0, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);
+                                                                  config_container, FinestMesh, 0, RUNTIME_FLOW_SYS, IntIter, val_iZone,val_iInst);
                                                                   
   if (config_container[val_iZone]->GetKind_Solver() == RANS) {
     

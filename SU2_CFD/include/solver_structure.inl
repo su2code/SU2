@@ -882,7 +882,9 @@ inline su2double CSolver::GetDirichlet_BC(CGeometry*, CConfig*, unsigned long) {
 
 inline void CSolver::Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-inline void CSolver::SetPoissonSourceTerm(CGeometry*, CSolver**, CConfig*, bool mg, unsigned short iMesh) { }
+inline void CSolver::SetPoissonSourceTerm(CGeometry*, CSolver**, CConfig*, unsigned short iMesh) { }
+
+inline void CSolver::SetMomCoeff(CGeometry*, CSolver**, CConfig*, bool mg, unsigned short iMesh) { }
 
 inline void CSolver::SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
 

@@ -4327,11 +4327,17 @@ public:
    */
   virtual void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
   
-    /*!
+  /*!
    * \brief A virtual member
    * Set source term for pressure correction.
    */
-  virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh); 
+  virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh); 
+
+  /*!
+   * \brief A virtual member
+   * Set source term for pressure correction.
+   */
+  virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh); 
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -8764,7 +8770,14 @@ public:
    *        on the residuals from the solution of momentum equation.
    * 
    */
-  void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh);
+  void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Compute the source term for the pressure correction equation based 
+   *        on the residuals from the solution of momentum equation.
+   * 
+   */
+  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool mg, unsigned short iMesh);
   
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.

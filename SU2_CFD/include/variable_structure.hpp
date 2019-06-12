@@ -2474,6 +2474,10 @@ public:
   
   virtual void Set_Mom_CoeffZero();
   
+  virtual void Set_Mom_Coeff(unsigned short val_Var, su2double val_Mom_Coeff);
+  
+  virtual void Set_Mom_Coeff_nb(unsigned short val_Var, su2double val_Mom_Coeff);
+  
   virtual su2double GetMassFlux();
   
   virtual su2double GetPoisson_Coeff();
@@ -4159,6 +4163,9 @@ public:
 
   void Set_Mom_Coeff_nb(su2double *val_Mom_Coeff);
   
+  void Set_Mom_Coeff_nb(unsigned short val_Var, su2double val_Mom_Coeff);  
+  
+  void Set_Mom_Coeff(unsigned short val_Var, su2double val_Mom_Coeff);  
   
   void Set_Mom_Coeff_nbZero();
   

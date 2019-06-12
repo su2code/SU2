@@ -1807,6 +1807,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
     case SOLUTION_OLD:
     case UNDIVIDED_LAPLACIAN:
     case SOLUTION_LIMITER:
+    case MOM_COEFF:
+    case MOM_COEFF_NB:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1856,6 +1858,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
       break;
     case AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case MASS_FLUX:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case PRIMITIVE_VARS:
+      COUNT_PER_POINT  = nPrimVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -1984,6 +1994,21 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Pred_Old(iVar);
             }
             break;
+          case MOM_COEFF:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->Get_Mom_Coeff(iVar);
+          break;
+          case MOM_COEFF_NB:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->Get_Mom_Coeff_nb(iVar);
+          break;
+          case MASS_FLUX:
+            bufDSend[buf_offset] = node[iPoint]->GetMassFlux();
+          break;
+          case PRIMITIVE_VARS:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetPrimitive(iVar);
+          break;  
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -2012,14 +2037,13 @@ void CSolver::CompleteComms(CGeometry *geometry,
   SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
-  
   su2double *bufDRecv = geometry->bufD_P2PRecv;
   
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
   
   if (geometry->nP2PRecv > 0) {
-    
+     
     for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
       
       /*--- For efficiency, recv the messages dynamically based on
@@ -2134,6 +2158,21 @@ void CSolver::CompleteComms(CGeometry *geometry,
               node[iPoint]->SetSolution_Pred_Old(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
             break;
+          case MOM_COEFF:
+            for (iVar = 0; iVar < nVar; iVar++) 
+              node[iPoint]->Set_Mom_Coeff(iVar, bufDRecv[buf_offset+iVar]);
+          break;
+          case MOM_COEFF_NB:
+            for (iVar = 0; iVar < nVar; iVar++) 
+              node[iPoint]->Set_Mom_Coeff_nb(iVar, bufDRecv[buf_offset+iVar]);
+          break;
+          case MASS_FLUX:
+            node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);
+          break;
+          case PRIMITIVE_VARS:
+            for (iVar = 0; iVar < nPrimVar; iVar++) 
+              node[iPoint]->SetPrimitive(iVar, bufDRecv[buf_offset+iVar]);
+          break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);

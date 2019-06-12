@@ -1222,7 +1222,9 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
                   Iteration, iZone, iInst);
       
      /*--- Set source term for pressure correction equation based on current flow solution ---*/
-     solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+     solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+     
+     solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
 	
 
      /*--- Solve the poisson equation (pressure correction) ---*/
@@ -1258,7 +1260,9 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 		config[iZone]->SetKind_TimeIntScheme(EULER_IMPLICIT);
 
 		/*--- Set source term for pressure correction equation based on current flow solution ---*/
-		solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+		solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+     
+		solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
 		 
 		/*--- Solve the poisson equation (pressure correction) ---*/
 		config[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, Iteration);
@@ -1283,7 +1287,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 	    
 	   //cout<<"Find massflux on "<<iMesh<<endl;
 	   /* Find Mass imbalance - SetPoissonSourceterm(imesh) - Sets ResMassFlux m_k*/
-	    solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], true, iMesh);
+	    solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh);
 	    
 	   //cout<<"Update R and M with trun errors on "<<iMesh<<endl;
 	   /* Set Residuals - R_k = R_k + P_k^m and m_k = m_k + P_k^c*/
@@ -1305,7 +1309,7 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
 	    
 	    //cout<<"Find massflux on "<<iMesh+1<<endl;
 	   /* Find Mass imbalance - SetPoissonSourceterm(imesh+1) - Sets ResMassFlux m_k+1*/
-	    solver_container[iZone][iInst][iMesh+1][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], config[iZone], true, iMesh+1);
+	    solver_container[iZone][iInst][iMesh+1][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh+1], solver_container[iZone][iInst][iMesh+1], config[iZone], iMesh+1);
 	    
 	   //cout<<"Find trunc errors based on restricted vars and restricted residuals on "<<iMesh+1<<endl;
 	   /* SetForcingTerm(imesh+1,imesh) P_(k+1)^m = I^(k+1)_k R_k - R_(k+1), P_(k+1)^c = I^(k+1)_k m_k - m_k+1*/
@@ -1353,7 +1357,9 @@ void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
                   Iteration, iZone, iInst);
       
             /*--- Set source term for pressure correction equation based on current flow solution ---*/
-            solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+            solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], false, iMesh);
+     
+            solver_container[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone],  iMesh);
 	
 
            /*--- Solve the poisson equation (pressure correction) ---*/

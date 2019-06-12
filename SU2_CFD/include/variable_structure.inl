@@ -731,7 +731,11 @@ inline void CVariable::SetPoisson_Coeff(su2double val_Poisson_Coeff){ }
 
 inline void CVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {  }
 
+inline void CVariable::Set_Mom_Coeff(unsigned short val_var, su2double val_Mom_Coeff) { }
+
 inline void CVariable::Set_Mom_Coeff_nb(su2double *val_Mom_Coeff) { }
+
+inline void CVariable::Set_Mom_Coeff_nb(unsigned short val_var, su2double val_Mom_Coeff) { }
 
 inline void CVariable::Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) { }
   
@@ -1169,6 +1173,10 @@ inline void CPBIncEulerVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {
       Mom_Coeff[iDim] = val_Mom_Coeff[iDim]; 
 }
 
+inline void CPBIncEulerVariable::Set_Mom_Coeff(unsigned short val_var, su2double val_Mom_Coeff) { 
+     Mom_Coeff[val_var] = val_Mom_Coeff; 
+}
+
 inline su2double CPBIncEulerVariable::GetSolution_iter_m(unsigned short val_var) { return Solution_iter_m[val_var]; }
 
 inline void CPBIncEulerVariable::AddSolution_iter_m(unsigned short val_var, su2double val_solution) { Solution_iter_m[val_var] += val_solution;}
@@ -1178,6 +1186,10 @@ inline su2double CPBIncEulerVariable::Get_Mom_Coeff_nb(unsigned short val_Var) {
 inline void CPBIncEulerVariable::Set_Mom_Coeff_nb(su2double *val_Mom_Coeff_nb) { 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Mom_Coeff_nb[iDim] = val_Mom_Coeff_nb[iDim]; 
+}
+
+inline void CPBIncEulerVariable::Set_Mom_Coeff_nb(unsigned short val_var, su2double val_Mom_Coeff) { 
+     Mom_Coeff_nb[val_var] = val_Mom_Coeff; 
 }
 
 inline void CPBIncEulerVariable::Add_Mom_Coeff_nb(su2double val_coeff_nb, unsigned short val_Var) { Mom_Coeff_nb[val_Var] += val_coeff_nb;}
