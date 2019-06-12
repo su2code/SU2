@@ -1428,6 +1428,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Total number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDiscAdjSinglezoneDriver(char* confFile,
@@ -1442,57 +1443,56 @@ public:
 
   /*!
    * \brief Preprocess the single-zone iteration
+   * \param[in] TimeIter - index of the current time-step.
    */
   void Preprocess(unsigned long TimeIter);
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-
-  void Run();
+  void Run(void);
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess();
+  void Postprocess(void);
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-
   void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void DirectRun(unsigned short kind_recording);
 
   /*!
    * \brief Set the objective function.
    */
-  void SetObjFunction();
+  void SetObjFunction(void);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction();
+  void SetAdj_ObjFunction(void);
 
   /*!
    * \brief Print out the direct residuals.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void Print_DirectResidual(unsigned short kind_recording);
 
   /*!
    * \brief Record the main computational path.
    */
-
   void MainRecording(void);
 
   /*!
    * \brief Record the secondary computational path.
    */
-
   void SecondaryRecording(void);
 
 };

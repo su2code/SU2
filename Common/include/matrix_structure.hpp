@@ -402,23 +402,6 @@ public:
   void DiagonalProduct(CSysVector<ScalarType> & vec, unsigned long row_i);
   
   /*!
-   * \brief Send receive the solution using MPI.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  template<class OtherType>
-  void SendReceive_Solution(CSysVector<OtherType> & x, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SendReceive_SolutionTransposed(CSysVector<ScalarType> & x, CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
    * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.

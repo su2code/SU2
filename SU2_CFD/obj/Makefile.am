@@ -59,7 +59,6 @@ noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
 libSU2Core_sources = \
-  ../include/data_manufactured_solutions.hpp \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -84,7 +83,6 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
-  ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
