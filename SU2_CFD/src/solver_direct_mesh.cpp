@@ -574,11 +574,13 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    Hence we still need a communication of the transformed coordinates, otherwise periodicity
    is not maintained. ---*/
-  geometry->Set_MPI_Coord(config);
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
 
   /*--- In the same way, communicate the displacements in the solver to make sure the halo
    nodes receive the correct value of the displacement. ---*/
-  Set_MPI_Displacement(geometry,config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
 }
 
