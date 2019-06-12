@@ -84,24 +84,12 @@ all:
 real: ${SWIG_SO_REAL}
 
 if BUILD_NORMAL
-  EXTRA_CC_FLAGS = -fPIC -O2
-#  EXTRA_CC_FLAGS = -fPIC -g3
+  EXTRA_CC_FLAGS = -fPIC -O3
 endif
 
 if BUILD_REVERSE
-  EXTRA_CC_FLAGS = -fPIC -O2 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
+  EXTRA_CC_FLAGS = -fPIC -O3 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
 #  EXTRA_CC_FLAGS = -fPIC -g3 -std=c++0x -DCODI_REVERSE_TYPE -I$(top_srcdir)/externals/codi/include -I$(top_srcdir)/externals/medi/include
-endif
-
-#External includes
-METIS_INCLUDE = -I${abs_top_srcdir}/externals/metis/include
-PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
-TECIO_INCLUDE = -I${abs_top_srcdir}/externals/tecio/include
-
-#External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB =
-if BUILD_TECIO
-  TECIO_LIB += ${abs_top_builddir}/externals/tecio/libtecio.a
 endif
 
 #SU2_BASE lib
@@ -121,10 +109,10 @@ if BUILD_REVERSE
 endif
 
 # Set the linking flags to use
-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB} ${PY_LIB}
+pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB}
 
 # Set the command line flags to use for compilation
-pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
+pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} @su2_externals_INCLUDES@ ${pySU2_INCLUDE}
 
 SO_LINK_FLAGS= -fPIC -shared 
 
