@@ -281,8 +281,8 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
 
       if (rank == MASTER_NODE && Screen_Output)
         cout << "Deforming the volume grid." << endl;
-      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                           config_container[val_iZone], true, Screen_Output, true);
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], true, false);
 
       nIterMesh = grid_movement[val_iZone][val_iInst]->Get_nIterMesh();
       stat_mesh = (nIterMesh == 0);
@@ -313,8 +313,8 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
         cout << "Deforming the volume grid." << endl;
 
-      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                    config_container[val_iZone], true, Screen_Output, false);
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                                                    config_container[val_iZone], true, false);
 
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
         cout << "There is no grid velocity." << endl;

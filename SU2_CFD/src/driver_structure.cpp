@@ -452,7 +452,7 @@ CDriver::CDriver(char* confFile,
         cout << "Setting moving mesh structure for FSI problems." << endl;
       /*--- Instantiate the container for the grid movement structure ---*/
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+        grid_movement[iZone][iInst] = new CVolumetricMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
 
   }
@@ -854,10 +854,10 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
   }
 
 
-  /*--- Set the transfer types and update some surface markers
-   *  depending on the actual type of interface ---*/
+//  /*--- Set the transfer types and update some surface markers
+//   *  depending on the actual type of interface ---*/
   
-  SetTransferTypes();
+//  SetTransferTypes();
   
   /*--- Definition of the geometry class to store the primal grid in the
  partitioning process. ---*/
