@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -36,6 +36,14 @@
  */
 
 #include "../include/SU2_CFD.hpp"
+
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
+/* Include file, needed for the runtime NaN catching. */
+//#include <fenv.h>
 
 using namespace std;
 
@@ -56,6 +64,14 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
+  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+
+  /*--- Initialize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_init();
+#endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
   
@@ -69,23 +85,34 @@ int main(int argc, char *argv[]) {
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
-   for variables allocation)  ---*/
-
+   for variables allocation). ---*/
+  
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
-
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  if (config->GetKind_Solver() == MULTIZONE)
+    nZone  = config->GetnConfigFiles();
+  else
+    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
+  if (config->GetSinglezone_Driver()) {
 
-  if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+    /*--- Single zone problem: instantiate the single zone driver class. ---*/
+
+    if (nZone > 1 ) {
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
+    }
+
+    driver = new CSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+  }
+  else if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
         config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
@@ -95,6 +122,12 @@ int main(int argc, char *argv[]) {
     }
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+  } else if (config->GetKind_Solver() == MULTIZONE) {
+
+    /*--- Multizone Driver. ---*/
+
+    driver = new CMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
@@ -153,7 +186,7 @@ int main(int argc, char *argv[]) {
     }
     
   }
-
+  
   delete config;
   config = NULL;
 
@@ -167,9 +200,13 @@ int main(int argc, char *argv[]) {
 
   if (driver != NULL) delete driver;
   driver = NULL;
+  
+  /*---Finalize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_finalize();
+#endif
 
   /*--- Finalize MPI parallelization ---*/
-
 #ifdef HAVE_MPI
   SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);

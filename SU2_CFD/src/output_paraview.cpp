@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for the output of ParaView visualization files.
  * \author F. Palacios, T. Economon, E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -107,8 +107,10 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
       fileroot = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    fileroot = config->GetHeat_FileName().c_str();
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
+    if (surf_sol) fileroot = config->GetSurfHeat_FileName().c_str();
+    else fileroot = config->GetHeat_FileName().c_str();
+  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -121,16 +123,12 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
-    
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-    strcat(cstr, buffer);
-  }
-  
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
+       Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
+      (val_nZone > 1) &&
+      (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
@@ -216,8 +214,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetAdjStructure_FileName().c_str();
   }
 
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
+  }
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -230,16 +230,12 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
-
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-    strcat(cstr, buffer);
-  }
-    
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || 
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
+       Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
+      (val_nZone > 1) &&
+      (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
@@ -1194,18 +1190,24 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol)
       filename = config->GetSurfStructure_FileName().c_str();
-    else
+    else {
       filename = config->GetStructure_FileName().c_str();
+      if (!new_file) {
+        filename = filename + "_def";
+      }
+    }
   }
   
   
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
+  }
   
   strcpy (cstr, filename.c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -1995,9 +1997,11 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     else
       filename = config->GetStructure_FileName().c_str();
   }
-
-  if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+  
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
+  }
 
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -2010,16 +2014,12 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
-
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-    strcat(cstr, buffer);
-  }
-
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
+       Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
+      (val_nZone > 1) &&
+      (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
@@ -2529,12 +2529,12 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nSurf_Elem_Par,
              (int)nSurf_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nSurf_Elem_Par*N_POINTS_QUADRILATERAL];
+    conn_buf = new int[nSurf_Elem_Par*(N_POINTS_QUADRILATERAL+1)];
   } else {
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nGlobal_Elem_Par,
              (int)nGlobal_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nGlobal_Elem_Par*N_POINTS_HEXAHEDRON];
+    conn_buf = new int[nGlobal_Elem_Par*(N_POINTS_HEXAHEDRON+1)];
   }
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
@@ -2666,7 +2666,6 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       conn_buf[iNode2+3] = Conn_Pyra_Par[iNode+2]-1;
       conn_buf[iNode2+4] = Conn_Pyra_Par[iNode+3]-1;
       conn_buf[iNode2+5] = Conn_Pyra_Par[iNode+4]-1;
-      conn_buf[iNode2+6] = Conn_Pyra_Par[iNode+5]-1;
     }
     if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                               nParallel_Pyra*(N_POINTS_PYRAMID+1));
@@ -2674,6 +2673,8 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
            nParallel_Pyra*(N_POINTS_PYRAMID+1), fhw);
     
   }
+  
+  if (conn_buf != NULL) delete [] conn_buf;
   
   /*--- Load/write the cell type for all elements in the file. ---*/
   
@@ -2759,7 +2760,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector data (reuse the counts above). ---*/
   
@@ -2858,6 +2859,10 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  /*--- Close the file. ---*/
+  
+  fclose(fhw);
+  
 #else
   
   /*--- Parallel binary output using MPI I/O. ---*/
@@ -2870,13 +2875,14 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   /*--- All ranks open the file using MPI. Here, we try to open the file with
    exclusive so that an error is generated if the file exists. We always want
-   to write a fresh restart file, so we delete any existing files and create
+   to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
   
   ierr = MPI_File_open(MPI_COMM_WORLD, fname,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
+    MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
     ierr = MPI_File_open(MPI_COMM_WORLD, fname,
@@ -3215,7 +3221,6 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       conn_buf[iStorage+3] = Conn_Pyra_Par[iNode+2]-1;
       conn_buf[iStorage+4] = Conn_Pyra_Par[iNode+3]-1;
       conn_buf[iStorage+5] = Conn_Pyra_Par[iNode+4]-1;
-      conn_buf[iStorage+6] = Conn_Pyra_Par[iNode+5]-1;
       iStorage += (N_POINTS_PYRAMID+1);
     }
     
@@ -3335,7 +3340,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Free the derived datatype. ---*/
   
   MPI_Type_free(&filetype);
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector point data. ---*/
   

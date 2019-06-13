@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -77,6 +77,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
   bool fsi = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -231,7 +232,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   }
 
   Solution_BGS_k = NULL;
-  if (fsi){
+  if (fsi || multizone){
       Solution_BGS_k  = new su2double [nVar];
       Solution[0] = val_density;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -251,6 +252,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
   bool fsi = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -398,7 +400,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   }
   
   Solution_BGS_k = NULL;
-  if (fsi){
+  if (fsi || multizone){
       Solution_BGS_k  = new su2double [nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution_BGS_k[iVar] = val_solution[iVar];

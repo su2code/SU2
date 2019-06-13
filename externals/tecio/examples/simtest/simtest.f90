@@ -14,11 +14,12 @@
       INCLUDE 'tecio.f90'
 
       character*1 NULLCHR
-      Integer*4   Debug,III,NPts,NElm
+      Integer*4   Debug,III,NPts,NElm,isDouble
 
       Dimension X(4,5), Y(4,5), P(4,5)
       Real*8    SolTime
       Integer*4 VIsDouble, FileType
+      Integer*4 FileFormat
       Integer*4 ZoneType,StrandID,ParentZn,IsBlock
       Integer*4 ICellMax,JCellMax,KCellMax,NFConns,FNMode,ShrConn
       POINTER   (NullPtr,Null)
@@ -28,6 +29,7 @@
       NullPtr = 0
       Debug   = 1
       FileType = 0
+      FileFormat = 0 ! 0 = PLT, 1 = SZPLT
       VIsDouble = 0
       IMax    = 4
       JMax    = 5
@@ -47,10 +49,11 @@
 !... Open the file and write the tecplot datafile 
 !... header information.
 !
-      I = TecIni112('SIMPLE DATASET'//NULLCHR, &
+      I = TecIni142('SIMPLE DATASET'//NULLCHR, &
                     'X Y P'//NULLCHR, &
-                    't.plt'//NULLCHR, &
+                    'simtestf90-t.plt'//NULLCHR, &
                     '.'//NULLCHR, &
+                    FileFormat, &
                     FileType, &
                     Debug, &
                     VIsDouble)
@@ -64,7 +67,7 @@
 !
 !... Write the zone header information.
 !
-      I = TecZne112('Simple Zone'//NULLCHR, &
+      I = TecZne142('Simple Zone'//NULLCHR, &
                     ZoneType, &
                     IMax, &
                     JMax, &
@@ -89,10 +92,11 @@
 !... Write out the field data.
 !
       III = IMax*JMax
-      I   = TecDat112(III,X,0)
-      I   = TecDat112(III,Y,0)
-      I   = TecDat112(III,P,0)
+      isDouble = 0
+      I   = TecDat142(III,X,0)
+      I   = TecDat142(III,Y,0)
+      I   = TecDat142(III,P,0)
 
-      I = TecEnd112()
+      I = TecEnd142()
       Stop
       End

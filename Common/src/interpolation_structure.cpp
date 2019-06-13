@@ -2,7 +2,7 @@
  * \file interpolation_structure.cpp
  * \brief Main subroutines used by SU2_FSI
  * \author H. Kline
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2736,7 +2736,7 @@ CRadialBasisFunction::~CRadialBasisFunction() {}
 void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
   int iProcessor, nProcessor = size;
-  int nPolynomial;
+  int nPolynomial = 0;
   int mark_donor, mark_target, target_check, donor_check;
   int *skip_row = NULL, *calc_polynomial_check;
 
@@ -2940,7 +2940,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     
 #else
     global_M = new CSymmetricMatrix;
-    global_M->Initialize(nVertexDonorInDomain, local_M);
+    global_M->Initialize((int)nVertexDonorInDomain, local_M);
 #endif
     
     /*--- Invert M matrix ---*/
@@ -2996,7 +2996,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
             for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++) {
               val_j = 0;
               for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++) {
-                val_j += global_M->Read(iVertexDonor, jVertexDonor)*P[jVertexDonor*(nPolynomial+1)+n];
+                val_j += global_M->Read((int)iVertexDonor, (int)jVertexDonor)*P[jVertexDonor*(nPolynomial+1)+n];
               }
               val_i += val_j*P[iVertexDonor*(nPolynomial+1)+m];
             }
@@ -3013,7 +3013,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
             for (int n=0; n<nPolynomial+1; n++) {
               val_j = 0;
               for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++) {
-                val_j += P[jVertexDonor*(nPolynomial+1)+n]*global_M->Read(jVertexDonor, iVertexDonor);
+                val_j += P[jVertexDonor*(nPolynomial+1)+n]*global_M->Read((int)jVertexDonor, (int)iVertexDonor);
               }
               val_i += val_j*Mp->Read(m, n);
             }
@@ -3038,7 +3038,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         }
 
         /*--- Calculate M_inv*(I - P'*M_p*P*M_inv) ---*/
-        global_M->MatMatMult(true, C_tmp, nGlobalVertexDonor);
+        global_M->MatMatMult(true, C_tmp, (int)nGlobalVertexDonor);
 
         /*--- Write to C_inv_trunc matrix ---*/
         for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++)
@@ -3050,7 +3050,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         C_inv_trunc = new su2double [nGlobalVertexDonor*nGlobalVertexDonor];
         for (iVertexDonor=0; iVertexDonor<nGlobalVertexDonor; iVertexDonor++)
           for (jVertexDonor=0; jVertexDonor<nGlobalVertexDonor; jVertexDonor++)
-      		C_inv_trunc[iVertexDonor*nGlobalVertexDonor+jVertexDonor] = global_M->Read(iVertexDonor, jVertexDonor);
+      		C_inv_trunc[iVertexDonor*nGlobalVertexDonor+jVertexDonor] = global_M->Read((int)iVertexDonor, (int)jVertexDonor);
       
       } // endif GetRadialBasisFunctionPolynomialOption
     } // endif (rank == MASTER_NODE)
@@ -3201,7 +3201,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, const i
   
   /*--- Compute P times its transpose ---*/
   PPT = new CSymmetricMatrix;
-  PPT->Initialize(n_rows);
+  PPT->Initialize((int)n_rows);
 
   iCount = 0;
   for (int i = 0; i < m; i ++) {
@@ -3216,7 +3216,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, const i
           {
             sum += SU2_TYPE::GetValue(P[k*m+i]*P[k*m+j]);
           }
-          PPT->Write(iCount, jCount, sum);
+          PPT->Write((int)iCount, (int)jCount, sum);
           
           jCount++;
         }
@@ -3281,7 +3281,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, const i
       keep_row[i] = int(i != iCount);
     
     /*--- form the truncated P... ---*/
-    n_polynomial = n_rows - 1;
+    n_polynomial = (int)n_rows - 1;
     
     write_row = new int [m];
     iCount = 0;
@@ -3316,7 +3316,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, const i
   }
   /*--- Not a plane after all ---*/
   else {
-    n_polynomial = n_rows;
+    n_polynomial = (int)n_rows;
   }
   
   delete PPT;

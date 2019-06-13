@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -37,7 +37,8 @@
 
 #pragma once
 
-inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
+template<class ScalarType>
+inline ScalarType CSysSolve<ScalarType>::Sign(const ScalarType & x, const ScalarType & y) const {
   if (y == 0.0)
     return 0.0;
   else {
@@ -46,3 +47,12 @@ inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const
     else return fabs(x);
   }
 }
+
+template<class ScalarType>
+inline ScalarType CSysSolve<ScalarType>::GetResidual(void) const { return Residual; }
+
+template<class ScalarType>
+void CSysSolve<ScalarType>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {}
+
+template<class ScalarType>
+void CSysSolve<ScalarType>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {}

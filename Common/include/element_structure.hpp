@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -20,7 +20,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -456,6 +456,18 @@ public:
 	 */
 	virtual void ComputeGrad_Pressure(void);
 
+    /*!
+	 * \brief Register the current and reference coordinates of the element as pre-accumulation inputs
+	 * the latter are needed for compatibility with shape derivatives, there is no problem registering
+	 * because inactive variables are ignored.
+	 */
+	void SetPreaccIn_Coords(void);
+	
+	/*!
+	 * \brief Register the stress residual as a pre-accumulation output. When computing the element
+	 * stiffness matrix this is the only term that sees its way into the RHS of the system.
+	 */
+	void SetPreaccOut_Kt_a(void);
 
 };
 
@@ -805,7 +817,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.2.0 "Cardinal"
+ * \version 6.2.0 "Falcon"
  */
 
 class CPRISM6 : public CElement {

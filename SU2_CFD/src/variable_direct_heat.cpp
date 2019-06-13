@@ -2,7 +2,7 @@
  * \file variable_direct_heat.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -53,6 +53,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   bool low_fidelity = false;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool multizone = config->GetMultizone_Problem();
 
   Undivided_Laplacian = NULL;
 
@@ -86,6 +87,13 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     Undivided_Laplacian = new su2double [nVar];
   }
+
+  Solution_BGS_k = NULL;
+  if (multizone){
+      Solution_BGS_k  = new su2double [1];
+      Solution_BGS_k[0] = val_Heat;
+  }
+
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {  }

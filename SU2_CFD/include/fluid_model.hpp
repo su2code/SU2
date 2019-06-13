@@ -1,8 +1,8 @@
 /*!
  * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
- * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 6.1.0 "Falcon"
+ * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -219,6 +219,11 @@ public:
 		 */
 		su2double GetdktdT_rho ();
 
+    /*!
+     * \brief Set specific heat Cp model.
+     */
+    virtual void SetCpModel (CConfig *config);
+  
 		/*!
 		 * \brief Set viscosity model.
 		 */
@@ -332,6 +337,7 @@ protected:
           Gamma_Minus_One,       /*!< \brief Heat Capacity Ratio Minus One. */
           Gas_Constant;        /*!< \brief Gas Constant. */
 
+  bool  ComputeEntropy;        /*!< \brief Whether or not to compute entropy. */
 
 public:
 
@@ -344,6 +350,11 @@ public:
 		 * \brief Constructor of the class.
 		 */
 		CIdealGas(su2double gamma, su2double R);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		CIdealGas(su2double gamma, su2double R, bool CompEntropy);
 
 
 		/*!
@@ -695,6 +706,50 @@ public:
    */
   
   void SetTDState_T(su2double val_Temperature);
+  
+};
+
+/*!
+ * \class CIncIdealGasPolynomial
+ * \brief Child class for defining a custom incompressible ideal gas model.
+ * \author: T. Economon
+ */
+class CIncIdealGasPolynomial : public CFluidModel {
+  
+protected:
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
+  su2double Gas_Constant,     /*!< \brief Specific Gas Constant. */
+  *b,                         /*!< \brief Polynomial coefficients for Cp as a function of temperature. */
+  Gamma;                      /*!< \brief Ratio of specific heats. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGasPolynomial(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGasPolynomial(su2double val_gas_constant, su2double val_operating_pressure);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CIncIdealGasPolynomial(void);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficients for variable Cp.
+   * \param[in] config - configuration container for the problem.
+   */
+  void SetCpModel(CConfig *config);
+  
+  /*!
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] T - Temperature value at the point.
+   */
+  void SetTDState_T(su2double val_temperature);
   
 };
 

@@ -3,13 +3,13 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
 # with selected contributions from the open-source community.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -51,13 +51,20 @@ lib_sources = \
   ../include/datatypes/complex_structure.inl \
   ../include/ad_structure.hpp \
   ../include/ad_structure.inl \
+  ../include/fem_cgns_elements.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
+  ../include/blas_structure.hpp \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
+  ../include/fem_geometry_structure.hpp \
+  ../include/fem_geometry_structure.inl \
+  ../include/fem_standard_element.hpp \
+  ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
+  ../include/graph_coloring_structure.hpp \
   ../include/grid_adaptation_structure.hpp \
   ../include/grid_adaptation_structure.inl \
   ../include/grid_movement_structure.hpp \
@@ -77,15 +84,28 @@ lib_sources = \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
   ../include/interpolation_structure.hpp \
+  ../include/fem_gauss_jacobi_quadrature.hpp \
+  ../include/fem_gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
   ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
+  ../include/wall_model.hpp \
+  ../include/wall_model.inl \
+  ../src/fem_cgns_elements.cpp \
   ../src/config_structure.cpp \
+  ../src/blas_structure.cpp \
   ../src/dual_grid_structure.cpp \
+  ../src/fem_geometry_structure.cpp \
+  ../src/fem_integration_rules.cpp \
+  ../src/fem_standard_element.cpp \
+  ../src/fem_wall_distance.cpp \
+  ../src/fem_work_estimate_metis.cpp \
   ../src/geometry_structure.cpp \
+  ../src/geometry_structure_fem_part.cpp \
+  ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
   ../src/linear_solvers_structure.cpp \
@@ -95,11 +115,14 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
   ../src/ad_structure.cpp \
+  ../src/fem_gauss_jacobi_quadrature.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
-  ../src/adt_structure.cpp
+  ../src/adt_structure.cpp \
+  ../src/wall_model.cpp \
+  ../src/toolboxes/printing_toolbox.cpp 
 
 lib_cxxflags = -fPIC
 lib_ldadd =
@@ -108,29 +131,9 @@ lib_ldadd =
 lib_cxxflags += @su2_externals_INCLUDES@
 lib_ldadd += @su2_externals_LIBS@
 
-# if BUILD_HDF5
-lib_cxxflags += @HDF5_CXX@
-lib_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-lib_cxxflags += @SZIP_CXX@
-lib_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-lib_cxxflags += @ZLIB_CXX@
-lib_ldadd += @ZLIB_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 lib_cxxflags += @MUTATIONPP_CXX@
 lib_ldadd += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-lib_cxxflags += @JSONCPP_CXX@
-lib_ldadd += @JSONCPP_LD@
 # endif
 
 if BUILD_NORMAL

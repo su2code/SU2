@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -71,44 +71,25 @@ endif
 
 if BUILD_REVERSE
 su2_dot_ldadd += \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
-   ../../Common/lib/libSU2_AD.a
+  ../../SU2_CFD/src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-variable_structure.$(OBJEXT) \
+  ../../Common/lib/libSU2_AD.a
 endif
 
 # always link to built dependencies from ./externals
 su2_dot_cxx_flags += @su2_externals_INCLUDES@
 su2_dot_ldadd += @su2_externals_LIBS@
+su2_dot_ldadd += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
 su2_dot_ldadd += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-su2_dot_cxx_flags += @JSONCPP_CXX@
-su2_dot_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_HDF5
-su2_dot_cxx_flags += @HDF5_CXX@
-su2_dot_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-su2_dot_cxx_flags += @SZIP_CXX@
-su2_dot_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-su2_dot_cxx_flags += @ZLIB_CXX@
-su2_dot_ldadd += @ZLIB_LD@
 # endif
 
 if BUILD_NORMAL

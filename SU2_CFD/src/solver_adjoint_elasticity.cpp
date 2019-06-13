@@ -2,7 +2,7 @@
  * \file solver_adjoint_elasticity.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -80,7 +80,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   unsigned short iVar, iMarker, iDim;
 
   bool restart = config->GetRestart();
-  bool fsi = config->GetFSI_Simulation();
 
   restart = false;
 
@@ -152,7 +151,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
-  if (fsi){
+  if (config->GetMultizone_Residual()){
 
     Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
     Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
@@ -521,7 +520,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->node[iPoint]->Get_femSolution_time_n()[iVar]);
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
       }
     }
     for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -624,6 +623,8 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
         }
 
+        if (config->GetTopology_Optimization())
+          direct_solver->RegisterVariables(geometry,config);
     }
 
   }
@@ -672,6 +673,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
       break;
   case REFERENCE_NODE:
       ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
+      break;
+  case VOLUME_FRACTION:
+      ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
       break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
@@ -907,7 +911,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     }
 
-
+    if (config->GetTopology_Optimization())
+      direct_solver->ExtractAdjoint_Variables(geometry,config);
   }
 
 
@@ -1052,7 +1057,7 @@ void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *con
 
 }
 
-void CDiscAdjFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
