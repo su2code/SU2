@@ -18395,7 +18395,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           /*--- Store this value for the wall shear stress at the node.  ---*/
           // cout << Coord[0] << " " << Coord[1] << " " << Y_Plus_Start << " " << Y_Plus << " " << Tau_Wall << endl;
           node[iPoint]->SetTauWall(Tau_Wall);
-          node[iPoint]->SetTemperature(T_Wall)
+          node[iPoint]->SetTemperature(T_Wall);
           node[iPoint]->SetDensity(Density_Wall);
           
         }
