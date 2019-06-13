@@ -12477,6 +12477,8 @@ protected:
 
 public:
 
+  unsigned long nElement;
+
   CMeshVariable** node;          /*!< \brief Vector which defines the variables for each problem. */
   CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
 

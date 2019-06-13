@@ -42,12 +42,46 @@
 
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(), System(false, true) {
 
+  unsigned int iElem;
+
+  /*--- general geometric settings ---*/
   nDim         = geometry->GetnDim();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+  nElement     = geometry->GetnElem();
 
+  /*--- Element container structure ---*/
+
+  /*--- First level: only the FEA_TERM is considered ---*/
+  element_container = new CElement** [1];
+  element_container[GRAD_TERM] = new CElement* [MAX_FE_KINDS];
+
+  /*--- Initialize all subsequent levels ---*/
+  for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+    element_container[GRAD_TERM][iKind] = NULL;
+  }
+
+  if (nDim == 2) {
+      element_container[GRAD_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+      element_container[GRAD_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+  }
+  else if (nDim == 3) {
+      element_container[GRAD_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+      element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8(nDim, config);
+      element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5(nDim, config);
+      element_container[GRAD_TERM][EL_PRISM] = new CPRISM6(nDim, config);
+  }
+
+  /*--- Allocate element properties - only the index, to allow further integration with CFEASolver on a later stage ---*/
+  element_properties = new CProperty*[nElement];
+  for (iElem = 0; iElem < nElement; iElem++){
+    element_properties[iElem] = new CProperty(iElem);
+  }
+
+  /*--- auxiliary submatrices ---*/
   su2double **matrixId;
 
+  /*--- linear system ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nDim, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nDim, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config);
@@ -59,6 +93,15 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
 
   delete [] Residual;
   delete [] matrixId;
+
+  if (element_container != NULL) {
+    for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+       if (element_container[GRAD_TERM][jVar] != NULL) delete element_container[GRAD_TERM][jVar];
+    }
+    delete [] element_container[FEA_TERM];
+    delete [] element_container;
+  }
+
 }
 
 
@@ -97,8 +140,81 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
 
+  unsigned long iElem, iVar, jVar;
+  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol;
+  int EL_KIND = 0;
+
+  su2double *Res_Stress_i;
+
+  su2double *Kab = NULL, *Ta = NULL;
+  unsigned short NelNodes, jNode;
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+      std::cout << "1.2 " << std::endl;
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim); //geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+      }
+
+    }
+
+    /*--- Set the properties of the element ---*/
+    element_container[GRAD_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+
+    numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+
+    /*--- Retrieve number of nodes ---*/
+
+    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+
+        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+          }
+        }
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+      }
+
+    }
+
+  }
+
+/*
+
+std::cout << "2. " << std::endl;
+
   unsigned long iPoint;
-  unsigned short iDim, jDim;
 
   matrixId    = new su2double *[nDim];
   for(iDim = 0; iDim < nDim; iDim++){
@@ -114,6 +230,8 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Jacobian.SetBlock(iPoint,iPoint,matrixId);
   }
+
+*/
 
 }
 
