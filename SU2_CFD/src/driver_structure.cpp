@@ -343,6 +343,10 @@ CDriver::CDriver(char* confFile,
       integration_container[iZone][iInst] = NULL;
 
       integration_container[iZone][iInst] = new CIntegration*[MAX_SOLS];
+
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        integration_container[iZone][iInst][iSol] = NULL;
+
       Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
           config_container[iZone], iInst);
     }

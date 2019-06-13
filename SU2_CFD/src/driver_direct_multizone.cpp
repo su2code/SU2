@@ -515,8 +515,9 @@ void CMultizoneDriver::Update() {
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
