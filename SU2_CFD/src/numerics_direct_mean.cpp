@@ -43,6 +43,7 @@ CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar,
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
+  fix_factor = config->GetCent_Jac_Fix_Factor();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -195,23 +196,23 @@ void CCentBase_Flow::ScalarDissipationJacobian(su2double **val_Jacobian_i, su2do
   /*--- n-1 diagonal entries ---*/
 
   for (iVar = 0; iVar < (nVar-1); iVar++) {
-    val_Jacobian_i[iVar][iVar] += cte_0;
-    val_Jacobian_j[iVar][iVar] -= cte_1;
+    val_Jacobian_i[iVar][iVar] += fix_factor*cte_0;
+    val_Jacobian_j[iVar][iVar] -= fix_factor*cte_1;
   }
   
   /*--- Last row of Jacobian_i ---*/
   
-  val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*sq_vel_i;
+  val_Jacobian_i[nVar-1][0] += fix_factor*cte_0*Gamma_Minus_One*sq_vel_i;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
-  val_Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
+    val_Jacobian_i[nVar-1][iDim+1] -= fix_factor*cte_0*Gamma_Minus_One*Velocity_i[iDim];
+  val_Jacobian_i[nVar-1][nVar-1] += fix_factor*cte_0*Gamma;
   
   /*--- Last row of Jacobian_j ---*/
   
-  val_Jacobian_j[nVar-1][0] -= cte_1*Gamma_Minus_One*sq_vel_j;
+  val_Jacobian_j[nVar-1][0] -= fix_factor*cte_1*Gamma_Minus_One*sq_vel_j;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_Jacobian_j[nVar-1][iDim+1] += cte_1*Gamma_Minus_One*Velocity_j[iDim];
-  val_Jacobian_j[nVar-1][nVar-1] -= cte_1*Gamma;
+    val_Jacobian_j[nVar-1][iDim+1] += fix_factor*cte_1*Gamma_Minus_One*Velocity_j[iDim];
+  val_Jacobian_j[nVar-1][nVar-1] -= fix_factor*cte_1*Gamma;
 
 }
 
@@ -713,7 +714,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
                              CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  UseApproximateJacobian = true;
+  UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
   FinDiffStep = 1e-4;
   
   Gamma = config->GetGamma();
@@ -1016,10 +1017,10 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
   if (!implicit) return;
   
-  if (UseApproximateJacobian)
-    ApproximateJacobian(val_Jacobian_i, val_Jacobian_j);
-  else
+  if (UseAccurateJacobian)
     NumericalJacobian(config, val_Jacobian_i, val_Jacobian_j);
+  else
+    ApproximateJacobian(val_Jacobian_i, val_Jacobian_j);
 
 }
 
