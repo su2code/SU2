@@ -1996,12 +1996,13 @@ public:
 class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
   bool implicit;
+  bool UseApproximateJacobian;
   unsigned short iDim, iVar, jVar, kVar;
   su2double FinDiffStep;
   
+  su2double MassFlux, DissFlux, Pressure;
   su2double *Velocity_i, *Velocity_j;
-  su2double *Primitives_i, *Primitives_j;
-  su2double ProjVelocity_i, ProjVelocity_j;
+  su2double *psi_i, *psi_j;
   
   /*--- Roe variables (for approximate Jacobian) ---*/
   su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
@@ -2019,7 +2020,14 @@ protected:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+  /*!
+   * \brief Compute the flux Jacobians using a mix of finite differences and manual differentiation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void NumericalJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
   
 public:
   
