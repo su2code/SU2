@@ -5736,7 +5736,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
 void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
-  unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
+  // unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
   unsigned short iVar, iDim, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2], pressure, enthalpy;
@@ -5761,8 +5761,8 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVar*nDim + iVar*nDim;
-        node[iPoint]->SetAnisoGrad(i+0, 0.0);
-        node[iPoint]->SetAnisoGrad(i+1, 0.0);
+        node[iPoint]->SetAnisoGrad(i+0, 0.);
+        node[iPoint]->SetAnisoGrad(i+1, 0.);
       }
     }
   }
@@ -5795,8 +5795,10 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
     vnx[0] = Crd[1][1]-Crd[2][1];
     vny[0] = Crd[2][0]-Crd[1][0];
+
     vnx[1] = Crd[2][1]-Crd[0][1];
     vny[1] = Crd[0][0]-Crd[2][0];
+
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
 
@@ -5815,7 +5817,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         for (unsigned short iNode=0; iNode<3; ++iNode) {
           const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
           const su2double Area = geometry->node[kNode]->GetVolume();
-          const su2double rap = 1./(Area*6.0);
+          const su2double rap = 1./(Area*6.);
           node[kNode]->AddAnisoGrad(i+0, graTri[0] * rap);
           node[kNode]->AddAnisoGrad(i+1, graTri[1] * rap);
         }
@@ -5842,9 +5844,9 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
-        node[iPoint]->SetAnisoHess(i+0, 0.0);
-        node[iPoint]->SetAnisoHess(i+1, 0.0);
-        node[iPoint]->SetAnisoHess(i+2, 0.0);
+        node[iPoint]->SetAnisoHess(i+0, 0.);
+        node[iPoint]->SetAnisoHess(i+1, 0.);
+        node[iPoint]->SetAnisoHess(i+2, 0.);
       }
     }
   }
@@ -5869,8 +5871,10 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
     vnx[0] = Crd[1][1]-Crd[2][1];
     vny[0] = Crd[2][0]-Crd[1][0];
+
     vnx[1] = Crd[2][1]-Crd[0][1];
     vny[1] = Crd[0][0]-Crd[2][0];
+
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
 
@@ -5899,7 +5903,7 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         for (unsigned short iNode=0; iNode<3; ++iNode) {
           const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
           const su2double Area = geometry->node[kNode]->GetVolume();
-          const su2double rap = 1./(Area*6.0);
+          const su2double rap = 1./(Area*6.);
           node[kNode]->AddAnisoHess(i+0, hesTri[0] * rap);
           node[kNode]->AddAnisoHess(i+1, hesTri[1] * rap);
           node[kNode]->AddAnisoHess(i+2, hesTri[2] * rap);
@@ -5928,8 +5932,8 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
                                {Lam1-a, Lam2-a}};
 
         if(abs(b) < 1.0e-16){
-          RuH[0][0] = 1.0; RuH[0][1] = 0.0;
-          RuH[1][0] = 0.0; RuH[1][1] = 1.0;
+          RuH[0][0] = 1.; RuH[0][1] = 0.;
+          RuH[1][0] = 0.; RuH[1][1] = 1.;
         }
 
         const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
@@ -5952,10 +5956,342 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = 5, nFluxMetr = 3;
+  su2double density, velocity[3], pressure, enthalpy;
+  su2double vnx[4], vny[4], vnz[4];
+  su2double graTet[3];
+  su2double Crd[4][3], Sens[4][nVarMetr][nFluxMetr];
+
+  //--- note: currently only implemented for Tet
+
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    //--- initialize gradients to 0
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVar*nDim + iVar*nDim;
+        node[iPoint]->SetAnisoGrad(i+0, 0.);
+        node[iPoint]->SetAnisoGrad(i+1, 0.);
+        node[iPoint]->SetAnisoGrad(i+2, 0.);
+      }
+    }
+  }
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<4; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (iDim = 0; iDim<3; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store sensors (goal-oriented)
+      density     = node[kNode]->GetDensity();
+      velocity[0] = node[kNode]->GetVelocity(0);
+      velocity[1] = node[kNode]->GetVelocity(1);
+      velocity[2] = node[kNode]->GetVelocity(2);
+      pressure    = node[kNode]->GetPressure();
+      enthalpy    = node[kNode]->GetEnthalpy();
+
+      Sens[iNode][0][0] = density*velocity[0];
+      Sens[iNode][1][0] = Sens[iNode][0][0]*velocity[0]+pressure;
+      Sens[iNode][2][0] = Sens[iNode][0][0]*velocity[1];
+      Sens[iNode][3][0] = Sens[iNode][0][0]*velocity[2];
+      Sens[iNode][4][0] = Sens[iNode][0][0]*enthalpy;
+
+      Sens[iNode][0][1] = density*velocity[1];
+      Sens[iNode][1][1] = Sens[iNode][0][1]*velocity[0];
+      Sens[iNode][2][1] = Sens[iNode][0][1]*velocity[1]+pressure;
+      Sens[iNode][3][1] = Sens[iNode][0][1]*velocity[2];
+      Sens[iNode][4][1] = Sens[iNode][0][1]*enthalpy;
+
+      Sens[iNode][0][2] = density*velocity[2];
+      Sens[iNode][1][2] = Sens[iNode][0][2]*velocity[0];
+      Sens[iNode][2][2] = Sens[iNode][0][2]*velocity[1];
+      Sens[iNode][3][2] = Sens[iNode][0][2]*velocity[1]+pressure;
+      Sens[iNode][4][2] = Sens[iNode][0][2]*enthalpy;
+    }
+
+    //--- inward edge's normals : edg[0]=P1P2P3, edg[1]=P2P3P0, edg[2]=P3P0P1, edg[3]=P0P1P2
+    vnx[0] = (Crd[1][1]-Crd[2][1])*(Crd[1][2]-Crd[3][2])-(Crd[1][1]-Crd[3][1])*(Crd[1][2]-Crd[2][2]);
+    vny[0] = (Crd[1][2]-Crd[2][2])*(Crd[1][0]-Crd[3][0])-(Crd[1][0]-Crd[2][0])*(Crd[1][2]-Crd[3][2]);
+    vnz[0] = (Crd[1][0]-Crd[2][0])*(Crd[1][1]-Crd[3][1])-(Crd[1][0]-Crd[3][0])*(Crd[1][1]-Crd[2][1]);
+
+    vnx[1] = (Crd[2][1]-Crd[3][1])*(Crd[2][2]-Crd[0][2])-(Crd[2][1]-Crd[0][1])*(Crd[2][2]-Crd[3][2]);
+    vny[1] = (Crd[2][2]-Crd[3][2])*(Crd[2][0]-Crd[0][0])-(Crd[2][0]-Crd[3][0])*(Crd[2][2]-Crd[0][2]);
+    vnz[1] = (Crd[2][0]-Crd[3][0])*(Crd[2][1]-Crd[0][1])-(Crd[2][0]-Crd[0][0])*(Crd[2][1]-Crd[3][1]);
+
+    vnx[2] = (Crd[3][1]-Crd[0][1])*(Crd[3][2]-Crd[1][2])-(Crd[3][1]-Crd[1][1])*(Crd[3][2]-Crd[0][2]);
+    vny[2] = (Crd[3][2]-Crd[0][2])*(Crd[3][0]-Crd[1][0])-(Crd[3][0]-Crd[0][0])*(Crd[3][2]-Crd[1][2]);
+    vnz[2] = (Crd[3][0]-Crd[0][0])*(Crd[3][1]-Crd[1][1])-(Crd[3][0]-Crd[1][0])*(Crd[3][1]-Crd[0][1]);
+
+    vnx[3] = (Crd[0][1]-Crd[1][1])*(Crd[0][2]-Crd[2][2])-(Crd[0][1]-Crd[2][1])*(Crd[0][2]-Crd[1][2]);
+    vny[3] = (Crd[0][2]-Crd[1][2])*(Crd[0][0]-Crd[2][0])-(Crd[0][0]-Crd[1][0])*(Crd[0][2]-Crd[2][2]);
+    vnz[3] = (Crd[0][0]-Crd[1][0])*(Crd[0][1]-Crd[2][1])-(Crd[0][0]-Crd[2][0])*(Crd[0][1]-Crd[1][1]);
+
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- gradient at the element ( graTet = 6*|T|*gradT ) 
+        graTet[0] = Sens[0][iVar][iFlux]*vnx[0] + Sens[1][iVar][iFlux]*vnx[1] + Sens[2][iVar][iFlux]*vnx[2] + Sens[3][iVar][iFlux]*vnx[3];
+        graTet[1] = Sens[0][iVar][iFlux]*vny[0] + Sens[1][iVar][iFlux]*vny[1] + Sens[2][iVar][iFlux]*vny[2] + Sens[3][iVar][iFlux]*vny[3];
+        graTet[2] = Sens[0][iVar][iFlux]*vnz[0] + Sens[1][iVar][iFlux]*vnz[1] + Sens[2][iVar][iFlux]*vnz[2] + Sens[3][iVar][iFlux]*vnz[3];
+    
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+        for (unsigned short iNode=0; iNode<4; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Vol = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Vol*24.);
+          node[kNode]->AddAnisoGrad(i+0, graTet[0] * rap);
+          node[kNode]->AddAnisoGrad(i+1, graTet[1] * rap);
+          node[kNode]->AddAnisoGrad(i+2, graTet[2] * rap);
+        }
+      }
+    }
+  }
 }
 
 void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
+  unsigned short iVar, iDim, iFlux;
+  unsigned short nVarMetr = 5, nFluxMetr = 3;  //--- TODO: adjust size of grad vector later for goal vs. feature
+  unsigned short nMetr = 6;
+  su2double vnx[4], vny[4];
+  su2double hesTet[6];
+  su2double Crd[4][3], Grad[4][3][nVarMetr][nFluxMetr];
+
+  //--- note: currently only implemented for Tri
+
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    //--- initialize sensor Hessian
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+        node[iPoint]->SetAnisoHess(i+0, 0.);
+        node[iPoint]->SetAnisoHess(i+1, 0.);
+        node[iPoint]->SetAnisoHess(i+2, 0.);
+        node[iPoint]->SetAnisoHess(i+3, 0.);
+        node[iPoint]->SetAnisoHess(i+4, 0.);
+        node[iPoint]->SetAnisoHess(i+5, 0.);
+      }
+    }
+  }
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    for (unsigned short iNode=0; iNode<4; ++iNode) {
+      const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+      //--- store coordinates
+      for (unsigned short iDim = 0; iDim<3; ++iDim) {
+        Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
+      }
+      //--- store gradient
+      for(iVar = 0; iVar < nVarMetr; iVar++){
+        for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+          const unsigned short i = iFlux*nVarMetr*nDim + iVar*nDim;
+          Grad[iNode][0][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+0);
+          Grad[iNode][1][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+1);
+          Grad[iNode][2][iVar][iFlux] = node[kNode]->GetAnisoGrad(i+2);
+        }
+      }
+    }
+
+    //--- inward edge's normals : edg[0]=P1P2P3, edg[1]=P2P3P0, edg[2]=P3P0P1, edg[3]=P0P1P2
+    vnx[0] = (Crd[1][1]-Crd[2][1])*(Crd[1][2]-Crd[3][2])-(Crd[1][1]-Crd[3][1])*(Crd[1][2]-Crd[2][2]);
+    vny[0] = (Crd[1][2]-Crd[2][2])*(Crd[1][0]-Crd[3][0])-(Crd[1][0]-Crd[2][0])*(Crd[1][2]-Crd[3][2]);
+    vnz[0] = (Crd[1][0]-Crd[2][0])*(Crd[1][1]-Crd[3][1])-(Crd[1][0]-Crd[3][0])*(Crd[1][1]-Crd[2][1]);
+
+    vnx[1] = (Crd[2][1]-Crd[3][1])*(Crd[2][2]-Crd[0][2])-(Crd[2][1]-Crd[0][1])*(Crd[2][2]-Crd[3][2]);
+    vny[1] = (Crd[2][2]-Crd[3][2])*(Crd[2][0]-Crd[0][0])-(Crd[2][0]-Crd[3][0])*(Crd[2][2]-Crd[0][2]);
+    vnz[1] = (Crd[2][0]-Crd[3][0])*(Crd[2][1]-Crd[0][1])-(Crd[2][0]-Crd[0][0])*(Crd[2][1]-Crd[3][1]);
+
+    vnx[2] = (Crd[3][1]-Crd[0][1])*(Crd[3][2]-Crd[1][2])-(Crd[3][1]-Crd[1][1])*(Crd[3][2]-Crd[0][2]);
+    vny[2] = (Crd[3][2]-Crd[0][2])*(Crd[3][0]-Crd[1][0])-(Crd[3][0]-Crd[0][0])*(Crd[3][2]-Crd[1][2]);
+    vnz[2] = (Crd[3][0]-Crd[0][0])*(Crd[3][1]-Crd[1][1])-(Crd[3][0]-Crd[1][0])*(Crd[3][1]-Crd[0][1]);
+
+    vnx[3] = (Crd[0][1]-Crd[1][1])*(Crd[0][2]-Crd[2][2])-(Crd[0][1]-Crd[2][1])*(Crd[0][2]-Crd[1][2]);
+    vny[3] = (Crd[0][2]-Crd[1][2])*(Crd[0][0]-Crd[2][0])-(Crd[0][0]-Crd[1][0])*(Crd[0][2]-Crd[2][2]);
+    vnz[3] = (Crd[0][0]-Crd[1][0])*(Crd[0][1]-Crd[2][1])-(Crd[0][0]-Crd[2][0])*(Crd[0][1]-Crd[1][1]);
+
+    //--- loop over conservative variables
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+
+      //--- loop over directions
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+
+        //--- hessian at the element ( hesTet = 6*|T|*hessienT ) 
+        hesTri[0] =         Grad[0][0][iVar][iFlux]*vnx[0] 
+                          + Grad[1][0][iVar][iFlux]*vnx[1] 
+                          + Grad[2][0][iVar][iFlux]*vnx[2]
+                          + Grad[3][0][iVar][iFlux]*vnx[3];
+
+        hesTri[1] = 0.5 * ( Grad[0][0][iVar][iFlux]*vny[0] 
+                          + Grad[1][0][iVar][iFlux]*vny[1] 
+                          + Grad[2][0][iVar][iFlux]*vny[2]
+                          + Grad[3][0][iVar][iFlux]*vny[3]
+                          + Grad[0][1][iVar][iFlux]*vnx[0] 
+                          + Grad[1][1][iVar][iFlux]*vnx[1] 
+                          + Grad[2][1][iVar][iFlux]*vnx[2]
+                          + Grad[3][1][iVar][iFlux]*vnx[3] );
+
+        hesTri[2] = 0.5 * ( Grad[0][0][iVar][iFlux]*vnz[0] 
+                          + Grad[1][0][iVar][iFlux]*vnz[1] 
+                          + Grad[2][0][iVar][iFlux]*vnz[2]
+                          + Grad[3][0][iVar][iFlux]*vnz[3]
+                          + Grad[0][2][iVar][iFlux]*vnx[0] 
+                          + Grad[1][2][iVar][iFlux]*vnx[1] 
+                          + Grad[2][2][iVar][iFlux]*vnx[2]
+                          + Grad[3][2][iVar][iFlux]*vnx[3] );
+
+        hesTri[3] =         Grad[0][1][iVar][iFlux]*vny[0] 
+                          + Grad[1][1][iVar][iFlux]*vny[1] 
+                          + Grad[2][1][iVar][iFlux]*vny[2]
+                          + Grad[2][1][iVar][iFlux]*vny[3];
+
+        hesTri[4] = 0.5 * ( Grad[0][1][iVar][iFlux]*vnz[0] 
+                          + Grad[1][1][iVar][iFlux]*vnz[1] 
+                          + Grad[2][1][iVar][iFlux]*vnz[2]
+                          + Grad[3][1][iVar][iFlux]*vnz[3]
+                          + Grad[0][2][iVar][iFlux]*vny[0] 
+                          + Grad[1][2][iVar][iFlux]*vny[1] 
+                          + Grad[2][2][iVar][iFlux]*vny[2]
+                          + Grad[3][2][iVar][iFlux]*vny[3] );
+
+        hesTri[5] =         Grad[0][2][iVar][iFlux]*vnz[0] 
+                          + Grad[1][2][iVar][iFlux]*vnz[1] 
+                          + Grad[2][2][iVar][iFlux]*vnz[2]
+                          + Grad[2][2][iVar][iFlux]*vnz[3];
+        
+        //--- assembling
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+        for (unsigned short iNode=0; iNode<3; ++iNode) {
+          const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
+          const su2double Vol = geometry->node[kNode]->GetVolume();
+          const su2double rap = 1./(Vol*24.);
+          node[kNode]->AddAnisoHess(i+0, hesTet[0] * rap);
+          node[kNode]->AddAnisoHess(i+1, hesTet[1] * rap);
+          node[kNode]->AddAnisoHess(i+2, hesTet[2] * rap);
+          node[kNode]->AddAnisoHess(i+3, hesTet[3] * rap);
+          node[kNode]->AddAnisoHess(i+4, hesTet[4] * rap);
+          node[kNode]->AddAnisoHess(i+5, hesTet[5] * rap);
+        }
+      }
+    }
+  }
+
+  //--- Make positive definite matrix
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    CVariable *var = node[iPoint];
+
+    for(iVar = 0; iVar < nVarMetr; iVar++){
+      for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
+        const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
+
+        su2double Lam[3], RuH[3][3];
+
+        const su2double a = var->GetAnisoHess(i+0);
+        const su2double b = var->GetAnisoHess(i+1);
+        const su2double c = var->GetAnisoHess(i+2);
+        const su2double d = var->GetAnisoHess(i+3);
+        const su2double e = var->GetAnisoHess(i+4);
+        const su2double f = var->GetAnisoHess(i+5);
+
+        const su2double p1 = b*b + c*c + e*e;
+        if(p1 < 1.0e-16){
+          //--- eigenvalues
+          Lam[0] = abs(a);
+          Lam[1] = abs(d);
+          Lam[2] = abs(f);
+
+          //--- eigenvectors
+          RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
+          RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
+        }
+        else{
+          //--- eigenvalues
+          const su2double q  = (a + d + f)/3.;
+          const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
+          const su2double p  = sqrt(p2/6.);
+
+          const su2double aa = (a-q)/p, bb = b/p, cc = c/p,
+                          dd = (d-q)/p, ee = e/p, ff = (f-q)/p;
+
+          const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+
+          const su2double pi = 3.141592653589793238;
+          su2double phi;
+          if(det <= -1.)     phi = pi/3.;
+          else if(det >= 1.) phi = 0.;
+          else               phi = acos(det)/3.;
+
+          Lam[0] = q+2.*p*cos(phi);
+          Lam[1] = q+2.*p*cos(phi+2.*p/3.);
+          Lam[2] = 3.*q-Lam1-Lam2;
+
+          //--- eigenvectors
+          for(unsigned short i = 0; i < 3; ++i) {
+            su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
+                                 {b,        d-Lam[i], e,        0.},
+                                 {c,        e,        f-Lam[i], 0.}};
+
+            int nr = 3, nc = 4, j = 0;
+            while(j < nr){
+              for(int r = 0; r < nr: ++r) {
+                const su2double d = A[j][j];
+                const su2double m = A[r][j]/d;
+                for(int c = 0; c < nc; ++c) {
+                  if(r == j) A[r][c] /= d;
+                  else       A[r][c] -= A[j][c]*m;
+                }
+              }
+              j++;
+            }
+            RuH[0][i] = A[0][4];
+            RuH[1][i] = A[1][4];
+            RuH[2][i] = A[2][4];
+          }
+
+          Lam[0] = abs(Lam[0]);
+          Lam[1] = abs(Lam[1]);
+          Lam[2] = abs(Lam[2]);
+        }
+
+
+        const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                         RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                         RuH[0][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                        {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                         RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                         RuH[1][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                        {RuH[2][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                         RuH[2][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                         RuH[2][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])}};
+
+        const su2double LamRuU[3][3] = {{Lam[0]*RuU[0][0],Lam[0]*RuU[1][0],Lam[0]*RuU[2][0]},
+                                        {Lam[1]*RuU[0][1],Lam[1]*RuU[1][1],Lam[1]*RuU[2][1]},
+                                        {Lam[2]*RuU[0][2],Lam[2]*RuU[1][2],Lam[2]*RuU[2][2]}};
+
+        const su2double Hess[6]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0]+RuU[0][2]*LamRuU[2][0], 
+                                        RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]+RuU[0][2]*LamRuU[2][1],
+                                        RuU[0][0]*LamRuU[0][2]+RuU[0][1]*LamRuU[1][2]+RuU[0][2]*LamRuU[2][2],
+                                        RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]+RuU[1][2]*LamRuU[2][1],
+                                        RuU[1][0]*LamRuU[0][2]+RuU[1][1]*LamRuU[1][2]+RuU[1][2]*LamRuU[2][2],
+                                        RuU[2][0]*LamRuU[0][2]+RuU[2][1]*LamRuU[1][2]+RuU[2][2]*LamRuU[2][2]};
+
+        var->SetAnisoHess(i+0, Hess[0]);
+        var->SetAnisoHess(i+1, Hess[1]);
+        var->SetAnisoHess(i+2, Hess[2]);
+        var->SetAnisoHess(i+3, Hess[3]);
+        var->SetAnisoHess(i+4, Hess[4]);
+        var->SetAnisoHess(i+5, Hess[5]);
+      }
+    }
+  }
 }
 
 void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {

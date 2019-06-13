@@ -780,41 +780,54 @@ void CErrorEstimationDriver::ComputeMetric() {
   if (rank == MASTER_NODE)
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
 
-  //--- Volume flow grad
-  if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
-  if(nDim == 2)
+  //--- 2D
+  if(nDim == 2){
+    //--- Volume flow grad
+    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj2(geometry_container[ZONE_0][INST_0][MESH_0], 
                                      config_container[ZONE_0]);
-  else
+
+    //--- Volume flow Hess
+    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
+    solver_flow->SetHessian_L2Proj2(geometry_container[ZONE_0][INST_0][MESH_0], 
+                                    config_container[ZONE_0]);
+
+    //--- Volume adj grad
+    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
+    solver_adj->SetGradient_L2Proj2(geometry_container[ZONE_0][INST_0][MESH_0], 
+                                    config_container[ZONE_0]);
+
+    //--- Metric
+    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+    SumWeightedHessian2(solver_flow, solver_adj, geometry_container[ZONE_0][INST_0][MESH_0]);
+  }
+
+  //--- 3D
+  else{
+    //--- Volume flow grad
+    if(rank == MASTER_NODE) cout << "Computing flow volume gradient via L2 Projection." << endl;
     solver_flow->SetGradient_L2Proj3(geometry_container[ZONE_0][INST_0][MESH_0], 
                                      config_container[ZONE_0]);
 
-  //--- Volume flow Hess
-  if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
-  if(nDim == 2)
-    solver_flow->SetHessian_L2Proj2(geometry_container[ZONE_0][INST_0][MESH_0], 
-                                    config_container[ZONE_0]);
-  else
+    //--- Volume flow Hess
+    if(rank == MASTER_NODE) cout << "Computing flow volume Hessian via L2 Projection." << endl;
     solver_flow->SetHessian_L2Proj3(geometry_container[ZONE_0][INST_0][MESH_0], 
                                     config_container[ZONE_0]);
 
-  //--- Volume adj grad
-  if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
-  if(nDim == 2)
-    solver_adj->SetGradient_L2Proj2(geometry_container[ZONE_0][INST_0][MESH_0], 
-                                    config_container[ZONE_0]);
-  else
+    //--- Volume adj grad
+    if(rank == MASTER_NODE) cout << "Computing adjoint volume gradient via L2 Projection." << endl;
     solver_adj->SetGradient_L2Proj3(geometry_container[ZONE_0][INST_0][MESH_0], 
                                     config_container[ZONE_0]);
 
-  if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
-  SumWeightedHessian(solver_flow, solver_adj, geometry_container[ZONE_0][INST_0][MESH_0]);
-
+    //--- Metric
+    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+    SumWeightedHessian3(solver_flow, solver_adj, geometry_container[ZONE_0][INST_0][MESH_0]);
+  }
 }
 
-void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
-                                                CSolver   *solver_adj,
-                                                CGeometry *geometry) {
+void CErrorEstimationDriver::SumWeightedHessian2(CSolver   *solver_flow,
+                                                 CSolver   *solver_adj,
+                                                 CGeometry *geometry) {
 
   unsigned long iPoint, nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
   unsigned short nVarMetr = solver_flow->GetnVar(), 
@@ -844,7 +857,11 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
     }
   }
 
-  //--- avoid null metrics
+  //--- avoid null metrics and obtain global complexity
+  su2double localComplexity  = 0.0,
+            globalComplexity = 0.0,
+            p = 1.0,                                                                    // For now, hardcode L1 metric
+            outComplexity = su2double(config_container[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -880,23 +897,6 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
     var->SetAnisoMetr(0, MetrNew[0]);
     var->SetAnisoMetr(1, MetrNew[1]);
     var->SetAnisoMetr(2, MetrNew[2]);
-  }
-
-  //--- obtain global complexity
-  su2double localComplexity  = 0.0,
-            globalComplexity = 0.0,
-            p = 1.0,                                                                    // For now, hardcode L1 metric
-            outComplexity = su2double(config_container[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
-  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
-
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = pow(a-c,2.) + 4.*b*b;
-
-    const su2double Lam1 = (a+c+sqrt(d))/2.;
-    const su2double Lam2 = (a+c-sqrt(d))/2.;
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
@@ -912,7 +912,9 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
   if(rank == MASTER_NODE)
     cout << "Current mesh complexity: " << globalComplexity << "." << endl;
 
-  //--- normalize to obtain Lp metric
+  //--- normalize to obtain Lp metric then constrain size
+  su2double hmax = config_container[ZONE_0]->GetMesh_Hmax(),
+            hmin = config_container[ZONE_0]->GetMesh_Hmin();
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
@@ -927,25 +929,6 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
     const su2double factor = pow(outComplexity/globalComplexity, 2./3.)
                            * pow(abs(Lam1*Lam2), -1./(2.*p+3.));
 
-    var->SetAnisoMetr(0, factor*a);
-    var->SetAnisoMetr(1, factor*b);
-    var->SetAnisoMetr(2, factor*c);
-  }
-
-  //--- maximum and minimal sizes
-  su2double hmax = config_container[ZONE_0]->GetMesh_Hmax(),
-            hmin = config_container[ZONE_0]->GetMesh_Hmin();
-  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    CVariable *var = solver_flow->node[iPoint];
-
-    const su2double a = var->GetAnisoMetr(0);
-    const su2double b = var->GetAnisoMetr(1);
-    const su2double c = var->GetAnisoMetr(2);
-    const su2double d = pow(a-c,2.) + 4.*b*b;
-
-    const su2double Lam1 = (a+c+sqrt(d))/2.;
-    const su2double Lam2 = (a+c-sqrt(d))/2.;
-
     su2double RuH[2][2] = {{b, b},
                            {Lam1-a, Lam2-a}};
 
@@ -957,8 +940,8 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
     const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
                                     {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
 
-    const su2double Lam1new = min(max(abs(Lam1), 1./(hmax*hmax)), 1./(hmin*hmin));
-    const su2double Lam2new = min(max(abs(Lam2), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam1new = min(max(abs(factor*Lam1), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam2new = min(max(abs(factor*Lam2), 1./(hmax*hmax)), 1./(hmin*hmin));
 
     const su2double LamRuU[2][2] = {{abs(Lam1new)*RuU[0][0],abs(Lam1new)*RuU[1][0]},
                                     {abs(Lam2new)*RuU[0][1],abs(Lam2new)*RuU[1][1]}};
@@ -970,6 +953,269 @@ void CErrorEstimationDriver::SumWeightedHessian(CSolver   *solver_flow,
     var->SetAnisoMetr(0, MetrNew[0]);
     var->SetAnisoMetr(1, MetrNew[1]);
     var->SetAnisoMetr(2, MetrNew[2]);
+  }
+}
+
+void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
+                                                 CSolver   *solver_adj,
+                                                 CGeometry *geometry) {
+
+  unsigned long iPoint, nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+  unsigned short nVarMetr = solver_flow->GetnVar(), 
+                 nFluxMetr = 3;  //--- TODO: adjust size for goal (for different solvers, currently Euler) vs. feature
+  unsigned short nMetr = 3*(nDim-1);
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    //--- initialize metric tensor
+    for(unsigned short im = 0; im < nMetr; ++im)
+      solver_flow->node[iPoint]->SetAnisoMetr(im, 0.0);
+
+    //--- perform summation of weighted Hessians
+    for (unsigned short iVar = 0; iVar < nVarMetr; ++iVar) {
+
+      for (unsigned short iFlux = 0; iFlux < nFluxMetr; ++iFlux) {
+        const unsigned short ig = iVar*nDim + iFlux;
+        const su2double grad = solver_adj->node[iPoint]->GetAnisoGrad(ig);
+
+        for (unsigned short im = 0; im < nMetr; ++im) {
+          const unsigned short ih = iFlux*nVarMetr*nMetr + iVar*nMetr + im;  
+          const su2double hess = solver_flow->node[iPoint]->GetAnisoHess(ih);
+          const su2double part = abs(grad)*hess;
+          solver_flow->node[iPoint]->AddAnisoMetr(im,part);
+        }
+      }
+    }
+  }
+
+  //--- avoid null metrics and obtain global complexity
+  su2double localComplexity  = 0.0,
+            globalComplexity = 0.0,
+            p = 1.0,                                                                    // For now, hardcode L1 metric
+            outComplexity = su2double(config_container[ZONE_0]->GetMesh_Complexity());  // Constraint mesh complexity
+  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    CVariable *var = solver_flow->node[iPoint];
+
+    su2double Lam[3], RuH[3][3];
+
+    const su2double a = var->GetAnisoMetr(0);
+    const su2double b = var->GetAnisoMetr(1);
+    const su2double c = var->GetAnisoMetr(2);
+    const su2double d = var->GetAnisoMetr(3);
+    const su2double e = var->GetAnisoMetr(4);
+    const su2double f = var->GetAnisoMetr(5);
+
+    const su2double p1 = b*b + c*c + e*e;
+    if(p1 < 1.0e-16){
+      //--- eigenvalues
+      Lam[0] = abs(a);
+      Lam[1] = abs(d);
+      Lam[2] = abs(f);
+
+      //--- eigenvectors
+      RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
+      RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
+    }
+    else{
+      //--- eigenvalues
+      const su2double q  = (a + d + f)/3.;
+      const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
+      const su2double p  = sqrt(p2/6.);
+
+      const su2double aa = (a-q)/p, bb = b/p, cc = c/p,
+                      dd = (d-q)/p, ee = e/p, ff = (f-q)/p;
+
+      const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+
+      const su2double pi = 3.141592653589793238;
+      su2double phi;
+      if(det <= -1.)     phi = pi/3.;
+      else if(det >= 1.) phi = 0.;
+      else               phi = acos(det)/3.;
+
+      Lam[0] = q+2.*p*cos(phi);
+      Lam[1] = q+2.*p*cos(phi+2.*p/3.);
+      Lam[2] = 3.*q-Lam1-Lam2;
+
+      //--- eigenvectors
+      for(unsigned short i = 0; i < 3; ++i) {
+        su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
+                             {b,        d-Lam[i], e,        0.},
+                             {c,        e,        f-Lam[i], 0.}};
+
+        int nr = 3, nc = 4, j = 0;
+        while(j < nr){
+          for(int r = 0; r < nr: ++r) {
+            const su2double d = A[j][j];
+            const su2double m = A[r][j]/d;
+            for(int c = 0; c < nc; ++c) {
+              if(r == j) A[r][c] /= d;
+              else       A[r][c] -= A[j][c]*m;
+            }
+          }
+          j++;
+        }
+        RuH[0][i] = A[0][4];
+        RuH[1][i] = A[1][4];
+        RuH[2][i] = A[2][4];
+      }
+
+      Lam[0] = abs(Lam[0]);
+      Lam[1] = abs(Lam[1]);
+      Lam[2] = abs(Lam[2]);
+    }
+
+    const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[0][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                    {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[1][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                    {RuH[2][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[2][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[2][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])}};
+
+    const su2double LamRuU[3][3] = {{Lam[0]*RuU[0][0],Lam[0]*RuU[1][0],Lam[0]*RuU[2][0]},
+                                    {Lam[1]*RuU[0][1],Lam[1]*RuU[1][1],Lam[1]*RuU[2][1]},
+                                    {Lam[2]*RuU[0][2],Lam[2]*RuU[1][2],Lam[2]*RuU[2][2]}};
+
+    const su2double Metr[6]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0]+RuU[0][2]*LamRuU[2][0], 
+                                    RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]+RuU[0][2]*LamRuU[2][1],
+                                    RuU[0][0]*LamRuU[0][2]+RuU[0][1]*LamRuU[1][2]+RuU[0][2]*LamRuU[2][2],
+                                    RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]+RuU[1][2]*LamRuU[2][1],
+                                    RuU[1][0]*LamRuU[0][2]+RuU[1][1]*LamRuU[1][2]+RuU[1][2]*LamRuU[2][2],
+                                    RuU[2][0]*LamRuU[0][2]+RuU[2][1]*LamRuU[1][2]+RuU[2][2]*LamRuU[2][2]};
+
+    var->SetAnisoMetr(0, Metr[0]);
+    var->SetAnisoMetr(1, Metr[1]);
+    var->SetAnisoMetr(2, Metr[2]);
+    var->SetAnisoMetr(3, Metr[3]);
+    var->SetAnisoMetr(4, Metr[4]);
+    var->SetAnisoMetr(5, Metr[5]);
+
+    const su2double Vol = geometry->node[iPoint]->GetVolume();
+
+    localComplexity += pow(abs(Lam[0]*Lam[1]*Lam[2]),p/(2.*p+3.))*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localComplexity, &globalComplexity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  globalComplexity = localComplexity;
+#endif
+
+  if(rank == MASTER_NODE)
+    cout << "Current mesh complexity: " << globalComplexity << "." << endl;
+
+  //--- normalize to obtain Lp metric then constrain size
+  su2double hmax = config_container[ZONE_0]->GetMesh_Hmax(),
+            hmin = config_container[ZONE_0]->GetMesh_Hmin();
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    CVariable *var = solver_flow->node[iPoint];
+
+    su2double Lam[3], RuH[3][3];
+
+    const su2double a = var->GetAnisoMetr(0);
+    const su2double b = var->GetAnisoMetr(1);
+    const su2double c = var->GetAnisoMetr(2);
+    const su2double d = var->GetAnisoMetr(3);
+    const su2double e = var->GetAnisoMetr(4);
+    const su2double f = var->GetAnisoMetr(5);
+
+    const su2double p1 = b*b + c*c + e*e;
+    if(p1 < 1.0e-16){
+      //--- eigenvalues
+      Lam[0] = abs(a);
+      Lam[1] = abs(d);
+      Lam[2] = abs(f);
+
+      //--- eigenvectors
+      RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
+      RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
+    }
+    else{
+      //--- eigenvalues
+      const su2double q  = (a + d + f)/3.;
+      const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
+      const su2double p  = sqrt(p2/6.);
+
+      const su2double aa = (a-q)/p, bb = b/p, cc = c/p,
+                      dd = (d-q)/p, ee = e/p, ff = (f-q)/p;
+
+      const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+
+      const su2double pi = 3.141592653589793238;
+      su2double phi;
+      if(det <= -1.)     phi = pi/3.;
+      else if(det >= 1.) phi = 0.;
+      else               phi = acos(det)/3.;
+
+      Lam[0] = q+2.*p*cos(phi);
+      Lam[1] = q+2.*p*cos(phi+2.*p/3.);
+      Lam[2] = 3.*q-Lam1-Lam2;
+
+      //--- eigenvectors
+      for(unsigned short i = 0; i < 3; ++i) {
+        su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
+                             {b,        d-Lam[i], e,        0.},
+                             {c,        e,        f-Lam[i], 0.}};
+
+        int nr = 3, nc = 4, j = 0;
+        while(j < nr){
+          for(int r = 0; r < nr: ++r) {
+            const su2double d = A[j][j];
+            const su2double m = A[r][j]/d;
+            for(int c = 0; c < nc; ++c) {
+              if(r == j) A[r][c] /= d;
+              else       A[r][c] -= A[j][c]*m;
+            }
+          }
+          j++;
+        }
+        RuH[0][i] = A[0][4];
+        RuH[1][i] = A[1][4];
+        RuH[2][i] = A[2][4];
+      }
+
+      Lam[0] = abs(Lam[0]);
+      Lam[1] = abs(Lam[0]);
+      Lam[2] = abs(Lam[2]);
+    }
+
+    const su2double factor = pow(outComplexity/globalComplexity, 2./3.)
+                           * pow(abs(Lam1*Lam2), -1./(2.*p+3.));
+
+    const su2double Lam1new = min(max(abs(factor*Lam[0]), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam2new = min(max(abs(factir*Lam[1]), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam3new = min(max(abs(factir*Lam[2]), 1./(hmax*hmax)), 1./(hmin*hmin));
+
+    const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[0][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                    {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[1][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
+                                    {RuH[2][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
+                                     RuH[2][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
+                                     RuH[2][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])}};
+
+    const su2double LamRuU[3][3] = {{Lam1new*RuU[0][0],Lam1new*RuU[1][0],Lam1new*RuU[2][0]},
+                                    {Lam2new*RuU[0][1],Lam2new*RuU[1][1],Lam2new*RuU[2][1]},
+                                    {Lam3new*RuU[0][2],Lam3new*RuU[1][2],Lam3new*RuU[2][2]}};
+
+    const su2double MetrNew[6]   = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0]+RuU[0][2]*LamRuU[2][0], 
+                                    RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]+RuU[0][2]*LamRuU[2][1],
+                                    RuU[0][0]*LamRuU[0][2]+RuU[0][1]*LamRuU[1][2]+RuU[0][2]*LamRuU[2][2],
+                                    RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]+RuU[1][2]*LamRuU[2][1],
+                                    RuU[1][0]*LamRuU[0][2]+RuU[1][1]*LamRuU[1][2]+RuU[1][2]*LamRuU[2][2],
+                                    RuU[2][0]*LamRuU[0][2]+RuU[2][1]*LamRuU[1][2]+RuU[2][2]*LamRuU[2][2]};
+
+    var->SetAnisoMetr(0, MetrNew[0]);
+    var->SetAnisoMetr(1, MetrNew[1]);
+    var->SetAnisoMetr(2, MetrNew[2]);
+    var->SetAnisoMetr(3, MetrNew[3]);
+    var->SetAnisoMetr(4, MetrNew[4]);
+    var->SetAnisoMetr(5, MetrNew[5]);
   }
 }
 

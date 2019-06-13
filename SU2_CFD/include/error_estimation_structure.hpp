@@ -139,9 +139,14 @@ public:
   void ComputeMetric(void);
 
   /*!
-   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter.
+   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter in 2D.
    */
-  void SumWeightedHessian(CSolver *solver_flow, CSolver *solver_adj, CGeometry *geometry);
+  void SumWeightedHessian2(CSolver *solver_flow, CSolver *solver_adj, CGeometry *geometry);
+
+  /*!
+   * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter in 3D.
+   */
+  void SumWeightedHessian3(CSolver *solver_flow, CSolver *solver_adj, CGeometry *geometry);
 
   /*!
    * \brief Output the solution in solution file.
