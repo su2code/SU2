@@ -1996,7 +1996,7 @@ public:
 class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
   bool implicit;
-  bool UseApproximateJacobian;
+  bool UseAccurateJacobian;
   unsigned short iDim, iVar, jVar, kVar;
   su2double FinDiffStep;
   
@@ -2641,6 +2641,7 @@ protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   bool grid_movement;              /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
+  su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
   su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
   su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
