@@ -15882,7 +15882,8 @@ void CPhysicalGeometry::GetQualityStatistics(CConfig *config) {
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) ){
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)){
       //}&&
       //  (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       
@@ -16025,10 +16026,33 @@ void CPhysicalGeometry::GetQualityStatistics(CConfig *config) {
     if (Volume_Ratio[iPoint] > vr_max) vr_max = Volume_Ratio[iPoint];
     if (Volume_Ratio[iPoint] < vr_min) vr_min = Volume_Ratio[iPoint];
   }
-  cout << " Ortho Min: " << ortho_min << " deg.  Ortho Max: " << ortho_max << " deg." << endl;
-  cout << " AR Min: " << ar_min << " deg.  AR Max: " << ar_max << " deg." << endl;
-  cout << " VolR Min: " << vr_min << " deg.  VolR Max: " << vr_max << " deg." << endl;
   
+  su2double Global_AR_Min, Global_AR_Max, Global_VR_Min, Global_VR_Max, Global_Ortho_Min, Global_Ortho_Max;
+  
+//#ifndef HAVE_MPI
+//  Global_AR_Min = ar_min;
+//  Global_AR_Max =ar_max;
+//  Global_VR_Min =vr_min;
+//  Global_VR_Max =vr_max;
+//  Global_Ortho_Min =ortho_min;
+//  Global_Ortho_Max =ortho_max;
+//#else
+  SU2_MPI::Allreduce(&ar_min, &Global_AR_Min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&ar_max, &Global_AR_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&vr_min, &Global_VR_Min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&vr_max, &Global_VR_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&ortho_min, &Global_Ortho_Min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&ortho_max, &Global_Ortho_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+//#endif
+  
+  if (rank == MASTER_NODE) {
+  cout << " Orthogonality Min.: " << Global_Ortho_Min << " deg.  Orthogonality Max.: " << Global_Ortho_Max << " deg." << endl;
+  cout << " Aspect Ratio Min.: " << Global_AR_Min << "  Aspect Ratio Max.: " << Global_AR_Max << endl;
+  cout << " Volume Ratio Min.: " << Global_VR_Min << "  Volume Ratio Max.: " << Global_VR_Max << endl;
+  }
+      
   // need any special communication here for MPI or for periodic?
   
   delete[] Coord_Edge_CG;
