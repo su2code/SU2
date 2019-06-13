@@ -713,6 +713,9 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                              CNumerics(val_nDim, val_nVar, config) {
   
+  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+    cout << "WARNING: Grid velocities are NOT yet considered in AUSM schemes." << endl;
+  
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
   FinDiffStep = 1e-4;
@@ -961,6 +964,9 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   /*--- Space to start preaccumulation ---*/
 
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+5);
+  AD::SetPreaccIn(V_j, nDim+5);
 
   /*--- Variables for the general form and primitives for mass flux and pressure calculation.  ---*/
   /*--- F_{1/2} = ||A|| ( 0.5 * mdot * (psi_i+psi_j) - 0.5 * |mdot| * (psi_i-psi_j) + N * pf ) ---*/
@@ -1011,7 +1017,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   
   /*--- Space to end preaccumulation ---*/
   
-  
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
   
   /*--- If required, compute Jacobians, either approximately (Roe) or numerically ---*/
   
