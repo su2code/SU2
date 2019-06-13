@@ -891,15 +891,9 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     
   }
   
-  /*--- Artificial dissipation ---*/
+  SetResMassFluxZero();
   
-  if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-  }
+
   
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -3446,7 +3440,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   Vel_j = new su2double[nDim];
   
   /*--- Initialize mass flux to zero ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) 
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
 	  node[iPoint]->SetMassFluxZero();
   
   Net_Mass = 0.0;
@@ -3582,7 +3576,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		     for (iDim = 0; iDim < nDim; iDim++) 
                MassFlux_Part -= node[iPoint]->GetDensity()*(node[iPoint]->GetVelocity(iDim))*Normal[iDim];  
 
-             node[iPoint]->AddMassFlux(MassFlux_Part);
+             if (geometry->node[iPoint]->GetDomain())
+              node[iPoint]->AddMassFlux(MassFlux_Part);
              
              /*--- Sum up the mass flux entering to be used for mass flow correction at outflow ---*/
              Mass_In += fabs(MassFlux_Part);		   
@@ -3612,7 +3607,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 				 node[iPoint]->AddMassFlux(MassFlux_Part);
 				 //node[iPoint]->SetMassFluxZero();
 			 }
-			 node[iPoint]->SetMassFluxZero();
+			 if (geometry->node[iPoint]->GetDomain())
+			  node[iPoint]->SetMassFluxZero();
 			}
          }
 		
@@ -3643,7 +3639,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 						
 						/*--- Sum up the mass flux leaving to be used for mass flow correction at outflow ---*/
 						Mass_Out += fabs(MassFlux_Part);
-						node[iPoint]->AddMassFlux(MassFlux_Part);
+						if (geometry->node[iPoint]->GetDomain())
+						 node[iPoint]->AddMassFlux(MassFlux_Part);
 		             }
                   }
             break;
@@ -3677,8 +3674,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		break;
 
 		default:
-		  MassFlux_Part = 0.0;
-		  node[iPoint]->AddMassFlux(MassFlux_Part);
 		break;
 		
 	}
@@ -3719,20 +3714,18 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 					    if (fabs(Area_out) < EPS)
 					      Mass_Corr = 0.0;
 					    
-					    node[iPoint]->AddMassFlux(MassFlux_Part);
+					    if (geometry->node[iPoint]->GetDomain())
+					     node[iPoint]->AddMassFlux(MassFlux_Part);
 					}
                 }
             break;
 	    }
 	}
   }
-  ResMassFlux = 0.0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	  ResMassFlux += node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux();
+    
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	  AddResMassFlux(node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux());
   } 
-
-  ResMassFlux = ResMassFlux/geometry->GetnPoint();
-  ResMassFlux = sqrt(ResMassFlux);
   
   InitiateComms(geometry, config, MASS_FLUX);
   CompleteComms(geometry, config, MASS_FLUX);
@@ -3759,25 +3752,25 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   Normal = new su2double [nDim];	
   
   /*--- Allocate corrections ---*/
-  Pressure_Correc = new su2double [nPoint];
+  Pressure_Correc = new su2double [nPointDomain];
   /*--- Velocity Corrections ---*/
-  vel_corr = new su2double* [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) 
+  vel_corr = new su2double* [nPointDomain];
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
     vel_corr[iPoint] = new su2double [nVar];
   
   /*--- Pressure Corrections ---*/
 	
-	for (iPoint = 0; iPoint < nPoint; iPoint++) 
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
 		Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
     
     PCorr_Ref = 0.0;
     //PCorr_Ref = solver_container[POISSON_SOL]->node[PRef_Point]->GetSolution(0);  
     
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 	for (iVar = 0; iVar < nVar; iVar++)
 	    vel_corr[iPoint][iVar] = 0.0;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  for (iVar = 0; iVar < nVar; iVar++) {
 			factor = node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/(node[iPoint]->Get_Mom_Coeff(iVar) - node[iPoint]->Get_Mom_Coeff_nb(iVar));
 			vel_corr[iPoint][iVar] = factor*(solver_container[POISSON_SOL]->node[iPoint]->GetGradient(0,iVar));
@@ -3801,12 +3794,12 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		
 		switch (Kind_Outlet) {
 			case PRESSURE_OUTLET:
-			    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+              for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					
-    			      Pressure_Correc[iPoint] = PCorr_Ref;
-
-	           }
+					if (geometry->node[iPoint]->GetDomain()) {
+					Pressure_Correc[iPoint] = PCorr_Ref;
+	               }
+              }
 	        break;
 	        
 	        case OPEN:
@@ -3876,8 +3869,6 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		   }
          }
          
-         
-         
          break;
          case INLET_FLOW:
          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -3895,7 +3886,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   }
   
   alpha_p = 1.0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  factor = 0.0;
 	  Vol = geometry->node[iPoint]->GetVolume();
 	  delT = node[iPoint]->GetDelta_Time();
@@ -3918,7 +3909,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
    
    
      /*--- Reset pressure corrections to zero for next iteration. ---*/
-   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	   solver_container[POISSON_SOL]->node[iPoint]->SetSolution(0,0.0);
    }
    
@@ -3928,12 +3919,13 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
    InitiateComms(geometry, config, PRIMITIVE_VARS);
    CompleteComms(geometry, config, PRIMITIVE_VARS);
 
-   for (iPoint = 0; iPoint < nPoint; iPoint++)
+   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 	  delete [] vel_corr[iPoint];
 	  
 	delete [] Normal;
 	delete [] vel_corr;
 	delete [] Pressure_Correc;
+	
 }
 
 
@@ -5864,6 +5856,8 @@ void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     
   }
   
+  SetResMassFluxZero();
+  
 }
 
 
@@ -5985,7 +5979,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  bool write = (Iteration % 500 == 0);
+  /*bool write = (Iteration % 500 == 0);
   ofstream TimeStepFile;
   stringstream iter;
   stringstream fname;
@@ -5993,7 +5987,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 	  iter<<Iteration;
 	  string iters = iter.str();
 	  fname<<"TimeStep/TimeStep"<<iters<<".txt";
-  }
+  }*/
   
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0; MinRefProjFlux = 0.0;
@@ -6101,7 +6095,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Each element uses their own speed, steady state simulation ---*/
   
-  if (write) TimeStepFile.open(fname.str(),ios::out);
+  //if (write) TimeStepFile.open(fname.str(),ios::out);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -6121,7 +6115,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     else {
       node[iPoint]->SetDelta_Time(0.0);
     }
-    if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Local_Delta_Time_Visc<<"\t"<<Vol<<endl;
+    //if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Local_Delta_Time_Visc<<"\t"<<Vol<<endl;
     
   }
   
@@ -6179,7 +6173,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     }
 
    delete [] Normal;
-   if (write) TimeStepFile.close();
+   //if (write) TimeStepFile.close();
 }
 
 void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){

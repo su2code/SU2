@@ -947,7 +947,9 @@ inline unsigned long CSolver::GetPoint_Max_BGS(unsigned short val_var) { return 
 
 inline su2double* CSolver::GetPoint_Max_Coord_BGS(unsigned short val_var) { return Point_Max_Coord_BGS[val_var]; }
 
-inline void CSolver::SetResMassFlux(su2double val_ResMassFlux) { }
+inline void CSolver::SetResMassFluxZero() { }
+
+inline void CSolver::AddResMassFlux(su2double val_ResMassFlux) { }
   
 inline double CSolver::GetResMassFlux() { return 0.0; }
 
@@ -2184,7 +2186,9 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
-inline void CPBIncEulerSolver::SetResMassFlux(su2double val_ResMassFlux) { ResMassFlux = val_ResMassFlux; }
+inline void CPBIncEulerSolver::SetResMassFluxZero() { ResMassFlux = 0.0; }
+
+inline void CPBIncEulerSolver::AddResMassFlux(su2double val_ResMassFlux) { ResMassFlux += val_ResMassFlux ; }
   
 inline su2double CPBIncEulerSolver::GetResMassFlux() { return ResMassFlux; }
 

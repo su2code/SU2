@@ -427,7 +427,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   su2double Src_Term;
-  ofstream Coarse_GridFile, Fine_GridFile;
+  //ofstream Coarse_GridFile, Fine_GridFile;
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -438,7 +438,11 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 	  Coarse_GridFile.open("coarse_src.txt", ios::out);
   		//cout<<"Writing the _src.txt file."<<endl;
   }*/
-  //if (iMesh == MESH_0 ) Fine_GridFile.open("fine_src.txt", ios::out);
+  //if (iMesh == MESH_0 ) 
+  //Fine_GridFile.open("fine_src.txt", ios::out);
+  MPI_File Fine_GridFile;
+  MPI_Status status;
+  MPI_File_open(MPI_COMM_SELF, "Poisson_src.txt",MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&Fine_GridFile);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -468,21 +472,24 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     LinSysRes.AddBlock(iPoint, Residual);
     
+    
+    MPI_File_write(Fine_GridFile, &Src_Term, sizeof(double), MPI_DOUBLE, &status);
+   
     //Source term is constant ==> jacobian is zero
     
-   /* if (iMesh == MESH_0) {
-		Fine_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
-        Fine_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
-    }
+   /* if (iMesh == MESH_0) {*/
+		//Fine_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+        //Fine_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<endl;
+    /*}
     if (iMesh == MESH_0 + 1) {
 		Coarse_GridFile<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         Coarse_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
     }*/
   }
-  
-  
-  /*if (iMesh == MESH_0 + 1) Coarse_GridFile.close();
-  if (iMesh == MESH_0) Fine_GridFile.close();*/
+   MPI_File_close(&Fine_GridFile);
+  /*if (iMesh == MESH_0 + 1) Coarse_GridFile.close();*/
+  //if (iMesh == MESH_0) 
+  //Fine_GridFile.close();
 }
 
 void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -505,7 +512,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-   
 	/*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  

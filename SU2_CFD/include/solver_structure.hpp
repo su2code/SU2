@@ -441,8 +441,12 @@ public:
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
-  virtual void SetResMassFlux(su2double val_ResMassFlux);
+  virtual void SetResMassFluxZero();
   
+  /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  virtual void AddResMassFlux(su2double val_ResMassFlux);
   
     /*!
    * \brief Get the convergence of mass flux for current internal iteration.
@@ -8782,8 +8786,12 @@ public:
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */
-  void SetResMassFlux(su2double val_ResMassFlux);
+  void SetResMassFluxZero();
   
+   /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  void AddResMassFlux(su2double val_ResMassFlux);
   
   /*!
    * \brief Get the convergence of mass flux for current internal iteration.
