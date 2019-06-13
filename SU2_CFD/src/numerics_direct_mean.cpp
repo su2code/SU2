@@ -713,6 +713,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
                              CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  UseApproximateJacobian = true;
   FinDiffStep = 1e-4;
   
   Gamma = config->GetGamma();
@@ -720,8 +721,8 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   
   Velocity_i = new su2double [nDim];
   Velocity_j = new su2double [nDim];
-  Primitives_i = new su2double [nDim+3];
-  Primitives_j = new su2double [nDim+3];
+  psi_i = new su2double [nVar];
+  psi_j = new su2double [nVar];
   
   RoeVelocity = new su2double [nDim];
   Lambda = new su2double [nVar];
@@ -738,9 +739,8 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   
   delete [] Velocity_i;
   delete [] Velocity_j;
-  delete [] Primitives_i;
-  delete [] Primitives_j;
-  
+  delete [] psi_i;
+  delete [] psi_j;
   
   delete [] RoeVelocity;
   delete [] Lambda;
@@ -754,7 +754,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
+void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
   
@@ -808,106 +808,59 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::RoeJacobian(su2double **val_Jacobian_i, su2dou
 
 }
 
+void CUpwAUSMPLUS_SLAU_Base_Flow::NumericalJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-
-  /*--- Space to start preaccumulation ---*/
-
-
-  /*--- Variables for the general form. ---*/
-
-  su2double mdot, phi, pressure;
-  su2double psi_i[5] = {1.0, 0.0, 0.0, 0.0, 0.0};
-  su2double psi_j[5] = {1.0, 0.0, 0.0, 0.0, 0.0};
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    /*--- Velocities ---*/
-    Primitives_i[iDim] = psi_i[iDim+1] = V_i[iDim+1];
-    Primitives_j[iDim] = psi_j[iDim+1] = V_j[iDim+1];
-  }
-
-  /*--- Pressure and Density ---*/
-  Primitives_i[ nDim ] = V_i[nDim+1];  Primitives_j[ nDim ] = V_j[nDim+1];
-  Primitives_i[nDim+1] = V_i[nDim+2];  Primitives_j[nDim+1] = V_j[nDim+2];
-
-  /*--- Enthalpy ---*/
-  Primitives_i[nDim+2] = psi_i[nVar-1] = V_i[nDim+3];
-  Primitives_j[nDim+2] = psi_j[nVar-1] = V_j[nDim+3];
-
-  /*--- Face area (norm or the normal vector) ---*/
-
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
-
-  /*-- Unit Normal ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = Normal[iDim]/Area;
-
-  /*--- Mass and pressure fluxes defined by derived classes ---*/
-
-  ComputeMassAndPressureFluxes(config, mdot, pressure);
-  phi = fabs(mdot);
-
-  val_residual[0] = mdot;
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = 0.5*mdot*(psi_i[iDim+1]+psi_j[iDim+1]) +
-                           0.5*phi *(psi_i[iDim+1]-psi_j[iDim+1]) +
-                           UnitNormal[iDim]*pressure;
-
-  val_residual[nVar-1] = 0.5*mdot*(psi_i[nVar-1]+psi_j[nVar-1]) +
-                         0.5*phi *(psi_i[nVar-1]-psi_j[nVar-1]);
-
-  for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
-  
-  /*--- Space to end preaccumulation ---*/
-  
-  
-  
-  if (!implicit) return;
-  
-  /*--- Use the Jacobians of the Roe scheme as an approximation ---*/
-  
-  RoeJacobian(val_Jacobian_i, val_Jacobian_j); return;
-  
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
   
-  su2double mi = 0.5*Area*(mdot+phi)/Primitives_i[nDim+1],
-            mj = 0.5*Area*(mdot-phi)/Primitives_j[nDim+1];
+  su2double mi = 0.5*Area*(MassFlux+DissFlux)/Density_i,
+            mj = 0.5*Area*(MassFlux-DissFlux)/Density_j;
   
   su2double psi_hat[5];
-  for (iVar = 0; iVar < 5; ++iVar) {
+  for (iVar = 0; iVar < nVar; ++iVar) {
     /*--- Valid for phi = |mdot| ---*/
-    psi_hat[iVar] = Area * (mdot > 0.0 ? psi_i[iVar] : psi_j[iVar]);
+    psi_hat[iVar] = Area * (MassFlux > 0.0 ? psi_i[iVar] : psi_j[iVar]);
   }
   
-  /*--- Numerical differentiation of fluxes wrt primitives, forward FD ---*/
+  /*--- Numerical differentiation of fluxes wrt primitives ---*/
+  
+  /*--- Create arrays of pointers to the primitive variables so we can loop through them ---*/
+  
+  su2double *primitives_i[6], *primitives_j[6];
+  
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    primitives_i[iDim] = &Velocity_i[iDim];
+    primitives_j[iDim] = &Velocity_j[iDim];
+  }
+  primitives_i[ nDim ] = &Pressure_i;  primitives_j[ nDim ] = &Pressure_j;
+  primitives_i[nDim+1] = &Density_i;   primitives_j[nDim+1] = &Density_j;
+  primitives_i[nDim+2] = &Enthalpy_i;  primitives_j[nDim+2] = &Enthalpy_j;
+  
+  /*--- Initialize the gradient arrays with the negative of the quantity,
+   then for forward finite differences we add to it and divide. ---*/
   
   su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
   
   for (iVar = 0; iVar < 6; ++iVar) {
-    dmdot_dVi[iVar] = -mdot;  dpres_dVi[iVar] = -pressure;
-    dmdot_dVj[iVar] = -mdot;  dpres_dVj[iVar] = -pressure;
+    dmdot_dVi[iVar] = -MassFlux;  dpres_dVi[iVar] = -Pressure;
+    dmdot_dVj[iVar] = -MassFlux;  dpres_dVj[iVar] = -Pressure;
   }
   
   for (iVar = 0; iVar < nDim+3; ++iVar) {
     /*--- Perturb side i ---*/
-    su2double epsilon = FinDiffStep * max(1.0, fabs(Primitives_i[iVar]));
-    Primitives_i[iVar] += epsilon;
-    ComputeMassAndPressureFluxes(config, mdot, pressure);
-    dmdot_dVi[iVar] += mdot;     dpres_dVi[iVar] += pressure;
-    dmdot_dVi[iVar] /= epsilon;  dpres_dVi[iVar] /= epsilon;
-    Primitives_i[iVar] -= epsilon;
+    su2double epsilon = FinDiffStep * max(1.0, fabs(*primitives_i[iVar]));
+    *primitives_i[iVar] += epsilon;
+    ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
+    dmdot_dVi[iVar] += MassFlux;  dpres_dVi[iVar] += Pressure;
+    dmdot_dVi[iVar] /= epsilon;   dpres_dVi[iVar] /= epsilon;
+    *primitives_i[iVar] -= epsilon;
     
     /*--- Perturb side j ---*/
-    epsilon = FinDiffStep * max(1.0, fabs(Primitives_j[iVar]));
-    Primitives_j[iVar] += epsilon;
-    ComputeMassAndPressureFluxes(config, mdot, pressure);
-    dmdot_dVj[iVar] += mdot;     dpres_dVj[iVar] += pressure;
-    dmdot_dVj[iVar] /= epsilon;  dpres_dVj[iVar] /= epsilon;
-    Primitives_j[iVar] -= epsilon;
+    epsilon = FinDiffStep * max(1.0, fabs(*primitives_j[iVar]));
+    *primitives_j[iVar] += epsilon;
+    ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
+    dmdot_dVj[iVar] += MassFlux;  dpres_dVj[iVar] += Pressure;
+    dmdot_dVj[iVar] /= epsilon;   dpres_dVj[iVar] /= epsilon;
+    *primitives_j[iVar] -= epsilon;
   }
 
   /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
@@ -924,36 +877,34 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
     if (jVar == 0) { // Density
       for (iDim = 0; iDim < nDim; ++iDim) {
         // -u,v,w / rho
-        dVi_dUi[iDim] = -Primitives_i[iDim]/Primitives_i[nDim+1];
-        dVj_dUj[iDim] = -Primitives_j[iDim]/Primitives_j[nDim+1];
+        dVi_dUi[iDim] = -Velocity_i[iDim] / Density_i;
+        dVj_dUj[iDim] = -Velocity_j[iDim] / Density_j;
         // ||V||^2
-        sq_veli += Primitives_i[iDim]*Primitives_i[iDim];
-        sq_velj += Primitives_j[iDim]*Primitives_j[iDim];
+        sq_veli += Velocity_i[iDim] * Velocity_i[iDim];
+        sq_velj += Velocity_j[iDim] * Velocity_j[iDim];
       }
       dVi_dUi[nDim] = 0.5*Gamma_Minus_One*sq_veli;
       dVj_dUj[nDim] = 0.5*Gamma_Minus_One*sq_velj;
       
       dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
       
-      dVi_dUi[nDim+2] = (-Gamma*Primitives_i[nDim] / ((Gamma-1.0)*Primitives_i[nDim+1]) +
-                          0.5*(Gamma-2.0)*sq_veli ) / Primitives_i[nDim+1];
-      dVj_dUj[nDim+2] = (-Gamma*Primitives_j[nDim] / ((Gamma-1.0)*Primitives_j[nDim+1]) +
-                          0.5*(Gamma-2.0)*sq_velj ) / Primitives_j[nDim+1];
+      dVi_dUi[nDim+2] = (0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i)) / Density_i;
+      dVj_dUj[nDim+2] = (0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j)) / Density_j;
     }
     else if (jVar == nVar-1) { // rho*Energy
       dVi_dUi[nDim] = dVj_dUj[nDim] = Gamma_Minus_One;
-      dVi_dUi[nDim+2] = Gamma / Primitives_i[nDim+1];
-      dVj_dUj[nDim+2] = Gamma / Primitives_j[nDim+1];
+      dVi_dUi[nDim+2] = Gamma / Density_i;
+      dVj_dUj[nDim+2] = Gamma / Density_j;
     }
     else { // Momentum
-      dVi_dUi[jVar-1] = 1.0 / Primitives_i[nDim+1];
-      dVj_dUj[jVar-1] = 1.0 / Primitives_j[nDim+1];
+      dVi_dUi[jVar-1] = 1.0 / Density_i;
+      dVj_dUj[jVar-1] = 1.0 / Density_j;
       
-      dVi_dUi[nDim] = -Gamma_Minus_One*Primitives_i[jVar-1];
-      dVj_dUj[nDim] = -Gamma_Minus_One*Primitives_j[jVar-1];
+      dVi_dUi[nDim] = -Gamma_Minus_One*Velocity_i[jVar-1];
+      dVj_dUj[nDim] = -Gamma_Minus_One*Velocity_j[jVar-1];
       
-      dVi_dUi[nDim+2] = dVi_dUi[nDim] / Primitives_i[nDim+1];
-      dVj_dUj[nDim+2] = dVj_dUj[nDim] / Primitives_j[nDim+1];
+      dVi_dUi[nDim+2] = dVi_dUi[nDim] / Density_i;
+      dVj_dUj[nDim+2] = dVj_dUj[nDim] / Density_j;
     }
     
     /*--- Dot product to complete chain rule ---*/
@@ -985,26 +936,90 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
     }
   
     /*--- Contributions from the derivatives of PSI wrt the conservatives (velocity part) ---*/
-    val_Jacobian_i[iDim+1][0] -= mi*Primitives_i[iDim];
-    val_Jacobian_j[iDim+1][0] -= mj*Primitives_j[iDim];
+    val_Jacobian_i[iDim+1][0] -= mi*Velocity_i[iDim];
+    val_Jacobian_j[iDim+1][0] -= mj*Velocity_j[iDim];
     
     val_Jacobian_i[iDim+1][iDim+1] += mi;
     val_Jacobian_j[iDim+1][iDim+1] += mj;
   }
 
   /*--- Continue dPSI/dU (energy part, last row) ---*/
-  val_Jacobian_i[nVar-1][0] += mi*(0.5*(Gamma-2.0)*sq_veli - 
-    Gamma*Primitives_i[nDim] / ((Gamma-1.0)*Primitives_i[nDim+1]));
-  
-  val_Jacobian_j[nVar-1][0] += mj*(0.5*(Gamma-2.0)*sq_velj -
-    Gamma*Primitives_j[nDim] / ((Gamma-1.0)*Primitives_j[nDim+1]));
+  val_Jacobian_i[nVar-1][0] += mi * (0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i));
+  val_Jacobian_j[nVar-1][0] += mj * (0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j));
   
   for (iDim = 0; iDim < nDim; ++iDim) {
-    val_Jacobian_i[nVar-1][iDim+1] -= mi*Gamma_Minus_One*Primitives_i[iDim]; 
-    val_Jacobian_j[nVar-1][iDim+1] -= mj*Gamma_Minus_One*Primitives_j[iDim]; 
+    val_Jacobian_i[nVar-1][iDim+1] -= mi*Gamma_Minus_One*Velocity_i[iDim]; 
+    val_Jacobian_j[nVar-1][iDim+1] -= mj*Gamma_Minus_One*Velocity_j[iDim]; 
   }
   val_Jacobian_i[nVar-1][nVar-1] += mi*Gamma;
   val_Jacobian_j[nVar-1][nVar-1] += mj*Gamma;
+
+}
+
+void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+
+  /*--- Space to start preaccumulation ---*/
+
+
+  /*--- Variables for the general form and primitives for mass flux and pressure calculation.  ---*/
+  /*--- F_{1/2} = ||A|| ( 0.5 * mdot * (psi_i+psi_j) - 0.5 * |mdot| * (psi_i-psi_j) + N * pf ) ---*/
+
+  psi_i[0] = 1.0;  psi_j[0] = 1.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    /*--- Velocities ---*/
+    Velocity_i[iDim] = psi_i[iDim+1] = V_i[iDim+1];
+    Velocity_j[iDim] = psi_j[iDim+1] = V_j[iDim+1];
+  }
+
+  /*--- Pressure and Density ---*/
+  Pressure_i = V_i[nDim+1];  Pressure_j = V_j[nDim+1];
+  Density_i  = V_i[nDim+2];  Density_j  = V_j[nDim+2];
+
+  /*--- Enthalpy ---*/
+  Enthalpy_i = psi_i[nVar-1] = V_i[nDim+3];
+  Enthalpy_j = psi_j[nVar-1] = V_j[nDim+3];
+
+  /*--- Face area (norm or the normal vector) ---*/
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
+
+  /*-- Unit Normal ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
+
+  /*--- Mass and pressure fluxes defined by derived classes ---*/
+
+  ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
+  DissFlux = fabs(MassFlux);
+
+  val_residual[0] = MassFlux;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[iDim+1] = 0.5*MassFlux*(psi_i[iDim+1]+psi_j[iDim+1]) +
+                           0.5*DissFlux*(psi_i[iDim+1]-psi_j[iDim+1]) +
+                           UnitNormal[iDim]*Pressure;
+
+  val_residual[nVar-1] = 0.5*MassFlux*(psi_i[nVar-1]+psi_j[nVar-1]) +
+                         0.5*DissFlux*(psi_i[nVar-1]-psi_j[nVar-1]);
+
+  for (iVar = 0; iVar < nVar; iVar++) val_residual[iVar] *= Area;
+  
+  /*--- Space to end preaccumulation ---*/
+  
+  
+  
+  /*--- If required, compute Jacobians, either approximately (Roe) or numerically ---*/
+  
+  if (!implicit) return;
+  
+  if (UseApproximateJacobian)
+    ApproximateJacobian(val_Jacobian_i, val_Jacobian_j);
+  else
+    NumericalJacobian(config, val_Jacobian_i, val_Jacobian_j);
 
 }
 
@@ -1024,20 +1039,10 @@ CUpwAUSMPLUSUP_Flow::~CUpwAUSMPLUSUP_Flow(void) {
 
 void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
 
-  /*--- Extract primitives ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = Primitives_i[iDim];
-    Velocity_j[iDim] = Primitives_j[iDim];
-  }
-
-  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
-  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
-  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
-
   /*--- Projected velocities ---*/
 
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+  su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0;
+
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
@@ -1123,21 +1128,9 @@ CUpwAUSMPLUSUP2_Flow::~CUpwAUSMPLUSUP2_Flow(void) {
 
 void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
 
-  /*--- Extract primitives ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = Primitives_i[iDim];
-    Velocity_j[iDim] = Primitives_j[iDim];
-  }
-
-  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
-  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
-  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
-
   /*--- Projected velocities and squared magnitude ---*/
 
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-  su2double sq_vel = 0.0;
+  su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0, sq_vel = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
@@ -1223,21 +1216,9 @@ CUpwSLAU_Flow::~CUpwSLAU_Flow(void) {
 
 void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) {
 
-  /*--- Extract primitives ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = Primitives_i[iDim];
-    Velocity_j[iDim] = Primitives_j[iDim];
-  }
-
-  Pressure_i = Primitives_i[ nDim ];  Pressure_j = Primitives_j[ nDim ];
-  Density_i  = Primitives_i[nDim+1];  Density_j  = Primitives_j[nDim+1];
-  Enthalpy_i = Primitives_i[nDim+2];  Enthalpy_j = Primitives_j[nDim+2];
-
   /*--- Project velocities and speed of sound ---*/
 
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-  su2double sq_veli = 0.0, sq_velj = 0.0;
+  su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0, sq_veli = 0.0, sq_velj = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
