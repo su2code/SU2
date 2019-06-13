@@ -1982,27 +1982,89 @@ public:
 };
 
 /*!
+ * \class CUpwAUSMPLUS_SLAU_Base_Flow
+ * \brief Base class for AUSM+up(2) and SLAU(2) convective schemes.
+ * \ingroup ConvDiscr
+ * \author Amit Sachdeva
+ */
+class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
+protected:
+  bool implicit;
+  bool UseAccurateJacobian;
+  unsigned short iDim, iVar, jVar, kVar;
+  su2double FinDiffStep;
+  
+  su2double MassFlux, DissFlux, Pressure;
+  su2double *Velocity_i, *Velocity_j;
+  su2double *psi_i, *psi_j;
+  
+  /*--- Roe variables (for approximate Jacobian) ---*/
+  su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
+  
+  /*!
+   * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
+  
+  /*!
+   * \brief Compute the flux Jacobians of the Roe scheme to use as an approximation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+  /*!
+   * \brief Compute the flux Jacobians using a mix of finite differences and manual differentiation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void NumericalJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
+  
+  /*!
+   * \brief Compute the AUSM+ and SLAU family of schemes.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CUpwAUSMPLUSUP_Flow
  * \brief Class for solving an approximate Riemann AUSM+ -up.
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP_Flow : public CNumerics {
+class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
-  bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, Pu, fa;
-  su2double Kp, Ku, sigma, alpha, beta, param1, mfP, mfM;
+  su2double Kp, Ku, sigma;
+  
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2018,15 +2080,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwAUSMPLUSUP_Flow(void);
-  
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2035,22 +2088,17 @@ public:
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP2_Flow : public CNumerics {
+class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
-  bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double sq_veli, sq_velj, mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
-  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+  su2double Kp, sigma;
+  
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up2 scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2067,14 +2115,6 @@ public:
    */
   ~CUpwAUSMPLUSUP2_Flow(void);
   
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2083,21 +2123,18 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_diss;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+class CUpwSLAU_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+protected:
+  bool slau_low_diss;
+  bool slau2;
+  
+  /*!
+   * \brief Mass flux and pressure for the SLAU and SLAU2 schemes.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2113,15 +2150,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2130,24 +2159,8 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU2_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_dissipation;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
-  
+class CUpwSLAU2_Flow : public CUpwSLAU_Flow {
 public:
-  
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -2160,15 +2173,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU2_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2630,6 +2635,7 @@ protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   bool grid_movement;              /*!< \brief Consider grid movement. */
   bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
+  su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
 
   su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
   su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
