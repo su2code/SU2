@@ -59,27 +59,6 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   char OutNam[1024], BasNam[1024];
   char *ptr=NULL;
 	
-  /*--- Retrieve filename from config ---*/
-  
-  // if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-  //   filename = config->GetRestart_AdjFileName();
-  //   filename = config->GetObjFunc_Extension(filename);
-  // } else if (fem){
-  //   filename = config->GetRestart_FEMFileName();
-  // } else {
-  //   filename = config->GetRestart_FlowFileName();
-  // }
-	
-	/*--- Get output name *.solb ---*/
-	
-  // strcpy(BasNam, filename.c_str());
-  // ptr = strstr(BasNam,".dat");	
-  // if ( ptr != NULL )
-  //   BasNam[ptr-BasNam]='\0';
-  // ptr = strstr(BasNam,".solb");	
-  // if ( ptr != NULL )
-  //   BasNam[ptr-BasNam]='\0';
-  // SPRINTF (OutNam, "%s.solb", BasNam);
   SPRINTF (OutNam, "current.restart.solb");
 
   /*--- Open the restart file and write the solution. ---*/
@@ -497,13 +476,6 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 	
   CPrimalGrid* bnd = NULL;
 
-  /*--- Read the name of the output and input file ---*/
-  // str = config->GetMesh_Out_FileName();
-
-  // unsigned short lastindex = str.find_last_of(".");
-  // str = str.substr(0, lastindex);
-
-  // SPRINTF (OutNam, "%s.meshb", str.c_str());
   SPRINTF (OutNam, "current.meshb");
 	
   OutMsh = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);

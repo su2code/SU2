@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_structure.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.

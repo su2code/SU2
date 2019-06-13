@@ -155,6 +155,8 @@ def amg ( config , kind='' ):
 
                 config_cfd.SOLUTION_ADJ_FILENAME  = current_solution_adj
                 config_cfd.ERROR_ESTIMATE         = 'YES'
+                config_cfd.MESH_HMAX              = config.ADAP_HMAX
+                config_cfd.MESH_HMIN              = config.ADAP_HMIN
                 config_cfd.MESH_COMPLEXITY        = int(mesh_sizes[0])
                 SU2_MET(config_cfd)
 
@@ -410,6 +412,7 @@ def amg ( config , kind='' ):
                 config_cfd.SOLUTION_FLOW_FILENAME = current_solution_ini
                 config_cfd.RESTART_FLOW_FILENAME  = current_solution
                 config_cfd.MATH_PROBLEM           = 'DIRECT'
+                config_cfd.RESTART_SOL            = 'YES'
                 
                 config_cfd.RESIDUAL_REDUCTION = float(adap_res[iSiz])
                 config_cfd.EXT_ITER = int(adap_ext_iter[iSiz])

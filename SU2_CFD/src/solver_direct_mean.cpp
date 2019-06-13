@@ -3316,7 +3316,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       SetPrimitive_Gradient_LS(geometry, config);
     }
-  
     
     /*--- Limiter computation ---*/
     
@@ -3389,6 +3388,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   
   return ErrorCounter;
 }
+
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
   
@@ -5325,6 +5325,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
+
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
@@ -5746,15 +5747,15 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
   //--- note: currently only implemented for Tri
 
   for (iPoint = 0; iPoint < nPoint; ++iPoint) {
-    //--- store sensors
-    if (Kind_Aniso_Sensor == ANISO_MACH) {
-      const su2double local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-      node[iPoint]->SetAnisoSens(local_Mach);
-    }
-    else if (Kind_Aniso_Sensor == ANISO_PRES) {
-      const su2double local_Pres = node[iPoint]->GetPressure();
-      node[iPoint]->SetAnisoSens(local_Pres);
-    }
+    //--- TODO: store sensors for feature-based
+    // if (Kind_Aniso_Sensor == ANISO_MACH) {
+    //   const su2double local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
+    //   node[iPoint]->SetAnisoSens(local_Mach);
+    // }
+    // else if (Kind_Aniso_Sensor == ANISO_PRES) {
+    //   const su2double local_Pres = node[iPoint]->GetPressure();
+    //   node[iPoint]->SetAnisoSens(local_Pres);
+    // }
 
     //--- initialize gradients to 0
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -5764,7 +5765,6 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+1, 0.0);
       }
     }
-
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {
@@ -5822,12 +5822,11 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
 }
 
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
+  unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
@@ -5837,7 +5836,7 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   //--- note: currently only implemented for Tri
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     //--- initialize sensor Hessian
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -5848,7 +5847,6 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoHess(i+2, 0.0);
       }
     }
-
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {
@@ -5912,22 +5910,27 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   //--- Make positive definite matrix
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-
     CVariable *var = node[iPoint];
 
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
 
-        const su2double DetH = var->GetAnisoHess(i+0)*var->GetAnisoHess(i+2)
-                             - var->GetAnisoHess(i+1)*var->GetAnisoHess(i+1);
-        const su2double TraH = var->GetAnisoHess(i+0)+var->GetAnisoHess(i+2);
+        const su2double a = var->GetAnisoHess(i+0);
+        const su2double b = var->GetAnisoHess(i+1);
+        const su2double c = var->GetAnisoHess(i+2);
+        const su2double d = pow(a-c,2.) + 4.*b*b;
 
-        const su2double Lam1 = TraH/2.0 + sqrt(TraH*TraH/4.-DetH);
-        const su2double Lam2 = TraH/2.0 - sqrt(TraH*TraH/4.-DetH);
+        const su2double Lam1 = (a+c+sqrt(d))/2.;
+        const su2double Lam2 = (a+c-sqrt(d))/2.;
 
-        const su2double RuH[2][2]    = {{var->GetAnisoHess(i+1),var->GetAnisoHess(i+1)},
-                                        {Lam1-var->GetAnisoHess(i+0),Lam2-var->GetAnisoHess(i+0)}};
+        su2double RuH[2][2] = {{b, b},
+                               {Lam1-a, Lam2-a}};
+
+        if(abs(b) < 1.0e-16){
+          RuH[0][0] = 1.0; RuH[0][1] = 0.0;
+          RuH[1][0] = 0.0; RuH[1][1] = 1.0;
+        }
 
         const su2double RuU[2][2]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])},
                                         {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]), RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1])}};
@@ -5942,12 +5945,9 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
         var->SetAnisoHess(i+0, Hess[0]);
         var->SetAnisoHess(i+1, Hess[1]);
         var->SetAnisoHess(i+2, Hess[2]);
-
       }
     }
-
   }
-
 }
 
 void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
@@ -8145,7 +8145,6 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
-  
   Total_ComboObj = 0.0;
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
@@ -11596,7 +11595,6 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
@@ -13060,7 +13058,6 @@ void CEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *confi
 
 }
 
-
 void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint;
@@ -13385,8 +13382,6 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 
 }
 
-
-
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint;
@@ -13558,7 +13553,6 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   delete [] TotalAreaVelocity;
 
 }
-
 
 void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
@@ -16404,7 +16398,6 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
     }
     
 }
-
 
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   

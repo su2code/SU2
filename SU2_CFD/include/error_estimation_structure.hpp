@@ -141,7 +141,7 @@ public:
   /*!
    * \brief Perform inner product of adjoint gradients and flux Hessian to compute the adaptation parameter.
    */
-  void SumWeightedHessian(CSolver* solver_flow, CSolver* solver_adj);
+  void SumWeightedHessian(CSolver *solver_flow, CSolver *solver_adj, CGeometry *geometry);
 
   /*!
    * \brief Output the solution in solution file.

@@ -89,8 +89,8 @@ COutput::COutput(CConfig *config) {
   /*--- Initialize pointers to NULL ---*/
   
   Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
-  Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
-  Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
+  Conn_Tria_Par      = NULL;  Conn_Quad_Par      = NULL;  Conn_Tetr_Par = NULL;
+  Conn_Hexa_Par      = NULL;  Conn_Pris_Par      = NULL;  Conn_Pyra_Par = NULL;
   
   Local_Data         = NULL;
   Local_Data_Copy    = NULL;

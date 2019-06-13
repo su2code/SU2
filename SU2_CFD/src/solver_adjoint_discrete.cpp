@@ -41,9 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
 }
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {
-
-}
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {}
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
@@ -99,7 +97,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     }
 
   }
-
 
   /*--- Define some structures for locating max residuals ---*/
 
@@ -597,7 +594,6 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 }
 
-
 void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
 
 //  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -722,7 +718,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
   }
 
 }
-
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
@@ -1091,7 +1086,7 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
   unsigned short iVar, iDim, iFlux;
-  unsigned short nVarMetr = 4, nFluxMetr = 1;
+  unsigned short nVarMetr = nVar, nFluxMetr = 1;
   su2double vnx[3], vny[3];
   su2double graTri[2];
   su2double Crd[3][2], Sens[3][nVarMetr][nFluxMetr];
@@ -1107,22 +1102,17 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
         node[iPoint]->SetAnisoGrad(i+1, 0.0);
       }
     }
-
   }
 
   for (iElem=0; iElem<nElem; ++iElem) {
     for (unsigned short iNode=0; iNode<3; ++iNode) {
       const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
       //--- store coordinates
-      for (unsigned short iDim = 0; iDim<2; ++iDim) {
+      for (iDim = 0; iDim<2; ++iDim) {
         Crd[iNode][iDim] = geometry->node[kNode]->GetCoord(iDim);
       }
       //--- store sensors
-      Sens[iNode][0][0] = node[kNode]->GetSolution(0);
-      Sens[iNode][1][0] = node[kNode]->GetSolution(1);
-      Sens[iNode][2][0] = node[kNode]->GetSolution(2);
-      Sens[iNode][3][0] = node[kNode]->GetSolution(3);
-
+      for(iVar = 0; iVar < nVarMetr; iVar++) Sens[iNode][iVar][0] = node[kNode]->GetSolution(iVar);
     }
 
     //--- inward edge's normals : edg[0]=P1P2, edg[1]=P2P0, edg[2]=P0P1
@@ -1155,7 +1145,6 @@ void CDiscAdjSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
 }
 
 void CDiscAdjSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){

@@ -2129,4 +2129,8 @@ inline unsigned short CConfig::GetKind_Aniso_Sensor(void) { return Kind_Aniso_Se
 
 inline bool CConfig::GetWrt_Aniso_Sensor(void) { return Wrt_Aniso_Sensor; }
 
+inline su2double CConfig::GetMesh_Hmax(void) { return Mesh_Hmax; }
+
+inline su2double CConfig::GetMesh_Hmin(void) { return Mesh_Hmin; }
+
 inline unsigned long CConfig::GetMesh_Complexity(void) { return Mesh_Complexity; }

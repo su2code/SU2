@@ -2408,6 +2408,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Sensor used to determine anisotropy */
   addBoolOption("WRT_ANISO_SENSOR", Wrt_Aniso_Sensor, false);
 
+  /* DESCRIPTION: Constraint maximum cell size */
+  addDoubleOption("MESH_HMAX", Mesh_Hmax, 10.0);
+
+  /* DESCRIPTION: Constraint minimum cell size */
+  addDoubleOption("MESH_HMIN", Mesh_Hmin, 1.0E-8);
+
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("MESH_COMPLEXITY", Mesh_Complexity, 10000);
 
