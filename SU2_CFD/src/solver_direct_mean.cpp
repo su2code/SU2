@@ -6061,7 +6061,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   unsigned short iVar, iDim, iFlux;
   unsigned short nVarMetr = 5, nFluxMetr = 3;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 6;
-  su2double vnx[4], vny[4];
+  su2double vnx[4], vny[4], vnz[4];
   su2double hesTet[6];
   su2double Crd[4][3], Grad[4][3][nVarMetr][nFluxMetr];
 
@@ -6125,12 +6125,12 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
 
         //--- hessian at the element ( hesTet = 6*|T|*hessienT ) 
-        hesTri[0] =         Grad[0][0][iVar][iFlux]*vnx[0] 
+        hesTet[0] =         Grad[0][0][iVar][iFlux]*vnx[0] 
                           + Grad[1][0][iVar][iFlux]*vnx[1] 
                           + Grad[2][0][iVar][iFlux]*vnx[2]
                           + Grad[3][0][iVar][iFlux]*vnx[3];
 
-        hesTri[1] = 0.5 * ( Grad[0][0][iVar][iFlux]*vny[0] 
+        hesTet[1] = 0.5 * ( Grad[0][0][iVar][iFlux]*vny[0] 
                           + Grad[1][0][iVar][iFlux]*vny[1] 
                           + Grad[2][0][iVar][iFlux]*vny[2]
                           + Grad[3][0][iVar][iFlux]*vny[3]
@@ -6139,7 +6139,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
                           + Grad[2][1][iVar][iFlux]*vnx[2]
                           + Grad[3][1][iVar][iFlux]*vnx[3] );
 
-        hesTri[2] = 0.5 * ( Grad[0][0][iVar][iFlux]*vnz[0] 
+        hesTet[2] = 0.5 * ( Grad[0][0][iVar][iFlux]*vnz[0] 
                           + Grad[1][0][iVar][iFlux]*vnz[1] 
                           + Grad[2][0][iVar][iFlux]*vnz[2]
                           + Grad[3][0][iVar][iFlux]*vnz[3]
@@ -6148,12 +6148,12 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
                           + Grad[2][2][iVar][iFlux]*vnx[2]
                           + Grad[3][2][iVar][iFlux]*vnx[3] );
 
-        hesTri[3] =         Grad[0][1][iVar][iFlux]*vny[0] 
+        hesTet[3] =         Grad[0][1][iVar][iFlux]*vny[0] 
                           + Grad[1][1][iVar][iFlux]*vny[1] 
                           + Grad[2][1][iVar][iFlux]*vny[2]
                           + Grad[2][1][iVar][iFlux]*vny[3];
 
-        hesTri[4] = 0.5 * ( Grad[0][1][iVar][iFlux]*vnz[0] 
+        hesTet[4] = 0.5 * ( Grad[0][1][iVar][iFlux]*vnz[0] 
                           + Grad[1][1][iVar][iFlux]*vnz[1] 
                           + Grad[2][1][iVar][iFlux]*vnz[2]
                           + Grad[3][1][iVar][iFlux]*vnz[3]
@@ -6162,7 +6162,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
                           + Grad[2][2][iVar][iFlux]*vny[2]
                           + Grad[3][2][iVar][iFlux]*vny[3] );
 
-        hesTri[5] =         Grad[0][2][iVar][iFlux]*vnz[0] 
+        hesTet[5] =         Grad[0][2][iVar][iFlux]*vnz[0] 
                           + Grad[1][2][iVar][iFlux]*vnz[1] 
                           + Grad[2][2][iVar][iFlux]*vnz[2]
                           + Grad[2][2][iVar][iFlux]*vnz[3];
@@ -6231,7 +6231,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
           Lam[0] = q+2.*p*cos(phi);
           Lam[1] = q+2.*p*cos(phi+2.*p/3.);
-          Lam[2] = 3.*q-Lam1-Lam2;
+          Lam[2] = 3.*q-Lam[0]-Lam[1];
 
           //--- eigenvectors
           for(unsigned short i = 0; i < 3; ++i) {
@@ -6241,7 +6241,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
             int nr = 3, nc = 4, j = 0;
             while(j < nr){
-              for(int r = 0; r < nr: ++r) {
+              for(int r = 0; r < nr; ++r) {
                 const su2double d = A[j][j];
                 const su2double m = A[r][j]/d;
                 for(int c = 0; c < nc; ++c) {

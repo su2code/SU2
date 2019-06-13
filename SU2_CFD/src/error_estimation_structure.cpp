@@ -1035,7 +1035,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
       Lam[0] = q+2.*p*cos(phi);
       Lam[1] = q+2.*p*cos(phi+2.*p/3.);
-      Lam[2] = 3.*q-Lam1-Lam2;
+      Lam[2] = 3.*q-Lam[0]-Lam[1];
 
       //--- eigenvectors
       for(unsigned short i = 0; i < 3; ++i) {
@@ -1045,7 +1045,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         int nr = 3, nc = 4, j = 0;
         while(j < nr){
-          for(int r = 0; r < nr: ++r) {
+          for(int r = 0; r < nr; ++r) {
             const su2double d = A[j][j];
             const su2double m = A[r][j]/d;
             for(int c = 0; c < nc; ++c) {
@@ -1152,7 +1152,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
       Lam[0] = q+2.*p*cos(phi);
       Lam[1] = q+2.*p*cos(phi+2.*p/3.);
-      Lam[2] = 3.*q-Lam1-Lam2;
+      Lam[2] = 3.*q-Lam[0]-Lam[1];
 
       //--- eigenvectors
       for(unsigned short i = 0; i < 3; ++i) {
@@ -1162,7 +1162,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
 
         int nr = 3, nc = 4, j = 0;
         while(j < nr){
-          for(int r = 0; r < nr: ++r) {
+          for(int r = 0; r < nr; ++r) {
             const su2double d = A[j][j];
             const su2double m = A[r][j]/d;
             for(int c = 0; c < nc; ++c) {
@@ -1178,16 +1178,16 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
       }
 
       Lam[0] = abs(Lam[0]);
-      Lam[1] = abs(Lam[0]);
+      Lam[1] = abs(Lam[1]);
       Lam[2] = abs(Lam[2]);
     }
 
     const su2double factor = pow(outComplexity/globalComplexity, 2./3.)
-                           * pow(abs(Lam1*Lam2), -1./(2.*p+3.));
+                           * pow(abs(Lam[0]*Lam[1]*Lam[2]), -1./(2.*p+3.));
 
     const su2double Lam1new = min(max(abs(factor*Lam[0]), 1./(hmax*hmax)), 1./(hmin*hmin));
-    const su2double Lam2new = min(max(abs(factir*Lam[1]), 1./(hmax*hmax)), 1./(hmin*hmin));
-    const su2double Lam3new = min(max(abs(factir*Lam[2]), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam2new = min(max(abs(factor*Lam[1]), 1./(hmax*hmax)), 1./(hmin*hmin));
+    const su2double Lam3new = min(max(abs(factor*Lam[2]), 1./(hmax*hmax)), 1./(hmin*hmin));
 
     const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
                                      RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
