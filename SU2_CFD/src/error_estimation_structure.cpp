@@ -1210,10 +1210,11 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
                                     RuU[1][0]*LamRuU[0][2]+RuU[1][1]*LamRuU[1][2]+RuU[1][2]*LamRuU[2][2],
                                     RuU[2][0]*LamRuU[0][2]+RuU[2][1]*LamRuU[1][2]+RuU[2][2]*LamRuU[2][2]};
 
+    //--- swap indices 2 and 3 to be consistent with AMG, which stores lower triangle in 3D
     var->SetAnisoMetr(0, MetrNew[0]);
     var->SetAnisoMetr(1, MetrNew[1]);
-    var->SetAnisoMetr(2, MetrNew[2]);
-    var->SetAnisoMetr(3, MetrNew[3]);
+    var->SetAnisoMetr(2, MetrNew[3]);
+    var->SetAnisoMetr(3, MetrNew[2]);
     var->SetAnisoMetr(4, MetrNew[4]);
     var->SetAnisoMetr(5, MetrNew[5]);
   }
