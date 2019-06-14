@@ -668,10 +668,6 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
 				if ( bnd->GetVTK_Type() != TRIANGLE ) 
 					continue;
 				
-				
-				if ( cptElem < 10 ) 
-					cout << bnd->GetNode(0)+1 << " " << bnd->GetNode(1)+1 << " " << bnd->GetNode(2)+1 << endl;
-				
 				cptElem++;
 				
 				GmfSetLin(OutMsh, GmfTriangles, bnd->GetNode(0)+1, bnd->GetNode(1)+1, 
