@@ -6169,7 +6169,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         
         //--- assembling
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
-        for (unsigned short iNode=0; iNode<3; ++iNode) {
+        for (unsigned short iNode=0; iNode<4; ++iNode) {
           const unsigned long kNode = geometry->elem[iElem]->GetNode(iNode);
           const su2double Vol = geometry->node[kNode]->GetVolume();
           const su2double rap = 1./(Vol*24.);
