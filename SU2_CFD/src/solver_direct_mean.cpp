@@ -6229,8 +6229,8 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
           else if(det >= 1.) phi = 0.;
           else               phi = acos(det)/3.;
 
-          Lam[0] = q+2.*p*cos(phi);
-          Lam[1] = q+2.*p*cos(phi+2.*p3/3.);
+          Lam[0] = q+2.*p3*cos(phi);
+          Lam[1] = q+2.*p3*cos(phi+2.*p3/3.);
           Lam[2] = 3.*q-Lam[0]-Lam[1];
 
           //--- eigenvectors
