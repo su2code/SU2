@@ -6251,9 +6251,9 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
               }
               j++;
             }
-            RuH[0][i] = A[0][4];
-            RuH[1][i] = A[1][4];
-            RuH[2][i] = A[2][4];
+            RuH[0][i] = A[0][3];
+            RuH[1][i] = A[1][3];
+            RuH[2][i] = A[2][3];
           }
 
           Lam[0] = abs(Lam[0]);
