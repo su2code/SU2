@@ -1034,7 +1034,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
       else               phi = acos(det)/3.;
 
       Lam[0] = q+2.*p*cos(phi);
-      Lam[1] = q+2.*p*cos(phi+2.*p/3.);
+      Lam[1] = q+2.*p*cos(phi+2.*p3/3.);
       Lam[2] = 3.*q-Lam[0]-Lam[1];
 
       //--- eigenvectors
@@ -1139,7 +1139,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
       const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
       const su2double p3 = sqrt(p2/6.);
 
-      const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p,
+      const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
                       dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
 
       const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
@@ -1151,7 +1151,7 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
       else               phi = acos(det)/3.;
 
       Lam[0] = q+2.*p*cos(phi);
-      Lam[1] = q+2.*p*cos(phi+2.*p/3.);
+      Lam[1] = q+2.*p*cos(phi+2.*p3/3.);
       Lam[2] = 3.*q-Lam[0]-Lam[1];
 
       //--- eigenvectors
