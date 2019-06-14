@@ -13195,15 +13195,21 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
               }
             }
             
-            /*--- Q-criterion is implemented directly as the second
-             invariant of the velocity gradient tensor. ---*/
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
             
-            Q = (Grad_Vel[0][0]*Grad_Vel[1][1] +
-                 Grad_Vel[1][1]*Grad_Vel[2][2] +
-                 Grad_Vel[0][0]*Grad_Vel[2][2] -
-                 Grad_Vel[0][1]*Grad_Vel[1][0] -
-                 Grad_Vel[1][2]*Grad_Vel[2][1] -
-                 Grad_Vel[0][2]*Grad_Vel[2][0]);
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+                pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
             Local_Data[jPoint][iVar] = Q; iVar++;
           }
         }
@@ -13817,15 +13823,22 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
               }
             }
             
-            /*--- Q-criterion is implemented directly as the second
-             invariant of the velocity gradient tensor. ---*/
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
             
-            Q = (Grad_Vel[0][0]*Grad_Vel[1][1] +
-                 Grad_Vel[1][1]*Grad_Vel[2][2] +
-                 Grad_Vel[0][0]*Grad_Vel[2][2] -
-                 Grad_Vel[0][1]*Grad_Vel[1][0] -
-                 Grad_Vel[1][2]*Grad_Vel[2][1] -
-                 Grad_Vel[0][2]*Grad_Vel[2][0]);
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+            pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
+            
             Local_Data[jPoint][iVar] = Q; iVar++;
           }
         }
