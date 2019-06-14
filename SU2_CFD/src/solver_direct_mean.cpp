@@ -6216,10 +6216,10 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
           //--- eigenvalues
           const su2double q  = (a + d + f)/3.;
           const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
-          const su2double p  = sqrt(p2/6.);
+          const su2double p3 = sqrt(p2/6.);
 
-          const su2double aa = (a-q)/p, bb = b/p, cc = c/p,
-                          dd = (d-q)/p, ee = e/p, ff = (f-q)/p;
+          const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
+                          dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
 
           const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
 
