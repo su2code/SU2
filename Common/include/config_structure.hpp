@@ -435,6 +435,7 @@ private:
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+  CFLRedCoeff_Chem,     /*!< \brief CFL reduction chemical source terms in TNE2 solver. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
@@ -879,23 +880,25 @@ private:
   Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
   Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
   Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
-  Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
-  Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
-  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
-  Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
-  Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
-  Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
-  Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
-  Pressure_ThermodynamicND,   /*!< \brief Farfield thermodynamic pressure value. */
-  Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
-  Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
-  Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
-  Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
-  Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
-  Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
-  Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
-  Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
+  Time_Ref,                      /*!< \brief Reference time for non-dimensionalization. */
+  Viscosity_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+  Conductivity_Ref,              /*!< \brief Reference conductivity for non-dimensionalization. */
+  Energy_Ref,                    /*!< \brief Reference viscosity for non-dimensionalization. */
+  Wall_Temperature,              /*!< \brief Temperature at an isotropic wall in Kelvin. */
+  Omega_Ref,                     /*!< \brief Reference angular velocity for non-dimensionalization. */
+  Force_Ref,                     /*!< \brief Reference body force for non-dimensionalization. */
+  Pressure_FreeStreamND,         /*!< \brief Farfield pressure value (external flow). */
+  Pressure_ThermodynamicND,      /*!< \brief Farfield thermodynamic pressure value. */
+  Temperature_FreeStreamND,      /*!< \brief Farfield temperature value (external flow). */
+  Density_FreeStreamND,          /*!< \brief Farfield density value (external flow). */
+  Velocity_FreeStreamND[3],      /*!< \brief Farfield velocity values (external flow). */
+  Energy_FreeStreamND,           /*!< \brief Farfield energy value (external flow). */
+  Viscosity_FreeStreamND,        /*!< \brief Farfield viscosity value (external flow). */
+  Tke_FreeStreamND,              /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND,            /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream;              /*!< \brief Specific dissipation (external flow). */
+  bool COLD_FLOW;                /*!< \brief Cold Flow Simulation. */
+  su2double *Cold_Flow_Options;  /*!< \brief Cold flow simulation option vector. */
   su2double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
   *ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
   *ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -1075,6 +1078,7 @@ private:
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
+  *default_cold_flow,         /*!< \brief Default cold flow simulation array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -5339,6 +5343,28 @@ public:
   unsigned short GetUnsteady_Simulation(void);
 
   /*!
+   * \brief Get if the cold flow simulation is required.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending if cold flow is desired.
+   * \return Cold Flow Simulation.
+   */
+  bool GetCOLD_FLOW(void);
+
+  /*!
+   * \brief Set cold flow simulation if required.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending if cold flow is desired.
+   * \return Cold Flow Simulation.
+   */
+  void SetCOLD_FLOW(bool coldflow);
+
+  /*!
+   * \brief Get the vector of the cold flow options.
+   * \return Cold flow options.
+   */
+  su2double GetCold_Flow_Options(unsigned short opt);
+
+  /*!
    * \brief Provides the number of species present in the plasma
    * \return: The number of species present in the plasma, read from input file
    */
@@ -6904,6 +6930,12 @@ public:
    */
   su2double GetCFLRedCoeff_Turb(void);
   
+  /*!
+   * \brief Get the CFL Levi number for chemistry solvers.
+   * \return Value of the CFL reduction in cold flow TNE2 problems.
+   */
+  su2double GetCFLRedCoeff_Chem(void);
+
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.

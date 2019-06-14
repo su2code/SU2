@@ -67,6 +67,27 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool cold_flow = config->GetCOLD_FLOW();
+  bool source    = true;
+
+  su2double Source_Iter  = config->GetCold_Flow_Options(0);
+  su2double Res_Red      = config->GetCold_Flow_Options(1);
+  su2double Res_Mag      = config->GetCold_Flow_Options(2);
+
+  /*--- Determine if source term required ---*/
+
+  if (cold_flow){
+    if (config->GetExtIter()<config->GetStartConv_Iter()){source = false;}
+    if ((config->GetExtIter() < Source_Iter)                        &&
+        (log10(solver_container[MESH_0]->GetRes_RMS(0)) > Res_Mag)  &&
+        (GetOrderResReduction() < Res_Red)) {
+      source = false;
+    }
+    if (source == true){
+      config ->SetCFL(0,(config->GetCFL(0)*config->GetCFLRedCoeff_Chem()));
+      config->SetCOLD_FLOW(false);
+    }
+  }
 
   /*--- Compute inviscid residuals ---*/
   
@@ -87,9 +108,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
   /*--- Compute source term residuals ---*/
+  if (source){
+    solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+  }
 
-  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-  
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
   
   if (dual_time)
@@ -555,7 +577,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       
       if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
       if (monitor > InitResidual) InitResidual = monitor;
-      
+
+      SetOrderResReduction(abs(InitResidual-monitor));
+
       /*--- Check the convergence ---*/
       
       if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||

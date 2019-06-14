@@ -2439,7 +2439,7 @@ void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
   pwr        = floor(log10(N));
 
   /*--- Bound the interpolation to table limit values ---*/
-  iIndex = int(pwr) - tbl_offset;
+  iIndex = pwr - tbl_offset;
   if (iIndex <= 0) {
     for (ii = 0; ii < 5; ii++)
       A[ii] = RxnConstantTable[0][ii];

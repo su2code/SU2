@@ -123,7 +123,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
 
-
     /*--- Modify file name for a time stepping unsteady restart ---*/
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
@@ -1206,7 +1205,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double lim_i, lim_j;
 
   //Unused at the momment
-  //unsigned short iSpecies;
+  unsigned short iSpecies;
   //su2double ProjGradV_i, ProjGradV_j;
   //su2double  lim_ij;
 
@@ -1428,8 +1427,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] dTdU_j;
   delete [] dTvedU_i;
   delete [] dTvedU_j;
-  delete [] Eve_i;
-  delete [] Eve_j;
+  //delete [] Eve_i;
+  //delete [] Eve_j;
   delete [] Cvve_i;
   delete [] Cvve_j;
 }
@@ -2596,19 +2595,12 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *co
     r11 = 0.0; r12   = 0.0; r13   = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
 
-    AD::StartPreacc();
-    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-    AD::SetPreaccIn(Coord_i, nDim);
-
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++)
         PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
-
-      AD::SetPreaccIn(Coord_j, nDim);
-      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -2689,9 +2681,6 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *co
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
-
-    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
-    AD::EndPreacc();
   }
 
   delete [] PrimVar_i;
@@ -2735,19 +2724,12 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
   r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
   r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-  AD::SetPreaccIn(Coord_i, nDim);
-
   for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
     jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
     Coord_j = geometry->node[jPoint]->GetCoord();
 
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
-
-    AD::SetPreaccIn(Coord_j, nDim);
-    AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
 
     weight = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
@@ -2770,7 +2752,6 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
         for (iDim = 0; iDim < nDim; iDim++)
           Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
     }
-
   }
 
   /*--- Entries of upper triangular matrix R ---*/

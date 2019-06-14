@@ -336,7 +336,7 @@ CNumerics::~CNumerics(void) {
   //if (eve_i  != NULL) delete [] eve_i;
   //if (eve_j  != NULL) delete [] eve_j;
   //if (Cvve_i != NULL) delete [] Cvve_i;
-  //if (Cvve_j != NULL) delete [] Cvve_j; These cause seg faults?
+  //if (Cvve_j != NULL) delete [] Cvve_j;
   if (Ys_i   != NULL) delete [] Ys_i;
   if (Ys_j   != NULL) delete [] Ys_j;
   if (In     != NULL) delete [] In;

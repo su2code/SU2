@@ -480,11 +480,12 @@ void CConfig::SetPointersNull(void) {
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
   Inc_Velocity_Init   = NULL;
+  Cold_Flow_Options   = NULL;
 
   RefOriginMoment     = NULL;
   CFL_AdaptParam      = NULL;
   CFL                 = NULL;
-  HTP_Axis = NULL;
+  HTP_Axis            = NULL;
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;
   Kappa_AdjFlow       = NULL;
@@ -539,6 +540,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf            = NULL;
+  default_cold_flow          = NULL;
   default_ffd_axis           = NULL;
   default_eng_cyl            = NULL;
   default_eng_val            = NULL;
@@ -659,6 +661,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
   
   default_vel_inf            = new su2double[3];
+  default_cold_flow          = new su2double[3];
   default_ffd_axis           = new su2double[3];
   default_eng_cyl            = new su2double[7];
   default_eng_val            = new su2double[5];
@@ -868,6 +871,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -897,10 +902,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
   
-  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
-  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
+
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
+  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
@@ -1254,6 +1258,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  /* DESCRIPTION:  Reduction factor of the CFL coefficient in the chemistry source terms in TNE2 solvers */
+  addDoubleOption("CFL_REDUCTION_CHEM", CFLRedCoeff_Chem, 1.0);
   /* DESCRIPTION: Number of total iterations */
   addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   /* DESCRIPTION: External iteration offset due to restart */
@@ -1473,12 +1479,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_TNE2
    *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
-  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  /*!\brief MUSCL_TNE2 \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_TNE2", MUSCL_TNE2, true);
-  /*!\brief SLOPE_LIMITER_FLOW
+  /*!\brief SLOPE_LIMITER_TNE2
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  /*!\brief COLD_FLOW \n DESCRIPTION: Check if Cold Flow should be used in scheme. */
+  addBoolOption("COLD_FLOW",COLD_FLOW, false);
+  /*!\brief COLD_FLOW_OPTIONS \n DESCRIPTION: Iterations, Residual, Resdiual Reduction*/
+  default_cold_flow[0] = 0.0; default_cold_flow[1] = 0.0; default_cold_flow[2] = 0.0;
+  addDoubleArrayOption("COLD_FLOW_OPTIONS", 3, Cold_Flow_Options, default_cold_flow);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -8210,6 +8221,7 @@ CConfig::~CConfig(void) {
   /*--- Delete some arrays needed just for initializing options. ---*/
   
   if (default_vel_inf       != NULL) delete [] default_vel_inf;
+  if (default_cold_flow     != NULL) delete [] default_cold_flow;
   if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
   if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;

@@ -1071,6 +1071,12 @@ inline unsigned short CConfig::GetnSpecies(void) {return nSpecies; }
 
 inline unsigned short CConfig::GetnReactions(void) {return nReactions; }
 
+inline bool CConfig::GetCOLD_FLOW(void) { return COLD_FLOW; }
+
+inline void CConfig::SetCOLD_FLOW(bool coldflow) { COLD_FLOW = coldflow; }
+
+inline su2double CConfig::GetCold_Flow_Options(unsigned short opt) {return Cold_Flow_Options[opt]; }
+
 inline su2double CConfig::GetArrheniusCoeff(unsigned short iReaction) { return ArrheniusCoefficient[iReaction]; }
 
 inline su2double CConfig::GetArrheniusEta(unsigned short iReaction) { return ArrheniusEta[iReaction]; }
@@ -1703,6 +1709,8 @@ inline su2double CConfig::GetCM_Target(void) { return CM_Target; }
 inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
+
+inline su2double CConfig::GetCFLRedCoeff_Chem(void) { return CFLRedCoeff_Chem; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

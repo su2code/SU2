@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
@@ -167,9 +167,9 @@ int main(int argc, char *argv[]) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
-      } else if (tne2) {
+      //} else if (tne2) {
 
-        driver = new CDiscAdjTNE2Driver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+      //  driver = new CDiscAdjTNE2Driver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
       } else {
 

@@ -1353,9 +1353,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 
     // If the Newton-Raphson method has converged, assign the value of Tve.
     // Otherwise, execute a bisection root-finding method
-    if (NRconvg)
+    if (NRconvg){
       V[TVE_INDEX] = Tve;
-    else {
+     } else {
 
       // Assign the bounds
       Tve_o = Tvemin;
@@ -1400,7 +1400,6 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     rhoCvve += U[iSpecies]*val_Cvves[iSpecies];
   V[RHOCVVE_INDEX] = rhoCvve;
 
-
   /*--- If there are clipped temperatures, correct the energy terms ---*/
   //  if (errT) {
   //    U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
@@ -1411,7 +1410,6 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   //                       - rhoE_ref + 0.5*rho*sqvel;
   //    U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
   //  }
-
 
   /*--- Pressure ---*/
   V[P_INDEX] = 0.0;
@@ -1780,7 +1778,7 @@ CTNE2NSVariable::CTNE2NSVariable(su2double *val_solution, unsigned short val_ndi
 }
 
 CTNE2NSVariable::~CTNE2NSVariable(void) {
-  delete [] DiffusionCoeff;
+  // This cause invalid free delete [] DiffusionCoeff;
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] Dij[iSpecies];
   delete [] Dij;
