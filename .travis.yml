@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - develop
+        - master
 
 python:
     - 3.6
