@@ -36,6 +36,9 @@
  */
 
 #include "../include/error_estimation_structure.hpp"
+#include "../include/solver_structure.hpp"
+
+CErrorEstimationDriver::CErrorEstimationDriver(void) { }
 
 CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
                                                unsigned short val_nZone,
@@ -996,7 +999,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
-    su2double Lam[3], RuH[3][3];
+    vector<su2double>          Lam(3);
+    vector<vector<su2double> > RuH(3, vector<su2double>(3, 0.0));
 
     const su2double a = var->GetAnisoMetr(0);
     const su2double b = var->GetAnisoMetr(1);
@@ -1006,64 +1010,73 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double f = var->GetAnisoMetr(5);
 
     const su2double p1 = b*b + c*c + e*e;
-    if(p1 < 1.0e-16){
-      //--- eigenvalues
-      Lam[0] = abs(a);
-      Lam[1] = abs(d);
-      Lam[2] = abs(f);
+        if(p1 < 1.0e-16){
+          //--- eigenvalues
+          Lam[0] = abs(a);
+          Lam[1] = abs(d);
+          Lam[2] = abs(f);
 
-      //--- eigenvectors
-      RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
-      RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
-    }
-    else{
-      //--- eigenvalues
-      const su2double q  = (a + d + f)/3.;
-      const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
-      const su2double p3 = sqrt(p2/6.);
-
-      const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
-                      dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
-
-      const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
-
-      const su2double pi = 3.141592653589793238;
-      su2double phi;
-      if(det <= -1.)     phi = pi/3.;
-      else if(det >= 1.) phi = 0.;
-      else               phi = acos(det)/3.;
-
-      Lam[0] = q+2.*p3*cos(phi);
-      Lam[1] = q+2.*p3*cos(phi+2.*p3/3.);
-      Lam[2] = 3.*q-Lam[0]-Lam[1];
-
-      //--- eigenvectors
-      for(unsigned short i = 0; i < 3; ++i) {
-        su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
-                             {b,        d-Lam[i], e,        0.},
-                             {c,        e,        f-Lam[i], 0.}};
-
-        int nr = 3, nc = 4, j = 0;
-        while(j < nr){
-          for(int r = 0; r < nr; ++r) {
-            const su2double d = A[j][j];
-            const su2double m = A[r][j]/d;
-            for(int c = 0; c < nc; ++c) {
-              if(r == j) A[r][c] /= d;
-              else       A[r][c] -= A[j][c]*m;
-            }
-          }
-          j++;
+          //--- eigenvectors
+          RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
+          RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
         }
-        RuH[0][i] = A[0][3];
-        RuH[1][i] = A[1][3];
-        RuH[2][i] = A[2][3];
-      }
+        else{
+          //--- eigenvalues
+          const su2double q  = (a + d + f)/3.;
+          const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
+          const su2double p3 = sqrt(p2/6.);
 
-      Lam[0] = abs(Lam[0]);
-      Lam[1] = abs(Lam[1]);
-      Lam[2] = abs(Lam[2]);
-    }
+          const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
+                          dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
+
+          const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+
+          const su2double pi = 3.141592653589793238;
+          su2double phi;
+          if(det <= -1.)     phi = pi/3.;
+          else if(det >= 1.) phi = 0.;
+          else               phi = acos(det)/3.;
+
+          Lam[0] = q+2.*p3*cos(phi);
+          Lam[1] = q+2.*p3*cos(phi+2.*pi/3.);
+          Lam[2] = 3.*q-Lam[0]-Lam[1];
+
+          //--- eigenvectors
+          CErrorEstimationUtil *util = new CErrorEstimationUtil();
+          for(unsigned short k = 0; k < 3; ++k) {
+            vector<vector<su2double>> A(3, vector<su2double>(3, 0.0));
+
+            //--- invert A-mu*I
+            su2double mu = 0.99*Lam[k];
+            A[0][0] = a-mu; A[0][1] = b;    A[0][2] = c;
+            A[1][0] = b;    A[1][1] = d-mu; A[1][2] = e;
+            A[2][0] = c;    A[2][1] = e;    A[2][2] = f-mu;
+
+            util->Inverse3(A);
+
+            //--- inverse power iteration
+            vector<su2double> b0(3, 1.0);
+            su2double norm = 1.0;
+            while(norm > 1.0e-16) {
+              vector<su2double> b1;
+              util->MatVec(A, b0, b1);
+              norm = sqrt(b1[0]*b1[0]+b1[1]*b1[1]+b1[2]*b1[2]);
+              b1[0] /= norm; b1[1] /= norm; b1[2] /= norm;
+              norm = (b1[0]*b1[0]-b0[0]*b0[0]) + (b1[1]*b1[1]-b0[1]*b0[1]) + (b1[2]*b1[2]-b0[2]*b0[2]);
+              // norm = (b1[0]-b0[0])*(b1[0]-b0[0]) + (b1[1]-b0[1])*(b1[1]-b0[1]) + (b1[2]-b0[2])*(b1[2]-b0[2]);
+              b0 = b1;
+            }
+            
+            //--- store
+            RuH[0][k] = b0[0];
+            RuH[1][k] = b0[1];
+            RuH[2][k] = b0[2];
+          }
+
+          Lam[0] = abs(Lam[0]);
+          Lam[1] = abs(Lam[1]);
+          Lam[2] = abs(Lam[2]);
+        }
 
     const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
                                      RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
@@ -1075,9 +1088,13 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
                                      RuH[2][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
                                      RuH[2][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])}};
 
-    const su2double LamRuU[3][3] = {{Lam[0]*RuU[0][0],Lam[0]*RuU[1][0],Lam[0]*RuU[2][0]},
-                                    {Lam[1]*RuU[0][1],Lam[1]*RuU[1][1],Lam[1]*RuU[2][1]},
-                                    {Lam[2]*RuU[0][2],Lam[2]*RuU[1][2],Lam[2]*RuU[2][2]}};
+    const su2double Lam1new = max(abs(Lam[0]), 1.0E-16);
+    const su2double Lam2new = max(abs(Lam[1]), 1.0E-16);
+    const su2double Lam3new = max(abs(Lam[2]), 1.0E-16);
+
+    const su2double LamRuU[3][3] = {{Lam1new*RuU[0][0],Lam1new*RuU[1][0],Lam1new*RuU[2][0]},
+                                    {Lam2new*RuU[0][1],Lam2new*RuU[1][1],Lam2new*RuU[2][1]},
+                                    {Lam3new*RuU[0][2],Lam3new*RuU[1][2],Lam3new*RuU[2][2]}};
 
     const su2double Metr[6]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0]+RuU[0][2]*LamRuU[2][0], 
                                     RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]+RuU[0][2]*LamRuU[2][1],
@@ -1113,7 +1130,8 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = solver_flow->node[iPoint];
 
-    su2double Lam[3], RuH[3][3];
+    vector<su2double>          Lam(3);
+    vector<vector<su2double> > RuH(3, vector<su2double>(3, 0.0));
 
     const su2double a = var->GetAnisoMetr(0);
     const su2double b = var->GetAnisoMetr(1);
@@ -1123,64 +1141,73 @@ void CErrorEstimationDriver::SumWeightedHessian3(CSolver   *solver_flow,
     const su2double f = var->GetAnisoMetr(5);
 
     const su2double p1 = b*b + c*c + e*e;
-    if(p1 < 1.0e-16){
-      //--- eigenvalues
-      Lam[0] = abs(a);
-      Lam[1] = abs(d);
-      Lam[2] = abs(f);
+        if(p1 < 1.0e-16){
+          //--- eigenvalues
+          Lam[0] = abs(a);
+          Lam[1] = abs(d);
+          Lam[2] = abs(f);
 
-      //--- eigenvectors
-      RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
-      RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
-    }
-    else{
-      //--- eigenvalues
-      const su2double q  = (a + d + f)/3.;
-      const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
-      const su2double p3 = sqrt(p2/6.);
-
-      const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
-                      dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
-
-      const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
-
-      const su2double pi = 3.141592653589793238;
-      su2double phi;
-      if(det <= -1.)     phi = pi/3.;
-      else if(det >= 1.) phi = 0.;
-      else               phi = acos(det)/3.;
-
-      Lam[0] = q+2.*p3*cos(phi);
-      Lam[1] = q+2.*p3*cos(phi+2.*p3/3.);
-      Lam[2] = 3.*q-Lam[0]-Lam[1];
-
-      //--- eigenvectors
-      for(unsigned short i = 0; i < 3; ++i) {
-        su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
-                             {b,        d-Lam[i], e,        0.},
-                             {c,        e,        f-Lam[i], 0.}};
-
-        int nr = 3, nc = 4, j = 0;
-        while(j < nr){
-          for(int r = 0; r < nr; ++r) {
-            const su2double d = A[j][j];
-            const su2double m = A[r][j]/d;
-            for(int c = 0; c < nc; ++c) {
-              if(r == j) A[r][c] /= d;
-              else       A[r][c] -= A[j][c]*m;
-            }
-          }
-          j++;
+          //--- eigenvectors
+          RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
+          RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
         }
-        RuH[0][i] = A[0][3];
-        RuH[1][i] = A[1][3];
-        RuH[2][i] = A[2][3];
-      }
+        else{
+          //--- eigenvalues
+          const su2double q  = (a + d + f)/3.;
+          const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
+          const su2double p3 = sqrt(p2/6.);
 
-      Lam[0] = abs(Lam[0]);
-      Lam[1] = abs(Lam[1]);
-      Lam[2] = abs(Lam[2]);
-    }
+          const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
+                          dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
+
+          const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+
+          const su2double pi = 3.141592653589793238;
+          su2double phi;
+          if(det <= -1.)     phi = pi/3.;
+          else if(det >= 1.) phi = 0.;
+          else               phi = acos(det)/3.;
+
+          Lam[0] = q+2.*p3*cos(phi);
+          Lam[1] = q+2.*p3*cos(phi+2.*pi/3.);
+          Lam[2] = 3.*q-Lam[0]-Lam[1];
+
+          //--- eigenvectors
+          CErrorEstimationUtil *util = new CErrorEstimationUtil();
+          for(unsigned short k = 0; k < 3; ++k) {
+            vector<vector<su2double>> A(3, vector<su2double>(3, 0.0));
+
+            //--- invert A-mu*I
+            su2double mu = 0.99*Lam[k];
+            A[0][0] = a-mu; A[0][1] = b;    A[0][2] = c;
+            A[1][0] = b;    A[1][1] = d-mu; A[1][2] = e;
+            A[2][0] = c;    A[2][1] = e;    A[2][2] = f-mu;
+
+            util->Inverse3(A);
+
+            //--- inverse power iteration
+            vector<su2double> b0(3, 1.0);
+            su2double norm = 1.0;
+            while(norm > 1.0e-16) {
+              vector<su2double> b1;
+              util->MatVec(A, b0, b1);
+              norm = sqrt(b1[0]*b1[0]+b1[1]*b1[1]+b1[2]*b1[2]);
+              b1[0] /= norm; b1[1] /= norm; b1[2] /= norm;
+              norm = (b1[0]*b1[0]-b0[0]*b0[0]) + (b1[1]*b1[1]-b0[1]*b0[1]) + (b1[2]*b1[2]-b0[2]*b0[2]);
+              // norm = (b1[0]-b0[0])*(b1[0]-b0[0]) + (b1[1]-b0[1])*(b1[1]-b0[1]) + (b1[2]-b0[2])*(b1[2]-b0[2]);
+              b0 = b1;
+            }
+            
+            //--- store
+            RuH[0][k] = b0[0];
+            RuH[1][k] = b0[1];
+            RuH[2][k] = b0[2];
+          }
+
+          Lam[0] = abs(Lam[0]);
+          Lam[1] = abs(Lam[1]);
+          Lam[2] = abs(Lam[2]);
+        }
 
     const su2double factor = pow(outComplexity/globalComplexity, 2./3.)
                            * pow(abs(Lam[0]*Lam[1]*Lam[2]), -1./(2.*p+3.));
@@ -1524,4 +1551,187 @@ void CErrorEstimationDriver::Solver_Deletion(CSolver ****solver_container,
 
   delete [] solver_container[val_iInst];
 
+}
+
+void CErrorEstimationUtil::MatVec(const vector<vector<su2double> >  &A,
+                                  const vector<su2double>           &x,
+                                  vector<su2double>                 &y) {
+
+  unsigned short m  = A.size(),
+                 n  = A[0].size(),
+                 nx = x.size();
+
+  if(n != nx) SU2_MPI::Error("Matrix and vector dimensions do not agree.", CURRENT_FUNCTION);
+
+  for(unsigned short i = 0; i < m; ++i){
+    y.push_back(0.0);
+    for(unsigned short j = 0; j < n; ++j){
+      y[i] += A[i][j]*x[j];
+    }
+  }
+}
+
+void CErrorEstimationUtil::MatMat(const vector<vector<su2double> >  &A,
+                                  const vector<vector<su2double> >  &B,
+                                  vector<vector<su2double> >        &Y) {
+  unsigned short ma = A.size(),
+                 na = A[0].size(),
+                 mb = B.size(),
+                 nb = B[0].size();
+
+  if(na != mb) SU2_MPI::Error("Matrix dimensions do not agree.", CURRENT_FUNCTION);
+
+  Y.resize(ma);
+
+  for(unsigned short i = 0; i < ma; ++i){
+    Y[i].resize(nb);
+    for(unsigned short j = 0; j < nb; ++j){
+      Y[i][j] = 0.0;
+      for(unsigned short k = 0; k < na; ++k)
+        Y[i][j] += A[i][k]*B[k][j];
+    }
+  }
+}
+
+void CErrorEstimationUtil::TransposeSquare(vector<vector<su2double> >  &mat) {
+
+  unsigned short m = mat.size(),
+                 i, j;
+
+  for(i = 0; i < m; i++){
+    for(j = 0; j < i; j++){
+      const su2double tmp = mat[i][j];
+      mat[i][j] = mat[j][i];
+      mat[j][i] = tmp;
+    }
+  }
+}
+
+void CErrorEstimationUtil::Inverse3(vector<vector<su2double> > &mat) {
+
+  int i, j;
+  int im, ip, jm, jp;
+  vector<vector<su2double> > tmp = mat;
+  // Replace entries by minor
+  for(i = 0; i < 3; ++i) {
+    im = i-1; ip = i+1;
+    if(im < 0) im = 2;
+    if(ip > 2) ip = 0;
+    for(j = 0; j < 3; ++j) {
+      jm = j-1; jp = j+1;
+      if(jm < 0) jm = 2;
+      if(jp > 2) jp = 0;
+      mat[i][j] = tmp[ip][jp]*tmp[im][jm]-tmp[im][jp]*tmp[ip][jm];
+    }
+  }
+
+  // Change signs
+  mat[0][1] *= -1.;
+  mat[1][0] *= -1.;
+  mat[1][2] *= -1.;
+  mat[2][1] *= -1.;
+
+  // Transpose
+  TransposeSquare(mat);
+
+  // Divide by det
+  const su2double det = tmp[0][0]*(tmp[1][1]*tmp[2][2]-tmp[1][2]*tmp[2][1])
+                      + tmp[0][1]*(tmp[1][2]*tmp[2][0]-tmp[1][0]*tmp[2][2])
+                      + tmp[0][2]*(tmp[1][0]*tmp[2][1]-tmp[1][1]*tmp[2][0]);
+  for(i = 0; i < 3; ++i) {
+    for(j = 0; j < 3; ++j) {
+      mat[i][j] /= det;
+    }
+  }
+}
+
+void CErrorEstimationUtil::Householder(const vector<vector<su2double> >    &mat,
+                                       vector<vector<su2double> >          &Q,
+                                       vector<vector<su2double> >          &R) {
+
+  unsigned short m = mat.size(),
+                 n = mat[0].size(),
+                 i, j, k;
+  su2double a, b;
+  vector<su2double> x(m),
+                    e(m);
+  // Temporary arrays
+  vector<vector<su2double> > z = mat,
+                            z1(m, vector<su2double>(n));
+
+  // Array of Q's
+  vector<vector<vector<su2double> > >  Qk(m, vector<vector<su2double> >(m, vector<su2double>(m)));
+
+  for(k = 0; k < n && k < m-1; k++){
+
+    // Minor
+    for(i = 0; i < m; i++)
+      for(j = 0; j < n; j++)
+        z1[i][j] = 0.0;
+
+    for(i = 0; i < k; i++) z1[i][i] = 1.0;
+
+    for(i = k; i < m; i++){
+      for(j = k; j < n; j++) z1[i][j] = z[i][j];
+    }
+
+    // Extract column
+    for(i = 0; i < m; i++) x[i] = z1[i][k];
+
+    // Norm of x
+    a = 0.0;
+    for(i = 0; i < m; i++) a += x[i]*x[i];
+    a = sqrt(a);
+    if(mat[k][k] > 0) a = -a;
+
+    // Fill unit vector e
+    for(i = 0; i < m; i++){
+      b = (i == k) ? 1 : 0;
+      e[i] = x[i] + a*b;
+    }
+
+    a = 0.0;  
+    for(i = 0; i < m; i++) a += e[i]*e[i];
+    a = sqrt(a);
+
+    for(i = 0; i < m; i++) e[i] /= a;
+
+    // Compute Householder factor
+    for(i = 0; i < m; i++){
+      for(j = 0; j < m; j++){
+        Qk[k][i][j] = -2.0*e[i]*e[j];
+      }
+    }
+    for(i = 0; i < m; i++) Qk[k][i][i] += 1.0;
+
+    // Qk[k]*z1
+    for(i = 0; i < m; i++)
+      for(j = 0; j < n; j++)
+        z[i][j] = 0.0;
+
+    MatMat(Qk[k], z1, z);
+
+  }
+
+  // Compute Q^T
+  Q = Qk[0];
+  for(i = 0; i < m; i++) z1[i].resize(m);
+
+  for(k = 1; k < n && k < m-1; k++){
+
+    for(i = 0; i < m; i++)
+      for(j = 0; j < m; j++)
+        z1[i][j] = 0.0;
+
+    MatMat(Qk[k], Q, z1);
+
+    Q = z1;
+
+  }
+
+  // Compute R
+  MatMat(Q, mat, R);
+
+  // Transpose Q
+  TransposeSquare(Q);
 }

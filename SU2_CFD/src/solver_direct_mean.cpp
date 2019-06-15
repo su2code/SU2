@@ -36,7 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../include/error_estimation_structure.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
@@ -5737,7 +5737,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), iElem, nElem = geometry->GetnElem();
   // unsigned short Kind_Aniso_Sensor = config->GetKind_Aniso_Sensor();
-  unsigned short iVar, iDim, iFlux;
+  unsigned short iVar, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   su2double density, velocity[2], pressure, enthalpy;
   su2double vnx[3], vny[3];
@@ -5829,7 +5829,7 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
 void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim, iFlux;
+  unsigned short iVar, iFlux;
   unsigned short nVarMetr = 4, nFluxMetr = 2;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 3;
   su2double vnx[3], vny[3];
@@ -6008,7 +6008,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       Sens[iNode][0][2] = density*velocity[2];
       Sens[iNode][1][2] = Sens[iNode][0][2]*velocity[0];
       Sens[iNode][2][2] = Sens[iNode][0][2]*velocity[1];
-      Sens[iNode][3][2] = Sens[iNode][0][2]*velocity[1]+pressure;
+      Sens[iNode][3][2] = Sens[iNode][0][2]*velocity[2]+pressure;
       Sens[iNode][4][2] = Sens[iNode][0][2]*enthalpy;
     }
 
@@ -6058,7 +6058,7 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain(), iElem, nElem = geometry->GetnElem();
-  unsigned short iVar, iDim, iFlux;
+  unsigned short iVar, iFlux;
   unsigned short nVarMetr = 5, nFluxMetr = 3;  //--- TODO: adjust size of grad vector later for goal vs. feature
   unsigned short nMetr = 6;
   su2double vnx[4], vny[4], vnz[4];
@@ -6151,7 +6151,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         hesTet[3] =         Grad[0][1][iVar][iFlux]*vny[0] 
                           + Grad[1][1][iVar][iFlux]*vny[1] 
                           + Grad[2][1][iVar][iFlux]*vny[2]
-                          + Grad[2][1][iVar][iFlux]*vny[3];
+                          + Grad[3][1][iVar][iFlux]*vny[3];
 
         hesTet[4] = 0.5 * ( Grad[0][1][iVar][iFlux]*vnz[0] 
                           + Grad[1][1][iVar][iFlux]*vnz[1] 
@@ -6165,7 +6165,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         hesTet[5] =         Grad[0][2][iVar][iFlux]*vnz[0] 
                           + Grad[1][2][iVar][iFlux]*vnz[1] 
                           + Grad[2][2][iVar][iFlux]*vnz[2]
-                          + Grad[2][2][iVar][iFlux]*vnz[3];
+                          + Grad[3][2][iVar][iFlux]*vnz[3];
         
         //--- assembling
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
@@ -6192,7 +6192,8 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
 
-        su2double Lam[3], RuH[3][3];
+        vector<su2double>          Lam(3);
+        vector<vector<su2double> > RuH(3, vector<su2double>(3, 0.0));
 
         const su2double a = var->GetAnisoHess(i+0);
         const su2double b = var->GetAnisoHess(i+1);
@@ -6230,37 +6231,45 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
           else               phi = acos(det)/3.;
 
           Lam[0] = q+2.*p3*cos(phi);
-          Lam[1] = q+2.*p3*cos(phi+2.*p3/3.);
+          Lam[1] = q+2.*p3*cos(phi+2.*pi/3.);
           Lam[2] = 3.*q-Lam[0]-Lam[1];
 
           //--- eigenvectors
-          for(unsigned short i = 0; i < 3; ++i) {
-            su2double A[3][4] = {{a-Lam[i], b,        c,        0.},
-                                 {b,        d-Lam[i], e,        0.},
-                                 {c,        e,        f-Lam[i], 0.}};
+          CErrorEstimationUtil *util = new CErrorEstimationUtil();
+          for(unsigned short k = 0; k < 3; ++k) {
+            vector<vector<su2double>> A(3, vector<su2double>(3, 0.0));
 
-            int nr = 3, nc = 4, j = 0;
-            while(j < nr){
-              for(int r = 0; r < nr; ++r) {
-                const su2double d = A[j][j];
-                const su2double m = A[r][j]/d;
-                for(int c = 0; c < nc; ++c) {
-                  if(r == j) A[r][c] /= d;
-                  else       A[r][c] -= A[j][c]*m;
-                }
-              }
-              j++;
+            //--- invert A-mu*I
+            su2double mu = 0.99*Lam[k];
+            A[0][0] = a-mu; A[0][1] = b;    A[0][2] = c;
+            A[1][0] = b;    A[1][1] = d-mu; A[1][2] = e;
+            A[2][0] = c;    A[2][1] = e;    A[2][2] = f-mu;
+
+            util->Inverse3(A);
+
+            //--- inverse power iteration
+            vector<su2double> b0(3, 1.0);
+            su2double norm = 1.0;
+            while(norm > 1.0e-16) {
+              vector<su2double> b1;
+              util->MatVec(A, b0, b1);
+              norm = sqrt(b1[0]*b1[0]+b1[1]*b1[1]+b1[2]*b1[2]);
+              b1[0] /= norm; b1[1] /= norm; b1[2] /= norm;
+              norm = (b1[0]*b1[0]-b0[0]*b0[0]) + (b1[1]*b1[1]-b0[1]*b0[1]) + (b1[2]*b1[2]-b0[2]*b0[2]);
+              // norm = (b1[0]-b0[0])*(b1[0]-b0[0]) + (b1[1]-b0[1])*(b1[1]-b0[1]) + (b1[2]-b0[2])*(b1[2]-b0[2]);
+              b0 = b1;
             }
-            RuH[0][i] = A[0][3];
-            RuH[1][i] = A[1][3];
-            RuH[2][i] = A[2][3];
+            
+            //--- store
+            RuH[0][k] = b0[0];
+            RuH[1][k] = b0[1];
+            RuH[2][k] = b0[2];
           }
 
           Lam[0] = abs(Lam[0]);
           Lam[1] = abs(Lam[1]);
           Lam[2] = abs(Lam[2]);
         }
-
 
         const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
                                          RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),

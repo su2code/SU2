@@ -49,15 +49,13 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   unsigned short iVar, nDim = geometry->GetnDim();
   unsigned short nVar_Buf = nVar_Par-nDim;
   unsigned long iPoint;
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   string filename;
   
   unsigned long OutSol, npoin = geometry->GetGlobal_nPointDomain();
   unsigned long myPoint, offset, Global_Index;
   int VarTyp[GmfMaxTyp];
   passivedouble bufDbl[GmfMaxTyp];
-  char OutNam[1024], BasNam[1024];
-  char *ptr=NULL;
+  char OutNam[1024];
 	
   SPRINTF (OutNam, "current.restart.solb");
 

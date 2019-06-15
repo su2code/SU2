@@ -40,6 +40,8 @@
 
 #pragma once
 
+class CErrorEstimationDriver;
+
 #include "../../Common/include/mpi_structure.hpp"
 
 #include <cmath>

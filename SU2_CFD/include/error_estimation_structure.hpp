@@ -38,15 +38,13 @@
 
 #pragma once
 
+class CSolver;
+
 #include "../../Common/include/adt_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../SU2_CFD/include/iteration_structure.hpp"
-#include "../../SU2_CFD/include/integration_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
-#include "../../SU2_CFD/include/numerics_structure.hpp"
-#include "../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
 
@@ -82,6 +80,11 @@ private:
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
 
 public:
+
+  /*! 
+   * \brief Constructor of the class.
+   */
+  CErrorEstimationDriver(void);
 
   /*! 
    * \brief Constructor of the class.
@@ -172,5 +175,57 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Solver_Deletion(CSolver ****solver_container, CConfig *config, unsigned short val_iInst);
+
+};
+
+/*!
+ * \class CErrorEstimationUtil
+ * \brief Class of functions used by error estimation driver.
+ * \version 6.1.0 "Falcon"
+ */
+class CErrorEstimationUtil {
+
+public:
+
+  /*! 
+   * \brief Constructor of the class.
+   */
+  CErrorEstimationUtil(void) { }
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CErrorEstimationUtil(void);
+
+  /*!
+   * \brief Function, which performs a matrix-vector multiplication.
+   */
+  void MatVec(const vector<vector<su2double> >  &A,
+              const vector<su2double>           &x,
+              vector<su2double>                 &y);
+
+  /*!
+   * \brief Function, which performs a matrix-matrix multiplication.
+   */
+  void MatMat(const vector<vector<su2double> >  &A,
+              const vector<vector<su2double> >  &B,
+              vector<vector<su2double> >        &Y);
+
+  /*!
+   * \brief Function, which transposes a square matrix.
+   */
+  void TransposeSquare(vector<vector<su2double> >  &mat);
+
+  /*!
+   * \brief Function, which inverts a 3x3 matrix.
+   */
+  void Inverse3(vector<vector<su2double> > &mat);
+
+  /*!
+   * \brief Function, which performs a QR factorization using the Householder method.
+   */
+  void Householder(const vector<vector<su2double> >  &mat,
+                   vector<vector<su2double> >        &Q,
+                   vector<vector<su2double> >        &R);
 
 };
