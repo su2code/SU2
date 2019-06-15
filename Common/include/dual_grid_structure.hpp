@@ -147,10 +147,12 @@ private:
   vector<unsigned long> Point;        /*!< \brief Points surrounding the central node of the control volume. */
   vector<long> Edge;                  /*!< \brief Edges that set up a control volume. */
   su2double *Volume;                  /*!< \brief Volume or Area of the control volume in 3D and 2D. */
+  su2double Periodic_Volume;          /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
   bool Domain,                        /*!< \brief Indicates if a point must be computed or belong to another boundary */
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  SolidBoundary;                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  SolidBoundary,                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  PeriodicBoundary;                      /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
   long *Vertex;                       /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
   su2double *Coord,                   /*!< \brief vector with the coordinates of the node. */
   *Coord_Old,                         /*!< \brief Old coordinates vector for geometry smoothing. */
@@ -166,7 +168,7 @@ private:
   bool Agglomerate_Indirect,					/*!< \brief This flag indicates if the indirect points can be agglomerated. */
   Agglomerate;                        /*!< \brief This flag indicates if the element has been agglomerated. */
   bool Move;                          /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
-  unsigned short color;               /*!< \brief Color of the point in the partitioning strategy. */
+  unsigned long color;                /*!< \brief Color of the point in the partitioning strategy. */
   su2double Wall_Distance;            /*!< \brief Distance to the nearest wall. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
   su2double Curvature;                /*!< \brief Value of the surface curvature (SU2_GEO). */
@@ -403,6 +405,18 @@ public:
 	 */
 	su2double GetVolume(void);
 	
+  /*!
+   * \brief Get the missing component of area or volume for a control volume on a periodic marker.
+   * \return Periodic component of area or volume for a control volume on a periodic marker.
+   */
+  su2double GetPeriodicVolume(void);
+  
+  /*!
+   * \brief Set the missing component of area or volume for a control volume on a periodic marker.
+   * \param[in] val_volume - Value of the volume from the missing components of the CV on the periodic marker.
+   */
+  void SetPeriodicVolume(su2double val_volume);
+  
 	/*!
 	 * \brief Get the maximum cell-center to cell-center length.
 	 * \return The maximum cell-center to cell-center length.
@@ -452,6 +466,12 @@ public:
 	void SetSolidBoundary(bool val_boundary);
   
   /*!
+   * \brief Set if a point belongs to a periodic boundary.
+   * \param[in] val_boundary - <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
+   */
+  void SetPeriodicBoundary(bool val_boundary);
+  
+  /*!
 	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
@@ -463,12 +483,18 @@ public:
 	 */
 	bool GetSolidBoundary(void);
   
+  /*!
+   * \brief Provides information about if a point belongs to a periodic boundary (without MPI).
+   * \return <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
+   */
+  bool GetPeriodicBoundary(void);
+  
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.
 	 * \note Each domain has a different color.
 	 * \param[in] val_color - Color of the point.
 	 */
-	void SetColor(unsigned short val_color);
+	void SetColor(unsigned long val_color);
 	
 	/*! 
 	 * \brief Set the number of neighbor (artificial dissipation).
@@ -486,7 +512,7 @@ public:
 	 * \brief Get the color of a point, the color indicates to which subdomain the point belong to.
 	 * \return Color of the point.
 	 */
-	unsigned short GetColor(void);
+	unsigned long GetColor(void);
 	
 	/*! 
 	 * \brief Get the global index in a parallel computation.

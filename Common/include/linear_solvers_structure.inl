@@ -37,7 +37,8 @@
 
 #pragma once
 
-inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
+template<class ScalarType>
+inline ScalarType CSysSolve<ScalarType>::Sign(const ScalarType & x, const ScalarType & y) const {
   if (y == 0.0)
     return 0.0;
   else {
@@ -46,3 +47,12 @@ inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const
     else return fabs(x);
   }
 }
+
+template<class ScalarType>
+inline ScalarType CSysSolve<ScalarType>::GetResidual(void) const { return Residual; }
+
+template<class ScalarType>
+void CSysSolve<ScalarType>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {}
+
+template<class ScalarType>
+void CSysSolve<ScalarType>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {}

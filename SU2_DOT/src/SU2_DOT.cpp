@@ -46,7 +46,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
   bool fem_solver = false;
-  bool periodic   = false;
   bool multizone  = false;
 
   su2double** Gradient;
@@ -89,7 +88,6 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_DOT);
 
   nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
   
@@ -109,7 +107,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -129,10 +127,10 @@ int main(int argc, char *argv[]) {
     
     if (multizone){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
@@ -167,9 +165,7 @@ int main(int argc, char *argv[]) {
       if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
       else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -180,11 +176,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
@@ -276,6 +268,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
   geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+    
+  geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
+    
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
