@@ -9327,6 +9327,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   cgsize_t* connElemCGNS = NULL;
   cgsize_t* connElemTemp = NULL;
   cgsize_t ElementDataSize = 0;
+  cgsize_t connDataSize;
+  cgsize_t* connOffset = NULL;
   cgsize_t* parentData = NULL;
   int** dataSize = NULL;
   bool** isInternal = NULL;
@@ -9379,6 +9381,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   bool *isMixed = NULL;
   
   unsigned short connSize = 10;
+  
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
@@ -9663,15 +9666,25 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         /*--- Allocate some memory for the handling the connectivity
          and auxiliary data that we are need to communicate. ---*/
-        
-        connElemCGNS = new cgsize_t[nElems[j-1][s-1]*connSize];
+        if (elemType != MIXED && elemType != NFACE_n && elemType != NGON_n) {
+            if (cg_npe(elemType, &npe)) cg_error_exit();
+            connDataSize = nElems[j-1][s-1]*npe;
+        } else {
+            connDataSize = nElems[j-1][s-1]*10; // Should do a partial read of ElementStartOffset to get the correct value
+        }
+
+        connElemCGNS = new cgsize_t[connDataSize];
         nPoinPerElem = new unsigned short[nElems[j-1][s-1]];
         elemGlobalID = new unsigned long[nElems[j-1][s-1]];
         elemTypes    = new unsigned short[nElems[j-1][s-1]];
-        
-        isMixed = new bool[nElems[j-1][s-1]];
-        for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) isMixed[ii] = false;
 
+        isMixed = new bool[nElems[j-1][s-1]];
+        if (elemType == MIXED){
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) isMixed[ii] = true;
+        }
+        else{
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) isMixed[ii] = false;
+        }
         /*--- Protect against the situation where there are fewer elements
         in a section than number of ranks, or the linear partitioning will
         fail. For now, assume that these must be surfaces, and we will 
@@ -9682,8 +9695,18 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 
           isInternal[j-1][s-1] = false;
 
-        } else {        
+        } else {
 
+        if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n){
+          connOffset = new cgsize_t[nElems[j-1][s-1]+1];
+          /* Starting with CGNS 3.4 the MIXED section has a ElementStartOffset array
+             to allow for efficient partial read. */
+          if (cg_poly_elements_partial_read(fn, i, j, s, (cgsize_t)elemB[rank],
+                                      (cgsize_t)elemE[rank], connElemCGNS, connOffset,
+                                       parentData) != CG_OK) cg_error_exit();
+          delete [] connOffset; // Not used after
+        }
+        else {
         /*--- Retrieve the connectivity information and store. Note that
          we are only accessing our rank's piece of the data here in the
          partial read function in the CGNS API. ---*/
@@ -9691,6 +9714,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         if (cg_elements_partial_read(fn, i, j, s, (cgsize_t)elemB[rank],
                                     (cgsize_t)elemE[rank], connElemCGNS,
                                     parentData) != CG_OK) cg_error_exit();
+        }
         
         /*--- Find the number of nodes required to represent
          this type of element. ---*/
@@ -9710,8 +9734,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           if (elemType == MIXED) {
             elmt_type = ElementType_t(connElemCGNS[counter]);
             cg_npe(elmt_type, &npe);
-            counter++; for ( int jj = 0; jj < npe; jj++ ) counter++;
-            isMixed[ii] = true;
+            counter++; for ( int jj = 0; jj < npe; jj++ ) counter++; // connOffset could be used instead of counter
           } else {
             elmt_type = elemType;
           }
@@ -9951,9 +9974,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             }
             
             /*--- Retrieve the connectivity information and store. ---*/
-            
-            if (cg_elements_read(fn, i, j, s, connElemTemp, parentData))
-              cg_error_exit();
+            if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
+              connOffset = new cgsize_t[nElems[j-1][s-1]+1];
+              if (cg_poly_elements_read(fn, i, j, s, connElemTemp, connOffset, parentData))
+                cg_error_exit();
+              delete [] connOffset;
+            } else {
+              if (cg_elements_read(fn, i, j, s, connElemTemp, parentData))
+                cg_error_exit();
+            }
             
             /*--- Copy these values into the larger array for
              storage until writing the SU2 file. ---*/
@@ -11194,9 +11223,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
        data from the CGNS file. ---*/
       
       cgsize_t sizeNeeded;
-      if (cg_ElementPartialSize(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
-                                (cgsize_t)elemE[rank], &sizeNeeded) != CG_OK)
-        cg_error_exit();
+      if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
+        //Bug in cg_ElementPartialSize that read the whole connectivity 
+        // Dirty fix:
+        sizeNeeded = nElems[s]*10;
+        // Should properly do a partial read of ElementStartOffset to compute sizeNeeded !!!
+      } else {
+        if (cg_ElementPartialSize(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
+                                  (cgsize_t)elemE[rank], &sizeNeeded) != CG_OK)
+          cg_error_exit();
+      }
       
       /*--- Allocate the memory for the connectivity and read the data. ---*/
       
@@ -11205,10 +11241,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Retrieve the connectivity information and store. Note that
        we are only accessing our rank's piece of the data here in the
        partial read function in the CGNS API. ---*/
-      
-      if (cg_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
-                                   (cgsize_t)elemE[rank], connElemCGNS.data(),
-                                   NULL) != CG_OK) cg_error_exit();
+      if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) { 
+        vector<cgsize_t> connOffset(nElems[s]+1, 0);
+        if (cg_poly_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
+                                          (cgsize_t)elemE[rank], connElemCGNS.data(),
+                                           connOffset.data(), NULL) != CG_OK) cg_error_exit();
+      } else { 
+        if (cg_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
+                                     (cgsize_t)elemE[rank], connElemCGNS.data(),
+                                     NULL) != CG_OK) cg_error_exit();
+      }
       
       /*--- Sync up the ranks after accessing the CGNS data. ---*/
   
@@ -11676,10 +11718,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         connElems[s] = new cgsize_t[nElems[s]*connSize];
         
         /*--- Retrieve the connectivity information and store. ---*/
-        
-        if (cg_elements_read(fn, iBase, iZone, s+1,
-                             connElemTemp.data(), NULL))
-          cg_error_exit();
+        if (elemType == MIXED || elemType == NGON_n || elemType == NFACE_n) {
+          vector<cgsize_t> connOffsetTemp(nElems[s]+1, 0);
+          if (cg_poly_elements_read(fn, iBase, iZone, s+1,
+                               connElemTemp.data(), connOffsetTemp.data(), NULL))
+            cg_error_exit();
+
+        } else { 
+          if (cg_elements_read(fn, iBase, iZone, s+1,
+                               connElemTemp.data(), NULL))
+            cg_error_exit();
+        }
         
         /*--- Copy these values into the larger array for
          storage until writing the SU2 file. ---*/
