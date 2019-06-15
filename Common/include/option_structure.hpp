@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -1612,7 +1612,6 @@ enum ENUM_PARAM {
   FFD_CAMBER = 14,		         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_TWIST = 15,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
   FFD_THICKNESS = 16,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 17,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
   FFD_ROTATION = 18,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CONTROL_POINT_2D = 19, /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,		     /*!< \brief Free form deformation for 3D design (camber change). */
@@ -1656,7 +1655,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("ROTATION", ROTATION)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
-("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_NACELLE", FFD_NACELLE)
