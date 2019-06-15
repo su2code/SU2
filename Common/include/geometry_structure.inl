@@ -137,19 +137,7 @@ inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short 
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
-inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
-
-inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
+inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
@@ -305,6 +293,8 @@ inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
 inline void CGeometry::MatchInterface(CConfig *config) { }
 
+inline void CGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) { }
+
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
@@ -386,6 +376,10 @@ inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, u
 inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
 
 inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
+
+inline void CGeometry::SetMGLevel(unsigned short val_iMesh) { MGLevel = val_iMesh; }
+
+inline unsigned short CGeometry::GetMGLevel(void) { return MGLevel; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
