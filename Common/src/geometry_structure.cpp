@@ -17421,7 +17421,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     vtxdist[0] = 0;
     for (int i = 0; i < size; i++) {
-      vtxdist[i+1] = (idx_t)ending_node[i];
+      vtxdist[i+1] = (idx_t)end_node[i];
     }
     
     /*--- Calling ParMETIS ---*/
