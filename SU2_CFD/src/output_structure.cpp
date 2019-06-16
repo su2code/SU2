@@ -13021,9 +13021,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       }
       if(wall_model || wall_function){
         nVar_Par +=1;
-        Variable_Names.push_back("TauWall");
+        Variable_Names.push_back("TauWall_WM");
       }
-      
+      if(wall_model){
+        nVar_Par +=1;
+        Variable_Names.push_back("HeatFlux_WM");
+      }
     }
     
   }
@@ -13452,6 +13455,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
           if(wall_model || wall_function){
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTauWall(); iVar++;
+          }
+          if(wall_model){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetHeatFlux(); iVar++;
           }
         }
         

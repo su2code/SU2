@@ -17679,7 +17679,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
       }
       
       /*--- Weakly enforce the wall temperature---*/
-      V_reflected[0] = 2.0 * Twall - V_domain[0];
+      //V_reflected[0] = 2.0 * Twall - V_domain[0];
       
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
@@ -18557,7 +18557,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         su2double dirTan[3] = {0.0, 0.0, 0.0};
         for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
         
-        if ((config->GetIntIter() == 0) && (iRKStep == 0)){
+        //if ((config->GetIntIter() == 0) && (iRKStep == 0)){
           /* Compute the wall shear stress and heat flux vector using
            the wall model. */
           su2double tauWall, qWall, ViscosityWall, kOverCvWall;
@@ -18578,13 +18578,13 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           node[iPoint]->SetTauWall(tauWall);
           node[iPoint]->SetHeatFlux(qWall);
           node[iPoint]->SetDirTanWM(dirTan);
-          node[iPoint]->SetLaminarViscosity(LaminarViscosity);
+          node[iPoint]->SetLaminarViscosity(ViscosityWall);
           node[iPoint]->SetEddyViscosity(0.0);
           node[iPoint]->SetDirNormalWM(Unit_Normal);
           
           //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
           //cout << iPoint << " " << tauWall << " " << qWall << " " << kOverCvWall << " " << ViscosityWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << " " << Temperature << " " << velTan << " " << LaminarViscosity << " " << Pressure << endl;
-        }
+        //}
 //        else{
 //          /*---
 //          http://wmles.umd.edu/coupling-les-to-a-wall-stress-model/

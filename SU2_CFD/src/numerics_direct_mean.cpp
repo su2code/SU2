@@ -5490,21 +5490,27 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
+  if((Mean_TauWall > 0)&&(config->GetWall_Models())){
+    for (iDim = 0; iDim < nDim; iDim++) {
+      heat_flux_vector[iDim] = -Mean_qWall * Mean_DirNormal[iDim];
+    }
+  }
+  else SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
-  if (Mean_TauWall > 0)
-    if (config->GetWall_Models())
-      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
-    else if (config->GetWall_Functions()){
+  if (Mean_TauWall > 0){
+//    if (config->GetWall_Models())
+//      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+//    else if (config->GetWall_Functions()){
       AddTauWall(Normal, Mean_TauWall);
       GetViscousProjFlux(Mean_PrimVar, Normal);
-    }
-    else
-      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
+  }
+//    else
+//      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
   else GetViscousProjFlux(Mean_PrimVar, Normal);
 
-  
+  //cout << " AddTauWall: " << Normal[0] << " " << Normal[1] << " "<< Normal[2] << " " << heat_flux_vector[0] << " " << heat_flux_vector[1] << " " << heat_flux_vector[2] << endl;
+
   /*--- Update viscous residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
