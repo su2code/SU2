@@ -7406,8 +7406,16 @@ if( (string == NULL) || (c_string == NULL) ) {
 
 *error_return = NO_ERROR ;
 
+	/** Search for early NULL termination **/
+for( iend=0; iend < string_length; iend++ ) {
+   if( string[ iend ] == '\0' ) {
+      break ;
+      } /* end if */
+   } /* end for */
+iend--;
+
 	/** Skip and trailing blanks **/
-for( iend=string_length-1; iend>=0; iend-- ) {
+for( ; iend>=0; iend-- ) {
    if( string[ iend ] != ' ' ) {
       break ;
       } /* end if */

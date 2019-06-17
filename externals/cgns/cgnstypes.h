@@ -29,10 +29,12 @@
 #ifndef CGNSTYPES_H
 #define CGNSTYPES_H
 
+#define CG_BUILD_HDF5   0
 #define CG_BUILD_LEGACY 0
 #define CG_BUILD_64BIT  1
 #define CG_BUILD_SCOPE  0
 #define CG_BUILD_BASESCOPE 0
+#define CG_BUILD_PARALLEL  0
 
 #define CG_MAX_INT32 0x7FFFFFFF
 #ifdef _WIN32
@@ -46,7 +48,7 @@
 # define CG_LONG_T long
 #endif
 
-#ifdef BUILD_HDF5
+#if CG_BUILD_HDF5
 
 /* ----------------------------------------------------------------
  * convert between HDF5 and ADF ids
@@ -57,11 +59,15 @@
 
 /* Determine if hdf5 has multi-dataset read/write capabilities */
 
-#define HDF5_HAVE_MULTI_DATASETS 
+#define HDF5_HAVE_MULTI_DATASETS 0
 
 /* Determine if hdf5 has collective metadata APIs  */
 
-#define HDF5_HAVE_COLL_METADATA 
+#define HDF5_HAVE_COLL_METADATA 0
+
+/* Determine if hdf5 H5Pset_file_space_strategy */
+
+#define HDF5_HAVE_FILE_SPACE_STRATEGY 0
 
 #endif
 
