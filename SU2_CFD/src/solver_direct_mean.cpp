@@ -6185,15 +6185,21 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
   }
 
   //--- Make positive definite matrix
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+    A[iDim]      = new su2double[nDim];
+    EigVec[iDim] = new su2double[nDim];
+  }
+  
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = node[iPoint];
 
     for(iVar = 0; iVar < nVarMetr; iVar++){
       for(iFlux = 0; iFlux < nFluxMetr; iFlux++){
         const unsigned short i = iFlux*nVarMetr*nMetr + iVar*nMetr;
-
-        vector<su2double>          Lam(3);
-        vector<vector<su2double> > RuH(3, vector<su2double>(3, 0.0));
 
         const su2double a = var->GetAnisoHess(i+0);
         const su2double b = var->GetAnisoHess(i+1);
@@ -6202,102 +6208,22 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
         const su2double e = var->GetAnisoHess(i+4);
         const su2double f = var->GetAnisoHess(i+5);
 
-        const su2double p1 = b*b + c*c + e*e;
-        if(p1 < 1.0e-16){
-          //--- eigenvalues
-          Lam[0] = abs(a);
-          Lam[1] = abs(d);
-          Lam[2] = abs(f);
+        A[0][0] = a; A[0][1] = b; A[0][2] = c;
+        A[1][0] = b; A[1][1] = d; A[1][2] = e;
+        A[2][0] = c; A[2][1] = e; A[2][2] = f;
 
-          //--- eigenvectors
-          RuH[0][0] = RuH[1][1] = RuH[2][2] = 1.;
-          RuH[0][1] = RuH[1][0] = RuH[0][2] = RuH[2][0] = RuH[1][2] = RuH[2][1] = 0.;
-        }
-        else{
-          //--- eigenvalues
-          const su2double q  = (a + d + f)/3.;
-          const su2double p2 = (a-q)*(a-q) + (d-q)*(d-q) + (f-q)*(f-q) + 2.*p1;
-          const su2double p3 = sqrt(p2/6.);
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-          const su2double aa = (a-q)/p3, bb = b/p3, cc = c/p3,
-                          dd = (d-q)/p3, ee = e/p3, ff = (f-q)/p3;
+        for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
 
-          const su2double det = 0.5*(aa*(dd*ff - ee*ee) + bb*(cc*ee - bb*ff) + cc*(bb*ee - dd*cc));
+        CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-          const su2double pi = 3.141592653589793238;
-          su2double phi;
-          if(det <= -1.)     phi = pi/3.;
-          else if(det >= 1.) phi = 0.;
-          else               phi = acos(det)/3.;
-
-          Lam[0] = q+2.*p3*cos(phi);
-          Lam[1] = q+2.*p3*cos(phi+2.*pi/3.);
-          Lam[2] = 3.*q-Lam[0]-Lam[1];
-
-          //--- eigenvectors
-          CErrorEstimationUtil *util = new CErrorEstimationUtil();
-          for(unsigned short k = 0; k < 3; ++k) {
-            vector<vector<su2double>> A(3, vector<su2double>(3, 0.0));
-
-            //--- invert A-mu*I
-            su2double mu = 0.99*Lam[k];
-            A[0][0] = a-mu; A[0][1] = b;    A[0][2] = c;
-            A[1][0] = b;    A[1][1] = d-mu; A[1][2] = e;
-            A[2][0] = c;    A[2][1] = e;    A[2][2] = f-mu;
-
-            util->Inverse3(A);
-
-            //--- inverse power iteration
-            vector<su2double> b0(3, 1.0);
-            su2double norm = 1.0;
-            while(norm > 1.0e-16) {
-              vector<su2double> b1;
-              util->MatVec(A, b0, b1);
-              norm = sqrt(b1[0]*b1[0]+b1[1]*b1[1]+b1[2]*b1[2]);
-              b1[0] /= norm; b1[1] /= norm; b1[2] /= norm;
-              norm = (b1[0]*b1[0]-b0[0]*b0[0]) + (b1[1]*b1[1]-b0[1]*b0[1]) + (b1[2]*b1[2]-b0[2]*b0[2]);
-              // norm = (b1[0]-b0[0])*(b1[0]-b0[0]) + (b1[1]-b0[1])*(b1[1]-b0[1]) + (b1[2]-b0[2])*(b1[2]-b0[2]);
-              b0 = b1;
-            }
-            
-            //--- store
-            RuH[0][k] = b0[0];
-            RuH[1][k] = b0[1];
-            RuH[2][k] = b0[2];
-          }
-
-          Lam[0] = abs(Lam[0]);
-          Lam[1] = abs(Lam[1]);
-          Lam[2] = abs(Lam[2]);
-        }
-
-        const su2double RuU[3][3]    = {{RuH[0][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
-                                         RuH[0][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
-                                         RuH[0][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
-                                        {RuH[1][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
-                                         RuH[1][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
-                                         RuH[1][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])},
-                                        {RuH[2][0]/sqrt(RuH[0][0]*RuH[0][0]+RuH[1][0]*RuH[1][0]+RuH[2][0]*RuH[2][0]),
-                                         RuH[2][1]/sqrt(RuH[0][1]*RuH[0][1]+RuH[1][1]*RuH[1][1]+RuH[2][1]*RuH[2][1]),
-                                         RuH[2][2]/sqrt(RuH[0][2]*RuH[0][2]+RuH[1][2]*RuH[1][2]+RuH[2][2]*RuH[2][2])}};
-
-        const su2double LamRuU[3][3] = {{Lam[0]*RuU[0][0],Lam[0]*RuU[1][0],Lam[0]*RuU[2][0]},
-                                        {Lam[1]*RuU[0][1],Lam[1]*RuU[1][1],Lam[1]*RuU[2][1]},
-                                        {Lam[2]*RuU[0][2],Lam[2]*RuU[1][2],Lam[2]*RuU[2][2]}};
-
-        const su2double Hess[6]      = {RuU[0][0]*LamRuU[0][0]+RuU[0][1]*LamRuU[1][0]+RuU[0][2]*LamRuU[2][0], 
-                                        RuU[0][0]*LamRuU[0][1]+RuU[0][1]*LamRuU[1][1]+RuU[0][2]*LamRuU[2][1],
-                                        RuU[0][0]*LamRuU[0][2]+RuU[0][1]*LamRuU[1][2]+RuU[0][2]*LamRuU[2][2],
-                                        RuU[1][0]*LamRuU[0][1]+RuU[1][1]*LamRuU[1][1]+RuU[1][2]*LamRuU[2][1],
-                                        RuU[1][0]*LamRuU[0][2]+RuU[1][1]*LamRuU[1][2]+RuU[1][2]*LamRuU[2][2],
-                                        RuU[2][0]*LamRuU[0][2]+RuU[2][1]*LamRuU[1][2]+RuU[2][2]*LamRuU[2][2]};
-
-        var->SetAnisoHess(i+0, Hess[0]);
-        var->SetAnisoHess(i+1, Hess[1]);
-        var->SetAnisoHess(i+2, Hess[2]);
-        var->SetAnisoHess(i+3, Hess[3]);
-        var->SetAnisoHess(i+4, Hess[4]);
-        var->SetAnisoHess(i+5, Hess[5]);
+        var->SetAnisoHess(i+0, A[0][0]);
+        var->SetAnisoHess(i+1, A[0][1]);
+        var->SetAnisoHess(i+2, A[0][2]);
+        var->SetAnisoHess(i+3, A[1][1]);
+        var->SetAnisoHess(i+4, A[1][2]);
+        var->SetAnisoHess(i+5, A[2][2]);
       }
     }
   }

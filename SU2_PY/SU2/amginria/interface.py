@@ -52,13 +52,7 @@ def amg_call_met(config):
         % (config['mesh_in'], config['metric_in'],  \
         config['hgrad'], config['hmin'], config['hmax'], \
         config['mesh_out'], config['itp_sol_in'])
-        
-    if config['adap_source'] != "":
-        cmd += ' -source %s ' % config['adap_source']
-    
-    if config['adap_back'] != "":
-        cmd += ' -back %s ' % config['adap_back']
-    
+            
     cmd += ' > %s' % config['amg_log']
     os.system(cmd)
 
