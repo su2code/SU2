@@ -280,7 +280,6 @@ CDriver::CDriver(char* confFile,
   }
   else {
     if (rank == MASTER_NODE) cout << "A Fluid driver has been instantiated." << endl;
-    //if (rank == MASTER_NODE) cout<<"Type incompressible: "<<config_container[iZone]->GetKind_Incomp_System()<<endl;
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {

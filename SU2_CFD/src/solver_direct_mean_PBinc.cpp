@@ -530,8 +530,6 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   
   /*--- Perform the MPI communication of the solution ---*/
 
-  //Set_MPI_Solution(geometry, config);
-
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
@@ -901,14 +899,13 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Error message ---*/
   
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
     SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
-  }
-  
+  }  
 }
 
 void CPBIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -3730,7 +3727,60 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   InitiateComms(geometry, config, MASS_FLUX);
   CompleteComms(geometry, config, MASS_FLUX);
   
+  SetResMassFluxRMS(geometry, config);
   delete [] Normal;
+}
+
+
+void CPBIncEulerSolver::SetResMassFluxRMS(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar;
+  
+#ifndef HAVE_MPI
+    
+  if (GetResMassFlux() != GetResMassFlux()) {
+      SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
+  }
+
+  ResMassFlux = sqrt(ResMassFlux/geometry->GetnPoint());
+      
+#else
+  
+  int nProcessor = size, iProcessor;
+
+  su2double sbuf_residual, rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
+  unsigned long *sbuf_point, *rbuf_point, Global_nPointDomain;
+  unsigned short iDim;
+  
+  /*--- Set the L2 Norm residual in all the processors ---*/
+  
+  sbuf_residual  = 0.0;
+  rbuf_residual  = 0.0;
+  
+  sbuf_residual = GetResMassFlux();
+  
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    unsigned long Local_nPointDomain = geometry->GetnPointDomain();
+    SU2_MPI::Allreduce(&sbuf_residual, &rbuf_residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    
+  } else {
+    
+    /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
+    
+    rbuf_residual = sbuf_residual;
+    Global_nPointDomain = geometry->GetnPointDomain();
+    
+  }
+  
+      
+  if (rbuf_residual != rbuf_residual) {
+    SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
+  }
+    
+  SetResMassFlux(max(EPS*EPS, sqrt(rbuf_residual/Global_nPointDomain)));  
+#endif
+  
 }
 
 

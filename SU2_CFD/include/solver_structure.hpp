@@ -439,9 +439,17 @@ public:
   virtual su2double GetRes_FEM(unsigned short val_var);
   
   /*!
-   * \brief Set the convergence of mass flux for current internal iteration.
+   * \brief Set the RMS of mass flux to zero.
    */
   virtual void SetResMassFluxZero();
+  
+  
+  virtual void SetResMassFlux(su2double val_ResMassFlux);
+  
+  /*!
+   * \brief Set the RMS of mass flux.
+   */
+  virtual void SetResMassFluxRMS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
@@ -8787,6 +8795,16 @@ public:
    * \brief Set the convergence of mass flux for current internal iteration.
    */
   void SetResMassFluxZero();
+  
+  /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  void SetResMassFlux(su2double val_ResMassFlux);
+  
+  /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  void SetResMassFluxRMS(CGeometry *geometry, CConfig *config);
   
    /*!
    * \brief Set the convergence of mass flux for current internal iteration.

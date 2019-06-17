@@ -89,16 +89,17 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   
  
  
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
+  
  if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) { 
-  /*--- Initialization of the structure of the whole Jacobian ---*/
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+	 Jacobian_i = new su2double* [nVar];
+	 Jacobian_j = new su2double* [nVar];
+	 for (iVar = 0; iVar < nVar; iVar++) {
+		 Jacobian_i[iVar] = new su2double [nVar];
+		 Jacobian_j[iVar] = new su2double [nVar];
+	 }
+	 /*--- Initialization of the structure of the whole Jacobian ---*/
+	 if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
+	 Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
  }
   /*--- Solution and residual vectors ---*/
   
@@ -123,6 +124,12 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
         node[iPoint] = new CPoissonVariable(0.0, nDim, nVar, config);
     else 
         node[iPoint] = new CPoissonVariable(0.0, nDim, nVar, config);
+  
+  /*--- Perform the MPI communication of the solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
 }
 
 CPoissonSolverFVM::~CPoissonSolverFVM(void) {

@@ -949,6 +949,10 @@ inline su2double* CSolver::GetPoint_Max_Coord_BGS(unsigned short val_var) { retu
 
 inline void CSolver::SetResMassFluxZero() { }
 
+inline void CSolver::SetResMassFlux(su2double val_ResMassFlux) { }
+
+inline void CSolver::SetResMassFluxRMS(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::AddResMassFlux(su2double val_ResMassFlux) { }
   
 inline double CSolver::GetResMassFlux() { return 0.0; }
@@ -2187,6 +2191,8 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
 inline void CPBIncEulerSolver::SetResMassFluxZero() { ResMassFlux = 0.0; }
+
+inline void CPBIncEulerSolver::SetResMassFlux(su2double val_ResMassFlux) { ResMassFlux = val_ResMassFlux; }
 
 inline void CPBIncEulerSolver::AddResMassFlux(su2double val_ResMassFlux) { ResMassFlux += val_ResMassFlux ; }
   
