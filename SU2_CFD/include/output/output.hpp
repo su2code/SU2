@@ -432,6 +432,10 @@ public:
   su2double GetHistoryFieldValue(string field){
     return HistoryOutput_Map[field].Value;
   }
+
+  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+    return HistoryOutputPerSurface_Map[field][iMarker].Value;
+  }
   
   vector<HistoryOutputField> GetHistoryGroup(string groupname){
     vector<HistoryOutputField> HistoryGroup;  
