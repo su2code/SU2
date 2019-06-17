@@ -590,40 +590,29 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
-  bool heat = false;
-
   ObjFunc = 0.0;
+  su2double Weight_ObjFunc;
 
-  /*--- Set to zero the combo objective functions ---*/
+  unsigned short iMarker_Analyze, nMarker_Analyze;
+
+
+  /*--- Call objective function calculations. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++){
 
     switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
-        break;
-    }
-  }
 
-  /*--- Repeat objective function calculations, in case they have been included in
-   *    the integration step and therefore have to be excluded from this part of the tape. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++){
-
-    heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Momentum_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Friction_Forces(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        if(heat) {
+        if(config_container[iZone]->GetWeakly_Coupled_Heat()) {
           solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
         solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
         break;
+
       case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
         solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->Heat_Fluxes(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
         break;
@@ -632,70 +621,50 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     direct_output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
   }
 
-  /*--- Specific scalar objective functions ---*/
-
-//  for (iZone = 0; iZone < nZone; iZone++){
-//    switch (config_container[iZone]->GetKind_Solver()) {
-//      case EULER:                   case NAVIER_STOKES:                   case RANS:
-//      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-
-//        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-//          output[iZone]->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);
-
-//        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-//          output[iZone]->SpecialOutput_Distortion(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
-
-//        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
-//          output[iZone]->SpecialOutput_SonicBoom(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
-
-//        if (config_container[ZONE_0]->GetPlot_Section_Forces())
-//          output[iZone]->SpecialOutput_SpanLoad(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
-
-//        break;
-//    }
-//  }
-
-  /*--- Surface based obj. function ---*/
+  /*--- Extract objective function values. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    heat = config_container[iZone]->GetWeakly_Coupled_Heat();
+    nMarker_Analyze = config_container[iZone]->GetnMarker_Monitoring();
 
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-        if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-          if (heat) {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
+    for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+      Weight_ObjFunc = config_container[iZone]->GetWeight_ObjFunc(iMarker_Analyze);
+
+      switch (config_container[iZone]->GetKind_Solver()) {
+
+        case EULER:                   case NAVIER_STOKES:                   case RANS:
+        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+
+          switch(config_container[iZone]->GetKind_ObjFunc()) {
+
+            case SURFACE_TOTAL_PRESSURE:
+              ObjFunc += direct_output[iZone]->GetHistoryFieldValuePerSurface("AVG_TOTALPRESS", iMarker_Analyze)*Weight_ObjFunc;
+              break;
+            case TOTAL_AVG_TEMPERATURE:
+              ObjFunc += direct_output[iZone]->GetHistoryFieldValuePerSurface("AVG_TOTALTEMP", iMarker_Analyze)*Weight_ObjFunc;
+              break;
+            case TOTAL_HEATFLUX:
+              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
+              break;
+            default:
+              break;
           }
-          else {
-            ObjFunc += direct_output[iZone]->GetHistoryFieldValue("AVG_TEMP");
+          break;
+
+        case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+          if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
           }
-        }
-        else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-          if (heat) {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+          else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
           }
-          else {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
-          }
-        }
-        else {
-          ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
-        }
-        break;
-      case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
-        if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-          ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
-        }
-        else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-          ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
-        }
-        break;
+          break;
+      }
     }
   }
 
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::Set_AdjIndex(ObjFunc_Index, ObjFunc);
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
