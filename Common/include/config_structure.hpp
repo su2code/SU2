@@ -977,7 +977,8 @@ private:
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
+  MultiphysicsDiscreteAdjoint;     /*!< \brief Use multiphysics discrete adjoint. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
@@ -8411,6 +8412,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void);
+
+  /*!
+   * \brief Get the indicator whether we are using the multiphysics discrete adjoint driver.
+   * \return the multiphysics discrete adjoint indicator.
+   */
+  bool GetMultiphysicsDiscrete_Adjoint(void);
   
   /*!
    * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems

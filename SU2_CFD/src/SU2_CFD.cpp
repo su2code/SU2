@@ -107,8 +107,12 @@ int main(int argc, char *argv[]) {
     if (nZone > 1 ) {
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
-    if (config->GetDiscrete_Adjoint())
-       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+    if (config->GetDiscrete_Adjoint()) {
+      if (config->GetMultiphysicsDiscrete_Adjoint())
+        driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+      else
+        driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+    }
     else
        driver = new CSinglezoneDriver(config_file_name, nZone, periodic, MPICommunicator);
 
