@@ -11223,16 +11223,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
        data from the CGNS file. ---*/
       
       cgsize_t sizeNeeded;
-      if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
-        //Bug in cg_ElementPartialSize that read the whole connectivity 
-        // Dirty fix:
-        sizeNeeded = nElems[s]*10;
-        // Should properly do a partial read of ElementStartOffset to compute sizeNeeded !!!
-      } else {
-        if (cg_ElementPartialSize(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
+      if (cg_ElementPartialSize(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
                                   (cgsize_t)elemE[rank], &sizeNeeded) != CG_OK)
           cg_error_exit();
-      }
       
       /*--- Allocate the memory for the connectivity and read the data. ---*/
       
