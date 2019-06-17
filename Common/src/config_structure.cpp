@@ -4627,11 +4627,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_ZoneInterface; iMarker_InterfaceBound++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ZoneInterface[iMarker_InterfaceBound];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERFACE_BOUNDARY;
-    iMarker_CfgFile++;
-  }
   
   for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
