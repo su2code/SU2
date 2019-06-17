@@ -128,6 +128,12 @@
 #define CG_CONFIG_HDF5_COMPRESS   201
 #define CG_CONFIG_HDF5_MPI_COMM   202
 
+/* HDF5 dataset storage layout */
+
+#define CG_CONTIGUOUS 0
+#define CG_COMPACT    1
+#define CG_CHUNKED    2
+
 /* note: CG_CONFIG_RIND_ZERO is obsolete and considered a bug.  Users are given
  *       the option only for backwards compatibilty */
 #define CG_CONFIG_RIND_ZERO (void*)0

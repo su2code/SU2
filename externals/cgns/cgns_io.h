@@ -49,6 +49,10 @@
 #define CGIO_FILE_HDF5   2
 #define CGIO_FILE_ADF2   3
 
+#define CGIO_CONTIGUOUS 0
+#define CGIO_COMPACT    1
+#define CGIO_CHUNKED    2
+
 /* currently these are the same as for ADF */
 
 #define CGIO_MAX_DATATYPE_LENGTH  2
