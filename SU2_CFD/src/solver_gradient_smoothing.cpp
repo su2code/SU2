@@ -40,7 +40,7 @@
 #include <algorithm>
 
 
-CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(), System(false, true) {
+CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(false,true) {
 
   unsigned int iElem;
 
@@ -53,7 +53,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   /*--- Element container structure ---*/
 
   /*--- First level: only the FEA_TERM is considered ---*/
-  element_container = new CElement** [1];
+  element_container = new CElement** [12];
   element_container[GRAD_TERM] = new CElement* [MAX_FE_KINDS];
 
   /*--- Initialize all subsequent levels ---*/
@@ -79,7 +79,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- auxiliary submatrices ---*/
-  su2double **matrixId;
+  #ifndef CODI_FORWARD_TYPE
+    passivedouble **matrixId;
+  #else
+    su2double **matrixId;
+  #endif
 
   /*--- linear system ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nDim, 0.0);
@@ -152,7 +156,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
   unsigned short NelNodes, jNode;
 
   /*--- Loops over all the elements ---*/
-
+/*
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
@@ -162,8 +166,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
     if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
     if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
 
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
-
     for (iNode = 0; iNode < nNodes; iNode++) {
 
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -171,20 +173,17 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
       std::cout << "1.2 " << std::endl;
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim); //geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[GRAD_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
 
     }
 
-    /*--- Set the properties of the element ---*/
     element_container[GRAD_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
-    /*--- Retrieve number of nodes ---*/
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -210,9 +209,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
   }
 
-/*
-
-std::cout << "2. " << std::endl;
+*/
 
   unsigned long iPoint;
 
@@ -230,8 +227,6 @@ std::cout << "2. " << std::endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Jacobian.SetBlock(iPoint,iPoint,matrixId);
   }
-
-*/
 
 }
 

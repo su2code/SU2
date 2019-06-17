@@ -38,7 +38,7 @@
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/adt_structure.hpp"
 
-CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), System(true) {
+CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
 
     /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
@@ -49,7 +49,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     switch (config->GetDeform_Stiffness_Type()) {
     case INVERSE_VOLUME:
     case SOLID_WALL_DISTANCE:
-    case VOLUME_DISTANCE:
       stiffness_set = false;
       break;
     case CONSTANT_STIFFNESS:
@@ -69,7 +68,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     nPointDomain = geometry->GetnPointDomain();
     nElement     = geometry->GetnElem();
 
-    nIterMesh   = 0;
     valResidual = 0.0;
 
     MinVolume_Ref = 0.0;
@@ -79,15 +77,32 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
     MaxVolume_Curr = 0.0;
 
     /*--- Initialize the node structure ---*/
+    bool isVertex;
+    long iVertex;
     Coordinate = new su2double[nDim];
-    node       = new CMeshVariable*[nPoint];
+    node       = new CVariable*[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
       /*--- We store directly the reference coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++)
         Coordinate[iDim] = geometry->node[iPoint]->GetCoord(iDim);
 
-      node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+      /*--- In principle, the node is not at the boundary ---*/
+      isVertex = false;
+      /*--- Looping over all markers ---*/
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
+        if (config->GetMarker_All_Moving(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        else iVertex = -1;
+
+        if (iVertex != -1){isVertex = true; break;}
+      }
+
+      /*--- Temporarily, keep everything the same ---*/
+      if (isVertex) node[iPoint] = new CMeshBoundVariable(Coordinate, nDim, config);
+      else          node[iPoint] = new CMeshVariable(Coordinate, nDim, config);
+
     }
 
     /*--- Initialize the element structure ---*/
@@ -139,19 +154,19 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
 
     /*--- Matrices to impose boundary conditions ---*/
 
-    matrixZeros = new su2double *[nDim];
-    matrixId    = new su2double *[nDim];
+    mZeros_Aux = new su2double *[nDim];
+    mId_Aux    = new su2double *[nDim];
     for(iDim = 0; iDim < nDim; iDim++){
-      matrixZeros[iDim] = new su2double[nDim];
-      matrixId[iDim]    = new su2double[nDim];
+      mZeros_Aux[iDim] = new su2double[nDim];
+      mId_Aux[iDim]    = new su2double[nDim];
     }
 
     for(iDim = 0; iDim < nDim; iDim++){
       for (jDim = 0; jDim < nDim; jDim++){
-        matrixZeros[iDim][jDim] = 0.0;
-        matrixId[iDim][jDim]    = 0.0;
+        mZeros_Aux[iDim][jDim] = 0.0;
+        mId_Aux[iDim][jDim]    = 0.0;
       }
-      matrixId[iDim][iDim] = 1.0;
+      mId_Aux[iDim][iDim] = 1.0;
     }
 
     /*--- Term ij of the Jacobian ---*/
@@ -162,11 +177,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver(), Syst
       for (jDim = 0; jDim < nDim; jDim++) {
         Jacobian_ij[iDim][jDim] = 0.0;
       }
-    }
-
-    KAux_ab = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      KAux_ab[iDim] = new su2double[nDim];
     }
 
     unsigned short iVar;
@@ -210,15 +220,13 @@ CMeshSolver::~CMeshSolver(void) {
   delete [] Solution;
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] matrixZeros[iDim];
-    delete [] matrixId[iDim];
+    delete [] mZeros_Aux[iDim];
+    delete [] mId_Aux[iDim];
     delete [] Jacobian_ij[iDim];
-    delete [] KAux_ab[iDim];
   }
-  delete [] matrixZeros;
-  delete [] matrixId;
+  delete [] mZeros_Aux;
+  delete [] mId_Aux;
   delete [] Jacobian_ij;
-  delete [] KAux_ab;
 
   if (element_container != NULL) {
     for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
@@ -270,7 +278,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       /*--- Compute the volume with the reference or with the current coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         if (updated) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim) 
-                               + node[indexNode[iNode]]->GetDisplacement(iDim);
+                               + node[indexNode[iNode]]->GetSolution(iDim);
         else val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
@@ -463,76 +471,6 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CMeshSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
-
-  unsigned long iElem, iVar, jVar;
-  unsigned short iNode, iDim, jDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
-  int EL_KIND = 0;
-
-  su2double *Kab = NULL, *Ta = NULL;
-  unsigned short NelNodes, jNode;
-
-  /*--- Loops over all the elements ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
-
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
-
-    for (iNode = 0; iNode < nNodes; iNode++) {
-
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim); //geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        val_Sol = Get_ValSol(indexNode[iNode], iDim) + val_Coord; //node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-      }
-
-    }
-
-    /*--- Set the properties of the element ---*/
-    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-
-    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
-    /*--- Retrieve number of nodes ---*/
-
-    NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
-
-    for (iNode = 0; iNode < NelNodes; iNode++) {
-
-      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
-
-      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-
-      for (jNode = 0; jNode < NelNodes; jNode++) {
-
-        Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-          }
-        }
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-      }
-
-    }
-
-  }
-
-}
-
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem;
@@ -559,64 +497,53 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
 
 void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
-
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
-  if (multizone) SetDisplacement_Old();
+  if (multizone) SetSolution_Old();
 
-  /*--- Retrieve number or internal iterations from config ---*/
+  /*--- Initialize sparse matrix ---*/
+  Jacobian.SetValZero();
 
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+  /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
+  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
+    else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
+  }
 
-  /*--- Loop over the total number of grid deformation iterations. The surface
-   deformation can be divided into increments to help with stability. ---*/
+  /*--- Compute the stiffness matrix. ---*/
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
 
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+  /*--- Initialize vectors and clean residual ---*/
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
 
-    /*--- Initialize vector and sparse matrix ---*/
-    LinSysSol.SetValZero();
-    LinSysRes.SetValZero();
-    Jacobian.SetValZero();
+  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
+  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
-    /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      if (nDim == 2) cout << scientific << "Min. area in the undeformed mesh: "<< MinVolume_Ref <<", max. area: " << MaxVolume_Ref <<"." << endl;
-      else           cout << scientific << "Min. volume in the undeformed mesh: "<< MinVolume_Ref <<", max. volume: " << MaxVolume_Ref <<"." << endl;
-    }
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry[MESH_0], config);
 
-    /*--- Compute the stiffness matrix. ---*/
-    Compute_StiffMatrix(geometry[MESH_0], numerics, config);
-
-    /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-    SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
-
-    /*--- Solve the linear system. ---*/
-    Solve_System_Mesh(geometry[MESH_0], config);
-
-    /*--- Update the grid coordinates and cell volumes using the solution
+  /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-    UpdateGridCoord(geometry[MESH_0], config);
+  UpdateGridCoord(geometry[MESH_0], config);
 
-    /*--- Update the dual grid. ---*/
-    UpdateDualGrid(geometry[MESH_0], config);
+  /*--- Update the dual grid. ---*/
+  UpdateDualGrid(geometry[MESH_0], config);
 
-    /*--- Check for failed deformation (negative volumes). ---*/
-    /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
-    SetMinMaxVolume(geometry[MESH_0], config, true);
+  /*--- Check for failed deformation (negative volumes). ---*/
+  /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
+  SetMinMaxVolume(geometry[MESH_0], config, true);
 
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
-      if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-      else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
-    }
-
+  if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    cout << scientific << "Linear solver iter.: " << IterLinSol << ". ";
+    if (nDim == 2) cout << "Min. area in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
+    else cout << "Min. volume in the deformed mesh: " << MinVolume_Curr << ". Error: " << valResidual << "." << endl;
   }
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
 
-  /*--- Update the dual grid. ---*/
+  /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
 
 }
@@ -627,16 +554,16 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   unsigned long iPoint, total_index;
   su2double val_disp, val_coord;
 
-  /*--- Update the grid coordinates using the solution of the linear system
-     after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
+  /*--- Update the grid coordinates using the solution of the linear system ---*/
 
+  /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++) {
       total_index = iPoint*nDim + iDim;
       /*--- Retrieve the displacement from the solution of the linear system ---*/
       val_disp = LinSysSol[total_index];
       /*--- Store the displacement of the mesh node ---*/
-      node[iPoint]->SetDisplacement(iDim, val_disp);
+      node[iPoint]->SetSolution(iDim, val_disp);
       /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
       val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
       /*--- Update the geometry container ---*/
@@ -647,11 +574,13 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    Hence we still need a communication of the transformed coordinates, otherwise periodicity
    is not maintained. ---*/
-  geometry->Set_MPI_Coord(config);
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
 
   /*--- In the same way, communicate the displacements in the solver to make sure the halo
    nodes receive the correct value of the displacement. ---*/
-  Set_MPI_Displacement(geometry,config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
 }
 
@@ -682,9 +611,9 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
 
-    Disp_nM1 = node[iPoint]->GetDisplacement_n1();
-    Disp_n   = node[iPoint]->GetDisplacement_n();
-    Disp_nP1 = node[iPoint]->GetDisplacement();
+    Disp_nM1 = node[iPoint]->GetSolution_time_n1();
+    Disp_n   = node[iPoint]->GetSolution_time_n();
+    Disp_nP1 = node[iPoint]->GetSolution();
 
     /*--- Unsteady time step ---*/
 
@@ -707,7 +636,10 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   }
 
   /*--- The velocity was computed for nPointDomain, now we communicate it ---*/
-  geometry->Set_MPI_GridVel(config);
+  //geometry->Set_MPI_GridVel(config);
+  geometry->InitiateComms(geometry, config, GRID_VELOCITY);
+  geometry->CompleteComms(geometry, config, GRID_VELOCITY);
+
 
 }
 
@@ -734,296 +666,32 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- First of all, move the FSI interfaces. ---*/
+  /*--- As initialization, move all the interfaces defined as moving. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      SetMoving_Boundary(geometry, config, iMarker);
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+
+      /*--- Impose the boundary condition ---*/
+      BC_Moving(geometry, numerics, config, iMarker);
+
     }
   }
 
-  /*--- Now, set to zero displacements of all the other boundary conditions, except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-
-
-  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
+  /*--- Then, impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries) ---*/
+  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+    if ((config->GetMarker_All_Moving(iMarker) == NO) &&
+        ((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
 
-      /*--- We must note that the FSI surfaces are not clamped ---*/
-      if (config->GetMarker_All_ZoneInterface(iMarker) == 0){
-        BC_Clamped(geometry, numerics, config, iMarker);
-      }
+         BC_Clamped(geometry, numerics, config, iMarker);
+
     }
   }
 
-  /*--- All others are pending. ---*/
+  /*--- Symmetry plane and periodic boundaries are pending. ---*/
 
-}
-
-void CMeshSolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = 0.0;  Solution[1] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;
-      }
-      else {
-        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            Jacobian.SetBlock(iNode,jPoint,matrixId);
-          }
-        }
-      }
-
-      /*--- Delete the full column for node iNode ---*/
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint, iNode,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != iPoint) {
-            Jacobian.SetBlock(iPoint,iNode,matrixZeros);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
-
-  unsigned short iDim, jDim;
-
-  su2double *VarDisp = NULL;
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Get the displacement on the vertex ---*/
-    VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    /*--- Add it to the current displacement (this will be replaced in the transfer routines
-     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iNode]->GetDisplacement(iDim) + VarDisp[iDim];
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
-      }
-      else {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            Jacobian.SetBlock(iNode,jPoint,matrixId);
-          }
-        }
-      }
-
-      /*--- Delete the columns for a particular node ---*/
-
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
-
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
-
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-            }
-          }
-
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
-            }
-          }
-
-          /*--- For the whole column, except the diagonal term ---*/
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            Jacobian.SetBlock(iPoint,iNode,matrixZeros);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-void CMeshSolver::Solve_System_Mesh(CGeometry *geometry, CConfig *config){
-
-
-  unsigned long IterLinSol = 0, iPoint, total_index;
-  unsigned short iVar;
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-
-  }
-
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-  /*--- The the number of iterations of the linear solver ---*/
-
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Store the value of the residual. ---*/
-
-  valResidual = System.GetResidual();
-
-}
-
-void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
-
-  unsigned short iDim;
-  unsigned long iPoint, iVertex;
-
-  su2double *VarCoord = NULL, *VarDisp = NULL;
-  su2double new_coord;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Get the displacement on the vertex ---*/
-    VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    /*--- Add it to the current displacement (this will be replaced in the transfer routines
-     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      VarCoord[iDim] = node[iPoint]->GetDisplacement(iDim) + VarDisp[iDim];
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Update the grid coordinates using the solution of the structural problem recorded in VarCoord. */
-      for (iDim = 0; iDim < nDim; iDim++) {
-        new_coord = node[iPoint]->GetMesh_Coord(iDim)+VarCoord[iDim];
-        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-        geometry->node[iPoint]->SetCoord(iDim, new_coord);
-      }
-    }
-
-  }
-
-}
-
-void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
-
-  unsigned short iMarker;
-
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- Set the dependencies on the FSI interfaces. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
-    }
-  }
-
-  UpdateDualGrid(geometry[MESH_0], config);
 
 }
 
@@ -1032,8 +700,8 @@ void CMeshSolver::SetDualTime_Mesh(void){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetDisplacement_n1();
-    node[iPoint]->SetDisplacement_n();
+    node[iPoint]->SetSolution_time_n1();
+    node[iPoint]->SetSolution_time_n();
   }
 
 }
@@ -1054,7 +722,7 @@ void CMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node[iPoint]->GetDisplacement(iVar) - node[iPoint]->GetDisplacement_Old(iVar);
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -1129,7 +797,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         /*--- Store the displacements computed as the current coordinates
          minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-        node[iPoint_Local]->SetDisplacement(iDim, displ);
+        node[iPoint_Local]->SetSolution(iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -1154,10 +822,12 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Communicate the loaded displacements. ---*/
-  solver[MESH_0][MESH_SOL]->Set_MPI_Displacement(geometry[MESH_0], config);
+  solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   /*--- Communicate the new coordinates at the halos ---*/
-  geometry[MESH_0]->Set_MPI_Coord(config);
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
   /*--- Recompute the edges and dual mesh control volumes in the
    domain and on the boundaries. ---*/
@@ -1247,7 +917,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++){
         curr_coord = Restart_Data[index+iDim];
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-        node[iPoint_Local]->SetDisplacement_n(iDim, displ);
+        node[iPoint_Local]->SetSolution_time_n(iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -1320,7 +990,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++){
           curr_coord = Restart_Data[index+iDim];
           displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-          node[iPoint_Local]->SetDisplacement_n1(iDim, displ);
+          node[iPoint_Local]->SetSolution_time_n1(iDim, displ);
         }
         iPoint_Global_Local++;
 
@@ -1353,139 +1023,9 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- It's necessary to communicate this information ---*/
-  geometry->Set_MPI_OldCoord(config);
+  //geometry->Set_MPI_OldCoord(config);
 
-}
-
-void CMeshSolver::Set_MPI_Displacement(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Displ = NULL, *Buffer_Send_Displ = NULL, *Displ = NULL, *newDispl = NULL;
-  su2double *translation;
-  newDispl = new su2double[nDim];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
-
-      /*--- Allocate Receive and send buffers  ---*/
-
-      Buffer_Receive_Displ = new su2double [nBufferR_Vector];
-      Buffer_Send_Displ = new su2double[nBufferS_Vector];
-
-      /*--- Copy the coordinates that should be sent ---*/
-
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Displ = node[iPoint]->GetDisplacement();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Displ[iDim*nVertexS+iVertex] = Displ[iDim];
-      }
-
-#ifdef HAVE_MPI
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Displ, nBufferS_Vector, MPI_DOUBLE, send_to,0,
-                   Buffer_Receive_Displ, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Receive_Displ[iDim*nVertexR+iVertex] = Buffer_Send_Displ[iDim*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-
-      delete [] Buffer_Send_Displ;
-
-      /*--- Do the coordinate transformation ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-        translation = config->GetPeriodicTranslate(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy coordinates before performing transformation. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          newDispl[iDim] = Buffer_Receive_Displ[iDim*nVertexR+iVertex];
-
-        /*--- Rotate the coordinates. ---*/
-
-        if (nDim == 2) {
-          newDispl[0] = (rotMatrix[0][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Displ[1*nVertexR+iVertex]) - translation[0];
-          newDispl[1] = (rotMatrix[1][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Displ[1*nVertexR+iVertex]) - translation[1];
-        }
-        else {
-          newDispl[0] = (rotMatrix[0][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
-                         rotMatrix[0][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
-          newDispl[1] = (rotMatrix[1][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
-                         rotMatrix[1][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
-          newDispl[2] = (rotMatrix[2][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
-                         rotMatrix[2][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
-                         rotMatrix[2][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
-        }
-
-        /*--- Copy transformed coordinates back into buffer. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          node[iPoint]->SetDisplacement(iDim, newDispl[iDim]);
-
-      }
-
-      /*--- Deallocate receive buffer. ---*/
-
-      delete [] Buffer_Receive_Displ;
-
-    }
-
-  }
-
-  delete [] newDispl;
+  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
+  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
 
 }

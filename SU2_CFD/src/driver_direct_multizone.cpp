@@ -42,11 +42,9 @@
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
                                                           val_nDim,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -139,6 +137,7 @@ CMultizoneDriver::~CMultizoneDriver(void) {
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
+  delete [] nVarZone;
 
   delete [] prefixed_motion;
 
@@ -208,6 +207,15 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetExtIter(TimeIter);
 
+    /*--- Store the current physical time in the config container, as
+     this can be used for verification / MMS. This should also be more
+     general once the drivers are more stable. ---*/
+    
+    if (unsteady)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+    
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
     if (config_container[iZone]->GetInvDesign_Cp() == YES)
@@ -507,8 +515,9 @@ void CMultizoneDriver::Update() {
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
@@ -666,8 +675,14 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
+  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_LEGACY) {
     transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+    UpdateMesh = true;
+  }
+  else if (transfer_types[donorZone][targetZone] == BOUNDARY_DISPLACEMENTS) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
     UpdateMesh = true;

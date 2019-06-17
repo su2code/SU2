@@ -210,6 +210,44 @@ void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry
 
 }
 
+CTransfer_BoundaryDisplacements::CTransfer_BoundaryDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_BoundaryDisplacements::~CTransfer_BoundaryDisplacements(void) {
+
+}
+
+
+void CTransfer_BoundaryDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
+                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                              CConfig *struct_config, CConfig *flow_config) {
+}
+
+void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
+                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+
+  su2double *DisplacementDonor;
+  unsigned short iVar;
+
+  /*--- The displacements come from the predicted solution, but they are no longer incremental ---*/
+  DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    Donor_Variable[iVar] = DisplacementDonor[iVar];
+
+}
+
+void CTransfer_BoundaryDisplacements::SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
+                               CConfig *flow_config, unsigned long Marker_Flow,
+                               unsigned long Vertex_Flow, unsigned long Point_Mesh) {
+
+  /*--- Impose the boundary displacements ---*/
+
+  mesh_solver->node[Point_Mesh]->SetBound_Disp(Target_Variable);
+
+}
+
 
 CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(void) : CTransfer() {
 

@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool fem_solver = false;
-  bool periodic = false;
   bool multizone = false;
 
   /*--- MPI initialization ---*/
@@ -83,7 +82,6 @@ int main(int argc, char *argv[]) {
 
   if (config->GetKind_Solver() == MULTIZONE) nZone  = config->GetnConfigFiles();
   else nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
 
@@ -101,7 +99,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_SOL, ZONE_0, nZone, 0, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_SOL, ZONE_0, nZone, 0, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -121,11 +119,12 @@ int main(int argc, char *argv[]) {
 
     if (multizone){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, true);
     }
+
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
@@ -183,9 +182,7 @@ int main(int argc, char *argv[]) {
 
       geometry_container[iZone][iInst] = NULL;
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines 
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -196,11 +193,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
@@ -210,7 +203,7 @@ int main(int argc, char *argv[]) {
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
-
+      
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
@@ -225,6 +218,10 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
       geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
 
+      /*--- Create the point-to-point MPI communication structures for the fvm solver. ---*/
+      
+      if (!fem_solver) geometry_container[iZone][iInst]->PreprocessP2PComms(geometry_container[iZone][iInst], config_container[iZone]);
+      
       /* Test for a fem solver, because some more work must be done. */
 
       if (fem_solver) {

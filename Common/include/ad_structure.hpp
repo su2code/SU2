@@ -59,6 +59,12 @@ namespace AD{
   void StopRecording();
 
   /*!
+   * \brief Check if the tape is active
+   * \param[out] Boolean which determines whether the tape is active.
+   */
+  bool isTapeActive();
+
+  /*!
    * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
    * \param[in] data - The variable to be registered as input.
    */
@@ -148,6 +154,60 @@ namespace AD{
    * for each output variable to the AD tape.
    */
   void EndPreacc();
+  
+  /*!
+   * \brief Initializes an externally differentiated function. Input and output variables are set with SetExtFuncIn/SetExtFuncOut
+   * \param[in] storePrimalInput - Specifies whether the primal input values are stored for the reverse call of the external function.
+   * \param[in] storePrimalOutput - Specifies whether the primal output values are stored for the reverse call of the external function.
+   */
+  void StartExtFunc(bool storePrimalInput, bool storePrimalOutput);
+  
+  /*!
+   * \brief Sets the scalar input of a externally differentiated function.
+   * \param[in] data - the scalar input variable.
+   */
+  void SetExtFuncIn(su2double &data);
+  
+  /*!
+   * \brief Sets the input variables of a externally differentiated function using a 1D array.
+   * \param[in] data - the input 1D array.
+   * \param[in] size - number of rows.
+   */
+  void SetExtFuncIn(const su2double* data, const int size);
+  
+  /*!
+  * \brief  Sets the input variables of a externally differentiated function using a 2D array.
+  * \param[in] data - the input 2D array.
+  * \param[in] size_x - number of rows.
+  * \param[in] size_y - number of columns.
+  */
+  void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y);
+
+  /*!
+   * \brief Sets the scalar output of a externally differentiated function.
+   * \param[in] data - the scalar output variable.
+   */
+  void SetExtFuncOut(su2double &data);
+
+  /*!
+   * \brief Sets the output variables of a externally differentiated function using a 1D array.
+   * \param[in] data - the output 1D array.
+   * \param[in] size - number of rows.
+   */
+  void SetExtFuncOut(su2double* data, const int size);
+
+  /*!
+  * \brief  Sets the output variables of a externally differentiated function using a 2D array.
+  * \param[in] data - the output 2D array.
+  * \param[in] size_x - number of rows.
+  * \param[in] size_y - number of columns.
+  */
+  void SetExtFuncOut(su2double** data, const int size_x, const int size_y);
+  
+  /*!
+   * \brief Ends an external function section by deleting the structures.
+   */
+  void EndExtFunc();
 
 }
 

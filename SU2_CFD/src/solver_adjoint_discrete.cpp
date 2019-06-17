@@ -685,8 +685,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
   }
 
-//  Set_MPI_CrossTerm(geometry, config);
-
 }
 
 void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
@@ -789,7 +787,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;
