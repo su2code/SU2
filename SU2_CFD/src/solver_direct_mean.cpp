@@ -36,7 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../include/error_estimation_structure.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
@@ -6193,7 +6193,7 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
     A[iDim]      = new su2double[nDim];
     EigVec[iDim] = new su2double[nDim];
   }
-  
+
   for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     CVariable *var = node[iPoint];
 

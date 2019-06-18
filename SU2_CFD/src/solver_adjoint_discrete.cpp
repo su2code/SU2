@@ -36,7 +36,6 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../include/error_estimation_structure.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 

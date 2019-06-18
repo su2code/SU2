@@ -36,7 +36,6 @@
  */
 
 #include "../include/error_estimation_structure.hpp"
-#include "../include/solver_structure.hpp"
 
 CErrorEstimationDriver::CErrorEstimationDriver(void) { }
 

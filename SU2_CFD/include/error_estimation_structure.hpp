@@ -38,13 +38,12 @@
 
 #pragma once
 
-class CSolver;
-
 #include "../../Common/include/adt_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
+#include "../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
 
