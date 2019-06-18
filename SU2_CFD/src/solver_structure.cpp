@@ -1808,7 +1808,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
     case UNDIVIDED_LAPLACIAN:
     case SOLUTION_LIMITER:
     case MOM_COEFF:
-    case MOM_COEFF_NB:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1998,10 +1997,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = node[iPoint]->Get_Mom_Coeff(iVar);
           break;
-          case MOM_COEFF_NB:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = node[iPoint]->Get_Mom_Coeff_nb(iVar);
-          break;
           case MASS_FLUX:
             bufDSend[buf_offset] = node[iPoint]->GetMassFlux();
           break;
@@ -2161,10 +2156,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MOM_COEFF:
             for (iVar = 0; iVar < nVar; iVar++) 
               node[iPoint]->Set_Mom_Coeff(iVar, bufDRecv[buf_offset+iVar]);
-          break;
-          case MOM_COEFF_NB:
-            for (iVar = 0; iVar < nVar; iVar++) 
-              node[iPoint]->Set_Mom_Coeff_nb(iVar, bufDRecv[buf_offset+iVar]);
           break;
           case MASS_FLUX:
             node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);

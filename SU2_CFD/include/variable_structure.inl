@@ -1108,7 +1108,7 @@ inline void CPBIncEulerVariable::SetPressure_val(su2double val_pressure) { Primi
 inline void CPBIncEulerVariable::SetVelocity(void) {
   Velocity2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Primitive[iDim+1] = Solution[iDim] / Primitive[nDim+1];
+    Primitive[iDim+1] = Solution[iDim] ;
     Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
   }
 }

@@ -2037,8 +2037,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MASS_FLUX            = 27,  /*!< \brief Mass flux in a CV communication. */
   MOM_COEFF		  	   = 28,  /*!< \brief Momentum eq coefficient communication. */
-  MOM_COEFF_NB  	   = 29,  /*!< \brief Momentum eq coefficient of neighbors communication. */
-  PRIMITIVE_VARS       = 30   /*!< \brief Primitive variable communication. */
+  PRIMITIVE_VARS       = 29   /*!< \brief Primitive variable communication. */
 };
 
 /*!

@@ -391,11 +391,11 @@ unsigned short iDim;
 			
 			
 			for (iDim = 0; iDim < nDim; iDim++) {
-				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_i/delT_i;
-			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_j/delT_j;
+				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) ;//- solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_i/delT_i;
+			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) ;//- solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(iDim) ;//- Vol_j/delT_j;
 
-				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
-				Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];
+				/*Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
+				Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];*/
 			}
 			numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
 		}
@@ -447,9 +447,9 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
   }*/
   //if (iMesh == MESH_0 ) 
   //Fine_GridFile.open("fine_src.txt", ios::out);
-  MPI_File Fine_GridFile;
+  /*MPI_File Fine_GridFile;
   MPI_Status status;
-  MPI_File_open(MPI_COMM_SELF, "Poisson_src.txt",MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&Fine_GridFile);
+  MPI_File_open(MPI_COMM_SELF, "Poisson_src.txt",MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&Fine_GridFile);*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -480,7 +480,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     LinSysRes.AddBlock(iPoint, Residual);
     
     
-    MPI_File_write(Fine_GridFile, &Src_Term, sizeof(double), MPI_DOUBLE, &status);
+    //MPI_File_write(Fine_GridFile, &Src_Term, sizeof(double), MPI_DOUBLE, &status);
    
     //Source term is constant ==> jacobian is zero
     
@@ -493,7 +493,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
         Coarse_GridFile<<Src_Term<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassTruncError()<<endl;
     }*/
   }
-   MPI_File_close(&Fine_GridFile);
+   //MPI_File_close(&Fine_GridFile);
   /*if (iMesh == MESH_0 + 1) Coarse_GridFile.close();*/
   //if (iMesh == MESH_0) 
   //Fine_GridFile.close();
@@ -643,7 +643,8 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
    su2double Edge_Vector[3],dist_ij_2,Volume;
    su2double *Coord_i,*Coord_j,Mom_Coeff,Mom_Coeff_i[3],Mom_Coeff_j[3];
    Normal = new su2double [nDim];
-   
+     int ranknp = SU2_MPI::GetRank();
+
    Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;Global_Delta_Time = 1.E6;
    
    
@@ -677,12 +678,9 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
     if (config->GetKind_Incomp_System() == PRESSURE_BASED ){
 		Poisson_Coeff = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim);
-	        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(iDim);
-		    		    
-		    Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
-		    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];
-		
+			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) ;
+	        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) ;
+	        
 		    Poisson_Coeff += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
 	    }
     }
@@ -692,10 +690,23 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
     
     Lambda = abs(Poisson_Coeff*Area);
     
-    
-    
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+    
+    /*if (ranknp == 0) {
+		cout<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+		cout<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(0)<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(1);
+		cout<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(0)<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(1);
+		cout<<"\t"<<geometry->node[iPoint]->GetVolume()<<endl;
+		
+		cout<<jPoint<<"\t"<<geometry->node[jPoint]->GetCoord(0)<<"\t"<<geometry->node[jPoint]->GetCoord(1)<<"\t";
+		cout<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(0)<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(1);
+		cout<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(0)<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(1);
+		cout<<"\t"<<geometry->node[jPoint]->GetVolume()<<endl;
+		
+		cout<<Poisson_Coeff<<"\t"<<Area<<endl;
+		cout<<endl;
+	}*/
     
    }
     /*--- Loop boundary edges ---*/
@@ -714,10 +725,8 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       if (config->GetKind_Incomp_System() == PRESSURE_BASED ){
 		Poisson_Coeff = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) - solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(iDim);
-		    
-		    Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
-		
+			Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim) ;
+			
 		    Poisson_Coeff += Mom_Coeff_i[iDim]*Normal[iDim];
 	    }
        }

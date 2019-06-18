@@ -629,7 +629,7 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 
 void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velocity, su2double *val_normal,
     su2double val_scale, su2double **val_Proj_Jac_Tensor) {
-  AD_BEGIN_PASSIVE
+
   unsigned short iDim;
   su2double proj_vel;
 
@@ -658,7 +658,6 @@ void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velo
     val_Proj_Jac_Tensor[2][2] = val_scale*(proj_vel+val_velocity[2]*val_normal[2]);
 
   }
-  AD_END_PASSIVE
 }
 
 
