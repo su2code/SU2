@@ -6012,22 +6012,35 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
       Sens[iNode][4][2] = Sens[iNode][0][2]*enthalpy;
     }
 
-    //--- inward edge's normals : edg[0]=P1P2P3, edg[1]=P2P3P0, edg[2]=P3P0P1, edg[3]=P0P1P2
-    vnx[0] = (Crd[1][1]-Crd[2][1])*(Crd[1][2]-Crd[3][2])-(Crd[1][1]-Crd[3][1])*(Crd[1][2]-Crd[2][2]);
-    vny[0] = (Crd[1][2]-Crd[2][2])*(Crd[1][0]-Crd[3][0])-(Crd[1][0]-Crd[2][0])*(Crd[1][2]-Crd[3][2]);
-    vnz[0] = (Crd[1][0]-Crd[2][0])*(Crd[1][1]-Crd[3][1])-(Crd[1][0]-Crd[3][0])*(Crd[1][1]-Crd[2][1]);
+    //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
+    vnx[0] = (Crd[2][1]-Crd[1][1])*(Crd[3][2]-Crd[1][2]) - (Crd[2][2]-Crd[1][2])*(Crd[3][1]-Crd[1][1]);
+    vny[0] = (Crd[2][2]-Crd[1][2])*(Crd[3][0]-Crd[1][0]) - (Crd[2][0]-Crd[1][0])*(Crd[3][2]-Crd[1][2]);
+    vnz[0] = (Crd[2][0]-Crd[1][0])*(Crd[3][1]-Crd[1][1]) - (Crd[2][1]-Crd[1][1])*(Crd[3][0]-Crd[1][0]);
 
-    vnx[1] = (Crd[2][1]-Crd[3][1])*(Crd[2][2]-Crd[0][2])-(Crd[2][1]-Crd[0][1])*(Crd[2][2]-Crd[3][2]);
-    vny[1] = (Crd[2][2]-Crd[3][2])*(Crd[2][0]-Crd[0][0])-(Crd[2][0]-Crd[3][0])*(Crd[2][2]-Crd[0][2]);
-    vnz[1] = (Crd[2][0]-Crd[3][0])*(Crd[2][1]-Crd[0][1])-(Crd[2][0]-Crd[0][0])*(Crd[2][1]-Crd[3][1]);
+    vnx[1] = (Crd[3][1]-Crd[2][1])*(Crd[0][2]-Crd[2][2]) - (Crd[3][2]-Crd[2][2])*(Crd[0][1]-Crd[2][1]);
+    vny[1] = (Crd[3][2]-Crd[2][2])*(Crd[0][0]-Crd[2][0]) - (Crd[3][0]-Crd[2][0])*(Crd[0][2]-Crd[2][2]);
+    vnz[1] = (Crd[3][0]-Crd[2][0])*(Crd[0][1]-Crd[2][1]) - (Crd[3][1]-Crd[2][1])*(Crd[0][0]-Crd[2][0]);
 
-    vnx[2] = (Crd[3][1]-Crd[0][1])*(Crd[3][2]-Crd[1][2])-(Crd[3][1]-Crd[1][1])*(Crd[3][2]-Crd[0][2]);
-    vny[2] = (Crd[3][2]-Crd[0][2])*(Crd[3][0]-Crd[1][0])-(Crd[3][0]-Crd[0][0])*(Crd[3][2]-Crd[1][2]);
-    vnz[2] = (Crd[3][0]-Crd[0][0])*(Crd[3][1]-Crd[1][1])-(Crd[3][0]-Crd[1][0])*(Crd[3][1]-Crd[0][1]);
+    vnx[2] = (Crd[0][1]-Crd[3][1])*(Crd[1][2]-Crd[3][2]) - (Crd[0][2]-Crd[3][2])*(Crd[1][1]-Crd[3][1]);
+    vny[2] = (Crd[0][2]-Crd[3][2])*(Crd[1][0]-Crd[3][0]) - (Crd[0][0]-Crd[3][0])*(Crd[1][2]-Crd[3][2]);
+    vnz[2] = (Crd[0][0]-Crd[3][0])*(Crd[1][1]-Crd[3][1]) - (Crd[0][1]-Crd[3][1])*(Crd[1][0]-Crd[3][0]);
 
-    vnx[3] = (Crd[0][1]-Crd[1][1])*(Crd[0][2]-Crd[2][2])-(Crd[0][1]-Crd[2][1])*(Crd[0][2]-Crd[1][2]);
-    vny[3] = (Crd[0][2]-Crd[1][2])*(Crd[0][0]-Crd[2][0])-(Crd[0][0]-Crd[1][0])*(Crd[0][2]-Crd[2][2]);
-    vnz[3] = (Crd[0][0]-Crd[1][0])*(Crd[0][1]-Crd[2][1])-(Crd[0][0]-Crd[2][0])*(Crd[0][1]-Crd[1][1]);
+    vnx[3] = (Crd[1][1]-Crd[0][1])*(Crd[2][2]-Crd[0][2]) - (Crd[1][2]-Crd[0][2])*(Crd[2][1]-Crd[0][1]);
+    vny[3] = (Crd[1][2]-Crd[0][2])*(Crd[2][0]-Crd[0][0]) - (Crd[1][0]-Crd[0][0])*(Crd[2][2]-Crd[0][2]);
+    vnz[3] = (Crd[1][0]-Crd[0][0])*(Crd[2][1]-Crd[0][1]) - (Crd[1][1]-Crd[0][1])*(Crd[2][0]-Crd[0][0]);
+
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 4; ++iNode) {
+      unsigned short jNode = (iNode+1) % 4;
+      su2double u[3] = {Crd[jNode][0]-Crd[iNode][0],
+                        Crd[jNode][1]-Crd[iNode][1],
+                        Crd[jNode][2]-Crd[iNode][2]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) < 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+        vnz[iNode] *= -1.0;
+      }
+    }
 
     //--- loop over conservative variables
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -6101,22 +6114,35 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
       }
     }
 
-    //--- inward edge's normals : edg[0]=P1P2P3, edg[1]=P2P3P0, edg[2]=P3P0P1, edg[3]=P0P1P2
-    vnx[0] = (Crd[1][1]-Crd[2][1])*(Crd[1][2]-Crd[3][2])-(Crd[1][1]-Crd[3][1])*(Crd[1][2]-Crd[2][2]);
-    vny[0] = (Crd[1][2]-Crd[2][2])*(Crd[1][0]-Crd[3][0])-(Crd[1][0]-Crd[2][0])*(Crd[1][2]-Crd[3][2]);
-    vnz[0] = (Crd[1][0]-Crd[2][0])*(Crd[1][1]-Crd[3][1])-(Crd[1][0]-Crd[3][0])*(Crd[1][1]-Crd[2][1]);
+    //--- inward face's normals : fac[0]=P1P2P3, fac[1]=P2P3P0, fac[2]=P3P0P1, fac[3]=P0P1P2
+    vnx[0] = (Crd[2][1]-Crd[1][1])*(Crd[3][2]-Crd[1][2]) - (Crd[2][2]-Crd[1][2])*(Crd[3][1]-Crd[1][1]);
+    vny[0] = (Crd[2][2]-Crd[1][2])*(Crd[3][0]-Crd[1][0]) - (Crd[2][0]-Crd[1][0])*(Crd[3][2]-Crd[1][2]);
+    vnz[0] = (Crd[2][0]-Crd[1][0])*(Crd[3][1]-Crd[1][1]) - (Crd[2][1]-Crd[1][1])*(Crd[3][0]-Crd[1][0]);
 
-    vnx[1] = (Crd[2][1]-Crd[3][1])*(Crd[2][2]-Crd[0][2])-(Crd[2][1]-Crd[0][1])*(Crd[2][2]-Crd[3][2]);
-    vny[1] = (Crd[2][2]-Crd[3][2])*(Crd[2][0]-Crd[0][0])-(Crd[2][0]-Crd[3][0])*(Crd[2][2]-Crd[0][2]);
-    vnz[1] = (Crd[2][0]-Crd[3][0])*(Crd[2][1]-Crd[0][1])-(Crd[2][0]-Crd[0][0])*(Crd[2][1]-Crd[3][1]);
+    vnx[1] = (Crd[3][1]-Crd[2][1])*(Crd[0][2]-Crd[2][2]) - (Crd[3][2]-Crd[2][2])*(Crd[0][1]-Crd[2][1]);
+    vny[1] = (Crd[3][2]-Crd[2][2])*(Crd[0][0]-Crd[2][0]) - (Crd[3][0]-Crd[2][0])*(Crd[0][2]-Crd[2][2]);
+    vnz[1] = (Crd[3][0]-Crd[2][0])*(Crd[0][1]-Crd[2][1]) - (Crd[3][1]-Crd[2][1])*(Crd[0][0]-Crd[2][0]);
 
-    vnx[2] = (Crd[3][1]-Crd[0][1])*(Crd[3][2]-Crd[1][2])-(Crd[3][1]-Crd[1][1])*(Crd[3][2]-Crd[0][2]);
-    vny[2] = (Crd[3][2]-Crd[0][2])*(Crd[3][0]-Crd[1][0])-(Crd[3][0]-Crd[0][0])*(Crd[3][2]-Crd[1][2]);
-    vnz[2] = (Crd[3][0]-Crd[0][0])*(Crd[3][1]-Crd[1][1])-(Crd[3][0]-Crd[1][0])*(Crd[3][1]-Crd[0][1]);
+    vnx[2] = (Crd[0][1]-Crd[3][1])*(Crd[1][2]-Crd[3][2]) - (Crd[0][2]-Crd[3][2])*(Crd[1][1]-Crd[3][1]);
+    vny[2] = (Crd[0][2]-Crd[3][2])*(Crd[1][0]-Crd[3][0]) - (Crd[0][0]-Crd[3][0])*(Crd[1][2]-Crd[3][2]);
+    vnz[2] = (Crd[0][0]-Crd[3][0])*(Crd[1][1]-Crd[3][1]) - (Crd[0][1]-Crd[3][1])*(Crd[1][0]-Crd[3][0]);
 
-    vnx[3] = (Crd[0][1]-Crd[1][1])*(Crd[0][2]-Crd[2][2])-(Crd[0][1]-Crd[2][1])*(Crd[0][2]-Crd[1][2]);
-    vny[3] = (Crd[0][2]-Crd[1][2])*(Crd[0][0]-Crd[2][0])-(Crd[0][0]-Crd[1][0])*(Crd[0][2]-Crd[2][2]);
-    vnz[3] = (Crd[0][0]-Crd[1][0])*(Crd[0][1]-Crd[2][1])-(Crd[0][0]-Crd[2][0])*(Crd[0][1]-Crd[1][1]);
+    vnx[3] = (Crd[1][1]-Crd[0][1])*(Crd[2][2]-Crd[0][2]) - (Crd[1][2]-Crd[0][2])*(Crd[2][1]-Crd[0][1]);
+    vny[3] = (Crd[1][2]-Crd[0][2])*(Crd[2][0]-Crd[0][0]) - (Crd[1][0]-Crd[0][0])*(Crd[2][2]-Crd[0][2]);
+    vnz[3] = (Crd[1][0]-Crd[0][0])*(Crd[2][1]-Crd[0][1]) - (Crd[1][1]-Crd[0][1])*(Crd[2][0]-Crd[0][0]);
+
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 4; ++iNode) {
+      unsigned short jNode = (iNode+1) % 4;
+      su2double u[3] = {Crd[jNode][0]-Crd[iNode][0],
+                        Crd[jNode][1]-Crd[iNode][1],
+                        Crd[jNode][2]-Crd[iNode][2]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) < 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+        vnz[iNode] *= -1.0;
+      }
+    }
 
     //--- loop over conservative variables
     for(iVar = 0; iVar < nVarMetr; iVar++){
