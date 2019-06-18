@@ -19,8 +19,7 @@ branches:
         - feature_FV_WMLES
 
 python:
-    - 2.7
-    #- 3.6
+    - 3.6
 
 env:
     global:
