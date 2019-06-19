@@ -2,13 +2,12 @@ su2_dot_src = ['SU2_DOT.cpp']
 su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                        'output/COutput.cpp',
 				       'output/CBaselineOutput.cpp',
-				       'output/output_csv.cpp',
+				       'output/filewriter/CCSVFileWriter.cpp',
 				       'output/output_structure_legacy.cpp',
-				       'output/output_cgns.cpp',
-				       'output/output_tecplot.cpp',
-				       'output/output_fieldview.cpp',
-				       'output/output_su2.cpp',
-				       'output/output_paraview.cpp',
+				       'output/filewriter/CTecplotFileWriter.cpp',
+				       'output/filewriter/CTecplotBinaryFileWriter.cpp',
+				       'output/filewriter/CSU2FileWriter.cpp',
+				       'output/filewriter/CSU2BinaryFileWriter.cpp',
 				       'variable_structure.cpp'])
 
 

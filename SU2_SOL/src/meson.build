@@ -3,12 +3,6 @@ su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                        'output/COutput.cpp',
                                        'output/output_structure_legacy.cpp',
 				       'output/CBaselineOutput.cpp',
-				       'output/output_csv.cpp',
-				       'output/output_cgns.cpp',
-				       'output/output_tecplot.cpp',
-				       'output/output_fieldview.cpp',
-				       'output/output_su2.cpp',
-				       'output/output_paraview.cpp',
 				       'variable_structure.cpp'])
 
 
