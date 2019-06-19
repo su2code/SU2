@@ -45,12 +45,17 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                                                   val_nZone,
                                                                                   val_periodic,
                                                                                   MPICommunicator) {
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    config_container[iZone]->SetMultiphysicsDiscrete_Adjoint(true);
+  }
 
   RecordingState = NONE;
 
   direct_nInst = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
     direct_nInst[iZone] = 1;
   }
 
