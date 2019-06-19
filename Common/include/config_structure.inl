@@ -1919,6 +1919,8 @@ inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
+inline void CConfig::SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj) { MultiphysicsDiscreteAdjoint = multi_disc_adj; }
+
 inline bool CConfig::GetMultiphysicsDiscrete_Adjoint() { return MultiphysicsDiscreteAdjoint; }
 
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}

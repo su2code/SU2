@@ -162,7 +162,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     }
 	}
 
-  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
+  if(config->GetMultiphysicsDiscrete_Adjoint() && config->GetAD_Mode()) {
     Input_AdjIndices = new int[nVar];
     Output_AdjIndices = new int[nVar];
 

@@ -8414,6 +8414,12 @@ public:
   bool GetDiscrete_Adjoint(void);
 
   /*!
+   * \brief Set the indicator whether we are using the multiphysics discrete adjoint driver.
+   * \return the multiphysics discrete adjoint indicator.
+   */
+  void SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj);
+
+  /*!
    * \brief Get the indicator whether we are using the multiphysics discrete adjoint driver.
    * \return the multiphysics discrete adjoint indicator.
    */
