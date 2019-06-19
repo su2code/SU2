@@ -122,15 +122,22 @@ private:
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
+   * \note See specializations for discrete adjoint right outside this class's declaration.
    */
   template<class DstType, class SrcType>
-  DstType ActiveAssign(const SrcType & val) const;
+  inline DstType ActiveAssign(const SrcType & val) const { return val; }
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
    */
   template<class DstType, class SrcType>
-  DstType PassiveAssign(const SrcType & val) const;
+  inline DstType PassiveAssign(const SrcType & val) const {
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+    return SU2_TYPE::GetValue(val);
+#else
+    return val;
+#endif
+  }
   
   /*!
    * \brief Assigns values to the sparse-matrix structure (used in Initialize).
@@ -198,26 +205,32 @@ private:
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  inline void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
+  inline void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+    for(unsigned long iVar = 0; iVar < nVar; iVar++)
+      c[iVar] = a[iVar] - b[iVar];
+  }
   
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  inline void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c);
+  inline void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) {
+    for(unsigned long iVar = 0; iVar < nVar*nEqn; iVar++)
+      c[iVar] = a[iVar] - b[iVar];
+  }
   
   /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
    */
-  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
+  inline void Gauss_Elimination(ScalarType* matrix, ScalarType* vec);
   
   /*!
    * \brief Invert a small dense matrix.
    * \param[in] matrix - the matrix.
    * \param[out] inverse - the matrix inverse.
    */
-  void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
+  inline void MatrixInverse(const ScalarType *matrix, ScalarType *inverse);
   
   /*!
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -226,28 +239,28 @@ private:
    * \param[in] transposed - If true the transposed of the block is used (default = false).
    * \return Solution of the linear system (overwritten on rhs).
    */
-  void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false);
+  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false);
   
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose = false);
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose = false);
   
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock);
+  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock);
   
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    */
-  ScalarType *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
+  inline ScalarType *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
@@ -255,7 +268,7 @@ private:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to set to A(i, j).
    */
-  void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
   
   
   /*!
@@ -264,7 +277,7 @@ private:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to set to A(i, j).
    */
-  void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  inline void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
   
   /*!
    * \brief Subtracts the specified block to the sparse matrix.
@@ -272,7 +285,7 @@ private:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
-  void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  inline void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
   
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
@@ -331,7 +344,11 @@ public:
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
-  void SetValZero(void);
+  inline void SetValZero(void) {
+    if(matrix != NULL)
+      for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
+        matrix[index] = 0.0;
+  }
   
   /*!
    * \brief Routine to load a vector quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
@@ -365,7 +382,14 @@ public:
    * \param[in] block_j - Column index.
    * \return Pointer to location in memory where the block starts.
    */
-  ScalarType *GetBlock(unsigned long block_i, unsigned long block_j);
+  inline ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) {
+    
+    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+      if (col_ind[index] == block_j)
+        return &(matrix[index*nVar*nEqn]);
+
+    return NULL;
+  }
   
   /*!
    * \brief Gets the value of a particular entry in block "ij".
@@ -375,7 +399,15 @@ public:
    * \param[in] jVar - Column of the block.
    * \return Value of the block entry.
    */
-  ScalarType GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar);
+  inline ScalarType GetBlock(unsigned long block_i, unsigned long block_j,
+                             unsigned short iVar, unsigned short jVar) {
+  
+    for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
+      if (col_ind[index] == block_j)
+        return matrix[index*nVar*nEqn+iVar*nEqn+jVar];
+
+    return 0.0;
+  }
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
@@ -384,7 +416,19 @@ public:
    * \param[in] **val_block - Block to set to A(i, j).
    */
   template<class OtherType>
-  void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+    
+    unsigned long iVar, jVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nEqn; jVar++)
+            matrix[index*nVar*nEqn+iVar*nEqn+jVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
@@ -393,7 +437,18 @@ public:
    * \param[in] *val_block - Block to set to A(i, j).
    */
   template<class OtherType>
-  void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block);
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
+  
+    unsigned long iVar, jVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar*nEqn; iVar++)
+          matrix[index*nVar*nEqn+iVar] = PassiveAssign<ScalarType,OtherType>(val_block[iVar]);
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Adds the specified block to the sparse matrix.
@@ -402,7 +457,19 @@ public:
    * \param[in] **val_block - Block to add to A(i, j).
    */
   template<class OtherType>
-  void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  
+    unsigned long iVar, jVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nEqn; jVar++)
+            matrix[index*nVar*nEqn+iVar*nEqn+jVar] += PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Subtracts the specified block to the sparse matrix.
@@ -411,7 +478,19 @@ public:
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
   template<class OtherType>
-  void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
+  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  
+    unsigned long iVar, jVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_j) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nEqn; jVar++)
+            matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= PassiveAssign<ScalarType,OtherType>(val_block[iVar][jVar]);
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Adds the specified value to the diagonal of the (i, i) subblock
@@ -420,7 +499,18 @@ public:
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
   template<class OtherType>
-  void AddVal2Diag(unsigned long block_i, OtherType val_matrix);
+  inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
+  
+    unsigned long iVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_i) {	// Only elements on the diagonal
+        for (iVar = 0; iVar < nVar; iVar++)
+          matrix[index*nVar*nVar+iVar*nVar+iVar] += PassiveAssign<ScalarType,OtherType>(val_matrix);
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Sets the specified value to the diagonal of the (i, i) subblock
@@ -429,7 +519,24 @@ public:
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
   template<class OtherType>
-  void SetVal2Diag(unsigned long block_i, OtherType val_matrix);
+  inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
+  
+    unsigned long iVar, jVar, index;
+  
+    for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+      if (col_ind[index] == block_i) {	// Only elements on the diagonal
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            matrix[index*nVar*nVar+iVar*nVar+jVar] = 0.0;
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          matrix[index*nVar*nVar+iVar*nVar+iVar] = PassiveAssign<ScalarType,OtherType>(val_matrix);
+        
+        break;
+      }
+    }
+  }
   
   /*!
    * \brief Deletes the values of the row i of the sparse matrix.
@@ -524,4 +631,10 @@ public:
   
 };
 
-#include "matrix_structure.inl"
+#ifdef CODI_REVERSE_TYPE
+template<> template<>
+inline passivedouble CSysMatrix<passivedouble>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
+
+template<> template<>
+inline passivedouble CSysMatrix<su2double>::ActiveAssign(const su2double & val) const { return SU2_TYPE::GetValue(val); }
+#endif
