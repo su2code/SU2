@@ -54,6 +54,8 @@
 #include "matrix_structure.hpp"
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
+#include "linear_algebra/CMatrixVectorProduct.hpp"
+#include "linear_algebra/CPreconditioner.hpp"
 
 using namespace std;
 

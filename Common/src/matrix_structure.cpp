@@ -1328,12 +1328,6 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template class CSysMatrixVectorProduct<su2double>;
-template class CSysMatrixVectorProductTransposed<su2double>;
-template class CJacobiPreconditioner<su2double>;
-template class CILUPreconditioner<su2double>;
-template class CLU_SGSPreconditioner<su2double>;
-template class CLineletPreconditioner<su2double>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1341,10 +1335,4 @@ template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<passivedouble
 template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
-template class CSysMatrixVectorProduct<passivedouble>;
-template class CSysMatrixVectorProductTransposed<passivedouble>;
-template class CJacobiPreconditioner<passivedouble>;
-template class CILUPreconditioner<passivedouble>;
-template class CLU_SGSPreconditioner<passivedouble>;
-template class CLineletPreconditioner<passivedouble>;
 #endif

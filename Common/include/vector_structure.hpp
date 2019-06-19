@@ -361,48 +361,4 @@ public:
 template<class ScalarType>
 CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<ScalarType> & u);
 
-/*!
- * \class CMatrixVectorProduct
- * \brief abstract base class for defining matrix-vector products
- * \author J. Hicken.
- *
- * The Krylov-subspace solvers require only matrix-vector products and
- * not the actual matrix/Jacobian.  We need some way to indicate which
- * function will perform the product.  However, sometimes the
- * functions that define the product will require different numbers
- * and types of inputs.  For example, the forward-difference
- * approximation to a Jacobian-vector product requires the vector that
- * defines the Jacobian and a perturbation parameter.  The
- * CMatrixVectorProduct class is used to derive child classes that can
- * handle the different types of matrix-vector products and still be
- * passed to a single implementation of the Krylov solvers.
- */
-template<class ScalarType>
-class CMatrixVectorProduct {
-public:
-  virtual ~CMatrixVectorProduct() = 0; ///< class destructor
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v)
-  const = 0; ///< matrix-vector product operation
-};
-template<class ScalarType>
-inline CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
-
-/*!
- * \class CPreconditioner
- * \brief abstract base class for defining preconditioning operation
- * \author J. Hicken.
- *
- * See the remarks regarding the CMatrixVectorProduct class.  The same
- * idea applies here to the preconditioning operation.
- */
-template<class ScalarType>
-class CPreconditioner {
-public:
-  virtual ~CPreconditioner() = 0; ///< class destructor
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v)
-  const = 0; ///< preconditioning operation
-};
-template<class ScalarType>
-inline CPreconditioner<ScalarType>::~CPreconditioner() {}
-
 #include "vector_structure.inl"
