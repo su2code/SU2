@@ -799,35 +799,35 @@ su2double CVolumetricMovement::ShapeFunc_Pyram(su2double Xi, su2double Eta, su2d
   
   /*--- Shape functions ---*/
   
-  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][3] = 0.5*(1.0+Zeta);
+  DShapeFunction[0][3] = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[1][3] = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[2][3] = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[3][3] = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[4][3] = Zeta;
   
   /*--- dN/d xi ---*/
   
-  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[0][0] = 0.5*(Zeta-Xi-1.0)/(Zeta-1.0);
+  DShapeFunction[1][0] = 0.5*Xi/(Zeta-1.0);
+  DShapeFunction[2][0] = 0.5*(1.0-Zeta-Xi)/(Zeta-1.0);
+  DShapeFunction[3][0] = DShapeFunction[1][0];
   DShapeFunction[4][0] = 0.0;
   
   /*--- dN/d eta ---*/
   
-  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
+  DShapeFunction[0][1] = 0.5*Eta/(Zeta-1.0);
+  DShapeFunction[1][1] = 0.5*(Zeta-Eta-1.0)/(Zeta-1.0);
+  DShapeFunction[2][1] = DShapeFunction[0][1];
+  DShapeFunction[3][1] = 0.5*(1.0-Zeta-Eta)/(Zeta-1.0);
   DShapeFunction[4][1] = 0.0;
   
   /*--- dN/d zeta ---*/
   
-  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-  DShapeFunction[4][2] = 0.5;
+  DShapeFunction[0][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta - Eta*Eta + Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+  DShapeFunction[1][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta + Eta*Eta - Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+  DShapeFunction[2][2] = DShapeFunction[0][2];
+  DShapeFunction[3][2] = DShapeFunction[1][2];
+  DShapeFunction[4][2] = 1.0;
   
   /*--- Jacobian transformation ---*/
   
@@ -1478,12 +1478,12 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
   
   if (nNodes == 6) {
     nGauss = 6;
-    Location[0][0] = 0.5;                 Location[0][1] = 0.5;                 Location[0][2] = -0.577350269189626;  Weight[0] = 0.166666666666666;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.0;                 Location[1][2] = 0.5;                 Weight[1] = 0.166666666666666;
-    Location[2][0] = 0.5;                 Location[2][1] = -0.577350269189626;  Location[2][2] = 0.0;                 Weight[2] = 0.166666666666666;
-    Location[3][0] = 0.5;                 Location[3][1] = 0.5;                 Location[3][2] = 0.577350269189626;   Weight[3] = 0.166666666666666;
-    Location[4][0] = 0.577350269189626;   Location[4][1] = 0.0;                 Location[4][2] = 0.5;                 Weight[4] = 0.166666666666666;
-    Location[5][0] = 0.5;                 Location[5][1] = 0.577350269189626;   Location[5][2] = 0.0;                 Weight[5] = 0.166666666666666;
+    Location[0][0] = -0.577350269189626;  Location[0][1] = 0.166666666666667;  Location[0][2] = 0.166666666666667;  Weight[0] = 0.166666666666667;
+    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.666666666666667;  Location[1][2] = 0.166666666666667;  Weight[1] = 0.166666666666667;
+    Location[2][0] = -0.577350269189626;  Location[2][1] = 0.166666666666667;  Location[2][2] = 0.666666666666667;  Weight[2] = 0.166666666666667;
+    Location[3][0] =  0.577350269189626;  Location[3][1] = 0.166666666666667;  Location[3][2] = 0.166666666666667;  Weight[3] = 0.166666666666667;
+    Location[4][0] =  0.577350269189626;  Location[4][1] = 0.666666666666667;  Location[4][2] = 0.166666666666667;  Weight[4] = 0.166666666666667;
+    Location[5][0] =  0.577350269189626;  Location[5][1] = 0.166666666666667;  Location[5][2] = 0.666666666666667;  Weight[5] = 0.166666666666667;
   }
   
   /*--- Hexahedrons. Nodes of numerical integration at 6 points (order 3). ---*/
@@ -9213,8 +9213,8 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
     else if (nDim == 3){
       element_container[EL_TETRA] = new CTETRA1(nDim, config);
       element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CHEXA8(nDim, config);
-      element_container[EL_PRISM] = new CHEXA8(nDim, config);
+      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
+      element_container[EL_PRISM] = new CPRISM6(nDim, config);
     }
 
     /*--- Term ij of the Jacobian ---*/
