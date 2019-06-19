@@ -882,13 +882,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
      partitioning process. ---*/
 
       CGeometry *geometry_aux = NULL;
-
-      /*--- For the FEM solver with time-accurate local time-stepping, use
-       a dummy solver class to retrieve the initial flow state. ---*/
-
-      CSolver *solver_aux = NULL;
-      if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
-
+      
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);

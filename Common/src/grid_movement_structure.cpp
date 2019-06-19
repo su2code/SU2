@@ -2208,7 +2208,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3];
+  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -2219,11 +2219,12 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
   
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin()[iDim];
     Omega[iDim]  = config->GetPlunging_Omega()[iDim]/config->GetOmega_Ref();
-    Ampl[iDim]   = config->GetPlunging_Ampl()[iDim];
+    Ampl[iDim]   = config->GetPlunging_Ampl()[iDim]/Lref;
   }
   
   /*--- Plunging frequency and amplitude from config. ---*/
