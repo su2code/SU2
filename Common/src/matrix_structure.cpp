@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/matrix_structure.hpp"
+#include "../include/matrix_structure.inl"
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
@@ -677,34 +677,6 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed) {
-
-  short iVar, jVar;
-  ScalarType *Block = GetBlock(block_i, block_i);
-
-  /*--- Copy block, as the algorithm modifies the matrix ---*/
-
-  if (!transposed) {
-    // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
-    memcpy( block, Block, nVar*nVar*sizeof(ScalarType) );
-
-//    for (iVar = 0; iVar < (short)nVar; iVar++)
-//      for (jVar = 0; jVar < (short)nVar; jVar++)
-//        block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-
-  } else {
-    for (iVar = 0; iVar < (short)nVar; iVar++)
-      for (jVar = 0; jVar < (short)nVar; jVar++)
-        block[iVar*nVar+jVar] = Block[jVar*nVar+iVar];
-  }
-
-  /*--- Solve system ---*/
-
-  Gauss_Elimination(block, rhs);
-
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index, col_j;
@@ -1324,10 +1296,49 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
   
 }
 
+template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b) {
+
+  /*--- Both row and column associated with node i are eliminated (Block_ii = I and all else 0) to preserve eventual symmetry. ---*/
+  /*--- The vector is updated with the product of column i by the known (enforced) solution at node i. ---*/
+
+  unsigned long iPoint, iVar, jVar, index, mat_begin;
+
+  /*--- Delete whole row first. ---*/
+  for (index = row_ptr[node_i]*nVar*nVar; index < row_ptr[node_i+1]*nVar*nVar; ++index)
+    matrix[index] = 0.0;
+
+  /*--- Update b with the column product and delete column. ---*/
+  for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; ++index) {
+      if (col_ind[index] == node_i)
+      {
+        mat_begin = index*nVar*nVar;
+
+        for(iVar = 0; iVar < nVar; ++iVar)
+          for(jVar = 0; jVar < nVar; ++jVar)
+            b[iPoint*nVar+iVar] -= matrix[mat_begin+iVar*nVar+jVar] * x_i[jVar];
+
+        /*--- If on diagonal, set diagonal of block to 1, else delete block. ---*/
+        if (iPoint == node_i)
+          for (iVar = 0; iVar < nVar; ++iVar) matrix[mat_begin+iVar*(nVar+1)] = 1.0;
+        else
+          for (iVar = 0; iVar < nVar*nVar; iVar++) matrix[mat_begin+iVar] = 0.0;
+      }
+    }
+  }
+
+  /*--- Set know solution in rhs vector. ---*/
+  for (iVar = 0; iVar < nVar; iVar++) b[node_i*nVar+iVar] = x_i[iVar];
+
+}
+
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
+template void  CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
@@ -1335,4 +1346,6 @@ template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<passivedouble
 template void  CSysMatrix<passivedouble>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, CConfig*, unsigned short);
 template void  CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const passivedouble*, CSysVector<passivedouble>&);
+template void  CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 #endif
