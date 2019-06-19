@@ -196,12 +196,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
-        if (!config->GetWall_Functions() || !config->GetWall_Models()){
+        if (!config->GetWall_Functions() && !config->GetWall_Models()){
           solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
           break;
         }
       case HEAT_FLUX:
-        if (!config->GetWall_Functions() || !config->GetWall_Models()){
+        if (!config->GetWall_Functions() && !config->GetWall_Models()){
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         }
         break;
