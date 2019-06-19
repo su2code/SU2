@@ -354,14 +354,16 @@ void CDiscAdjMultizoneDriver::Run() {
     SetAdjoints_Iter();
 
     SetResidual_RMS();
-    
+
     for (iZone = 0; iZone < nZone; iZone++) {
     	output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone], 
 				  config_container[iZone]->GetTimeIter(), config_container[iZone]->GetOuterIter(), config_container[iZone]->GetInnerIter());
-    }    
-    
-    OuterConvergence(iOuter_Iter);
-    
+    }
+
+    if (nZone > 1) {
+      OuterConvergence(iOuter_Iter);
+    }
+
     /*--- Check convergence in each zone --*/
 
     checkConvergence = 0;
@@ -643,6 +645,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           switch(config_container[iZone]->GetKind_ObjFunc()) {
 
+            case DRAG_COEFFICIENT:
+              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
+              break;
             case SURFACE_TOTAL_PRESSURE:
               ObjFunc += direct_output[iZone]->GetHistoryFieldValuePerSurface("AVG_TOTALPRESS", iMarker_Analyze)*Weight_ObjFunc;
               break;
