@@ -5864,41 +5864,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Euler implicit method for the flow equations." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
             case FGMRES:
             case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
+              if (Kind_Linear_Solver == BCGSTAB)
+                cout << "BCGSTAB is used for solving the linear system." << endl;
+              else
+                cout << "FGMRES is used for solving the linear system." << endl;
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
               }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-               break;
-            case SMOOTHER_JACOBI:
-              cout << "A Jacobi method is used for smoothing the linear system." << endl;
               break;
-            case SMOOTHER_ILU:
-              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LUSGS:
-              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LINELET:
-              cout << "A Linelet method is used for smoothing the linear system." << endl;
+            case SMOOTHER:
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case LINELET: cout << "A Linelet"; break;
+                case LU_SGS:  cout << "A LU-SGS"; break;
+                case JACOBI:  cout << "A Jacobi"; break;
+              }
+              cout << " method is used for smoothing the linear system." << endl;
               break;
           }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
         case CLASSICAL_RK4_EXPLICIT:
           cout << "Classical RK4 explicit method for the flow equations." << endl;

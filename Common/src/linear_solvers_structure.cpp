@@ -842,16 +842,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
     ScreenOutput = config->GetDeform_Output();
   }
 
-  /*--- For smoother-type solvers set the associated preconditioner type. ---*/
-
-  switch (KindSolver) {
-    case SMOOTHER_LINELET: KindPrecond = LINELET; break;
-    case SMOOTHER_JACOBI: KindPrecond = JACOBI; break;
-    case SMOOTHER_LUSGS: KindPrecond = LU_SGS; break;
-    case SMOOTHER_ILU:  KindPrecond = ILU; break;
-    default: break; // whatever was obtained from config above
-  }
-
   /*--- Stop the recording for the linear solver ---*/
 
   bool TapeActive = NO;
@@ -918,7 +908,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
         if ( Residual < SolverTol*Norm0 ) break;
       }
       break;
-    case SMOOTHER_LINELET: case SMOOTHER_JACOBI: case SMOOTHER_LUSGS: case SMOOTHER_ILU:
+    case SMOOTHER:
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput, config);
       break;
     default:
