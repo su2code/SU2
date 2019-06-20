@@ -110,7 +110,10 @@ public:
   /*!
 	 * \brief Sets to zero all the entries of the vector.
 	 */
-	void SetValZero(void);
+	inline void SetValZero(void) {
+    for (unsigned long i = 0; i < nElm; i++)
+      vec_val[i] = 0.0;
+	}
   
   /*!
    * \brief constructor from array
@@ -146,32 +149,38 @@ public:
   /*!
    * \brief return the number of local elements in the CSysVector
    */
-  unsigned long GetLocSize() const;
+  inline unsigned long GetLocSize() const { return nElm; }
   
   /*!
    * \brief return the number of local elements in the CSysVector without ghost cells
    */
-  unsigned long GetNElmDomain() const;
+  inline unsigned long GetNElmDomain() const { return nElmDomain; }
   
   /*!
    * \brief return the size of the CSysVector (over all processors)
    */
-  unsigned long GetSize() const;
+  inline unsigned long GetSize() const {
+#ifdef HAVE_MPI
+    return nElmGlobal;
+#else
+    return (unsigned long)nElm;
+#endif
+  }
   
   /*!
    * \brief return the number of variables at each block (typically number per node)
    */
-  unsigned short GetNVar() const;
+  inline unsigned short GetNVar() const { return nVar; }
   
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned long GetNBlk() const;
+  inline unsigned long GetNBlk() const { return nBlk; }
 	
 	/*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned long GetNBlkDomain() const;
+  inline unsigned long GetNBlkDomain() const { return nBlkDomain; }
   
   /*!
    * \brief set calling CSysVector to scaling of another CSysVector
@@ -260,13 +269,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  ScalarType & operator[](const unsigned long & i);
+  inline ScalarType & operator[](const unsigned long & i) { return vec_val[i]; }
   
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  const ScalarType & operator[](const unsigned long & i) const;
+  inline const ScalarType & operator[](const unsigned long & i) const { return vec_val[i]; }
     
   /*!
    * \brief the L2 norm of the CSysVector
@@ -360,5 +369,3 @@ public:
  */
 template<class ScalarType>
 CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<ScalarType> & u);
-
-#include "vector_structure.inl"
