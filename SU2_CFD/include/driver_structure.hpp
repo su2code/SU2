@@ -442,6 +442,14 @@ public:
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
 
   /*!
+   * \brief Get the pressure at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return vertex pressure.
+   */
+  passivedouble GetVertexPressure(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
    * \brief Get the x coordinate of a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -1529,6 +1537,21 @@ public:
    * \brief Run one iteration of the solver.
    */
   void DirectRun(unsigned short kind_recording);
+
+  vector<passivedouble> GetTotal_Sens_Diff_Inputs();
+
+  // TODO Remove after debugging
+  passivedouble Get_ObjFunc();
+
+  /*!
+   * \brief Get a weight of the objective function.
+   */
+  su2double GetWeight_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \brief Set a weight for the objective function.
+   */
+  void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
 
   /*!
    * \brief Set the objective function.

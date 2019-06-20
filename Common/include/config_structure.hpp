@@ -1102,6 +1102,10 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  unsigned short nDiff_Inputs;  /*!< \brief Number of inputs that are differentiated with respect to
+ */
+  unsigned short *Diff_Inputs;          /*!< \brief List of enums defining which inputs should be differentiated with respect to */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -2382,7 +2386,13 @@ public:
    * \return Value of the Froude number.
    */
   void SetMach(su2double val_mach);
-  
+
+  /*!
+   * \brief Set the Prandl Lam parameter.
+   * \return Value of the Prandl Lam parameter.
+   */
+  void SetPrandtl_Lam(su2double val_pl);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -3898,7 +3908,12 @@ public:
    * \brief Set the value of the non-dimensional constant viscosity.
    */
   void SetMu_ConstantND(su2double mu_const);
-  
+
+  /*!
+   * \brief Set the value of the constant viscosity.
+   */
+  void SetMu_Constant(su2double mu);
+
   /*!
    * \brief Set the value of the non-dimensional thermal conductivity.
    */
@@ -9125,6 +9140,18 @@ public:
    * \return Number of pseudo-time steps run for the single-zone problem
    */
   unsigned long GetnIter(void);
+
+  /*!
+   * \brief Get the list of inputs that are differentiated with respect to
+   * \return List of inputs that are differentiated with respect to
+   */
+  unsigned short* GetDiff_Inputs(void);
+
+  /*!
+   * \brief Get the number of inputs that are differentiated with respect to
+   * \return Number of inputs that are differentiated with respect to
+   */
+  unsigned short GetnDiff_Inputs(void);
 
   /*!
    * \brief Get the restart iteration

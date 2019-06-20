@@ -164,7 +164,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   CkInflow                      = NULL;
   CkOutflow1                    = NULL;
   CkOutflow2                    = NULL;
- 
+
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -876,7 +876,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
+  /*--- Initialize differentiable inputs arrays ---*/
+
+  Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
+  Diff_Inputs_Vars.assign(config->GetnDiff_Inputs(), 1.0);  // TODO Maybe assign isnt necessary here because array might be used sparsely
+
+  // TODO Are both reserve and assigned necessary?
+  Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
+  Total_Sens_Diff_Inputs.assign(config->GetnDiff_Inputs(), 1.0);
+
+  // Store iMesh for re-running SetNondimensionalization after registering variables
+  iMesh_Store = iMesh;
+
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3143,6 +3155,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
           SetDonorPrimVar(iMarker, iVertex, iVar,  iPrimVar[iVar]);
         
         SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+      
         
       }
       
@@ -8899,6 +8912,14 @@ void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container
         SU2_MPI::Error("Custom inlet BCs are not currently compatible with multigrid.", CURRENT_FUNCTION);
     }
   }
+}
+
+void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+
+}
+
+void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
+
 }
 
 void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
@@ -16014,7 +16035,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
+  /*--- Initialize differentiable inputs arrays ---*/
+
+  Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
+  Diff_Inputs_Vars.assign(config->GetnDiff_Inputs(), 1.0);  // TODO Maybe assign isnt necessary here because array might be used sparsely
+
+  // TODO Are both reserve and assigned necessary?
+  Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
+  Total_Sens_Diff_Inputs.assign(config->GetnDiff_Inputs(), 1.0);
+
+  // Store iMesh for re-running SetNondimensionalization after registering variables
+  iMesh_Store = iMesh;
+
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -16085,7 +16118,7 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] Buffet_Sensor;
   }
-  
+
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -18264,5 +18297,68 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
+}
+
+void CNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+  // TODO Also run CIncEulerSolver's register variables?
+
+  unsigned short iDiff_Inputs;
+  bool reset_nondimensionalization = false;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_MU_CONSTANT:
+        Diff_Inputs_Vars[iDiff_Inputs] = config->GetMu_Constant();
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs]);
+          config->SetMu_Constant(Diff_Inputs_Vars[iDiff_Inputs]);
+          reset_nondimensionalization = true;
+        }
+        break;
+      case DI_PRANDTL_LAM:
+        Diff_Inputs_Vars[iDiff_Inputs] = config->GetPrandtl_Lam();
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs]);
+        }
+        config->SetPrandtl_Lam(Diff_Inputs_Vars[iDiff_Inputs]);
+        reset_nondimensionalization = true;
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  if (reset_nondimensionalization) {
+    delete FluidModel;
+    FluidModel = NULL;
+    SetNondimensionalization(config, iMesh_Store);
+  }
+}
+
+void CNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+  // TODO Account for non scalar cases
+
+  unsigned short iDiff_Inputs;
+  passivedouble Local_Sens;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_MU_CONSTANT:
+      case DI_PRANDTL_LAM:
+        Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs]);
+        break;
+
+      default:
+        continue;  // If nothing was done, skip assignment below
+    }
+#ifdef HAVE_MPI
+    // TODO Should it be MPI Allreduce/MPI_SUM here?
+    SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs],  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_Diff_Inputs[iDiff_Inputs] = Local_Sens;
+#endif
+  }
+
 }
 

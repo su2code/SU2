@@ -597,7 +597,19 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
+  /*--- Initialize differentiable inputs arrays ---*/
+
+  Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
+  Diff_Inputs_Vars.assign(config->GetnDiff_Inputs(), 1.0);  // TODO Maybe assign isnt necessary here because array might be used sparsely
+
+  // TODO Are both reserve and assigned necessary?
+  Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
+  Total_Sens_Diff_Inputs.assign(config->GetnDiff_Inputs(), 1.0);
+
+  // Store iMesh for re-running SetNondimensionalization after registering variables
+  iMesh_Store = iMesh;
+
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -2024,7 +2036,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     /*--- Constant viscosity model ---*/
 
     config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-    
+
     /*--- Sutherland's model ---*/
     
     config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
@@ -5291,6 +5303,26 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
+//      case DO_RHO:
+//
+//      case DO_RHOU1:
+//      case DO_RHOU2:
+//      case DO_RHOU3:
+//      case DO_RHOE:
+//      case DO_PRESS:
+//      case DO_AOA:
+//      case DO_SA:
+//      case DO_K:
+//      case DO_W:
+//      case DO_TEMP:
+//      case DO_UTOL:
+//      case DO_RTOL:
+//      case DO_ETOL:
+//      case DO_DISPX:
+//      case DO_DISPY:
+//      case DO_DISPZ:
+//      case DO_VSM:
+//        break;
       default:
         break;
 
@@ -7505,6 +7537,16 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   }
 }
 
+
+void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+
+}
+
+void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+
+}
+
+
 CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
   /*--- Basic array initialization ---*/
@@ -8092,7 +8134,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
+  /*--- Initialize differentiable inputs arrays ---*/
+
+  Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
+  Diff_Inputs_Vars.assign(config->GetnDiff_Inputs(), 1.0);  // TODO Maybe assign isnt necessary here because array might be used sparsely
+
+  // TODO Are both reserve and assigned necessary?
+  Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
+  Total_Sens_Diff_Inputs.assign(config->GetnDiff_Inputs(), 1.0);
+
+  // Store iMesh for re-running SetNondimensionalization after registering variables
+  iMesh_Store = iMesh;
+
 }
 
 CIncNSSolver::~CIncNSSolver(void) {
@@ -9433,4 +9487,68 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     }
   }
+}
+
+
+void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+  // TODO Also run CIncEulerSolver's register variables?
+
+  unsigned short iDiff_Inputs;
+  bool reset_nondimensionalization = false;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_MU_CONSTANT:
+        Diff_Inputs_Vars[iDiff_Inputs] = config->GetMu_Constant();
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs]);
+          config->SetMu_Constant(Diff_Inputs_Vars[iDiff_Inputs]);
+          reset_nondimensionalization = true;
+        }
+        break;
+      case DI_PRANDTL_LAM:
+        Diff_Inputs_Vars[iDiff_Inputs] = config->GetPrandtl_Lam();
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs]);
+        }
+        config->SetPrandtl_Lam(Diff_Inputs_Vars[iDiff_Inputs]);
+        reset_nondimensionalization = true;
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  if (reset_nondimensionalization) {
+    delete FluidModel;
+    FluidModel = NULL;
+    SetNondimensionalization(config, iMesh_Store);
+  }
+}
+
+void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+  // TODO Account for non scalar cases
+
+  unsigned short iDiff_Inputs;
+  passivedouble Local_Sens;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_MU_CONSTANT:
+      case DI_PRANDTL_LAM:
+        Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs]);
+        break;
+
+      default:
+        continue;  // If nothing was done, skip assignment below
+    }
+#ifdef HAVE_MPI
+    // TODO Should it be MPI Allreduce/MPI_SUM here?
+    SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs],  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_Diff_Inputs[iDiff_Inputs] = Local_Sens;
+#endif
+  }
+
 }

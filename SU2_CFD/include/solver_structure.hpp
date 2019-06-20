@@ -143,7 +143,9 @@ protected:
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
-  
+
+  vector<passivedouble> Total_Sens_Diff_Inputs;    /*!< \brief Total sensitivities to the differentiation inputs. */
+
 public:
   
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4473,7 +4475,9 @@ public:
    * \param[in] val_implicit_periodic - Flag controlling solution rotation for periodic BCs.
    */
   void SetRotatePeriodic(bool val_rotate_periodic);
-  
+
+  vector<passivedouble> GetTotal_Sens_Diff_Inputs(void);
+
 };
 
 /*!
@@ -4614,7 +4618,7 @@ public:
  */
 class CEulerSolver : public CSolver {
 protected:
-  
+
   su2double
   Mach_Inf,  /*!< \brief Mach number at the infinity. */
   Density_Inf,  /*!< \brief Density at the infinity. */
@@ -4888,6 +4892,9 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  vector<su2double> Diff_Inputs_Vars; /*!< \brief Differentiation input variables to be registered with AD. */
+  unsigned short iMesh_Store;
 
 public:
   
@@ -5212,7 +5219,7 @@ public:
    */
   void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
 
-  /*!
+    /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
@@ -7041,6 +7048,9 @@ public:
    */
   void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
 
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
+
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
 };
 
@@ -7239,6 +7249,9 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  vector<su2double> Diff_Inputs_Vars; /*!< \brief Differentiation input variables to be registered with AD. */
+  unsigned short iMesh_Store;
 
 public:
   
@@ -8491,7 +8504,10 @@ public:
    */
    su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
-  
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
+
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
 };
 
 /*!
@@ -8991,6 +9007,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
+
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
  
 };
 
@@ -9055,7 +9075,7 @@ private:
   AllBound_HF_Visc,    /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
-  
+
 public:
   
   /*!
@@ -9433,6 +9453,10 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
+
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
+
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
 };
 

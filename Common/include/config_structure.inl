@@ -674,6 +674,8 @@ inline void CConfig::SetReynolds(su2double val_reynolds) { Reynolds = val_reynol
 
 inline void CConfig::SetMach(su2double val_mach) { Mach = val_mach; }
 
+inline void CConfig::SetPrandtl_Lam(su2double val_pl) { Prandtl_Lam = val_pl; }
+
 inline void CConfig::SetLength_Ref(su2double val_length_ref) { Length_Ref = val_length_ref; }
 
 inline void CConfig::SetVelocity_Ref(su2double val_velocity_ref) { Velocity_Ref = val_velocity_ref; }
@@ -916,6 +918,8 @@ inline su2double CConfig::GetKt_PolyCoeff(unsigned short val_index) { return KtP
 inline su2double CConfig::GetKt_PolyCoeffND(unsigned short val_index) { return KtPolyCoefficientsND[val_index]; }
 
 inline su2double* CConfig::GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+
+inline void CConfig::SetMu_Constant(su2double mu) { Mu_Constant = mu; }
 
 inline void CConfig::SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
 
@@ -2046,6 +2050,10 @@ inline string CConfig::GetConfigFilename(unsigned short index) { return Config_F
 inline unsigned short CConfig::GetnConfigFiles(void) { return nConfig_Files; }
 
 inline unsigned short CConfig::GetnMarker_ZoneInterface(void) { return nMarker_ZoneInterface; }
+
+inline unsigned short CConfig::GetnDiff_Inputs(void) { return nDiff_Inputs; }
+
+inline unsigned short* CConfig::GetDiff_Inputs(void) { return Diff_Inputs; }
 
 inline string CConfig::GetMarkerTag_ZoneInterface(unsigned short val_iMarker) { return Marker_ZoneInterface[val_iMarker]; }
 

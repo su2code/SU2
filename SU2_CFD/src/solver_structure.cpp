@@ -54,7 +54,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   Residual_j         = NULL;
   Point_Max          = NULL;
   Point_Max_Coord    = NULL;
-  Point_Max_BGS      = NULL;
+  Point_Max_BGS       = NULL;
   Point_Max_Coord_BGS = NULL;
   Solution           = NULL;
   Solution_i         = NULL;
@@ -99,7 +99,7 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   
   rotate_periodic   = false;
   implicit_periodic = false;
-  
+
 }
 
 CSolver::~CSolver(void) {

@@ -135,6 +135,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
+  // XXX Temporary, should pull probably only after direct soler has actually computed it.
+  // XXX But how to initialize it then?
+  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+
 }
 
 CDiscAdjSolver::~CDiscAdjSolver(void) { 
@@ -362,6 +366,9 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
   /*--- Here it is possible to register other variables as input that influence the flow solution
    * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
    * extracted in the ExtractAdjointVariables routine. ---*/
+
+  direct_solver->RegisterVariables(geometry, config, reset);
+
 }
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
@@ -594,9 +601,28 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
+  
+  direct_solver->ExtractAdjoint_Variables(geometry, config);
+  Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+
+  /*--- Copy variables that are dealt with here (adjoint solver) instead of direct solver to Diff Inputs ---*/
+  unsigned short iDiff_Inputs;
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      // TODO Add check for cases like above. E.g., when incompressible Total_Sens_Mach is undefined
+      case DI_MACH:
+        Total_Sens_Diff_Inputs[iDiff_Inputs] = SU2_TYPE::GetValue(Total_Sens_Mach);
+        break;
+      case DI_AOA:
+        // XXX Adjust for radians-degrees here?
+        Total_Sens_Diff_Inputs[iDiff_Inputs] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
+        break;
+      default:
+        break;
+    }
+  }
 
 }
-
 
 void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
 

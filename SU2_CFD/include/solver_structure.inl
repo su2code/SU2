@@ -1196,6 +1196,8 @@ inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_
 
 inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
 
+inline vector<passivedouble> CSolver::GetTotal_Sens_Diff_Inputs(void) {return Total_Sens_Diff_Inputs;}
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -1675,7 +1677,6 @@ inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2doubl
       cartesianVelocity[2] = turboVelocity[2];
   }
 }
-
 
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 

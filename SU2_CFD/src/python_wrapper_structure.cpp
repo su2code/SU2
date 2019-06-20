@@ -431,6 +431,16 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
 }
 
+passivedouble CDriver::GetVertexPressure(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint;
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  su2double Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetPressure();
+
+  return SU2_TYPE::GetValue(Pn);
+
+}
+
 passivedouble CDriver::GetVertexForceX(unsigned short iMarker, unsigned short iVertex) {
 
   return SU2_TYPE::GetValue(PyWrapNodalForce[0]);
@@ -1085,4 +1095,16 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
 
   return FlowLoad_Sens_passive;
 
+}
+
+vector<passivedouble> CDiscAdjSinglezoneDriver::GetTotal_Sens_Diff_Inputs() {
+  // TODO Add check if Sensitivity hasnt been calculated yet?
+  // TODO Which solver to use here?
+
+  return solver[ADJFLOW_SOL]->GetTotal_Sens_Diff_Inputs();
+}
+
+// TODO Remove after debugging
+passivedouble CDiscAdjSinglezoneDriver::Get_ObjFunc() {
+  return SU2_TYPE::GetValue(ObjFunc);
 }

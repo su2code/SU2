@@ -372,6 +372,8 @@ void CConfig::SetPointersNull(void) {
   
   Config_Filenames = NULL;
 
+  Diff_Inputs = NULL;
+
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
@@ -2365,6 +2367,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
   addBoolOption("UQ_PERMUTE", uq_permute, false);
+
+	/* DESCRIPTION: List of variables to differentiate with respect to */
+	addEnumListOption("DIFF_INPUTS", nDiff_Inputs, Diff_Inputs, DiffInput_Var_Map);
 
   /* END_CONFIG_OPTIONS */
 
@@ -7317,6 +7322,7 @@ CConfig::~CConfig(void) {
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
 
+  if (Diff_Inputs != NULL)           delete[] Diff_Inputs;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
