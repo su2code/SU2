@@ -4960,46 +4960,12 @@ void CAvgGrad_Base::ReplaceTauWall(const su2double *val_primvar,
   
   /*--- ---*/
   unsigned short iDim;
-  su2double Area, velWall_tan, Sign;
+  su2double Area, velWall_tan;
   
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += val_normal[iDim]*val_normal[iDim];
   Area = sqrt(Area);
-  
-  Sign = 1.0;
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    Sign += val_dir_normal[iDim];
-//  
-//  if (Sign > 0.0) Sign = 1.0;
-//  else Sign = -1.0;
-    
-//  // norm = 0.0;
-//  // for (iDim = 0 ; iDim < nDim; iDim++)
-//  //   for (jDim = 0 ; jDim < nDim; jDim++)
-//  //     norm += 0.5 * tau[iDim][jDim] * tau[iDim][jDim];
-//  // norm = sqrt(norm);
-//
-//  // for (iDim = 0 ; iDim < nDim; iDim++)
-//  //   for (jDim = 0 ; jDim < nDim; jDim++)
-//  //     tau[iDim][jDim] = tau[iDim][jDim] * val_tau_wall / norm;
-//
-//  for (iDim = 0 ; iDim < nDim; iDim++)
-//    for (jDim = 0 ; jDim < nDim; jDim++)
-//      tau[iDim][jDim] = - val_tau_wall * val_dir_tan[iDim] * val_normal[jDim] * Area;
-//
-//
-//  for (iDim = 0 ; iDim < nDim; iDim++)
-//    for (jDim = 0 ; jDim < nDim; jDim++)
-//      Transpose[iDim][jDim] = tau[jDim][iDim];
-//
-//  /*--- Shear Stress must be symmetric ---*/
-//
-//  for (iDim = 0 ; iDim < nDim; iDim++)
-//    for (jDim = 0 ; jDim < nDim; jDim++)
-//      tau[iDim][jDim] = Transpose[iDim][jDim] + tau[iDim][jDim];
-//
-  //cout << " ReplaceTauWall: " << val_tau_wall << " " <<  Area << " " << val_normal[0] << " " << val_normal[1] << " "<< val_dir_tan[0] << " " << val_dir_tan[1] << " " << Sign << endl;
   
   /*--- primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
   
@@ -5499,18 +5465,17 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
                     Mean_Eddy_Viscosity);
 
   if (Mean_TauWall > 0){
-//    if (config->GetWall_Models())
-//      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
-//    else if (config->GetWall_Functions()){
+    if (config->GetWall_Models())
+      ReplaceTauWall(Mean_PrimVar, Normal, Mean_DirTan, Mean_DirNormal, Mean_TauWall, Mean_qWall);
+    else if (config->GetWall_Functions()){
       AddTauWall(Normal, Mean_TauWall);
       GetViscousProjFlux(Mean_PrimVar, Normal);
+    }
+    else
+      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
   }
-//    else
-//      SU2_MPI::Error("There is something wrong with the wall models/functions specification.", CURRENT_FUNCTION);
   else GetViscousProjFlux(Mean_PrimVar, Normal);
-
-  //cout << " AddTauWall: " << Normal[0] << " " << Normal[1] << " "<< Normal[2] << " " << heat_flux_vector[0] << " " << heat_flux_vector[1] << " " << heat_flux_vector[2] << endl;
-
+  
   /*--- Update viscous residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
