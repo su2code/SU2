@@ -147,6 +147,9 @@ public:
   unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
+  unsigned short periodicIndexDonor;     /*!< \brief Periodic indicator of the donor face. A value of 0 means no
+                                                     periodic donor face. A value larger than 0 gives the index of
+                                                     the periodic donor boundary + 1. */
   short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
                                                      boundary. For an internal face the value is -1,
                                                      while an invalidated face has the value -2. */
@@ -297,6 +300,7 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
+  unsigned short MGLevel;         /*!< \brief The mesh level index for the current geometry container. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
   /* --- Custom boundary variables --- */
@@ -354,7 +358,6 @@ public:
 	vector<su2double> XCoordList;	/*!< \brief Vector containing points appearing on a single plane */
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
-
   
   /*--- Partitioning-specific variables ---*/
   map<unsigned long,unsigned long> Global_to_Local_Elem;
@@ -371,6 +374,48 @@ public:
 #endif
 #endif
   
+  /*--- Data structures for point-to-point MPI communications. ---*/
+
+  int countPerPoint;                  /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int nP2PSend;                       /*!< \brief Number of sends during point-to-point comms. */
+  int nP2PRecv;                       /*!< \brief Number of receives during point-to-point comms. */
+  int *nPoint_P2PSend;                /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
+  int *nPoint_P2PRecv;                /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  int *Neighbors_P2PSend;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
+  int *Neighbors_P2PRecv;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
+  map<int, int> P2PSend2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
+  map<int, int> P2PRecv2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
+  unsigned long *Local_Point_P2PSend; /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
+  unsigned long *Local_Point_P2PRecv; /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
+  su2double *bufD_P2PRecv;            /*!< \brief Data structure for su2double point-to-point receive. */
+  su2double *bufD_P2PSend;            /*!< \brief Data structure for su2double point-to-point send. */
+  unsigned short *bufS_P2PRecv;       /*!< \brief Data structure for unsigned long point-to-point receive. */
+  unsigned short *bufS_P2PSend;       /*!< \brief Data structure for unsigned long point-to-point send. */
+  SU2_MPI::Request *req_P2PSend;      /*!< \brief Data structure for point-to-point send requests. */
+  SU2_MPI::Request *req_P2PRecv;      /*!< \brief Data structure for point-to-point recv requests. */
+
+  /*--- Data structures for periodic communications. ---*/
+
+  int countPerPeriodicPoint;                /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
+  int nPeriodicSend;                        /*!< \brief Number of sends during periodic comms. */
+  int nPeriodicRecv;                        /*!< \brief Number of receives during periodic comms. */
+  int *nPoint_PeriodicSend;                 /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
+  int *nPoint_PeriodicRecv;                 /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
+  int *Neighbors_PeriodicSend;              /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
+  int *Neighbors_PeriodicRecv;              /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
+  map<int, int> PeriodicSend2Neighbor;      /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
+  map<int, int> PeriodicRecv2Neighbor;      /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
+  unsigned long *Local_Point_PeriodicSend;  /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
+  unsigned long *Local_Point_PeriodicRecv;  /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
+  unsigned long *Local_Marker_PeriodicSend; /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be sent in periodic comms. */
+  unsigned long *Local_Marker_PeriodicRecv; /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
+  su2double *bufD_PeriodicRecv;             /*!< \brief Data structure for su2double periodic receive. */
+  su2double *bufD_PeriodicSend;             /*!< \brief Data structure for su2double periodic send. */
+  unsigned short *bufS_PeriodicRecv;        /*!< \brief Data structure for unsigned long periodic receive. */
+  unsigned short *bufS_PeriodicSend;        /*!< \brief Data structure for unsigned long periodic send. */
+  SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
+  SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -380,7 +425,86 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CGeometry(void);
+  
+  /*!
+   * \brief Routine to launch non-blocking recvs only for all periodic communications. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \brief Routine to set up persistent data structures for point-to-point MPI communications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessP2PComms(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Routine to allocate buffers for point-to-point MPI communications. Also called to dynamically reallocate if not enough memory is found for comms during runtime.
+   * \param[in] val_countPerPoint - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
+   */
+  void AllocateP2PComms(unsigned short val_countPerPoint);
+  
+  /*!
+   * \brief Routine to launch non-blocking recvs only for all point-to-point communication with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
+   */
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse);
+  
+  /*!
+   * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry     - Geometrical definition of the problem.
+   * \param[in] config       - Definition of the particular problem.
+   * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] val_iMessage - Index of the message in the order they are stored.
+   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
+   */
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse);
+  
+  /*!
+   * \brief Routine to set up persistent data structures for periodic communications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessPeriodicComms(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Routine to allocate buffers for periodic communications. Also called to dynamically reallocate if not enough memory is found for comms during runtime.
+   * \param[in] val_countPerPeriodicPoint - Maximum count of the data type per vertex in periodic comms, e.g., nPrimvarGrad*nDim.
+   */
+  void AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint);
 
+  /*!
+   * \brief Routine to launch non-blocking recvs only for all periodic communication with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void PostPeriodicRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to launch a single non-blocking send once the buffer is loaded for a periodic commucation. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry     - Geometrical definition of the problem.
+   * \param[in] config       - Definition of the particular problem.
+   * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] val_iMessage - Index of the message in the order they are stored.
+   */
+  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+
+  /*!
+   * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs for all point-to-point communication with neighboring partitions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
 	/*! 
 	 * \brief Get number of coordinates.
 	 * \return Number of coordinates.
@@ -715,6 +839,12 @@ public:
 	 */
 	virtual void MatchInterface(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void MatchPeriodic(CConfig *config, unsigned short val_periodic);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -771,12 +901,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   virtual void DivideConnectivity(CConfig *config, unsigned short Elem_Type);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	virtual void SetPeriodicBoundary(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -871,13 +995,6 @@ public:
 	 */
 	virtual void SetBoundSensitivity(CConfig *config);
 
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Set the data containers for customized boundary conditions.
    * \param[in] config - Definition of the particular problem.
@@ -910,30 +1027,6 @@ public:
     * \param[in] iter - Current physical time step.
     */
    virtual void SetGridVelocity(CConfig *config, unsigned long iter);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_Coord(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_GridVel(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-  virtual void Set_MPI_OldCoord(CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_MaxLength(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1569,6 +1662,18 @@ public:
    * \param[in] config - Problem configuration.
    */
   void SetElemVolume(CConfig *config);
+  
+  /*!
+   * \brief Set the multigrid index for the current geometry object.
+   * \param[in] val_iMesh - Multigrid index for current geometry object.
+   */
+  void SetMGLevel(unsigned short val_iMesh);
+  
+  /*!
+   * \brief Get the multigrid index for the current geometry object.
+   * \return Multigrid index for current geometry object.
+   */
+  unsigned short GetMGLevel(void);
 
 };
 
@@ -1766,14 +1871,14 @@ public:
    * \param[in] sendReq - Array of MPI recv requests.
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
-  void InitiateComms(void *bufSend,
-                     int *nElemSend,
-                     SU2_MPI::Request *sendReq,
-                     void *bufRecv,
-                     int *nElemRecv,
-                     SU2_MPI::Request *recvReq,
-                     unsigned short countPerElem,
-                     unsigned short commType);
+  void InitiateCommsAll(void *bufSend,
+                        int *nElemSend,
+                        SU2_MPI::Request *sendReq,
+                        void *bufRecv,
+                        int *nElemRecv,
+                        SU2_MPI::Request *recvReq,
+                        unsigned short countPerElem,
+                        unsigned short commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
@@ -1782,10 +1887,10 @@ public:
    * \param[in] nRecvs - Number of receives to be completed.
    * \param[in] sendReq - Array of MPI recv requests.
    */
-  void CompleteComms(int nSends,
-                     SU2_MPI::Request *sendReq,
-                     int nRecvs,
-                     SU2_MPI::Request *recvReq);
+  void CompleteCommsAll(int nSends,
+                        SU2_MPI::Request *sendReq,
+                        int nRecvs,
+                        SU2_MPI::Request *recvReq);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.
@@ -1986,6 +2091,13 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchInterface(CConfig *config);
+  
+  /*!
+   * \brief Mach the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the first periodic face in a pair.
+   */
+  void MatchPeriodic(CConfig *config, unsigned short val_periodic);
 
 	/*! 
 	 * \brief Set boundary vertex structure of the control volume.
@@ -2124,36 +2236,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetGridVelocity(CConfig *config, unsigned long iter);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Coord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid velocities.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_GridVel(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_OldCoord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the max grid spacing.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_MaxLength(CConfig *config);
-
-  /*!
-   * \brief Set the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPeriodicBoundary(CConfig *config);
 
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
@@ -2745,6 +2827,13 @@ public:
 	 */
 	void MatchInterface(CConfig *config);
 
+  /*!
+   * \brief Mach the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the first periodic face in a pair.
+   */
+  void MatchPeriodic(CConfig *config, unsigned short val_periodic);
+  
 	/*! 
 	 * \brief Set boundary vertex structure of the agglomerated control volume.
 	 * \param[in] config - Definition of the particular problem.
@@ -2843,51 +2932,6 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
 
-};
-
-/*! 
- * \class CPeriodicGeometry
- * \brief Class for defining a periodic boundary condition.
- * \author T. Economon, F. Palacios
- */
-class CPeriodicGeometry : public CGeometry {
-	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
-	unsigned long *nNewElem_BoundPer;			/*!< \brief Number of new periodic elements of the boundary. */
-
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPeriodicGeometry(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CPeriodicGeometry(void);
-
-	/*! 
-	 * \brief Set the periodic boundaries of the grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Tecplot 
-	 *            information is going to be stored.
-	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
-
-	/*! 
-	 * \brief Write the .su2 file.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
 };
 
 /*! 

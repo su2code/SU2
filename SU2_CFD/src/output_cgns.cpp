@@ -85,17 +85,15 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
     cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"end");
     if (cgns_err) cg_error_print();
-//    
-//    cgns_err = cg_goto(cgns_file, cgns_base, cgns_zone,"end");
-//    if (cgns_err) cg_error_print();
+
     
     /*--- write CGNS node coordinates ---*/
-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"x", Coords[0], &cgns_coord);
+    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateX", Coords[0], &cgns_coord);
     if (cgns_err) cg_error_print();
-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"y", Coords[1], &cgns_coord);
+    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateY", Coords[1], &cgns_coord);
     if (cgns_err) cg_error_print();
     if (geometry->GetnDim() == 3) {
-      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"z", Coords[2], &cgns_coord);
+      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"CoordinateZ", Coords[2], &cgns_coord);
       if (cgns_err) cg_error_print();
     }
     
