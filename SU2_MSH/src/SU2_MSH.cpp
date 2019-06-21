@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   char file_name[MAX_STRING_SIZE];
   int rank, size;
   string str;
-	bool periodic = false;
   
   /*--- MPI initialization ---*/
   
@@ -81,7 +80,6 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_MSH);
 
   nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
   
@@ -103,7 +101,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
@@ -118,15 +116,9 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines 
-     will be entirely removed eventually in favor of the new methods. ---*/
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    if (periodic) {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    } else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-    }
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -174,6 +166,9 @@ int main(int argc, char *argv[]) {
 	cout << "Set control volume structure." << endl;
 	geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE); geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
+  /*--- Create the point-to-point MPI communication structures. ---*/
+  
+  geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
 	
 	if ((config_container[ZONE_0]->GetKind_Adaptation() != NONE) && (config_container[ZONE_0]->GetKind_Adaptation() != PERIODIC)) {
 		
@@ -289,39 +284,6 @@ int main(int argc, char *argv[]) {
 				(config_container[ZONE_0]->GetKind_Adaptation() == REMAINING))
 			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_AdjFileName());
 		
-	}
-	else {
-    
-    if (config_container[ZONE_0]->GetKind_Adaptation() == PERIODIC) {
-      
-      cout << endl <<"-------------------- Setting the periodic boundaries --------------------" << endl;
-      
-      /*--- Set periodic boundary conditions ---*/
-      
-      geometry_container[ZONE_0]->SetPeriodicBoundary(config_container[ZONE_0]);
-      
-      /*--- Original grid for debugging purposes ---*/
-      
-      strcpy (file_name, "periodic_original.dat"); geometry_container[ZONE_0]->SetTecPlot(file_name, true);
-      
-      /*--- Create a new grid with the right periodic boundary ---*/
-      
-      CGeometry *periodic; periodic = new CPeriodicGeometry(geometry_container[ZONE_0], config_container[ZONE_0]);
-      periodic->SetPeriodicBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
-      periodic->SetMeshFile(geometry_container[ZONE_0], config_container[ZONE_0], config_container[ZONE_0]->GetMesh_Out_FileName());
-      
-      /*--- Output of the grid for debuging purposes ---*/
-      
-      strcpy (file_name, "periodic_halo.dat"); periodic->SetTecPlot(file_name, true);
-      
-    }
-    
-    if (config_container[ZONE_0]->GetKind_Adaptation() == NONE) {
-      strcpy (file_name, "original_grid.dat");
-      geometry_container[ZONE_0]->SetTecPlot(file_name, true);
-      geometry_container[ZONE_0]->SetMeshFile(config_container[ZONE_0], config_container[ZONE_0]->GetMesh_Out_FileName());
-    }
-    
 	}
   
   if (rank == MASTER_NODE)

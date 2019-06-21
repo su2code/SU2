@@ -86,7 +86,7 @@ CFaceOfElement::CFaceOfElement() {
   nDOFsElem0      = nDOFsElem1 = 0;
   elemType0       = elemType1  = 0;
   faceID0         = faceID1    = 0;
-  periodicIndex   = 0;
+  periodicIndex   = periodicIndexDonor = 0;
   faceIndicator   = 0;
 
   JacFaceIsConsideredConstant = false;
@@ -106,7 +106,7 @@ CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type,
   nDOFsElem0      = nDOFsElem1 = 0;
   elemType0       = elemType1  = 0;
   faceID0         = faceID1    = 0;
-  periodicIndex   = 0;
+  periodicIndex   = periodicIndexDonor = 0;
   faceIndicator   = 0;
 
   JacFaceIsConsideredConstant = false;
@@ -186,8 +186,9 @@ void CFaceOfElement::Copy(const CFaceOfElement &other) {
   faceID0    = other.faceID0;
   faceID1    = other.faceID1;
 
-  periodicIndex = other.periodicIndex;
-  faceIndicator = other.faceIndicator;
+  periodicIndex      = other.periodicIndex;
+  periodicIndexDonor = other.periodicIndexDonor;
+  faceIndicator      = other.faceIndicator;
 
   JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
   elem0IsOwner                = other.elem0IsOwner;
@@ -816,19 +817,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           /*--- Check if this boundary face must be stored on this rank.
                 If so, create an object of CBoundaryFace and add it
                 to boundElems.                                          ---*/
-          if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-            vector<CFaceOfElement>::iterator low;
-            low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          vector<CFaceOfElement>::iterator low;
+          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          if(low != localFaces.end()) {
+            if( !(thisFace < *low) ) {
 
-            CBoundaryFace thisBoundFace;
-            thisBoundFace.VTK_Type          = VTK_Type;
-            thisBoundFace.nPolyGrid         = nPolyGrid;
-            thisBoundFace.nDOFsGrid         = nDOFsGrid;
-            thisBoundFace.globalBoundElemID = i;
-            thisBoundFace.domainElementID   = low->elemID0;
-            thisBoundFace.Nodes             = nodeIDs;
+              CBoundaryFace thisBoundFace;
+              thisBoundFace.VTK_Type          = VTK_Type;
+              thisBoundFace.nPolyGrid         = nPolyGrid;
+              thisBoundFace.nDOFsGrid         = nDOFsGrid;
+              thisBoundFace.globalBoundElemID = i;
+              thisBoundFace.domainElementID   = low->elemID0;
+              thisBoundFace.Nodes             = nodeIDs;
 
-            boundElems.push_back(thisBoundFace);
+              boundElems.push_back(thisBoundFace);
+            }
           }
         }
 
@@ -1807,16 +1810,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Check if the face is actually present. If not, print an error message
            and exit. */
         thisFace.CreateUniqueNumbering();
-        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
-          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
-                         CURRENT_FUNCTION);
-
-        /* Carry out the search again, but now with lower_bound to find the
-           actual entry to determine the domain element and the rank where
-           this boundary element should be sent to.. */
         vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( !thisFaceFound )
+          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                         CURRENT_FUNCTION);
+
+        /* Determine the domain element and the rank where
+           this boundary element should be sent to.. */
         const unsigned long domainElementID = low->elemID0;
         const int rankBoundElem = (int) low->elemID1;
 
@@ -1936,14 +1943,19 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Check if the face is actually present. If not, print an error message
          and exit. */
       thisFace.CreateUniqueNumbering();
-      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( !thisFaceFound )
         SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
                        CURRENT_FUNCTION);
 
-      /* Carry out the search again, but now with lower_bound to find the
-         actual entry to set the domain element. */
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      /* Set the domain element. */
       boundElems[i].domainElementID = low->elemID0;
     }
 #endif
@@ -2378,53 +2390,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
-  /*--- In case of periodic boundaries with only one element in the periodic
-        direction, there are faces for which both adjacent elements are the
-        same. This also means that these faces are still present twice and one
-        must be removed. This is done below. ---*/
-  map<CUnsignedLong2T, unsigned long> mapFaceToInd;
-
-  nFacesLocOr = nFacesLoc;
-  for(unsigned long i=0; i<nFacesLoc; ++i) {
-    if(localFaces[i].elemID0 == localFaces[i].elemID1) {
-
-      /* Search for this entry in mapFaceToInd. */
-      CUnsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
-      map<CUnsignedLong2T, unsigned long>::const_iterator MMI;
-      MMI = mapFaceToInd.find(thisFace);
-
-      if(MMI == mapFaceToInd.end()) {
-
-        /* This face is not stored in the map yet. Do so now. */
-        mapFaceToInd[thisFace] = i;
-      }
-      else {
-
-        /* This face is already stored in the map, which means that it is
-           already present in the list of faces. Invalidate this face. */
-        localFaces[i].nCornerPoints = 4;
-        localFaces[i].cornerPoints[0] = Global_nPoint;
-        localFaces[i].cornerPoints[1] = Global_nPoint;
-        localFaces[i].cornerPoints[2] = Global_nPoint;
-        localFaces[i].cornerPoints[3] = Global_nPoint;
-        --nFacesLoc;
-      }
-    }
-  }
-
-  /*--- Check if the number of faces removed is identical to the number
-        of faces stored in the map mapFaceToInd. ---*/
-  nFacesLocOr -= nFacesLoc;
-  if(nFacesLocOr != mapFaceToInd.size())
-    SU2_MPI::Error(string("Something wrong with periodic faces for which elements are ") +
-                   string("their own neighbors"), CURRENT_FUNCTION);
-
-  /*--- Remove the invalidated faces, if any present. ---*/
-  if( nFacesLocOr ) {
-    sort(localFaces.begin(), localFaces.end());
-    localFaces.resize(nFacesLoc);
-  }
-
   /*--- Determine whether or not the Jacobians of the elements and faces
         can be considered constant. ---*/
   DetermineFEMConstantJacobiansAndLenScale(config);
@@ -2469,13 +2434,25 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       /* Check if both elements have the same time level. */
       if(timeLevel0 == timeLevel1) {
 
-        /* Same time level, hence both elements can own the face. The decision
-           below makes an attempt to spread the workload evenly. */
-        const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
-        if( sumElemID%2 )
-          localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
-        else
-          localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+        /* Same time level, hence both elements can own the face. First check whether
+           elemID0 == elemID1 (which happens for periodic problems with only one
+           element in the periodic direction), because this is a special case. */
+        if(localFaces[i].elemID0 == localFaces[i].elemID1) {
+
+          /* This face occurs twice, but should be owned only once. Base this
+             decision on the periodic index. */
+          localFaces[i].elem0IsOwner = localFaces[i].periodicIndex < localFaces[i].periodicIndexDonor;
+        }
+        else {
+
+          /* Different elements on both sides of the face. The ownership decision
+             below makes an attempt to spread the workload evenly. */
+          const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+          if( sumElemID%2 )
+            localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+          else
+            localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+        }
       }
       else {
 
@@ -2513,21 +2490,23 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        if(low->elemID0 == thisFace.elemID0) {
-          elem[k]->SetNeighbor_Elements(low->elemID1, i);
-          elem[k]->SetOwnerFace(low->elem0IsOwner, i);
-        }
-        else {
-          elem[k]->SetNeighbor_Elements(low->elemID0, i);
-          elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
-        }
+      if(low != localFaces.end() ) {
+        if( !(thisFace < *low) ) {
+          if(low->elemID0 == thisFace.elemID0) {
+            elem[k]->SetNeighbor_Elements(low->elemID1, i);
+            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+          }
+          else {
+            elem[k]->SetNeighbor_Elements(low->elemID0, i);
+            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+          }
 
-        if(low->periodicIndex > 0)
-          elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+          if(low->periodicIndex > 0)
+            elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+        }
       }
     }
   }
@@ -2554,6 +2533,24 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     vector<unsigned long>::iterator lastEntry;
     lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
     adjacency[i].erase(lastEntry, adjacency[i].end());
+  }
+
+  /* Due to periodic boundary conditions it is also possible that self entries
+     are present. ParMETIS is not able to deal with self entries, hence
+     they must be removed as well. */
+  for(unsigned long i=0; i<nElem; ++i) {
+    const unsigned long globalElemID = i + starting_node[rank];
+    unsigned long nEntriesNew = adjacency[i].size();
+
+    for(unsigned long j=0; j<adjacency[i].size(); ++j) {
+      if(adjacency[i][j] == globalElemID) {
+        adjacency[i][j] = ULONG_MAX;
+        --nEntriesNew;
+      }
+    }
+
+    sort(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].resize(nEntriesNew);
   }
 
   /*--- Possibly add the connectivities in the graph from the wall function
@@ -3096,15 +3093,17 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
               missing information in the face corresponding to the iterator low. ---*/
-        if( binary_search(facesDonor.begin(), facesDonor.end(), thisMatchingFace) ) {
+        vector<CMatchingFace>::const_iterator donorLow;
+        donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
-          vector<CMatchingFace>::const_iterator donorLow;
-          donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
-
-          low->elemID1    = donorLow->elemID;
-          low->nPolySol1  = donorLow->nPoly;
-          low->nDOFsElem1 = donorLow->nDOFsElem;
-          low->elemType1  = donorLow->elemType;
+        if(donorLow != facesDonor.end()) {
+          if( !(thisMatchingFace < *donorLow) ) {
+            low->elemID1            = donorLow->elemID;
+            low->nPolySol1          = donorLow->nPoly;
+            low->nDOFsElem1         = donorLow->nDOFsElem;
+            low->elemType1          = donorLow->elemType;
+            low->periodicIndexDonor = jMarker + 1;
+          }
         }
       }
     }
@@ -4818,9 +4817,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
         thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::const_iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::const_iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( thisFaceFound ) {
 
         /* Check if this internal matching face is owned by this element. */
         bool faceIsOwned;

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -175,19 +175,6 @@ enum ANSWER {
 };
 
 /*!
- * \brief Verbosity level
- */
-enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
-  VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
-  VERB_HIGH = 2			/*!< \brief High level of verbosity. */
-};
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
-
-/*!
  * \brief Average method for marker analyze
  */
 enum AVERAGE_TYPE {
@@ -327,12 +314,10 @@ static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, 
 enum ENUM_MAT_COMPRESS {
   COMPRESSIBLE_MAT = 0,		/*!< \brief Definition of compressible material. */
   NEARLY_INCOMPRESSIBLE_MAT = 1,	/*!< \brief Definition of nearly incompressible material. */
-  INCOMPRESSIBLE_MAT = 2			/*!< \brief Definition of incompressible material. */
 };
 static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
 ("COMPRESSIBLE", COMPRESSIBLE_MAT)
-("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
-("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
+("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT);
 
 
 
@@ -487,15 +472,8 @@ const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis te
 const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
 
 const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
-const int MAT_NHINC   = 3;   /*!< \brief Position of the Neo-Hookean incompressible material model. */
-const int MAT_IDEALDE = 4;   /*!< \brief Position of the Ideal-DE material model. */
-const int MAT_KNOWLES = 5;   /*!< \brief Position of the Knowles material model. */
-
-const int INC_TERM = 2;      /*!< \brief Position of the incompressible term in the element container array. */
-
-const int FEA_ADJ = 6;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
-const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
-
+const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model. */
+const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 
 /*!
@@ -1634,7 +1612,6 @@ enum ENUM_PARAM {
   FFD_CAMBER = 14,		         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_TWIST = 15,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
   FFD_THICKNESS = 16,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 17,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
   FFD_ROTATION = 18,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CONTROL_POINT_2D = 19, /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,		     /*!< \brief Free form deformation for 3D design (camber change). */
@@ -1678,7 +1655,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("ROTATION", ROTATION)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
-("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_NACELLE", FFD_NACELLE)
@@ -1950,6 +1926,73 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
 ("CUSTOM", CUSTOM_REF);
 
 /*!
+ * \brief Vertex-based quantities exchanged during periodic marker communications.
+ */
+enum PERIODIC_QUANTITIES {
+  PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
+  PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
+  PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
+  PERIODIC_LAPLACIAN  =  4,  /*!< \brief Undivided Laplacian communication for JST (periodic only). */
+  PERIODIC_MAX_EIG    =  5,  /*!< \brief Maximum eigenvalue communication (periodic only). */
+  PERIODIC_SENSOR     =  6,  /*!< \brief Dissipation sensor communication (periodic only). */
+  PERIODIC_SOL_GG     =  7,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_PRIM_GG    =  8,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for Least Squares (periodic only). */
+  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for Least Squares (periodic only). */
+  PERIODIC_LIM_SOL_1  = 11,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_IMPLICIT   = 15   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+};
+
+/*!
+ * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
+ */
+enum MPI_QUANTITIES {
+  SOLUTION             =  0,  /*!< \brief Conservative solution communication. */
+  SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
+  SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
+  SOLUTION_DISPONLY    =  4,  /*!< \brief Solution displacement only communication. */
+  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
+  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
+  SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
+  PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
+  PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
+  UNDIVIDED_LAPLACIAN  = 10,  /*!< \brief Undivided Laplacian communication. */
+  MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
+  SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
+  AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
+  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
+  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
+  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
+  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
+  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
+  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
+};
+
+/*!
+ * \brief MPI communication level
+ */
+enum COMM_LEVEL {
+  COMM_NONE    = 0,   /*!< \brief Disable all MPI comms. Purely for testing, as results are incorrect. */
+  COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
+  COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
+};
+static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
+("NONE",    COMM_NONE)
+("MINIMAL", COMM_MINIMAL)
+("FULL",    COMM_FULL);
+
+/*
  * \brief types of filter kernels, initially intended for structural topology optimization applications
  */
 enum ENUM_FILTER_KERNEL {
@@ -1978,6 +2021,39 @@ static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCr
 ("NO_PROJECTION" , NO_PROJECTION)
 ("HEAVISIDE_UP"  , HEAVISIDE_UP)
 ("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
+
+/*!
+ * \brief the different validation solution
+ */
+enum ENUM_VERIFICATION_SOLUTIONS {
+  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+};
+static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
+("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
+("INVISCID_VORTEX",          INVISCID_VORTEX)
+("RINGLEB",                  RINGLEB)
+("NS_UNIT_QUAD",             NS_UNIT_QUAD)
+("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
+("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
+("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
+("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
+("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
+("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
+("MMS_INC_EULER",            MMS_INC_EULER)
+("MMS_INC_NS",               MMS_INC_NS)
+("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION);
 
 /* END_CONFIG_ENUMS */
 
