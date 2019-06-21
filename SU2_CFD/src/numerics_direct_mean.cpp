@@ -361,6 +361,9 @@ CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   
   grid_movement = config->GetGrid_Movement();
   
+  if (grid_movement && (SU2_MPI::GetRank() == MASTER_NODE))
+    cout << "WARNING: Grid velocities are NOT yet considered by the CUSP scheme." << endl;
+  
   /*--- Allocate some structures ---*/
   Diff_U = new su2double [nVar];
   Diff_Flux = new su2double [nVar];
@@ -392,6 +395,10 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
 
 void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                      CConfig *config) {
+  
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+4);
+  AD::SetPreaccIn(V_j, nDim+4);
   
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -498,6 +505,9 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (0.5*Nu_c*Diff_U[iVar] + 0.5*Beta*Diff_Flux[iVar])*Area;
+    
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 
   /*--- Jacobian computation ---*/
 
@@ -542,6 +552,9 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 }
 
 CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+    cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -588,6 +601,11 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
 }
 
 void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+4);
+  AD::SetPreaccIn(V_j, nDim+4);
   
   /*--- Face area (norm or the normal vector) ---*/
   Area = 0.0;
@@ -659,6 +677,9 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] *= Area;
   
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
+  
   /*--- Roe's Jacobian for AUSM (this must be fixed) ---*/
   if (implicit) {
     
@@ -714,7 +735,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
                              CNumerics(val_nDim, val_nVar, config) {
   
   if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
-    cout << "WARNING: Grid velocities are NOT yet considered in AUSM schemes." << endl;
+    cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
@@ -964,9 +985,10 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   /*--- Space to start preaccumulation ---*/
 
+  AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+5);
-  AD::SetPreaccIn(V_j, nDim+5);
+  AD::SetPreaccIn(V_i, nDim+4);
+  AD::SetPreaccIn(V_j, nDim+4);
 
   /*--- Variables for the general form and primitives for mass flux and pressure calculation.  ---*/
   /*--- F_{1/2} = ||A|| ( 0.5 * mdot * (psi_i+psi_j) - 0.5 * |mdot| * (psi_i-psi_j) + N * pf ) ---*/
