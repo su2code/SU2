@@ -17632,7 +17632,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
           else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) &&
                   abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
           else                                              {Largest=2;Arbitrary=1;Zero=0;}
-          
+
           Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
           Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
           Tangential[Zero] =  0.0;
@@ -17725,23 +17725,23 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
           Grad_Reflected[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
       
       if (config->GetWall_Models()){
-        
+
         /*--- Reflect the gradients for all scalars including the velocity components.
          The gradients of the velocity components are set later with the
          correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
           if(iVar == 0 || iVar > nDim) { // Exclude velocity component gradients
-            
+
             /*--- Compute projected part of the gradient in a dot product ---*/
             ProjGradient = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               ProjGradient += Grad_Reflected[iVar][iDim]*UnitNormal[iDim];
-            
+
             for (iDim = 0; iDim < nDim; iDim++)
               Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
           }
         }
-        
+
         /*--- Compute gradients of normal and tangential velocity:
          grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
          grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
@@ -17753,7 +17753,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
             GradTangVel[iVar] += Grad_Reflected[iDim+1][iVar] * Tangential[iDim];
           }
         }
-        
+
         /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
          component twice, just as done with velocity above.
          grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
@@ -17764,12 +17764,12 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
           ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([v*n])*t
           ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([v*t])*n
         }
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
           GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
         }
-        
+
         /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
          grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
          grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
@@ -18425,8 +18425,8 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     /* Length Scale can be precompute from DES LengthScale.
      I would like to test the Shear Layer Adapted one*/
     //lenScale    = node[iPoint]->GetDES_LengthScale();
-    lenScale = pow(geometry->node[iPoint]->GetVolume(),1./3.);
-    //lenScale = geometry->node[iPoint]->GetMaxLength();
+    //lenScale = pow(geometry->node[iPoint]->GetVolume(),1./3.);
+    lenScale = geometry->node[iPoint]->GetMaxLength();
 
     /* Compute the eddy viscosity. */
     if (nDim == 2){
@@ -18442,6 +18442,30 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
     }
     /* Set eddy viscosity. */
     node[iPoint]->SetEddyViscosity(muTurb);
+  }
+  
+  /* Loop over the markers and select the ones for which a wall model
+   treatment is carried out. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX:{
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+        /* Set the eddy viscosity to zero if it is using a wall model */
+        if ((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
+            (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL)){
+          
+          for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            node[iPoint]->SetEddyViscosity(0.0);
+          }
+        }
+      }
+        break;
+      default:
+        break;
+    }
   }
 }
 
@@ -18558,6 +18582,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
         
         //if ((config->GetIntIter() == 0) && (iRKStep == 0)){
+        if (iRKStep == 0){
           /* Compute the wall shear stress and heat flux vector using
            the wall model. */
           su2double tauWall, qWall, ViscosityWall, kOverCvWall;
@@ -18584,7 +18609,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           
           //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
           //cout << iPoint << " " << tauWall << " " << qWall << " " << kOverCvWall << " " << ViscosityWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << " " << Temperature << " " << velTan << " " << LaminarViscosity << " " << Pressure << endl;
-        //}
+        }
 //        else{
 //          /*---
 //          http://wmles.umd.edu/coupling-les-to-a-wall-stress-model/
