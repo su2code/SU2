@@ -964,6 +964,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 
   /*--- Space to start preaccumulation ---*/
 
+  AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(V_i, nDim+5);
   AD::SetPreaccIn(V_j, nDim+5);
