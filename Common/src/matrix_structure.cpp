@@ -357,7 +357,6 @@ void CSysMatrix<ScalarType>::SetIndexes(unsigned long val_nPoint, unsigned long 
       invM = new ScalarType [nPointDomain*nVar*nEqn];
       for (iVar = 0; iVar < nPointDomain*nVar*nEqn; iVar++) invM[iVar] = 0.0;
       
-      DiagInverted.resize(nPointDomain,false);
     }
     
   }
@@ -827,8 +826,6 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
   ScalarType *Block_ij;
   const ScalarType *Block_jk;
   long iPoint, jPoint, kPoint;
-  
-  fill(DiagInverted.begin(), DiagInverted.end(), false);
 
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm, so that we have the factorization stored
@@ -853,6 +850,10 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
   
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     
+    /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
+    
+    InverseDiagonalBlock_ILUMatrix(iPoint-1, &invM[(iPoint-1)*nVar*nVar]);
+    
     /*--- For each row (unknown), loop over all entries in A on this row
      row_ptr_ilu[iPoint+1] will have the index for the first entry on the next
      row. ---*/
@@ -867,13 +868,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
       
       if (jPoint < iPoint) {
         
-        /*--- If we're in the lower triangle, get the pointer to this block,
-         invert it, and then right multiply against the original block ---*/
+        /*--- If we're in the lower triangle, multiply the block by
+         the inverse of the corresponding diagonal block. ---*/
         
-        if (!DiagInverted[jPoint]) {
-          InverseDiagonalBlock_ILUMatrix(jPoint, &invM[jPoint*nVar*nVar]);
-          DiagInverted[jPoint] = true;
-        }
         Block_ij = &ILU_matrix[index*nVar*nEqn];
         MatrixMatrixProduct(Block_ij, &invM[jPoint*nVar*nVar], block_weight);
         
@@ -907,12 +904,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
       }
     }
   }
-
-  /*--- On coarse grids we are not guaranteed to have gone through all diagonal blocks above ---*/
-
-  for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++)
-    if (!DiagInverted[iPoint])
-      InverseDiagonalBlock_ILUMatrix(iPoint, &invM[iPoint*nVar*nVar]);
+  
+  InverseDiagonalBlock_ILUMatrix(nPointDomain-1, &invM[(nPointDomain-1)*nVar*nVar]);
 
 }
 

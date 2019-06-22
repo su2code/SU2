@@ -89,8 +89,7 @@ private:
   unsigned long *row_ptr_ilu;        /*!< \brief Pointers to the first element in each row (ILU). */
   unsigned long *col_ind_ilu;        /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;        /*!< \brief Fill in level for the ILU preconditioner. */
-  vector<bool> DiagInverted;         /*!< \brief Mark if ILU diagonal entries have been inverted and stored in invM. */
-
+  
   ScalarType *block;             /*!< \brief Internal array to store a subblock of the matrix. */
   ScalarType *block_inverse;     /*!< \brief Internal array to store a subblock of the matrix. */
   ScalarType *block_weight;      /*!< \brief Internal array to store a subblock of the matrix. */
