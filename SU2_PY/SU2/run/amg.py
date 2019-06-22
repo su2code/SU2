@@ -210,7 +210,7 @@ def amg ( config , kind='' ):
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['mesh_out']    = 'current.new.meshb'
     config_amg['metric_in']   = ''
-    config_amg['sol_in']      = 'current_sensor.solb'
+    config_amg['sol_in']      = 'current.metr.solb'
     config_amg['itp_sol_in']  = 'current.solb'
     config_amg['adap_source'] = ''
     
@@ -325,44 +325,59 @@ def amg ( config , kind='' ):
 
                     #--- Use metric computed from SU2 to drive the adaptation
 
-                    config_amg['metric_in']   = 'current.metr.solb'
-                    config_amg['sol_in']      = ''
+                    # config_amg['metric_in']   = 'current.metr.solb'
+                    config_amg['sol_in']      = 'current.metr.solb'
                     config_amg['itp_sol_in']  = 'current.restart.solb'
 
                     # mesh.pop('sensor',None)
 
+                    # sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
+                    
+                    # # mesh_new = su2amg.amg_call_python(mesh, config_amg)
+                    # #--- For now, just use executable
+                    # try :
+                    #     su2amg.amg_call_met(config_amg)
+                    # except:
+                    #     raise RuntimeError , "\n##ERROR : Call to AMG failed.\n"
+                    
+                    # if not os.path.exists(config_amg['mesh_out']):
+                    #     raise RuntimeError , "\n##ERROR : Mesh adaptation failed.\n"
+                    
+                    # if not os.path.exists("current.restart.itp.solb"):
+                    #     raise RuntimeError , "\n##ERROR AMG: Solution interpolation failed.\n"
+
+                    # #--- Convert output from Inria mesh format to su2
+                    # # Deal with markers
+                    
+                    # save_markers = mesh['markers']
+                    # del mesh
+                    
+                    # # Read Inria mesh
+                    # mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.restart.itp.solb")
+                    # mesh['markers'] = save_markers
+                    
+                    # current_mesh = "ite%d.su2" % global_iter
+                    # current_solution = "ite%d.dat" % global_iter    
+                    
+                    # su2amg.write_mesh(current_mesh, current_solution, mesh)
+                    
+                    # if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
+                    #     raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
                     sys.stdout.write(' %s Generating adapted mesh using AMG\n' % pad_cpt)
                     
-                    # mesh_new = su2amg.amg_call_python(mesh, config_amg)
-                    #--- For now, just use executable
-                    try :
-                        su2amg.amg_call_met(config_amg)
-                    except:
-                        raise RuntimeError , "\n##ERROR : Call to AMG failed.\n"
+                    mesh_new = su2amg.amg_call_python(mesh, config_amg)
+                                    
+                    #--- print mesh size
                     
-                    if not os.path.exists(config_amg['mesh_out']):
-                        raise RuntimeError , "\n##ERROR : Mesh adaptation failed.\n"
-                    
-                    if not os.path.exists("current.restart.itp.solb"):
-                        raise RuntimeError , "\n##ERROR AMG: Solution interpolation failed.\n"
-
-                    #--- Convert output from Inria mesh format to su2
-                    # Deal with markers
-                    
-                    save_markers = mesh['markers']
-                    del mesh
-                    
-                    # Read Inria mesh
-                    mesh = su2amg.read_mesh(config_amg['mesh_out'], "current.restart.itp.solb")
-                    mesh['markers'] = save_markers
+                    sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+                                    
+                    mesh_new['markers'] = mesh['markers']
+                    mesh_new['dimension'] = mesh['dimension']
                     
                     current_mesh = "ite%d.su2" % global_iter
-                    current_solution = "ite%d.dat" % global_iter    
-                    
-                    su2amg.write_mesh(current_mesh, current_solution, mesh)
-                    
-                    if not os.path.exists(current_mesh) or not os.path.exists(current_solution) :
-                        raise RuntimeError , "\n##ERROR : Conversion to SU2 failed.\n"
+                    current_solution = "ite%d.dat" % global_iter
+                                    
+                    su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
                 else:
                 

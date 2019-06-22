@@ -60,13 +60,12 @@ def amg_call_met(config):
 def amg_call_python(mesh, config):
     
     remesh_options                = {}
-    remesh_options['Lp']          = 2
+    remesh_options['Lp']          = 1
     remesh_options['gradation']   = config['hgrad']
     remesh_options['target']      = config['size']
     remesh_options['logfile']     = config['amg_log']
     remesh_options['sol_in']      = config['sol_in']
     remesh_options['sol_itp_in']  = config['sol_itp_in']
-    remesh_options['metric_in']   = config['metric_in']
     
     Dim = mesh['dimension']
     
