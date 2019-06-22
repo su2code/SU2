@@ -1097,11 +1097,19 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
 
 }
 
-vector<passivedouble> CDiscAdjSinglezoneDriver::GetTotal_Sens_Diff_Inputs() {
+vector<passivedouble> CDiscAdjSinglezoneDriver::GetTotal_Sens_Diff_Inputs(unsigned short index) {
   // TODO Add check if Sensitivity hasnt been calculated yet?
   // TODO Which solver to use here?
 
-  return solver[ADJFLOW_SOL]->GetTotal_Sens_Diff_Inputs();
+  return solver[ADJFLOW_SOL]->GetTotal_Sens_Diff_Inputs()[index];
+}
+
+unsigned short CDiscAdjSinglezoneDriver::GetnDiff_Inputs() {
+  return config->GetnDiff_Inputs();
+}
+
+void CDiscAdjSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
+  solver[ADJFLOW_SOL]->SetDiff_Inputs_Vars(val, index);
 }
 
 // TODO Remove after debugging

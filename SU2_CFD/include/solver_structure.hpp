@@ -144,7 +144,9 @@ protected:
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
 
-  vector<passivedouble> Total_Sens_Diff_Inputs;    /*!< \brief Total sensitivities to the differentiation inputs. */
+  vector< vector<passivedouble> > Total_Sens_Diff_Inputs;    /*!< \brief Total sensitivities to the differentiation inputs. */
+  vector< vector<su2double> > Diff_Inputs_Vars;    /*!< \brief Differentiation input variables to be registered with AD. */
+
 
 public:
   
@@ -4476,7 +4478,11 @@ public:
    */
   void SetRotatePeriodic(bool val_rotate_periodic);
 
-  vector<passivedouble> GetTotal_Sens_Diff_Inputs(void);
+  vector< vector<passivedouble> > GetTotal_Sens_Diff_Inputs(void);
+
+  virtual vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
+
+  virtual void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 
 };
 
@@ -4893,7 +4899,6 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
-  vector<su2double> Diff_Inputs_Vars; /*!< \brief Differentiation input variables to be registered with AD. */
   unsigned short iMesh_Store;
 
 public:
@@ -7052,6 +7057,10 @@ public:
 
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
+  vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
+
+  void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
+
 };
 
 /*!
@@ -7250,7 +7259,6 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
-  vector<su2double> Diff_Inputs_Vars; /*!< \brief Differentiation input variables to be registered with AD. */
   unsigned short iMesh_Store;
 
 public:
@@ -8507,6 +8515,10 @@ public:
   void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
 
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+  vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
+
+  void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 
 };
 
@@ -12829,7 +12841,7 @@ private:
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
-  
+
 public:
   
   /*!
@@ -13083,6 +13095,10 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+  vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
+
+  void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 };
 
 /*!

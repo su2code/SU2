@@ -1196,7 +1196,11 @@ inline void CSolver::SetImplicitPeriodic(bool val_implicit_periodic) { implicit_
 
 inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_periodic = val_rotate_periodic; }
 
-inline vector<passivedouble> CSolver::GetTotal_Sens_Diff_Inputs(void) {return Total_Sens_Diff_Inputs;}
+inline vector< vector<passivedouble> > CSolver::GetTotal_Sens_Diff_Inputs(void) {return Total_Sens_Diff_Inputs;}
+
+inline vector<su2double> CSolver::GetDiff_Inputs_Vars(unsigned short index) { }
+
+inline void CSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) { }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 

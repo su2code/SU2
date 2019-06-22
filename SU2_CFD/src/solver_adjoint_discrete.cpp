@@ -273,6 +273,15 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   }
 }
 
+vector<su2double> CDiscAdjSolver::GetDiff_Inputs_Vars(unsigned short index) {
+  return direct_solver->GetDiff_Inputs_Vars(index);
+}
+
+void CDiscAdjSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
+  direct_solver->SetDiff_Inputs_Vars(val, index);
+  // TODO Add flag and check when registering variables if the diff input vars have been set
+}
+
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
   /*--- Register farfield values as input ---*/
@@ -601,24 +610,49 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
-  
+
+  // XXX Debug
+  for (unsigned short i = 0; i < Total_Sens_Diff_Inputs.size(); i++) {
+    cout << "[ ";
+    for (unsigned short j = 0; j < Total_Sens_Diff_Inputs[i].size(); j++) {
+      cout << Total_Sens_Diff_Inputs[i][j] << ", ";
+    }
+    cout << "], ";
+  }
+  cout << endl;
+
   direct_solver->ExtractAdjoint_Variables(geometry, config);
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
 
   /*--- Copy variables that are dealt with here (adjoint solver) instead of direct solver to Diff Inputs ---*/
   unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-      // TODO Add check for cases like above. E.g., when incompressible Total_Sens_Mach is undefined
-      case DI_MACH:
-        Total_Sens_Diff_Inputs[iDiff_Inputs] = SU2_TYPE::GetValue(Total_Sens_Mach);
-        break;
-      case DI_AOA:
-        // XXX Adjust for radians-degrees here?
-        Total_Sens_Diff_Inputs[iDiff_Inputs] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
-        break;
-      default:
-        break;
+
+    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+      switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+        // TODO Add check for cases like above. E.g., when incompressible Total_Sens_Mach is undefined
+        case DI_MACH:
+          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_Mach);
+          break;
+        case DI_AOA:
+          // XXX Adjust for radians-degrees here?
+          Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
+          Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
+          break;
+        default:
+          break;
+      }
+    }
+
+    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()) {
+
+    }
+
+    if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+        (KindDirect_Solver == RUNTIME_FLOW_SYS &&
+         (!config->GetBoolTurbomachinery()))) {
+
     }
   }
 

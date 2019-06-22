@@ -1538,14 +1538,18 @@ public:
    */
   void DirectRun(unsigned short kind_recording);
 
-  vector<passivedouble> GetTotal_Sens_Diff_Inputs();
+  vector<passivedouble> GetTotal_Sens_Diff_Inputs(unsigned short index);
+
+  unsigned short GetnDiff_Inputs();
 
   // TODO Remove after debugging
   passivedouble Get_ObjFunc();
 
-  /*!
-   * \brief Get a weight of the objective function.
-   */
+  void SetDiff_Inputs_Vars(vector<passivedouble> diff_input, unsigned short index);
+
+    /*!
+     * \brief Get a weight of the objective function.
+     */
   su2double GetWeight_ObjFunc(unsigned short val_obj);
 
   /*!
