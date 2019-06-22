@@ -114,7 +114,10 @@ private:
    * so, feel free to delete this and replace it as needed with the
    * appropriate global function
    */
-  ScalarType Sign(const ScalarType & x, const ScalarType & y) const;
+  inline ScalarType Sign(const ScalarType & x, const ScalarType & y) const {
+    if (y == 0.0) return 0.0;
+    return fabs(x) * (y < 0.0 ? -1.0 : 1.0);
+  }
   
   /*!
    * \brief applys a Givens rotation to a 2-vector
@@ -300,7 +303,7 @@ public:
    * \brief Get the final residual.
    * \return The residual at the end of Solve
    */
-  ScalarType GetResidual(void) const;
+  inline ScalarType GetResidual(void) const { return Residual; }
 
 };
 
