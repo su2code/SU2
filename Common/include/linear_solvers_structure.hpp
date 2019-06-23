@@ -306,5 +306,3 @@ public:
   inline ScalarType GetResidual(void) const { return Residual; }
 
 };
-
-#include "linear_solvers_structure.inl"
