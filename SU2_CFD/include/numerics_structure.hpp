@@ -1997,18 +1997,21 @@ class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
 protected:
   bool implicit;
   bool UseAccurateJacobian;
+  bool HasAnalyticalDerivatives;
   unsigned short iDim, iVar, jVar, kVar;
   su2double FinDiffStep;
   
   su2double MassFlux, DissFlux, Pressure;
   su2double *Velocity_i, *Velocity_j;
   su2double *psi_i, *psi_j;
+  su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
   
   /*--- Roe variables (for approximate Jacobian) ---*/
   su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
   
   /*!
    * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
+   * \note See the body of the (empty) default implementation for instructions on how to implement the method.
    * \param[in] config - Definition of the particular problem.
    * \param[out] mdot - The mass flux.
    * \param[out] pressure - The pressure at the control volume face.
@@ -2027,7 +2030,7 @@ protected:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    */
-  void NumericalJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  void AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
   
 public:
   
