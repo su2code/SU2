@@ -1165,6 +1165,9 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   /*--- Analytical differentiation of the face mass flux and
    pressure (in reverse mode, "?_b" denotes dmot_d?). ---*/
   
+  /*--- limited mean Mach number (used in division...) ---*/
+  su2double MF = max(numeric_limits<passivedouble>::epsilon(),sqrt(MFsq));
+  
   for (int outVar=0; outVar<2; ++outVar) {
     
     su2double aF_b    = 0.0, mF_b    = 0.0, MF_b  = 0.0, rhoF_b = 0.0, fa_b   = 0.0, alpha_b = 0.0,
@@ -1189,7 +1192,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
         rhoF_b -= Mp/rhoF * mF_b;
         fa_b -= Mp/fa * mF_b;
         aF_b -= 2.0*Mp/aF * mF_b;
-        MF_b += 2.0*sigma*sqrt(MFsq)*(Kp/fa)*(Pressure_j-Pressure_i)/(rhoF*aF*aF) * mF_b;
+        MF_b += 2.0*sigma*MF*(Kp/fa)*(Pressure_j-Pressure_i)/(rhoF*aF*aF) * mF_b;
         tmp = -(Kp/fa)*(1.0-sigma*MFsq)/(rhoF*aF*aF);
         p_i_b -= tmp * mF_b;
         p_j_b += tmp * mF_b;
@@ -1248,13 +1251,13 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     su2double Mref_b = 2.0*(1.0-sqrt(Mrefsq)) * fa_b;
     
     /*--- Mrefsq = ... ---*/
-    if (MFsq < 1.0 && MFsq > Minf*Minf) MF_b += Mref_b;
+    if (MF < 1.0 && MF > Minf) MF_b += Mref_b;
     
     /*--- MFsq = ... ---*/
-    mL_b += 0.5*mL/sqrt(MFsq) * MF_b;  mR_b += 0.5*mR/sqrt(MFsq) * MF_b;
+    mL_b += 0.5*mL/MF * MF_b;  mR_b += 0.5*mR/MF * MF_b;
     
     /*--- mL/R = ... ---*/
-    Vn_i_b += mL_b/aF,  Vn_j_b += mR_b/aF;
+    Vn_i_b += mL_b/aF;  Vn_j_b += mR_b/aF;
     aF_b -= (mL*mL_b+mR*mR_b)/aF;
     
     /*--- aF,ahat,astar = f(H_i,H_j) ---*/
