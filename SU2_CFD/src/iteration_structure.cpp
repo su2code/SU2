@@ -140,139 +140,139 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
   }
   
   if (config_container[val_iZone]->GetSurface_Movement(DEFORMING)){
-    if (rank == MASTER_NODE)
-      cout << endl << " Updating surface positions." << endl;
-    
-    /*--- Translating ---*/
-    
-    /*--- Compute the new node locations for moving markers ---*/
-    
-    surface_movement[val_iZone]->Surface_Translating(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                     config_container[val_iZone], ExtIter, val_iZone);
-    /*--- Deform the volume grid around the new boundary locations ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << " Deforming the volume grid." << endl;
-    grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                               config_container[val_iZone], true);
-    
-    /*--- Plunging ---*/
-    
-    /*--- Compute the new node locations for moving markers ---*/
-    
-    surface_movement[val_iZone]->Surface_Plunging(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                  config_container[val_iZone], ExtIter, val_iZone);
-    /*--- Deform the volume grid around the new boundary locations ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << " Deforming the volume grid." << endl;
-    grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                               config_container[val_iZone], true);
-    
-    /*--- Pitching ---*/
-    
-    /*--- Compute the new node locations for moving markers ---*/
-    
-    surface_movement[val_iZone]->Surface_Pitching(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                  config_container[val_iZone], ExtIter, val_iZone);
-    /*--- Deform the volume grid around the new boundary locations ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << " Deforming the volume grid." << endl;
-    grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                               config_container[val_iZone], true);
-    
-    /*--- Rotating ---*/
-    
-    /*--- Compute the new node locations for moving markers ---*/
-    
-    surface_movement[val_iZone]->Surface_Rotating(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                  config_container[val_iZone], ExtIter, val_iZone);
-    /*--- Deform the volume grid around the new boundary locations ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << " Deforming the volume grid." << endl;
-    grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                               config_container[val_iZone], true);
-    
-    /*--- Update the grid velocities on the fine mesh using finite
-           differencing based on node coordinates at previous times. ---*/
-    
-    if (!adjoint) {
       if (rank == MASTER_NODE)
-        cout << " Computing grid velocities by finite differencing." << endl;
-      geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
-    }
-    
-    /*--- Update the multigrid structure after moving the finest grid,
-           including computing the grid velocities on the coarser levels. ---*/
-    
-    grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
-    
-  }
-  
-  if (config_container[val_iZone]->GetSurface_Movement(AEROELASTIC) 
-      || config_container[val_iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)){
-    
-    /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
-    if (IntIter == 0) {
-      if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
-        
-        if (rank == MASTER_NODE) {
-          cout << endl << " Performing rigid mesh transformation." << endl;
-        }
-        
-        /*--- Move each node in the volume mesh using the specified type
-         of rigid mesh motion. These routines also compute analytic grid
-         velocities for the fine mesh. ---*/
-        
-        grid_movement[val_iZone][val_iInst]->Rigid_Translation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                               config_container[val_iZone], val_iZone, ExtIter);
-        grid_movement[val_iZone][val_iInst]->Rigid_Plunging(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                            config_container[val_iZone], val_iZone, ExtIter);
-        grid_movement[val_iZone][val_iInst]->Rigid_Pitching(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                            config_container[val_iZone], val_iZone, ExtIter);
-        grid_movement[val_iZone][val_iInst]->Rigid_Rotation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                            config_container[val_iZone], val_iZone, ExtIter);
-        
-        /*--- Update the multigrid structure after moving the finest grid,
-         including computing the grid velocities on the coarser levels. ---*/
-        
-        grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
-      }
-      
-    }
-    
-    /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-    else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0) {
-      
-      if (rank == MASTER_NODE)
-        cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
-      
-      /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
-      
-      solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Aeroelastic(surface_movement[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], ExtIter);
-      
+        cout << endl << " Updating surface positions." << endl;
+
+      /*--- Translating ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Translating(geometry_container[val_iZone][val_iInst][MESH_0],
+                                            config_container[val_iZone], ExtIter, val_iZone);
       /*--- Deform the volume grid around the new boundary locations ---*/
-      
+
       if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
+        cout << " Deforming the volume grid." << endl;
       grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                 config_container[val_iZone], true);
-      
+                                           config_container[val_iZone], true);
+
+      /*--- Plunging ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Plunging(geometry_container[val_iZone][val_iInst][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Pitching ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Pitching(geometry_container[val_iZone][val_iInst][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Rotating ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Rotating(geometry_container[val_iZone][val_iInst][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], true);
+
       /*--- Update the grid velocities on the fine mesh using finite
        differencing based on node coordinates at previous times. ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Computing grid velocities by finite differencing." << endl;
-      geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
-      
+
+      if (!adjoint) {
+        if (rank == MASTER_NODE)
+          cout << " Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+      }
+
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
-      
+
       grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
-    }
-  }
+
+      }
+
+  if (config_container[val_iZone]->GetSurface_Movement(AEROELASTIC) 
+      || config_container[val_iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)){
+
+      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+      if (IntIter == 0) {
+        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
+
+          if (rank == MASTER_NODE) {
+            cout << endl << " Performing rigid mesh transformation." << endl;
+          }
+
+          /*--- Move each node in the volume mesh using the specified type
+           of rigid mesh motion. These routines also compute analytic grid
+           velocities for the fine mesh. ---*/
+
+          grid_movement[val_iZone][val_iInst]->Rigid_Translation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone][val_iInst]->Rigid_Plunging(geometry_container[val_iZone][val_iInst][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone][val_iInst]->Rigid_Pitching(geometry_container[val_iZone][val_iInst][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone][val_iInst]->Rigid_Rotation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+
+          /*--- Update the multigrid structure after moving the finest grid,
+           including computing the grid velocities on the coarser levels. ---*/
+
+          grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
+        }
+
+      }
+
+      /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
+      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0) {
+
+        if (rank == MASTER_NODE)
+          cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
+
+        /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
+
+        solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Aeroelastic(surface_movement[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], ExtIter);
+
+        /*--- Deform the volume grid around the new boundary locations ---*/
+
+        if (rank == MASTER_NODE)
+          cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
+        grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                             config_container[val_iZone], true);
+
+        /*--- Update the grid velocities on the fine mesh using finite
+         differencing based on node coordinates at previous times. ---*/
+
+        if (rank == MASTER_NODE)
+          cout << " Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+
+        /*--- Update the multigrid structure after moving the finest grid,
+         including computing the grid velocities on the coarser levels. ---*/
+
+        grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
+      }
+        }
   if (config_container[val_iZone]->GetSurface_Movement(FLUID_STRUCTURE)){
       if (rank == MASTER_NODE && Screen_Output)
         cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
@@ -281,8 +281,8 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
 
       if (rank == MASTER_NODE && Screen_Output)
         cout << "Deforming the volume grid." << endl;
-      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                           config_container[val_iZone], true, Screen_Output, true);
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                           config_container[val_iZone], true, false);
 
       nIterMesh = grid_movement[val_iZone][val_iInst]->Get_nIterMesh();
       stat_mesh = (nIterMesh == 0);
@@ -301,47 +301,47 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
        including computing the grid velocities on the coarser levels. ---*/
 
       grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
-    
+
   }
   if (config_container[val_iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
-    
+
     if ((rank == MASTER_NODE) && (!discrete_adjoint) && Screen_Output)
-      cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
-    
-    /*--- Deform the volume grid around the new boundary locations ---*/
-    
+        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
-      cout << "Deforming the volume grid." << endl;
-    
-    grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                    config_container[val_iZone], true, Screen_Output, false);
-    
+        cout << "Deforming the volume grid." << endl;
+
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+                                                                    config_container[val_iZone], true, false);
+
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
-      cout << "There is no grid velocity." << endl;
-    
-    /*--- Update the multigrid structure after moving the finest grid,
+        cout << "There is no grid velocity." << endl;
+
+      /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
-    
-    grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
-    
+
+      grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
+
   }
   if (config_container[val_iZone]->GetSurface_Movement(EXTERNAL) || config_container[val_iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
     /*--- Apply rigid rotation to entire grid first, if necessary ---*/
-    
+
     if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
       if (rank == MASTER_NODE)
         cout << " Updating node locations by rigid rotation." << endl;
       grid_movement[val_iZone][val_iInst]->Rigid_Rotation(geometry_container[val_iZone][val_iInst][MESH_0],
                                                           config_container[val_iZone], val_iZone, ExtIter);
     }
-    
+
     /*--- Load new surface node locations from external files ---*/
     
-    if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE)
       cout << " Updating surface locations from file." << endl;
     surface_movement[val_iZone]->SetExternal_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
                                                          config_container[val_iZone], val_iZone, ExtIter);
-    
+
     /*--- Deform the volume grid around the new boundary locations ---*/
     
     if (rank == MASTER_NODE)
@@ -356,15 +356,15 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
       if (rank == MASTER_NODE)
         cout << " Computing grid velocities by finite differencing." << endl;
       geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
-    }
-    
+  }
+
     /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
     
     grid_movement[val_iZone][val_iInst]->UpdateMultiGrid(geometry_container[val_iZone][val_iInst], config_container[val_iZone]);
      
   }
- }
+}
 
 void CIteration::Preprocess(COutput *output,
                             CIntegration ****integration_container,
@@ -2562,7 +2562,13 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
 
 }
 
-void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeometry ****geometry_container, CNumerics ******numerics_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
+void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container,
+                                             CGeometry ****geometry_container,
+                                             CNumerics ******numerics_container,
+                                             CConfig **config_container,
+                                             unsigned short iZone,
+                                             unsigned short iInst,
+                                             unsigned short kind_recording){
 
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
   bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();

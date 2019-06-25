@@ -1515,7 +1515,7 @@ void CSourceRotatingFrame_AdjFlow::ComputeResidual(su2double *val_residual, su2d
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 
   /*--- Retrieve the angular velocity vector from config. ---*/
-  
+
   for (iDim = 0; iDim < 3; iDim++){
     Omega[iDim] = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
   }

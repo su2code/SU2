@@ -66,7 +66,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
     nIterMesh = 0;
 
-	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+    /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
     if (config->GetVolumetric_Movement()){
       LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
       LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -349,7 +349,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   su2double Volume = 0.0, CoordCorners[8][3];
   unsigned short nNodes = 0, iNodes, iDim;
   bool RightVol = true;
-
+  
   if (rank == MASTER_NODE && Screen_Output)
     cout << "Computing volumes of the grid elements." << endl;
   
@@ -529,7 +529,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
   
   bool Screen_Output  = config->GetDeform_Output();
-
+  
   /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
   
   if (nDim == 2) StiffMatrix_nElem = 8;
@@ -801,35 +801,35 @@ su2double CVolumetricMovement::ShapeFunc_Pyram(su2double Xi, su2double Eta, su2d
   
   /*--- Shape functions ---*/
   
-  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][3] = 0.5*(1.0+Zeta);
+  DShapeFunction[0][3] = 0.25*(-Xi+Eta+Zeta-1.0)*(-Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[1][3] = 0.25*(-Xi-Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[2][3] = 0.25*( Xi+Eta+Zeta-1.0)*( Xi-Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[3][3] = 0.25*( Xi+Eta+Zeta-1.0)*(-Xi+Eta+Zeta-1.0)/(1.0-Zeta);
+  DShapeFunction[4][3] = Zeta;
   
   /*--- dN/d xi ---*/
   
-  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
+  DShapeFunction[0][0] = 0.5*(Zeta-Xi-1.0)/(Zeta-1.0);
+  DShapeFunction[1][0] = 0.5*Xi/(Zeta-1.0);
+  DShapeFunction[2][0] = 0.5*(1.0-Zeta-Xi)/(Zeta-1.0);
+  DShapeFunction[3][0] = DShapeFunction[1][0];
   DShapeFunction[4][0] = 0.0;
   
   /*--- dN/d eta ---*/
   
-  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
+  DShapeFunction[0][1] = 0.5*Eta/(Zeta-1.0);
+  DShapeFunction[1][1] = 0.5*(Zeta-Eta-1.0)/(Zeta-1.0);
+  DShapeFunction[2][1] = DShapeFunction[0][1];
+  DShapeFunction[3][1] = 0.5*(1.0-Zeta-Eta)/(Zeta-1.0);
   DShapeFunction[4][1] = 0.0;
   
   /*--- dN/d zeta ---*/
   
-  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-  DShapeFunction[4][2] = 0.5;
+  DShapeFunction[0][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta - Eta*Eta + Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+  DShapeFunction[1][2] = 0.25*(-1.0 + 2.0*Zeta - Zeta*Zeta + Eta*Eta - Xi*Xi)/((1.0-Zeta)*(1.0-Zeta));
+  DShapeFunction[2][2] = DShapeFunction[0][2];
+  DShapeFunction[3][2] = DShapeFunction[1][2];
+  DShapeFunction[4][2] = 1.0;
   
   /*--- Jacobian transformation ---*/
   
@@ -1480,12 +1480,12 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
   
   if (nNodes == 6) {
     nGauss = 6;
-    Location[0][0] = 0.5;                 Location[0][1] = 0.5;                 Location[0][2] = -0.577350269189626;  Weight[0] = 0.166666666666666;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.0;                 Location[1][2] = 0.5;                 Weight[1] = 0.166666666666666;
-    Location[2][0] = 0.5;                 Location[2][1] = -0.577350269189626;  Location[2][2] = 0.0;                 Weight[2] = 0.166666666666666;
-    Location[3][0] = 0.5;                 Location[3][1] = 0.5;                 Location[3][2] = 0.577350269189626;   Weight[3] = 0.166666666666666;
-    Location[4][0] = 0.577350269189626;   Location[4][1] = 0.0;                 Location[4][2] = 0.5;                 Weight[4] = 0.166666666666666;
-    Location[5][0] = 0.5;                 Location[5][1] = 0.577350269189626;   Location[5][2] = 0.0;                 Weight[5] = 0.166666666666666;
+    Location[0][0] = -0.577350269189626;  Location[0][1] = 0.166666666666667;  Location[0][2] = 0.166666666666667;  Weight[0] = 0.166666666666667;
+    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.666666666666667;  Location[1][2] = 0.166666666666667;  Weight[1] = 0.166666666666667;
+    Location[2][0] = -0.577350269189626;  Location[2][1] = 0.166666666666667;  Location[2][2] = 0.666666666666667;  Weight[2] = 0.166666666666667;
+    Location[3][0] =  0.577350269189626;  Location[3][1] = 0.166666666666667;  Location[3][2] = 0.166666666666667;  Weight[3] = 0.166666666666667;
+    Location[4][0] =  0.577350269189626;  Location[4][1] = 0.666666666666667;  Location[4][2] = 0.166666666666667;  Weight[4] = 0.166666666666667;
+    Location[5][0] =  0.577350269189626;  Location[5][1] = 0.166666666666667;  Location[5][2] = 0.666666666666667;  Weight[5] = 0.166666666666667;
   }
   
   /*--- Hexahedrons. Nodes of numerical integration at 6 points (order 3). ---*/
@@ -1929,7 +1929,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
     Center[iDim] = config->GetMotion_Origin()[iDim];
     Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
   }
-  
+
   /*-- Set dt for harmonic balance cases ---*/
   if (harmonic_balance) {
     /*--- period of oscillation & compute time interval using nTimeInstances ---*/
@@ -2073,7 +2073,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
-  
+
   /*--- Pitching origin, frequency, and amplitude from config. ---*/	
   
   for (iDim = 0; iDim < 3; iDim++){
@@ -2208,7 +2208,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3];
+  su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -2219,15 +2219,16 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
   
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin()[iDim];
     Omega[iDim]  = config->GetPlunging_Omega()[iDim]/config->GetOmega_Ref();
-    Ampl[iDim]   = config->GetPlunging_Ampl()[iDim];
+    Ampl[iDim]   = config->GetPlunging_Ampl()[iDim]/Lref;
   }
   
   /*--- Plunging frequency and amplitude from config. ---*/
-
+  
   if (harmonic_balance) {
     /*--- period of oscillation & time interval using nTimeInstances ---*/
     su2double period = config->GetHarmonicBalance_Period();
@@ -5686,7 +5687,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
-	
+  
   /*--- Initialize the delta variation in coordinates ---*/
   VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
   
@@ -5766,8 +5767,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
       for (iDim = 0; iDim < 3; iDim++){
         Center[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -5787,14 +5788,14 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
                                            unsigned long iter, unsigned short iZone) {
   
-	su2double deltaT, time_new, time_old, Lref;
+  su2double deltaT, time_new, time_old, Lref;
   su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
-	
+  
   /*--- Initialize the delta variation in coordinates ---*/
   VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
   
@@ -5878,8 +5879,8 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
       for (iDim = 0; iDim < 3; iDim++){
         Center[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -6212,8 +6213,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       
       for (iDim = 0; iDim < 3; iDim++){
         Center_Aux[iDim] += VarCoord[iDim];
-        config->SetMarkerMotion_Origin(Center_Aux, jMarker);
       }
+      config->SetMarkerMotion_Origin(Center_Aux, jMarker);      
     }
   }
 
@@ -9110,7 +9111,7 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
   
     size = SU2_MPI::GetSize();
     rank = SU2_MPI::GetRank();
-  
+
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
@@ -9174,8 +9175,8 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
     else if (nDim == 3){
       element_container[EL_TETRA] = new CTETRA1(nDim, config);
       element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CHEXA8(nDim, config);
-      element_container[EL_PRISM] = new CHEXA8(nDim, config);
+      element_container[EL_PYRAM] = new CPYRAM5(nDim, config);
+      element_container[EL_PRISM] = new CPRISM6(nDim, config);
     }
 
     /*--- Term ij of the Jacobian ---*/

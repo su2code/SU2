@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
   bool fem_solver = false;
-  
+
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
   int rank, size;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
-
+    
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);

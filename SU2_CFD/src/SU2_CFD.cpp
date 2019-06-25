@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo, zone_specific, periodic = false;
+  bool fsi, turbo, zone_specific;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -108,22 +108,22 @@ int main(int argc, char *argv[]) {
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     if (config->GetDiscrete_Adjoint())
-       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     else
-       driver = new CSinglezoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+       driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
 
   }
   else if (config->GetMultizone_Problem() && !turbo) {
 
     /*--- Multizone Driver. ---*/
 
-    driver = new CMultizoneDriver(config_file_name, nZone, periodic, MPICommunicator);
+    driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, periodic, MPICommunicator);
+    driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     /*--- If the problem is a discrete adjoint FSI problem ---*/
     if (disc_adj_fsi) {
       if (stat_fsi) {
-        driver = new CDiscAdjFSIDriver(config_file_name, nZone, periodic, MPICommunicator);
+        driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
       }
       else {
         SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
@@ -141,25 +141,25 @@ int main(int argc, char *argv[]) {
     }
     /*--- If the problem is a direct FSI problem ---*/
     else{
-      driver = new CFSIDriver(config_file_name, nZone, periodic, MPICommunicator);
+      driver = new CFSIDriver(config_file_name, nZone, MPICommunicator);
     }
 
   } else if (zone_specific) {
-    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, periodic, MPICommunicator);
+    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-      if (turbo) {
+    if (turbo) {
 
-      driver = new CTurbomachineryDriver(config_file_name, nZone, periodic, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
 
     } else {
 
       /*--- Instantiate the class for external aerodynamics ---*/
 
-      driver = new CFluidDriver(config_file_name, nZone, periodic, MPICommunicator);
+      driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
       
     }
     

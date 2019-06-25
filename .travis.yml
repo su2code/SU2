@@ -19,7 +19,6 @@ branches:
         - feature_input_output
 
 python:
-    - 2.7
     - 3.6
 
 env:
