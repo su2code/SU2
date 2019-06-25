@@ -731,14 +731,14 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
 }
 
-CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                             CConfig *config, unsigned short iMesh) : CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                             CNumerics(val_nDim, val_nVar, config) {
   
   if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  UseAccurateJacobian = config->GetUse_Accurate_Jacobians() && (iMesh == MESH_0);
+  UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
   HasAnalyticalDerivatives = false;
   FinDiffStep = 1e-4;
   
@@ -1071,8 +1071,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 }
 
 
-CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
-                     unsigned short iMesh) : CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config, iMesh) {
+CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                     CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
   HasAnalyticalDerivatives = true;
   Minf = config->GetMach();
@@ -1295,8 +1295,8 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   }
 }
 
-CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config,
-                      unsigned short iMesh) : CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config, iMesh) {
+CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
   
   Minf = config->GetMach();
   Kp = 0.25;
@@ -1384,8 +1384,8 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doub
 
 }
 
-CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation,
-                             unsigned short iMesh) : CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config, iMesh) {
+CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
+               CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
   slau_low_diss = val_low_dissipation;
   slau2 = false;
@@ -1461,8 +1461,8 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
 
 }
 
-CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation,
-                               unsigned short iMesh) : CUpwSLAU_Flow(val_nDim, val_nVar, config, val_low_dissipation, iMesh) {
+CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
+                CUpwSLAU_Flow(val_nDim, val_nVar, config, val_low_dissipation) {
 
   /*--- The difference between SLAU and SLAU2 is minimal, so we derive from SLAU and set this flag
    so that the ComputeMassAndPressureFluxes function modifies the pressure according to SLAU2.

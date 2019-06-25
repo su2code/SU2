@@ -2039,9 +2039,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Grid level.
    */
-  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, unsigned short iMesh);
+  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -2083,9 +2082,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Grid level.
    */
-  CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, unsigned short iMesh);
+  CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -2118,9 +2116,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Grid level.
    */
-  CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, unsigned short iMesh);
+  CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -2155,10 +2152,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_low_dissipation - Use low dissipation formulation.
-   * \param[in] iMesh - Grid level.
    */
-  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation, unsigned short iMesh);
+  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
@@ -2180,10 +2175,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_low_dissipation - Use low dissipation formulation.
-   * \param[in] iMesh - Grid level.
    */
-  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation, unsigned short iMesh);
+  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
