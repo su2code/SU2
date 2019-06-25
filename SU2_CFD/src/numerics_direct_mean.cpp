@@ -1108,7 +1108,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
 
   /*--- Left and right pressures and Mach numbers ---*/
   
-  su2double mLP, pLP, mRM, pRM;
+  su2double mLP, betaLP, mRM, betaRM;
 
   su2double mL = ProjVelocity_i/aF;
   su2double mR = ProjVelocity_j/aF;
@@ -1127,11 +1127,11 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
 
     mLP = p1 + beta*p2;
-    pLP = Pressure_i * (p1*(2.0-mL) + alpha*mL*p2);
+    betaLP = p1*(2.0-mL) + alpha*mL*p2;
   }
   else {
     mLP = 0.5*(mL+fabs(mL));
-    pLP = Pressure_i*mLP/mL;
+    betaLP = mLP/mL;
   }
 
   if (fabs(mR) <= 1.0) {
@@ -1139,11 +1139,11 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
 
     mRM = -p1 - beta*p2;
-    pRM =  Pressure_j * (p1*(2.0+mR) - alpha*mR*p2);
+    betaRM = p1*(2.0+mR) - alpha*mR*p2;
   }
   else {
     mRM = 0.5*(mR-fabs(mR));
-    pRM = Pressure_j*mRM/mR;
+    betaRM = mRM/mR;
   }
 
   /*--- Pressure and velocity diffusion terms ---*/
@@ -1151,14 +1151,14 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   su2double rhoF = 0.5*(Density_i+Density_j);
   su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
 
-  su2double Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
+  su2double Pu = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
 
   /*--- Finally the fluxes ---*/
 
   su2double mF = mLP + mRM + Mp;
   mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
 
-  pressure = pLP + pRM + Pu;
+  pressure = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
   
   if (!implicit || !UseAccurateJacobian) return;
   
@@ -1167,80 +1167,77 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   
   for (int outVar=0; outVar<2; ++outVar) {
     
-    su2double aF_b, mF_b, rho_i_b, rho_j_b, fa_b, rhoF_b, p_i_b, p_j_b, MF_b, mR_b, mL_b;
-    su2double betaP_b, betaM_b, Vn_i_b = 0.0, Vn_j_b = 0.0, alpha_b;
+    su2double aF_b    = 0.0, mF_b    = 0.0, MF_b  = 0.0, rhoF_b = 0.0, fa_b   = 0.0, alpha_b = 0.0,
+              rho_i_b = 0.0, rho_j_b = 0.0, p_i_b = 0.0, p_j_b  = 0.0, Vn_i_b = 0.0, Vn_j_b  = 0.0,
+              mR_b    = 0.0, mL_b    = 0.0, betaLP_b = 0.0,  betaRM_b = 0.0,  tmp = 0.0;
     
     if (outVar==0) {
       /*--- mdot = ... ---*/
       if (mF > 0.0) {
-        aF_b = mF*Density_i;
-        mF_b = aF*Density_i;
-        rho_i_b = mF*aF;
-        rho_j_b = 0.0;
+        aF_b += mF*Density_i;
+        mF_b += aF*Density_i;
+        rho_i_b += mF*aF;
       }
       else {
-        aF_b = mF*Density_j;
-        mF_b = aF*Density_j;
-        rho_i_b = 0.0;
-        rho_j_b = mF*aF;
+        aF_b += mF*Density_j;
+        mF_b += aF*Density_j;
+        rho_j_b += mF*aF;
       }
       
       /*--- Mp = ... ---*/
-      fa_b = rhoF_b = p_i_b = p_j_b = MF_b = 0.0;
-      
       if (sigma*MFsq < 1.0) {
-        fa_b = -Mp/fa * mF_b;
-        rhoF_b = -Mp/rhoF * mF_b;
+        rhoF_b -= Mp/rhoF * mF_b;
+        fa_b -= Mp/fa * mF_b;
         aF_b -= 2.0*Mp/aF * mF_b;
-        MF_b = 2.0*sigma*sqrt(MFsq)*(Kp/fa)*(Pressure_j-Pressure_i)/(rhoF*aF*aF) * mF_b;
-        
-        su2double tmp = -(Kp/fa)*(1.0-sigma*MFsq)/(rhoF*aF*aF);
-        p_i_b = -tmp * mF_b;
-        p_j_b =  tmp * mF_b;
+        MF_b += 2.0*sigma*sqrt(MFsq)*(Kp/fa)*(Pressure_j-Pressure_i)/(rhoF*aF*aF) * mF_b;
+        tmp = -(Kp/fa)*(1.0-sigma*MFsq)/(rhoF*aF*aF);
+        p_i_b -= tmp * mF_b;
+        p_j_b += tmp * mF_b;
       }
       
       /*--- rhoF = ... ---*/
       rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
       
       /*--- mRM = ... ---*/
-      if (fabs(mR) < 1.0) mR_b = (-0.5*(mR-1.0)-beta*4.0*mR*(mR*mR-1.0)) * mF_b;
-      else                mR_b = (mR <= -1.0 ? 1.0 : 0.0) * mF_b;
+      if (fabs(mR) < 1.0) mR_b += (1.0-mR)*(0.5+4.0*beta*mR*(mR+1.0)) * mF_b;
+      else if (mR <=-1.0) mR_b += mF_b;
       
       /*--- mLP = ... ---*/
-      if (fabs(mL) < 1.0) mL_b = (-0.5*(mL+1.0)-beta*4.0*mL*(mL*mL-1.0)) * mF_b;
-      else                mL_b = (mL <= -1.0 ? 0.0 : 1.0) * mF_b;
+      if (fabs(mL) < 1.0) mL_b += (1.0+mL)*(0.5+4.0*beta*mL*(mL-1.0)) * mF_b;
+      else if (mL >= 1.0) mL_b += mF_b;
     }
     else {
       /*--- pressure = ... ---*/
-      p_i_b = pLP/Pressure_i;  p_j_b = pRM/Pressure_j;
-      betaP_b = Pressure_i;    betaM_b = Pressure_j;
+      p_i_b += betaLP;  betaLP_b += Pressure_i;
+      p_j_b += betaRM;  betaRM_b += Pressure_j;
       
       /*--- Pu = ... ---*/
-      fa_b = Pu/fa;
-      rhoF_b = Pu/rhoF;
-      aF_b = Pu/aF;
-      betaP_b += Pu*Pressure_i/pLP;
-      betaP_b += Pu*Pressure_j/pRM;
-      su2double tmp = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*2.0*rhoF*aF;
-      Vn_i_b = -tmp;
-      Vn_j_b =  tmp;
+      rhoF_b += Pu/rhoF;
+      fa_b += Pu/fa;
+      aF_b += Pu/aF;
+      tmp = -Ku*fa*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
+      betaLP_b += tmp*betaRM;
+      betaRM_b += tmp*betaLP;
+      tmp = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF;
+      Vn_i_b -= tmp;
+      Vn_j_b += tmp;
       
       /*--- rhoF = ... ---*/
-      rho_i_b = 0.5*rhoF_b;  rho_j_b = 0.5*rhoF_b;
+      rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
       
-      /*--- pRM/pj (beta-) = ... ---*/
+      /*--- betaRM = ... ---*/
       if (fabs(mR) < 1.0) {
-        mR_b = (mR*mR-1.0)*(0.75-alpha*(5.0*mR*mR-1.0)) * betaM_b;
-        alpha_b = -mR*(mR*mR-1.0)*(mR*mR-1.0) * betaM_b;
+        tmp = mR*mR-1.0;
+        mR_b += tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaRM_b;
+        alpha_b -= mR*tmp*tmp * betaRM_b;
       }
-      else mR_b = alpha_b = 0.0;
       
-      /*--- pLP/pi (beta+) = ... ---*/
+      /*--- betaLP = ... ---*/
       if (fabs(mL) < 1.0) {
-        mL_b = (1.0-mL*mL)*(0.75-alpha*(5.0*mL*mL-1.0)) * betaP_b;
-        alpha_b += mL*(mL*mL-1.0)*(mL*mL-1.0) * betaP_b;
+        tmp = mL*mL-1.0;
+        mL_b -= tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaLP_b;
+        alpha_b += mL*tmp*tmp * betaLP_b;
       }
-      else mL_b = 0.0;
       
       /*--- alpha = ... ---*/
       fa_b += 1.875*fa * alpha_b;
@@ -1250,48 +1247,36 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     /*--- fa = ... ---*/
     su2double Mref_b = 2.0*(1.0-sqrt(Mrefsq)) * fa_b;
     
-    /*--- fa = ... ---*/
+    /*--- Mrefsq = ... ---*/
     if (MFsq < 1.0 && MFsq > Minf*Minf) MF_b += Mref_b;
     
     /*--- MFsq = ... ---*/
-    mL_b += MF_b*mL/sqrt(MFsq);  mR_b += MF_b*mR/sqrt(MFsq);
+    mL_b += 0.5*mL/sqrt(MFsq) * MF_b;  mR_b += 0.5*mR/sqrt(MFsq) * MF_b;
     
     /*--- mL/R = ... ---*/
     Vn_i_b += mL_b/aF,  Vn_j_b += mR_b/aF;
     aF_b -= (mL*mL_b+mR*mR_b)/aF;
     
-    /*--- aF = ... ---*/
-    su2double ahatL_b = 0.0, ahatR_b = 0.0;
+    /*--- aF,ahat,astar = f(H_i,H_j) ---*/
+    su2double astar_b = aF_b, H_i_b, H_j_b;
     
-    if (ahatL < ahatR) ahatL_b = aF_b;
-    else               ahatR_b = aF_b;
-    
-    /*--- ahatL = ... ---*/
-    su2double astarL_b = ahatL_b;
-    
-    if (astarL <= ProjVelocity_i) {
-      astarL_b *= 2.0*astarL/ProjVelocity_i;
-      Vn_i_b -= ahatL_b*pow(astarL/ProjVelocity_i,2.0);
+    if (ahatL < ahatR) {
+      if (astarL <= ProjVelocity_i) {
+        tmp = astarL/ProjVelocity_i;
+        astar_b *= 2.0*tmp;
+        Vn_i_b -= tmp*tmp * aF_b;
+      }
+      H_i_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_i)) * astar_b;
+      H_j_b = 0.0;
     }
-    
-    /*--- ahatR = ... ---*/
-    su2double astarR_b = ahatR_b;
-    
-    if (astarR <= -ProjVelocity_j) {
-      astarR_b *= 2.0*astarR/ProjVelocity_j;
-      Vn_j_b += ahatR_b*pow(astarR/ProjVelocity_j,2.0);
-    }
-    
-    /*--- astarL/R = ... ---*/
-    su2double H_i_b = astarL_b * sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_i));
-    su2double H_j_b = astarR_b * sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_j));
-    
-    /*--- ProjVelocity = ... ---*/
-    su2double V_i_b[3], V_j_b[3];
-    
-    for (iDim = 0; iDim < nDim; ++iDim) {
-      V_i_b[iDim] = UnitNormal[iDim] * Vn_i_b;
-      V_j_b[iDim] = UnitNormal[iDim] * Vn_j_b;
+    else {
+      if (astarR <= -ProjVelocity_j) {
+        tmp = -astarR/ProjVelocity_j;
+        astar_b *= 2.0*tmp;
+        Vn_j_b += tmp*tmp * aF_b;
+      }
+      H_j_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_j)) * astar_b;
+      H_i_b = 0.0;
     }
     
     /*--- store derivatives ---*/
@@ -1299,9 +1284,10 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
               *target_j = (outVar==0 ? dmdot_dVj : dpres_dVj);
     target_i[5] = target_j[5] = 0.0;
     
+    /*--- ProjVelocity = ... ---*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      target_i[iDim] = V_i_b[iDim];
-      target_j[iDim] = V_j_b[iDim];
+      target_i[iDim] = UnitNormal[iDim] * Vn_i_b;
+      target_j[iDim] = UnitNormal[iDim] * Vn_j_b;
     }
     target_i[ nDim ] = p_i_b;   target_j[ nDim ] = p_j_b;
     target_i[nDim+1] = rho_i_b; target_j[nDim+1] = rho_j_b;
