@@ -406,6 +406,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  su2double PhysicalTime;                       /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
   unsigned short nLevels_TimeAccurateLTS;       /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;              /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;                   /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
@@ -1055,6 +1056,7 @@ private:
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
+  unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -2930,7 +2932,6 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void);
-
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -3131,6 +3132,18 @@ public:
    * \return Current internal iteration.
    */
   unsigned long GetIntIter(void);
+
+  /*!
+   * \brief Set the current physical time.
+   * \param[in] val_t - Current physical time.
+   */
+  void SetPhysicalTime(su2double val_t);
+  
+  /*!
+   * \brief Get the current physical time.
+   * \return Current physical time.
+   */
+  su2double GetPhysicalTime(void);
   
   /*!
    * \brief Get the frequency for writing the solution file.
@@ -5610,7 +5623,7 @@ public:
    * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
    */
   bool GetSurface_Movement(unsigned short kind_movement);
-  
+
   /*!
    * \brief Set a surface movement marker.
    * \param[in] iMarker - Moving marker.
@@ -5624,7 +5637,7 @@ public:
    * \return Type of dynamic mesh motion.
    */
   unsigned short GetKind_GridMovement();
-
+  
   /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -5712,14 +5725,14 @@ public:
    * \return pitching amplitude of the mesh.
    */
   su2double* GetPitching_Ampl();
-  
+
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return  pitching amplitude of the marker.
    */
   su2double* GetMarkerPitching_Ampl(unsigned short iMarkerMoving);
-  
+
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -5768,7 +5781,7 @@ public:
    * \return Angular velocity of the mesh about the z-axis.
    */
   su2double GetFinalRotation_Rate_Z();
-
+  
   /*!
    * \brief Set the angular velocity of the mesh about the z-axis.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -6409,60 +6422,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Analyze_TagBound(unsigned short val_marker);
-  
-  /*!
-   * \brief Set the total number of SEND_RECEIVE periodic transformations.
-   * \param[in] val_index - Total number of transformations.
-   */
-  void SetnPeriodicIndex(unsigned short val_index);
-  
-  /*!
-   * \brief Get the total number of SEND_RECEIVE periodic transformations.
-   * \return Total number of transformations.
-   */
-  unsigned short GetnPeriodicIndex(void);
-  
-  /*!
-   * \brief Set the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] center - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicCenter(unsigned short val_index, su2double* center);
-  
-  /*!
-   * \brief Get the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing coordinates of the center point.
-   */
-  su2double* GetPeriodicCenter(unsigned short val_index);
-  
-  /*!
-   * \brief Set the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] rotation - Pointer to a vector containing the rotation angles.
-   */
-  void SetPeriodicRotation(unsigned short val_index, su2double* rotation);
-  
-  /*!
-   * \brief Get the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing the angles of rotation.
-   */
-  su2double* GetPeriodicRotation(unsigned short val_index);
-  
-  /*!
-   * \brief Set the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] translate - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-
-  /*!
-   * \brief Get the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return The translation vector.
-   */
-  su2double* GetPeriodicTranslate(unsigned short val_index);
   
   /*!
    * \brief Get the total temperature at a nacelle boundary.
@@ -8929,6 +8888,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+
+  /*!
+   * \brief Get the verification solution.
+   * \return The verification solution to be used.
+   */
+  unsigned short GetVerification_Solution(void);
   
   /*!
    * \brief Get topology optimization.

@@ -817,19 +817,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           /*--- Check if this boundary face must be stored on this rank.
                 If so, create an object of CBoundaryFace and add it
                 to boundElems.                                          ---*/
-          if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-            vector<CFaceOfElement>::iterator low;
-            low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          vector<CFaceOfElement>::iterator low;
+          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          if(low != localFaces.end()) {
+            if( !(thisFace < *low) ) {
 
-            CBoundaryFace thisBoundFace;
-            thisBoundFace.VTK_Type          = VTK_Type;
-            thisBoundFace.nPolyGrid         = nPolyGrid;
-            thisBoundFace.nDOFsGrid         = nDOFsGrid;
-            thisBoundFace.globalBoundElemID = i;
-            thisBoundFace.domainElementID   = low->elemID0;
-            thisBoundFace.Nodes             = nodeIDs;
+              CBoundaryFace thisBoundFace;
+              thisBoundFace.VTK_Type          = VTK_Type;
+              thisBoundFace.nPolyGrid         = nPolyGrid;
+              thisBoundFace.nDOFsGrid         = nDOFsGrid;
+              thisBoundFace.globalBoundElemID = i;
+              thisBoundFace.domainElementID   = low->elemID0;
+              thisBoundFace.Nodes             = nodeIDs;
 
-            boundElems.push_back(thisBoundFace);
+              boundElems.push_back(thisBoundFace);
+            }
           }
         }
 
@@ -1808,16 +1810,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Check if the face is actually present. If not, print an error message
            and exit. */
         thisFace.CreateUniqueNumbering();
-        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
-          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
-                         CURRENT_FUNCTION);
-
-        /* Carry out the search again, but now with lower_bound to find the
-           actual entry to determine the domain element and the rank where
-           this boundary element should be sent to.. */
         vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( !thisFaceFound )
+          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                         CURRENT_FUNCTION);
+
+        /* Determine the domain element and the rank where
+           this boundary element should be sent to.. */
         const unsigned long domainElementID = low->elemID0;
         const int rankBoundElem = (int) low->elemID1;
 
@@ -1937,14 +1943,19 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Check if the face is actually present. If not, print an error message
          and exit. */
       thisFace.CreateUniqueNumbering();
-      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( !thisFaceFound )
         SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
                        CURRENT_FUNCTION);
 
-      /* Carry out the search again, but now with lower_bound to find the
-         actual entry to set the domain element. */
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      /* Set the domain element. */
       boundElems[i].domainElementID = low->elemID0;
     }
 #endif
@@ -2479,21 +2490,23 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        if(low->elemID0 == thisFace.elemID0) {
-          elem[k]->SetNeighbor_Elements(low->elemID1, i);
-          elem[k]->SetOwnerFace(low->elem0IsOwner, i);
-        }
-        else {
-          elem[k]->SetNeighbor_Elements(low->elemID0, i);
-          elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
-        }
+      if(low != localFaces.end() ) {
+        if( !(thisFace < *low) ) {
+          if(low->elemID0 == thisFace.elemID0) {
+            elem[k]->SetNeighbor_Elements(low->elemID1, i);
+            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+          }
+          else {
+            elem[k]->SetNeighbor_Elements(low->elemID0, i);
+            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+          }
 
-        if(low->periodicIndex > 0)
-          elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+          if(low->periodicIndex > 0)
+            elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+        }
       }
     }
   }
@@ -3080,16 +3093,17 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
               missing information in the face corresponding to the iterator low. ---*/
-        if( binary_search(facesDonor.begin(), facesDonor.end(), thisMatchingFace) ) {
+        vector<CMatchingFace>::const_iterator donorLow;
+        donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
-          vector<CMatchingFace>::const_iterator donorLow;
-          donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
-
-          low->elemID1            = donorLow->elemID;
-          low->nPolySol1          = donorLow->nPoly;
-          low->nDOFsElem1         = donorLow->nDOFsElem;
-          low->elemType1          = donorLow->elemType;
-          low->periodicIndexDonor = jMarker + 1;
+        if(donorLow != facesDonor.end()) {
+          if( !(thisMatchingFace < *donorLow) ) {
+            low->elemID1            = donorLow->elemID;
+            low->nPolySol1          = donorLow->nPoly;
+            low->nDOFsElem1         = donorLow->nDOFsElem;
+            low->elemType1          = donorLow->elemType;
+            low->periodicIndexDonor = jMarker + 1;
+          }
         }
       }
     }
@@ -4803,9 +4817,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
         thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
-      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<CFaceOfElement>::const_iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      vector<CFaceOfElement>::const_iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      bool thisFaceFound = false;
+      if(low != localFaces.end()) {
+        if( !(thisFace < *low) ) thisFaceFound = true;
+      }
+
+      if( thisFaceFound ) {
 
         /* Check if this internal matching face is owned by this element. */
         bool faceIsOwned;

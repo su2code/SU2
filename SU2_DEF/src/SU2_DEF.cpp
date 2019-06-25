@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];

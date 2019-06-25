@@ -1,15 +1,23 @@
 su2_dot_src = ['SU2_DOT.cpp']
 su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                        'output/COutput.cpp',
+                                       'output/output_structure_legacy.cpp',
 				       'output/CBaselineOutput.cpp',
+				       'output/filewriter/CParallelDataSorter.cpp',
+				       'output/filewriter/CParallelFileWriter.cpp',
+				       'output/filewriter/CFEMDataSorter.cpp',
+				       'output/filewriter/CSurfaceFEMDataSorter.cpp',
+				       'output/filewriter/CFVMDataSorter.cpp',
+				       'output/filewriter/CSurfaceFVMDataSorter.cpp',
 				       'output/filewriter/CCSVFileWriter.cpp',
-				       'output/output_structure_legacy.cpp',
 				       'output/filewriter/CTecplotFileWriter.cpp',
 				       'output/filewriter/CTecplotBinaryFileWriter.cpp',
+				       'output/filewriter/CParaviewFileWriter.cpp',
+				       'output/filewriter/CParaviewBinaryFileWriter.cpp',
 				       'output/filewriter/CSU2FileWriter.cpp',
 				       'output/filewriter/CSU2BinaryFileWriter.cpp',
+				       'output/filewriter/CSU2MeshFileWriter.cpp',
 				       'variable_structure.cpp'])
-
 
 su2_dot = executable('SU2_DOT',
                      su2_dot_src, 
