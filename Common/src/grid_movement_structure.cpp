@@ -1926,8 +1926,8 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*--- Center of rotation & angular velocity vector from config ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
 
   /*-- Set dt for harmonic balance cases ---*/
@@ -2077,10 +2077,10 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Pitching origin, frequency, and amplitude from config. ---*/	
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    Omega[iDim]  = config->GetPitching_Omega()[iDim]/config->GetOmega_Ref();
-    Ampl[iDim]   = config->GetPitching_Ampl()[iDim]*DEG2RAD;
-    Phase[iDim]  = config->GetPitching_Phase()[iDim]*DEG2RAD;
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim]   = config->GetPitching_Ampl(iDim)*DEG2RAD;
+    Phase[iDim]  = config->GetPitching_Phase(iDim)*DEG2RAD;
   }
 
 
@@ -2222,9 +2222,9 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   Lref   = config->GetLength_Ref();
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    Omega[iDim]  = config->GetPlunging_Omega()[iDim]/config->GetOmega_Ref();
-    Ampl[iDim]   = config->GetPlunging_Ampl()[iDim]/Lref;
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetPlunging_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim]   = config->GetPlunging_Ampl(iDim)/Lref;
   }
   
   /*--- Plunging frequency and amplitude from config. ---*/
@@ -2307,8 +2307,9 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
    new location will be used for subsequent pitching/rotation.---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    config->GetMotion_Origin()[iDim] += deltaX[iDim];
+    Center[iDim] = config->GetMotion_Origin(iDim) + deltaX[iDim];
   } 
+  config->SetMotion_Origin(Center);
   
   /*--- As the body origin may have moved, print it to the console ---*/
   
@@ -2354,8 +2355,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Get motion center and translation rates from config ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    xDot[iDim]   = config->GetTranslation_Rate()[iDim];
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    xDot[iDim]   = config->GetTranslation_Rate(iDim);
   }
   
   if (harmonic_balance) {
@@ -2425,8 +2426,10 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
    new location will be used for subsequent pitching/rotation.---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    config->GetMotion_Origin()[iDim] += deltaX[iDim];
-  }
+    Center[iDim] = config->GetMotion_Origin(iDim) + deltaX[iDim];
+  } 
+  config->SetMotion_Origin(Center);
+
   
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
@@ -5629,9 +5632,9 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
       /*--- Get prescribed wall speed from config for this marker ---*/
       
       for (iDim = 0; iDim < 3; iDim++){
-        Center[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
-        Omega[iDim]  = config->GetMarkerRotationRate(jMarker)[iDim]/Omega_Ref;
-        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker)[iDim]/Vel_Ref;
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+        Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/Omega_Ref;
+        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim)/Vel_Ref;
       }
       
       
@@ -5717,8 +5720,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
         if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
 
           for (iDim = 0; iDim < 3; iDim++){
-            xDot[iDim]   = config->GetMarkerTranslationRate(jMarker)[iDim];
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
+            xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
           }
           
           /*--- Print some information to the console. Be verbose at the first
@@ -5828,9 +5831,9 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
           /*--- Plunging frequency and amplitude from config. ---*/
           
           for (iDim = 0; iDim < 3; iDim++){
-            Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker)[iDim]/Lref;
-            Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker)[iDim]/config->GetOmega_Ref();
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
+            Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker, iDim)/Lref;
+            Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker, iDim)/config->GetOmega_Ref();
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
           }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
@@ -5943,10 +5946,10 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
           /*--- Pitching origin, frequency, and amplitude from config. ---*/
           
           for (iDim = 0; iDim < 3; iDim++){
-            Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker)[iDim]*DEG2RAD;
-            Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker)[iDim]/config->GetOmega_Ref();
-            Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker)[iDim]*DEG2RAD;
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
+            Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker, iDim)*DEG2RAD;
+            Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker, iDim)/config->GetOmega_Ref();
+            Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker, iDim)*DEG2RAD;
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
           }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
@@ -6085,8 +6088,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
           /*--- Rotation origin and angular velocity from config. ---*/
           
           for (iDim = 0; iDim < 3; iDim++){
-            Omega[iDim]  = config->GetMarkerRotationRate(jMarker)[iDim]/config->GetOmega_Ref();
-            Center[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
+            Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/config->GetOmega_Ref();
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
           }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
@@ -6183,7 +6186,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
         
       for (iDim = 0; iDim < 3; iDim++){
-        Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker)[iDim];
+        Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
       }
       
       /*--- Calculate non-dim. position from rotation center ---*/
@@ -6277,7 +6280,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   if (config->GetKind_GridMovement() == AEROELASTIC_RIGID_MOTION) {
     su2double Omega, dt, psi;
     dt = config->GetDelta_UnstTimeND();
-    Omega  = (config->GetRotation_Rate()[3]/config->GetOmega_Ref());
+    Omega  = (config->GetRotation_Rate(3)/config->GetOmega_Ref());
     psi = Omega*(dt*ExtIter);
     
     /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
@@ -6354,8 +6357,8 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    Omega[iDim] = config->GetPitching_Omega()[iDim]/config->GetOmega_Ref();
-    Ampl[iDim] = config->GetPitching_Ampl()[iDim]*DEG2RAD;
+    Omega[iDim] = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim] = config->GetPitching_Ampl(iDim)*DEG2RAD;
   }
   
   /*--- Compute delta time based on physical time step ---*/
@@ -6526,16 +6529,16 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     su2double cosPhi, sinPhi, cosPsi, sinPsi;
     
     /*--- Center of rotation & angular velocity vector from config ---*/
-    Center[0] = config->GetMotion_Origin()[0];
-    Center[1] = config->GetMotion_Origin()[1];
-    Center[2] = config->GetMotion_Origin()[2];
+    Center[0] = config->GetMotion_Origin(0);
+    Center[1] = config->GetMotion_Origin(1);
+    Center[2] = config->GetMotion_Origin(2);
     
     /*--- Angular velocity vector from config ---*/
     
     dt = static_cast<su2double>(iter)*config->GetDelta_UnstTimeND();
-    Omega[0]  = config->GetRotation_Rate()[0];
-    Omega[1]  = config->GetRotation_Rate()[1];
-    Omega[2]  = config->GetRotation_Rate()[2];
+    Omega[0]  = config->GetRotation_Rate(0);
+    Omega[1]  = config->GetRotation_Rate(1);
+    Omega[2]  = config->GetRotation_Rate(2);
     
     /*--- For the unsteady adjoint, use reverse time ---*/
     if (adjoint) {

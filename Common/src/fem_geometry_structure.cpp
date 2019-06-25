@@ -6668,12 +6668,12 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
     case ROTATING_FRAME: {
 
       /* Get the rotation rate and rotation center from config. */
-    const su2double Center[] = {config->GetMotion_Origin()[0],
-                                config->GetMotion_Origin()[1],
-                                config->GetMotion_Origin()[2]};
-    const su2double Omega[]  = {config->GetRotation_Rate()[0]/Omega_Ref,
-                                config->GetRotation_Rate()[1]/Omega_Ref,
-                                config->GetRotation_Rate()[2]/Omega_Ref};
+    const su2double Center[] = {config->GetMotion_Origin(0),
+                                config->GetMotion_Origin(1),
+                                config->GetMotion_Origin(2)};
+    const su2double Omega[]  = {config->GetRotation_Rate(0)/Omega_Ref,
+                                config->GetRotation_Rate(1)/Omega_Ref,
+                                config->GetRotation_Rate(2)/Omega_Ref};
 
       /* Array used to store the distance to the rotation center. */ 
       su2double dist[] = {0.0, 0.0, 0.0};
@@ -6789,9 +6789,9 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
     case STEADY_TRANSLATION: {
 
       /* Get the translation velocity from config. */
-    const su2double vTrans[] = {config->GetTranslation_Rate()[0]/Vel_Ref,
-                                config->GetTranslation_Rate()[1]/Vel_Ref,
-                                config->GetTranslation_Rate()[2]/Vel_Ref};
+    const su2double vTrans[] = {config->GetTranslation_Rate(0)/Vel_Ref,
+                                config->GetTranslation_Rate(1)/Vel_Ref,
+                                config->GetTranslation_Rate(2)/Vel_Ref};
 
       /* Loop over the owned volume elements. */
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -6874,15 +6874,15 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
           
           /* Determine the prescribed translation velocity, rotation rate
                and rotation center. */
-          const su2double Center[] = {config->GetMotion_Origin()[0],
-                                      config->GetMotion_Origin()[1],
-                                      config->GetMotion_Origin()[2]};
-          const su2double Omega[]  = {config->GetRotation_Rate()[0]/Omega_Ref,
-                                      config->GetRotation_Rate()[1]/Omega_Ref,
-                                      config->GetRotation_Rate()[2]/Omega_Ref};
-          const su2double vTrans[] = {config->GetTranslation_Rate()[0]/Vel_Ref,
-                                      config->GetTranslation_Rate()[1]/Vel_Ref,
-                                      config->GetTranslation_Rate()[2]/Vel_Ref};
+          const su2double Center[] = {config->GetMotion_Origin(0),
+                                      config->GetMotion_Origin(1),
+                                      config->GetMotion_Origin(2)};
+          const su2double Omega[]  = {config->GetRotation_Rate(0)/Omega_Ref,
+                                      config->GetRotation_Rate(1)/Omega_Ref,
+                                      config->GetRotation_Rate(2)/Omega_Ref};
+          const su2double vTrans[] = {config->GetTranslation_Rate(0)/Vel_Ref,
+                                      config->GetTranslation_Rate(1)/Vel_Ref,
+                                      config->GetTranslation_Rate(2)/Vel_Ref};
           
           /* Easier storage of the surface elements and loop over them. */
           vector<CSurfaceElementFEM> &surfElem = boundaries[i].surfElem;
