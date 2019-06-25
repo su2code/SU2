@@ -739,6 +739,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   UseAccurateJacobian = config->GetUse_Accurate_Jacobians();
+  HasAnalyticalDerivatives = false;
   FinDiffStep = 1e-4;
   
   Gamma = config->GetGamma();
@@ -777,6 +778,20 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   delete [] P_Tensor;
   delete [] invP_Tensor;
   
+}
+
+void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure)
+{
+  /*--- For schemes that fit in the general form of AUSM+up and SLAU schemes you can inherit from this class
+   and implement only the specifics, which should be the face mass flux (per unit area) and the face pressure.
+     For implicit solution methods this class can either approximate the flux Jacobians (using those of the Roe
+   scheme) or compute accurate ones. This is done either numerically, differentiating "mdot" and "pressure"
+   using 1st order finite differences, or analytically if you use this function to set the values of
+   "dmdot_dVi/j", "dpres_dVi/j" and set "HasAnalyticalDerivatives" to true in the ctor of the derived class.
+     For accurate numerical differentiation "mdot" and "pressure" can be functions of, at most, the velocities,
+   pressures, densities, and enthalpies at nodes i/j. This is also the order expected for the partial derivatives
+   of "mdot" and "pressure" in "d?_dVi/j" (in case they are known analytically, see the AUSM+up implementation).
+  ---*/
 }
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
@@ -833,7 +848,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
 }
 
-void CUpwAUSMPLUS_SLAU_Base_Flow::NumericalJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
+void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
   
@@ -846,46 +861,48 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::NumericalJacobian(CConfig *config, su2double *
     psi_hat[iVar] = Area * (MassFlux > 0.0 ? psi_i[iVar] : psi_j[iVar]);
   }
   
-  /*--- Numerical differentiation of fluxes wrt primitives ---*/
+  /*--- If not computed analytically, numerically differentiate the fluxes wrt primitives ---*/
   
-  /*--- Create arrays of pointers to the primitive variables so we can loop through them ---*/
-  
-  su2double *primitives_i[6], *primitives_j[6];
-  
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    primitives_i[iDim] = &Velocity_i[iDim];
-    primitives_j[iDim] = &Velocity_j[iDim];
-  }
-  primitives_i[ nDim ] = &Pressure_i;  primitives_j[ nDim ] = &Pressure_j;
-  primitives_i[nDim+1] = &Density_i;   primitives_j[nDim+1] = &Density_j;
-  primitives_i[nDim+2] = &Enthalpy_i;  primitives_j[nDim+2] = &Enthalpy_j;
-  
-  /*--- Initialize the gradient arrays with the negative of the quantity,
-   then for forward finite differences we add to it and divide. ---*/
-  
-  su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
-  
-  for (iVar = 0; iVar < 6; ++iVar) {
-    dmdot_dVi[iVar] = -MassFlux;  dpres_dVi[iVar] = -Pressure;
-    dmdot_dVj[iVar] = -MassFlux;  dpres_dVj[iVar] = -Pressure;
-  }
-  
-  for (iVar = 0; iVar < nDim+3; ++iVar) {
-    /*--- Perturb side i ---*/
-    su2double epsilon = FinDiffStep * max(1.0, fabs(*primitives_i[iVar]));
-    *primitives_i[iVar] += epsilon;
-    ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
-    dmdot_dVi[iVar] += MassFlux;  dpres_dVi[iVar] += Pressure;
-    dmdot_dVi[iVar] /= epsilon;   dpres_dVi[iVar] /= epsilon;
-    *primitives_i[iVar] -= epsilon;
+  if (!HasAnalyticalDerivatives) {
     
-    /*--- Perturb side j ---*/
-    epsilon = FinDiffStep * max(1.0, fabs(*primitives_j[iVar]));
-    *primitives_j[iVar] += epsilon;
-    ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
-    dmdot_dVj[iVar] += MassFlux;  dpres_dVj[iVar] += Pressure;
-    dmdot_dVj[iVar] /= epsilon;   dpres_dVj[iVar] /= epsilon;
-    *primitives_j[iVar] -= epsilon;
+    /*--- Create arrays of pointers to the primitive variables so
+     we can loop through and perturb them in a general way. ---*/
+    
+    su2double *primitives_i[6], *primitives_j[6];
+    
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      primitives_i[iDim] = &Velocity_i[iDim];
+      primitives_j[iDim] = &Velocity_j[iDim];
+    }
+    primitives_i[ nDim ] = &Pressure_i;  primitives_j[ nDim ] = &Pressure_j;
+    primitives_i[nDim+1] = &Density_i;   primitives_j[nDim+1] = &Density_j;
+    primitives_i[nDim+2] = &Enthalpy_i;  primitives_j[nDim+2] = &Enthalpy_j;
+    
+    /*--- Initialize the gradient arrays with the negative of the quantity,
+     then for forward finite differences we add to it and divide. ---*/
+    
+    for (iVar = 0; iVar < 6; ++iVar) {
+      dmdot_dVi[iVar] = -MassFlux;  dpres_dVi[iVar] = -Pressure;
+      dmdot_dVj[iVar] = -MassFlux;  dpres_dVj[iVar] = -Pressure;
+    }
+    
+    for (iVar = 0; iVar < nDim+3; ++iVar) {
+      /*--- Perturb side i ---*/
+      su2double epsilon = FinDiffStep * max(1.0, fabs(*primitives_i[iVar]));
+      *primitives_i[iVar] += epsilon;
+      ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
+      dmdot_dVi[iVar] += MassFlux;  dpres_dVi[iVar] += Pressure;
+      dmdot_dVi[iVar] /= epsilon;   dpres_dVi[iVar] /= epsilon;
+      *primitives_i[iVar] -= epsilon;
+      
+      /*--- Perturb side j ---*/
+      epsilon = FinDiffStep * max(1.0, fabs(*primitives_j[iVar]));
+      *primitives_j[iVar] += epsilon;
+      ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
+      dmdot_dVj[iVar] += MassFlux;  dpres_dVj[iVar] += Pressure;
+      dmdot_dVj[iVar] /= epsilon;   dpres_dVj[iVar] /= epsilon;
+      *primitives_j[iVar] -= epsilon;
+    }
   }
 
   /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
@@ -1047,7 +1064,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
   if (!implicit) return;
   
   if (UseAccurateJacobian)
-    NumericalJacobian(config, val_Jacobian_i, val_Jacobian_j);
+    AccurateJacobian(config, val_Jacobian_i, val_Jacobian_j);
   else
     ApproximateJacobian(val_Jacobian_i, val_Jacobian_j);
 
@@ -1057,6 +1074,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2do
 CUpwAUSMPLUSUP_Flow::CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                      CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 
+  HasAnalyticalDerivatives = true;
   Minf = config->GetMach();
   Kp = 0.25;
   Ku = 0.75;
@@ -1090,7 +1108,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
 
   /*--- Left and right pressures and Mach numbers ---*/
   
-  su2double mLP, pLP, mRM, pRM;
+  su2double mLP, betaLP, mRM, betaRM;
 
   su2double mL = ProjVelocity_i/aF;
   su2double mR = ProjVelocity_j/aF;
@@ -1109,11 +1127,11 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
 
     mLP = p1 + beta*p2;
-    pLP = Pressure_i * (p1*(2.0-mL) + alpha*mL*p2);
+    betaLP = p1*(2.0-mL) + alpha*mL*p2;
   }
   else {
     mLP = 0.5*(mL+fabs(mL));
-    pLP = Pressure_i*mLP/mL;
+    betaLP = mLP/mL;
   }
 
   if (fabs(mR) <= 1.0) {
@@ -1121,11 +1139,11 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
 
     mRM = -p1 - beta*p2;
-    pRM =  Pressure_j * (p1*(2.0+mR) - alpha*mR*p2);
+    betaRM = p1*(2.0+mR) - alpha*mR*p2;
   }
   else {
     mRM = 0.5*(mR-fabs(mR));
-    pRM = Pressure_j*mRM/mR;
+    betaRM = mRM/mR;
   }
 
   /*--- Pressure and velocity diffusion terms ---*/
@@ -1133,15 +1151,151 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
   su2double rhoF = 0.5*(Density_i+Density_j);
   su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
 
-  su2double Pu = -Ku*fa*(pLP/Pressure_i)*(pRM/Pressure_j)*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
+  su2double Pu = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
 
   /*--- Finally the fluxes ---*/
 
   su2double mF = mLP + mRM + Mp;
   mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
 
-  pressure = pLP + pRM + Pu;
-
+  pressure = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
+  
+  if (!implicit || !UseAccurateJacobian) return;
+  
+  /*--- Analytical differentiation of the face mass flux and
+   pressure (in reverse mode, "?_b" denotes dmot_d?). ---*/
+  
+  /*--- limited mean Mach number (used in division...) ---*/
+  su2double MF = max(numeric_limits<passivedouble>::epsilon(),sqrt(MFsq));
+  
+  for (int outVar=0; outVar<2; ++outVar) {
+    
+    su2double aF_b    = 0.0, mF_b    = 0.0, MF_b  = 0.0, rhoF_b = 0.0, fa_b   = 0.0, alpha_b = 0.0,
+              rho_i_b = 0.0, rho_j_b = 0.0, p_i_b = 0.0, p_j_b  = 0.0, Vn_i_b = 0.0, Vn_j_b  = 0.0,
+              mR_b    = 0.0, mL_b    = 0.0, betaLP_b = 0.0,  betaRM_b = 0.0,  tmp = 0.0;
+    
+    if (outVar==0) {
+      /*--- mdot = ... ---*/
+      if (mF > 0.0) {
+        aF_b += mF*Density_i;
+        mF_b += aF*Density_i;
+        rho_i_b += mF*aF;
+      }
+      else {
+        aF_b += mF*Density_j;
+        mF_b += aF*Density_j;
+        rho_j_b += mF*aF;
+      }
+      
+      /*--- Mp = ... ---*/
+      if (sigma*MFsq < 1.0) {
+        rhoF_b -= Mp/rhoF * mF_b;
+        fa_b -= Mp/fa * mF_b;
+        aF_b -= 2.0*Mp/aF * mF_b;
+        MF_b += 2.0*sigma*MF*(Kp/fa)*(Pressure_j-Pressure_i)/(rhoF*aF*aF) * mF_b;
+        tmp = -(Kp/fa)*(1.0-sigma*MFsq)/(rhoF*aF*aF);
+        p_i_b -= tmp * mF_b;
+        p_j_b += tmp * mF_b;
+      }
+      
+      /*--- rhoF = ... ---*/
+      rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
+      
+      /*--- mRM = ... ---*/
+      if (fabs(mR) < 1.0) mR_b += (1.0-mR)*(0.5+4.0*beta*mR*(mR+1.0)) * mF_b;
+      else if (mR <=-1.0) mR_b += mF_b;
+      
+      /*--- mLP = ... ---*/
+      if (fabs(mL) < 1.0) mL_b += (1.0+mL)*(0.5+4.0*beta*mL*(mL-1.0)) * mF_b;
+      else if (mL >= 1.0) mL_b += mF_b;
+    }
+    else {
+      /*--- pressure = ... ---*/
+      p_i_b += betaLP;  betaLP_b += Pressure_i;
+      p_j_b += betaRM;  betaRM_b += Pressure_j;
+      
+      /*--- Pu = ... ---*/
+      rhoF_b += Pu/rhoF;
+      fa_b += Pu/fa;
+      aF_b += Pu/aF;
+      tmp = -Ku*fa*2.0*rhoF*aF*(ProjVelocity_j-ProjVelocity_i);
+      betaLP_b += tmp*betaRM;
+      betaRM_b += tmp*betaLP;
+      tmp = -Ku*fa*betaLP*betaRM*2.0*rhoF*aF;
+      Vn_i_b -= tmp;
+      Vn_j_b += tmp;
+      
+      /*--- rhoF = ... ---*/
+      rho_i_b += 0.5*rhoF_b;  rho_j_b += 0.5*rhoF_b;
+      
+      /*--- betaRM = ... ---*/
+      if (fabs(mR) < 1.0) {
+        tmp = mR*mR-1.0;
+        mR_b += tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaRM_b;
+        alpha_b -= mR*tmp*tmp * betaRM_b;
+      }
+      
+      /*--- betaLP = ... ---*/
+      if (fabs(mL) < 1.0) {
+        tmp = mL*mL-1.0;
+        mL_b -= tmp*(0.75-alpha*(5.0*tmp+4.0)) * betaLP_b;
+        alpha_b += mL*tmp*tmp * betaLP_b;
+      }
+      
+      /*--- alpha = ... ---*/
+      fa_b += 1.875*fa * alpha_b;
+    }
+    
+    /*--- steps shared by both ---*/
+    /*--- fa = ... ---*/
+    su2double Mref_b = 2.0*(1.0-sqrt(Mrefsq)) * fa_b;
+    
+    /*--- Mrefsq = ... ---*/
+    if (MF < 1.0 && MF > Minf) MF_b += Mref_b;
+    
+    /*--- MFsq = ... ---*/
+    mL_b += 0.5*mL/MF * MF_b;  mR_b += 0.5*mR/MF * MF_b;
+    
+    /*--- mL/R = ... ---*/
+    Vn_i_b += mL_b/aF;  Vn_j_b += mR_b/aF;
+    aF_b -= (mL*mL_b+mR*mR_b)/aF;
+    
+    /*--- aF,ahat,astar = f(H_i,H_j) ---*/
+    su2double astar_b = aF_b, H_i_b, H_j_b;
+    
+    if (ahatL < ahatR) {
+      if (astarL <= ProjVelocity_i) {
+        tmp = astarL/ProjVelocity_i;
+        astar_b *= 2.0*tmp;
+        Vn_i_b -= tmp*tmp * aF_b;
+      }
+      H_i_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_i)) * astar_b;
+      H_j_b = 0.0;
+    }
+    else {
+      if (astarR <= -ProjVelocity_j) {
+        tmp = -astarR/ProjVelocity_j;
+        astar_b *= 2.0*tmp;
+        Vn_j_b += tmp*tmp * aF_b;
+      }
+      H_j_b = sqrt(0.5*(Gamma-1.0)/((Gamma+1.0)*Enthalpy_j)) * astar_b;
+      H_i_b = 0.0;
+    }
+    
+    /*--- store derivatives ---*/
+    su2double *target_i = (outVar==0 ? dmdot_dVi : dpres_dVi),
+              *target_j = (outVar==0 ? dmdot_dVj : dpres_dVj);
+    target_i[5] = target_j[5] = 0.0;
+    
+    /*--- ProjVelocity = ... ---*/
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      target_i[iDim] = UnitNormal[iDim] * Vn_i_b;
+      target_j[iDim] = UnitNormal[iDim] * Vn_j_b;
+    }
+    target_i[ nDim ] = p_i_b;   target_j[ nDim ] = p_j_b;
+    target_i[nDim+1] = rho_i_b; target_j[nDim+1] = rho_j_b;
+    target_i[nDim+2] = H_i_b;   target_j[nDim+2] = H_j_b;
+  }
 }
 
 CUpwAUSMPLUSUP2_Flow::CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
