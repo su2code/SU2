@@ -5716,14 +5716,20 @@ public:
    * \brief Get the mesh motion origin.
    * \return The mesh motion origin.
    */
-  su2double* GetMotion_Origin();
+  su2double GetMotion_Origin(unsigned short iDim);
+  
+  /*!
+   * \brief Set the mesh motion origin.
+   * \return The mesh motion origin.
+   */
+  void SetMotion_Origin(su2double* val);
   
   /*!
    * \brief Get the mesh motion origin.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return The motion origin of the marker.
    */
-  su2double* GetMarkerMotion_Origin(unsigned short iMarkerMoving);
+  su2double GetMarkerMotion_Origin(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Set the mesh motion origin.
@@ -5734,104 +5740,111 @@ public:
   
   /*!
    * \brief Get the translational velocity of the mesh.
+   * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
    */
-  su2double* GetTranslation_Rate();
+  su2double GetTranslation_Rate(unsigned short iDim);
   
   /*!
    * \brief Get the translational velocity of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return Translational velocity of the marker.
    */
-  su2double* GetMarkerTranslationRate(unsigned short iMarkerMoving);
+  su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the translational velocity of the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Translational velocity of the mesh.
    */
-  su2double* GetRotation_Rate();
+  su2double GetRotation_Rate(unsigned short iDim);
+  
+  /*!
+   * \brief Get the translational velocity of the mesh.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \return Translational velocity of the mesh.
+   */
+  void SetRotation_Rate(unsigned short iDim, su2double val);
   
   /*!
    * \brief Get the rotation velocity of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return Rotation velocity of the marker.
    */
-  su2double* GetMarkerRotationRate(unsigned short iMarkerMoving);
+  su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Angular frequency of the mesh pitching.
    */
-  su2double* GetPitching_Omega();
+  su2double GetPitching_Omega(unsigned short iDim);
   
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return  Angular frequency of the marker pitching.
    */
-  su2double* GetMarkerPitching_Omega(unsigned short iMarkerMoving);
+  su2double GetMarkerPitching_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return pitching amplitude of the mesh.
    */
-  su2double* GetPitching_Ampl();
+  su2double GetPitching_Ampl(unsigned short iDim);
 
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return  pitching amplitude of the marker.
    */
-  su2double* GetMarkerPitching_Ampl(unsigned short iMarkerMoving);
+  su2double GetMarkerPitching_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
 
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return pitching phase of the mesh.
    */
-  su2double* GetPitching_Phase();
+  su2double GetPitching_Phase(unsigned short iDim);
   
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return pitching phase of the marker.
    */
-  su2double* GetMarkerPitching_Phase(unsigned short iMarkerMoving);
+  su2double GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Angular frequency of the mesh plunging.
    */
-  su2double* GetPlunging_Omega();
+  su2double GetPlunging_Omega(unsigned short iDim);
   
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return Angular frequency of the marker plunging.
    */
-  su2double* GetMarkerPlunging_Omega(unsigned short iMarkerMoving);
+  su2double GetMarkerPlunging_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the  pitching amplitudeof the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Plunging amplitude of the mesh.
    */
-  su2double* GetPlunging_Ampl();
+  su2double GetPlunging_Ampl(unsigned short iDim);
   
   /*!
    * \brief Get  pitching amplitude of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    * \return Plunging amplitude of the marker.
    */
-  su2double* GetMarkerPlunging_Ampl(unsigned short iMarkerMoving);
+  su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Angular velocity of the mesh about the z-axis.
    */
   su2double GetFinalRotation_Rate_Z();
