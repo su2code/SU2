@@ -41,10 +41,8 @@
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   bool val_periodic,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
                                                                                                  val_nZone,
-                                                                                                 val_periodic,
                                                                                                  MPICommunicator) {
 
 
@@ -263,7 +261,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Set the dependencies of the iteration ---*/
 
-  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, kind_recording);
+  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
+                             INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/
 

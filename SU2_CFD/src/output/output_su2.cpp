@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/output.hpp"
+#include "../../include/output/COutput.hpp"
 
 void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   

@@ -49,17 +49,38 @@ ___bin_SU2_DEF_SOURCES = \
 
 ___bin_SU2_DEF_CXXFLAGS =
 ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_mesh.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_csv.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_paraview.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-COutput.o \
+  ../../SU2_CFD/src/output/libSU2Core_a-CMeshOutput.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CCSVFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CFEMDataSorter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CFVMDataSorter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CParallelDataSorter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CParallelFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CParaviewFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CParaviewBinaryFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CSU2FileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CSU2BinaryFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CSU2MeshFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CSurfaceFEMDataSorter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CSurfaceFVMDataSorter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CTecplotFileWriter.o \
+  ../../SU2_CFD/src/output/filewriter/libSU2Core_a-CTecplotBinaryFileWriter.o \
   ../../SU2_CFD/src/output/libSU2Core_a-output_structure_legacy.o \
   ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o
+  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CVerificationSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CIncTGVSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CInviscidVortexSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSIncEulerSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSIncNSSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSNSTwoHalfCirclesSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSNSTwoHalfSpheresSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSNSUnitQuadSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CMMSNSUnitQuadSolutionWallBC.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CNSUnitQuadSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CRinglebSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CTGVSolution.o \
+  ../../Common/src/toolboxes/MMS/libSU2_a-CUserDefinedSolution.o
 
 # always link to built dependencies from ./externals
 ___bin_SU2_DEF_CXXFLAGS += @su2_externals_INCLUDES@

@@ -45,7 +45,7 @@
 #include "driver_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
-#include "output/output.hpp"
+#include "output/COutput.hpp"
 #include "numerics_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"

@@ -120,6 +120,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double Opt_RelaxFactor;  	/*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
+  su2double StartTime;
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -405,6 +406,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  su2double PhysicalTime;                       /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
   unsigned short nLevels_TimeAccurateLTS;       /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;              /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;                   /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
@@ -1055,6 +1057,7 @@ private:
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
+  unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -1084,8 +1087,15 @@ private:
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
   
+  /*!
+   * \brief Set the default values of config options not set in the config file using another config object.
+   * \param config - Config object to use the default values from.
+   */
   void SetDefaultFromConfig(CConfig *config);
   
+  /*!
+   * \brief Set default values for all options not yet set.
+   */
   void SetDefault();
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -2930,7 +2940,6 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_NearFieldBound(void);
-
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -3131,6 +3140,18 @@ public:
    * \return Current internal iteration.
    */
   unsigned long GetIntIter(void);
+
+  /*!
+   * \brief Set the current physical time.
+   * \param[in] val_t - Current physical time.
+   */
+  void SetPhysicalTime(su2double val_t);
+  
+  /*!
+   * \brief Get the current physical time.
+   * \return Current physical time.
+   */
+  su2double GetPhysicalTime(void);
   
   /*!
    * \brief Get the frequency for writing the solution file.
@@ -5610,7 +5631,7 @@ public:
    * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
    */
   bool GetSurface_Movement(unsigned short kind_movement);
-  
+
   /*!
    * \brief Set a surface movement marker.
    * \param[in] iMarker - Moving marker.
@@ -5624,7 +5645,7 @@ public:
    * \return Type of dynamic mesh motion.
    */
   unsigned short GetKind_GridMovement();
-
+  
   /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -5647,16 +5668,25 @@ public:
   
   /*!
    * \brief Get the mesh motion origin.
+   * \param[in] iDim - spatial component
    * \return The mesh motion origin.
    */
-  su2double* GetMotion_Origin();
+  su2double GetMotion_Origin(unsigned short iDim);
+  
+  /*!
+   * \brief Set the mesh motion origin.
+   * \param[in] val - new value of the origin 
+   * \return The mesh motion origin.
+   */
+  void SetMotion_Origin(su2double* val);
   
   /*!
    * \brief Get the mesh motion origin.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
    * \return The motion origin of the marker.
    */
-  su2double* GetMarkerMotion_Origin(unsigned short iMarkerMoving);
+  su2double GetMarkerMotion_Origin(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Set the mesh motion origin.
@@ -5667,111 +5697,126 @@ public:
   
   /*!
    * \brief Get the translational velocity of the mesh.
+   * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
    */
-  su2double* GetTranslation_Rate();
+  su2double GetTranslation_Rate(unsigned short iDim);
   
   /*!
    * \brief Get the translational velocity of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component    
    * \return Translational velocity of the marker.
    */
-  su2double* GetMarkerTranslationRate(unsigned short iMarkerMoving);
+  su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the translational velocity of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
    */
-  su2double* GetRotation_Rate();
+  su2double GetRotation_Rate(unsigned short iDim);
   
   /*!
-   * \brief Get the rotation velocity of the marker.
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \param[in] val - new value of the rotation rate.
+   * \return Translational velocity of the mesh.
+   */
+  void SetRotation_Rate(unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief Get the rotation rate of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component   
    * \return Rotation velocity of the marker.
    */
-  su2double* GetMarkerRotationRate(unsigned short iMarkerMoving);
+  su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the  pitching amplitudeof the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \brief Get the pitching rate of the mesh.
+   * \param[in] iDim - spatial component
    * \return Angular frequency of the mesh pitching.
    */
-  su2double* GetPitching_Omega();
+  su2double GetPitching_Omega(unsigned short iDim);
   
   /*!
-   * \brief Get  pitching amplitude of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \brief Get pitching rate of the marker.
+   * \param[in] iMarkerMoving - Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component  
    * \return  Angular frequency of the marker pitching.
    */
-  su2double* GetMarkerPitching_Omega(unsigned short iMarkerMoving);
+  su2double GetMarkerPitching_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the  pitching amplitudeof the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \brief Get the pitching amplitude of the mesh.
+   * \param[in] iDim - spatial component   
    * \return pitching amplitude of the mesh.
    */
-  su2double* GetPitching_Ampl();
-  
+  su2double GetPitching_Ampl(unsigned short iDim);
+
   /*!
-   * \brief Get  pitching amplitude of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \brief Get pitching amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
    * \return  pitching amplitude of the marker.
    */
-  su2double* GetMarkerPitching_Ampl(unsigned short iMarkerMoving);
-  
+  su2double GetMarkerPitching_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
+
   /*!
-   * \brief Get the  pitching amplitudeof the mesh.
+   * \brief Get the pitching phase of the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return pitching phase of the mesh.
    */
-  su2double* GetPitching_Phase();
+  su2double GetPitching_Phase(unsigned short iDim);
   
   /*!
-   * \brief Get  pitching amplitude of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \brief Get pitching phase of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) \
+   * \param[in] iDim - spatial component
    * \return pitching phase of the marker.
    */
-  su2double* GetMarkerPitching_Phase(unsigned short iMarkerMoving);
+  su2double GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the  pitching amplitudeof the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \brief Get the plunging rate of the mesh.
+   * \param[in] iDim - spatial component
    * \return Angular frequency of the mesh plunging.
    */
-  su2double* GetPlunging_Omega();
+  su2double GetPlunging_Omega(unsigned short iDim);
   
   /*!
-   * \brief Get  pitching amplitude of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \brief Get plunging rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
    * \return Angular frequency of the marker plunging.
    */
-  su2double* GetMarkerPlunging_Omega(unsigned short iMarkerMoving);
+  su2double GetMarkerPlunging_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the  pitching amplitudeof the mesh.
+   * \brief Get the plunging amplitude of the mesh.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component
    * \return Plunging amplitude of the mesh.
    */
-  su2double* GetPlunging_Ampl();
+  su2double GetPlunging_Ampl(unsigned short iDim);
   
   /*!
-   * \brief Get  pitching amplitude of the marker.
-   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \brief Get plunging amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
    * \return Plunging amplitude of the marker.
    */
-  su2double* GetMarkerPlunging_Ampl(unsigned short iMarkerMoving);
+  su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
    * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Angular velocity of the mesh about the z-axis.
    */
   su2double GetFinalRotation_Rate_Z();
-
+  
   /*!
    * \brief Set the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
    */
   void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
@@ -6409,60 +6454,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Analyze_TagBound(unsigned short val_marker);
-  
-  /*!
-   * \brief Set the total number of SEND_RECEIVE periodic transformations.
-   * \param[in] val_index - Total number of transformations.
-   */
-  void SetnPeriodicIndex(unsigned short val_index);
-  
-  /*!
-   * \brief Get the total number of SEND_RECEIVE periodic transformations.
-   * \return Total number of transformations.
-   */
-  unsigned short GetnPeriodicIndex(void);
-  
-  /*!
-   * \brief Set the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] center - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicCenter(unsigned short val_index, su2double* center);
-  
-  /*!
-   * \brief Get the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing coordinates of the center point.
-   */
-  su2double* GetPeriodicCenter(unsigned short val_index);
-  
-  /*!
-   * \brief Set the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] rotation - Pointer to a vector containing the rotation angles.
-   */
-  void SetPeriodicRotation(unsigned short val_index, su2double* rotation);
-  
-  /*!
-   * \brief Get the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing the angles of rotation.
-   */
-  su2double* GetPeriodicRotation(unsigned short val_index);
-  
-  /*!
-   * \brief Set the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] translate - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-
-  /*!
-   * \brief Get the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return The translation vector.
-   */
-  su2double* GetPeriodicTranslate(unsigned short val_index);
   
   /*!
    * \brief Get the total temperature at a nacelle boundary.
@@ -8941,6 +8932,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+
+  /*!
+   * \brief Get the verification solution.
+   * \return The verification solution to be used.
+   */
+  unsigned short GetVerification_Solution(void);
   
   /*!
    * \brief Get topology optimization.
@@ -9130,6 +9127,10 @@ public:
   * \brief Get the convergence field for monitoring
   */
   string GetConv_Field();
+  
+  void Set_StartTime(su2double starttime);
+  
+  su2double Get_StartTime();
 
 };
 

@@ -42,8 +42,8 @@
 #include "iteration_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
-#include "output/output.hpp"
-#include "output/output_driver.hpp"
+#include "output/COutput.hpp"
+#include "output/CDriverOutput.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -51,15 +51,15 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"
 
-#include "output/output_elasticity.hpp"
-#include "output/output_adj_elasticity.hpp"
-#include "output/output_flow_comp.hpp"
-#include "output/output_adj_flow_comp.hpp"
-#include "output/output_flow_comp_fem.hpp"
-#include "output/output_flow_inc.hpp"
-#include "output/output_adj_flow_inc.hpp"
-#include "output/output_heat.hpp"
-#include "output/output_adj_heat.hpp"
+#include "output/CElasticityOutput.hpp"
+#include "output/CAdjElasticityOutput.hpp"
+#include "output/CFlowCompOutput.hpp"
+#include "output/CAdjFlowOutput.hpp"
+#include "output/CFlowCompFEMOutput.hpp"
+#include "output/CFlowIncOutput.hpp"
+#include "output/CAdjFlowIncOutput.hpp"
+#include "output/CHeatOutput.hpp"
+#include "output/CAdjHeatOutput.hpp"
 
 using namespace std;
 
@@ -126,12 +126,10 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
-   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          bool val_periodic,
           SU2_Comm MPICommunicator);
 
   /*!
@@ -147,7 +145,7 @@ public:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic);
+  void Input_Preprocessing(SU2_Comm MPICommunicator);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
@@ -715,12 +713,10 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
-   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile,
                unsigned short val_nZone,
-               bool val_periodic,
                SU2_Comm MPICommunicator);
 
   /*!
@@ -823,7 +819,6 @@ public:
    */
   CTurbomachineryDriver(char* confFile,
                         unsigned short val_nZone,
-                        bool val_periodic,
                         SU2_Comm MPICommunicator);
 
   /*!
@@ -875,12 +870,10 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
-   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CHBDriver(char* confFile,
             unsigned short val_nZone,
-            bool val_periodic,
             SU2_Comm MPICommunicator);
 
   /*!
@@ -949,12 +942,10 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFSIDriver(char* confFile,
              unsigned short val_nZone,
-             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!
@@ -1067,18 +1058,13 @@ public:
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_periodic - Bool for periodic BCs.
+   * \param[in] val_nDim - Total number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDiscAdjFSIDriver(char* confFile,
                     unsigned short val_nZone,
-                    bool val_periodic,
                     SU2_Comm MPICommunicator);
 
   /*!
@@ -1321,7 +1307,6 @@ public:
    */
   CMultiphysicsZonalDriver(char* confFile,
                            unsigned short val_nZone,
-                           bool val_periodic,
                            SU2_Comm MPICommunicator);
 
   /*!
@@ -1372,7 +1357,6 @@ public:
    */
   CSinglezoneDriver(char* confFile,
              unsigned short val_nZone,
-             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!
@@ -1415,6 +1399,10 @@ public:
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
 
 };
 
@@ -1447,11 +1435,11 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Total number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDiscAdjSinglezoneDriver(char* confFile,
              unsigned short val_nZone,
-             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!
@@ -1461,57 +1449,56 @@ public:
 
   /*!
    * \brief Preprocess the single-zone iteration
+   * \param[in] TimeIter - index of the current time-step.
    */
   void Preprocess(unsigned long TimeIter);
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-
-  void Run();
+  void Run(void);
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess();
+  void Postprocess(void);
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-
   void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void DirectRun(unsigned short kind_recording);
 
   /*!
    * \brief Set the objective function.
    */
-  void SetObjFunction();
+  void SetObjFunction(void);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction();
+  void SetAdj_ObjFunction(void);
 
   /*!
    * \brief Print out the direct residuals.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void Print_DirectResidual(unsigned short kind_recording);
 
   /*!
    * \brief Record the main computational path.
    */
-
   void MainRecording(void);
 
   /*!
    * \brief Record the secondary computational path.
    */
-
   void SecondaryRecording(void);
 
 };
@@ -1553,7 +1540,6 @@ public:
    */
   CMultizoneDriver(char* confFile,
              unsigned short val_nZone,
-             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!
@@ -1645,7 +1631,6 @@ public:
    */
   CDiscAdjMultizoneDriver(char* confFile,
              unsigned short val_nZone,
-             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!

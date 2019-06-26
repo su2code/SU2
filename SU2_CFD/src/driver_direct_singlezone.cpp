@@ -41,10 +41,8 @@
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -120,6 +118,15 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
   config_container[ZONE_0]->SetExtIter(TimeIter);
 
+  /*--- Store the current physical time in the config container, as
+   this can be used for verification / MMS. This should also be more
+   general once the drivers are more stable. ---*/
+  
+  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
+  else
+    config_container[ZONE_0]->SetPhysicalTime(0.0);
+  
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
 //  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
@@ -296,14 +303,16 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
 
   }
-
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  config_container[ZONE_0]->Set_StartTime(StartTime);
+  
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
@@ -313,5 +322,53 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
   }
 
+}
+
+bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
+
+  unsigned long nInnerIter, InnerIter, TimeIter, nTimeIter;
+  su2double MaxTime, CurTime;
+  bool TimeDomain, InnerConvergence;
+  
+  nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
+  InnerIter  = config_container[ZONE_0]->GetInnerIter();
+  TimeIter   = config_container[ZONE_0]->GetTimeIter();
+  nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
+  MaxTime    = config_container[ZONE_0]->GetMax_Time();
+  CurTime    = TimeIter*config_container[ZONE_0]->GetTime_Step();
+  
+  TimeDomain = config_container[ZONE_0]->GetTime_Domain();
+  
+  InnerConvergence = output[ZONE_0]->GetConvergence();
+  
+  /*--- Check whether the inner solver has converged --- */
+
+  if (TimeDomain == NO){
+    if (((InnerIter+1 >= nInnerIter) || InnerConvergence) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER)." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+  }
+
+  /*--- Check whether the outer time integration has reached the final time ---*/
+
+  StopCalc = CurTime >= MaxTime;
+
+  if (TimeDomain == YES) {
+    if ((StopCalc || TimeIter+1 >= nTimeIter) && (rank == MASTER_NODE)){
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (StopCalc) cout << endl << "Maximum time reached." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER)." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;      
+    }
+  }
+
+  /*--- Reset the inner convergence --- */
+  
+  output[ZONE_0]->SetConvergence(false);
+
+  return StopCalc;
 }
 
