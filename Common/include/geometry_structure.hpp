@@ -147,6 +147,9 @@ public:
   unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
+  unsigned short periodicIndexDonor;     /*!< \brief Periodic indicator of the donor face. A value of 0 means no
+                                                     periodic donor face. A value larger than 0 gives the index of
+                                                     the periodic donor boundary + 1. */
   short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
                                                      boundary. For an internal face the value is -1,
                                                      while an invalidated face has the value -2. */
@@ -297,6 +300,7 @@ protected:
 	unsigned short nDim,	/*!< \brief Number of dimension of the problem. */
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
+  unsigned short MGLevel;         /*!< \brief The mesh level index for the current geometry container. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
   /* --- Custom boundary variables --- */
@@ -900,12 +904,6 @@ public:
 
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 */
-	virtual void SetPeriodicBoundary(CConfig *config);
-
-	/*! 
-	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
@@ -997,13 +995,6 @@ public:
 	 */
 	virtual void SetBoundSensitivity(CConfig *config);
 
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Set the data containers for customized boundary conditions.
    * \param[in] config - Definition of the particular problem.
@@ -1036,30 +1027,6 @@ public:
     * \param[in] iter - Current physical time step.
     */
    virtual void SetGridVelocity(CConfig *config, unsigned long iter);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_Coord(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-   virtual void Set_MPI_GridVel(CConfig *config);
-
-   /*!
-    * \brief A virtual member.
-    * \param[in] config - Definition of the particular problem.
-    */
-  virtual void Set_MPI_OldCoord(CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_MaxLength(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1695,6 +1662,18 @@ public:
    * \param[in] config - Problem configuration.
    */
   void SetElemVolume(CConfig *config);
+  
+  /*!
+   * \brief Set the multigrid index for the current geometry object.
+   * \param[in] val_iMesh - Multigrid index for current geometry object.
+   */
+  void SetMGLevel(unsigned short val_iMesh);
+  
+  /*!
+   * \brief Get the multigrid index for the current geometry object.
+   * \return Multigrid index for current geometry object.
+   */
+  unsigned short GetMGLevel(void);
 
   /*!
    * \brief Compute and store the volume of the elements.
@@ -2256,36 +2235,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetGridVelocity(CConfig *config, unsigned long iter);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Coord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid velocities.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_GridVel(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_OldCoord(CConfig *config);
-  
-  /*!
-   * \brief Perform the MPI communication for the max grid spacing.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_MaxLength(CConfig *config);
-
-  /*!
-   * \brief Set the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPeriodicBoundary(CConfig *config);
 
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
@@ -2982,51 +2931,6 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
 
-};
-
-/*! 
- * \class CPeriodicGeometry
- * \brief Class for defining a periodic boundary condition.
- * \author T. Economon, F. Palacios
- */
-class CPeriodicGeometry : public CGeometry {
-	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
-	unsigned long *nNewElem_BoundPer;			/*!< \brief Number of new periodic elements of the boundary. */
-
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPeriodicGeometry(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CPeriodicGeometry(void);
-
-	/*! 
-	 * \brief Set the periodic boundaries of the grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Tecplot 
-	 *            information is going to be stored.
-	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
-
-	/*! 
-	 * \brief Write the .su2 file.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
 };
 
 /*! 

@@ -40,10 +40,8 @@
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                       unsigned short val_nZone,
-                                      bool val_periodic,
                                       SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
                                                                                   val_nZone,
-                                                                                  val_periodic,
                                                                                   MPICommunicator) {
   for (iZone = 0; iZone < nZone; iZone++) {
 

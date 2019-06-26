@@ -41,10 +41,8 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -218,6 +216,15 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     config_container[iZone]->SetTimeIter(TimeIter);
     
 
+    /*--- Store the current physical time in the config container, as
+     this can be used for verification / MMS. This should also be more
+     general once the drivers are more stable. ---*/
+    
+    if (unsteady)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+    
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
 //    if (config_container[iZone]->GetInvDesign_Cp() == YES)

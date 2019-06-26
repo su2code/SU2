@@ -59,7 +59,6 @@ noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
 libSU2Core_sources = \
-  ../include/data_manufactured_solutions.hpp \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -99,7 +98,6 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
-  ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
@@ -126,27 +124,35 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
-  ../src/output/output_cgns.cpp \
-  ../src/output/output_structure.cpp \
+  ../src/output/filewriter/CCSVFileWriter.cpp \
+  ../src/output/filewriter/CFEMDataSorter.cpp \
+  ../src/output/filewriter/CFVMDataSorter.cpp \
+  ../src/output/filewriter/CParallelDataSorter.cpp \
+  ../src/output/filewriter/CParallelFileWriter.cpp \
+  ../src/output/filewriter/CParaviewBinaryFileWriter.cpp \
+  ../src/output/filewriter/CParaviewFileWriter.cpp \
+  ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
+  ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
+  ../src/output/filewriter/CSU2BinaryFileWriter.cpp \
+  ../src/output/filewriter/CSU2FileWriter.cpp \
+  ../src/output/filewriter/CSU2MeshFileWriter.cpp \
+  ../src/output/filewriter/CTecplotFileWriter.cpp \
+  ../src/output/filewriter/CTecplotBinaryFileWriter.cpp \
+  ../src/output/COutput.cpp \
   ../src/output/output_physics.cpp \
-  ../src/output/output_tecplot.cpp \
-  ../src/output/output_fieldview.cpp \
-  ../src/output/output_su2.cpp \
-  ../src/output/output_paraview.cpp \
-  ../src/output/output_csv.cpp \
-  ../src/output/output_mesh.cpp \
-  ../src/output/output_elasticity.cpp \
-  ../src/output/output_flow.cpp \
-  ../src/output/output_flow_comp.cpp \
-  ../src/output/output_flow_comp_fem.cpp \
-  ../src/output/output_flow_inc.cpp \
-  ../src/output/output_heat.cpp \
-  ../src/output/output_baseline.cpp \
-  ../src/output/output_adj_elasticity.cpp \
-  ../src/output/output_adj_heat.cpp \
-  ../src/output/output_adj_flow_comp.cpp \
-  ../src/output/output_adj_flow_inc.cpp \
-  ../src/output/output_driver.cpp \
+  ../src/output/CMeshOutput.cpp \
+  ../src/output/CElasticityOutput.cpp \
+  ../src/output/CFlowOutput.cpp \
+  ../src/output/CFlowCompOutput.cpp \
+  ../src/output/CFlowCompFEMOutput.cpp \
+  ../src/output/CFlowIncOutput.cpp \
+  ../src/output/CHeatOutput.cpp \
+  ../src/output/CBaselineOutput.cpp \
+  ../src/output/CAdjElasticityOutput.cpp \
+  ../src/output/CAdjHeatOutput.cpp \
+  ../src/output/CAdjFlowCompOutput.cpp \
+  ../src/output/CAdjFlowIncOutput.cpp \
+  ../src/output/CDriverOutput.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
