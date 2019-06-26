@@ -83,9 +83,9 @@ endif
 if BUILD_REVERSE
 su2_dot_ldadd += \
   ../../SU2_CFD/src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/output/libSU2Core_a-output_structure_legacy.$(OBJEXT) \
-  ../../SU2_CFD/src/output/libSU2Core_a-COutput.$(OBJEXT) \
-  ../../SU2_CFD/src/output/libSU2Core_a-CBaselineOutput.$(OBJEXT) \
+  ../../SU2_CFD/src/output/libSU2Core_AD_a-output_structure_legacy.$(OBJEXT) \
+  ../../SU2_CFD/src/output/libSU2Core_AD_a-COutput.$(OBJEXT) \
+  ../../SU2_CFD/src/output/libSU2Core_AD_a-CBaselineOutput.$(OBJEXT) \
   ../../SU2_CFD/src/output/filewriter/libSU2Core_AD_a-CParallelDataSorter.$(OBJEXT) \
   ../../SU2_CFD/src/output/filewriter/libSU2Core_AD_a-CParallelFileWriter.$(OBJEXT) \
   ../../SU2_CFD/src/output/filewriter/libSU2Core_AD_a-CFEMDataSorter.$(OBJEXT) \
