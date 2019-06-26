@@ -120,13 +120,6 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
   
-  SetHistoryOutputValue("INT_ITER", config->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config->GetExtIter());
-
-  SetHistoryOutputValue("TIME_ITER",  config->GetTimeIter());
-  SetHistoryOutputValue("OUTER_ITER", config->GetOuterIter());
-  SetHistoryOutputValue("INNER_ITER", config->GetInnerIter());
-    
   SetHistoryOutputValue("ADJOINT_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_RMS(0)));
   SetHistoryOutputValue("ADJOINT_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_RMS(1)));
   if (nVar_FEM == 3){

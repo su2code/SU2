@@ -240,10 +240,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* turb_solver = solver[TURB_SOL];  
   CSolver* heat_solver = solver[HEAT_SOL];
   
-  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
-  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
-  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
-
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));

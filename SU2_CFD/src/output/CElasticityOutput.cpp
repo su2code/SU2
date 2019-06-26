@@ -151,13 +151,6 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  // Iteration numbers
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
-
-  // Misc.
-  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
