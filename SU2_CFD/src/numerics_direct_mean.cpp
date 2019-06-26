@@ -755,7 +755,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
   }
@@ -771,7 +771,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
   delete [] RoeVelocity;
   delete [] Lambda;
   delete [] Epsilon;
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
   }
@@ -796,6 +796,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(CConfig *config, 
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
+  unsigned short iDim, iVar, jVar, kVar;
   su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
   
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
@@ -851,6 +852,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
+  
+  unsigned short iDim, iVar, jVar;
   
   /*--- If not computed analytically, numerically differentiate the fluxes wrt primitives ---*/
   
@@ -1011,6 +1014,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
 
 void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  unsigned short iDim, iVar;
+
   /*--- Space to start preaccumulation ---*/
 
   AD::StartPreacc();
@@ -1102,7 +1107,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
 
   su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
@@ -1299,7 +1304,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doubl
     target_i[5] = target_j[5] = 0.0;
     
     /*--- ProjVelocity = ... ---*/
-    for (iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
       target_i[iDim] = UnitNormal[iDim] * Vn_i_b;
       target_j[iDim] = UnitNormal[iDim] * Vn_j_b;
     }
@@ -1327,7 +1332,7 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2doub
 
   su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0, sq_vel = 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
 
@@ -1415,7 +1420,7 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(CConfig *config, su2double &mdo
 
   su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0, sq_veli = 0.0, sq_velj = 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
 
@@ -3616,6 +3621,9 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 }
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  if (config->GetGrid_Movement() && (SU2_MPI::GetRank() == MASTER_NODE))
+    cout << "WARNING: Grid velocities are NOT yet considered in the MSW scheme." << endl;
   
   /*--- Set booleans from CConfig settings ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);

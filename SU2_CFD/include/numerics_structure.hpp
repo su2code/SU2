@@ -2010,7 +2010,6 @@ protected:
   bool implicit;
   bool UseAccurateJacobian;
   bool HasAnalyticalDerivatives;
-  unsigned short iDim, iVar, jVar, kVar;
   su2double FinDiffStep;
   
   su2double MassFlux, DissFlux, Pressure;
