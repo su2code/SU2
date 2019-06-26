@@ -15637,8 +15637,8 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   /*--- Center of rotation & angular velocity vector from config ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
   
   L_Ref     = config->GetLength_Ref();
@@ -15715,7 +15715,7 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   
   /*--- Get the translational velocity vector from config ---*/
   for (iDim = 0; iDim < 3; iDim++){
-    xDot[iDim] = config->GetTranslation_Rate()[iDim]/config->GetVelocity_Ref();
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
   }
   /*--- Print some information to the console ---*/
   
@@ -19487,8 +19487,8 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   /*--- Center of rotation & angular velocity vector from config. ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    Center[iDim] = config->GetMotion_Origin()[iDim];
-    Omega[iDim]  = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
   
   L_Ref     = config->GetLength_Ref();
@@ -19555,7 +19555,7 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned shor
   /*--- Get the translational velocity vector from config ---*/
   
   for (iDim = 0; iDim < 3; iDim++){
-    xDot[iDim] = config->GetTranslation_Rate()[iDim]/config->GetVelocity_Ref();
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
   }
   
   /*--- Loop over all nodes and set the translational velocity ---*/

@@ -5698,7 +5698,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             if (rotating_frame) {
               
               for (iDim = 0; iDim < 3; iDim++){
-                Omega[iDim] = config->GetRotation_Rate()[iDim]/config->GetOmega_Ref();
+                Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
               }
               
               /*--- Calculate momentum source terms as: rho * ( Omega X V ) ---*/
