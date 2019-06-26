@@ -991,11 +991,16 @@ void CDriver::Geometrical_Preprocessing() {
       if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
 
-      /*--- Create the control volume structures ---*/
-
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
-      geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      /*--- Create the control volume structures or update if using wall model. ---*/
+      if (!wall_models){
+        if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+        geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      }
+      else{
+        geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], UPDATE);
+        geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], UPDATE);
+      }
 
       /*--- Interpolate the donor information for the wall model, if needed. ---*/
 
