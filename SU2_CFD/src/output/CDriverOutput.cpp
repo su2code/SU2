@@ -106,7 +106,7 @@ void CDriverOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config)
     map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
     vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
     
-    nField = ZoneHistoryFields.size();
+    nField = ZoneHistoryNames.size();
     
     
     /*-- For all the variables per solver --*/
@@ -140,7 +140,7 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
     map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
     vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
     
-    nField = ZoneHistoryFields.size();
+    nField = ZoneHistoryNames.size();
     
     
     /*-- For all the variables per solver --*/
