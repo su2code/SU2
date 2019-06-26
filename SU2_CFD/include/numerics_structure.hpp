@@ -1554,7 +1554,7 @@ public:
 class CUpwRoeBase_Flow : public CNumerics {
 protected:
   bool implicit, grid_movement, roe_low_dissipation;
-  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
   su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
   su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
   
