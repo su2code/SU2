@@ -214,10 +214,6 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];  
 
-  SetHistoryOutputValue("TIME_ITER",  curr_TimeIter);  
-  SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
-  SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
-
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_RMS(2)));
