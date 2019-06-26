@@ -4731,7 +4731,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
         rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->GetRotation_Rate()[2] = rot_z;
+          config_container[iZone]->SetRotation_Rate(2, rot_z);
           if(rank == MASTER_NODE && print && ExtIter > 0) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;

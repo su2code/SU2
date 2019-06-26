@@ -3631,7 +3631,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           if (config->GetKind_GridMovement() == AEROELASTIC_RIGID_MOTION) {
             su2double Omega, dt, psi;
             dt = config->GetDelta_UnstTimeND();
-            Omega  = (config->GetRotation_Rate()[2]/config->GetOmega_Ref());
+            Omega  = (config->GetRotation_Rate(2)/config->GetOmega_Ref());
             psi = Omega*(dt*ExtIter);
             
             /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/

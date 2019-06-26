@@ -946,9 +946,9 @@ inline unsigned short CConfig::GetKind_GridMovement() { return Kind_GridMovement
 
 inline void CConfig::SetKind_GridMovement(unsigned short motion_Type) { Kind_GridMovement = motion_Type; }
 
-inline su2double* CConfig::GetMotion_Origin(){return Motion_Origin;}
+inline su2double CConfig::GetMotion_Origin(unsigned short iDim){return Motion_Origin[iDim];}
 
-inline su2double* CConfig::GetMarkerMotion_Origin(unsigned short iMarkerMoving){return &MarkerMotion_Origin[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerMotion_Origin(unsigned short iMarkerMoving, unsigned short iDim){return MarkerMotion_Origin[3*iMarkerMoving + iDim];}
 
 inline void CConfig::SetMarkerMotion_Origin(su2double* val, unsigned short iMarkerMoving){
   for (unsigned short iDim = 0; iDim < 3; iDim++){
@@ -956,35 +956,43 @@ inline void CConfig::SetMarkerMotion_Origin(su2double* val, unsigned short iMark
   }
 }
 
-inline su2double* CConfig::GetTranslation_Rate(){return Translation_Rate;}
+inline void CConfig::SetMotion_Origin(su2double* val){
+  for (unsigned short iDim = 0; iDim < 3; iDim++){
+    Motion_Origin[iDim] = val[iDim];
+  }
+}
 
-inline su2double* CConfig::GetMarkerTranslationRate(unsigned short iMarkerMoving){return &MarkerTranslation_Rate[3*iMarkerMoving];}
+inline su2double CConfig::GetTranslation_Rate(unsigned short iDim){return Translation_Rate[iDim];}
 
-inline su2double* CConfig::GetRotation_Rate(){return Rotation_Rate;}
+inline su2double CConfig::GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim){return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
+
+inline su2double CConfig::GetRotation_Rate(unsigned short iDim){return Rotation_Rate[iDim];}
+
+inline void CConfig::SetRotation_Rate(unsigned short iDim, su2double val){Rotation_Rate[iDim] = val;}
 
 inline su2double CConfig::GetFinalRotation_Rate_Z(){return FinalRotation_Rate_Z;}
 
-inline su2double* CConfig::GetMarkerRotationRate(unsigned short iMarkerMoving){return &MarkerRotation_Rate[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim){return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
 
-inline su2double* CConfig::GetPitching_Omega(){return Pitching_Omega;}
+inline su2double CConfig::GetPitching_Omega(unsigned short iDim){return Pitching_Omega[iDim];}
 
-inline su2double* CConfig::GetMarkerPitching_Omega(unsigned short iMarkerMoving){return &MarkerPitching_Omega[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerPitching_Omega(unsigned short iMarkerMoving, unsigned short iDim){return MarkerPitching_Omega[3*iMarkerMoving + iDim];}
 
-inline su2double* CConfig::GetPitching_Ampl(){return Pitching_Ampl;}
+inline su2double CConfig::GetPitching_Ampl(unsigned short iDim){return Pitching_Ampl[iDim];}
 
-inline su2double* CConfig::GetMarkerPitching_Ampl(unsigned short iMarkerMoving){return &MarkerPitching_Ampl[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerPitching_Ampl(unsigned short iMarkerMoving, unsigned short iDim){return MarkerPitching_Ampl[3*iMarkerMoving + iDim];}
 
-inline su2double* CConfig::GetPitching_Phase(){return Pitching_Phase;}
+inline su2double CConfig::GetPitching_Phase(unsigned short iDim){return Pitching_Phase[iDim];}
 
-inline su2double* CConfig::GetMarkerPitching_Phase(unsigned short iMarkerMoving){return &MarkerPitching_Phase[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim){return MarkerPitching_Phase[3*iMarkerMoving + iDim];}
 
-inline su2double* CConfig::GetPlunging_Omega(){return Plunging_Omega;}
+inline su2double CConfig::GetPlunging_Omega(unsigned short iDim){return Plunging_Omega[iDim];}
 
-inline su2double* CConfig::GetMarkerPlunging_Omega(unsigned short iMarkerMoving){return &MarkerPlunging_Omega[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerPlunging_Omega(unsigned short iMarkerMoving, unsigned short iDim){return MarkerPlunging_Omega[3*iMarkerMoving + iDim];}
 
-inline su2double* CConfig::GetPlunging_Ampl(){return Plunging_Ampl;}
+inline su2double CConfig::GetPlunging_Ampl(unsigned short iDim){return Plunging_Ampl[iDim];}
 
-inline su2double* CConfig::GetMarkerPlunging_Ampl(unsigned short iMarkerMoving){return &MarkerPlunging_Ampl[3*iMarkerMoving];}
+inline su2double CConfig::GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim){return MarkerPlunging_Ampl[3*iMarkerMoving + iDim];}
 
 inline su2double CConfig::GetMach_Motion(void) { return Mach_Motion; }
 
