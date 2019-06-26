@@ -1540,24 +1540,26 @@ public:
 };
 
 /*!
- * \class CUpwRoe_Flow
- * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \class CUpwRoeBase_Flow
+ * \brief Intermediate base class for Roe schemes on ideal gas.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
  */
-class CUpwRoe_Flow : public CNumerics {
-private:
+class CUpwRoeBase_Flow : public CNumerics {
+protected:
   bool implicit, grid_movement, roe_low_dissipation;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon, MaxLambda, Delta;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
-  unsigned short iVar, jVar, kVar, iDim;
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
+  su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
+  su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  
+  /*!
+   * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) = 0;
   
 public:
   
@@ -1566,6 +1568,51 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   */
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwRoeBase_Flow(void);
+  
+  /*!
+   * \brief Compute the flux from node i to node j, part common to most Roe schemes.
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+};
+
+/*!
+ * \class CUpwRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno, F. Palacios
+ */
+class CUpwRoe_Flow : public CUpwRoeBase_Flow {
+private:
+  /*!
+   * \brief Add standard Roe dissipation to the flux.
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
   CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
@@ -1573,15 +1620,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwRoe_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
 };
 
@@ -1652,43 +1690,30 @@ public:
  * \author E. Molina, A. Bueno, F. Palacios
  * \version 6.2.0 "Falcon"
  */
-class CUpwL2Roe_Flow : public CNumerics {
+class CUpwL2Roe_Flow : public CUpwRoeBase_Flow {
 private:
-    bool implicit, grid_movement;
-    su2double *Diff_U;
-    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-    su2double *ProjFlux_i, *ProjFlux_j;
-    su2double *delta_wave, *delta_vel;
-    su2double *Lambda, *Epsilon, MaxLambda, Delta;
-    su2double **P_Tensor, **invP_Tensor;
-    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
-    unsigned short iDim, iVar, jVar, kVar;
+  /*!
+   * \brief Add L^2 Roe dissipation to the flux (low-Mach scheme).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
     
 public:
-    
-    /*!
-     * \brief Constructor of the class.
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-    CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-    /*!
-     * \brief Destructor of the class.
-     */
-    ~CUpwL2Roe_Flow(void);
-    
-    /*!
-     * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-     * \param[in] config - Definition of the particular problem.
-     */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwL2Roe_Flow(void);
 };
 
 /*!
@@ -1698,43 +1723,30 @@ public:
  * \author E. Molina, A. Bueno, F. Palacios
  * \version 6.2.0 "Falcon"
  */
-class CUpwLMRoe_Flow : public CNumerics {
+class CUpwLMRoe_Flow : public CUpwRoeBase_Flow {
 private:
-    bool implicit, grid_movement;
-    su2double *Diff_U;
-    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-    su2double *ProjFlux_i, *ProjFlux_j;
-    su2double *delta_wave, *delta_vel;
-    su2double *Lambda, *Epsilon, MaxLambda, Delta;
-    su2double **P_Tensor, **invP_Tensor;
-    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
-    unsigned short iDim, iVar, jVar, kVar;
+  /*!
+   * \brief Add LMRoe dissipation to the flux (low-Mach scheme).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
     
 public:
-    
-    /*!
-     * \brief Constructor of the class.
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-    CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-    /*!
-     * \brief Destructor of the class.
-     */
-    ~CUpwLMRoe_Flow(void);
-    
-    /*!
-     * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-     * \param[in] config - Definition of the particular problem.
-     */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwLMRoe_Flow(void);
 };
 
 /*!
@@ -1992,7 +2004,6 @@ protected:
   bool implicit;
   bool UseAccurateJacobian;
   bool HasAnalyticalDerivatives;
-  unsigned short iDim, iVar, jVar, kVar;
   su2double FinDiffStep;
   
   su2double MassFlux, DissFlux, Pressure;
