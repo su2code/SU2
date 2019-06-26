@@ -2895,6 +2895,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   RoeVelocity = new su2double [nDim];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
+  Conservatives_i = new su2double [nVar];
+  Conservatives_j = new su2double [nVar];
   Lambda = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
@@ -2912,6 +2914,8 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   delete [] RoeVelocity;
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
+  delete [] Conservatives_i;
+  delete [] Conservatives_j;
   delete [] Lambda;
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
@@ -2933,7 +2937,6 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   unsigned short iVar, jVar, iDim;
-  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
 
   AD::StartPreacc();
@@ -3040,14 +3043,15 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   
   /*--- Reconstruct conservative variables ---*/
   
-  U_i[0] = Density_i;  U_j[0] = Density_j;
+  Conservatives_i[0] = Density_i;
+  Conservatives_j[0] = Density_j;
   
   for (iDim = 0; iDim < nDim; iDim++) {
-    U_i[iDim+1] = Density_i*Velocity_i[iDim];
-    U_j[iDim+1] = Density_j*Velocity_j[iDim];
+    Conservatives_i[iDim+1] = Density_i*Velocity_i[iDim];
+    Conservatives_j[iDim+1] = Density_j*Velocity_j[iDim];
   }
-  U_i[nDim+1] = Density_i*Energy_i;
-  U_j[nDim+1] = Density_j*Energy_j;
+  Conservatives_i[nDim+1] = Density_i*Energy_i;
+  Conservatives_j[nDim+1] = Density_j*Energy_j;
   
   /*--- Compute left and right fluxes ---*/
   
@@ -3072,7 +3076,7 @@ void CUpwRoeBase_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   
   if (grid_movement) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] -= ProjGridVel*Area * 0.5*(U_i[iVar]+U_j[iVar]);
+      val_residual[iVar] -= ProjGridVel*Area * 0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
       
       if (implicit) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
@@ -3100,7 +3104,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
   
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
-  for (iVar = 0; iVar < nVar; iVar++) Diff_U[iVar] = U_j[iVar]-U_i[iVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
   
   /*--- Low dissipation formulation ---*/
   if (roe_low_dissipation)
