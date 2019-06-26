@@ -121,11 +121,7 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) { 
   
   CSolver* adjheat_solver = solver[ADJHEAT_SOL];
-  
-  SetHistoryOutputValue("TIME_ITER", config->GetTimeIter());  
-  SetHistoryOutputValue("INNER_ITER", config->GetInnerIter());
-  SetHistoryOutputValue("OUTER_ITER", config->GetOuterIter()); 
-  
+
   SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
  
   SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
