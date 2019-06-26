@@ -119,7 +119,7 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
 
   if (timestep > 0.0){
     is_unsteady = true;
-    solution_time = timestep*time_iter;
+    solution_time = SU2_TYPE::GetValue(timestep)*time_iter;
   }
   
   int32_t zone;
