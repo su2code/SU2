@@ -852,15 +852,6 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
 
   /*--- Compute Jacobians using a mixed (numerical/analytical) formulation ---*/
   
-  su2double mi = 0.5*Area*(MassFlux+DissFlux)/Density_i,
-            mj = 0.5*Area*(MassFlux-DissFlux)/Density_j;
-  
-  su2double psi_hat[5];
-  for (iVar = 0; iVar < nVar; ++iVar) {
-    /*--- Valid for phi = |mdot| ---*/
-    psi_hat[iVar] = Area * (MassFlux > 0.0 ? psi_i[iVar] : psi_j[iVar]);
-  }
-  
   /*--- If not computed analytically, numerically differentiate the fluxes wrt primitives ---*/
   
   if (!HasAnalyticalDerivatives) {
@@ -908,7 +899,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
   /*--- Differentiation of fluxes wrt conservatives assuming ideal gas ---*/
   
   su2double dmdot_dUi[5], dmdot_dUj[5], dpres_dUi[5], dpres_dUj[5];
-  su2double sq_veli = 0.0, sq_velj = 0.0;
+  su2double sq_veli = 0.0, sq_velj = 0.0, dHi_drhoi, dHj_drhoj;
+  su2double oneOnRhoi = 1.0/Density_i, oneOnRhoj = 1.0/Density_j;
   
   for (jVar = 0; jVar < nVar; ++jVar) {
 
@@ -919,8 +911,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     if (jVar == 0) { // Density
       for (iDim = 0; iDim < nDim; ++iDim) {
         // -u,v,w / rho
-        dVi_dUi[iDim] = -Velocity_i[iDim] / Density_i;
-        dVj_dUj[iDim] = -Velocity_j[iDim] / Density_j;
+        dVi_dUi[iDim] = -Velocity_i[iDim] * oneOnRhoi;
+        dVj_dUj[iDim] = -Velocity_j[iDim] * oneOnRhoj;
         // ||V||^2
         sq_veli += Velocity_i[iDim] * Velocity_i[iDim];
         sq_velj += Velocity_j[iDim] * Velocity_j[iDim];
@@ -930,23 +922,25 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
       
       dVi_dUi[nDim+1] = dVj_dUj[nDim+1] = 1.0;
       
-      dVi_dUi[nDim+2] = (0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i)) / Density_i;
-      dVj_dUj[nDim+2] = (0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j)) / Density_j;
+      dHi_drhoi = 0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i);
+      dHj_drhoj = 0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j);
+      dVi_dUi[nDim+2] = dHi_drhoi * oneOnRhoi;
+      dVj_dUj[nDim+2] = dHj_drhoj * oneOnRhoj;
     }
     else if (jVar == nVar-1) { // rho*Energy
       dVi_dUi[nDim] = dVj_dUj[nDim] = Gamma_Minus_One;
-      dVi_dUi[nDim+2] = Gamma / Density_i;
-      dVj_dUj[nDim+2] = Gamma / Density_j;
+      dVi_dUi[nDim+2] = Gamma * oneOnRhoi;
+      dVj_dUj[nDim+2] = Gamma * oneOnRhoj;
     }
     else { // Momentum
-      dVi_dUi[jVar-1] = 1.0 / Density_i;
-      dVj_dUj[jVar-1] = 1.0 / Density_j;
+      dVi_dUi[jVar-1] = oneOnRhoi;
+      dVj_dUj[jVar-1] = oneOnRhoj;
       
       dVi_dUi[nDim] = -Gamma_Minus_One*Velocity_i[jVar-1];
       dVj_dUj[nDim] = -Gamma_Minus_One*Velocity_j[jVar-1];
       
-      dVi_dUi[nDim+2] = dVi_dUi[nDim] / Density_i;
-      dVj_dUj[nDim+2] = dVj_dUj[nDim] / Density_j;
+      dVi_dUi[nDim+2] = dVi_dUi[nDim] * oneOnRhoi;
+      dVj_dUj[nDim+2] = dVj_dUj[nDim] * oneOnRhoj;
     }
     
     /*--- Dot product to complete chain rule ---*/
@@ -960,7 +954,18 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     }
   }
   
-  /*--- Assemble final Jacobians ---*/
+  /*--- Assemble final Jacobians (assuming phi = |mdot|) ---*/
+  
+  su2double mdot_hat, psi_hat[5];
+  
+  if (MassFlux > 0.0) {
+    mdot_hat = Area*MassFlux*oneOnRhoi;
+    for (iVar = 0; iVar < nVar; ++iVar) psi_hat[iVar] = Area*psi_i[iVar];
+  }
+  else {
+    mdot_hat = Area*MassFlux*oneOnRhoj;
+    for (iVar = 0; iVar < nVar; ++iVar) psi_hat[iVar] = Area*psi_j[iVar];
+  }
   
   /*--- Contribution from the mass flux derivatives ---*/
   for (iVar = 0; iVar < nVar; ++iVar) {
@@ -970,31 +975,37 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(CConfig *config, su2double **
     }
   }
   
+  /*--- Contribution from the pressure derivatives ---*/
   for (iDim = 0; iDim < nDim; ++iDim) {
-    /*--- Contribution from the pressure derivatives ---*/
     for (jVar = 0; jVar < nVar; ++jVar) {
       val_Jacobian_i[iDim+1][jVar] += Normal[iDim] * dpres_dUi[jVar];
       val_Jacobian_j[iDim+1][jVar] += Normal[iDim] * dpres_dUj[jVar];
     }
-  
-    /*--- Contributions from the derivatives of PSI wrt the conservatives (velocity part) ---*/
-    val_Jacobian_i[iDim+1][0] -= mi*Velocity_i[iDim];
-    val_Jacobian_j[iDim+1][0] -= mj*Velocity_j[iDim];
-    
-    val_Jacobian_i[iDim+1][iDim+1] += mi;
-    val_Jacobian_j[iDim+1][iDim+1] += mj;
   }
-
-  /*--- Continue dPSI/dU (energy part, last row) ---*/
-  val_Jacobian_i[nVar-1][0] += mi * (0.5*(Gamma-2.0)*sq_veli - Gamma*Pressure_i/((Gamma-1.0)*Density_i));
-  val_Jacobian_j[nVar-1][0] += mj * (0.5*(Gamma-2.0)*sq_velj - Gamma*Pressure_j/((Gamma-1.0)*Density_j));
   
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    val_Jacobian_i[nVar-1][iDim+1] -= mi*Gamma_Minus_One*Velocity_i[iDim]; 
-    val_Jacobian_j[nVar-1][iDim+1] -= mj*Gamma_Minus_One*Velocity_j[iDim]; 
+  /*--- Contributions from the derivatives of PSI wrt the conservatives ---*/
+  if (MassFlux > 0.0) {
+    /*--- Velocity terms ---*/
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      val_Jacobian_i[iDim+1][0]      -= mdot_hat*Velocity_i[iDim];
+      val_Jacobian_i[iDim+1][iDim+1] += mdot_hat;
+      val_Jacobian_i[nVar-1][iDim+1] -= mdot_hat*Gamma_Minus_One*Velocity_i[iDim];
+    }
+    /*--- Energy terms ---*/
+    val_Jacobian_i[nVar-1][0]      += mdot_hat*dHi_drhoi;
+    val_Jacobian_i[nVar-1][nVar-1] += mdot_hat*Gamma;
   }
-  val_Jacobian_i[nVar-1][nVar-1] += mi*Gamma;
-  val_Jacobian_j[nVar-1][nVar-1] += mj*Gamma;
+  else {
+    /*--- Velocity terms ---*/
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      val_Jacobian_j[iDim+1][0]      -= mdot_hat*Velocity_j[iDim];
+      val_Jacobian_j[iDim+1][iDim+1] += mdot_hat;
+      val_Jacobian_j[nVar-1][iDim+1] -= mdot_hat*Gamma_Minus_One*Velocity_j[iDim];
+    }
+    /*--- Energy terms ---*/
+    val_Jacobian_j[nVar-1][0]      += mdot_hat*dHj_drhoj;
+    val_Jacobian_j[nVar-1][nVar-1] += mdot_hat*Gamma;
+  }
 
 }
 
