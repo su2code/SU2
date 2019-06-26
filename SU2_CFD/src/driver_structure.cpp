@@ -47,8 +47,11 @@ CDriver::CDriver(char* confFile,
                  unsigned short val_nDim,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
 
-#ifdef CODI_REVERSE_TYPE
-  SU2_MPI::Init_AMPI();
+  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
+#ifdef HAVE_MPI
+  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+    SU2_MPI::Init_AMPI();
+  #endif
 #endif
 
   unsigned short jZone, iSol;
