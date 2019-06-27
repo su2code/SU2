@@ -6,7 +6,7 @@
 CSU2FileWriter::CSU2FileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){
 
-  file_ext = ".su2s";
+  file_ext = ".dat";
     
 }
 

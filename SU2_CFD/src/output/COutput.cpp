@@ -531,6 +531,12 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
 
 void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
   
+  string FileName = VolumeFilename;
+  
+  if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
+    FileName = RestartFilename;
+  }
+  
   CFileWriter* file_writer = NULL;
 
   /*--- Set the file writer --- */
@@ -539,7 +545,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Write data to file --- */
   
-  file_writer->Write_Data(config->GetFilename(VolumeFilename, ""), data_sorter);
+  file_writer->Write_Data(config->GetFilename(FileName, ""), data_sorter);
 
   delete file_writer;
   
