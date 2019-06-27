@@ -6,7 +6,7 @@
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){
 
-  file_ext = ".su2s";
+  file_ext = ".dat";
     
 }
 
