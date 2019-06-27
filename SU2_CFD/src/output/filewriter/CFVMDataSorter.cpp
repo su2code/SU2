@@ -125,41 +125,6 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   nTotalPoint = nLocalPoint_Sort;
 #endif
   
-  /*--- Now that we know the actual number of points we need to output,
-   compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-  
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *starting_node = new unsigned long[size];
-  unsigned long *ending_node   = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-  
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = nTotalPoint/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long rem_points = nTotalPoint-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-  
-  /*--- Store the local number of nodes and the beginning/end index ---*/
-  
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    starting_node[ii] = ending_node[ii-1];
-    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = nTotalPoint;
-  
   /*--- We start with the grid nodes distributed across all procs with
    no particular ordering assumed. We need to loop through our local partition
    and decide how many nodes we must send to each other rank in order to
@@ -190,13 +155,13 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/npoint_procs[0];
+      iProcessor = Global_Index/nPoint_Lin[0];
       if (iProcessor >= (unsigned long)size)
         iProcessor = (unsigned long)size-1;
-      if (Global_Index >= nPoint_Linear[iProcessor])
-        while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+      if (Global_Index >= nPoint_Cum[iProcessor])
+        while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
       else
-        while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
       
       /*--- If we have not visited this node yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -274,13 +239,13 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
       
       /*--- Search for the processor that owns this point. ---*/
       
-      iProcessor = Global_Index/npoint_procs[0];
+      iProcessor = Global_Index/nPoint_Lin[0];
       if (iProcessor >= (unsigned long)size)
         iProcessor = (unsigned long)size-1;
-      if (Global_Index >= nPoint_Linear[iProcessor])
-        while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+      if (Global_Index >= nPoint_Cum[iProcessor])
+        while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
       else
-        while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
       
       /*--- Load node coordinates into the buffer for sending. ---*/
       
@@ -299,7 +264,7 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
          points once they all reach the correct processor. ---*/
         
         nn = idIndex[iProcessor];
-        idSend[nn] = Global_Index - starting_node[iProcessor];
+        idSend[nn] = Global_Index - beg_node[iProcessor];
         
         /*--- Increment the index by the message length ---*/
         
@@ -463,12 +428,6 @@ void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Recv;
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
-
-  delete [] npoint_procs;
-  delete [] starting_node;
-  delete [] ending_node;
-  delete [] nPoint_Linear;
-  
 }
 
 

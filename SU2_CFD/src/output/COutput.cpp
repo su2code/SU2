@@ -1095,11 +1095,38 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     }
     cout << endl;
   }
-
+  
+  unsigned long nPoint = 0;
+  
+  if (fem_output){
+    
+    /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+    
+    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+    
+    unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+    
+    CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
+    
+    /*--- Access the solution by looping over the owned volume elements. ---*/
+    
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+      
+      for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {        
+       
+        nPoint++;
+        
+      }
+    }
+  } else {
+    nPoint = geometry->GetnPoint();
+  }
+  
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
    
-  Local_Data.resize(geometry->GetnPoint(), std::vector<su2double>(GlobalField_Counter, 0.0));
+  Local_Data.resize(nPoint, std::vector<su2double>(GlobalField_Counter, 0.0));
   
 }
 

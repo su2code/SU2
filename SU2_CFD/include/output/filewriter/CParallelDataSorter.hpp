@@ -24,8 +24,6 @@ protected:
   int *Conn_Hexa_Par;
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
-  map<unsigned long,unsigned long> Global2Renumber, 
-                                   Renumber2Global;
   
   unsigned long nGlobalPoint_Sort;
   unsigned long nLocalPoint_Sort;
@@ -133,7 +131,14 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(){return nPoint_Cum[rank];}
+  unsigned long GetnPointCumulative(unsigned short rank){return nPoint_Cum[rank];}
+  
+  /*!
+   * \brief Get the linear number of points
+   * \input rank - the processor rank.
+   * \return The linear number of points up to certain processor rank.
+   */
+  unsigned long GetnPointLinear(unsigned short rank){return nPoint_Lin[rank];}  
   
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)

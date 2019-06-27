@@ -25,6 +25,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   Conn_Pyra_Par = NULL;
   
   Parallel_Data = NULL;
+  
+  nLocalPoint_Sort = 0;
 }
 
 CParallelDataSorter::~CParallelDataSorter(){

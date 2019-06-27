@@ -202,7 +202,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    in cumulative storage format. ---*/
 
   disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-          GlobalField_Counter*data_sorter->GetnPointCumulative()*sizeof(passivedouble));
+          GlobalField_Counter*data_sorter->GetnPointCumulative(rank)*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
