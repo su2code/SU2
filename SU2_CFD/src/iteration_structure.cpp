@@ -313,7 +313,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)
         cout << "Deforming the volume grid." << endl;
 
-      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
+      grid_movement[val_iZone][val_iInst]->SetVolume_Deformation_Elas(geometry_container[val_iZone][val_iInst][MESH_0],
                                                                     config_container[val_iZone], true, false);
 
     if ((rank == MASTER_NODE) && (!discrete_adjoint)&& Screen_Output)

@@ -3140,9 +3140,20 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
-  *Solution, *Solution_i, *Solution_j, *LocalMinSolution, *LocalMaxSolution,
-  *GlobalMinSolution, *GlobalMaxSolution,
+  *Solution, *Solution_i, *Solution_j,
+  *LocalMinSolution = NULL, *LocalMaxSolution = NULL,
+  *GlobalMinSolution = NULL, *GlobalMaxSolution = NULL,
   dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
+  
+#ifdef CODI_REVERSE_TYPE
+  bool TapeActive = false;
+
+  if (config->GetDiscrete_Adjoint() && config->GetFrozen_Limiter_Disc()) {
+    /*--- If limiters are frozen do not record the computation ---*/
+    TapeActive = AD::globalTape.isActive();
+    AD::StopRecording();
+  }
+#endif
   
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
@@ -3286,33 +3297,34 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
     
-    /*--- Allocate memory for the max and min solution value --*/
-    
-    LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
-    LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
-    
-    /*--- Compute the max value and min value of the solution ---*/
-    
-    Solution = node[iPoint]->GetSolution();
-    for (iVar = 0; iVar < nVar; iVar++) {
-      LocalMinSolution[iVar] = Solution[iVar];
-      LocalMaxSolution[iVar] = Solution[iVar];
-    }
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+
+      /*--- Allocate memory for the max and min solution value --*/
       
-      /*--- Get the solution variables ---*/
+      LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
+      LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
+      
+      /*--- Compute the max value and min value of the solution ---*/
       
       Solution = node[iPoint]->GetSolution();
-      
       for (iVar = 0; iVar < nVar; iVar++) {
-        LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
-        LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+        LocalMinSolution[iVar] = Solution[iVar];
+        LocalMaxSolution[iVar] = Solution[iVar];
       }
       
-    }
-    
-    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Get the solution variables ---*/
+        
+        Solution = node[iPoint]->GetSolution();
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
+          LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+        }
+        
+      }
+      
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3339,8 +3351,20 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
 
       for (iVar = 0; iVar < nVar; iVar++) {
+          
+        AD::StartPreacc();
+        AD::SetPreaccIn(Gradient_i[iVar], nDim);
+        AD::SetPreaccIn(Gradient_j[iVar], nDim);
+        AD::SetPreaccIn(Coord_i, nDim);
+        AD::SetPreaccIn(Coord_j, nDim);
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          AD::SetPreaccIn(GlobalMaxSolution[iVar]);
+          AD::SetPreaccIn(GlobalMinSolution[iVar]);
           eps1 = LimK * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
           eps2 = eps1*eps1;
         }
@@ -3348,11 +3372,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
           eps1 = LimK*dave;
           eps2 = eps1*eps1*eps1;
         }
-        
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
@@ -3387,14 +3406,15 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
           node[jPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
         }
+        
+        AD::EndPreacc();
       }
-      
-      AD::EndPreacc();
-
     }
     
-    delete [] LocalMinSolution; delete [] GlobalMinSolution;
-    delete [] LocalMaxSolution; delete [] GlobalMaxSolution;
+    if (LocalMinSolution  != NULL) delete [] LocalMinSolution;
+    if (LocalMaxSolution  != NULL) delete [] LocalMaxSolution;
+    if (GlobalMinSolution != NULL) delete [] GlobalMinSolution;
+    if (GlobalMaxSolution != NULL) delete [] GlobalMaxSolution;
 
   }
   
@@ -3554,6 +3574,9 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, SOLUTION_LIMITER);
   CompleteComms(geometry, config, SOLUTION_LIMITER);
 
+#ifdef CODI_REVERSE_TYPE
+  if (TapeActive) AD::StartRecording();
+#endif
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
