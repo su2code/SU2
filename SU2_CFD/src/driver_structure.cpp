@@ -877,6 +877,10 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
+
+      if(driver_config->GetDiscrete_Adjoint()) {
+        config_container[iZone]->SetMultiphysicsDiscrete_Adjoint(true);
+      }
     }
   }
 
