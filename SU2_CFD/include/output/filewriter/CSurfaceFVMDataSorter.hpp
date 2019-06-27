@@ -6,7 +6,8 @@
 class CSurfaceFVMDataSorter : public CParallelDataSorter{
   
   CFVMDataSorter* volume_sorter;
-    
+  map<unsigned long,unsigned long> Renumber2Global;
+  
 public:
   CSurfaceFVMDataSorter(CConfig *config, unsigned short nFields, CFVMDataSorter* volume_sorter);
   
