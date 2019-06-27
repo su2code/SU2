@@ -108,12 +108,12 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
       }
       for (iElem = 0; iElem < data_sorter->GetnElem(PRISM); iElem++) {
         output_file << "13\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3) - 1 << "\t";
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4) - 1 << "\t"; 
-        output_file << data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5) - 1 << "\t";
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 0) - 1 << "\t"; 
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 1) - 1 << "\t";
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 2) - 1 << "\t";
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 3) - 1 << "\t";
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 4) - 1 << "\t"; 
+        output_file << data_sorter->GetElem_Connectivity(PRISM, iElem, 5) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       
