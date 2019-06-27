@@ -1499,19 +1499,8 @@ public:
 class CUpwCUSP_Flow : public CNumerics {
   
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  *ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
-  cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  LamdaNeg, LamdaPos, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
-  **Jacobian;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
+  bool implicit;
   
 public:
   
