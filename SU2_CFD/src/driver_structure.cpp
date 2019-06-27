@@ -402,7 +402,7 @@ CDriver::CDriver(char* confFile,
       grid_movement[iZone][iInst] = NULL;
 
     if (!fem_solver && (config_container[iZone]->GetGrid_Movement() ||
-                        (config_container[iZone]->GetDirectDiff() == D_DESIGN))) {
+                        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) && !config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -446,13 +446,12 @@ CDriver::CDriver(char* confFile,
       }
     }
 
-    if (config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC) ||
-        config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE)){
+    if (config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
       if (rank == MASTER_NODE)
         cout << "Setting moving mesh structure for FSI problems." << endl;
       /*--- Instantiate the container for the grid movement structure ---*/
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        grid_movement[iZone][iInst] = new CVolumetricMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+        grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
 
   }
