@@ -12642,7 +12642,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
-  
+  su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
   bool rotating_frame       = config->GetRotating_Frame();
@@ -12901,8 +12902,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
       }
       
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par +=1;
+        Variable_Names.push_back("Q_Criterion");
+      }
     }
     
     if (rotating_frame) {
@@ -13185,28 +13188,30 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             iVar++;
           }
           
-          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+          if (nDim == 3){
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+                Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              }
             }
+            
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+            
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+                pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
+            Local_Data[jPoint][iVar] = Q; iVar++;
           }
-          
-          su2double OmegaMag = 0.0, StrainMag = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-            }
-          }
-          StrainMag   = sqrt(StrainMag);
-          OmegaMag    = sqrt(OmegaMag);
-          su2double Q = 0.5*(OmegaMag - StrainMag);
-          Local_Data[jPoint][iVar] = Q; iVar++;
         }
         
         /*--- For rotating frame problems, compute the relative velocity. ---*/
@@ -13263,6 +13268,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double RefDensity = 0.0, RefPressure = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
+  su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
@@ -13532,8 +13538,10 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Vorticity_y");
       nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
       
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par +=1;
+        Variable_Names.push_back("Q_Criterion");
+      }
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13808,29 +13816,31 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
           
-          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+          if (nDim == 3){
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+                Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              }
             }
+            
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+            
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+            pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
+            
+            Local_Data[jPoint][iVar] = Q; iVar++;
           }
-          
-          su2double OmegaMag = 0.0, StrainMag = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-            }
-          }
-          StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-          
-          su2double Q = 0.5*(OmegaMag - StrainMag);
-          Local_Data[jPoint][iVar] = Q; iVar++;
-          
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
