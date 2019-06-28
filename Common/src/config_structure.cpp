@@ -2416,6 +2416,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Type of output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
+  su2double WrtFreqDefault[] = {1.0,1.0,1.0};
+  
+  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
+  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, WrtFreqDefault);
+  
+  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
+  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, WrtFreqDefault);
+ 
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -3180,18 +3188,26 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (!Time_Domain){
     nTimeIter = 1;
     Time_Step = 0;
+    
+    ScreenWrtFreq[0] = 1.0;
+    HistoryWrtFreq[0] = 1.0;
+    
+    nExtIter = nIter;
   } 
   
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
-  }
-  
-  if (!Time_Domain){
-    nExtIter = nIter;
-  } else {
     nExtIter = nTimeIter;
   }
+  
+  if (!Multizone_Problem){
+    ScreenWrtFreq[1] = 1.0;
+    HistoryWrtFreq[1] = 1.0;
+  }
+  
+
+  
 
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that

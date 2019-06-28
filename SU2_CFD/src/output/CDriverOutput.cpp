@@ -169,9 +169,52 @@ inline bool CDriverOutput::WriteScreen_Header(CConfig *config) {
 
 }
 inline bool CDriverOutput::WriteScreen_Output(CConfig *config) {
+  
+  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
 
-  bool write_output = true;
-
-  return write_output;
+  /*--- Check if screen output should be written --- */
+  
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (Convergence) {return true;}
+  
+  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq[1]) && 
+      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+ 
+  return true;
 }
 
+inline bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
+  
+  su2double* HistoryWrt_Freq = config->GetHistory_Wrt_Freq();
+    
+  /*--- Check if screen output should be written --- */
+  
+  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq[0])&& 
+      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (Convergence) {return true;}
+  
+  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq[1]) && 
+      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+    
+    return false;
+    
+  }
+ 
+  return true;
+}
