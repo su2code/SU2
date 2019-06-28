@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if ((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
-    && config->GetUnsteady_Simulation() != HARMONIC_BALANCE && !turbo ) {
+  if (((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
+    && config->GetUnsteady_Simulation() != HARMONIC_BALANCE && (!turbo)) || (turbo && config->GetDiscrete_Adjoint())) {
 
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
