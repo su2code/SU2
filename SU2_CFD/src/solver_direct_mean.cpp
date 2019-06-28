@@ -17639,7 +17639,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
           break;
         }
       }
-            
+      
       /*--- Allocate the reflected state at the symmetry boundary. ---*/
       V_reflected = GetCharacPrimVar(val_marker, iVertex);
       
@@ -18539,7 +18539,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         
         for (iDim = 0; iDim < nDim; iDim++) Area += normals[iDim]*normals[iDim];
         Area = sqrt(Area);
-        for (iDim = 0; iDim < nDim; iDim++) Unit_Normal[iDim] = normals[iDim]/Area;
+        for (iDim = 0; iDim < nDim; iDim++) Unit_Normal[iDim] = - normals[iDim]/Area;
         
         /*--- Load the coefficients and interpolate---*/
         for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
@@ -18565,7 +18565,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         
         /* TODO: Subtract the prescribed wall velocity, i.e. grid velocity
          from the velocity in the exchange point. */
-        //for(unsigned short k=0; k<nDim; ++k) vel[k] -= gridVel[k];
+        for(unsigned short iDim=0; iDim<nDim; ++iDim) vel_LES[iDim] -= node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetSolution(0);
         
         /* Determine the tangential velocity by subtracting the normal
          velocity component. */
@@ -18581,7 +18581,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         su2double dirTan[3] = {0.0, 0.0, 0.0};
         for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = vel_LES[iDim]/velTan;
         
-        //if ((config->GetIntIter() == 0) && (iRKStep == 0)){
         if (iRKStep == 0){
           /* Compute the wall shear stress and heat flux vector using
            the wall model. */
@@ -18607,8 +18606,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
           node[iPoint]->SetEddyViscosity(0.0);
           node[iPoint]->SetDirNormalWM(Unit_Normal);
           
-          //cout << Pressure << " " << velTan << " " << LaminarViscosity << " " << tauWall<< " "  << qWall << endl;
-          //cout << iPoint << " " << tauWall << " " << qWall << " " << kOverCvWall << " " << ViscosityWall << " " << dirTan[0] << " " << dirTan[1] << " " << dirTan[2] << " " << Temperature << " " << velTan << " " << LaminarViscosity << " " << Pressure << endl;
         }
 //        else{
 //          /*---
@@ -18631,7 +18628,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
 //          TransferFunction = qWall_old / dirTanMag_old;
 //          su2double qWall_new = dirTanMag_new * TransferFunction;
 //
-//          cout << Coord[0] << " " << Coord[1] << " " << dirTanMag_old << " " << dirTanMag_new << " " << tauWall_old << " " << tauWall_new << endl;
 //          /*--- Set tau wall and heat flux at the node based on transfer functions. ---*/
 //          node[iPoint]->SetTauWall(tauWall_new);
 //          node[iPoint]->SetHeatFlux(qWall_new);
