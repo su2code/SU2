@@ -4531,8 +4531,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
-        Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
 
         /*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
@@ -4548,7 +4546,6 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
         V_outlet[PRESS_INDEX] = Pressure;
         V_outlet[RHO_INDEX]   = Density;
-        V_outlet[H_INDEX]     = Energy+Pressure/Density;
         V_outlet[A_INDEX]     = SoundSpeed;
 
         for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -4605,9 +4602,8 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
         for (iDim = 0; iDim < nDim; iDim++)
           U_outlet[nSpecies+iDim] = Velocity[iDim]*Density;
-        U_outlet[nVar-2] = Energy;
 
-        /*--- Set the Electronic energy ---*/
+        /*--- Calculate energy (RRHO and Electronic) ---*/
         for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
 
           // Species formation energy
@@ -4628,8 +4624,15 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           }
           Ee = Ru/Ms[iSpecies] * (num/denom);
 
+          // Mixture total Energy
+          U_outlet[nVar-2] += U_outlet[iSpecies] * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies]*
+                  (V_outlet[T_INDEX]-Tref[iSpecies]) + Ev + Ee + Ef +
+                  0.5*Velocity2);
+
           // Mixture vibrational-electronic energy
           U_outlet[nVar-1] += U_outlet[iSpecies] * (Ev + Ee);
+
+
         }
 
         for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
@@ -4642,6 +4645,9 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         }
 
       }
+
+      /*--- Setting Last remaining variables ---*/
+      V_outlet[H_INDEX]= (U_outlet[nVar-2]+Pressure)/Density;
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_outlet);
@@ -4668,53 +4674,53 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 
       /*--- Viscous contribution ---*/
-      if (viscous) {
+//      if (viscous) {
 
-        /*--- Set the normal vector and the coordinates ---*/
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        /*--- Set the normal vector and the coordinates ---*/
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//        /*--- Primitive variables, and gradient ---*/
+//        visc_numerics->SetPrimitive(V_domain, V_outlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
-        /*--- Conservative variables, and gradient ---*/
-        visc_numerics->SetConservative(U_domain, U_outlet);
-        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(), node_infty->GetGradient() );
+//        /*--- Conservative variables, and gradient ---*/
+//        visc_numerics->SetConservative(U_domain, U_outlet);
+//        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(), node_infty->GetGradient() );
 
 
-        /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
-        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
-        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+//        /*--- Pass supplementary information to CNumerics ---*/
+//        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+//        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+//        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
 
-        /*--- Species diffusion coefficients ---*/
-        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
-                                         node_infty->GetDiffusionCoeff() );
+//        /*--- Species diffusion coefficients ---*/
+//        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+//                                         node_infty->GetDiffusionCoeff() );
 
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
-                                           node_infty->GetLaminarViscosity() );
+//        /*--- Laminar viscosity ---*/
+//        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+//                                           node_infty->GetLaminarViscosity() );
 
-        /*--- Thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
-                                              node_infty->GetThermalConductivity());
+//        /*--- Thermal conductivity ---*/
+//        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+//                                              node_infty->GetThermalConductivity());
 
-        /*--- Vib-el. thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
-                                                 node_infty->GetThermalConductivity_ve() );
+//        /*--- Vib-el. thermal conductivity ---*/
+//        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+//                                                 node_infty->GetThermalConductivity_ve() );
 
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+//        /*--- Laminar viscosity ---*/
+//        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
 
-        /*--- Compute and update residual ---*/
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
+//        /*--- Compute and update residual ---*/
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
 
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
+//        /*--- Jacobian contribution for implicit integration ---*/
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      }
     }
   }
 
@@ -7915,7 +7921,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
