@@ -107,6 +107,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_direct_mesh.cpp \
+  ../src/numerics_gradient_smoothing.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \

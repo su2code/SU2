@@ -79,6 +79,11 @@ protected:
   unsigned short iDe;             /*!< \brief ID of the dielectric elastomer. */
 	unsigned long iDV;              /*!< \brief ID of the Design Variable (if it is element based). */
 	unsigned long iProp;            /*!< \brief ID of the Element Property. */
+
+  su2double **HiHj;
+  su2double ****DHiDHj;
+  su2double ***DHiHj;
+
 public:
   enum FrameType {REFERENCE=1, CURRENT=2}; /*!< \brief Type of nodal coordinates. */
 
@@ -87,7 +92,7 @@ protected:
 	 * \brief Allocate element matrices and vectors, to be called by constructors of children classes.
 	 * \param[in] body_forces - If we need dead loads.
 	 */
-	void AllocateStructures(const bool body_forces);
+  void AllocateStructures(const bool body_forces, const bool gradient_smoothing = false);
 	
 	/*!
 	 * \brief Compute gradients for 2D elements.
@@ -239,10 +244,68 @@ public:
 	 */
 	void Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA);
 
+  /*!
+   * \brief Add the scalar product of the shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the term that will contribute.
+   */
+  void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the term that will contribute.
+   */
+  void Add_DHiDHj(su2double **val, unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Add the transposed scalar product of the gradients of shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the term that will contribute.
+   */
+  void Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Add the scalar product of the gradients of shape functions with the shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the term that will contribute.
+   */
+  void Add_DHiHj(su2double *val, unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Get the scalar product of the shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[out] val - value of the term that will contribute.
+   */
+  su2double Get_HiHj(unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Get the scalar product of the gradients of shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[out] val - value of the term that will contribute.
+   */
+  su2double** Get_DHiDHj(unsigned short nodeA, unsigned short nodeB);
+
+  /*!
+   * \brief Get the scalar product of the gradients of shape functions with the shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[out] val - value of the term that will contribute.
+   */
+  su2double* Get_DHiHj(unsigned short nodeA, unsigned short nodeB);
+
+
+
 	/*!
 	 * \brief Restarts the values in the element.
 	 */
-	void clearElement(void);
+  void clearElement(const bool gradient_smoothing = false);
 
 	/*!
 	 * \brief Restarts the values of stress in the element.

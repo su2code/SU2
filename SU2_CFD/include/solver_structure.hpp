@@ -4322,7 +4322,7 @@ public:
    * \param[in] solver - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  virtual void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CConfig *config);
+  virtual void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
@@ -12184,7 +12184,11 @@ public:
   CElement*** element_container;  /*!< \brief Container which stores the element information. */
   CProperty** element_properties; /*!< \brief Vector which stores the indices of each element */
 
-  su2double **matrixId;
+  su2double **matrixId;           /*!< \brief Submatrix to create a linear system for testing purposes. */
+
+  su2double **mZeros_Aux;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
+  su2double **mId_Aux;            /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
+
 
 
   /*!
@@ -12200,17 +12204,32 @@ public:
   /*!
    * \brief Main routine for applying the solver
    */
-  void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CConfig *config);
-
-  /*!
-   * \brief Assemble the stiffness matrix
-   */
-  void Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config);
+  void ApplyGradientSmoothing(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Assemble the stiffness matrix
    */
   void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Calculate the RHS of the PDE
+   */
+  void Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config);
+
+  /*!
+   * \brief Set the boundary conditions
+   */
+  void Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Set Dirichlet boundary conditions
+   */
+  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set Neumann boundary conditions
+   */
+  void BC_Neumann(CGeometry *geometry, Solver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Call the linear systems solver
@@ -12221,172 +12240,6 @@ public:
    * \brief Extract the solution of the linear solver and store it in the sensitivities of the discrete adjoint solver.
    */
   void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config);
-
-
-#ifdef SOMEBIZAREFLAG
-  /*!
-   * \brief Grid deformation using the linear elasticity equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Set the stiffness of the mesh.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Compute the min and max volume of the elements in the domain.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] updated - Boolean, computes the volumes with the updated coordinates.
-   * \return Value of the length of the smallest edge of the grid.
-   */
-  void SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated);
-
-  /*!
-   * \brief Compute the min and max volume of the elements in the domain.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetWallDistance(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
-
-  /*!
-   * \brief Get the value of the current coordinate (coordinate + solution) to set on the element structure.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
-   */
-  su2double Get_ValSol(unsigned long indexNode, unsigned short iDim);
-
-  /*!
-   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Update the value of the coordinates after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the dual grid after the grid movement (edges and control volumes).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the grid velocity form the displacements of the mesh.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the coarse multigrid levels after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-
-  /*!
-   * \brief Check the boundary vertex that are going to be moved.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements to 0.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker -
-   */
-  void BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Solve_System_Mesh(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
-
-  /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Move the mesh in time.
-   */
-  void SetDualTime_Mesh(void);
-
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-
-  /*!
-   * \brief Load the geometries at the previous time states n and nM1.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Impose the send-receive boundary condition for displacements in mesh deformation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Displacement(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the old displacement before a new deformation is done.
-   */
-  void SetDisplacement_Old(void);
-
-#endif
 
 };
 

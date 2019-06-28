@@ -48,7 +48,7 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 
   nNodes = 3;
   nGaussPoints = 1;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -121,7 +121,7 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 
   nNodes = 4;
   nGaussPoints = 4;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -222,7 +222,7 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 
   nNodes = 4;
   nGaussPoints = 1;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -304,7 +304,7 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 
   nNodes = 8;
   nGaussPoints = 8;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -493,7 +493,7 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
 
   nNodes = 5;
   nGaussPoints = 5;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 
@@ -625,7 +625,7 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 
   nNodes = 6;
   nGaussPoints = 6;
-  AllocateStructures(config->GetDeadLoad());
+  AllocateStructures(config->GetDeadLoad(), config->GetSmoothGradient());
 
   /*--- Gauss coordinates and weights ---*/
 

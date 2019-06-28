@@ -67,6 +67,11 @@ CElement::CElement(void) {
   iDe = 0;
   iDV = 0;
   iProp = 0;
+
+  HiHj = NULL;
+  DHiDHj = NULL;
+  DHiHj = NULL;
+
 }
 
 
@@ -102,11 +107,15 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
   iDV = 0;
   iProp = 0;
 
+  HiHj = NULL;
+  DHiDHj = NULL;
+  DHiHj = NULL;
+
 }
 
 CElement::~CElement(void) {
   
-  unsigned short iNode, iGauss, jNode;
+  unsigned short iNode, iGauss, jNode, iDim;
   
   if (GaussPoint != NULL) {
     for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -202,9 +211,39 @@ CElement::~CElement(void) {
     delete [] FDL_a;
   }
 
+  if (HiHj != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      delete [] HiHj[iNode];
+    }
+    delete [] HiHj;
+  }
+
+  if (DHiDHj != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (jNode = 0; jNode < nNodes; jNode++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          delete [] DHiDHj [iNode][jNode][iDim];
+        }
+        delete [] DHiDHj [iNode][jNode];
+      }
+      delete [] DHiDHj[iNode];
+    }
+    delete [] DHiDHj;
+  }
+
+  if (DHiHj != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (jNode = 0; jNode < nNodes; jNode++) {
+        delete [] DHiHj [iNode][jNode];
+      }
+      delete [] DHiHj[iNode];
+    }
+    delete [] DHiHj;
+  }
+
 }
 
-void CElement::AllocateStructures(const bool body_forces) {
+void CElement::AllocateStructures(const bool body_forces, const bool gradient_smoothing) {
 
   /*--- Derived classes should call this method after setting nGauss and nNodes. ---*/
 
@@ -284,6 +323,35 @@ void CElement::AllocateStructures(const bool body_forces) {
 
   }
 
+  /*--- allocate my structures for testing / add emaningfull if option later ---*/
+  if ( gradient_smoothing ) {
+
+    HiHj = new su2double *[nNodes];
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      HiHj[iNode] = new su2double [nNodes];
+    }
+
+    DHiDHj = new su2double ***[nNodes];
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      DHiDHj[iNode] = new su2double **[nNodes];
+      for (jNode = 0; jNode < nNodes; jNode++) {
+        DHiDHj[iNode][jNode] = new su2double *[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          DHiDHj[iNode][jNode][iDim] = new su2double [nDim];
+        }
+      }
+    }
+
+    DHiHj = new su2double **[nNodes];
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      DHiHj[iNode] = new su2double *[nNodes];
+      for (jNode = 0; jNode < nNodes; jNode++) {
+        DHiHj[iNode][jNode] = new su2double [nDim];
+      }
+    }
+
+  }
+
 }
 
 void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
@@ -328,8 +396,38 @@ void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA) {
   
 }
 
+void CElement::Add_DHiDHj(su2double **val, unsigned short nodeA, unsigned short nodeB) {
 
-void CElement::clearElement(void) {
+  unsigned short iDim, jDim;
+
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
+    }
+  }
+}
+
+void CElement::Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB) {
+
+  unsigned short iDim, jDim;
+
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      DHiHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
+    }
+  }
+}
+
+void CElement::Add_DHiHj(su2double **val, unsigned short nodeA, unsigned short nodeB) {
+
+  unsigned short iDim;
+
+  for(iDim = 0; iDim < nDim; iDim++) {
+    DHiHj[nodeA][nodeB][iDim] += val[iDim];
+  }
+}
+
+void CElement::clearElement(const bool gradient_smoothing) {
   
   unsigned short iNode, jNode, iDim, nDimSq;
   
@@ -348,6 +446,21 @@ void CElement::clearElement(void) {
       }
     }
   }
+
+  if ( gradient_smoothing ) {
+    for(iNode = 0; iNode < nNodes; iNode++) {
+      for (jNode = 0; jNode < nNodes; jNode++) {
+        if (HiHj != NULL) HiHj[iNode][jNode] = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++) {
+          if (DHiHj != NULL) DHiHj[iNode][jNode][iDim] = 0.0;
+          for(jDim = 0; jDim < nDim; jDim++) {
+            if (DHiDHj != NULL) DHiHj[iNode][jNode][iDim][jDim] = 0.0;
+          }
+        }
+      }
+    }
+  }
+
 }
 
 void CElement::clearStress(void) {

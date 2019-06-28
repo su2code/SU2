@@ -4337,6 +4337,44 @@ public:
 
 };
 
+/*!
+ * \class CGradSmoothing
+ * \brief Class for computing the stiffness matrix of the sobolev problem
+ * \ingroup FEM_Discr
+ * \author T. Dick
+ * \version 6.2.0 "Falcon"
+ */
+class CGradSmoothing : public CFEAElasticity {
+
+    su2double **Aux_Mat;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGradSmoothing(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CGradSmoothing(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CGradSmoothing(void);
+
+  void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+
+  void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
+};
 
 /*!
  * \class CFEM_NeoHookean_Comp

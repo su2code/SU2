@@ -540,7 +540,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- If necessary smooth the calculated geometry sensitivities ---*/
 
   if (config->GetSmoothGradient()) {
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], config);
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics_container[ZONE_0 ][INST_0][MESH_0][GRADIENT_SMOOTHING], config);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/

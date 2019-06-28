@@ -2847,6 +2847,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (dynamic_mesh)
     numerics_container[val_iInst][MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
 
+  /*--- If we want to apply the gradient smoothing we must initialize the numerics here ---*/
+  if(config->GetSmoothGradient()) {
+    numerics_container[val_iInst][MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim, config);
+  }
+
 }
 
 void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
