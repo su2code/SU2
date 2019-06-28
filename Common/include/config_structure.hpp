@@ -874,39 +874,31 @@ private:
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
   
-  su2double *Motion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  *Translation_Rate,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  *Pitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  *Plunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
-  su2double *MarkerMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *MarkerRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *MarkerPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
+  su2double *Motion_Origin, /*!< \brief Mesh motion origin. */
+  *Translation_Rate,        /*!< \brief Translational velocity of the mesh. */
+  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh . */
+  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching. */
+  *Pitching_Ampl,           /*!< \brief Pitching amplitude. */ 
+  *Pitching_Phase,          /*!< \brief Pitching phase offset. */ 
+  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging. */ 
+  *Plunging_Ampl;           /*!< \brief Plunging amplitude. */
+  su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
+  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
+  *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
+  *MarkerPitching_Omega,          /*!< \brief Angular frequency of marker. */
+  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */ 
+  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */ 
+  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */ 
+  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
   
-  unsigned short nMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  nTranslation,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  nRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  nPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  nPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  nPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  nPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  nPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
-  unsigned short nMarkerMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  nMarkerTranslation,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  nMarkerRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  nMarkerPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  nMarkerPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  nMarkerPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  nMarkerPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  nMarkerPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
+  unsigned short nMarkerMotion_Origin, /*!< \brief Number of values provided for mesh motion origin of marker. */
+  nMarkerTranslation,        /*!< \brief Number of values provided for translational velocity of marker. */
+  nMarkerRotation_Rate,           /*!< \brief Number of values provided for angular velocity of marker. */
+  nMarkerPitching_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
+  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
+  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
+  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
+  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
   su2double  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short
   nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
