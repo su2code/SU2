@@ -6868,16 +6868,12 @@ void CIncEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *confi
 
   Velocity2_Real = 0.0;
   Velocity2_ND   = 0.0;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Velocity2_Real += Velocity_Real[iVar]*Velocity_Real[iVar];
-    Velocity2_ND   += Velocity_ND[iVar]*Velocity_ND[iVar];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
+    Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
   }
 
   factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
-
-  cout << "***********************************************************************" << endl;
-  cout << " Factor: " << factor << endl;
-  cout << "***********************************************************************" << endl;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -6933,10 +6929,6 @@ void CIncEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *confi
           for (iDim = 0; iDim < nDim; iDim++) {
             VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
           }
-          cout << " VertexTraction(" << geometry->node[iPoint]->GetGlobalIndex() << "): "
-               << VertexTraction[iMarker][iVertex][0] << " "
-               << VertexTraction[iMarker][iVertex][1] << " "
-               << VertexTraction[iMarker][iVertex][2] << endl;
         }
         else{
           for (iDim = 0; iDim < nDim; iDim++) {
