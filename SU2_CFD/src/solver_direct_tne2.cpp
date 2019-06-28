@@ -7921,7 +7921,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 1;
+  C = 5;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
