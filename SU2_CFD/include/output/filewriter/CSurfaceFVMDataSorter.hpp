@@ -28,6 +28,11 @@ public:
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort);
   
+  /*!
+   * \brief Get the global index of the surface point
+   * \param Local surface index
+   * \return Global index
+   */  
   unsigned long GetGlobalIndex(unsigned long iPoint) { return Renumber2Global[iPoint]; }
   
   
