@@ -2055,3 +2055,7 @@ inline string CConfig::GetConv_Field(){ return ConvField; }
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
 inline su2double  CConfig::Get_StartTime() {return StartTime;}
+
+inline su2double* CConfig::GetScreen_Wrt_Freq() {return ScreenWrtFreq;}
+
+inline su2double* CConfig::GetHistory_Wrt_Freq() {return HistoryWrtFreq;}

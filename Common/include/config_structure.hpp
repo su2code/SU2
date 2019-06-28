@@ -1059,6 +1059,8 @@ private:
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  su2double *HistoryWrtFreq,    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
+            *ScreenWrtFreq;     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -9107,10 +9109,30 @@ public:
   */
   string GetConv_Field();
   
+  /*!
+   * \brief Set_StartTime
+   * \param starttime
+   */
   void Set_StartTime(su2double starttime);
   
+  /*!
+   * \brief Get_StartTime
+   * \return 
+   */
   su2double Get_StartTime();
 
+  /*!
+   * \brief GetHistory_Wrt_Freq
+   * \return 
+   */
+  su2double* GetHistory_Wrt_Freq();
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq
+   * \return 
+   */
+  su2double* GetScreen_Wrt_Freq();
+  
 };
 
 #include "config_structure.inl"

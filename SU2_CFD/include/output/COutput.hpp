@@ -539,7 +539,13 @@ protected:
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
-  inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {return (iIter % iFreq == 0);} 
+  inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {
+    if (iFreq == 0.0){
+      return false;
+    }
+    
+    return (iIter % iFreq == 0);
+  } 
   
   /*--------------------------------- Virtual functions ---------------------------------------- */
   

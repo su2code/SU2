@@ -1246,25 +1246,18 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   
    map<string, bool>::iterator it = Average.begin();
    for (it = Average.begin(); it != Average.end(); it++){
-     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES");
+     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES", TYPE_AUTO_RESIDUAL);
    }
   
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
-  if (config->GetUnsteady_Simulation() == STEADY) {
-    write_header = ((curr_InnerIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);
-  } else if  (config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    if (!config->GetRestart())
-      write_header = ((curr_TimeIter % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
-    else {
-      write_header = (((curr_TimeIter - config->GetRestart_Iter()) % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && curr_InnerIter == 0);    
-    }
-  } else {
-    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetInnerIter() == 0;
-  }
 
+  if (curr_InnerIter == 0){
+    write_header = true;
+  }
+  
   /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
   if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
 
@@ -1272,31 +1265,76 @@ bool COutput::WriteScreen_Header(CConfig *config) {
 }
 
 bool COutput::WriteScreen_Output(CConfig *config) {
-  bool write_output = false;
   
-  write_output = config->GetnInner_Iter() - 1 == curr_InnerIter;
+  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
+    
   
-  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) )){
-    write_output = write_output || PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq_DualTime());
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+    
+    return false;
+    
   }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = write_output ||  PrintOutput(config->GetInnerIter(), config->GetWrt_Con_Freq()) ;    
-  } 
-
-  /*--- For multizone problems, print the body only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
-
-  return write_output;
+  
+  /*--- Check if screen output should be written --- */
+  
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (Convergence) {return true;}
+  
+  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq[1]) && 
+      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (!PrintOutput(curr_InnerIter, ScreenWrt_Freq[2]) &&
+      !(curr_InnerIter == config->GetnInner_Iter() - 1)){
+    
+    return false;
+    
+  }
+ 
+  return true;
+  
 }
 
 bool COutput::WriteHistoryFile_Output(CConfig *config) { 
-// if (!write_dualtime){
-//   return true;
-// }
-// else {
-//   return false;
-// }
+
+  su2double* HistoryWrt_Freq = config->GetHistory_Wrt_Freq();
+    
+  /*--- Check if screen output should be written --- */
+  
+  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq[0])&& 
+      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (Convergence) {return true;}
+  
+  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq[1]) && 
+      !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
+    
+    return false;
+    
+  }
+  
+  if (!PrintOutput(curr_InnerIter, HistoryWrt_Freq[2]) &&
+      !(curr_InnerIter == config->GetnInner_Iter() - 1)){
+    
+    return false;
+    
+  }
+ 
   return true;
+
 }
 
 void COutput::SetCommonHistoryFields(CConfig *config){
