@@ -933,7 +933,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.117827] #last 4 columns
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.255896] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -946,7 +946,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.396634, 0.320019, 0.403674] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.400174, 0.352029, 0.407521] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -972,7 +972,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 2
-    pipe.test_vals = [0.457554, 0.542877, 0.781840, 0.944999] #last 4 columns
+    pipe.test_vals = [0.486616, 0.617750, 0.950973, 1.018949] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -985,7 +985,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.715494, 1.096497, 1.126065] #last 4 columns
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.716122, 1.095620, 1.136611] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -1011,7 +1011,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.722945, -1.612486] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.720012, -1.607989] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
