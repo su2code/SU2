@@ -27,7 +27,12 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry,  bool val_sort);
-    
+  
+  /*!
+   * \brief Get the global index of the surface point
+   * \param Local surface index
+   * \return Global index
+   */
   unsigned long GetGlobalIndex(unsigned long iPoint) { return globalSurfaceDOFIDs[iPoint]; }
   
 private:
