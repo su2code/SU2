@@ -17639,7 +17639,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
           break;
         }
       }
-      
+            
       /*--- Allocate the reflected state at the symmetry boundary. ---*/
       V_reflected = GetCharacPrimVar(val_marker, iVertex);
       
@@ -17796,7 +17796,7 @@ void CNSSolver::BC_Isothermal_WallModel(CGeometry      *geometry,
       velWall_tan = 0.;
       DirTanWM = node[iPoint]->GetDirTanWM();
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        velWall_tan +=  V_domain[iDim+1] * DirTanWM[iDim];
+        velWall_tan +=  0.5 * (V_domain[iDim+1] + V_reflected[iDim+1]) * DirTanWM[iDim];
       
       TauWall = node[iPoint]->GetTauWall();
       Wall_HeatFlux = node[iPoint]->GetHeatFlux();

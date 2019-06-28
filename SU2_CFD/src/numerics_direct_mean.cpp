@@ -5456,12 +5456,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   
-  if((Mean_TauWall > 0)&&(config->GetWall_Models())){
-    for (iDim = 0; iDim < nDim; iDim++) {
-      heat_flux_vector[iDim] = -Mean_qWall * Mean_DirNormal[iDim];
-    }
-  }
-  else SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
 
   if (Mean_TauWall > 0){
