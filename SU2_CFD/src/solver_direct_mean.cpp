@@ -18565,7 +18565,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES(CGeometry *geometry, CSolver **solver_c
         
         /* TODO: Subtract the prescribed wall velocity, i.e. grid velocity
          from the velocity in the exchange point. */
-        for(unsigned short iDim=0; iDim<nDim; ++iDim) vel_LES[iDim] -= node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetSolution(0);
+        for(iDim=0; iDim<nDim; ++iDim) vel_LES[iDim] -= node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetSolution(0);
         
         /* Determine the tangential velocity by subtracting the normal
          velocity component. */
