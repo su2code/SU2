@@ -4342,6 +4342,50 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the tractions at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  virtual void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   */
+  virtual su2double GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned long iVertex,
+                               unsigned short iDim);
+
+  /*!
+   * \brief Register the vertex tractions as output.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  virtual void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
+   */
+  virtual void StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker, 
+                                           unsigned long iVertex, unsigned short iDim, su2double val_adjoint);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions to the AD structure.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  virtual void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
   
 protected:
   /*!
@@ -4760,6 +4804,9 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+
+  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
 public:
   
@@ -6848,6 +6895,50 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the tractions at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   */
+  su2double GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned long iVertex,
+                               unsigned short iDim);
+
+  /*!
+   * \brief Register the vertex tractions as output.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  virtual void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
+   */
+   void StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker, 
+                                    unsigned long iVertex, unsigned short iDim, su2double val_adjoint);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions to the AD structure.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -7040,6 +7131,9 @@ protected:
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
+
+  su2double ***VertexTraction;   /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
 
   /* Sliding meshes variables */
 
@@ -8239,6 +8333,50 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the tractions at the vertices.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   */
+  su2double GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned long iVertex,
+                               unsigned short iDim);
+
+  /*!
+   * \brief Register the vertex tractions as output.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the adjoints of the vertex tractions.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] iMarker  - Index of the marker
+   * \param[in] iVertex  - Index of the relevant vertex
+   * \param[in] iDim     - Dimension
+   * \param[in] val_adjoint - Value received for the adjoint (from another solver)
+   */
+  void StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker, 
+                                   unsigned long iVertex, unsigned short iDim, su2double val_adjoint);
+
+  /*!
+   * \brief Set the adjoints of the vertex tractions to the AD structure.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
 };
 
 /*!

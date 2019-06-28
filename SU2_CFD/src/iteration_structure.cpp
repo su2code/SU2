@@ -837,6 +837,12 @@ void CFluidIteration::Postprocess(COutput *output,
 
   if(config_container[val_iZone]->GetSinglezone_Driver()){
 
+    cout << "YEP, I COME HERE" << endl;
+
+    /*--- Compute the tractions at the vertices ---*/
+    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(
+          geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
     if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
         config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
         config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS){
