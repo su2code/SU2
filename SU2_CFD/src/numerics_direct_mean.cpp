@@ -636,16 +636,16 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
   Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
-  Density_i = V_i[nDim+2];                        Density_j = V_j[nDim+2];
+  Density_i  = V_i[nDim+2];                       Density_j  = V_j[nDim+2];
   Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  Energy_i   = Enthalpy_i - Pressure_i/Density_i; Energy_j   = Enthalpy_j - Pressure_j/Density_j;
 
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
     Velocity_j[iDim] = V_j[iDim+1];
-    sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
+    sq_vel_i += Velocity_i[iDim]*Velocity_i[iDim];
+    sq_vel_j += Velocity_j[iDim]*Velocity_j[iDim];
   }
   
   SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i));
@@ -730,11 +730,11 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   if (fabs(Mach) >= 1.0) Beta = Mach/fabs(Mach);
   
   if (Beta == 0.0) Nu_c = fabs(ProjVelocity);
-  if ((Beta > 0.0) && ((0.0 < Mach) && (Mach < 1.0))) Nu_c = - (1.0-Beta)*LamdaNeg;
+  if ((Beta > 0.0) && ((0.0 < Mach) && (Mach < 1.0))) Nu_c = - (1.0+Beta)*LamdaNeg;
   if ((Beta < 0.0) && ((-1.0 < Mach) && (Mach < 0.0))) Nu_c = (1.0-Beta)*LamdaPos;
   if (fabs(Mach) >= 1) Nu_c = 0.0;
   
-  /*--- Compute viscous part of the residual ---*/
+  /*--- Compute the residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] += (0.5*Nu_c*Diff_U[iVar] + 0.5*Beta*Diff_Flux[iVar])*Area;
@@ -753,14 +753,14 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     
     /*--- Last row of Jacobian_i (solution difference contribution) ---*/
     
-    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*sq_vel_i;
+    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*0.5*sq_vel_i;
     for (iDim = 0; iDim < nDim; iDim++)
       val_Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
     val_Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
     
     /*--- Last row of Jacobian_j (solution difference contribution) ---*/
     
-    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*sq_vel_j;
+    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*0.5*sq_vel_j;
     for (iDim = 0; iDim < nDim; iDim++)
       val_Jacobian_j[nVar-1][iDim+1] += cte_0*Gamma_Minus_One*Velocity_j[iDim];
     val_Jacobian_j[nVar-1][nVar-1] -= cte_0*Gamma;
