@@ -1,7 +1,7 @@
 /*!
- * \file variable_template.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios
+ * \file CTurbVariable.hpp
+ * \brief Base class for defining the variables of the turbulence model.
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,11 +35,50 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#pragma once
 
-CTemplateVariable::CTemplateVariable(void) : CVariable() { }
+#include "CVariable.hpp"
 
-CTemplateVariable::CTemplateVariable(su2double val_Template, unsigned short val_nDim, 
-                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
+/*!
+ * \class CTurbVariable
+ * \brief Base class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author A. Bueno.
+ */
+class CTurbVariable : public CVariable {
+protected:
+  su2double muT;                /*!< \brief Eddy viscosity. */
+  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+  
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CTurbVariable(void);
+  
+  /*!
+   * \brief Get the value of the eddy viscosity.
+   * \return the value of the eddy viscosity.
+   */
+  inline su2double GetmuT() { return muT; }
+  
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  inline void SetmuT(su2double val_muT) { muT = val_muT; }
+};
 
-CTemplateVariable::~CTemplateVariable(void) { }

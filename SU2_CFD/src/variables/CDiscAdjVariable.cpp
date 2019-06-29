@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_discrete.cpp
+ * \file CDiscAdjVariable.cpp
  * \brief Main subroutines for the discrete adjoint variable structure.
  * \author T. Albring
  * \version 6.2.0 "Falcon"
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CDiscAdjVariable.hpp"
 
 CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
 
@@ -49,8 +49,8 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
 
 }
 
-CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
+CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim, unsigned short val_nvar,
+                                   CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);

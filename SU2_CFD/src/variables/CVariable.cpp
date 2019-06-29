@@ -1,5 +1,5 @@
 /*!
- * \file variable_structure.cpp
+ * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CVariable.hpp"
 
 unsigned short CVariable::nDim = 0;
 
@@ -455,14 +455,3 @@ void CVariable::GetResTruncError(su2double *val_trunc_error) {
     val_trunc_error[iVar] = Res_TruncError[iVar];
   
 }
-
-CBaselineVariable::CBaselineVariable(void) : CVariable() { }
-
-CBaselineVariable::CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
-  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution[iVar] = val_solution[iVar];
-  
-}
-
-CBaselineVariable::~CBaselineVariable(void) { }
