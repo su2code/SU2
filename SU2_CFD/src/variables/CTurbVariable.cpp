@@ -1,7 +1,7 @@
 /*!
- * \file variable_direct_heat.cpp
+ * \file CTurbVariable.cpp
  * \brief Definition of the solution fields.
- * \author F. Palacios, T. Economon
+ * \author F. Palacios, A. Bueno
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,65 +35,47 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CTurbVariable.hpp"
 
-CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
+CTurbVariable::CTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-
-  Undivided_Laplacian = NULL;
+  HB_Source = NULL;
   
 }
 
-CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
+  
+  unsigned short iVar;
 
-  unsigned short iVar, iMesh, nMGSmooth = 0;
-  bool low_fidelity = false;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool multizone = config->GetMultizone_Problem();
+  /*--- Array initialization ---*/
+  
+  HB_Source = NULL;
+  
+  /*--- Allocate space for the harmonic balance source terms ---*/
+  
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    HB_Source = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      HB_Source[iVar] = 0.0;
+  }
+  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Undivided_Laplacian = NULL;
-
-  /*--- Initialization of heat variable ---*/
-  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
-
-  /*--- Allocate residual structures ---*/
-
-  Res_TruncError = new su2double [nVar];
-
+  Limiter = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+  
+  Solution_Max = new su2double [nVar];
+  Solution_Min = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
   }
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if ((nMGSmooth > 0) || low_fidelity) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
-  }
-
-  /*--- Allocate and initialize solution for dual time strategy ---*/
-  if (dual_time) {
-    Solution_time_n[0]  = val_Heat;
-    Solution_time_n1[0] = val_Heat;
-  }
-
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
-    Undivided_Laplacian = new su2double [nVar];
-  }
-
-  Solution_BGS_k = NULL;
-  if (multizone){
-      Solution_BGS_k  = new su2double [1];
-      Solution_BGS_k[0] = val_Heat;
-  }
-
+  
 }
 
-CHeatFVMVariable::~CHeatFVMVariable(void) {  }
+CTurbVariable::~CTurbVariable(void) { }
+

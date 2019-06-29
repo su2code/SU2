@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_mean.cpp
+ * \file CAdjEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CAdjEulerVariable.hpp"
 
 CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
   
@@ -48,8 +48,10 @@ CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
   
 }
 
-CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim,
-                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
+                                     unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
+                                     CVariable(val_nDim, val_nvar, config) {
+  
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -137,8 +139,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
   
 }
 
-CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim,
-                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
+                                     CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+  
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -255,17 +258,3 @@ bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CCo
   return RightVol;
   
 }
-
-CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
-
-CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim,
-                               unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_solution, val_nDim, val_nvar, config) {
-  
-}
-
-CAdjNSVariable::CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
-                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
-
-}
-
-CAdjNSVariable::~CAdjNSVariable(void) { }

@@ -1,7 +1,7 @@
 /*!
- * \file variable_adjoint_turbulent.cpp
+ * \file CTransLMVariable.cpp
  * \brief Definition of the solution fields.
- * \author F. Palacios, A. Bueno
+ * \author A. Aranake
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,51 +35,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CTransLMVariable.hpp"
 
-CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
+CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
+
+CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,
+                                   unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
+                                   CTurbVariable(val_nDim, val_nvar, config) {
+  // Initialization of variables
+  Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
+  Solution[1] = val_REth;          Solution_Old[1] = val_REth;
   
 }
 
-CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar;
-
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-  /*--- Initialization of variables ---*/
-  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_psinu_inf;
-    Solution_Old[iVar] = val_psinu_inf;
-  }
-  
-  Residual_Old = new su2double [nVar];
-  
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
-
-}
-
-CAdjTurbVariable::~CAdjTurbVariable(void) {
-  
-  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-  if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
-}
+CTransLMVariable::~CTransLMVariable(void) { }
