@@ -124,7 +124,10 @@ public:
    * \brief Set the value of the solution.
    * \param[in] val_solution - Solution of the problem.
    */
-  void SetSolution(su2double *val_solution);
+  inline void SetSolution(su2double *val_solution) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = val_solution[iVar];
+  }
   
   /*!
    * \overload
@@ -177,7 +180,10 @@ public:
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
-  void SetSolution_Old(su2double *val_solution_old);
+  inline void SetSolution_Old(su2double *val_solution_old) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_Old[iVar] = val_solution_old[iVar];
+  }
 
   /*!
    * \overload
@@ -189,76 +195,111 @@ public:
   /*!
    * \brief Set old variables to the value of the current variables.
    */
-  void Set_OldSolution(void);
+  inline void Set_OldSolution(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_Old[iVar] = Solution[iVar];
+  }
 
   /*!
    * \brief Set variables to the value of the old variables.
    */
-  void Set_Solution(void);
+  inline void Set_Solution(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+     Solution[iVar] = Solution_Old[iVar];
+  }
 
   /*!
    * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
    */
-  void Set_OldSolution_Adj(void);
+  inline void Set_OldSolution_Adj(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_Adj_Old[iVar] = Solution[iVar];
+  }
 
   /*!
    * \brief Set the variable solution at time n.
    */  
-  void Set_Solution_time_n(void);
+  inline void Set_Solution_time_n(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_time_n[iVar] = Solution[iVar];
+  }
   
   /*!
    * \brief Set the variable solution at time n-1.
    */
-  void Set_Solution_time_n1(void);
+  inline void Set_Solution_time_n1(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_time_n1[iVar] = Solution_time_n[iVar];
+  }
   
   /*!
    * \brief Set the variable solution at time n.
    */
-  void Set_Solution_time_n(su2double* val_sol);
+  inline void Set_Solution_time_n(su2double* val_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_time_n[iVar] = val_sol[iVar];
+  }
   
   /*!
    * \brief Set the variable solution at time n-1.
    */
-  void Set_Solution_time_n1(su2double* val_sol);
+  inline void Set_Solution_time_n1(su2double* val_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_time_n1[iVar] = val_sol[iVar];
+  }
   
   /*!
    * \brief Set to zero the velocity components of the solution.
    */
-  void SetVelSolutionZero(void);
+  inline void SetVelSolutionZero(void) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = 0.0;
+  }
   
   /*!
    * \brief Specify a vector to set the velocity components of the solution.
    * \param[in] val_vector - Pointer to the vector.
    */
-  void SetVelSolutionVector(su2double *val_vector);
+  inline void SetVelSolutionVector(su2double *val_vector) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Solution[iDim+1] = val_vector[iDim];
+  }
   
   /*!
    * \brief Set to zero velocity components of the solution.
    */
-  void SetVelSolutionOldZero(void);
+  inline void SetVelSolutionOldZero(void) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = 0.0;
+  }
   
   /*!
    * \brief Specify a vector to set the velocity components of the old solution.
    * \param[in] val_vector - Pointer to the vector.
    */
-  void SetVelSolutionOldVector(su2double *val_vector);
+  inline void SetVelSolutionOldVector(su2double *val_vector) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Solution_Old[iDim+1] = val_vector[iDim];
+  }
   
   /*!
    * \brief Set to zero the solution.
    */
-  void SetSolutionZero(void);
+  inline void SetSolutionZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+  }
   
   /*!
    * \brief Set to zero a particular solution.
    */
-  void SetSolutionZero(unsigned short val_var);
+  inline void SetSolutionZero(unsigned short val_var) {Solution[val_var] = 0.0;}
   
   /*!
    * \brief Add a value to the solution.
    * \param[in] val_var - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
-  void AddSolution(unsigned short val_var, su2double val_solution);
+  inline void AddSolution(unsigned short val_var, su2double val_solution) {
+    Solution[val_var] = Solution_Old[val_var] + val_solution;
+  }
 
   /*!
    * \brief A virtual member.
@@ -318,8 +359,12 @@ public:
    * \param[in] lowerlimit - Lower value.
    * \param[in] upperlimit - Upper value.
    */
-  void AddClippedSolution(unsigned short val_var, su2double val_solution,
-                          su2double lowerlimit, su2double upperlimit);
+  inline void AddClippedSolution(unsigned short val_var, su2double val_solution,
+                                 su2double lowerlimit, su2double upperlimit) {
+    
+    su2double val_new = Solution_Old[val_var] + val_solution;
+    Solution[val_var] = min(max(val_new, lowerlimit), upperlimit);
+  }
   
   /*!
    * \brief Update the variables using a conservative format.
@@ -330,9 +375,13 @@ public:
    * \param[in] lowerlimit - Lower value.
    * \param[in] upperlimit - Upper value.
    */
-  void AddConservativeSolution(unsigned short val_var, su2double val_solution,
-                               su2double val_density, su2double val_density_old, su2double lowerlimit,
-                               su2double upperlimit);
+  inline void AddConservativeSolution(unsigned short val_var, su2double val_solution,
+                                      su2double val_density, su2double val_density_old,
+                                      su2double lowerlimit, su2double upperlimit) {
+    
+    su2double val_new = (Solution_Old[val_var]*val_density_old + val_solution)/val_density;
+    Solution[val_var] = min(max(val_new, lowerlimit), upperlimit);
+  }
   
   /*!
    * \brief Get the solution of the problem.
@@ -362,18 +411,26 @@ public:
    * \brief Set the value of the old residual.
    * \param[in] val_residual_old - Pointer to the residual vector.
    */
-  void SetResidual_Old(su2double *val_residual_old);
+  inline void SetResidual_Old(su2double *val_residual_old) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Residual_Old[iVar] = val_residual_old[iVar];
+  }
   
   /*!
    * \brief Add a value to the summed residual vector.
    * \param[in] val_residual - Pointer to the residual vector.
    */
-  void AddResidual_Sum(su2double *val_residual);
+  inline void AddResidual_Sum(su2double *val_residual) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Residual_Sum[iVar] += val_residual[iVar];
+  }
   
   /*!
    * \brief Set summed residual vector to zero value.
    */
-  void SetResidualSumZero(void);
+  inline void SetResidualSumZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Sum[iVar] = 0.0;
+  }
   
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -396,7 +453,10 @@ public:
    * \brief Get the value of the summed residual.
    * \param[in] val_residual - Pointer to the summed residual.
    */
-  void GetResidual_Sum(su2double *val_residual);
+  inline void GetResidual_Sum(su2double *val_residual) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      val_residual[iVar] = Residual_Sum[iVar];
+  }
   
   /*!
    * \brief Set auxiliar variables, we are looking for the gradient of that variable.
@@ -413,7 +473,9 @@ public:
   /*!
    * \brief Set the auxiliary variable gradient to zero value.
    */
-  void SetAuxVarGradientZero(void);
+  inline void SetAuxVarGradientZero(void) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Grad_AuxVar[iDim] = 0.0;
+  }
   
   /*!
    * \brief Set the value of the auxiliary variable gradient.
@@ -453,33 +515,43 @@ public:
    * \brief Add a value to the truncation error.
    * \param[in] val_truncation_error - Value that we want to add to the truncation error.
    */
-  void AddRes_TruncError(su2double *val_truncation_error);
+  inline void AddRes_TruncError(su2double *val_truncation_error) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError[iVar] += val_truncation_error[iVar];
+  }
   
   /*!
    * \brief Subtract a value to the truncation error.
    * \param[in] val_truncation_error - Value that we want to subtract to the truncation error.
    */
-  void SubtractRes_TruncError(su2double *val_truncation_error);
+  inline void SubtractRes_TruncError(su2double *val_truncation_error) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError[iVar] -= val_truncation_error[iVar];
+  }
   
   /*!
    * \brief Set the truncation error to zero.
    */
-  void SetRes_TruncErrorZero(void);
+  inline void SetRes_TruncErrorZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_TruncError[iVar] = 0.0;
+  }
   
   /*!
    * \brief Set the truncation error to zero.
    */
-  void SetVal_ResTruncError_Zero(unsigned short val_var);
+  inline void SetVal_ResTruncError_Zero(unsigned short val_var) {Res_TruncError[val_var] = 0.0;}
   
   /*!
    * \brief Set the velocity of the truncation error to zero.
    */
-  void SetVel_ResTruncError_Zero(void);
+  inline void SetVel_ResTruncError_Zero(void) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) Res_TruncError[iDim+1] = 0.0;
+  }
   
   /*!
    * \brief Set the velocity of the truncation error to zero.
    */
-  void SetEnergy_ResTruncError_Zero(void);
+  inline void SetEnergy_ResTruncError_Zero(void) {Res_TruncError[nDim+1] = 0.0;}
   
   /*!
    * \brief Get the truncation error.
@@ -491,13 +563,20 @@ public:
    * \brief Get the truncation error.
    * \param[in] val_trunc_error - Pointer to the truncation error.
    */
-  void GetResTruncError(su2double *val_trunc_error);
+  inline void GetResTruncError(su2double *val_trunc_error) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      val_trunc_error[iVar] = Res_TruncError[iVar];
+  }
   
   /*!
    * \brief Set the gradient of the solution.
    * \param[in] val_gradient - Gradient of the solution.
    */
-  void SetGradient(su2double **val_gradient);
+  inline void SetGradient(su2double **val_gradient) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Gradient[iVar][iDim] = val_gradient[iVar][iDim];
+  }
   
   /*!
    * \overload
@@ -510,7 +589,11 @@ public:
   /*!
    * \brief Set to zero the gradient of the solution.
    */
-  void SetGradientZero(void);
+  inline void SetGradientZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Gradient[iVar][iDim] = 0.0;
+  }
   
   /*!
    * \brief Add <i>val_value</i> to the solution gradient.
@@ -553,7 +636,11 @@ public:
   /*!
    * \brief Set to zero the Rmatrix for least squares gradient calculations.
    */
-  void SetRmatrixZero(void);
+  inline void SetRmatrixZero(void) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        Rmatrix[iDim][jDim] = 0.0;
+  }
   
   /*!
    * \brief Add <i>val_value</i> to the Rmatrix for least squares gradient calculations.
@@ -842,32 +929,45 @@ public:
    * \brief Add the value of the undivided laplacian of the solution.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  void AddUnd_Lapl(su2double *val_und_lapl);
+  inline void AddUnd_Lapl(su2double *val_und_lapl) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Undivided_Laplacian[iVar] += val_und_lapl[iVar];
+  }
   
   /*!
    * \brief Subtract the value of the undivided laplacian of the solution.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  void SubtractUnd_Lapl(su2double *val_und_lapl);
+  inline void SubtractUnd_Lapl(su2double *val_und_lapl) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Undivided_Laplacian[iVar] -= val_und_lapl[iVar];
+  }
   
   /*!
    * \brief Subtract the value of the undivided laplacian of the solution.
    * \param[in] val_var - Variable of the undivided laplacian.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  void SubtractUnd_Lapl(unsigned short val_var, su2double val_und_lapl);
+  inline void SubtractUnd_Lapl(unsigned short val_var, su2double val_und_lapl) {
+    Undivided_Laplacian[val_var] -= val_und_lapl;
+  }
   
   /*!
    * \brief Set the undivided laplacian of the solution to zero.
    */
-  void SetUnd_LaplZero(void);
+  inline void SetUnd_LaplZero(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Undivided_Laplacian[iVar] = 0.0;
+  }
   
   /*!
    * \brief Set a value to the undivided laplacian.
    * \param[in] val_var - Variable of the undivided laplacian.
    * \param[in] val_und_lapl - Value of the undivided laplacian.
    */
-  void SetUnd_Lapl(unsigned short val_var, su2double val_und_lapl);
+  inline void SetUnd_Lapl(unsigned short val_var, su2double val_und_lapl) {
+    Undivided_Laplacian[val_var] = val_und_lapl;
+  }
   
   /*!
    * \brief Get the undivided laplacian of the solution.
@@ -1979,8 +2079,10 @@ public:
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
-  virtual void SetSolution_time_n(su2double *val_solution_time_n);
-  
+  inline virtual void SetSolution_time_n(su2double *val_solution_time_n) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Solution_time_n[iVar] = val_solution_time_n[iVar];
+  }
   
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
