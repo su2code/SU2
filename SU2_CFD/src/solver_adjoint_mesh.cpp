@@ -118,7 +118,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
       /*--- If the marker is flagged as moving, retrieve the node vertex ---*/
-      if (config->GetMarker_All_Moving(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (config->GetMarker_All_Interface(iMarker) == YES) iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       else iVertex = -1;
 
       if (iVertex != -1){isVertex = true; break;}
