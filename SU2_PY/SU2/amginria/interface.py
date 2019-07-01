@@ -31,7 +31,7 @@ def amg_call(config):
         -itp  %s  -nordg " \
         % (config['mesh_in'], config['sol_in'],  \
         config['size'],  config['hgrad'], config['hmin'], config['hmax'], \
-        config['mesh_out'], config['itp_sol_in'])
+        config['mesh_out'], config['sol_itp_in'])
         
     if config['adap_source'] != "":
         cmd += ' -source %s ' % config['adap_source']
@@ -51,7 +51,7 @@ def amg_call_met(config):
         -itp  %s  -nordg " \
         % (config['mesh_in'], config['metric_in'],  \
         config['hgrad'], config['hmin'], config['hmax'], \
-        config['mesh_out'], config['itp_sol_in'])
+        config['mesh_out'], config['sol_itp_in'])
             
     cmd += ' > %s' % config['amg_log']
     os.system(cmd)
@@ -79,7 +79,7 @@ def amg_call_python(mesh, config):
     ''' 
       TO ADD: 
      {'adap_back' 'hmax' 'hmin'
-      'sol_in': 'current_sensor.solb', 'itp_sol_in': 'current.solb', 'metric_in': '', 'adap_source': '', 
+      'sol_in': 'current_sensor.solb', 'sol_itp_in': 'current.solb', 'metric_in': '', 'adap_source': '', 
      'mesh_in': 'current.meshb', 'mesh_out': 'current.new.meshb'}
     ''' 
     

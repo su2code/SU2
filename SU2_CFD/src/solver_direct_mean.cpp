@@ -5802,6 +5802,25 @@ void CEulerSolver::SetGradient_L2Proj2(CGeometry *geometry, CConfig *config){
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
 
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 3; ++iNode) {
+      su2double CrdAvg[2] = {0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 3; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+        }
+      }
+      CrdAvg[0] /= 2.;
+      CrdAvg[1] /= 2.;
+      su2double u[2] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1]) > 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+      }
+    }
+
     //--- loop over conservative variables
     for(iVar = 0; iVar < nVarMetr; iVar++){
 
@@ -5877,6 +5896,25 @@ void CEulerSolver::SetHessian_L2Proj2(CGeometry *geometry, CConfig *config){
 
     vnx[2] = Crd[0][1]-Crd[1][1];
     vny[2] = Crd[1][0]-Crd[0][0];
+
+    //--- check if inward normal
+    for(unsigned short iNode = 0; iNode < 3; ++iNode) {
+      su2double CrdAvg[2] = {0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 3; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+        }
+      }
+      CrdAvg[0] /= 2.;
+      CrdAvg[1] /= 2.;
+      su2double u[2] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1]) > 0.) {
+        vnx[iNode] *= -1.0;
+        vny[iNode] *= -1.0;
+      }
+    }
 
     //--- loop over conservative variables
     for(iVar = 0; iVar < nVarMetr; iVar++){
@@ -6031,11 +6069,21 @@ void CEulerSolver::SetGradient_L2Proj3(CGeometry *geometry, CConfig *config){
 
     //--- check if inward normal
     for(unsigned short iNode = 0; iNode < 4; ++iNode) {
-      unsigned short jNode = (iNode+1) % 4;
-      su2double u[3] = {Crd[jNode][0]-Crd[iNode][0],
-                        Crd[jNode][1]-Crd[iNode][1],
-                        Crd[jNode][2]-Crd[iNode][2]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) < 0.) {
+      su2double CrdAvg[3] = {0.0, 0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 4; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+          CrdAvg[2] += Crd[jNode][2];
+        }
+      }
+      CrdAvg[0] /= 3.;
+      CrdAvg[1] /= 3.;
+      CrdAvg[2] /= 3.;
+      su2double u[3] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1],
+                        CrdAvg[2]-Crd[iNode][2]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) > 0.) {
         vnx[iNode] *= -1.0;
         vny[iNode] *= -1.0;
         vnz[iNode] *= -1.0;
@@ -6133,11 +6181,21 @@ void CEulerSolver::SetHessian_L2Proj3(CGeometry *geometry, CConfig *config){
 
     //--- check if inward normal
     for(unsigned short iNode = 0; iNode < 4; ++iNode) {
-      unsigned short jNode = (iNode+1) % 4;
-      su2double u[3] = {Crd[jNode][0]-Crd[iNode][0],
-                        Crd[jNode][1]-Crd[iNode][1],
-                        Crd[jNode][2]-Crd[iNode][2]};
-      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) < 0.) {
+      su2double CrdAvg[3] = {0.0, 0.0, 0.0};
+      for(unsigned short jNode = 0; jNode < 4; ++jNode) {
+        if(iNode != jNode) {
+          CrdAvg[0] += Crd[jNode][0];
+          CrdAvg[1] += Crd[jNode][1];
+          CrdAvg[2] += Crd[jNode][2];
+        }
+      }
+      CrdAvg[0] /= 3.;
+      CrdAvg[1] /= 3.;
+      CrdAvg[2] /= 3.;
+      su2double u[3] = {CrdAvg[0]-Crd[iNode][0],
+                        CrdAvg[1]-Crd[iNode][1],
+                        CrdAvg[2]-Crd[iNode][2]};
+      if((vnx[iNode]*u[0] + vny[iNode]*u[1] + vnz[iNode]*u[2]) > 0.) {
         vnx[iNode] *= -1.0;
         vny[iNode] *= -1.0;
         vnz[iNode] *= -1.0;

@@ -211,7 +211,7 @@ def amg ( config , kind='' ):
     config_amg['mesh_out']    = 'current.new.meshb'
     config_amg['metric_in']   = ''
     config_amg['sol_in']      = 'current.metr.solb'
-    config_amg['itp_sol_in']  = 'current.solb'
+    config_amg['sol_itp_in']  = 'current.solb'
     config_amg['adap_source'] = ''
     
     if 'ADAP_BACK' in config:
@@ -327,7 +327,7 @@ def amg ( config , kind='' ):
 
                     # config_amg['metric_in']   = 'current.metr.solb'
                     config_amg['sol_in']      = 'current.metr.solb'
-                    config_amg['itp_sol_in']  = 'current.restart.solb'
+                    config_amg['sol_itp_in']  = 'current.restart.solb'
 
                     # mesh.pop('sensor',None)
 
