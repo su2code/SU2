@@ -906,6 +906,34 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    when the problem is unsteady. ---*/
   UpdateMultiGrid(geometry, config);
 
+  /*--- Store the boundary displacements at the Bound_Disp variable. ---*/
+
+  unsigned short iMarker;
+  unsigned long iVertex, iNode;
+  su2double *VarDisp = NULL;
+
+  su2double VarCoord[3] = {0.0, 0.0, 0.0};
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+
+      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+        /*--- Get node index ---*/
+        iNode = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Store it into the current displacement.  ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          VarCoord[iDim] = node[iNode]->GetSolution(iDim);
+        }
+
+        node[iNode]->SetBound_Disp(VarCoord);
+
+      }
+
+    }
+  }
+
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   if (Restart_Vars != NULL) delete [] Restart_Vars;
