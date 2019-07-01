@@ -1839,6 +1839,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool grid_movement = config->GetGrid_Movement();
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -1869,9 +1870,10 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     }
     
-    /*--- Compute residuals, and Jacobians ---*/
+    /*--- Compute residuals, and Jacobians. Store mass flux if required. ---*/
 
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
     
     /*--- Update convective and artificial dissipation residuals ---*/
 
@@ -1905,6 +1907,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool grid_movement    = config->GetGrid_Movement();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool rans             = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   /*--- Loop over all the edges ---*/
   
@@ -1978,9 +1981,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       
     }
     
-    /*--- Compute the residual ---*/
+    /*--- Compute the residual and store the mass flux if required ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
 
     /*--- Update residual value ---*/
     
@@ -6802,6 +6806,8 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
   
+  /*--- Edge mass fluxes ---*/
+  EdgeMassFluxes = NULL;
 }
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
@@ -6820,6 +6826,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -7375,7 +7382,16 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
+
+  /*--- Allocate and initialize edge mass flux array if RANS and for the finest grid only ---*/
   
+  if (rans && (iMesh == MESH_0)) {
+    
+    EdgeMassFluxes = new su2double [geometry->GetnEdge()];
+    
+    for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); ++iEdge)
+      EdgeMassFluxes[iEdge] = 0.0;
+  }
 }
 
 CIncNSSolver::~CIncNSSolver(void) {
@@ -7440,6 +7456,7 @@ CIncNSSolver::~CIncNSSolver(void) {
     delete [] HeatConjugateVar;
   }
   
+  if (EdgeMassFluxes != NULL) delete [] EdgeMassFluxes;
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {

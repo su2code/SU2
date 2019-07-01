@@ -89,15 +89,16 @@ CTurbSolver::~CTurbSolver(void) {
   
 }
 
-void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                  CConfig *config, unsigned short iMesh) {
   
-  su2double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  su2double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j;
+  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j;
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
-  bool muscl         = config->GetMUSCL_Turb();
-  bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
-  bool grid_movement = config->GetGrid_Movement();
+  bool muscl   = config->GetMUSCL_Turb();
+  bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -105,9 +106,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Primitive variables w/o reconstruction ---*/
+    /*--- Convective flux ---*/
+    
+    EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+    numerics->SetMassFlux(EdgeMassFlux);
+    
+    /*--- Flow primitive variables (SA models need density). ---*/
     
     V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
     V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
@@ -117,12 +122,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     Turb_i = node[iPoint]->GetSolution();
     Turb_j = node[jPoint]->GetSolution();
-    numerics->SetTurbVar(Turb_i, Turb_j);
     
-    /*--- Grid Movement ---*/
-    
-    if (grid_movement)
-      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+    /*--- Reconstruct if required ---*/
     
     if (muscl) {
 
@@ -130,33 +131,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
-      
-      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
-      
-      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
-      if (limiter) {
-        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
-        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
-      }
-      
-      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-        }
-        if (limiter) {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-      }
-      
-      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
       
       /*--- Turbulent variables using gradient reconstruction and limiters ---*/
       
@@ -182,9 +156,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
           Solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
         }
       }
-      
       numerics->SetTurbVar(Solution_i, Solution_j);
-      
+    }
+    else {
+      numerics->SetTurbVar(Turb_i, Turb_j);
     }
     
     /*--- Add and subtract residual ---*/

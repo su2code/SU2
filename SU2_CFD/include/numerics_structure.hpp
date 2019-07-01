@@ -70,6 +70,7 @@ protected:
   su2double *Enthalpy_formation;
   su2double Prandtl_Lam;        /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl's number. */
+  su2double MassFlux;      /*!< \brief Mass flux across edge. */
   
 public:
   
@@ -1484,9 +1485,14 @@ public:
    * \param[in] d: array that will hold the ordered eigenvalues
    * \param[in] e: supplemental data structure
    * \param[in] n: order of matrix V
-
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+  
+  /*!
+   * \brief SetMassFlux
+   * \param[in] val_MassFlux: Mass flux across the edge
+   */
+  inline void SetMassFlux(const su2double val_MassFlux) {MassFlux = val_MassFlux;}
   
 };
 
@@ -2475,7 +2481,7 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn();
+  inline void ExtraADPreaccIn() {}
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
