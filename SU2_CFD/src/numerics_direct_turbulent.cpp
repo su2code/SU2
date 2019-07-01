@@ -65,7 +65,9 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
                                        CConfig *config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
+  AD::SetPreaccIn(TurbVar_i, nVar);
+  AD::SetPreaccIn(TurbVar_j, nVar);
+  AD::SetPreaccIn(MassFlux);
 
   ExtraADPreaccIn();
 
