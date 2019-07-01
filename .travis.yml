@@ -6,12 +6,6 @@ sudo: required
 
 language: python
 
-cache: 
-    pip: true
-    directories:
-        - $HOME/build
-        - $HOME/.ccache
-
 compiler:
     - gcc
 
@@ -22,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - meson_build
+        - develop
 
 python:
     - 3.6
@@ -53,19 +47,17 @@ before_install:
 
     # Install the necessary packages using apt-get with sudo
     - sudo apt-get update -qq
-    - sudo apt-get install -qq build-essential libopenmpi-dev swig
+    - sudo apt-get install -qq build-essential libopenmpi-dev
  
     # Install Python dependencies
     # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
-    - if [ ! -f "$HOME/miniconda/bin/conda" ]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
-    - if [ ! -f "$HOME/miniconda/bin/conda" ]; then bash miniconda.sh -u -b -p $HOME/miniconda; fi
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
     - export PATH="$HOME/miniconda/bin:$PATH"
-    - conda install --yes -q python=$TRAVIS_PYTHON_VERSION
-
-    - pip install --upgrade pip
-    - pip install numpy
-    - pip install mpi4py
-    - pip install meson
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda install -q -c anaconda python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
 
     # to avoid interference with MPI
     - test -n $CC  && unset CC

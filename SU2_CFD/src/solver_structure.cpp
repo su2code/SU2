@@ -1,6 +1,6 @@
 /*!
  * \file solver_structure.cpp
- * \brief Main subrotuines for solving direct, adjoint and linearized problems.
+ * \brief Main subroutines for solving primal and adjoint problems.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
@@ -36,11 +36,28 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
+#include "../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
+#include "../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+
 
 CSolver::CSolver(void) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  /*--- Set the multigrid level to the finest grid. This can be
+        overwritten in the constructors of the derived classes. ---*/
+  MGLevel = MESH_0;
   
   /*--- Array initialization ---*/
   
@@ -94,6 +111,9 @@ CSolver::CSolver(void) {
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
   
   IterLinSolver = 0;
+
+  /*--- Initialize pointer for any verification solution. ---*/
+  VerificationSolution  = NULL;
   
   /*--- Flags for the periodic BC communications. ---*/
   
@@ -219,6 +239,8 @@ CSolver::~CSolver(void) {
   if (nCol_InletFile    != NULL) {delete [] nCol_InletFile;    nCol_InletFile    = NULL;}
   if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
 
+  if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
+  
 }
 
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
@@ -291,11 +313,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     case PERIODIC_SOL_GG:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nVar;
+      JCOUNT           = nDim;
       break;
     case PERIODIC_PRIM_GG:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nPrimVarGrad;
+      JCOUNT           = nDim;
       break;
     case PERIODIC_SOL_LS:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
@@ -2164,6 +2189,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
+    if (log10(sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())) > 20 ){
+      SU2_MPI::Error("SU2 has diverged. (Residual > 10^20 detected)", CURRENT_FUNCTION);
+    }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
     
@@ -2209,7 +2237,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
     
   }
-  
+
   delete [] sbuf_residual;
   delete [] rbuf_residual;
   
@@ -3112,9 +3140,20 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
-  *Solution, *Solution_i, *Solution_j, *LocalMinSolution, *LocalMaxSolution,
-  *GlobalMinSolution, *GlobalMaxSolution,
+  *Solution, *Solution_i, *Solution_j,
+  *LocalMinSolution = NULL, *LocalMaxSolution = NULL,
+  *GlobalMinSolution = NULL, *GlobalMaxSolution = NULL,
   dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
+  
+#ifdef CODI_REVERSE_TYPE
+  bool TapeActive = false;
+
+  if (config->GetDiscrete_Adjoint() && config->GetFrozen_Limiter_Disc()) {
+    /*--- If limiters are frozen do not record the computation ---*/
+    TapeActive = AD::globalTape.isActive();
+    AD::StopRecording();
+  }
+#endif
   
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
@@ -3258,33 +3297,34 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
     
-    /*--- Allocate memory for the max and min solution value --*/
-    
-    LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
-    LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
-    
-    /*--- Compute the max value and min value of the solution ---*/
-    
-    Solution = node[iPoint]->GetSolution();
-    for (iVar = 0; iVar < nVar; iVar++) {
-      LocalMinSolution[iVar] = Solution[iVar];
-      LocalMaxSolution[iVar] = Solution[iVar];
-    }
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+
+      /*--- Allocate memory for the max and min solution value --*/
       
-      /*--- Get the solution variables ---*/
+      LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
+      LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
+      
+      /*--- Compute the max value and min value of the solution ---*/
       
       Solution = node[iPoint]->GetSolution();
-      
       for (iVar = 0; iVar < nVar; iVar++) {
-        LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
-        LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+        LocalMinSolution[iVar] = Solution[iVar];
+        LocalMaxSolution[iVar] = Solution[iVar];
       }
       
-    }
-    
-    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Get the solution variables ---*/
+        
+        Solution = node[iPoint]->GetSolution();
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
+          LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+        }
+        
+      }
+      
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3311,8 +3351,20 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
 
       for (iVar = 0; iVar < nVar; iVar++) {
+          
+        AD::StartPreacc();
+        AD::SetPreaccIn(Gradient_i[iVar], nDim);
+        AD::SetPreaccIn(Gradient_j[iVar], nDim);
+        AD::SetPreaccIn(Coord_i, nDim);
+        AD::SetPreaccIn(Coord_j, nDim);
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          AD::SetPreaccIn(GlobalMaxSolution[iVar]);
+          AD::SetPreaccIn(GlobalMinSolution[iVar]);
           eps1 = LimK * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
           eps2 = eps1*eps1;
         }
@@ -3320,11 +3372,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
           eps1 = LimK*dave;
           eps2 = eps1*eps1*eps1;
         }
-        
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
@@ -3359,14 +3406,15 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
           node[jPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
         }
+        
+        AD::EndPreacc();
       }
-      
-      AD::EndPreacc();
-
     }
     
-    delete [] LocalMinSolution; delete [] GlobalMinSolution;
-    delete [] LocalMaxSolution; delete [] GlobalMaxSolution;
+    if (LocalMinSolution  != NULL) delete [] LocalMinSolution;
+    if (LocalMaxSolution  != NULL) delete [] LocalMaxSolution;
+    if (GlobalMinSolution != NULL) delete [] GlobalMinSolution;
+    if (GlobalMaxSolution != NULL) delete [] GlobalMaxSolution;
 
   }
   
@@ -3526,91 +3574,9 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, SOLUTION_LIMITER);
   CompleteComms(geometry, config, SOLUTION_LIMITER);
 
-}
-
-void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian) {
-  
-  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
-  unsigned short iMarker, iVar;
-  su2double DualArea, Partial_Res, *Normal;
-  su2double **UxVar_Gradient, **UyVar_Gradient;
-  
-  UxVar_Gradient = new su2double* [geometry->GetnPoint()];
-  UyVar_Gradient = new su2double* [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    UxVar_Gradient[iPoint] = new su2double [2];
-    UyVar_Gradient[iPoint] = new su2double [2];
-  }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    for (iVar = 0; iVar < 2; iVar++) {
-      UxVar_Gradient[iPoint][iVar] = 0.0;
-      UyVar_Gradient[iPoint][iVar] = 0.0;
-    }
-  
-  /*---  Loop interior edges ---*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    Normal = geometry->edge[iEdge]->GetNormal();
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(1) + node[jPoint]->GetSolution(1)) * Normal[0];
-    UxVar_Gradient[iPoint][0] += Partial_Res;
-    UxVar_Gradient[jPoint][0] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(1) + node[jPoint]->GetSolution(1)) * Normal[1];
-    UxVar_Gradient[iPoint][1] += Partial_Res;
-    UxVar_Gradient[jPoint][1] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(2) + node[jPoint]->GetSolution(2)) * Normal[0];
-    UyVar_Gradient[iPoint][0] += Partial_Res;
-    UyVar_Gradient[jPoint][0] -= Partial_Res;
-    
-    Partial_Res =  0.5 * ( node[iPoint]->GetSolution(2) + node[jPoint]->GetSolution(2)) * Normal[1];
-    UyVar_Gradient[iPoint][1] += Partial_Res;
-    UyVar_Gradient[jPoint][1] -= Partial_Res;
-    
-  }
-  
-  /*---  Loop boundary edges ---*/
-  
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      Point = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      
-      Partial_Res =  node[Point]->GetSolution(1) * Normal[0];
-      UxVar_Gradient[Point][0] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(1) * Normal[1];
-      UxVar_Gradient[Point][1] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(2) * Normal[0];
-      UyVar_Gradient[Point][0] -= Partial_Res;
-      
-      Partial_Res =  node[Point]->GetSolution(2) * Normal[1];
-      UyVar_Gradient[Point][1] -= Partial_Res;
-    }
-    }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    DualArea = geometry->node[iPoint]->GetVolume();
-    PressureLaplacian[iPoint] = (UxVar_Gradient[iPoint][0]*UxVar_Gradient[iPoint][0] + UyVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][1] +
-                                 UxVar_Gradient[iPoint][1]*UyVar_Gradient[iPoint][0] + UxVar_Gradient[iPoint][0]*UyVar_Gradient[iPoint][1])/DualArea ;
-    
-  }
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    delete[] UxVar_Gradient[iPoint];
-    delete[] UyVar_Gradient[iPoint];
-  }
-  
-  delete[] UxVar_Gradient;
-  delete[] UyVar_Gradient;
-  
+#ifdef CODI_REVERSE_TYPE
+  if (TapeActive) AD::StartRecording();
+#endif
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
@@ -5338,6 +5304,43 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (Inlet_Fine   != NULL) delete [] Inlet_Fine;
   delete [] Normal;
   
+}
+
+void CSolver::SetVerificationSolution(unsigned short nDim,
+                                      unsigned short nVar,
+                                      CConfig        *config) {
+
+  /*--- Determine the verification solution to be set and
+        allocate memory for the corresponding class. ---*/
+  switch( config->GetVerification_Solution() ) {
+
+    case NO_VERIFICATION_SOLUTION:
+      VerificationSolution = NULL; break;
+    case INVISCID_VORTEX:
+      VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
+    case RINGLEB:
+      VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
+    case NS_UNIT_QUAD:
+      VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
+    case TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
+    case INC_TAYLOR_GREEN_VORTEX:
+      VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_UNIT_QUAD:
+      VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_UNIT_QUAD_WALL_BC:
+      VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_TWO_HALF_CIRCLES:
+      VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_TWO_HALF_SPHERES:
+      VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_INC_EULER:
+      VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, MGLevel, config); break;
+    case MMS_INC_NS:
+      VerificationSolution = new CMMSIncNSSolution(nDim, nVar, MGLevel, config); break;
+    case USER_DEFINED_SOLUTION:
+      VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
+  }
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
