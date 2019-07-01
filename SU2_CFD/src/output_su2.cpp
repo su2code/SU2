@@ -40,9 +40,8 @@
 void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream& output_file) {
   
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, VTK_Type, nMarker_;
   short SendTo;
-  su2double *center, *angles, *transl;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
@@ -220,28 +219,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
   input_file.close();
 
   remove(str.c_str());
-
-  /*--- Get the total number of periodic transformations ---*/
-  
-  nPeriodic = config->GetnPeriodicIndex();
-  output_file << "NPERIODIC= " << nPeriodic << endl;
-  
-  /*--- From iPeriodic obtain the iMarker ---*/
-  
-  for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-    
-    /*--- Retrieve the supplied periodic information. ---*/
-    
-    center = config->GetPeriodicCenter(iPeriodic);
-    angles = config->GetPeriodicRotation(iPeriodic);
-    transl = config->GetPeriodicTranslate(iPeriodic);
-    
-    output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
-    output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
-    output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
-    output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-    
-  }
 
 }
 

@@ -723,6 +723,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief KIND_FEM_DG_SHOCK \n DESCRIPTION: Specify shock capturing method for DG OPTIONS: see \link ShockCapturingDG_Map \endlink \n DEFAULT: NO_SHOCK_CAPTURING \ingroup Config*/
   addEnumOption("KIND_FEM_DG_SHOCK", Kind_FEM_DG_Shock, ShockCapturingDG_Map, NO_SHOCK_CAPTURING);
 
+  /*!\brief KIND_VERIFICATION_SOLUTION \n DESCRIPTION: Specify the verification solution OPTIONS: see \link Verification_Solution_Map \endlink \n DEFAULT: NO_VERIFICATION_SOLUTION \ingroup Config*/
+  addEnumOption("KIND_VERIFICATION_SOLUTION", Kind_Verification_Solution, Verification_Solution_Map, NO_VERIFICATION_SOLUTION);
+
   /*!\brief KIND_MATRIX_COLORING \n DESCRIPTION: Specify the method for matrix coloring for Jacobian computations OPTIONS: see \link MatrixColoring_Map \endlink \n DEFAULT GREEDY_COLORING \ingroup Config*/
   addEnumOption("KIND_MATRIX_COLORING", Kind_Matrix_Coloring, MatrixColoring_Map, GREEDY_COLORING);
 
@@ -1681,9 +1684,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  Options: AREA, MASSFLUX
    *  \n Use with MARKER_ANALYZE. \ingroup Config*/
   addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
-  /*!\brief CONSOLE_OUTPUT_VERBOSITY
-   *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
-  addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
   /*!\brief COMM_LEVEL
    *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
   addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
@@ -1849,7 +1849,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - OBSTACLE ( Center, Bump size )
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
-   - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TWIST_2D ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -4319,7 +4320,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != DISC_ADJ_RANS)) {
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
-    
+  
+  /*--- Check for running SU2_MSH for periodic preprocessing, and throw
+   an error to report that this is no longer necessary. ---*/
+  
+  if ((Kind_SU2 == SU2_MSH) &&
+      (Kind_Adaptation == PERIODIC)) {
+    SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
+                   string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
+                   string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5066,7 +5077,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
     	  if (Kind_Material == NEO_HOOKEAN) {
     		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
-    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
     	  }
     	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
@@ -7857,24 +7867,6 @@ unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
     if (Marker_EngineExhaust[iMarker_Engine] == Marker_CfgFile_TagBound[kMarker_All]) break;
   
   return kMarker_All;
-}
-
-void CConfig::SetnPeriodicIndex(unsigned short val_index) {
-
-  /*--- Store total number of transformations. ---*/
-  nPeriodic_Index = val_index;
-
-  /*--- Allocate memory for centers, angles, translations. ---*/
-  Periodic_Center    = new su2double*[nPeriodic_Index];
-  Periodic_Rotation  = new su2double*[nPeriodic_Index];
-  Periodic_Translate = new su2double*[nPeriodic_Index];
-  
-  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
-    Periodic_Center[i]    = new su2double[3];
-    Periodic_Rotation[i]  = new su2double[3];
-    Periodic_Translate[i] = new su2double[3];
-  }
-  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
