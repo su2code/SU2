@@ -655,6 +655,12 @@ public:
   vector<string> GetAllMovingMarkersTag();
 
   /*!
+   * \brief Get all the interface boundary marker tags.
+   * \return List of moving boundary markers tags.
+   */
+  vector<string> GetAllInterfaceMarkersTag();
+
+  /*!
    * \brief Get all the heat transfer boundary markers tags.
    * \return List of heat transfer boundary markers tags.
    */
@@ -744,6 +750,26 @@ public:
    * \param[in] LoadX - Value of the load in the direction Z.
    */
   vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
+   * strategy is in place).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   */
+  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the adjoint of the flow tractions (from the extra step -
+   * the repeated methods should be unified once the postprocessing strategy is in place).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] LoadX - Value of the adjoint in the direction X.
+   * \param[in] LoadX - Value of the adjoint in the direction Y.
+   * \param[in] LoadX - Value of the adjoint in the direction Z.
+   */
+  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                    passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.

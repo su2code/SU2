@@ -370,7 +370,7 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
               {0.0, 0.0, 0.0} ,
               {0.0, 0.0, 0.0} } ;
 
-  su2double Pinf = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetPressure_Inf();
+  su2double Pinf = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetPressure_Inf();
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -713,6 +713,24 @@ vector<string> CDriver::GetAllMovingMarkersTag(){
   return movingBoundariesTagList;
 }
 
+vector<string> CDriver::GetAllInterfaceMarkersTag(){
+
+  vector<string> interfaceBoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Interface();
+  interfaceBoundariesTagList.resize(nBoundariesMarker);
+
+  for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_Interface_TagBound(iMarker);
+    interfaceBoundariesTagList[iMarker] = Marker_Tag;
+  }
+
+  return interfaceBoundariesTagList;
+}
+
+
 vector<string> CDriver::GetAllCHTMarkersTag(){
 
   vector<string> CHTBoundariesTagList;
@@ -977,7 +995,8 @@ vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, u
 
 }
 
-void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX, passivedouble LoadY, passivedouble LoadZ) {
+void CDriver::SetLoads(unsigned short iMarker, unsigned short iVertex, passivedouble LoadX,
+                       passivedouble LoadY, passivedouble LoadZ) {
 
   unsigned long iPoint;
   PyWrapNodalForce[0] = LoadX;
@@ -1094,5 +1113,48 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
   FlowLoad_Sens_passive[2] = SU2_TYPE::GetValue(FlowLoad_Sens[2]);
 
   return FlowLoad_Sens_passive;
+
+}
+
+vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint, GlobalIndex;
+  vector<su2double> FlowLoad(3, 0.0);
+  vector<passivedouble> FlowLoad_passive(3, 0.0);
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+  if (config_container[ZONE_0]->GetMarker_All_Interface(iMarker) == YES) {
+    FlowLoad[0] = solver->GetVertexTractions(iMarker, iVertex, 0);
+    FlowLoad[1] = solver->GetVertexTractions(iMarker, iVertex, 1);
+    if (solver->GetnVar() == 3)
+      FlowLoad[2] = solver->GetVertexTractions(iMarker, iVertex, 2);
+    else
+      FlowLoad[2] = 0.0;
+  }
+  else{
+    FlowLoad[0] = 0.0;
+    FlowLoad[1] = 0.0;
+    FlowLoad[2] = 0.0;
+  }
+
+  FlowLoad_passive[0] = SU2_TYPE::GetValue(FlowLoad[0]);
+  FlowLoad_passive[1] = SU2_TYPE::GetValue(FlowLoad[1]);
+  FlowLoad_passive[2] = SU2_TYPE::GetValue(FlowLoad[2]);
+
+  return FlowLoad_passive;
+
+}
+
+void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                  passivedouble val_AdjointY, passivedouble val_AdjointZ) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+
+  solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 0, val_AdjointX);
+  solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 1, val_AdjointY);
+  solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 2, val_AdjointZ);
 
 }

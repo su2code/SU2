@@ -1156,14 +1156,13 @@ inline void CSolver::ComputeVerificationError(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config) { }
 
-inline su2double CSolver::GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                             unsigned long iVertex, unsigned short iDim) { return 0.0; }
+inline su2double CSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
+                                             unsigned short iDim) { return 0.0; }
 
 inline void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                                 unsigned long iVertex, unsigned short iDim,
-                                                 su2double val_adjoint) { }
+inline void CSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                                 unsigned short iDim, su2double val_adjoint) { }
 
 inline void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config) { }
 
@@ -1658,14 +1657,13 @@ inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 
-inline su2double CEulerSolver::GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                             unsigned long iVertex, unsigned short iDim) {
+inline su2double CEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
+                                                  unsigned short iDim) {
   return VertexTraction[iMarker][iVertex][iDim];
 }
 
-inline void CEulerSolver::StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                                      unsigned long iVertex, unsigned short iDim,
-                                                      su2double val_adjoint) {
+inline void CEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                                      unsigned short iDim, su2double val_adjoint) {
   VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
 }
 
@@ -2198,14 +2196,13 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
-inline su2double CIncEulerSolver::GetVertexTractions(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                             unsigned long iVertex, unsigned short iDim) {
+inline su2double CIncEulerSolver::GetVertexTractions(unsigned short iMarker, unsigned long iVertex,
+                                                     unsigned short iDim) {
   return VertexTraction[iMarker][iVertex][iDim];
 }
 
-inline void CIncEulerSolver::StoreVertexTractionsAdjoint(CGeometry *geometry, CConfig *config, unsigned short iMarker,
-                                                         unsigned long iVertex, unsigned short iDim,
-                                                         su2double val_adjoint) {
+inline void CIncEulerSolver::StoreVertexTractionsAdjoint(unsigned short iMarker, unsigned long iVertex,
+                                                         unsigned short iDim, su2double val_adjoint) {
   VertexTractionAdjoint[iMarker][iVertex][iDim] = val_adjoint;
 }
 

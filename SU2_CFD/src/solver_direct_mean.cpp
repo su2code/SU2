@@ -14539,8 +14539,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
 void CEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
-  /*---- NOTE: IT MIGHT BE NEEDED TO UPDATE THE GRADIENTS BEFORE COMPUTING THE TRACTIONS FOR THE ADJOINT ---*/
-
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
@@ -14649,9 +14647,67 @@ void CEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
 void CEulerSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
 
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint;
+
+  /*--- Loop over all the markers ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- If this is defined as an interface marker ---*/
+    if (config->GetMarker_All_Interface(iMarker) == YES) {
+
+      /*--- Loop over the vertices ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Recover the point index ---*/
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          /*--- Register the vertex traction as output ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
+          }
+
+        }
+      }
+    }
+  }
+
 }
 
 void CEulerSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint;
+
+  /*--- Loop over all the markers ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- If this is defined as an interface marker ---*/
+    if (config->GetMarker_All_Interface(iMarker) == YES) {
+
+      /*--- Loop over the vertices ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Recover the point index ---*/
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          /*--- Set the adjoint of the vertex traction from the value received ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+
+            SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
+                                    SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+          }
+
+        }
+      }
+    }
+  }
 
 }
 
