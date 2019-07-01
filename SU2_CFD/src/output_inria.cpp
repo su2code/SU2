@@ -57,7 +57,7 @@ void COutput::SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **so
   passivedouble bufDbl[GmfMaxTyp];
   char OutNam[1024];
 	
-  SPRINTF (OutNam, "current.restart.solb");
+  SPRINTF (OutNam, "current.solb");
 
   /*--- Open the restart file and write the solution. ---*/
 	
@@ -371,7 +371,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
     /*--- Write metric tensor ---*/
 
-    SPRINTF (OutNam, "current.metr.solb");
+    SPRINTF (OutNam, "current_sensor.solb");
     OutMetr = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
   
     if ( !OutMetr ) {

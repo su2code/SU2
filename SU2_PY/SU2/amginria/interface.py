@@ -26,7 +26,7 @@ def return_mesh_size(mesh):
 def amg_call(config):
     
     cmd = ''
-    cmd = "amg -in %s -sol %s -p 2 \
+    cmd = "amg -in %s -sol %s -p 1 \
          -c %f -hgrad %.2f -hmin %le -hmax %le -out %s \
         -itp  %s  -nordg " \
         % (config['mesh_in'], config['sol_in'],  \
@@ -49,7 +49,7 @@ def amg_call_met(config):
     cmd = "amg -in %s -met %s -p 1 \
         -hgrad %.2f -hmin %le -hmax %le -out %s \
         -itp  %s  -nordg " \
-        % (config['mesh_in'], config['metric_in'],  \
+        % (config['mesh_in'], config['sol_in'],  \
         config['hgrad'], config['hmin'], config['hmax'], \
         config['mesh_out'], config['sol_itp_in'])
             
@@ -62,10 +62,12 @@ def amg_call_python(mesh, config):
     remesh_options                = {}
     remesh_options['Lp']          = 1
     remesh_options['gradation']   = config['hgrad']
+    remesh_options['hmax']        = config['hmax']
+    remesh_options['hmin']        = config['hmin']
     remesh_options['target']      = config['size']
     remesh_options['logfile']     = config['amg_log']
-    remesh_options['sol_in']      = config['sol_in']
-    remesh_options['sol_itp_in']  = config['sol_itp_in']
+    # remesh_options['sol_in']      = config['sol_in']
+    # remesh_options['sol_itp_in']  = config['sol_itp_in']
     
     Dim = mesh['dimension']
     
@@ -91,6 +93,7 @@ def amg_call_python(mesh, config):
     mesh['Edges']     = mesh['Edges'].tolist()    
 
     if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].flatten().tolist()
+    # if 'metric' in mesh: mesh['metric'] = mesh['metric'].flatten().tolist()
     
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
@@ -256,6 +259,15 @@ def create_sensor(solution, sensor):
         pres   = np.array(Sol[:,iPres])
         sensor = np.stack((mach, pres), axis=1)    
         sensor_header = ["Mach", "Pres"]
+
+    elif sensor == "GOAL":
+
+        iGoal  = solution['id_solution_tag']['Aniso_Metric[0]']
+        if Dim == 2:
+            sensor = np.array(Sol[:,iGoal:iGoal+2])
+        elif Dim == 3:
+            sensor = np.array(Sol[:,iGoal:iGoal+5])
+        sensor_header = ["Goal"]
                 
     else :
         sys.stderr.write("## ERROR : Unknown sensor.\n")
