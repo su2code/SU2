@@ -56,7 +56,7 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
-  
+
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
@@ -82,20 +82,20 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
   nVar = val_nvar;
-  
+
   /*--- Allocate the solution array - here it is also possible
    to allocate some extra flow variables that do not participate
    in the simulation ---*/
   Solution = new su2double [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
-  
+
 }
 
 CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
-  
+
   unsigned short iVar, iDim, jDim;
-  
+
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
@@ -112,29 +112,29 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
-  
+
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
   nVar = val_nvar;
-  
-  /*--- Allocate solution, solution old, residual and gradient 
-   which is common for all the problems, here it is also possible 
-   to allocate some extra flow variables that do not participate 
+
+  /*--- Allocate solution, solution old, residual and gradient
+   which is common for all the problems, here it is also possible
+   to allocate some extra flow variables that do not participate
    in the simulation ---*/
   Solution = new su2double [nVar];
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     Solution[iVar] = 0.0;
 
   Solution_Old = new su2double [nVar];
-  
+
   Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Gradient[iVar] = new su2double [nDim];
     for (iDim = 0; iDim < nDim; iDim ++)
       Gradient[iVar][iDim] = 0.0;
   }
-  
+
   if (config->GetUnsteady_Simulation() != NO) {
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
@@ -143,11 +143,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = 0.0;
   }
-  
+
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
 	}
-  
+
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     Rmatrix = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -156,7 +156,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
         Rmatrix[iDim][jDim] = 0.0;
     }
   }
-  
+
 }
 
 CVariable::~CVariable(void) {
@@ -175,7 +175,7 @@ CVariable::~CVariable(void) {
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
-  
+
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Gradient[iVar];
@@ -187,5 +187,5 @@ CVariable::~CVariable(void) {
       delete [] Rmatrix[iDim];
     delete [] Rmatrix;
   }
-  
+
 }

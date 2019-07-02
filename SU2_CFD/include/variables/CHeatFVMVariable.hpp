@@ -49,14 +49,14 @@ class CHeatFVMVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
   su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CHeatFVMVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_Heat - Values of the Heat solution (initialization value).
@@ -65,7 +65,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */

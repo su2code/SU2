@@ -152,11 +152,11 @@ public:
   inline void SetSolution_Vel_Direct(su2double *val_solution_direct) {
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct_Vel[iVar] = val_solution_direct[iVar];
   }
-  
+
   inline void SetSolution_Accel_Direct(su2double *val_solution_direct) {
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct_Accel[iVar] = val_solution_direct[iVar];
   }
-  
+
   inline su2double* GetSolution_Direct() {return Solution_Direct; }
 
   inline su2double* GetSolution_Vel_Direct() {return Solution_Direct_Vel; }
@@ -227,7 +227,7 @@ public:
   inline void SetSolution_Accel_time_n(su2double *val_solution_accel_time_n) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
   }
-  
+
   /*!
    * \brief Set the value of the adjoint velocity (Structural Analysis) at time n.
    * \param[in] val_solution_old - Pointer to the residual vector.
@@ -235,7 +235,7 @@ public:
   inline void SetSolution_Vel_time_n(su2double *val_solution_vel_time_n) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Vel_time_n[iVar] = val_solution_vel_time_n[iVar];
   }
-  
+
   /*!
    * \brief Set the value of the old acceleration (Structural Analysis - adjoint).
    * \param[in] val_solution - Old solution of the problem (acceleration).
@@ -283,7 +283,7 @@ public:
   /*!
    * \brief Set the value of the adjoint solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(void) { 
+  inline void Set_BGSSolution_k(void) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution_BGS_k[iDim] = Solution_BGS[iDim];
   }

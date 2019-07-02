@@ -50,15 +50,15 @@ class CIncNSVariable : public CIncEulerVariable {
 private:
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-  
+
   su2double DES_LengthScale;
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CIncNSVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_pressure - value of the pressure.
@@ -69,7 +69,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[in] val_solution - Pointer to the flow value (initialization value).
@@ -78,45 +78,45 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CIncNSVariable(void);
-  
+
   /*!
    * \brief Set the laminar viscosity.
    */
   inline void SetLaminarViscosity(su2double laminarViscosity) {Primitive[nDim+4] = laminarViscosity;}
-  
+
   /*!
    * \brief Set the vorticity value.
    */
   bool SetVorticity(void);
-  
+
   /*!
    * \brief Set the rate of strain magnitude.
    */
   bool SetStrainMag(void);
-  
+
   /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
   inline void SetEddyViscosity(su2double eddy_visc) {Primitive[nDim+5] = eddy_visc; }
-  
+
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetLaminarViscosity(void) {return Primitive[nDim+4]; }
-  
+
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
   inline su2double GetEddyViscosity(void) {return Primitive[nDim+5]; }
-  
+
   /*!
    * \brief Set the thermal conductivity.
    */
@@ -134,28 +134,28 @@ public:
    * \return Value of the vorticity.
    */
   inline su2double *GetVorticity(void) {return Vorticity; }
-  
+
   /*!
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
   inline su2double GetStrainMag(void) {return StrainMag; }
-  
+
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
   bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
-  
+
   /*!
    * \brief Set the DES Length Scale.
    */
   inline void SetDES_LengthScale(su2double val_des_lengthscale) {DES_LengthScale = val_des_lengthscale; }
-    
+
   /*!
    * \brief Get the DES length scale
    * \return Value of the DES length Scale.
    */
   inline su2double GetDES_LengthScale(void) {return DES_LengthScale; }
-  
+
 };

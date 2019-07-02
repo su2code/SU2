@@ -39,7 +39,7 @@
 
 #include "CVariable.hpp"
 
-/*! 
+/*!
  * \class CAdjTurbVariable
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
@@ -53,28 +53,28 @@ protected:
   su2double **dFT_dUTvar;   /*!< \brief Sensitivity of boundary flux
                              to mean flow and turbulence vars. */
   su2double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
-  
+
 public:
-  
+
   /*!
-   * \brief Constructor of the class. 
-   */    
+   * \brief Constructor of the class.
+   */
   CAdjTurbVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.   
-   */    
+   * \param[in] config - Definition of the particular problem.
+   */
   CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
-   * \brief Destructor of the class. 
-   */    
+   * \brief Destructor of the class.
+   */
   ~CAdjTurbVariable(void);
-  
+
   /*!
    * \brief Set the Eddy Viscosity Sensitivity of the problem.
    * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
@@ -82,7 +82,7 @@ public:
   inline void SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
     for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) EddyViscSens[iVar] = val_EddyViscSens[iVar];
   }
-  
+
   /*!
    * \brief Get the Eddy Viscosity Sensitivity of the problem.
    * \return Pointer to the Eddy Viscosity Sensitivity.
