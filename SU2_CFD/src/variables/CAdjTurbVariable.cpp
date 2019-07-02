@@ -38,14 +38,14 @@
 #include "../../include/variables/CAdjTurbVariable.hpp"
 
 CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
-  
+
   /*--- Array initialization ---*/
-  
+
   dmuT_dUTvar = NULL;
   dRTstar_dUTvar = NULL;
   dFT_dUTvar = NULL;
   EddyViscSens = NULL;
-  
+
 }
 
 CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar,
@@ -53,21 +53,21 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   unsigned short iVar;
 
   /*--- Array initialization ---*/
-  
+
   dmuT_dUTvar = NULL;
   dRTstar_dUTvar = NULL;
   dFT_dUTvar = NULL;
   EddyViscSens = NULL;
-  
+
   /*--- Initialization of variables ---*/
-  
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_psinu_inf;
     Solution_Old[iVar] = val_psinu_inf;
   }
-  
+
   Residual_Old = new su2double [nVar];
-  
+
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
@@ -78,8 +78,8 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {
-  
+
   if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
   if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
+
 }

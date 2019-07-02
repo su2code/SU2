@@ -53,13 +53,13 @@ protected:
   su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   F2,            /*!< \brief Menter blending function for stress limiter. */
   CDkw;           /*!< \brief Cross-diffusion. */
-  
+
 public:
   /*!
    * \brief Constructor of the class.
    */
   CTurbSSTVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_rho_kine - Turbulent variable value (initialization value).
@@ -72,12 +72,12 @@ public:
    */
   CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
                    su2double *constants, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTurbSSTVariable(void);
-  
+
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.
@@ -85,17 +85,17 @@ public:
    * \param[in] val_density - Value of the density.
    */
   void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
-  
+
   /*!
    * \brief Get the first blending function.
    */
   inline su2double GetF1blending(void) { return F1; }
-  
+
   /*!
    * \brief Get the second blending function.
    */
   inline su2double GetF2blending(void) { return F2; }
-  
+
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */

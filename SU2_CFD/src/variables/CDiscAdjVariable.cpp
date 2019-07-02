@@ -45,7 +45,7 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   Sensitivity    = NULL;
 
   DualTime_Derivative   = NULL;
-  DualTime_Derivative_n = NULL; 
+  DualTime_Derivative_n = NULL;
 
 }
 

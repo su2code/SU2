@@ -52,15 +52,15 @@ protected:
   su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;      /*! < \brief Wind gust value */
   su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
-  
+
   /*--- Primitive variable definition ---*/
-  
+
   su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-  
+
   /*--- Secondary variable definition ---*/
-  
+
   su2double *Secondary;            /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
@@ -71,14 +71,14 @@ protected:
 
   /*--- Old solution container for BGS iterations ---*/
   su2double* Solution_BGS_k;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CEulerVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_density - Value of the flow density (initialization value).
@@ -90,7 +90,7 @@ public:
    */
   CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
                  unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[in] val_solution - Pointer to the flow value (initialization value).
@@ -99,7 +99,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -131,7 +131,7 @@ public:
    * \brief Set to zero the gradient of the primitive variables.
    */
   void SetGradient_PrimitiveZero(unsigned short val_primvar);
-  
+
   /*!
    * \brief Add <i>val_value</i> to the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -139,7 +139,7 @@ public:
    * \param[in] val_value - Value to add to the gradient of the primitive variables.
    */
   inline void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] += val_value; }
-  
+
   /*!
    * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -147,7 +147,7 @@ public:
    * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
    */
   inline void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] -= val_value; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] val_var - Index of the variable.
@@ -155,14 +155,14 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) {return Gradient_Primitive[val_var][val_dim]; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] val_var - Index of the variable.
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetLimiter_Primitive(unsigned short val_var) {return Limiter_Primitive[val_var]; }
-  
+
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -170,31 +170,31 @@ public:
    * \param[in] val_value - Value of the gradient.
    */
   inline void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Primitive[val_var][val_dim] = val_value; }
-  
+
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_value - Value of the gradient.
    */
   inline void SetLimiter_Primitive(unsigned short val_var, su2double val_value) {Limiter_Primitive[val_var] = val_value; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
   inline su2double **GetGradient_Primitive(void) {return Gradient_Primitive; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(void) {return Limiter_Primitive; }
-  
+
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
   void SetGradient_SecondaryZero(unsigned short val_secondaryvar);
-  
+
   /*!
    * \brief Add <i>val_value</i> to the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -202,7 +202,7 @@ public:
    * \param[in] val_value - Value to add to the gradient of the primitive variables.
    */
   inline void AddGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Secondary[val_var][val_dim] += val_value; }
-  
+
   /*!
    * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -210,7 +210,7 @@ public:
    * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
    */
   inline void SubtractGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Secondary[val_var][val_dim] -= val_value; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] val_var - Index of the variable.
@@ -218,7 +218,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetGradient_Secondary(unsigned short val_var, unsigned short val_dim) {return Gradient_Secondary[val_var][val_dim]; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] val_var - Index of the variable.
@@ -226,7 +226,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetLimiter_Secondary(unsigned short val_var) {return Limiter_Secondary[val_var]; }
-  
+
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -234,7 +234,7 @@ public:
    * \param[in] val_value - Value of the gradient.
    */
   inline void SetGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value) {Gradient_Secondary[val_var][val_dim] = val_value; }
-  
+
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -242,29 +242,29 @@ public:
    * \param[in] val_value - Value of the gradient.
    */
   inline void SetLimiter_Secondary(unsigned short val_var, su2double val_value) {Limiter_Secondary[val_var] = val_value; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
   inline su2double **GetGradient_Secondary(void) {return Gradient_Secondary; }
-  
+
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Secondary(void) {return Limiter_Secondary; }
-  
+
   /*!
    * \brief A virtual member.
    */
   inline void SetdPdrho_e(su2double dPdrho_e) {Secondary[0] = dPdrho_e;}
-  
+
   /*!
    * \brief A virtual member.
    */
   inline void SetdPde_rho(su2double dPde_rho) {Secondary[1] = dPde_rho;}
-  
+
   /*!
    * \brief Set the value of the pressure.
    */
@@ -273,7 +273,7 @@ public:
     if (Primitive[nDim+1] > 0.0) return false;
     else return true;
   }
-  
+
   /*!
    * \brief Set the value of the speed of the sound.
    * \param[in] soundspeed2 - Value of soundspeed^2.
@@ -286,29 +286,29 @@ public:
       return false;
     }
   }
-  
+
   /*!
    * \brief Set the value of the enthalpy.
    */
   inline void SetEnthalpy(void) {Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
-  
+
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(CFluidModel *FluidModel);
-  
+
   /*!
    * \brief A virtual member.
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
-  
+
   /*!
    * \brief Get the primitive variables.
    * \param[in] val_var - Index of the variable.
    * \return Value of the primitive variable for the index <i>val_var</i>.
    */
   inline su2double GetPrimitive(unsigned short val_var) {return Primitive[val_var]; }
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -316,7 +316,7 @@ public:
    * \return Set the value of the primitive variable for the index <i>val_var</i>.
    */
   inline void SetPrimitive(unsigned short val_var, su2double val_prim) {Primitive[val_var] = val_prim; }
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_prim - Primitive variables.
@@ -326,20 +326,20 @@ public:
     for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
       Primitive[iVar] = val_prim[iVar];
   }
-  
+
   /*!
    * \brief Get the primitive variables of the problem.
    * \return Pointer to the primitive variable vector.
    */
   inline su2double *GetPrimitive(void) {return Primitive; }
-  
+
   /*!
    * \brief Get the primitive variables.
    * \param[in] val_var - Index of the variable.
    * \return Value of the primitive variable for the index <i>val_var</i>.
    */
   inline su2double GetSecondary(unsigned short val_var) {return Secondary[val_var]; }
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -347,7 +347,7 @@ public:
    * \return Set the value of the primitive variable for the index <i>val_var</i>.
    */
   inline void SetSecondary(unsigned short val_var, su2double val_secondary) {Secondary[val_var] = val_secondary; }
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_prim - Primitive variables.
@@ -357,13 +357,13 @@ public:
     for (unsigned short iVar = 0; iVar < nSecondaryVar; iVar++)
       Secondary[iVar] = val_secondary[iVar];
   }
-  
+
   /*!
    * \brief Get the primitive variables of the problem.
    * \return Pointer to the primitive variable vector.
    */
   inline su2double *GetSecondary(void) {return Secondary; }
-  
+
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
@@ -372,7 +372,7 @@ public:
     if (Primitive[nDim+2] > 0.0) return false;
     else return true;
   }
-  
+
   /*!
    * \brief Set the value of the temperature.
    * \param[in] temperature - how agitated the particles are :)
@@ -382,63 +382,63 @@ public:
     if (Primitive[0] > 0.0) return false;
     else return true;
   }
-  
+
   /*!
    * \brief Get the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
    */
   inline su2double GetVelocity2(void) {return Velocity2; }
-  
+
   /*!
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
   inline su2double GetPressure(void) {return Primitive[nDim+1]; }
-  
+
   /*!
    * \brief Get the speed of the sound.
    * \return Value of speed of the sound.
    */
   inline su2double GetSoundSpeed(void) {return Primitive[nDim+4]; }
-  
+
   /*!
    * \brief Get the enthalpy of the flow.
    * \return Value of the enthalpy of the flow.
    */
   inline su2double GetEnthalpy(void) {return Primitive[nDim+3]; }
-  
+
   /*!
    * \brief Get the density of the flow.
    * \return Value of the density of the flow.
    */
   inline su2double GetDensity(void) {return Solution[0]; }
-  
+
   /*!
    * \brief Get the energy of the flow.
    * \return Value of the energy of the flow.
    */
   inline su2double GetEnergy(void) {return Solution[nVar-1]/Solution[0]; };
-  
+
   /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
   inline su2double GetTemperature(void) {return Primitive[0]; }
-  
+
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] val_dim - Index of the dimension.
    * \return Value of the velocity for the dimension <i>val_dim</i>.
    */
   inline su2double GetVelocity(unsigned short val_dim) {return Primitive[val_dim+1]; }
-  
+
   /*!
    * \brief Get the projected velocity in a unitary vector direction (compressible solver).
    * \param[in] val_vector - Direction of projection.
    * \return Value of the projected velocity.
    */
   su2double GetProjVel(su2double *val_vector);
-  
+
   /*!
    * \brief Set the velocity vector from the solution.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -450,7 +450,7 @@ public:
       Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
     }
   }
-  
+
   /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -459,39 +459,39 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution_Old[iDim+1] = val_velocity[iDim]*Solution[0];
   }
-  
+
   /*!
    * \brief Set the harmonic balance source term.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
    */
   inline void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) {HB_Source[val_var] = val_source; }
-  
+
   /*!
    * \brief Get the harmonic balance source term.
    * \param[in] val_var - Index of the variable.
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   inline su2double GetHarmonicBalance_Source(unsigned short val_var) {return HB_Source[val_var]; }
-  
+
   /*!
    * \brief Get the value of the preconditioner Beta.
    * \return Value of the low Mach preconditioner variable Beta
    */
   inline su2double GetPreconditioner_Beta() {return Precond_Beta; }
-  
+
   /*!
    * \brief Set the value of the preconditioner Beta.
    * \param[in] Value of the low Mach preconditioner variable Beta
    */
   inline void SetPreconditioner_Beta(su2double val_Beta) {Precond_Beta = val_Beta; }
-  
+
   /*!
    * \brief Get the value of the wind gust
    * \return Value of the wind gust
    */
   inline su2double* GetWindGust() {return WindGust;}
-  
+
   /*!
    * \brief Set the value of the wind gust
    * \param[in] Value of the wind gust
@@ -500,13 +500,13 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       WindGust[iDim] = val_WindGust[iDim];
   }
-  
+
   /*!
    * \brief Get the value of the derivatives of the wind gust
    * \return Value of the derivatives of the wind gust
    */
   inline su2double* GetWindGustDer() {return WindGustDer;}
-  
+
   /*!
    * \brief Set the value of the derivatives of the wind gust
    * \param[in] Value of the derivatives of the wind gust
@@ -519,7 +519,7 @@ public:
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(void) { 
+  inline void Set_BGSSolution_k(void) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       Solution_BGS_k[iVar] = Solution[iVar];
   }

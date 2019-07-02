@@ -52,13 +52,13 @@ private:
   su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
   su2double DES_LengthScale;
   su2double Vortex_Tilting;
-  
+
 public:
   /*!
    * \brief Constructor of the class.
    */
   CTurbSAVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
@@ -68,19 +68,19 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTurbSAVariable(void);
-  
+
   /*!
    * \brief Set the harmonic balance source term.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
    */
   inline void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) {HB_Source[val_var] = val_source; }
-  
+
   /*!
    * \brief Get the harmonic balance source term.
    * \param[in] val_var - Index of the variable.
@@ -99,27 +99,27 @@ public:
    * \param[in] val_gamma - New value of the intermittency.
    */
   inline void SetGammaBC(su2double val_gamma) {gamma_BC = val_gamma; }
-  
+
   /*!
    * \brief Get the DES length scale
    * \return Value of the DES length Scale.
    */
   inline su2double GetDES_LengthScale(void) {return DES_LengthScale; }
-  
+
   /*!
    * \brief Set the DES Length Scale.
    */
   inline void SetDES_LengthScale(su2double val_des_lengthscale) {DES_LengthScale = val_des_lengthscale; }
-  
+
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    */
   void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
-  
+
   /*!
    * \brief Get the vortex tilting measure for computation of the EDDES length scale
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting() {return Vortex_Tilting; }
-  
+
 };

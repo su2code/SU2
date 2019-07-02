@@ -54,12 +54,12 @@ protected:
   su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
   bool incompressible;
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CAdjEulerVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_psirho - Value of the adjoint density (initialization value).
@@ -70,7 +70,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \overload
    * \param[in] val_solution - Pointer to the adjoint value (initialization value).
@@ -79,29 +79,29 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CAdjEulerVariable(void);
-  
+
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
+
   /*!
    * \brief Set the value of the adjoint velocity.
    * \param[in] val_phi - Value of the adjoint velocity.
    */
   inline void SetPhi_Old(su2double *val_phi) {for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
-  
+
   /*!
    * \brief Set the value of the force projection vector.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
    */
   inline void SetForceProj_Vector(su2double *val_ForceProj_Vector) {for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
-  
+
   /*!
    * \brief Set the value of the objective function source.
    * \param[in] val_ObjFuncSource - Pointer to the objective function source.
@@ -115,32 +115,32 @@ public:
    * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
    */
   inline void SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) {for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
-  
+
   /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */
   inline su2double *GetForceProj_Vector(void) {return ForceProj_Vector; }
-  
+
   /*!
    * \brief Get the value of the objective function source.
    * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
    */
   inline su2double *GetObjFuncSource(void) {return ObjFuncSource; }
-  
+
   /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */
   inline su2double *GetIntBoundary_Jump(void) {return IntBoundary_Jump; }
-  
+
   /*!
    * \brief Set the harmonic balance source term.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
    */
   inline void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) {HB_Source[val_var] = val_source; }
-  
+
   /*!
    * \brief Get the harmonic balance source term.
    * \param[in] val_var - Index of the variable.

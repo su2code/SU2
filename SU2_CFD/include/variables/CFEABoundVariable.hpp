@@ -54,14 +54,14 @@ protected:
 
   su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
   su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CFEABoundVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_fea - Values of the fea solution (initialization value).
@@ -70,7 +70,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */

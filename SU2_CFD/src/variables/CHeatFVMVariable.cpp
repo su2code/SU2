@@ -38,12 +38,12 @@
 #include "../../include/variables/CHeatFVMVariable.hpp"
 
 CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
-  
+
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
 
   Undivided_Laplacian = NULL;
-  
+
 }
 
 CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,

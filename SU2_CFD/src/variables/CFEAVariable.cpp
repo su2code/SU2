@@ -40,31 +40,31 @@
 CFEAVariable::CFEAVariable(void) : CVariable() {
 
   VonMises_Stress       = 0.0;
-  
+
   Stress                = NULL;    // Nodal stress (for output purposes)
   Residual_Ext_Body     = NULL;    // Residual component due to body forces
-  
+
   Solution_time_n       = NULL;    // Solution at the node at the previous subiteration
 
   Solution_Vel          = NULL;    // Velocity at the node at time t+dt
   Solution_Vel_time_n   = NULL;    // Velocity at the node at time t
-  
+
   Solution_Accel        = NULL;    // Acceleration at the node at time t+dt
   Solution_Accel_time_n = NULL;    // Acceleration at the node at time t
-  
+
   Solution_Pred         = NULL;    // Predictor of the solution at the current subiteration
   Solution_Pred_Old     = NULL;    // Predictor of the solution at the previous subiteration
-  
+
   Prestretch            = NULL;    // Prestretch geometry
   Reference_Geometry    = NULL;    // Reference geometry for optimization purposes
-  
+
   Solution_BGS_k        = NULL;    // Old solution stored to check convergence in the BGS loop
 
 }
 
 CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
                            CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-  
+
   unsigned short iVar;
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
@@ -72,22 +72,22 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
 
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
-  
+
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
-  
+
   bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi_analysis = config->GetFSI_Simulation();
 
   VonMises_Stress = 0.0;
-  
+
   if (nDim == 2) Stress = new su2double [3];
   else if (nDim == 3) Stress = new su2double [6];
-  
+
   /*--- Initialization of variables ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_fea[iVar];
   }
-  
+
   Solution_Vel       =  NULL;
   Solution_Vel_time_n    =  NULL;
   Solution_Accel       =  NULL;
@@ -104,7 +104,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
       Solution_Accel_time_n[iVar] = val_fea[iVar+2*nVar];
     }
   }
-  
+
   Solution_Pred       =  NULL;
   Solution_Pred_Old     =  NULL;
   Solution_Pred_Old   = NULL;
@@ -119,7 +119,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
       Solution_BGS_k[iVar] = 0.0;
     }
   }
-  
+
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
   if (incremental_load && nonlinear_analysis) {
     Solution_Old       =  new su2double [nVar];
@@ -131,7 +131,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
       Solution_Old[iVar] = val_fea[iVar];
     }
   }
-  
+
   /*--- Body residual ---*/
   Residual_Ext_Body = NULL;
   if (body_forces) {Residual_Ext_Body = new su2double [nVar];
@@ -139,33 +139,33 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
       Residual_Ext_Body[iVar] = 0.0;
     }
   }
-  
+
   Reference_Geometry = NULL;
   if (refgeom)  Reference_Geometry = new su2double [nVar];
-  
+
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
-  
-  
+
+
 }
 
 CFEAVariable::~CFEAVariable(void) {
-  
+
   if (Stress                != NULL) delete [] Stress;
   if (Residual_Ext_Body     != NULL) delete [] Residual_Ext_Body;
-  
+
   if (Solution_Vel          != NULL) delete [] Solution_Vel;
   if (Solution_Vel_time_n   != NULL) delete [] Solution_Vel_time_n;
-  
+
   if (Solution_Accel        != NULL) delete [] Solution_Accel;
   if (Solution_Accel_time_n != NULL) delete [] Solution_Accel_time_n;
-  
+
   if (Solution_Pred         != NULL) delete [] Solution_Pred;
   if (Solution_Pred_Old     != NULL) delete [] Solution_Pred_Old;
-  
+
   if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
   if (Prestretch            != NULL) delete [] Prestretch;
-  
+
   if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
 
 }

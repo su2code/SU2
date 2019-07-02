@@ -49,14 +49,14 @@
 class CTransLMVariable : public CTurbVariable {
 protected:
   su2double gamma_sep;
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CTransLMVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
@@ -67,23 +67,23 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CTransLMVariable(void);
-  
+
   /*!
    * \brief ________________.
    */
   inline su2double GetIntermittency(void) { return Solution[0]; }
-  
+
   /*!
    * \brief ________________.
    * \param[in] gamma_sep_in
    */
   inline void SetGammaSep(su2double gamma_sep_in) {gamma_sep = gamma_sep_in;}
-  
+
   /*!
    * \brief Correction for separation-induced transition.
    */

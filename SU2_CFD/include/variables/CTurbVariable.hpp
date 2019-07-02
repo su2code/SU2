@@ -49,13 +49,13 @@ class CTurbVariable : public CVariable {
 protected:
   su2double muT;                /*!< \brief Eddy viscosity. */
   su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
-  
+
 public:
   /*!
    * \brief Constructor of the class.
    */
   CTurbVariable(void);
-  
+
   /*!
    * \overload
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -63,18 +63,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CTurbVariable(void);
-  
+
   /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
   inline su2double GetmuT() { return muT; }
-  
+
   /*!
    * \brief Set the value of the eddy viscosity.
    * \param[in] val_muT - Value of the eddy viscosity.

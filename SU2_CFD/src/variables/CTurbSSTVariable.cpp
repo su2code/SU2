@@ -46,36 +46,36 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+
   /*--- Initialization of variables ---*/
-  
+
   Solution[0] = val_kine;     Solution_Old[0] = val_kine;
   Solution[1] = val_omega;  Solution_Old[1] = val_omega;
-  
+
   sigma_om2 = constants[3];
   beta_star = constants[6];
-  
+
   F1   = 1.0;
   F2   = 0.0;
   CDkw = 0.0;
-  
+
   /*--- Initialization of eddy viscosity ---*/
-  
+
   muT = val_muT;
-  
+
   /*--- Allocate and initialize solution for the dual time strategy ---*/
-  
+
   if (dual_time) {
     Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
     Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
   }
-    
+
 }
 
 CTurbSSTVariable::~CTurbSSTVariable(void) {
 
   if (HB_Source != NULL) delete [] HB_Source;
-  
+
 }
 
 void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) {
@@ -87,29 +87,29 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   AD::SetPreaccIn(val_density);
   AD::SetPreaccIn(Solution, nVar);
   AD::SetPreaccIn(Gradient, nVar, nDim);
-  
+
   /*--- Cross diffusion ---*/
-  
+
   CDkw = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     CDkw += Gradient[0][iDim]*Gradient[1][iDim];
   CDkw *= 2.0*val_density*sigma_om2/Solution[1];
   CDkw = max(CDkw, pow(10.0, -20.0));
-  
+
   /*--- F1 ---*/
-  
+
   arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
   arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
   arg2 = max(arg2A, arg2B);
   arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
   F1 = tanh(pow(arg1, 4.0));
-  
+
   /*--- F2 ---*/
-  
+
   arg2 = max(2.0*arg2A, arg2B);
   F2 = tanh(pow(arg2, 2.0));
 
   AD::SetPreaccOut(F1); AD::SetPreaccOut(F2); AD::SetPreaccOut(CDkw);
   AD::EndPreacc();
-  
+
 }
