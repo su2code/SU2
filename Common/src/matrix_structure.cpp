@@ -886,7 +886,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
            upper triangular part, then multiply and modify the matrix.
            Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
           
-          if (kPoint >= jPoint) {
+          if (kPoint > jPoint) {
             
             Block_jk = &ILU_matrix[index_*nVar*nEqn];
             MatrixMatrixProduct(block_weight, Block_jk, block);
