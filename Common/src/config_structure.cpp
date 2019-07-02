@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -5047,10 +5047,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
-          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
-          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
-          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SA_DES:  cout << "SA based Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:  cout << "SA based Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:  cout << "SA based Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:  cout << "SA based Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SST_DDES:  cout << "SST based Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SST_EDDES:  cout << "SST based Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
