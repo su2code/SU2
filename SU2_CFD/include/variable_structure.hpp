@@ -4297,6 +4297,7 @@ protected:
   su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   F2,            /*!< \brief Menter blending function for stress limiter. */
   CDkw;           /*!< \brief Cross-diffusion. */
+  su2double DES_LengthScale;
   
 public:
   /*!
@@ -4344,6 +4345,18 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   su2double GetCrossDiff(void);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);
+
 };
 
 

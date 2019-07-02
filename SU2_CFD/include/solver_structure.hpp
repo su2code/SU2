@@ -9869,6 +9869,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.

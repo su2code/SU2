@@ -3506,6 +3506,26 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
+  
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    
+    /*--- Set the vortex tilting coefficient at every node if required
+     TODO: SetVortex_Tilting to SST_EDDES ---*/
+    
+//    if (kind_hybridRANSLES == SST_EDDES){
+//      for (iPoint = 0; iPoint < nPoint; iPoint++){
+//        PrimGrad_Flow      = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+//        Vorticity          = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+//        Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+//        node[iPoint]->SetVortex_Tilting(PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+//      }
+//    }
+    
+    /*--- Compute the DES length scale ---*/
+    
+    SetDES_LengthScale(solver_container, geometry, config);
+    
+  }
 
 }
 
@@ -3573,9 +3593,21 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
-    /*--- Set distance to the surface ---*/
+    /*--- Get Hybrid RANS/LES Type and set the appropriate wall distance ---*/
     
-    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
+      
+      /*--- Set distance to the surface ---*/
+      
+      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      
+    } else {
+      
+      /*--- Set DES length scale ---*/
+      
+      numerics->SetDistance(node[iPoint]->GetDES_LengthScale(), 0.0);
+      
+    }
     
     /*--- Menter's first blending function ---*/
     
@@ -4339,6 +4371,158 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
 su2double* CTurbSSTSolver::GetConstants() {
   return constants;
+}
+
+void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
+  
+  unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
+  unsigned long iPoint = 0, jPoint = 0;
+  unsigned short iDim = 0, jDim = 0, iNeigh = 0, nNeigh = 0;
+  
+  su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
+  eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
+  
+  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, r_d = 0.0, f_d = 0.0,
+  deltaDDES = 0.0, Omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
+  aux_ln = 0.0, f_kh = 0.0;
+  
+  su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0), k2 = pow(0.41, 2.0);
+  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
+  su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
+  su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
+  su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
+  ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure = 0.0;
+  
+  
+  /*--- Note that SST-DDES version uses different cofficients ---*/
+  su2double cDES1 = 0.78;
+  su2double cDES2 = 0.61;
+  su2double f1_blend, f2_blend, cDES, turb_ke, turb_omega, lengthRANS, lengthLES;
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    
+    coord_i                 = geometry->node[iPoint]->GetCoord();
+    nNeigh                  = geometry->node[iPoint]->GetnPoint();
+    wallDistance            = geometry->node[iPoint]->GetWall_Distance();
+    primVarGrad             = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+    vorticity               = solver[FLOW_SOL]->node[iPoint]->GetVorticity();
+    density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
+    laminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    eddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
+    kinematicViscosity      = laminarViscosity/density;
+    kinematicViscosityTurb  = eddyViscosity/density;
+    
+    f1_blend = solver[TURB_SOL]->node[iPoint]->GetF1blending();
+    f2_blend = solver[TURB_SOL]->node[iPoint]->GetF2blending();
+    turb_ke  = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+    turb_omega    = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+    
+    uijuij = 0.0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      for(jDim = 0; jDim < nDim; jDim++){
+        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+      }
+    }
+    uijuij = sqrt(fabs(uijuij));
+    uijuij = max(uijuij,1e-10);
+    
+    /*--- Low Reynolds number correction term ---*/
+    
+    nu_hat = node[iPoint]->GetSolution()[0];
+    Ji   = nu_hat/kinematicViscosity;
+    Ji_2 = Ji * Ji;
+    Ji_3 = Ji*Ji*Ji;
+    fv1  = Ji_3/(Ji_3+cv1_3);
+    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+    ft2 = ct3*exp(-ct4*Ji_2);
+    cw1 = cb1/k2+(1.0+cb2)/sigma;
+    
+    psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+    psi_2 = min(100.0,psi_2);
+    
+    switch(kindHybridRANSLES){
+        
+      case SST_DDES:
+        /*--- Development of DDES and IDDES Formulations for the k-Omega Shear Stress Transport Model
+         Mikhail S. Gritskevich, Andrey V. Garbaruk, Jochen Schütze and Florian R. Menter
+         Flow Turbulence Combust DOI 10.1007/s10494-011-9378-4
+         ---*/
+        
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
+        
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+        
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = lengthRANS-f_d*max(0.0,(lengthRANS-lengthLES));
+        
+        break;
+        
+      case SST_EDDES:
+        
+        /*--- SA Version: An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
+         Shur et al.
+         Flow Turbulence Combust - 2015
+         SST Version: Assessment of delayed DES and improved delayed DES combined with a shear-layer-adapted
+         subgrid length-scale in separated flows.
+         Guseva, E.K., Garbaruk, A.V., Strelets, M.Kh., 2017.
+         Flow Turbul. Combust. 98 (2), 481–502.
+         ---*/
+        
+        
+        vortexTiltingMeasure = node[iPoint]->GetVortex_Tilting();
+        
+        Omega = sqrt(vorticity[0]*vorticity[0] +
+                     vorticity[1]*vorticity[1] +
+                     vorticity[2]*vorticity[2]);
+        
+        for (iDim = 0; iDim < 3; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/Omega;
+        }
+        
+        ln_max = 0.0;
+        deltaDDES = 0.0;
+        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
+          jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+          coord_j = geometry->node[jPoint]->GetCoord();
+          for (iDim = 0; iDim < nDim; iDim++){
+            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
+          }
+          deltaDDES = geometry->node[iPoint]->GetMaxLength();
+          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
+          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
+          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
+          aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
+          ln_max = max(ln_max,aux_ln);
+          vortexTiltingMeasure += node[jPoint]->GetVortex_Tilting();
+        }
+        
+        vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
+        
+        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+        
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        
+        maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        if (f_d < 0.999){
+          maxDelta = deltaDDES;
+        }
+        
+        cDES = config->GetConst_DES();
+        distDES = cDES * maxDelta;
+        lengthScale=wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        
+        break;
+        
+    }
+    
+    node[iPoint]->SetDES_LengthScale(lengthScale);
+    
+  }
 }
 
 void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
