@@ -483,9 +483,9 @@ def amg ( config , kind='' ):
             sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
             
             
-            to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
-            for fil in to_remove:
-                if os.path.exists(fil) : os.remove(fil)
+            # to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
+            # for fil in to_remove:
+            #     if os.path.exists(fil) : os.remove(fil)
             
             global_iter += 1
     
