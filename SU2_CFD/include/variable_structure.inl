@@ -1131,26 +1131,26 @@ inline void CFEAVariable::Clear_BodyForces_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Body[iVar] = 0.0;
 }
 
-inline void CFEABoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
+inline void CFEAFSIBoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = val_flowTraction[iVar];
 }
 
-inline void CFEABoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
+inline void CFEAFSIBoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
 
-inline su2double CFEABoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
+inline su2double CFEAFSIBoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
 
-inline void CFEABoundVariable::Clear_FlowTraction(void) {
+inline void CFEAFSIBoundVariable::Clear_FlowTraction(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = 0.0;
 }
 
-inline void CFEABoundVariable::Set_FlowTraction_n(void) {
+inline void CFEAFSIBoundVariable::Set_FlowTraction_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction_n[iVar] = FlowTraction[iVar];
 }
 
-inline su2double CFEABoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
+inline su2double CFEAFSIBoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
 
 inline bool CFEABoundVariable::Get_isVertex(void) { return true; }
 
@@ -1279,12 +1279,12 @@ inline void CFEAVariable::RegisterSolution_Accel_time_n() {
 	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
 }
 
-inline void CFEABoundVariable::RegisterFlowTraction() {
+inline void CFEAFSIBoundVariable::RegisterFlowTraction() {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction[iVar]);
 }
 
-inline su2double CFEABoundVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {
+inline su2double CFEAFSIBoundVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {
       su2double val_sens; val_sens = SU2_TYPE::GetDerivative(FlowTraction[iDim]); return val_sens;
 }
 
