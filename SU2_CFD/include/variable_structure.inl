@@ -1673,6 +1673,18 @@ inline void CDiscAdjFEABoundVariable::SetFlowTractionSensitivity(unsigned short 
 
 inline su2double CDiscAdjFEABoundVariable::GetFlowTractionSensitivity(unsigned short iDim) { return FlowTraction_Sens[iDim]; }
 
+inline void CVariable::SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){ }
+
+inline su2double CVariable::GetSourceTerm_DispAdjoint(unsigned short iDim) { return 0.0; }
+
+inline void CDiscAdjFEABoundVariable::SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){
+  SourceTerm_DispAdjoint[iDim] = val;
+}
+
+inline su2double CDiscAdjFEABoundVariable::GetSourceTerm_DispAdjoint(unsigned short iDim) {
+  return SourceTerm_DispAdjoint[iDim];
+}
+
 inline bool CDiscAdjFEAVariable::Get_isVertex(void) { return false; }
 
 inline bool CDiscAdjFEABoundVariable::Get_isVertex(void) { return true; }

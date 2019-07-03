@@ -1158,3 +1158,17 @@ void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex
   solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 2, val_AdjointZ);
 
 }
+
+void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                        passivedouble val_AdjointY, passivedouble val_AdjointZ) {
+
+  unsigned long iPoint;
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+  solver->node[iPoint]->SetSourceTerm_DispAdjoint(0, val_AdjointX);
+  solver->node[iPoint]->SetSourceTerm_DispAdjoint(1, val_AdjointY);
+  solver->node[iPoint]->SetSourceTerm_DispAdjoint(2, val_AdjointZ);
+
+}

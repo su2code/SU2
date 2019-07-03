@@ -764,12 +764,23 @@ public:
    * the repeated methods should be unified once the postprocessing strategy is in place).
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
-   * \param[in] LoadX - Value of the adjoint in the direction X.
-   * \param[in] LoadX - Value of the adjoint in the direction Y.
-   * \param[in] LoadX - Value of the adjoint in the direction Z.
+   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
+   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
+   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
   void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
                                     passivedouble val_AdjointY, passivedouble val_AdjointZ);
+
+  /*!
+   * \brief Set the adjoint of the structural displacements (from an outside source)
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
+   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
+   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
+   */
+  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
