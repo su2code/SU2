@@ -1000,7 +1000,6 @@ private:
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
-  bool RegisterFlowTraction;  /*!< \brief Determine if Flow Tractions must be registered for adjoint applications. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -8756,12 +8755,6 @@ public:
    * \return  Bool: determines if loads will come from a python wrapper.
    */
   bool GetpyFSI(void);
-
-  /*!
-   * \brief Get whether the flow tractions are registered for adjoint applications
-   * \return  Bool: determines if flow loads will be registered.
-   */
-  bool GetRegister_FlowTraction(void);
 
   /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
