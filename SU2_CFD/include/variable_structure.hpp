@@ -2519,6 +2519,20 @@ public:
    */
   virtual su2double GetFlowTractionSensitivity(unsigned short iDim);
 
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  virtual void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  virtual su2double GetSourceTerm_DispAdjoint(unsigned short iDim);
+
 };
 
 /*!
