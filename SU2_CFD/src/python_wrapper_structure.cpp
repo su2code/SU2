@@ -1155,7 +1155,8 @@ void CDriver::SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex
 
   solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 0, val_AdjointX);
   solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 1, val_AdjointY);
-  solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 2, val_AdjointZ);
+  if (solver->GetnVar() == 3)
+    solver->StoreVertexTractionsAdjoint(iMarker, iVertex, 2, val_AdjointZ);
 
 }
 
@@ -1164,11 +1165,12 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short i
 
   unsigned long iPoint;
 
-  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL];
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   solver->node[iPoint]->SetSourceTerm_DispAdjoint(0, val_AdjointX);
   solver->node[iPoint]->SetSourceTerm_DispAdjoint(1, val_AdjointY);
-  solver->node[iPoint]->SetSourceTerm_DispAdjoint(2, val_AdjointZ);
+  if (solver->GetnVar() == 3)
+    solver->node[iPoint]->SetSourceTerm_DispAdjoint(2, val_AdjointZ);
 
 }
