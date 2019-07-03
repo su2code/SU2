@@ -199,16 +199,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   }
   else{
     bool isVertex;
-    bool registerFlowTraction = config->GetRegister_FlowTraction();
     long indexVertex;
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       isVertex = false;
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (indexVertex != -1){isVertex = true; break;}
+        if (config->GetMarker_All_Interface(iMarker) == YES) {
+          indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (indexVertex != -1){isVertex = true; break;}
+        }
       }
-      if (isVertex && registerFlowTraction)
+      if (isVertex)
         node[iPoint] = new CDiscAdjFEABoundVariable(Solution, nDim, nVar, config);
       else
         node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
