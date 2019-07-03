@@ -66,15 +66,12 @@ def amg_call_python(mesh, config):
     remesh_options['hmin']        = config['hmin']
     remesh_options['target']      = config['size']
     remesh_options['logfile']     = config['amg_log']
-    # remesh_options['sol_in']      = config['sol_in']
-    # remesh_options['sol_itp_in']  = config['sol_itp_in']
     
     Dim = mesh['dimension']
     
     if Dim == 2 :
         Ver = mesh['xyz']
         mesh['xy'] = np.stack((Ver[:,0],Ver[:,1]), axis=1)
-        #'Triangles' =  np.delete(mesh['Triangles'], -1, axis=1)
         
         del mesh['xyz']
     

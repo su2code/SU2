@@ -42,7 +42,6 @@ from .. import io   as su2io
 from .. import amginria as su2amg
 from interface import CFD as SU2_CFD
 from interface import MET as SU2_MET
-import _amgio as amgio
 
 def amg ( config , kind='' ):
     
@@ -216,7 +215,6 @@ def amg ( config , kind='' ):
     
     if 'ADAP_BACK' in config:
         config_amg['adap_back'] = os.path.join(cwd,config['ADAP_BACK'])
-        #os.symlink(os.path.join(cwd, config.ADAP_BACK), config.ADAP_BACK)
     else:
         config_amg['adap_back'] = config['MESH_FILENAME']
     
@@ -226,7 +224,7 @@ def amg ( config , kind='' ):
         raise RuntimeError , "\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back']
     
     if back_extension == ".su2":
-        amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
+        su2amg._amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = "amg_back.meshb"
     
     if 'ADAP_SOURCE' in config:
@@ -485,9 +483,9 @@ def amg ( config , kind='' ):
             sys.stdout.write(' %s CFD done. Residual convergence %.2lf orders of magnitude\n' % (pad_nul, res_cvg))
             
             
-            # to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
-            # for fil in to_remove:
-            #     if os.path.exists(fil) : os.remove(fil)
+            to_remove = ["current.itp.solb", config_amg['mesh_out'], config_amg['sol_in']]
+            for fil in to_remove:
+                if os.path.exists(fil) : os.remove(fil)
             
             global_iter += 1
     

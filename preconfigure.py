@@ -343,14 +343,14 @@ def init_inria(argument_dict, modes, update = False):
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_libMeshb = 'c8dd9050595e58d05b26cf97212f8419e4f269a9'
     github_repo_libMeshb = 'https://github.com/bmunguia/libMeshb'
-    sha_version_amgint   = 'eff15740897d37cea281060bbf46bd63adc3eccb'
-    github_repo_amgint   = 'https://github.com/bmunguia/amginterface'
+    # sha_version_amgint   = 'eff15740897d37cea281060bbf46bd63adc3eccb'
+    # github_repo_amgint   = 'https://github.com/bmunguia/amginterface'
 
     libMeshb_name = 'libMeshb'
-    amgint_name   = 'amginterface'
+    # amgint_name   = 'amginterface'
 
     alt_name_libMeshb = 'externals/libMeshb'
-    alt_name_amgint   = 'externals/amginterface'
+    alt_name_amgint   = 'SU2_PY/SU2/amginria'
 
     # Some log and error files
     log = open( 'preconf_inria.log', 'w' )
@@ -358,19 +358,19 @@ def init_inria(argument_dict, modes, update = False):
     pkg_environ = os.environ
 
     libMeshb_status = False
-    amgint_status   = False
+    # amgint_status   = False
 
     # Remove modules if update is requested
     if update:
         if os.path.exists(alt_name_libMeshb):
             print('Removing ' + alt_name_libMeshb)
             shutil.rmtree(alt_name_libMeshb)
-        if os.path.exists(alt_name_amgint):
-            print('Removing ' + alt_name_amgint)
-            shutil.rmtree(alt_name_amgint)
+        # if os.path.exists(alt_name_amgint):
+        #     print('Removing ' + alt_name_amgint)
+        #     shutil.rmtree(alt_name_amgint)
 
     submodule_check(libMeshb_name, alt_name_libMeshb, github_repo_libMeshb, sha_version_libMeshb, log, err, update)
-    submodule_check(amgint_name,   alt_name_amgint,   github_repo_amgint,   sha_version_amgint,   log, err, update)
+    # submodule_check(amgint_name,   alt_name_amgint,   github_repo_amgint,   sha_version_amgint,   log, err, update)
 
     # Setup AMG interface
     subprocess.call(['python setup.py','build_ext','--inplace'], cwd = alt_name_amgint, stdout = log, stderr = err, shell = True)
