@@ -1892,8 +1892,6 @@ inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
 inline bool CConfig::GetpyFSI(void) { return pyFSI; }
 
-inline bool CConfig::GetRegister_FlowTraction(void) { return RegisterFlowTraction; }
-
 inline bool CConfig::GetRelaxation(void) { return Relaxation; }
 
 inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
