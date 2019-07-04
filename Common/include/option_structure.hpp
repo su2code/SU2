@@ -364,7 +364,8 @@ enum ENUM_TRANSFER {
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
   NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
   FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
-  STRUCTURAL_DISPLACEMENTS          = 11,   /*!< \brief Structural displacements (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS_LEGACY   = 11,   /*!< \brief Structural displacements (between fluids and solids) - legacy version (to be removed). */
+  BOUNDARY_DISPLACEMENTS            = 21,   /*!< \brief Boundary displacements (between fluids and solids) */
   STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
@@ -374,20 +375,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
 };
-static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
-("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
-("NO_COMMON_INTERFACE", NO_COMMON_INTERFACE)
-("NO_TRANSFER", NO_TRANSFER)
-("FLOW_TRACTION", FLOW_TRACTION)
-("STRUCTURAL_DISPLACEMENTS", STRUCTURAL_DISPLACEMENTS)
-("STRUCTURAL_DISPLACEMENTS_DISC_ADJ", STRUCTURAL_DISPLACEMENTS_DISC_ADJ)
-("SLIDING_INTERFACE", SLIDING_INTERFACE)
-("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
-("MIXING_PLANE", MIXING_PLANE)
-("CONJUGATE_HEAT_FS", CONJUGATE_HEAT_FS)
-("CONJUGATE_HEAT_WEAKLY_FS", CONJUGATE_HEAT_WEAKLY_FS)
-("CONJUGATE_HEAT_SF", CONJUGATE_HEAT_SF)
-("CONJUGATE_HEAT_WEAKLY_SF", CONJUGATE_HEAT_WEAKLY_SF);
+
 /*!
  * \brief different regime modes
  */
