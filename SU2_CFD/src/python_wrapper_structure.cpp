@@ -1174,3 +1174,35 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short i
     solver->node[iPoint]->SetSourceTerm_DispAdjoint(2, val_AdjointZ);
 
 }
+
+vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint, GlobalIndex;
+  vector<su2double> MeshCoord(3, 0.0);
+  vector<passivedouble> MeshCoord_passive(3, 0.0);
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+  if (solver != NULL) {
+    MeshCoord[0] = solver->node[iPoint]->GetMesh_Coord(0);
+    MeshCoord[1] = solver->node[iPoint]->GetMesh_Coord(1);
+    if (solver->GetnVar() == 3)
+      MeshCoord[2] = solver->node[iPoint]->GetMesh_Coord(2);
+    else
+      MeshCoord[2] = 0.0;
+  }
+  else{
+    MeshCoord[0] = 0.0;
+    MeshCoord[1] = 0.0;
+    MeshCoord[2] = 0.0;
+  }
+
+  MeshCoord_passive[0] = SU2_TYPE::GetValue(MeshCoord[0]);
+  MeshCoord_passive[1] = SU2_TYPE::GetValue(MeshCoord[1]);
+  MeshCoord_passive[2] = SU2_TYPE::GetValue(MeshCoord[2]);
+
+  return MeshCoord_passive;
+
+}
