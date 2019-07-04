@@ -74,7 +74,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_MET, ZONE_0, nZone, nDim, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_MET, ZONE_0, nZone, nDim, false);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -88,10 +88,10 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
     if (driver_config->GetKind_Solver() == MULTIZONE){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_MET, iZone, nZone, nDim, VERB_HIGH);
+      config_container[iZone] = new CConfig(zone_file_name, SU2_MET, iZone, nZone, nDim, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_MET, iZone, nZone, nDim, VERB_HIGH);
+      config_container[iZone] = new CConfig(config_file_name, SU2_MET, iZone, nZone, nDim, true);
     }
 
     /*--- Set the MPI communicator ---*/

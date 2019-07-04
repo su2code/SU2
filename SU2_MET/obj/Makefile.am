@@ -53,7 +53,6 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_MET
 
 ___bin_SU2_MET_LDADD += \
-  ../../SU2_CFD/src/libSU2Core_AD_a-data_manufactured_solutions.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_AD_a-error_estimation_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model.$(OBJEXT) \
