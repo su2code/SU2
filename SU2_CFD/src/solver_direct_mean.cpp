@@ -190,6 +190,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -373,11 +376,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) 
     nVertex[iMarker] = geometry->nVertex[iMarker];
- 
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
   SetNondimensionalization(config, iMesh);
+  
+  /*--- Check if we are executing a verification case. If so, the
+   VerificationSolution object will be instantiated for a particular
+   option from the available library of verification solutions. Note
+   that this is done after SetNondim(), as problem-specific initial
+   parameters are needed by the solution constructors. ---*/
+  
+  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Allocate the node variables ---*/
   
@@ -2853,7 +2864,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   
   /*--- Write output to the console if this is the master node and first domain ---*/
   
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+  if ((rank == MASTER_NODE) && (MGLevel == MESH_0)) {
     
     cout.precision(6);
     
@@ -3078,6 +3089,28 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
 
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution)  && (ExtIter == 0) && !restart) {
+
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      
+      /*--- Loop over all grid points. ---*/
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
+        
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
+        VerificationSolution->GetInitialCondition(coor, solDOF);
+        
+      }
+    }
+  }
+  
   /*--- Set subsonic initial condition for engine intakes ---*/
   
   if (SubsonicEngine) {
@@ -3260,7 +3293,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
@@ -3399,7 +3432,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-    bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -3649,8 +3682,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned long ExtIter = config->GetExtIter();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
@@ -4090,6 +4122,40 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
+    }
+  }
+  
+  /*--- Check if a verification solution is to be computed. ---*/
+  
+  if ( VerificationSolution ) {
+    if ( VerificationSolution->IsManufacturedSolution() ) {
+      
+      /*--- Get the physical time. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      
+      /*--- Loop over points ---*/
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        
+        /*--- Get control volume size. ---*/
+        su2double Volume = geometry->node[iPoint]->GetVolume();
+        
+        /*--- Get the current point coordinates. ---*/
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the MMS source term. ---*/
+        vector<su2double> sourceMan(nVar,0.0);
+        VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
+        
+        /*--- Compute the residual for this control volume. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Residual[iVar] = sourceMan[iVar]*Volume;
+        }
+        
+        /*--- Subtract Residual ---*/
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+      }
     }
   }
   
@@ -5239,6 +5305,9 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   
   SetResidual_RMS(geometry, config);
   
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -5302,6 +5371,10 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   SetResidual_RMS(geometry, config);
 
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
+  
 }
 
 void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -5345,6 +5418,10 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -5455,6 +5532,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
+  /*--- For verification cases, compute the global error metrics. ---*/
+  
+  ComputeVerificationError(geometry, config);
   
 }
 
@@ -6318,9 +6399,20 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
-  *Primitive, *Primitive_i, *Primitive_j, *LocalMinPrimitive, *LocalMaxPrimitive,
-  *GlobalMinPrimitive, *GlobalMaxPrimitive,
+  *Primitive, *Primitive_i, *Primitive_j,
+  *LocalMinPrimitive = NULL, *LocalMaxPrimitive = NULL,
+  *GlobalMinPrimitive = NULL, *GlobalMaxPrimitive = NULL,
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
+
+#ifdef CODI_REVERSE_TYPE
+  bool TapeActive = false;
+
+  if (config->GetDiscrete_Adjoint() && config->GetFrozen_Limiter_Disc()) {
+    /*--- If limiters are frozen do not record the computation ---*/
+    TapeActive = AD::globalTape.isActive();
+    AD::StopRecording();
+  }
+#endif
   
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
@@ -6464,33 +6556,34 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   if ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) ||
       (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
     
-    /*--- Allocate memory for the max and min primitive value --*/
-    
-    LocalMinPrimitive = new su2double [nPrimVarGrad]; GlobalMinPrimitive = new su2double [nPrimVarGrad];
-    LocalMaxPrimitive = new su2double [nPrimVarGrad]; GlobalMaxPrimitive = new su2double [nPrimVarGrad];
-    
-    /*--- Compute the max value and min value of the solution ---*/
-    
-    Primitive = node[0]->GetPrimitive();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      LocalMinPrimitive[iVar] = Primitive[iVar];
-      LocalMaxPrimitive[iVar] = Primitive[iVar];
-    }
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+
+      /*--- Allocate memory for the max and min primitive value --*/
       
-      /*--- Get the primitive variables ---*/
+      LocalMinPrimitive = new su2double [nPrimVarGrad]; GlobalMinPrimitive = new su2double [nPrimVarGrad];
+      LocalMaxPrimitive = new su2double [nPrimVarGrad]; GlobalMaxPrimitive = new su2double [nPrimVarGrad];
       
-      Primitive = node[iPoint]->GetPrimitive();
+      /*--- Compute the max value and min value of the solution ---*/
       
+      Primitive = node[0]->GetPrimitive();
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
-        LocalMaxPrimitive[iVar] = max (LocalMaxPrimitive[iVar], Primitive[iVar]);
+        LocalMinPrimitive[iVar] = Primitive[iVar];
+        LocalMaxPrimitive[iVar] = Primitive[iVar];
       }
       
-    }
-    
-    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Get the primitive variables ---*/
+        
+        Primitive = node[iPoint]->GetPrimitive();
+        
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
+          LocalMaxPrimitive[iVar] = max (LocalMaxPrimitive[iVar], Primitive[iVar]);
+        }
+        
+      }
+      
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(LocalMinPrimitive, GlobalMinPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(LocalMaxPrimitive, GlobalMaxPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -6510,16 +6603,22 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       Gradient_j = node[jPoint]->GetGradient_Primitive();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
-      AD::StartPreacc();
-      AD::SetPreaccIn(Gradient_i, nPrimVarGrad, nDim);
-      AD::SetPreaccIn(Gradient_j, nPrimVarGrad, nDim);
-      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-      AD::SetPreaccIn(eps2);
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
+        AD::StartPreacc();
+        AD::SetPreaccIn(Gradient_i[iVar], nDim);
+        AD::SetPreaccIn(Gradient_j[iVar], nDim);
+        AD::SetPreaccIn(Coord_i, nDim);
+        AD::SetPreaccIn(Coord_j, nDim);
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          AD::SetPreaccIn(GlobalMaxPrimitive[iVar]);
+          AD::SetPreaccIn(GlobalMinPrimitive[iVar]);
           eps1 = LimK * (GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar]);
           eps2 = eps1*eps1;
         }
@@ -6527,11 +6626,6 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
           eps1 = LimK*dave;
           eps2 = eps1*eps1*eps1;
         }
-
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
-        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
@@ -6567,14 +6661,14 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
           AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
         }
         
+        AD::EndPreacc();
       }
-
-      AD::EndPreacc();
-      
     }
     
-    delete [] LocalMinPrimitive; delete [] GlobalMinPrimitive;
-    delete [] LocalMaxPrimitive; delete [] GlobalMaxPrimitive;
+    if (LocalMinPrimitive  != NULL) delete [] LocalMinPrimitive;
+    if (LocalMaxPrimitive  != NULL) delete [] LocalMaxPrimitive;
+    if (GlobalMinPrimitive != NULL) delete [] GlobalMinPrimitive;
+    if (GlobalMaxPrimitive != NULL) delete [] GlobalMaxPrimitive;
     
   }
 
@@ -6590,6 +6684,9 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, PRIMITIVE_LIMITER);
   CompleteComms(geometry, config, PRIMITIVE_LIMITER);
   
+#ifdef CODI_REVERSE_TYPE
+  if (TapeActive) AD::StartRecording();
+#endif
 }
 
 void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
@@ -13186,7 +13283,76 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
 
-void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+void CEulerSolver::BC_Custom(CGeometry      *geometry,
+                             CSolver        **solver_container,
+                             CNumerics      *conv_numerics,
+                             CNumerics      *visc_numerics,
+                             CConfig        *config,
+                             unsigned short val_marker) {
+  
+  /* Check for a verification solution. */
+  
+  if (VerificationSolution) {
+    
+    unsigned short iVar;
+    unsigned long iVertex, iPoint, total_index;
+    
+    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    
+    /*--- Get the physical time. ---*/
+    
+    su2double time = 0.0;
+    if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      
+      /*--- Get the point index for the current node. ---*/
+      
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+      
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      
+      if (geometry->node[iPoint]->GetDomain()) {
+        
+        /*--- Get the coordinates for the current node. ---*/
+        
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Get the conservative state from the verification solution. ---*/
+        
+        VerificationSolution->GetBCState(coor, time, Solution);
+        
+        /*--- For verification cases, we will apply a strong Dirichlet
+         condition by setting the solution values at the boundary nodes
+         directly and setting the residual to zero at those nodes. ---*/
+        
+        node[iPoint]->SetSolution_Old(Solution);
+        node[iPoint]->SetSolution(Solution);
+        node[iPoint]->SetRes_TruncErrorZero();
+        LinSysRes.SetBlock_Zero(iPoint);
+        
+        /*--- Adjust rows of the Jacobian (includes 1 in the diagonal) ---*/
+        
+        if (implicit){
+          for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
+        
+      }
+    }
+    
+  } else {
+    
+    /* The user must specify the custom BC's here. */
+    SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+    
+  }
+  
+}
 
 void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -13424,6 +13590,105 @@ void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
   }
 
+}
+
+void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
+                                            CConfig   *config) {
+
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
+
+  /*--- If this is a verification case, we can compute the global
+   error metrics by using the difference between the local error
+   and the known solution at each DOF. This is then collected into
+   RMS (L2) and maximum (Linf) global error norms. From these
+   global measures, one can compute the order of accuracy. ---*/
+  
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
+                      || (config->GetExtIter() == 1));
+  if( !write_heads ) return;  
+
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
+  if (VerificationSolution) {
+    if (VerificationSolution->ExactSolutionKnown()) {
+
+      /*--- Get the physical time if necessary. ---*/
+      su2double time = 0.0;
+      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    
+      /*--- Reset the global error measures to zero. ---*/
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        VerificationSolution->SetError_RMS(iVar, 0.0);
+        VerificationSolution->SetError_Max(iVar, 0.0, 0);
+      }
+    
+      /*--- Loop over all owned points. ---*/
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry->node[iPoint]->GetCoord();
+        su2double *solDOF     = node[iPoint]->GetSolution();
+      
+        /* Get local error from the verification solution class. */
+        vector<su2double> error(nVar,0.0);
+        VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
+      
+        /* Increment the global error measures */
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
+          VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
+                                             geometry->node[iPoint]->GetGlobalIndex(),
+                                             geometry->node[iPoint]->GetCoord());
+        }
+      }
+    
+      /* Finalize the calculation of the global error measures. */
+      VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
+    
+      /*--- Screen output of the error metrics. This can be improved
+       once the new output classes are in place. ---*/
+    
+      if ((rank == MASTER_NODE) && (geometry->GetMGLevel() == MESH_0)) {
+
+        cout.precision(5);
+        cout.setf(ios::scientific, ios::floatfield);
+      
+        if (!config->GetDiscrete_Adjoint()) {
+        
+          cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
+        
+          cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
+          cout << setw(20) << "Max Error  [Rho]: " << setw(12) << VerificationSolution->GetError_Max(0);
+          cout << endl;
+        
+          cout << setw(20) << "RMS Error [RhoU]: " << setw(12) << VerificationSolution->GetError_RMS(1) << "     | ";
+          cout << setw(20) << "Max Error [RhoU]: " << setw(12) << VerificationSolution->GetError_Max(1);
+          cout << endl;
+        
+          cout << setw(20) << "RMS Error [RhoV]: " << setw(12) << VerificationSolution->GetError_RMS(2) << "     | ";
+          cout << setw(20) << "Max Error [RhoV]: " << setw(12) << VerificationSolution->GetError_Max(2);
+          cout << endl;
+        
+          if (nDim == 3) {
+            cout << setw(20) << "RMS Error [RhoW]: " << setw(12) << VerificationSolution->GetError_RMS(3) << "     | ";
+            cout << setw(20) << "Max Error [RhoW]: " << setw(12) << VerificationSolution->GetError_Max(3);
+            cout << endl;
+          }
+        
+          cout << setw(20) << "RMS Error [RhoE]: " << setw(12) << VerificationSolution->GetError_RMS(nDim+1) << "     | ";
+          cout << setw(20) << "Max Error [RhoE]: " << setw(12) << VerificationSolution->GetError_Max(nDim+1);
+          cout << endl;
+        
+          cout << "-------------------------------------------------------------------------" << endl << endl;
+          cout.unsetf(ios_base::floatfield);
+        
+        }
+      }
+    }
+  }
+  
 }
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
@@ -14860,6 +15125,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
+  /*--- Store the multigrid level. ---*/
+  MGLevel = iMesh;
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -14984,11 +15252,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
- 
+  
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
   SetNondimensionalization(config, iMesh);
+  
+  /*--- Check if we are executing a verification case. If so, the
+   VerificationSolution object will be instantiated for a particular
+   option from the available library of verification solutions. Note
+   that this is done after SetNondim(), as problem-specific initial
+   parameters are needed by the solution constructors. ---*/
+  
+  SetVerificationSolution(nDim, nVar, config);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -15688,8 +15964,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
+  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));

@@ -59,8 +59,8 @@ noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
 libSU2Core_sources = \
-  ../include/data_manufactured_solutions.hpp \
   ../include/definition_structure.hpp \
+  ../include/error_estimation_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
   ../include/integration_structure.hpp \
@@ -84,8 +84,6 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
-  ../include/error_estimation_structure.hpp \
-  ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/error_estimation_structure.cpp \
   ../src/fluid_model.cpp \
@@ -97,6 +95,7 @@ libSU2Core_sources = \
   ../src/integration_time.cpp \
   ../src/driver_direct_multizone.cpp \
   ../src/driver_direct_singlezone.cpp \
+  ../src/driver_adjoint_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
