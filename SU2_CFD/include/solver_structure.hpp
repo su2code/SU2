@@ -4317,14 +4317,6 @@ public:
   virtual void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
-   */
-  virtual void ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -15727,13 +15719,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Set the boundary displacements in the mesh side of the problem
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.

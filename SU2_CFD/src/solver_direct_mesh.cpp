@@ -716,44 +716,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 }
 
-void CMeshSolver::ComputeBoundary_Displacements(CGeometry *geometry, CConfig *config){
-
-  unsigned short iDim, iMarker;
-  unsigned long iNode, iVertex;
-
-  su2double *VarDisp = NULL;
-
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
-
-//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//    if (config->GetMarker_All_Moving(iMarker) == YES) {
-
-//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-//        /*--- Get node index ---*/
-//        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
-
-//        /*--- Get the displacement on the vertex ---*/
-//        VarDisp = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-
-//        /*--- Add it to the current displacement. This will be replaced in the transfer routines.  ---*/
-//        for (iDim = 0; iDim < nDim; iDim++){
-//          VarCoord[iDim] = node[iNode]->GetSolution(iDim) + VarDisp[iDim];
-//        }
-
-//        if (geometry->node[iNode]->GetDomain()) {
-
-//          node[iNode]->SetBound_Disp(VarCoord);
-
-//        }
-
-//      }
-
-//    }
-//  }
-
-}
-
 void CMeshSolver::SetDualTime_Mesh(void){
 
   unsigned long iPoint;
