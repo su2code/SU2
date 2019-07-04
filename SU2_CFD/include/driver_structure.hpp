@@ -783,6 +783,14 @@ public:
                                  passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
+   * \brief Get the undeformed mesh coordinates
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Undeformed Vertex Coordinates
+   */
+  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
   virtual void Run_GaussSeidel(){};
