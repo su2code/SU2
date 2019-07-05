@@ -12174,57 +12174,13 @@ void CPhysicalGeometry::ReadCGNSPoints(CConfig *config, int val_fn,
     else
       SU2_MPI::Error(string("Unknown coordinate name, ") + coordname +
                      string(", in the CGNS file."), CURRENT_FUNCTION);
+
+    /*--- Now read our rank's chunk of coordinates from the file.
+      Ask for datatype RealDouble and let CGNS library do the translation
+      when RealSingle is found. ---*/
     
-    /*--- Now read our rank's chunk of coordinates from the file. ---*/
-    
-    switch (datatype) {
-        
-      case RealSingle: {
-        
-        /*--- Read the coordinates with a buffer of float type. ---*/
-        
-        float *coordsFloat = new float[nPoint];
-        if (cg_coord_read(val_fn, val_iBase, val_iZone, coordname, datatype,
-                          &range_min, &range_max, coordsFloat)) cg_error_exit();
-        
-        /*--- Copy these coords into the array for storage until loading. ---*/
-        
-        for (iPoint = 0; iPoint < nPoint; iPoint++)
-          gridCoords[indC][iPoint] = coordsFloat[iPoint];
-        
-        /*--- Immediately release buffer. ---*/
-        
-        delete [] coordsFloat;
-        
-        break;
-      }
-        
-      case RealDouble: {
-        
-        /*--- Read the coordinates with a buffer of double type. ---*/
-        
-        passivedouble *coordsDouble = new passivedouble[nPoint];
-        if (cg_coord_read(val_fn, val_iBase, val_iZone, coordname, datatype,
-                          &range_min, &range_max, coordsDouble)) cg_error_exit();
-        
-        /*--- Copy these coords into the array for storage until loading. ---*/
-        
-        for (iPoint = 0; iPoint < nPoint; iPoint++)
-          gridCoords[indC][iPoint] = coordsDouble[iPoint];
-        
-        /*--- Immediately release buffer. ---*/
-        
-        delete [] coordsDouble;
-        
-        break;
-      }
-        
-      default: {
-        SU2_MPI::Error("CGNS coordinates must be single or double precision.",
-                       CURRENT_FUNCTION);
-        break;
-      }
-    }
+    if (cg_coord_read(val_fn, val_iBase, val_iZone, coordname, RealDouble,
+                      &range_min, &range_max, gridCoords[indC])) cg_error_exit();
   }
   
   /*--- Set the point counts then load the points into the CPoint class. ---*/
@@ -12232,30 +12188,31 @@ void CPhysicalGeometry::ReadCGNSPoints(CConfig *config, int val_fn,
   nPointNode  = nPoint;
   GlobalIndex = beg_node[rank];
   node        = new CPoint*[nPoint];
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    switch(nDim) {
-      case 2:
+  switch(nDim) {
+    case 2:
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         node[iPoint] = new CPoint(gridCoords[0][iPoint],
                                   gridCoords[1][iPoint],
                                   GlobalIndex,
                                   config);
-        break;
-      case 3:
+        GlobalIndex++;
+      }
+      break;
+    case 3:
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         node[iPoint] = new CPoint(gridCoords[0][iPoint],
                                   gridCoords[1][iPoint],
                                   gridCoords[2][iPoint],
                                   GlobalIndex,
                                   config);
-        break;
-    }
-    GlobalIndex++;
+        GlobalIndex++;
+      }
+      break;
   }
   
   /*--- Release the grid coordinates buffer immediately after loading. ---*/
   
-  for (int k = 0; k < val_ncoords; k++)
-    delete [] gridCoords[k];
+  delete [] gridBuffer;
   delete [] gridCoords;
   
 #endif
