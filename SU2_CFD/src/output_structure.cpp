@@ -7291,8 +7291,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
@@ -7391,11 +7391,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case ADJ_RANS : case DISC_ADJ_RANS:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
+            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
-              ConvHist_file[0] << adj_turb_resid;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+              config[val_iZone]->GetHistFile()[0] << adj_turb_resid;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
@@ -13835,7 +13835,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
-  
+  su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
   bool rotating_frame       = config->GetRotating_Frame();
@@ -14068,6 +14069,22 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Roe_Dissipation");
     }
     
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Density");
+        Variable_Names.push_back("Verification_Momentum_x");
+        Variable_Names.push_back("Verification_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Momentum_z");
+        Variable_Names.push_back("Verification_Energy");
+        Variable_Names.push_back("Error_Density");
+        Variable_Names.push_back("Error_Momentum_x");
+        Variable_Names.push_back("Error_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Momentum_z");
+        Variable_Names.push_back("Error_Energy");
+      }
+    }
+    
     /*--- New variables get registered here before the end of the loop. ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -14078,8 +14095,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
       }
       
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par +=1;
+        Variable_Names.push_back("Q_Criterion");
+      }
     }
     
     if (rotating_frame) {
@@ -14321,6 +14340,36 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
         }
         
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+          
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+          
+            /* Set the pointers to the coordinates and solution of this DOF. */
+            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+            su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
+            su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+          
+            /* Get the verification solution. */
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+          
+            /* Get local error from the verification solution class. */
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
+
+          }
+        }
+        
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
 
@@ -14332,28 +14381,30 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             iVar++;
           }
           
-          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+          if (nDim == 3){
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+                Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              }
             }
+            
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+            
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+                pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
+            Local_Data[jPoint][iVar] = Q; iVar++;
           }
-          
-          su2double OmegaMag = 0.0, StrainMag = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-            }
-          }
-          StrainMag   = sqrt(StrainMag);
-          OmegaMag    = sqrt(OmegaMag);
-          su2double Q = 0.5*(OmegaMag - StrainMag);
-          Local_Data[jPoint][iVar] = Q; iVar++;
         }
         
         /*--- For rotating frame problems, compute the relative velocity. ---*/
@@ -14410,6 +14461,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double RefDensity = 0.0, RefPressure = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
+  su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
@@ -14657,14 +14709,32 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Thermal_Conductivity");
     }
     
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Pressure");
+        Variable_Names.push_back("Verification_Velocity_x");
+        Variable_Names.push_back("Verification_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Velocity_z");
+        if (energy || weakly_coupled_heat) Variable_Names.push_back("Verification_Temperature");
+        Variable_Names.push_back("Error_Pressure");
+        Variable_Names.push_back("Error_Velocity_x");
+        Variable_Names.push_back("Error_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Velocity_z");
+        if (energy || weakly_coupled_heat) Variable_Names.push_back("Error_Temperature");
+      }
+    }
+    
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       nVar_Par += 2;
       Variable_Names.push_back("Vorticity_x");
       Variable_Names.push_back("Vorticity_y");
-        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
       
-      nVar_Par +=1;
-      Variable_Names.push_back("Q_Criterion");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par +=1;
+        Variable_Names.push_back("Q_Criterion");
+      }
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -14903,39 +14973,71 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
         }
         
-        /*--- New variables can be loaded to the Local_Data structure here,
-         assuming they were registered above correctly. ---*/
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+          
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+          
+            /* Set the pointers to the coordinates and solution of this DOF. */
+            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+            su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
+            su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
+          
+            /* Get the verification solution. */
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+          
+            /* Get local error from the verification solution class. */
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
 
+          }
+        }
+        
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
           
-          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+          if (nDim == 3){
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+                Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              }
             }
+            
+            /*--- Q Criterion Eq 1.2 of---*/
+            /*--- HALLER, G. (2005). An objective definition of a vortex. Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+            
+            su2double s11 = Grad_Vel[0][0];
+            su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+            su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+            su2double s22 = Grad_Vel[1][1];
+            su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+            su2double s33 = Grad_Vel[2][2];
+            su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+            su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+            su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+            
+            Q = 2. * pow( omega12, 2.) + 2. * pow( omega13, 2.) + 2. * pow( omega23, 2.) - \
+            pow( s11, 2.) - pow( s22, 2.) - pow( s33, 2.0) - 2. * pow( s12, 2.) - 2. * pow( s13, 2.) - 2. * pow( s23, 2.0);
+            
+            Local_Data[jPoint][iVar] = Q; iVar++;
           }
-          
-          su2double OmegaMag = 0.0, StrainMag = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
-            }
-          }
-          StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-          
-          su2double Q = 0.5*(OmegaMag - StrainMag);
-          Local_Data[jPoint][iVar] = Q; iVar++;
-          
         }
+        
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
 
       }
 
@@ -23050,8 +23152,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
     }
     Variable_Names.push_back("Mach");
 
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
     if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
       nVar_Par += 1;
       Variable_Names.push_back("Laminar_Viscosity");
@@ -23060,6 +23160,24 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       nVar_Par += 1;
       Variable_Names.push_back("Eddy_Viscosity");
     }
+
+    if (solver[FLOW_SOL]->VerificationSolution) {
+      if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+        nVar_Par += 2*nVar_Consv_Par;
+        Variable_Names.push_back("Verification_Density");
+        Variable_Names.push_back("Verification_Momentum_x");
+        Variable_Names.push_back("Verification_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_Momentum_z");
+        Variable_Names.push_back("Verification_Energy");
+        Variable_Names.push_back("Error_Density");
+        Variable_Names.push_back("Error_Momentum_x");
+        Variable_Names.push_back("Error_Momentum_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Momentum_z");
+        Variable_Names.push_back("Error_Energy");
+      }
+    }
+
+    /*--- New variables get registered here before the end of the loop. ---*/
   }
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
@@ -23131,33 +23249,62 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
         iVar++;
       }
 
-      /*--- Prepare the primitive states. ---*/
+      if (!config->GetLow_MemoryOutput()) {
 
-      const su2double DensityInv = 1.0/U[0];
-      su2double vel[3], Velocity2 = 0.0;
-      for(iDim=0; iDim<nDim; ++iDim) {
-        vel[iDim] = U[iDim+1]*DensityInv;
-        Velocity2 += vel[iDim]*vel[iDim];
-      }
-      su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
-      DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
+        /*--- Prepare the primitive states. ---*/
 
-      /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
+        const su2double DensityInv = 1.0/U[0];
+        su2double vel[3], Velocity2 = 0.0;
+        for(iDim=0; iDim<nDim; ++iDim) {
+          vel[iDim] = U[iDim+1]*DensityInv;
+          Velocity2 += vel[iDim]*vel[iDim];
+        }
+        su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
+        DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
 
-      Local_Data[jPoint][iVar] = DGFluidModel->GetPressure(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetTemperature(); iVar++;
-      Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
-      Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
+        /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
 
-      /*--- New variables can be loaded to the Local_Data structure here,
-       assuming they were registered above correctly. ---*/
+        Local_Data[jPoint][iVar] = DGFluidModel->GetPressure(); iVar++;
+        Local_Data[jPoint][iVar] = DGFluidModel->GetTemperature(); iVar++;
+        Local_Data[jPoint][iVar] = DGFluidModel->GetCp(); iVar++;
+        Local_Data[jPoint][iVar] = sqrt(Velocity2)/DGFluidModel->GetSoundSpeed(); iVar++;
 
-      if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-        // todo: Export Eddy instead of Laminar viscosity
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
+          Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        }
+        if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+          // todo: Export Eddy instead of Laminar viscosity
+          Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+        }
+
+        if (solver[FLOW_SOL]->VerificationSolution) {
+          if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
+
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+
+            /* Get the verification solution. */
+            su2double mmsSol[5];
+            solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = mmsSol[jVar];
+              iVar++;
+            }
+
+            /* Get local error from the verification solution class. */
+            su2double error[5];
+            solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, U, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = error[jVar];
+              iVar++;
+            }
+          }
+        }
+
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
+
       }
 
       /*--- Increment the point counter. ---*/

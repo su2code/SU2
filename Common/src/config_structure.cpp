@@ -65,7 +65,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
   
-  /*--- Store MPI rank and size ---*/
+  /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -99,7 +99,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
-  /*--- Store MPI rank and size ---*/
+  /*--- Store MPI rank and size ---*/ 
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -128,7 +128,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
-  /*--- Store MPI rank and size ---*/
+  /*--- Store MPI rank and size ---*/ 
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -172,78 +172,78 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
-  case SU2: {
+    case SU2: {
 
-    /*--- Local variables for reading the SU2 file. ---*/
-    string text_line;
-    ifstream mesh_file;
+      /*--- Local variables for reading the SU2 file. ---*/
+      string text_line;
+      ifstream mesh_file;
 
-    /*--- Check if the mesh file can be opened for reading. ---*/
-    mesh_file.open(val_mesh_filename.c_str(), ios::in);
-    if (mesh_file.fail())
-      SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
-                     CURRENT_FUNCTION);
+      /*--- Check if the mesh file can be opened for reading. ---*/
+      mesh_file.open(val_mesh_filename.c_str(), ios::in);
+      if (mesh_file.fail())
+        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
 
-    /*--- Read the SU2 mesh file until the zone data is reached or
+      /*--- Read the SU2 mesh file until the zone data is reached or
             when it can be decided that it is not present. ---*/
-    while( getline (mesh_file, text_line) ) {
+      while( getline (mesh_file, text_line) ) {
 
-      /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
-      if(text_line.find ("NZONE=",0) != string::npos) {
-        text_line.erase (0,6); nZone = atoi(text_line.c_str());
-        break;
-      }
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+        if(text_line.find ("NZONE=",0) != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+          break;
+        }
 
-      /*--- If one of the keywords IZONE, NELEM or NPOIN, NMARK is encountered,
+        /*--- If one of the keywords IZONE, NELEM or NPOIN, NMARK is encountered,
               it can be assumed that the NZONE keyword is not present and the loop
               can be terminated. ---*/
-      if(text_line.find ("IZONE=",0) != string::npos) break;
-      if(text_line.find ("NELEM=",0) != string::npos) break;
-      if(text_line.find ("NPOIN=",0) != string::npos) break;
-      if(text_line.find ("NMARK=",0) != string::npos) break;
+        if(text_line.find ("IZONE=",0) != string::npos) break;
+        if(text_line.find ("NELEM=",0) != string::npos) break;
+        if(text_line.find ("NPOIN=",0) != string::npos) break;
+        if(text_line.find ("NMARK=",0) != string::npos) break;
+      }
+
+      mesh_file.close();
+      break;
     }
 
-    mesh_file.close();
-    break;
-  }
-
-  case CGNS: {
+    case CGNS: {
 
 #ifdef HAVE_CGNS
 
-    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-    int fn, nbases, file_type;
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      int fn, nbases, file_type;
 
-    /*--- Check whether the supplied file is truly a CGNS file. ---*/
-    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK )
-      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file"),
-                     CURRENT_FUNCTION);
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK )
+        SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file"),
+                       CURRENT_FUNCTION);
 
-    /*--- Open the CGNS file for reading. The value of fn returned
+      /*--- Open the CGNS file for reading. The value of fn returned
             is the specific index number for this file and will be
             repeatedly used in the function calls. ---*/
-    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
 
-    /*--- Get the number of databases. This is the highest node
+      /*--- Get the number of databases. This is the highest node
             in the CGNS heirarchy. ---*/
-    if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
+      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
 
-    /*--- Check if there is more than one database. Throw an
+      /*--- Check if there is more than one database. Throw an
             error if there is because this reader can currently
             only handle one database. ---*/
-    if ( nbases > 1 )
-      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.",
-                     CURRENT_FUNCTION);
+      if ( nbases > 1 )
+        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.",
+                       CURRENT_FUNCTION);
 
-    /*--- Determine the number of zones present in the first base.
+      /*--- Determine the number of zones present in the first base.
             Note that the indexing starts at 1 in CGNS. Afterwards
             close the file again. ---*/
-    if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
-    if (cg_close(fn) != CG_OK) cg_error_exit();
+      if(cg_nzones(fn, 1, &nZone) != CG_OK) cg_error_exit();
+      if (cg_close(fn) != CG_OK) cg_error_exit();
 #endif
 
-    break;
-  }
+      break;
+    }
   }
 
   return (unsigned short) nZone;
@@ -254,90 +254,90 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
   short nDim = -1;
 
   switch (val_format) {
-  case SU2: {
+    case SU2: {
 
-    /*--- Local variables for reading the SU2 file. ---*/
-    string text_line;
-    ifstream mesh_file;
+      /*--- Local variables for reading the SU2 file. ---*/
+      string text_line;
+      ifstream mesh_file;
 
-    /*--- Open grid file ---*/
-    mesh_file.open(val_mesh_filename.c_str(), ios::in);
-    if (mesh_file.fail()) {
-      SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
-    }
-
-    /*--- Read the SU2 mesh file until the dimension data is reached
-            or when it can be decided that it is not present. ---*/
-    while( getline (mesh_file, text_line) ) {
-
-      /*--- Search for the "NDIME" keyword to determine the number
-              of dimensions.  ---*/
-      if(text_line.find ("NDIME=",0) != string::npos) {
-        text_line.erase (0,6); nDim = atoi(text_line.c_str());
-        break;
+      /*--- Open grid file ---*/
+      mesh_file.open(val_mesh_filename.c_str(), ios::in);
+      if (mesh_file.fail()) {
+        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
       }
 
-      /*--- If one of the keywords NELEM or NPOIN, NMARK is encountered,
+      /*--- Read the SU2 mesh file until the dimension data is reached
+            or when it can be decided that it is not present. ---*/
+      while( getline (mesh_file, text_line) ) {
+
+        /*--- Search for the "NDIME" keyword to determine the number
+              of dimensions.  ---*/
+        if(text_line.find ("NDIME=",0) != string::npos) {
+          text_line.erase (0,6); nDim = atoi(text_line.c_str());
+          break;
+        }
+
+        /*--- If one of the keywords NELEM or NPOIN, NMARK is encountered,
               it can be assumed that the NZONE keyword is not present and
               the loop can be terminated. ---*/
-      if(text_line.find ("NELEM=",0) != string::npos) break;
-      if(text_line.find ("NPOIN=",0) != string::npos) break;
-      if(text_line.find ("NMARK=",0) != string::npos) break;
+        if(text_line.find ("NELEM=",0) != string::npos) break;
+        if(text_line.find ("NPOIN=",0) != string::npos) break;
+        if(text_line.find ("NMARK=",0) != string::npos) break;
+      }
+
+      mesh_file.close();
+
+      /*--- Throw an error if the dimension was not found. ---*/
+      if (nDim == -1) {
+        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+                       CURRENT_FUNCTION);
+      }
+
+      break;
     }
 
-    mesh_file.close();
-
-    /*--- Throw an error if the dimension was not found. ---*/
-    if (nDim == -1) {
-      SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
-                     CURRENT_FUNCTION);
-    }
-
-    break;
-  }
-
-  case CGNS: {
+    case CGNS: {
 
 #ifdef HAVE_CGNS
 
-    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-    int fn, nbases, file_type;
-    int cell_dim, phys_dim;
-    char basename[CGNS_STRING_SIZE];
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      int fn, nbases, file_type;
+      int cell_dim, phys_dim;
+      char basename[CGNS_STRING_SIZE];
 
-    /*--- Check whether the supplied file is truly a CGNS file. ---*/
-    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
-                     CURRENT_FUNCTION);
-    }
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
+                       CURRENT_FUNCTION);
+      }
 
-    /*--- Open the CGNS file for reading. The value of fn returned
+      /*--- Open the CGNS file for reading. The value of fn returned
             is the specific index number for this file and will be
             repeatedly used in the function calls. ---*/
-    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
 
-    /*--- Get the number of databases. This is the highest node
+      /*--- Get the number of databases. This is the highest node
             in the CGNS heirarchy. ---*/
-    if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
+      if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
 
-    /*--- Check if there is more than one database. Throw an
+      /*--- Check if there is more than one database. Throw an
             error if there is because this reader can currently
             only handle one database. ---*/
-    if ( nbases > 1 )
-      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
-                     CURRENT_FUNCTION);
+      if ( nbases > 1 )
+        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
+                       CURRENT_FUNCTION);
 
-    /*--- Read the database. Note that the indexing starts at 1.
+      /*--- Read the database. Note that the indexing starts at 1.
             Afterwards close the file again. ---*/
-    if (cg_base_read(fn, 1, basename, &cell_dim, &phys_dim) != CG_OK) cg_error_exit();
-    if (cg_close(fn) != CG_OK) cg_error_exit();
+      if (cg_base_read(fn, 1, basename, &cell_dim, &phys_dim) != CG_OK) cg_error_exit();
+      if (cg_close(fn) != CG_OK) cg_error_exit();
 
-    /*--- Set the problem dimension as read from the CGNS file ---*/
-    nDim = cell_dim;
+      /*--- Set the problem dimension as read from the CGNS file ---*/
+      nDim = cell_dim;
 #endif
 
-    break;
-  }
+      break;
+    }
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -398,7 +398,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface           = NULL; Marker_Damper         = NULL;
 
   
-  /*--- Boundary Condition settings ---*/
+    /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
@@ -483,16 +483,16 @@ void CConfig::SetPointersNull(void) {
   Cold_Flow_Options   = NULL;
 
   RefOriginMoment     = NULL;
-  CFL_AdaptParam      = NULL;
+  CFL_AdaptParam      = NULL;            
   CFL                 = NULL;
-  HTP_Axis            = NULL;
+  HTP_Axis = NULL;
   PlaneTag            = NULL;
-  Kappa_Flow          = NULL;
+  Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
   Kappa_Heat          = NULL;
   Stations_Bounds     = NULL;
-  ParamDV             = NULL;
-  DV_Value            = NULL;
+  ParamDV             = NULL;     
+  DV_Value            = NULL;    
   Design_Variable     = NULL;
 
   Hold_GridFixed_Coord      = NULL;
@@ -536,7 +536,7 @@ void CConfig::SetPointersNull(void) {
   /* Harmonic Balance Frequency pointer */
   
   Omega_HB = NULL;
-
+    
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf            = NULL;
@@ -578,7 +578,7 @@ void CConfig::SetPointersNull(void) {
   FFDTag                = NULL;
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
-
+ 
   Kind_Data_Riemann        = NULL;
   Riemann_Var1             = NULL;
   Riemann_Var2             = NULL;
@@ -738,6 +738,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief KIND_FEM_DG_SHOCK \n DESCRIPTION: Specify shock capturing method for DG OPTIONS: see \link ShockCapturingDG_Map \endlink \n DEFAULT: NO_SHOCK_CAPTURING \ingroup Config*/
   addEnumOption("KIND_FEM_DG_SHOCK", Kind_FEM_DG_Shock, ShockCapturingDG_Map, NO_SHOCK_CAPTURING);
+
+  /*!\brief KIND_VERIFICATION_SOLUTION \n DESCRIPTION: Specify the verification solution OPTIONS: see \link Verification_Solution_Map \endlink \n DEFAULT: NO_VERIFICATION_SOLUTION \ingroup Config*/
+  addEnumOption("KIND_VERIFICATION_SOLUTION", Kind_Verification_Solution, Verification_Solution_Map, NO_VERIFICATION_SOLUTION);
 
   /*!\brief KIND_MATRIX_COLORING \n DESCRIPTION: Specify the method for matrix coloring for Jacobian computations OPTIONS: see \link MatrixColoring_Map \endlink \n DEFAULT GREEDY_COLORING \ingroup Config*/
   addEnumOption("KIND_MATRIX_COLORING", Kind_Matrix_Coloring, MatrixColoring_Map, GREEDY_COLORING);
@@ -1740,9 +1743,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  Options: AREA, MASSFLUX
    *  \n Use with MARKER_ANALYZE. \ingroup Config*/
   addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
-  /*!\brief CONSOLE_OUTPUT_VERBOSITY
-   *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
-  addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
   /*!\brief COMM_LEVEL
    *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
   addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
@@ -1908,7 +1908,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - OBSTACLE ( Center, Bump size )
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
-   - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TWIST_2D ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -2647,7 +2648,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Wall_Functions = true;
       
       if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-          || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
 
         SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
@@ -5086,7 +5087,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != DISC_ADJ_RANS)) {
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
-
+  
+  /*--- Check for running SU2_MSH for periodic preprocessing, and throw
+   an error to report that this is no longer necessary. ---*/
+  
+  if ((Kind_SU2 == SU2_MSH) &&
+      (Kind_Adaptation == PERIODIC)) {
+    SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
+                   string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
+                   string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5854,29 +5865,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       default:
         SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
 
-      }
-      break;
-    case FEM_ELASTICITY: case DISC_ADJ_FEM:
-      if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
-      if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
-      if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
-      if (Kind_Material == NEO_HOOKEAN) {
-        if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
-        if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
-      }
-      break;
-    case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
-    case ADJ_NAVIER_STOKES:
-      if (Frozen_Visc_Cont)
-        cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
-      else
-        cout << "Continuous Navier-Stokes adjoint equations." << endl;
-      break;
-    case ADJ_RANS:
-      if (Frozen_Visc_Cont)
-        cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
-      else
-        cout << "Continuous RANS adjoint equations." << endl;
+        }
+        break;
+      case FEM_ELASTICITY: case DISC_ADJ_FEM:
+    	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
+    	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
+    	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+    	  if (Kind_Material == NEO_HOOKEAN) {
+    		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+    	  }
+    	  break;
+      case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
+      case ADJ_NAVIER_STOKES:
+        if (Frozen_Visc_Cont)
+          cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
+        else
+          cout << "Continuous Navier-Stokes adjoint equations." << endl;
+        break;
+      case ADJ_RANS:
+        if (Frozen_Visc_Cont)
+          cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
+        else
+          cout << "Continuous RANS adjoint equations." << endl;
 
       break;
 
@@ -8842,24 +8852,6 @@ unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
     if (Marker_EngineExhaust[iMarker_Engine] == Marker_CfgFile_TagBound[kMarker_All]) break;
   
   return kMarker_All;
-}
-
-void CConfig::SetnPeriodicIndex(unsigned short val_index) {
-
-  /*--- Store total number of transformations. ---*/
-  nPeriodic_Index = val_index;
-
-  /*--- Allocate memory for centers, angles, translations. ---*/
-  Periodic_Center    = new su2double*[nPeriodic_Index];
-  Periodic_Rotation  = new su2double*[nPeriodic_Index];
-  Periodic_Translate = new su2double*[nPeriodic_Index];
-  
-  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
-    Periodic_Center[i]    = new su2double[3];
-    Periodic_Rotation[i]  = new su2double[3];
-    Periodic_Translate[i] = new su2double[3];
-  }
-  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
