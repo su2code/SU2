@@ -11222,23 +11222,29 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Determine the size of the vector needed to read the connectivity
        data from the CGNS file. ---*/
       
-      cgsize_t sizeNeeded;
+      cgsize_t sizeNeeded, sizeOffset;
       if (cg_ElementPartialSize(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
                                   (cgsize_t)elemE[rank], &sizeNeeded) != CG_OK)
           cg_error_exit();
       
-      /*--- Allocate the memory for the connectivity and read the data. ---*/
+      /*--- Allocate the memory for the connectivity, the offset if needed and read the data. ---*/
       
       vector<cgsize_t> connElemCGNS(sizeNeeded,0);
+
+      if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
+         sizeOffset = nElems[s]+1;
+      } else {
+         sizeOffset = 0;
+      }
+      vector<cgsize_t> connOffsetCGNS(sizeOffset,0);
       
       /*--- Retrieve the connectivity information and store. Note that
        we are only accessing our rank's piece of the data here in the
        partial read function in the CGNS API. ---*/
       if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) { 
-        vector<cgsize_t> connOffset(nElems[s]+1, 0);
         if (cg_poly_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
                                           (cgsize_t)elemE[rank], connElemCGNS.data(),
-                                           connOffset.data(), NULL) != CG_OK) cg_error_exit();
+                                           connOffsetCGNS.data(), NULL) != CG_OK) cg_error_exit();
       } else { 
         if (cg_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
                                      (cgsize_t)elemE[rank], connElemCGNS.data(),
@@ -11273,7 +11279,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
         if (elemType == MIXED) {
           elmt_type = ElementType_t(connElemCGNS[counter]);
-          cg_npe(elmt_type, &npe);
+          npe = connOffsetCGNS[iElem+1]-connOffsetCGNS[iElem]-1;
+          //cg_npe(elmt_type, &npe);
           counter++; for (int jj = 0; jj < npe; jj++) counter++;
           isMixed[iElem] = true;
         } else {
@@ -11342,7 +11349,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         }
         
       }
-      
+
+      /*--- Force free the memory for the conn offset from the CGNS file. ---*/
+      vector<cgsize_t>().swap(connOffsetCGNS);
+
       /*--- These are internal elems. Allocate memory on each proc. ---*/
       
       vector<cgsize_t> connElemTemp(nElems[s]*connSize,0);
@@ -12140,10 +12150,11 @@ void CPhysicalGeometry::ReadCGNSPoints(CConfig *config, int val_fn,
   
   /*--- Create buffer to hold the grid coordinates for our rank. ---*/
   
-  su2double **gridCoords = new su2double*[val_ncoords];
+  passivedouble **gridCoords = new passivedouble*[val_ncoords];
+  passivedouble  *gridBuffer = new passivedouble[val_ncoords*nPoint];
   for (int k = 0; k < val_ncoords; k++)
-    gridCoords[k] = new su2double[nPoint];
-  
+    gridCoords[k] = &gridBuffer[k*nPoint];
+
   /*--- Loop over each set of coordinates. ---*/
   
   for (int k = 0; k < val_ncoords; k++) {
