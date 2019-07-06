@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - molinaedu85@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_DDES-SST
 
 python:
     - 3.6
