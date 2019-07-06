@@ -913,7 +913,7 @@ inline void CNSVariable::SetWallTemperature(su2double Temperature_Wall ) { Primi
 
 inline void CNSVariable::SetRoe_Dissipation(su2double val_dissipation) { Roe_Dissipation = val_dissipation; }
 
-inline su2double CTurbSAVariable::GetVortex_Tilting() { return Vortex_Tilting; }
+inline su2double CTurbVariable::GetVortex_Tilting() { return Vortex_Tilting; }
 
 inline su2double *CAdjEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 

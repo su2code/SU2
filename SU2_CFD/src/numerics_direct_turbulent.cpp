@@ -1241,8 +1241,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
-
-
+    
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
 
@@ -1262,10 +1261,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_residual[1] += alfa_blended*Density_i*pw*Volume;
 
    /*--- Dissipation ---*/
-
-   val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+   
+   if(using_ddes){
+     val_residual[0] -= Density_i * (pow(TurbVar_i[0],1.5) / dist_i) * Volume;
+   }
+   else{
+     val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+   }
    val_residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
-
+    
    /*--- Cross diffusion ---*/
 
    val_residual[1] += (1.0 - F1_i)*CDkw_i*Volume;

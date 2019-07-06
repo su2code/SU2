@@ -3487,6 +3487,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetExtIter() <= config->GetLimiterIter());
 
+  su2double** PrimGrad_Flow = NULL;
+  su2double* Vorticity = NULL;
+  su2double Laminar_Viscosity = 0;
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -3512,14 +3515,14 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     /*--- Set the vortex tilting coefficient at every node if required
      TODO: SetVortex_Tilting to SST_EDDES ---*/
     
-//    if (kind_hybridRANSLES == SST_EDDES){
-//      for (iPoint = 0; iPoint < nPoint; iPoint++){
-//        PrimGrad_Flow      = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-//        Vorticity          = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
-//        Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-//        node[iPoint]->SetVortex_Tilting(PrimGrad_Flow, Vorticity, Laminar_Viscosity);
-//      }
-//    }
+    if (config->GetKind_HybridRANSLES() == SST_EDDES){
+      for (iPoint = 0; iPoint < nPoint; iPoint++){
+        PrimGrad_Flow      = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+        Vorticity          = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+        Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        node[iPoint]->SetVortex_Tilting(PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+      }
+    }
     
     /*--- Compute the DES length scale ---*/
     
@@ -3593,21 +3596,9 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
-    /*--- Get Hybrid RANS/LES Type and set the appropriate wall distance ---*/
+    /*--- Set distance to the surface ---*/
     
-    if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
-      
-      /*--- Set distance to the surface ---*/
-      
-      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
-      
-    } else {
-      
-      /*--- Set DES length scale ---*/
-      
-      numerics->SetDistance(node[iPoint]->GetDES_LengthScale(), 0.0);
-      
-    }
+    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     
     /*--- Menter's first blending function ---*/
     
@@ -3626,6 +3617,14 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
     
     numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
+    
+    /*--- Get Hybrid RANS/LES Type and set the appropriate wall distance ---*/
+    
+    if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
+      
+      numerics->SetDistance(node[iPoint]->GetDES_LengthScale(), 0.0);
+      
+    }
     
     /*--- Compute the source term ---*/
     
@@ -4382,7 +4381,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
   eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
   
-  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, r_d = 0.0, f_d = 0.0,
+  su2double maxDelta = 0.0, distDES = 0.0, uijuij = 0.0, r_d = 0.0, f_d = 0.0,
   deltaDDES = 0.0, Omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
   aux_ln = 0.0, f_kh = 0.0;
   
@@ -4474,7 +4473,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         
         
         vortexTiltingMeasure = node[iPoint]->GetVortex_Tilting();
-        
+        //cout << vortexTiltingMeasure << endl;
         Omega = sqrt(vorticity[0]*vorticity[0] +
                      vorticity[1]*vorticity[1] +
                      vorticity[2]*vorticity[2]);

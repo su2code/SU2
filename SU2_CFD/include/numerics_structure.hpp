@@ -213,6 +213,7 @@ public:
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  bool using_ddes;                /*!< \brief Flag for DDES approach  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */

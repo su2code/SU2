@@ -166,6 +166,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   m = new su2double [nDim];
   
   Dissipation_ij = 1.0;
+  
+  using_ddes = (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES);
 
   /* --- Initializing variables for the UQ methodology --- */
   using_uq = config->GetUsing_UQ();
