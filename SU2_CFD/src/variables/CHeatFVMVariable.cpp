@@ -41,8 +41,7 @@ CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
 
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
-
-  Undivided_Laplacian = NULL;
+  Solution_BGS_k  = NULL;
 
 }
 
@@ -55,8 +54,10 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool multizone = config->GetMultizone_Problem();
 
-  Undivided_Laplacian = NULL;
-
+  /*--- Array initialization ---*/
+  Solution_Direct = NULL;
+  Solution_BGS_k  = NULL;
+  
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
 
@@ -88,12 +89,14 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
     Undivided_Laplacian = new su2double [nVar];
   }
 
-  Solution_BGS_k = NULL;
   if (multizone){
-      Solution_BGS_k  = new su2double [1];
-      Solution_BGS_k[0] = val_Heat;
+    Solution_BGS_k  = new su2double [1];
+    Solution_BGS_k[0] = val_Heat;
   }
 
 }
 
-CHeatFVMVariable::~CHeatFVMVariable(void) {  }
+CHeatFVMVariable::~CHeatFVMVariable(void) {
+  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
+  if (Solution_Direct != NULL) delete [] Solution_Direct;
+}

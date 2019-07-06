@@ -72,11 +72,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
 
 }
 
-CTurbSSTVariable::~CTurbSSTVariable(void) {
-
-  if (HB_Source != NULL) delete [] HB_Source;
-
-}
+CTurbSSTVariable::~CTurbSSTVariable(void) {}
 
 void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) {
   unsigned short iDim;

@@ -77,5 +77,6 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
 }
 
-CTurbVariable::~CTurbVariable(void) { }
-
+CTurbVariable::~CTurbVariable(void) {
+  if (HB_Source != NULL) delete [] HB_Source;
+}

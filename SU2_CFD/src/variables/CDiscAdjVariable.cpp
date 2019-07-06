@@ -42,10 +42,22 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
-  Sensitivity    = NULL;
+  Sensitivity     = NULL;
 
   DualTime_Derivative   = NULL;
   DualTime_Derivative_n = NULL;
+
+  Geometry_Direct       = NULL;
+  Solution_Geometry     = NULL;
+  Solution_Geometry_Old = NULL;
+  Cross_Term_Derivative = NULL;
+
+  Solution_BGS            = NULL;
+  Solution_BGS_k          = NULL;
+  Solution_Geometry_BGS_k = NULL;
+
+  Geometry_CrossTerm_Derivative      = NULL;
+  Geometry_CrossTerm_Derivative_Flow = NULL;
 
 }
 
@@ -56,13 +68,26 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
   bool fsi = config->GetFSI_Simulation();
+  
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
-  Sensitivity    = NULL;
+  Sensitivity     = NULL;
 
   DualTime_Derivative   = NULL;
   DualTime_Derivative_n = NULL;
+
+  Geometry_Direct       = NULL;
+  Solution_Geometry     = NULL;
+  Solution_Geometry_Old = NULL;
+  Cross_Term_Derivative = NULL;
+
+  Solution_BGS            = NULL;
+  Solution_BGS_k          = NULL;
+  Solution_Geometry_BGS_k = NULL;
+
+  Geometry_CrossTerm_Derivative      = NULL;
+  Geometry_CrossTerm_Derivative_Flow = NULL;
 
   if (dual_time) {
     DualTime_Derivative = new su2double[nVar];
@@ -93,15 +118,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     }
   }
 
-  Geometry_Direct       = NULL;
-  Solution_Geometry     = NULL;
-  Solution_Geometry_Old = NULL;
-  Cross_Term_Derivative = NULL;
-  Solution_BGS            = NULL;
-  Solution_BGS_k          = NULL;
-  Solution_Geometry_BGS_k = NULL;
-  Geometry_CrossTerm_Derivative = NULL;
-  Geometry_CrossTerm_Derivative_Flow = NULL;
   if (fsi){
     Solution_Geometry       = new su2double[nDim];
     Geometry_Direct         = new su2double[nDim];

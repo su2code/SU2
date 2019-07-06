@@ -53,8 +53,6 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
 
-  Undivided_Laplacian = NULL;
-
   Solution_BGS_k = NULL;
 
 }
@@ -85,8 +83,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
-
-  Undivided_Laplacian = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -216,8 +212,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
 
-  Undivided_Laplacian = NULL;
-
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -322,8 +316,6 @@ CIncEulerVariable::~CIncEulerVariable(void) {
       if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
 
   if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
 
