@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_turbulent.cpp
+ * \file CAdjTurbVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
  * \version 6.2.0 "Falcon"

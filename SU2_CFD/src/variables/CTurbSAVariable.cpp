@@ -108,9 +108,4 @@ void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vo
   AD::EndPreacc();
 }
 
-CTurbSAVariable::~CTurbSAVariable(void) {
-
-  if (HB_Source != NULL) delete [] HB_Source;
-
-}
-
+CTurbSAVariable::~CTurbSAVariable(void) {}

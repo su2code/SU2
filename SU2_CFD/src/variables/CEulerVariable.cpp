@@ -60,8 +60,6 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
 
-  Undivided_Laplacian = NULL;
-
   Solution_New = NULL;
 
   Solution_BGS_k = NULL;
@@ -99,8 +97,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
-
-  Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
 
@@ -275,8 +271,6 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
 
-  Undivided_Laplacian = NULL;
-
   Solution_New = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
@@ -430,8 +424,6 @@ CEulerVariable::~CEulerVariable(void) {
       if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
-
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
 
   if (Solution_New != NULL) delete [] Solution_New;
 
