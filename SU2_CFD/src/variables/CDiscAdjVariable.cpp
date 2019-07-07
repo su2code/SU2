@@ -68,7 +68,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
   bool fsi = config->GetFSI_Simulation();
-  
+
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
