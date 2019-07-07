@@ -5053,6 +5053,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_EDDES:  cout << "SA based Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
           case SST_DDES:  cout << "SST based Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SST_EDDES:  cout << "SST based Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SST_IDDES:  cout << "SST based Improved Delayed Detached Eddy Simulation (IDDES) with Standard SGS" << endl; break;
         }
         if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;

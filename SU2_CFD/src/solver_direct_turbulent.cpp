@@ -3512,8 +3512,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     
-    /*--- Set the vortex tilting coefficient at every node if required
-     TODO: SetVortex_Tilting to SST_EDDES ---*/
+    /*--- Set the vortex tilting coefficient at every node if required ---*/
     
     if (config->GetKind_HybridRANSLES() == SST_EDDES){
       for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -4376,26 +4375,22 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   
   unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
   unsigned long iPoint = 0, jPoint = 0;
-  unsigned short iDim = 0, jDim = 0, iNeigh = 0, nNeigh = 0;
+  unsigned short iDim = 0, iNeigh = 0, nNeigh = 0;
   
-  su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
-  eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
+  su2double density, laminarViscosity, kinematicViscosity, strainmag, vorticitymag, strainvort,
+  eddyViscosity, kinematicViscosityTurb, wallDistance, lengthScale = 0.0;
   
-  su2double maxDelta = 0.0, distDES = 0.0, uijuij = 0.0, r_d = 0.0, f_d = 0.0,
+  su2double maxDelta = 0.0, r_d = 0.0, f_d = 0.0,
   deltaDDES = 0.0, Omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
-  aux_ln = 0.0, f_kh = 0.0;
+  aux_ln = 0.0, f_kh = 0.0, k2 = pow(0.41, 2.0),
+  f_max=1.0, f_min=0.1, a1=0.15, a2=0.3, cw1 = 0.0;
   
-  su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0), k2 = pow(0.41, 2.0);
-  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
-  su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
-  su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
   su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
   ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure = 0.0;
   
   
   /*--- Note that SST-DDES version uses different cofficients ---*/
-  su2double cDES1 = 0.78;
-  su2double cDES2 = 0.61;
+  su2double cDES1 = 0.78, cDES2 = 0.61, cd1 = 20.0, cd2 = 3.0;
   su2double f1_blend, f2_blend, cDES, turb_ke, turb_omega, lengthRANS, lengthLES;
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -4408,36 +4403,45 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
     laminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     eddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
+    strainmag               = solver[TURB_SOL]->node[iPoint]->GetStrainMag();
     kinematicViscosity      = laminarViscosity/density;
     kinematicViscosityTurb  = eddyViscosity/density;
-    
+  
     f1_blend = solver[TURB_SOL]->node[iPoint]->GetF1blending();
     f2_blend = solver[TURB_SOL]->node[iPoint]->GetF2blending();
     turb_ke  = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
     turb_omega    = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
     
-    uijuij = 0.0;
-    for(iDim = 0; iDim < nDim; iDim++){
-      for(jDim = 0; jDim < nDim; jDim++){
-        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
-      }
-    }
-    uijuij = sqrt(fabs(uijuij));
-    uijuij = max(uijuij,1e-10);
+    vorticitymag = sqrt(pow(vorticity[0],2.0) + pow(vorticity[1],2.0) + pow(vorticity[2],2.0));
+    strainvort = sqrt(0.5 * (pow(strainmag,2.0) + pow(vorticitymag,2.0)));
+    
+//    su2double uijuij = 0.0,
+//    uijuij = 0.0;
+//    for(iDim = 0; iDim < nDim; iDim++){
+//      for(jDim = 0; jDim < nDim; jDim++){
+//        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+//      }
+//    }
+//    uijuij = sqrt(fabs(uijuij));
+//    uijuij = max(uijuij,1e-10);
     
     /*--- Low Reynolds number correction term ---*/
     
-    nu_hat = node[iPoint]->GetSolution()[0];
-    Ji   = nu_hat/kinematicViscosity;
-    Ji_2 = Ji * Ji;
-    Ji_3 = Ji*Ji*Ji;
-    fv1  = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
-    ft2 = ct3*exp(-ct4*Ji_2);
-    cw1 = cb1/k2+(1.0+cb2)/sigma;
-    
-    psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
-    psi_2 = min(100.0,psi_2);
+//    su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0);
+//    su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
+//    su2double sigma = 2./3., cb2 = 0.622;
+//    su2double Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
+//    nu_hat = node[iPoint]->GetSolution()[0];
+//    Ji   = nu_hat/kinematicViscosity;
+//    Ji_2 = Ji * Ji;
+//    Ji_3 = Ji*Ji*Ji;
+//    fv1  = Ji_3/(Ji_3+cv1_3);
+//    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+//    ft2 = ct3*exp(-ct4*Ji_2);
+//    cw1 = cb1/k2+(1.0+cb2)/sigma;
+//
+//    psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+//    psi_2 = min(100.0,psi_2);
     
     switch(kindHybridRANSLES){
         
@@ -4449,8 +4453,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         
         maxDelta = geometry->node[iPoint]->GetMaxLength();
         
-        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(strainvort*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
         
         cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
         
@@ -4503,17 +4507,63 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         
         f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
         
-        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(strainvort*k2*pow(wallDistance, 2.0));
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
         
         maxDelta = (ln_max/sqrt(3.0)) * f_kh;
         if (f_d < 0.999){
           maxDelta = deltaDDES;
         }
         
-        cDES = config->GetConst_DES();
-        distDES = cDES * maxDelta;
-        lengthScale=wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+        
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = lengthRANS-f_d*max(0.0,(lengthRANS-lengthLES));
+
+        break;
+        
+      case SST_IDDES:
+        
+        /*--- Development of DDES and IDDES Formulations for the k-Omega Shear Stress Transport Model
+         Mikhail S. Gritskevich, Andrey V. Garbaruk, Jochen Schütze and Florian R. Menter
+         Flow Turbulence Combust DOI 10.1007/s10494-011-9378-4
+         ---*/
+        
+        /*--- Model Coefficients ---*/
+        
+        cw1 = 0.15;
+        su2double c_l2 = pow(5.0,2.0), c_t2 = pow(1.87,2.0), f_e1;
+        
+        su2double h_max = geometry->node[iPoint]->GetMaxLength();
+        maxDelta = min(cw1*max(wallDistance,h_max),h_max);
+        
+        su2double alpha = 0.25 - wallDistance / h_max;
+        su2double alpha2 = pow(alpha, 2.0);
+        su2double f_b = min(2.0 * exp(-9.0 * pow(alpha,2.0)), 1.0);
+        
+        su2double r_dl = kinematicViscosity/(strainvort*k2*pow(wallDistance, 2.0));
+        r_d = kinematicViscosityTurb/(strainvort*k2*pow(wallDistance, 2.0));
+        
+        f_d = 1.0-tanh(pow(cd1*r_d,cd2));
+        
+        su2double fd_tilde = max( 1.0 - f_d, f_b);
+
+        if (alpha >= 0.0) f_e1 = 2.0 * exp(-11.09 * alpha2);
+        else f_e1 = 2.0 * exp(-9.0 * alpha2);
+        
+        su2double f_l = tanh(pow(c_l2 * r_dl, 10.0));
+        su2double f_t = tanh(pow(c_t2 * r_d, 3.0));
+        
+        su2double f_e2 = 1.0 - max(f_t , f_l);
+        
+        su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
+
+        cDES = cDES1 * f1_blend + cDES2 * (1.0 - f1_blend);
+        
+        lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
+        lengthLES   = cDES * maxDelta;
+        lengthScale = fd_tilde * (1.0 + f_e) * lengthRANS + (1.0 - fd_tilde) * lengthLES;
         
         break;
         

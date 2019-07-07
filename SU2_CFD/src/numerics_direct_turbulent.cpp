@@ -1261,7 +1261,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_residual[1] += alfa_blended*Density_i*pw*Volume;
 
    /*--- Dissipation ---*/
-   
+   /*--- if using DDES, the dissipation term is modified. Note that part of this term was
+          already calculated in SetDes_LengthScale. ---*/
+    
    if(using_ddes){
      val_residual[0] -= Density_i * (pow(TurbVar_i[0],1.5) / dist_i) * Volume;
    }
