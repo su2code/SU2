@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CAdjEulerVariable.hpp"
+#include "../include/variables/CAdjNSVariable.hpp"
 
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   
