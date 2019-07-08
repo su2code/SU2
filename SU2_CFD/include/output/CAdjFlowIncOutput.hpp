@@ -50,7 +50,7 @@ private:
   
   bool cont_adj;
 
-  unsigned short nDim, turb_model;
+  unsigned short nDim, turb_model, rad_model;
   bool heat, weakly_coupled_heat;
   
 public:
