@@ -60,14 +60,14 @@ class CMediMPIWrapper;
 typedef CMediMPIWrapper SU2_MPI;
 
 #if defined CODI_REVERSE_TYPE
-#include <medi/codiMediPackTypes.hpp>
+#include <codi/externals/codiMediPackTypes.hpp>
 #if CODI_PRIMAL_INDEX_TAPE
 typedef CoDiPackToolPrimalRestore<su2double> MediTool;
 #else
 typedef CoDiPackTool<su2double> MediTool;
 #endif // defined CODI_REVERSE_TYPE
 #elif defined CODI_FORWARD_TYPE
-#include <medi/codiForwardMediPackTypes.hpp>
+#include <codi/externals/codiForwardMediPackTypes.hpp>
 typedef CoDiPackForwardTool<su2double> MediTool;
 #endif // defined CODI_FORWARD_TYPE
 #define AMPI_ADOUBLE ((medi::MpiTypeInterface*)MediTool::MPI_TYPE)
@@ -76,6 +76,18 @@ typedef CoDiPackForwardTool<su2double> MediTool;
 class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
+
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper {};
+
+/*--- This one is the default in both direct and AD. ---*/
+template<> struct SelectMPIWrapper<su2double> { typedef SU2_MPI W; };
+
+/*--- In AD we overload also for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+class CBaseMPIWrapper;
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#endif
 
 /*!
  * \class CMPIWrapper
@@ -184,6 +196,10 @@ public:
                        void *recvbuf, int recvcount, Datatype recvtype,
                        Comm comm);
 
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
+                        Comm comm);
+
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        Datatype recvtype,int source, int recvtag,
@@ -286,6 +302,10 @@ public:
   static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                        void *recvbuf, int recvcount, Datatype recvtype,
                        Comm comm);
+
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *rdispls, Datatype recvtype,
+                        Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -412,6 +432,10 @@ public:
   static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                            void *recvbuf, int recvcount, Datatype recvtype,
                            Comm comm);
+
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *rdispls, Datatype recvtype,
+                        Comm comm);
 
   static void Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
                              Datatype datatype, Op op, Comm comm);

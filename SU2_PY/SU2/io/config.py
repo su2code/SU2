@@ -407,10 +407,13 @@ def read_config(filename):
             # int parameters
             if case("NUMBER_PART")            or\
                case("AVAILABLE_PROC")         or\
-               case("EXT_ITER")               or\
+               case("ITER")               or\
                case("TIME_INSTANCES")         or\
                case("UNST_ADJOINT_ITER")      or\
                case("ITER_AVERAGE_OBJ")       or\
+               case("INNER_ITER")             or\
+               case("OUTER_ITER")             or\
+               case("TIME_ITER")             or\
                case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
@@ -868,7 +871,10 @@ def write_config(filename,param_dict):
             if case("TIME_INSTANCES")         : pass
             if case("AVAILABLE_PROC")         : pass
             if case("UNST_ADJOINT_ITER")      : pass
-            if case("EXT_ITER")               :
+            if case("ITER")              or\
+               case("TIME_ITER")         or\
+               case("INNER_ITER")        or\
+               case("OUTER_ITER"): 
                 output_file.write("%i" % new_value)
                 break
                         

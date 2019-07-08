@@ -229,7 +229,7 @@ class State(ordered_bunch):
         files = self.FILES
         
         mesh_name     = config.MESH_FILENAME
-        direct_name   = config.SOLUTION_FLOW_FILENAME
+        direct_name   = config.SOLUTION_FILENAME
         adjoint_name  = config.SOLUTION_ADJ_FILENAME
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'

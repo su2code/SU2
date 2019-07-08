@@ -233,7 +233,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   else {
 
     /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFEMFileName();
+    mesh_filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(mesh_filename);
 
     restart_file.open(filename.data(), ios::in);
