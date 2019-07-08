@@ -2592,8 +2592,8 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver_container,
   if (config_container[val_iZone]->GetWeakly_Coupled_Heat()) {
     solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
   }
-  if (config_container[iZone]->GetKind_RadiationModel() != NONE) {
-    solver_container[iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+  if (config_container[val_iZone]->GetKind_RadiationModel() != NONE) {
+    solver_container[val_iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
   }
 
 }
@@ -2640,7 +2640,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container,
   if (radiation){
     solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][iInst][MESH_0][RAD_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][RAD_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver_container[iZone][iInst][MESH_0][RAD_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver_container[iZone][iInst][MESH_0][RAD_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
   }
 }
 

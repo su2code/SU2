@@ -48,7 +48,7 @@
 class CFlowIncOutput : public CFlowOutput {
 private:
 
-  unsigned short turb_model;
+  unsigned short turb_model, rad_model;
   bool heat, weakly_coupled_heat;
     
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
