@@ -56,7 +56,7 @@
 #include "task_definition.hpp"
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
-#include "variable_structure.hpp"
+#include "variables/CVariable.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"

@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CFEABoundVariable.hpp"
+#include "../include/variables/CFEAVariable.hpp"
 #include <algorithm>
 
 CFEASolver::CFEASolver(void) : CSolver() {
