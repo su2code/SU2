@@ -1,7 +1,7 @@
 /*!
- * \file variable_template.cpp
+ * \file CBaselineVariable.cpp
  * \brief Definition of the solution fields.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,11 +35,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CBaselineVariable.hpp"
 
-CTemplateVariable::CTemplateVariable(void) : CVariable() { }
+CBaselineVariable::CBaselineVariable(void) : CVariable() { }
 
-CTemplateVariable::CTemplateVariable(su2double val_Template, unsigned short val_nDim, 
-                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
+CBaselineVariable::CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
 
-CTemplateVariable::~CTemplateVariable(void) { }
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution[iVar] = val_solution[iVar];
+
+}
+
+CBaselineVariable::~CBaselineVariable(void) { }
+
