@@ -190,7 +190,9 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
     Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
     Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
   }
-    
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
 }
 
 CTurbSSTVariable::~CTurbSSTVariable(void) {

@@ -41,12 +41,8 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -114,15 +110,19 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case DEFORMING:
-      case EXTERNAL: case EXTERNAL_ROTATION:
-      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case RIGID_MOTION: 
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
-      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
-      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
+    }
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+        config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
+        config_container[iZone]->GetSurface_Movement(DEFORMING) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
+      prefixed_motion[iZone] = true;
     }
   }
 
@@ -135,7 +135,8 @@ CMultizoneDriver::~CMultizoneDriver(void) {
     delete [] residual[iZone];
     delete [] residual_rel[iZone];
   }
-
+  
+  delete [] nVarZone;
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
@@ -215,6 +216,15 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     config_container[iZone]->SetTimeIter(TimeIter);
     
 
+    /*--- Store the current physical time in the config container, as
+     this can be used for verification / MMS. This should also be more
+     general once the drivers are more stable. ---*/
+    
+    if (unsteady)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+    
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
 //    if (config_container[iZone]->GetInvDesign_Cp() == YES)
@@ -362,7 +372,7 @@ void CMultizoneDriver::Run_Jacobi() {
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -395,68 +405,25 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
-  unsigned short iRes, iVar;
-  unsigned short nVarSol;
-
-  /*--- Compute the residual for the all the zones ---*/
+  
+  /*--- Update the residual for the all the zones ---*/
+  
   for (iZone = 0; iZone < nZone; iZone++){
-    iVar = 0; // Initialize the variable index for each zone
-
+    
     /*--- Account for all the solvers ---*/
+    
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      /*-- If the solver position iSol is enabled --*/
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
-        nVarSol = solver_container[iZone][INST_0][MESH_0][iSol]->GetnVar();
-
-        /*--- Compute the block residual on each solver ---*/
-        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0],
-            config_container[iZone]);
-
-        /*--- Loop over all the variables in the solver ---*/
-        for (iRes = 0; iRes < nVarSol; iRes++){
-          /*--- Store the log10 of the residual value ---*/
-          residual[iZone][iVar] = log10(solver_container[iZone][INST_0][MESH_0][iSol]->GetRes_BGS(iRes));
-          /*--- If it is the first iteration, the init_res is the current residual ---*/
-          if (OuterIter == 0) init_res[iZone][iVar] = residual[iZone][iVar];
-          /*--- residual_rel checks the difference in order of magnitude between the current and the initial residual ---*/
-          residual_rel[iZone][iVar] = fabs(residual[iZone][iRes] - init_res[iZone][iRes]);
-          /*--- Move the position of the container ---*/
-          iVar++;
-        }
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){    
+        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       }
     }
+    
+    /*--- make sure that everything is loaded into the output container ---*/
+    
+    output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    
   }
-
-  /*--- This still has to be generalised ---*/
-//  if (fsi){
-
-//    /*--- This should be possible to change dinamically in the config ---*/
-//    if (rank == MASTER_NODE){
-
-//      cout << endl << "-------------------------------------------------------------------------" << endl;
-//      cout << endl;
-//      cout << "Convergence summary for BGS iteration ";
-//      cout << OuterIter << endl;
-//      cout << endl;
-//      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-//      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
-//      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-//      cout.width(8); cout << OuterIter*1000;
-//      cout.width(15); cout << residual[ZONE_0][0];
-//      cout.width(15); cout << residual[ZONE_0][3];
-//      cout.width(15); cout << residual[ZONE_1][0];
-//      cout.width(15); cout << residual[ZONE_1][1];
-//      cout << endl;
-//    }
-//    for (iZone = 0; iZone < nZone; iZone++){
-//      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
-//        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
-//        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
-//      }
-//    }
-//  }
-
+  
   /*--- Update the residual for the all the zones ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     /*--- Accounting for all the solvers ---*/
@@ -469,24 +436,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- Print out the convergence data to screen and history file ---*/
-  driver_output->SetBody(output, solver_container, driver_config, config_container);
+  driver_output->SetMultizoneHistory_Output(output, config_container, driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
-
-  /*-----------------------------------------------------------------*/
-  /*-------------------- Output FSI history -------------------------*/
-  /*-----------------------------------------------------------------*/
-  if (fsi){
-    bool ZONE_FLOW=0, ZONE_FEA=1;
-    /*--- This is a hack to test it works. ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
-      if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
-    }
- //   output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
- //       config_container, integration_container, 0,
- //       ZONE_FLOW, ZONE_FEA, false);
-  }
 
   return Convergence;
 
@@ -529,8 +481,20 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
+  
+
   
   for (iZone = 0; iZone < nZone; iZone++){
+    
+    bool Wrt_Surf = config_container[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol  = config_container[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_CSV  = config_container[iZone]->GetWrt_Csv_Sol();
+    
+    if (config_container[iZone]->GetWrt_Binary_Restart()){
+      RestartFormat = SU2_RESTART_BINARY;
+    }
     
     bool output_files = false;
     
@@ -597,14 +561,30 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
       
       /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
-      
-      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, iZone, nZone);
-      
-      
-      /*--- Execute the routine for writing special output. ---*/
-      // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-      
+       surface solution, and surface comma-separated value files. ---*/
+      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        
+        /*--- Write restart files ---*/
+        
+        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        
+        /*--- Write visualization files ---*/
+        
+        if (Wrt_Vol)
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        
+        if (Wrt_Surf)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+        if (Wrt_CSV)
+          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+        
+        output[iZone]->DeallocateData_Parallel();
+        
+      }
       
       if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
       

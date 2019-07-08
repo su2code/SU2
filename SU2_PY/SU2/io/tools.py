@@ -222,16 +222,16 @@ def get_headerMap(nZones = 1):
                  "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
                  'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
-                 "D(CL)"           : "D_LIFT"                  ,
-                 "D(CD)"           : "D_DRAG"                  ,
-                 "D(CSF)"          : "D_SIDEFORCE"             ,
-                 "D(CMx)"          : "D_MOMENT_X"              ,
-                 "D(CMy)"          : "D_MOMENT_Y"              ,
-                 "D(CMz)"          : "D_MOMENT_Z"              ,
-                 "D(CFx)"          : "D_FORCE_X"               ,
-                 "D(CFy)"          : "D_FORCE_Y"               ,
-                 "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "d[CL]"           : "D_LIFT"                  ,
+                 "d[CD]"           : "D_DRAG"                  ,
+                 "d[CSF]"          : "D_SIDEFORCE"             ,
+                 "d[CMx]"          : "D_MOMENT_X"              ,
+                 "d[CMy]"          : "D_MOMENT_Y"              ,
+                 "d[CMz]"          : "D_MOMENT_Z"              ,
+                 "d[CFx]"          : "D_FORCE_X"               ,
+                 "d[CFy]"          : "D_FORCE_Y"               ,
+                 "d[CFz]"          : "D_FORCE_Z"               ,
+                 "d[CEff]"        : "D_EFFICIENCY"            ,
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
                  "D(HeatFlux_Total)" : "D_HEAT"                ,
                  "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
@@ -1153,8 +1153,8 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME
+        restart  = config.RESTART_FILENAME
+        solution = config.SOLUTION_FILENAME
         
         # expand zones
         restarts  = expand_zones(restart,config)

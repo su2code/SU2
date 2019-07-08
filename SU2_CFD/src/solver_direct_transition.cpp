@@ -164,7 +164,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     cout << "No LM restart yet!!" << endl; // TODO, Aniket
     int j;
     cin >> j;
-    string mesh_filename = config->GetSolution_FlowFileName();
+    string mesh_filename = config->GetSolution_FileName();
     cstr = new char [mesh_filename.size()+1];
     strcpy (cstr, mesh_filename.c_str());
     restart_file.open(cstr, ios::in);
@@ -258,8 +258,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -269,8 +268,9 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   
   /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
+    
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   

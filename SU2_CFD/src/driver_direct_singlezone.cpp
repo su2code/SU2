@@ -41,12 +41,8 @@
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -86,6 +82,10 @@ void CSinglezoneDriver::StartSolver() {
 
     Run();
 
+    /*--- Perform some postprocessing on the solution before the update ---*/
+
+    Postprocess();
+
     /*--- Update the solution for dual time stepping strategy ---*/
 
     Update();
@@ -118,6 +118,15 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
   config_container[ZONE_0]->SetExtIter(TimeIter);
 
+  /*--- Store the current physical time in the config container, as
+   this can be used for verification / MMS. This should also be more
+   general once the drivers are more stable. ---*/
+  
+  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
+  else
+    config_container[ZONE_0]->SetPhysicalTime(0.0);
+  
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
 //  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
@@ -161,13 +170,11 @@ void CSinglezoneDriver::Run() {
   iteration_container[ZONE_0][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-  /*--- A corrector step can help preventing numerical instabilities ---*/
-  Corrector();
-
-
 }
 
-void CSinglezoneDriver::Corrector() {
+void CSinglezoneDriver::Postprocess() {
+
+    /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
       iteration_container[ZONE_0][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
@@ -186,6 +193,17 @@ void CSinglezoneDriver::Update() {
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   bool output_files = false;
+  
+  unsigned short RestartFormat = SU2_RESTART_ASCII;
+  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
+  
+  bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
+  bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
+  bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
+  
+  if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
+    RestartFormat = SU2_RESTART_BINARY;
+  }
 
   /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
@@ -232,7 +250,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   /*--- write the solution ---*/
 
-  if (output_files) {
+  if (output_files && config_container[ZONE_0]->GetWrt_Output()) {
 
     /*--- Time the output for performance benchmarking. ---*/
 #ifndef HAVE_MPI
@@ -251,14 +269,29 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-
-    output[ZONE_0]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, ZONE_0, nZone);
-
-
-    /*--- Execute the routine for writing special output. ---*/
-   //output[ZONE_0]->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-
-
+    
+    for (unsigned short iInst = 0; iInst < nInst[ZONE_0]; iInst++){
+      
+      config_container[ZONE_0]->SetiInst(iInst);
+      
+      output[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
+      
+      /*--- Write restart files ---*/
+      
+      output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
+      
+      /*--- Write visualization files ---*/
+      
+      if (Wrt_Vol)
+        output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+      if (Wrt_Surf)
+        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+      if (Wrt_CSV)
+        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+      
+      output[ZONE_0]->DeallocateData_Parallel();
+      
+    }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
     /*--- Store output time and restart the timer for the compute phase. ---*/
@@ -270,14 +303,16 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
 
   }
-
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  config_container[ZONE_0]->Set_StartTime(StartTime);
+  
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
@@ -287,5 +322,53 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
   }
 
+}
+
+bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
+
+  unsigned long nInnerIter, InnerIter, TimeIter, nTimeIter;
+  su2double MaxTime, CurTime;
+  bool TimeDomain, InnerConvergence;
+  
+  nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
+  InnerIter  = config_container[ZONE_0]->GetInnerIter();
+  TimeIter   = config_container[ZONE_0]->GetTimeIter();
+  nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
+  MaxTime    = config_container[ZONE_0]->GetMax_Time();
+  CurTime    = TimeIter*config_container[ZONE_0]->GetTime_Step();
+  
+  TimeDomain = config_container[ZONE_0]->GetTime_Domain();
+  
+  InnerConvergence = output[ZONE_0]->GetConvergence();
+  
+  /*--- Check whether the inner solver has converged --- */
+
+  if (TimeDomain == NO){
+    if (((InnerIter+1 >= nInnerIter) || InnerConvergence) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER)." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+  }
+
+  /*--- Check whether the outer time integration has reached the final time ---*/
+
+  StopCalc = CurTime >= MaxTime;
+
+  if (TimeDomain == YES) {
+    if ((StopCalc || TimeIter+1 >= nTimeIter) && (rank == MASTER_NODE)){
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (StopCalc) cout << endl << "Maximum time reached." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER)." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;      
+    }
+  }
+
+  /*--- Reset the inner convergence --- */
+  
+  output[ZONE_0]->SetConvergence(false);
+
+  return StopCalc;
 }
 

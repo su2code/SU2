@@ -122,7 +122,10 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
       Solution_BGS_k[iDim]        = 0.0;
     }
   }
-
+  
+  if (config->GetMultizone_Problem())
+    Set_BGSSolution_k();
+  
 }
 
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val_solution_accel, su2double* val_solution_vel, unsigned short val_ndim,
