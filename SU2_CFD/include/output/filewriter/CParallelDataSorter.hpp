@@ -28,7 +28,6 @@ protected:
   unsigned long nGlobalPoint_Sort;
   unsigned long nLocalPoint_Sort;
   unsigned long nPoint_Restart;
-  int *Local_Halo_Sort;
 
   unsigned long *beg_node;
   unsigned long *end_node;
@@ -156,5 +155,17 @@ public:
    * \param[in] surf_sol - if <TRUE>, surface connectivity is deallocated, otherwise the volume connectivity.
    */
   void DeallocateConnectivity();
+  
+  /*!
+   * \brief CreateLinearPartition
+   */
+  void CreateLinearPartition(unsigned long nGlobalPoint);
+  
+  /*!
+   * \brief FindProcessor
+   * \param global_index
+   * \return 
+   */
+  unsigned short FindProcessor(unsigned long global_index);
   
 };
