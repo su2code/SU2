@@ -111,7 +111,7 @@ protected:
   
   enum HistoryFieldType {           
     TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
-    TYPE_REL_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
+    TYPE_AUTO_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
     TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
     TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
@@ -284,7 +284,7 @@ public:
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
   
-  void SetMultizoneHistory_Output(COutput** output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter);
+  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter);
   
   /*! 
    * \brief Returns a pointer to the legacy output class needed for some old driver implementations.

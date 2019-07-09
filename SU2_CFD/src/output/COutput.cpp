@@ -210,33 +210,34 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   Postprocess_HistoryData(config);
 
 }
-void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter){
+void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
   
   curr_TimeIter  = TimeIter;
   curr_OuterIter = OuterIter;
   
-
   bool write_header, write_screen, write_history;
   
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
   
   LoadMultizoneHistoryData(output, config);
   
+  Convergence_Monitoring(driver_config, curr_OuterIter);  
+  
   /*--- Output using only the master node ---*/
   
   if (rank == MASTER_NODE && !no_writing) {
     
     /*--- Write the history file ---------------------------------------------------------------------------*/
-    write_history = WriteHistoryFile_Output(config[ZONE_0]);
-    if (write_history) SetHistoryFile_Output(config[ZONE_0]);
+    write_history = WriteHistoryFile_Output(driver_config);
+    if (write_history) SetHistoryFile_Output(driver_config);
     
     /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = WriteScreen_Header(config[ZONE_0]);
-    if (write_header) SetScreen_Header(config[ZONE_0]);
+    write_header = WriteScreen_Header(driver_config);
+    if (write_header) SetScreen_Header(driver_config);
     
     /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = WriteScreen_Output(config[ZONE_0]);
-    if (write_screen) SetScreen_Output(config[ZONE_0]);
+    write_screen = WriteScreen_Output(driver_config);
+    if (write_screen) SetScreen_Output(driver_config);
     
   }
   
@@ -555,101 +556,100 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
 bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
   unsigned short iCounter;
-  
-  bool Already_Converged = Convergence;
-  
-  su2double monitor = HistoryOutput_Map[Conv_Field].Value;
-  
-  /*--- Cauchy based convergence criteria ---*/
-  
-  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT) {
     
-    if (Iteration == 0){
-      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++){
-        Cauchy_Serie[iCounter] = 0.0;
+  Convergence = false;
+  
+  if( HistoryOutput_Map.count(Conv_Field) > 0 ){
+    
+    su2double monitor = HistoryOutput_Map[Conv_Field].Value;
+    
+    /*--- Cauchy based convergence criteria ---*/
+    
+    if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT) {
+      
+      if (Iteration == 0){
+        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++){
+          Cauchy_Serie[iCounter] = 0.0;
+        }
+        New_Func = monitor;
       }
+      
+      Old_Func = New_Func;
       New_Func = monitor;
+      Cauchy_Func = fabs(New_Func - Old_Func);
+      
+      Cauchy_Serie[Iteration % config->GetCauchy_Elems()] = Cauchy_Func;
+      Cauchy_Value = 1.0;
+      if (Iteration >= config->GetCauchy_Elems()){     
+        Cauchy_Value = 0.0;
+        for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+          Cauchy_Value += Cauchy_Serie[iCounter];
+      }
+      
+      if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
+      else { Convergence = true; Convergence_FullMG = true; New_Func = 0.0;}
+      
+      SetHistoryOutputValue("CAUCHY", Cauchy_Value);
+      
     }
     
-    Old_Func = New_Func;
-    New_Func = monitor;
-    Cauchy_Func = fabs(New_Func - Old_Func);
+    /*--- Residual based convergence criteria ---*/
     
-    Cauchy_Serie[Iteration % config->GetCauchy_Elems()] = Cauchy_Func;
-    Cauchy_Value = 1.0;
-    if (Iteration >= config->GetCauchy_Elems()){     
-      Cauchy_Value = 0.0;
-      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Value += Cauchy_Serie[iCounter];
+    if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_RESIDUAL || HistoryOutput_Map[Conv_Field].FieldType == TYPE_AUTO_RESIDUAL) {
+      
+      /*--- Check the convergence ---*/
+      
+      if ((monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+      else { Convergence = false; Convergence_FullMG = false; }
+      
     }
     
-    if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
-    else { Convergence = true; Convergence_FullMG = true; New_Func = 0.0;}
+    /*--- Do not apply any convergence criteria of the number
+     of iterations is less than a particular value ---*/
     
-    SetHistoryOutputValue("CAUCHY", Cauchy_Value);
- 
-  }
-  
-  /*--- Residual based convergence criteria ---*/
-  
-  if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_RESIDUAL || HistoryOutput_Map[Conv_Field].FieldType == TYPE_REL_RESIDUAL) {
+    if (Iteration < config->GetStartConv_Iter()) {
+      Convergence = false;
+      Convergence_FullMG = false;
+    }
     
-    /*--- Check the convergence ---*/
+    /*--- Apply the same convergence criteria to all the processors ---*/
     
-    if ((monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
+#ifdef HAVE_MPI
+    
+    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+    
+    /*--- Convergence criteria ---*/
+    
+    sbuf_conv[0] = Convergence;
+    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    
+    /*-- Compute global convergence criteria in the master node --*/
+    
+    sbuf_conv[0] = 0;
+    if (rank == MASTER_NODE) {
+      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+      else sbuf_conv[0] = 0;
+    }
+    
+    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    
+    if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
     else { Convergence = false; Convergence_FullMG = false; }
     
-  }
-  
-  /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-  
-  if (Iteration < config->GetStartConv_Iter()) {
-    Convergence = false;
-    Convergence_FullMG = false;
-  }
-  
-  if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
-  
-  
-  /*--- Apply the same convergence criteria to all the processors ---*/
-  
-#ifdef HAVE_MPI
-  
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-  
-  /*--- Convergence criteria ---*/
-  
-  sbuf_conv[0] = Convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  
-  /*-- Compute global convergence criteria in the master node --*/
-  
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-  
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-  
-  if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
-  else { Convergence = false; Convergence_FullMG = false; }
-  
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-  
+    delete [] sbuf_conv;
+    delete [] rbuf_conv;
+    
 #endif
-  
-  /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-  
-  if (monitor != monitor) {
-    SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+    
+    /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+    
+    if (monitor != monitor) {
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+    }
+    
   }
-  
-  
   return Convergence;
 }
 
@@ -1230,7 +1230,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, TYPE_REL_RESIDUAL);
+      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, TYPE_AUTO_RESIDUAL);
       Average[currentField.OutputGroup] = true;
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
