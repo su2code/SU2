@@ -436,11 +436,11 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- Print out the convergence data to screen and history file ---*/
-  driver_output->SetMultizoneHistory_Output(output, config_container, driver_config->GetTimeIter(), driver_config->GetOuterIter());
+  driver_output->SetMultizoneHistory_Output(output, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 
-  return Convergence;
+  return driver_output->GetConvergence();
 
 }
 
