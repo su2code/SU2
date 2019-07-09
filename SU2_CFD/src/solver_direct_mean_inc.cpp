@@ -6463,7 +6463,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
   Average_Density_Global /= Area_Global;
   config->SetStreamwise_Periodic_MassFlow(MassFlow_Global);
 
-  if (rank == MASTER_NODE) { cout << "MassFlow_Global: " << MassFlow_Global * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
+  if (rank == MASTER_NODE) { cout << "MassFlow_Global: " << fabs(MassFlow_Global) * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
   if (rank == MASTER_NODE) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
 
   if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {

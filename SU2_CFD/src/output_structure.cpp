@@ -19015,6 +19015,9 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
           Pressure   = solver->node[iPoint]->GetPressure();
+          /*--- TK:: In streamwise periodic cases the (working variable) pressure difference shoul be zero. ---*/
+          if(config->GetKind_Streamwise_Periodic() != NONE)
+            Pressure = solver->node[iPoint]->GetStreamwise_Periodic_RecoveredPressure();
           SoundSpeed = solver->node[iPoint]->GetSoundSpeed();
 
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -19309,7 +19312,9 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     if (nMarker_Analyze == 2) {
-      su2double Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
+      //su2double Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
+      //TK:: Like that total pressure drop is taken
+      su2double Pressure_Drop = (Surface_TotalPressure_Total[1]-Surface_TotalPressure_Total[0]) * config->GetPressure_Ref();
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
     } else {
       config->SetSurface_PressureDrop(iMarker_Analyze, 0.0);
