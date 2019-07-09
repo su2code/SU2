@@ -90,8 +90,6 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   Prestretch            = NULL;    // Prestretch geometry
   Reference_Geometry    = NULL;    // Reference geometry for optimization purposes
 
-  Solution_BGS_k        = NULL;    // Old solution stored to check convergence in the BGS loop
-
   if      (nDim == 2) Stress = new su2double [3];
   else if (nDim == 3) Stress = new su2double [6];
 
@@ -166,8 +164,6 @@ CFEAVariable::~CFEAVariable(void) {
 
   if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
   if (Prestretch            != NULL) delete [] Prestretch;
-
-  if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
 
 }
 
