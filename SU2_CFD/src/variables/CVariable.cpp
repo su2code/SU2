@@ -56,6 +56,7 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  Solution_BGS_k = NULL;
 
 }
 
@@ -77,6 +78,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  Solution_BGS_k = NULL;
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -156,7 +158,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
         Rmatrix[iDim][jDim] = 0.0;
     }
   }
-
+  
+  if (config->GetMultizone_Problem()){
+    Solution_BGS_k = new su2double[nVar];
+  }
+  
 }
 
 CVariable::~CVariable(void) {
@@ -175,6 +181,7 @@ CVariable::~CVariable(void) {
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
+  if (Solution_BGS_k      != NULL) delete [] Solution_BGS_k;
 
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)

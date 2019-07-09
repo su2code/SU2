@@ -55,7 +55,6 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
 
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
-  Solution_BGS_k  = NULL;
 
   /*--- Initialization of heat variable ---*/
   Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
@@ -94,6 +93,5 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
   if (Solution_Direct != NULL) delete [] Solution_Direct;
 }
