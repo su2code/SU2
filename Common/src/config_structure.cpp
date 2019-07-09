@@ -652,6 +652,7 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
+  default_wrt_freq           = NULL;
   
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
@@ -698,6 +699,10 @@ void CConfig::SetPointersNull(void) {
   top_optim_kernels       = NULL;
   top_optim_kernel_params = NULL;
   top_optim_filter_radius = NULL;
+  
+  ScreenOutput = NULL;
+  HistoryOutput = NULL;
+  VolumeOutput = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -757,6 +762,7 @@ void CConfig::SetConfig_Options() {
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  default_wrt_freq             = new su2double[3];
   
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -2416,13 +2422,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Type of output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
-  su2double WrtFreqDefault[] = {1.0,1.0,1.0};
+  default_wrt_freq[0] = 1.0; default_wrt_freq[1] = 1.0; default_wrt_freq[2] = 1.0;
+  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
+  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, default_wrt_freq);
   
   /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, WrtFreqDefault);
-  
-  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, WrtFreqDefault);
+  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, default_wrt_freq);
  
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
@@ -3202,12 +3207,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (!Multizone_Problem){
-    ScreenWrtFreq[1] = 1.0;
-    HistoryWrtFreq[1] = 1.0;
+    ScreenWrtFreq[1] = 0.0;
+    HistoryWrtFreq[1] = 0.0;
   }
-  
-
-  
 
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
@@ -7265,6 +7267,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
+  if (default_wrt_freq != NULL) delete [] default_wrt_freq;
   
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
@@ -7301,6 +7304,11 @@ CConfig::~CConfig(void) {
   if (top_optim_kernels != NULL) delete [] top_optim_kernels;
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
+  
+  if (ScreenOutput != NULL) delete [] ScreenOutput;
+  if (HistoryOutput != NULL) delete [] HistoryOutput;
+  if (VolumeOutput != NULL) delete [] VolumeOutput;
+  
 
 }
 
