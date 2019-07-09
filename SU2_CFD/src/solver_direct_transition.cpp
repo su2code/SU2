@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CTransLMVariable.hpp"
+#include "../include/variables/CTurbSAVariable.hpp"
 
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 

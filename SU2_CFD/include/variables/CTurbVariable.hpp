@@ -1,7 +1,7 @@
 /*!
- * \file variable_direct_transition.cpp
- * \brief Definition of the solution fields.
- * \author A. Aranake
+ * \file CTurbVariable.hpp
+ * \brief Base class for defining the variables of the turbulence model.
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,24 +35,50 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#pragma once
 
-CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
+#include "CVariable.hpp"
 
-CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_nDim, val_nvar, config) {
-  
-  // Initialization of variables
-  Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
-  Solution[1] = val_REth;          Solution_Old[1] = val_REth;
-  
-}
+/*!
+ * \class CTurbVariable
+ * \brief Base class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author A. Bueno.
+ */
+class CTurbVariable : public CVariable {
+protected:
+  su2double muT;                /*!< \brief Eddy viscosity. */
+  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
 
-CTransLMVariable::~CTransLMVariable(void) { }
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbVariable(void);
 
-void CTransLMVariable::SetGammaEff() {
-  
-  /* -- Correction for separation-induced transition -- */
-  Solution[0] = max(Solution[0], gamma_sep);
-  
-}
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CTurbVariable(void);
+
+  /*!
+   * \brief Get the value of the eddy viscosity.
+   * \return the value of the eddy viscosity.
+   */
+  inline su2double GetmuT() { return muT; }
+
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  inline void SetmuT(su2double val_muT) { muT = val_muT; }
+};
+
