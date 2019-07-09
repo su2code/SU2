@@ -352,7 +352,6 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
   grid_movement = config->GetGrid_Movement();
   
   Diff_Psi = new su2double [nVar]; Diff_Lapl = new su2double [nVar];
-  Und_Lapl_i = new su2double [nVar]; Und_Lapl_j = new su2double [nVar];
   Velocity_i = new su2double [nDim]; Velocity_j = new su2double [nDim];
   MeanPhi = new su2double [nDim];
   
@@ -366,7 +365,6 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
 CCentJST_AdjFlow::~CCentJST_AdjFlow(void) {
   
   delete [] Diff_Psi; delete [] Diff_Lapl;
-  delete [] Und_Lapl_i; delete [] Und_Lapl_j;
   delete [] Velocity_i; delete [] Velocity_j;
   delete [] MeanPhi;
 }

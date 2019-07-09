@@ -1,7 +1,7 @@
 /*!
- * \file variable_adjoint_turbulent.cpp
+ * \file CHeatFVMVariable.cpp
  * \brief Definition of the solution fields.
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,53 +35,65 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CHeatFVMVariable.hpp"
 
-CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
-  
+CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
+
   /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
+  Solution_Direct = NULL;
+  Solution_BGS_k  = NULL;
+
 }
 
-CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,
+                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 
-  unsigned short iVar;
+  unsigned short iVar, iMesh, nMGSmooth = 0;
+  bool low_fidelity = false;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-  /*--- Initialization of variables ---*/
-  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_psinu_inf;
-    Solution_Old[iVar] = val_psinu_inf;
-  }
-  
-  Residual_Old = new su2double [nVar];
-  
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  Solution_Direct = NULL;
+  Solution_BGS_k  = NULL;
 
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
+  /*--- Initialization of heat variable ---*/
+  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
+
+  /*--- Allocate residual structures ---*/
+
+  Res_TruncError = new su2double [nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
+
+  /*--- Only for residual smoothing (multigrid) ---*/
+
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+
+  if ((nMGSmooth > 0) || low_fidelity) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
+
+  /*--- Allocate and initialize solution for dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n[0]  = val_Heat;
+    Solution_time_n1[0] = val_Heat;
+  }
+
+  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
+    Undivided_Laplacian = new su2double [nVar];
+  }
   
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
+  
 }
 
-CAdjTurbVariable::~CAdjTurbVariable(void) {
-  
-  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-  if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
+CHeatFVMVariable::~CHeatFVMVariable(void) {
+  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
+  if (Solution_Direct != NULL) delete [] Solution_Direct;
 }

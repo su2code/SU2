@@ -17,7 +17,8 @@ su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
 				       'output/filewriter/CSU2FileWriter.cpp',
 				       'output/filewriter/CSU2BinaryFileWriter.cpp',
 				       'output/filewriter/CSU2MeshFileWriter.cpp',
-				       'variable_structure.cpp'])
+				       'variables/CBaselineVariable.cpp',
+				       'variables/CVariable.cpp'])
 
 su2_dot = executable('SU2_DOT',
                      su2_dot_src, 

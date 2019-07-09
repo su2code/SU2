@@ -1,5 +1,5 @@
 /*!
- * \file variable_direct_heat.cpp
+ * \file CBaselineVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
@@ -35,61 +35,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CBaselineVariable.hpp"
 
-CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
+CBaselineVariable::CBaselineVariable(void) : CVariable() { }
 
-  Undivided_Laplacian = NULL;
-  
+CBaselineVariable::CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution[iVar] = val_solution[iVar];
+
 }
 
-CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
+CBaselineVariable::~CBaselineVariable(void) { }
 
-  unsigned short iVar, iMesh, nMGSmooth = 0;
-  bool low_fidelity = false;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  Undivided_Laplacian = NULL;
-
-  /*--- Initialization of heat variable ---*/
-  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
-
-  /*--- Allocate residual structures ---*/
-
-  Res_TruncError = new su2double [nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if ((nMGSmooth > 0) || low_fidelity) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
-  }
-
-  /*--- Allocate and initialize solution for dual time strategy ---*/
-  if (dual_time) {
-    Solution_time_n[0]  = val_Heat;
-    Solution_time_n1[0] = val_Heat;
-  }
-
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
-    Undivided_Laplacian = new su2double [nVar];
-  }
-  
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
-  
-}
-
-CHeatFVMVariable::~CHeatFVMVariable(void) {  }

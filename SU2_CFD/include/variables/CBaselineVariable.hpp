@@ -1,7 +1,7 @@
 /*!
- * \file variable_template.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios
+ * \file CBaselineVariable.hpp
+ * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,11 +35,34 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#pragma once
 
-CTemplateVariable::CTemplateVariable(void) : CVariable() { }
+#include "CVariable.hpp"
 
-CTemplateVariable::CTemplateVariable(su2double val_Template, unsigned short val_nDim, 
-                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
+/*!
+ * \class CBaselineVariable
+ * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon.
+ */
+class CBaselineVariable : public CVariable {
+public:
 
-CTemplateVariable::~CTemplateVariable(void) { }
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBaselineVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBaselineVariable(void);
+
+};
