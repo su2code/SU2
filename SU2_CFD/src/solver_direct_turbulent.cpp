@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CTurbSAVariable.hpp"
+#include "../include/variables/CTurbSSTVariable.hpp"
 
 CTurbSolver::CTurbSolver(void) : CSolver() {
   
