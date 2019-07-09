@@ -4071,10 +4071,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
   	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-    ConvCriteria = RESIDUAL;
+      ConvCriteria = RESIDUAL;
   		nExtIter += Iter_dCL_dAlpha;
-  		OrderMagResidual = 24;
-  		MinLogResidual = -24;
+  		//OrderMagResidual = 24;
+  		//MinLogResidual = -24;
   	}
   }
 
