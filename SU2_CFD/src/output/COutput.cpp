@@ -1252,15 +1252,44 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header = false;
 
+  bool write_header = false;
+  
+  unsigned long RestartIter = 0;
+  
+  if (config->GetRestart() && config->GetTime_Domain()){
+    RestartIter = config->GetRestart_Iter();
+  }
+  
+  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
+  
+  /*--- Header is always disabled for multizone problems unless explicitely requested --- */
+  
+  if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
+    return false;
+  }
+
+  /* --- Always print header in the first iteration --- */
+  
+  if ((curr_InnerIter == 0) && 
+      (curr_OuterIter == 0) && 
+      (curr_TimeIter == RestartIter)){
+    return true;
+  }
+  
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+      !(curr_TimeIter == config->GetnTime_Iter() - 1)){
+    return false;
+  }
+   
+  if (SU2_TYPE::Int(ScreenWrt_Freq[2]) == 0 && SU2_TYPE::Int(ScreenWrt_Freq[1]) == 0){
+    return false;
+  }
+  
   if (curr_InnerIter == 0){
     write_header = true;
   }
   
-  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
-
   return write_header;
 }
 

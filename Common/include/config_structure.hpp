@@ -1059,6 +1059,7 @@ private:
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  su2double *default_wrt_freq;
   su2double *HistoryWrtFreq,    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
             *ScreenWrtFreq;     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
