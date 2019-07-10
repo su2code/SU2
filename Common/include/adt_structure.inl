@@ -68,7 +68,5 @@ inline bool CADTBaseClass::IsEmpty(void) const { return isEmpty;}
 
 inline CADTPointsOnlyClass::~CADTPointsOnlyClass() {}
 
-inline CADTElemClass::CADTElemClass() {}
-
 inline CADTElemClass::~CADTElemClass() {}
 
