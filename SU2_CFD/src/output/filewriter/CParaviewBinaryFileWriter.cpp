@@ -42,6 +42,16 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (val.c[0] == 0x10) BigEndian = false;
   else BigEndian = true;
   
+  file_size = 0.0;
+  
+  /*--- Set a timer for the file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
   /*--- Serial implementation in case we have not compiled with MPI. ---*/
   
 #ifndef HAVE_MPI
@@ -64,15 +74,19 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   strcpy(str_buf, "# vtk DataFile Version 3.0\n");
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   strcpy(str_buf, "vtk output\n");
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   strcpy(str_buf, "BINARY\n");
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   strcpy(str_buf, "DATASET UNSTRUCTURED_GRID\n");
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   /*--- Write the point coordinates. ---*/
   
@@ -80,6 +94,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   SPRINTF(str_buf, "POINTS %i float\n", (int)GlobalPoint);
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   /*--- Load/write the 1D buffer of point coordinates. ---*/
   
@@ -97,6 +112,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian) SwapBytes((char *)coord_buf, sizeof(float), 3*GlobalPoint);
   
   fwrite(coord_buf, sizeof(float), 3*GlobalPoint, fhw);
+  file_size += sizeof(char)*3*GlobalPoint;
+  
   delete [] coord_buf;
   
   /*--- Write the connectivity data. ---*/
@@ -119,6 +136,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   SPRINTF (str_buf, "\nCELLS %i %i\n", (int)data_sorter->GetnElem(),
            (int)nGlobal_Elem_Storage);
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
+  
   conn_buf = new int[data_sorter->GetnElem()*(N_POINTS_HEXAHEDRON+1)];
   
   
@@ -137,6 +156,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   fwrite(conn_buf, sizeof(int),
          nTot_Line*(N_POINTS_LINE+1), fhw);
   
+  file_size += sizeof(int)*nTot_Line*(N_POINTS_LINE+1);
+  
   for (iElem = 0; iElem < nTot_Tria; iElem++) {
     iNode  = iElem*N_POINTS_TRIANGLE;
     iNode2 = iElem*(N_POINTS_TRIANGLE+1);
@@ -149,6 +170,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Tria*(N_POINTS_TRIANGLE+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Tria*(N_POINTS_TRIANGLE+1), fhw);
+  file_size += sizeof(int)*nTot_Tria*(N_POINTS_TRIANGLE+1);
   
   for (iElem = 0; iElem < nTot_Quad; iElem++) {
     iNode  = iElem*N_POINTS_QUADRILATERAL;
@@ -163,6 +185,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Quad*(N_POINTS_QUADRILATERAL+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Quad*(N_POINTS_QUADRILATERAL+1), fhw);
+  file_size += sizeof(int)*nTot_Quad*(N_POINTS_QUADRILATERAL+1);
   
   for (iElem = 0; iElem < nTot_Tetr; iElem++) {
     iNode  = iElem*N_POINTS_TETRAHEDRON;
@@ -177,7 +200,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Tetr*(N_POINTS_TETRAHEDRON+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Tetr*(N_POINTS_TETRAHEDRON+1), fhw);
-  
+  file_size += sizeof(int)*nTot_Tetr*(N_POINTS_TETRAHEDRON+1);
+   
   for (iElem = 0; iElem < nTot_Hexa; iElem++) {
     iNode  = iElem*N_POINTS_HEXAHEDRON;
     iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
@@ -195,6 +219,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Hexa*(N_POINTS_HEXAHEDRON+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Hexa*(N_POINTS_HEXAHEDRON+1), fhw);
+  file_size += sizeof(int)*nTot_Hexa*(N_POINTS_HEXAHEDRON+1);
   
   for (iElem = 0; iElem < nTot_Pris; iElem++) {
     iNode  = iElem*N_POINTS_PRISM;
@@ -211,6 +236,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Pris*(N_POINTS_PRISM+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Pris*(N_POINTS_PRISM+1), fhw);
+  file_size += sizeof(int)*nTot_Pris*(N_POINTS_PRISM+1);
   
   for (iElem = 0; iElem < nTot_Pyra; iElem++) {
     iNode  = iElem*N_POINTS_PYRAMID;
@@ -226,7 +252,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                             nTot_Pyra*(N_POINTS_PYRAMID+1));
   fwrite(conn_buf, sizeof(int),
          nTot_Pyra*(N_POINTS_PYRAMID+1), fhw);
-  
+  file_size += sizeof(int)*nTot_Pyra*(N_POINTS_PYRAMID+1);
   
   
   if (conn_buf != NULL) delete [] conn_buf;
@@ -236,6 +262,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
 
   SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(data_sorter->GetnElem()));
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)*strlen(str_buf);
   
   int *type_buf = NULL;
   
@@ -247,6 +274,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Line);
   fwrite(type_buf, sizeof(int), nTot_Line, fhw);
+  file_size += sizeof(int)*nTot_Line;
     
   for (iElem = 0; iElem < nTot_Tria; iElem++) {
     type_buf[iElem] = TRIANGLE;
@@ -254,6 +282,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Tria);
   fwrite(type_buf, sizeof(int), nTot_Tria, fhw);
+  file_size += sizeof(int)*nTot_Tria;
   
   for (iElem = 0; iElem < nTot_Quad; iElem++) {
     type_buf[iElem] = QUADRILATERAL;
@@ -261,6 +290,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Quad);
   fwrite(type_buf, sizeof(int), nTot_Quad, fhw);
+  file_size += sizeof(int)*nTot_Quad;
   
   for (iElem = 0; iElem < nTot_Tetr; iElem++) {
     type_buf[iElem] = TETRAHEDRON;
@@ -268,6 +298,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Tetr);
   fwrite(type_buf, sizeof(int), nTot_Tetr, fhw);
+  file_size += sizeof(int)*nTot_Tetr;
   
   for (iElem = 0; iElem < nTot_Hexa; iElem++) {
     type_buf[iElem] = HEXAHEDRON;
@@ -275,6 +306,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Hexa);
   fwrite(type_buf, sizeof(int), nTot_Hexa, fhw);
+  file_size += sizeof(int)*nTot_Hexa;
   
   for (iElem = 0; iElem < nTot_Pris; iElem++) {
     type_buf[iElem] = PRISM;
@@ -282,6 +314,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Pris);
   fwrite(type_buf, sizeof(int), nTot_Pris, fhw);
+  file_size += sizeof(int)*nTot_Pris;
   
   for (iElem = 0; iElem < nTot_Pyra; iElem++) {
     type_buf[iElem] = PYRAMID;
@@ -289,7 +322,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   if (!BigEndian)
     SwapBytes((char *)type_buf, sizeof(int), nTot_Pyra);
   fwrite(type_buf, sizeof(int), nTot_Pyra, fhw);
-  
+  file_size += sizeof(int)*nTot_Pyra;
   
   
   if (type_buf != NULL) delete [] type_buf;
@@ -298,6 +331,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   SPRINTF (str_buf, "\nPOINT_DATA %i\n", (int)GlobalPoint);
   fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  file_size += sizeof(char)* strlen(str_buf);
   
   unsigned short varStart = 2;
   if (nDim == 3) varStart++;
@@ -335,6 +369,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       fieldname.erase(fieldname.end()-2,fieldname.end());
       SPRINTF (str_buf, "\nVECTORS %s float\n", fieldname.c_str());
       fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      file_size += sizeof(char)* strlen(str_buf);
       
       /*--- Prepare the 1D data buffer on this rank. ---*/
       
@@ -356,6 +391,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       if (!BigEndian)
         SwapBytes((char *)vec_buf, sizeof(float), NCOORDS*GlobalPoint);
       fwrite(vec_buf, sizeof(float), NCOORDS*GlobalPoint, fhw);
+      file_size += sizeof(float)*NCOORDS*GlobalPoint;
       
       delete [] vec_buf;
       
@@ -365,9 +401,11 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       
       SPRINTF (str_buf, "\nSCALARS %s float 1\n", fieldname.c_str());
       fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      file_size += sizeof(char)* strlen(str_buf);
       
       SPRINTF (str_buf, "LOOKUP_TABLE default\n");
       fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      file_size += sizeof(char)* strlen(str_buf);
       
       /*--- Prepare the 1D data buffer on this rank. ---*/
       
@@ -383,6 +421,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       if (!BigEndian)
         SwapBytes((char *)scalar_buf, sizeof(float), GlobalPoint);
       fwrite(scalar_buf, sizeof(float), GlobalPoint, fhw);
+      file_size += sizeof(float)*GlobalPoint;
       
       delete [] scalar_buf;
       
@@ -438,24 +477,29 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
+  
   
   strcpy(str_buf, "vtk output\n");
   if (rank == MASTER_NODE)
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
   
   strcpy(str_buf, "BINARY\n");
   if (rank == MASTER_NODE)
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
   
   strcpy(str_buf, "DATASET UNSTRUCTURED_GRID\n");
   if (rank == MASTER_NODE)
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
   
   /*--- Communicate the number of total points that will be
    written by each rank. After this communication, each proc knows how
@@ -493,6 +537,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
   
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
@@ -539,6 +584,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   /*--- Update the displacement position for MPI IO. ---*/
   
   disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
+  file_size += sizeof(float)*myPoint*NCOORDS;
   
   /*--- Free the derived datatype and coordinate array. ---*/
   
@@ -630,6 +676,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
   
@@ -738,6 +785,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   disp += nElemStorage_Cum[size]*sizeof(int);
   
+  file_size += sizeof(int)*myElemStorage;  
+  
   /*--- Free the derived datatype. ---*/
   
   MPI_Type_free(&filetype);
@@ -752,6 +801,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);  
   
   int *type_buf = new int[myElem];
   unsigned long jElem = 0;
@@ -810,6 +860,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   disp += nElem_Cum[size]*sizeof(int);
   
+  file_size += sizeof(int)*myElem;    
+  
   /*--- Free the derived datatype. ---*/
   
   MPI_Type_free(&filetype);
@@ -824,6 +876,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
     MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                       MPI_CHAR, MPI_STATUS_IGNORE);
   disp += strlen(str_buf)*sizeof(char);
+  file_size += sizeof(char)*strlen(str_buf);  
   
   /*--- Adjust container start location to avoid point coords. ---*/
   
@@ -874,6 +927,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
         MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                           MPI_CHAR, MPI_STATUS_IGNORE);
       disp += strlen(str_buf)*sizeof(char);
+      file_size += sizeof(char)*strlen(str_buf);  
       
       /*--- Prepare the 1D data buffer on this rank. ---*/
       
@@ -925,6 +979,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       
       disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
       
+      file_size += sizeof(float)*myPoint*NCOORDS;  
+      
       /*--- Free the derived datatype and coordinate array. ---*/
       
       MPI_Type_free(&filetype);
@@ -941,6 +997,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
         MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                           MPI_CHAR, MPI_STATUS_IGNORE);
       disp += strlen(str_buf)*sizeof(char);
+      file_size += sizeof(char)*strlen(str_buf);  
       
       MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE,
                         (char*)"native", MPI_INFO_NULL);
@@ -949,6 +1006,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
         MPI_File_write_at(fhw, disp, str_buf, strlen(str_buf),
                           MPI_CHAR, MPI_STATUS_IGNORE);
       disp += strlen(str_buf)*sizeof(char);
+      file_size += sizeof(char)*strlen(str_buf);  
       
       /*--- Prepare the 1D data buffer on this rank. ---*/
       
@@ -993,6 +1051,8 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
       
       disp += nPoint_Cum[size]*sizeof(float);
       
+      file_size += sizeof(float)*myPoint;  
+      
       /*--- Free the derived datatype and coordinate array. ---*/
       
       MPI_Type_free(&filetype);
@@ -1006,6 +1066,28 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   /*--- All ranks close the file after writing. ---*/
   
   MPI_File_close(&fhw);
+  
+  
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
+  
+  /*--- Communicate the total file size for the restart ---*/
+  
+#ifdef HAVE_MPI
+  su2double my_file_size = file_size;
+  SU2_MPI::Allreduce(&my_file_size, &file_size, 1,
+                     MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
   
   /*--- Delete the offset counters that we needed for MPI IO. ---*/
   

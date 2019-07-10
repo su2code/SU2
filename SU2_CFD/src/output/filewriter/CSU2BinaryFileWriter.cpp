@@ -32,7 +32,8 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
   
   ofstream restart_file;
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  su2double file_size = 0.0, StartTime, StopTime, UsedTime, Bandwidth;
+
+  file_size = 0.0;
   
   strcpy(fname, filename.c_str());
 

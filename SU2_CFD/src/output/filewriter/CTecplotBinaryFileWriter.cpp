@@ -29,6 +29,14 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
   
+  /*--- Set a timer for the binary file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif  
+  
 #ifdef HAVE_TECIO
   
   /*--- Reduce the total number of each element. ---*/
@@ -92,15 +100,16 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
       zone_type = ZONETYPE_FEQUADRILATERAL;
     }
     else {
-      zone_type = ZONETYPE_FEBRICK;
+      zone_type = ZONETYPE_FEBRICK;      
     }
   }
   else {
-    if (nTot_Line > 0 && (nTot_Tria + nTot_Quad == 0)){
+    if (nTot_Line >= 0 && (nTot_Tria + nTot_Quad == 0)){
       zone_type = ZONETYPE_FELINESEG;
+      
     }
     else{
-      zone_type = ZONETYPE_FEQUADRILATERAL;
+      zone_type = ZONETYPE_FEQUADRILATERAL;      
     }
   }
 
@@ -626,7 +635,20 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
   
 #endif /* HAVE_TECIO */
   
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
 
+  file_size = Determine_Filesize(filename);
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
 }
 
 

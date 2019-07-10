@@ -521,9 +521,13 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
   surface_sort->SortOutputData(config, geometry);
   
-  /*--- Write data to file --- */
+  if (surface_sort->GetnElem() > 0){
   
-  file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+    /*--- Write data to file --- */
+  
+    file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+  
+  }
   
   delete file_writer;
   delete surface_sort;
@@ -547,6 +551,15 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Write data to file --- */
   
   file_writer->Write_Data(config->GetFilename(FileName, ""), data_sorter);
+  
+  if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
+    cout << "Wrote " << file_writer->Get_Filesize()/1.0e6 << " MB to disk in ";
+    cout << file_writer->Get_UsedTime() << " s. (" << file_writer->Get_Bandwidth() << " MB/s)." << endl;
+  }
+  
+  if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
+    config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg() + file_writer->Get_Bandwidth());
+  }
 
   delete file_writer;
   
