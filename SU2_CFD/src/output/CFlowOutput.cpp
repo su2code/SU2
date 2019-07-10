@@ -601,6 +601,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Vector;
   delete [] Surface_VelocityIdeal;
   delete [] Surface_MassFlow_Abs;
+  
+  std::cout << std::resetiosflags(std::cout.flags());
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
