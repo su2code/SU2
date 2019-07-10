@@ -377,23 +377,26 @@ def init_inria(argument_dict, modes, update = False):
         pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
         pyamg_targz = 'LinuxPyAmg.tar.gz'
         pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
-        # subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
-        # subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
-        # subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
-        # subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-        # subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
+        subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
+        try:
+            subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        except:
+            pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
+            subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
+
     elif sys.platform == 'darwin':
         print('Installing pyAMG for Mac.')
         pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/MacPyAmg.tar.gz'
         pyamg_targz = 'MacPyAmg.tar.gz'
         pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-macosx_10_9_x86_64.whl'
-
-    # # For now, only download pyAMG for Linux
-    subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
-    subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
-    subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
-    subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
-    subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('wget -N --no-check-certificate ' + pyamg_dwnld, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('mkdir pyAMG', stdout = log, stderr = err, shell = True)
+        subprocess.check_call('tar -zxvf ' + pyamg_targz + ' --directory pyAMG/', stdout = log, stderr = err, shell = True)
+        subprocess.check_call('pip install --user pyAMG/' + pyamg_whl, stdout = log, stderr = err, shell = True)
+        subprocess.check_call('rm ' + pyamg_targz, stdout = log, stderr = err, shell = True)
 
     return True
 
