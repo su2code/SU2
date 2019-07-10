@@ -23,7 +23,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   unsigned short iDim;
   
-  unsigned long iPoint, iElem, iNode;
+  unsigned long iPoint, iElem;
   
   ofstream Paraview_File;
     
@@ -59,8 +59,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   FILE* fhw;
   fhw = fopen(fname, "wb");
   
-  unsigned long iNode2;
-  unsigned long nSurf_Elem_Storage;
+  unsigned long iNode2, iNode;
   unsigned long nGlobal_Elem_Storage;
   
   /*--- Error check for opening the file. ---*/
@@ -346,18 +345,18 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
                     fieldname.end());
     
     bool output_variable = true, isVector = false;
-    size_t found = fieldname[iField].find("_x");
+    size_t found = fieldnames[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
     }
-    found = fieldname[iField].find("_y");
+    found = fieldnames[iField].find("_y");
     if (found!=string::npos) {
       //skip
       output_variable = false;
       VarCounter++;
     }
-    found = fieldname[iField].find("_z");
+    found = fieldnames[iField].find("_z");
     if (found!=string::npos) {
       //skip
       output_variable = false;
@@ -384,7 +383,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
           if (nDim == 2 && iDim == 2) {
             vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
-            val = (float)SU2_TYPE::GetValue(Data[VarCounter+iDim][iPoint]);
+            val = (float)SU2_TYPE::GetValue(data_sorter->GetData(VarCounter+iDim,iPoint));
             vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }

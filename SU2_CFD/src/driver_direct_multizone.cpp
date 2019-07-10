@@ -398,7 +398,6 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
-  bool Convergence = false;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size;

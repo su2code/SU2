@@ -24,7 +24,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   filename += file_ext;
   
-  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, offset, nElem;
+  unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], offset, nElem;
   unsigned short iMarker, iDim, iChar, VTK_Type, nMarker_;
   short SendTo;
   ifstream input_file;

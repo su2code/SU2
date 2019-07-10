@@ -215,7 +215,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-  nGlobal_Surf_Poin = nSurf_Poin_Par;
+  nGlobal_Poin_Par = nParallel_Poin;
 #endif
 
   /*-------------------------------------------------------------------*/
@@ -322,7 +322,7 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
     
     unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-    nSurf_Elem_Par   = nTotal_Surf_Elem;
+    nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
     SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
