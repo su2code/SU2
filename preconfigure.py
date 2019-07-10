@@ -341,7 +341,7 @@ def init_inria(argument_dict, modes, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_libMeshb = 'c8dd9050595e58d05b26cf97212f8419e4f269a9'
+    sha_version_libMeshb = '5aecc508d1554f2725634321497b63feb1ec74fa'
     github_repo_libMeshb = 'https://github.com/bmunguia/libMeshb'
 
     libMeshb_name = 'libMeshb'
