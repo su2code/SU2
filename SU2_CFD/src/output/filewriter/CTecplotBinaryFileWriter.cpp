@@ -344,26 +344,19 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
 #else
 
   unsigned short iVar;
-
+  
   vector<passivedouble> var_data;
-  size_t var_data_size = nVar_Par * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
+  size_t var_data_size = fieldnames.size() * data_sorter->GetnPoints();
   var_data.reserve(var_data_size);
   
-  if (surf_sol) {
-    for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
-      for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
-        var_data.push_back(SU2_TYPE::GetValue(Parallel_Surf_Data[iVar][i]));
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, &var_data[iVar * nSurf_Poin_Par]);
-      if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
-    }
-  } else {
-    for (iVar = 0; err == 0 && iVar < GlobalField_Counter; iVar++) {
-      for(unsigned long i = 0; i < nParallel_Poin; ++i)
-        var_data.push_back(SU2_TYPE::GetValue(Parallel_Data[iVar][i]));
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nParallel_Poin, &var_data[iVar * nParallel_Poin]);
-      if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
-    }
+
+  for (iVar = 0; err == 0 && iVar <  fieldnames.size(); iVar++) {
+    for(unsigned long i = 0; i < data_sorter->GetnPoints(); ++i)
+      var_data.push_back(SU2_TYPE::GetValue(data_sorter->GetData(iVar,i)));
+    err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, data_sorter->GetnPoints(), &var_data[iVar * data_sorter->GetnPoints()]);
+    if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
   }
+  
 
 #endif /* HAVE_MPI */
   
@@ -514,119 +507,80 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
     }
   }
 #else
-  if (surf_sol) {
-
-    int64_t nodes[4];
-
-    for (iElem = 0; err == 0 && iElem < nParallel_Line; iElem++) {
-      iNode = iElem*N_POINTS_LINE;
-      nodes[0] = Conn_BoundLine_Par[iNode+0];
-      nodes[1] = Conn_BoundLine_Par[iNode+1];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 2, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-        
-    for (iElem = 0; err == 0 && iElem < nParallel_BoundTria; iElem++) {
-      iNode = iElem*N_POINTS_TRIANGLE;
-      nodes[0] = Conn_BoundTria_Par[iNode+0];
-      nodes[1] = Conn_BoundTria_Par[iNode+1];
-      nodes[2] = Conn_BoundTria_Par[iNode+2];
-      nodes[3] = Conn_BoundTria_Par[iNode+2];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-        
-    for (iElem = 0; err == 0 && iElem < nParallel_BoundQuad; iElem++) {
-      iNode = iElem*N_POINTS_QUADRILATERAL;
-      nodes[0] = Conn_BoundQuad_Par[iNode+0];
-      nodes[1] = Conn_BoundQuad_Par[iNode+1];
-      nodes[2] = Conn_BoundQuad_Par[iNode+2];
-      nodes[3] = Conn_BoundQuad_Par[iNode+3];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-
-  } else {
-
-    int64_t nodes[8];
-
-    for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
-      iNode = iElem*N_POINTS_TRIANGLE;
-      nodes[0] = Conn_Tria_Par[iNode+0];
-      nodes[1] = Conn_Tria_Par[iNode+1];
-      nodes[2] = Conn_Tria_Par[iNode+2];
-      nodes[3] = Conn_Tria_Par[iNode+2];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-
-    for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
-      iNode = iElem*N_POINTS_QUADRILATERAL;
-      nodes[0] = Conn_Quad_Par[iNode+0];
-      nodes[1] = Conn_Quad_Par[iNode+1];
-      nodes[2] = Conn_Quad_Par[iNode+2];
-      nodes[3] = Conn_Quad_Par[iNode+3];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-
-    for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
-      iNode = iElem*N_POINTS_TETRAHEDRON;
-      nodes[0] = Conn_Tetr_Par[iNode+0];
-      nodes[1] = Conn_Tetr_Par[iNode+1];
-      nodes[2] = Conn_Tetr_Par[iNode+2];
-      nodes[3] = Conn_Tetr_Par[iNode+2];
-      nodes[4] = Conn_Tetr_Par[iNode+3];
-      nodes[5] = Conn_Tetr_Par[iNode+3];
-      nodes[6] = Conn_Tetr_Par[iNode+3];
-      nodes[7] = Conn_Tetr_Par[iNode+3];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-
-    for (iElem = 0; err == 0 && iElem < nParallel_Hexa; iElem++) {
-      iNode = iElem*N_POINTS_HEXAHEDRON;
-      nodes[0] = Conn_Hexa_Par[iNode+0];
-      nodes[1] = Conn_Hexa_Par[iNode+1];
-      nodes[2] = Conn_Hexa_Par[iNode+2];
-      nodes[3] = Conn_Hexa_Par[iNode+3];
-      nodes[4] = Conn_Hexa_Par[iNode+4];
-      nodes[5] = Conn_Hexa_Par[iNode+5];
-      nodes[6] = Conn_Hexa_Par[iNode+6];
-      nodes[7] = Conn_Hexa_Par[iNode+7];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-      
-    for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
-      iNode = iElem*N_POINTS_PRISM;
-      nodes[0] = Conn_Pris_Par[iNode+0];
-      nodes[1] = Conn_Pris_Par[iNode+1];
-      nodes[2] = Conn_Pris_Par[iNode+1];
-      nodes[3] = Conn_Pris_Par[iNode+2];
-      nodes[4] = Conn_Pris_Par[iNode+3];
-      nodes[5] = Conn_Pris_Par[iNode+4];
-      nodes[6] = Conn_Pris_Par[iNode+4];
-      nodes[7] = Conn_Pris_Par[iNode+5];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-    
-    for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
-      iNode = iElem*N_POINTS_PYRAMID;
-      nodes[0] = Conn_Pyra_Par[iNode+0];
-      nodes[1] = Conn_Pyra_Par[iNode+1];
-      nodes[2] = Conn_Pyra_Par[iNode+2];
-      nodes[3] = Conn_Pyra_Par[iNode+3];
-      nodes[4] = Conn_Pyra_Par[iNode+4];
-      nodes[5] = Conn_Pyra_Par[iNode+4];
-      nodes[6] = Conn_Pyra_Par[iNode+4];
-      nodes[7] = Conn_Pyra_Par[iNode+4];
-      err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
-      if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
-    }
-      
+  
+  int64_t nodes[8];
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Tria; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
+    nodes[3] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
   }
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Quad; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2);
+    nodes[3] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 4, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
+  }
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2);
+    nodes[3] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2);
+    nodes[4] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
+    nodes[5] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
+    nodes[6] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
+    nodes[7] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
+  }
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Hexa; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2);
+    nodes[3] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3);
+    nodes[4] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4);
+    nodes[5] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5);
+    nodes[6] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6);
+    nodes[7] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
+  }
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Pris; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(PRISM, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(PRISM, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(PRISM, iElem, 1);
+    nodes[3] = data_sorter->GetElem_Connectivity(PRISM, iElem, 2);
+    nodes[4] = data_sorter->GetElem_Connectivity(PRISM, iElem, 3);
+    nodes[5] = data_sorter->GetElem_Connectivity(PRISM, iElem, 4);
+    nodes[6] = data_sorter->GetElem_Connectivity(PRISM, iElem, 4);
+    nodes[7] = data_sorter->GetElem_Connectivity(PRISM, iElem, 5);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
+  }
+  
+  for (iElem = 0; err == 0 && iElem < nParallel_Pyra; iElem++) {
+    nodes[0] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0);
+    nodes[1] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 1);
+    nodes[2] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 2);
+    nodes[3] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 3);
+    nodes[4] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4);
+    nodes[5] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4);
+    nodes[6] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4);
+    nodes[7] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 4);
+    err = tecZoneNodeMapWrite64(file_handle, zone, rank, 1, 8, nodes);
+    if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
+  }
+  
+  
 
 #endif
   

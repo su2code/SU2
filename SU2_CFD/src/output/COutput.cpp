@@ -1145,7 +1145,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
 
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){
   
-  bool Wrt_Halo = config->GetWrt_Halo();
   unsigned short iMarker = 0;
   unsigned long iPoint = 0, jPoint = 0;
   long iVertex = 0;

@@ -111,7 +111,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    needed for when we read the strings later. ---*/
 
   for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
+    strncpy(str_buf, fieldnames[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
     file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
   }
@@ -123,8 +123,8 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
 
   /*--- Write the external iteration. ---*/
 
-  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
-  file_size += (su2double)sizeof(int);
+//  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
+//  file_size += (su2double)sizeof(int);
 
   /*--- Write the metadata. ---*/
 

@@ -25,7 +25,6 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
 
   unsigned long iPoint, iElem;
 
-  unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
 
   ofstream Paraview_File;
