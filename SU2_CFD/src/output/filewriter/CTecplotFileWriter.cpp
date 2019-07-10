@@ -33,6 +33,16 @@ void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
 
   ofstream Tecplot_File;
   
+  file_size = 0.0;
+  
+  /*--- Set a timer for the file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
   /*--- Reduce the total number of each element. ---*/
 
   unsigned long nTot_Line, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
@@ -213,6 +223,20 @@ void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   Tecplot_File.close();
   
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
+  
+  file_size = Determine_Filesize(filename);
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
 }
 
 
