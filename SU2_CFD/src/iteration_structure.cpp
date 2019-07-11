@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
@@ -3027,6 +3027,12 @@ void CDiscAdjTNE2Iteration::Preprocess(COutput *output,
                                        unsigned short val_iZone,
                                        unsigned short val_iInst) {
 
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime =MPI_Wtime();
+#endif
+
   unsigned long IntIter = 0, iPoint;
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
@@ -3482,16 +3488,42 @@ void CDiscAdjTNE2Iteration::Update(COutput *output,
 }
 
 bool CDiscAdjTNE2Iteration::Monitor(COutput *output,
-                                    CIntegration ****integration_container,
-                                    CGeometry ****geometry_container,
-                                    CSolver *****solver_container,
-                                    CNumerics ******numerics_container,
-                                    CConfig **config_container,
-                                    CSurfaceMovement **surface_movement,
-                                    CVolumetricMovement ***grid_movement,
-                                    CFreeFormDefBox*** FFDBox,
-                                    unsigned short val_iZone,
-                                    unsigned short val_iInst)     { return false; }
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     {
+
+  bool StopCalc = false;
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[val_iZone][INST_0][ADJTNE2_SOL]->GetConvergence();
+
+  /*--- Write the convergence history for the fluid (only screen output) ---*/
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+
+  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+
+  return StopCalc;
+
+}
 
 void CDiscAdjTNE2Iteration::Postprocess(COutput *output,
                                         CIntegration ****integration_container,

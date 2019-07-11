@@ -642,7 +642,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   }
 
   /*--- Warning message about non-physical points ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -871,7 +871,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
     SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -986,7 +986,7 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
 
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
@@ -1407,7 +1407,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   }
 
   /*--- Warning message about non-physical reconstructions ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -5387,8 +5387,12 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   if (grid_movement && val_update_geo) {
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    geometry[MESH_0]->Set_MPI_Coord(config);
-    geometry[MESH_0]->Set_MPI_GridVel(config);
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -5413,7 +5417,8 @@ void CTNE2EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   if (static_fsi && val_update_geo) {
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
     /*--- Recompute the edges and  dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -6206,7 +6211,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*--- Warning message about non-physical points ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
@@ -6398,7 +6403,7 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
@@ -6597,7 +6602,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   }
 
   /*--- Communicate minimum and maximum time steps ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;

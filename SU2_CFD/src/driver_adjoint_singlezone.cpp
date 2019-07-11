@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
@@ -73,6 +73,14 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) direct_iteration = new CTurboIteration(config);
     else       direct_iteration = new CFluidIteration(config);
+    MainVariables = FLOW_CONS_VARS;
+    SecondaryVariables = MESH_COORDS;
+    break;
+
+  case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: //case DISC_ADJ_TNE2_RANS:
+    if (rank == MASTER_NODE)
+      cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
+    direct_iteration = new CTNE2Iteration(config);
     MainVariables = FLOW_CONS_VARS;
     SecondaryVariables = MESH_COORDS;
     break;
@@ -175,8 +183,8 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
     iteration->Iterate(output, integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+                       solver_container, numerics_container, config_container,
+                       surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = iteration->Monitor(output, integration_container, geometry_container,
@@ -204,6 +212,15 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   if (config->GetKind_Solver() == DISC_ADJ_EULER ||
       config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
       config->GetKind_Solver() == DISC_ADJ_RANS){
+
+    /*--- Compute the geometrical sensitivities ---*/
+    SecondaryRecording();
+
+  }
+
+  if (config->GetKind_Solver() == DISC_ADJ_TNE2_EULER ||
+      config->GetKind_Solver() == DISC_ADJ_TNE2_NAVIER_STOKES){// ||
+      //config->GetKind_Solver() == DISC_ADJ_TNE2_RANS){
 
     /*--- Compute the geometrical sensitivities ---*/
     SecondaryRecording();
@@ -364,20 +381,52 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     }
 
     break;
+
+  case TNE2_EULER:           case TNE2_NAVIER_STOKES:           //case TNE2_RANS:
+  case DISC_ADJ_TNE2_EULER:  case DISC_ADJ_TNE2_NAVIER_STOKES:  //case DISC_ADJ_TNE2_RANS:
+
+    solver[TNE2_SOL]->SetTotal_ComboObj(0.0);
+
+    if (config->GetnMarker_Analyze() != 0)
+      output->SpecialOutput_AnalyzeSurface(solver[TNE2_SOL], geometry, config, false);
+
+    if ((config->GetnMarker_Analyze() != 0) && compressible)
+      output->SpecialOutput_Distortion(solver[TNE2_SOL], geometry, config, false);
+
+    if (config->GetnMarker_NearFieldBound() != 0)
+      output->SpecialOutput_SonicBoom(solver[TNE2_SOL], geometry, config, false);
+
+    if (config->GetPlot_Section_Forces())
+      output->SpecialOutput_SpanLoad(solver[TNE2_SOL], geometry, config, false);
+
+    /*--- Surface based obj. function ---*/
+
+    solver[TNE2_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc += solver[TNE2_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
+      }
+    }
+
+    break;
   case DISC_ADJ_FEM:
     switch (config->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-        break;
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
+      break;
     case REFERENCE_NODE:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-        break;
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
+      break;
     case VOLUME_FRACTION:
-        ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-        break;
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+      break;
     default:
-        ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-        break;
+      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
+      break;
     }
     break;
   }
@@ -443,6 +492,24 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
       }
       break;
 
+    case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES: //case DISC_ADJ_TNE2_RANS:
+      //THIS ISNT GENERAL YET --- DELETE ME
+      cout << "log10[U(0)]: "   << log10(solver[TNE2_SOL]->GetRes_RMS(0))
+           << ", log10[U(1)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(1))
+           << ", log10[U(2)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(2)) << "." << endl;
+      cout << "log10[U(3)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(3));
+      if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[TNE2_SOL]->GetRes_RMS(4));
+      cout << "." << endl;
+      if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
+        cout << "log10[Turb(0)]: "   << log10(solver[TURB_SOL]->GetRes_RMS(0));
+        if (solver[TURB_SOL]->GetnVar() > 1) cout << ", log10[Turb(1)]: " << log10(solver[TURB_SOL]->GetRes_RMS(1));
+        cout << "." << endl;
+      }
+      if (config->GetWeakly_Coupled_Heat()){
+        cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
+      }
+      break;
+
     case DISC_ADJ_FEM:
 
       if (config->GetGeometricConditions() == LARGE_DEFORMATIONS){
@@ -475,9 +542,9 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
   else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != NONE)){
     cout << endl << "Recording the computational graph with respect to the ";
     switch (SecondaryVariables){
-      case MESH_COORDS: cout << "mesh coordinates." << endl;    break;
-      default:          cout << "secondary variables." << endl; break;
-     }
+    case MESH_COORDS: cout << "mesh coordinates." << endl;    break;
+    default:          cout << "secondary variables." << endl; break;
+    }
   }
 
 }

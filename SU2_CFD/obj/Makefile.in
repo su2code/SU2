@@ -158,10 +158,8 @@ am__v_AR_1 =
 libSU2Core_a_AR = $(AR) $(ARFLAGS)
 am__DEPENDENCIES_1 =
 @BUILD_NORMAL_TRUE@libSU2Core_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libSU2Core_a_SOURCES_DIST =  \
-	../include/data_manufactured_solutions.hpp \
-	../include/definition_structure.hpp ../include/fluid_model.hpp \
-	../include/fluid_model.inl \
+am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
+	../include/fluid_model.hpp ../include/fluid_model.inl \
 	../include/integration_structure.hpp \
 	../include/integration_structure.inl \
 	../include/driver_structure.hpp \
@@ -178,13 +176,13 @@ am__libSU2Core_a_SOURCES_DIST =  \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
-	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_direct_multizone.cpp \
 	../src/driver_direct_singlezone.cpp \
+	../src/driver_adjoint_singlezone.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
@@ -228,9 +226,7 @@ am__libSU2Core_a_SOURCES_DIST =  \
 	../src/variable_direct_elasticity.cpp \
 	../src/variable_structure.cpp ../src/variable_template.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 =  \
-	../src/libSU2Core_a-data_manufactured_solutions.$(OBJEXT) \
-	../src/libSU2Core_a-definition_structure.$(OBJEXT) \
+am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-fluid_model.$(OBJEXT) \
 	../src/libSU2Core_a-fluid_model_pig.$(OBJEXT) \
 	../src/libSU2Core_a-fluid_model_pvdw.$(OBJEXT) \
@@ -240,6 +236,7 @@ am__objects_1 =  \
 	../src/libSU2Core_a-integration_time.$(OBJEXT) \
 	../src/libSU2Core_a-driver_direct_multizone.$(OBJEXT) \
 	../src/libSU2Core_a-driver_direct_singlezone.$(OBJEXT) \
+	../src/libSU2Core_a-driver_adjoint_singlezone.$(OBJEXT) \
 	../src/libSU2Core_a-driver_structure.$(OBJEXT) \
 	../src/libSU2Core_a-iteration_structure.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_adjoint_mean.$(OBJEXT) \
@@ -299,7 +296,6 @@ libSU2Core_AD_a_AR = $(AR) $(ARFLAGS)
 @BUILD_REVERSE_TRUE@libSU2Core_AD_a_DEPENDENCIES =  \
 @BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
 am__libSU2Core_AD_a_SOURCES_DIST =  \
-	../include/data_manufactured_solutions.hpp \
 	../include/definition_structure.hpp ../include/fluid_model.hpp \
 	../include/fluid_model.inl \
 	../include/integration_structure.hpp \
@@ -318,13 +314,13 @@ am__libSU2Core_AD_a_SOURCES_DIST =  \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
-	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_direct_multizone.cpp \
 	../src/driver_direct_singlezone.cpp \
+	../src/driver_adjoint_singlezone.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
@@ -367,9 +363,7 @@ am__libSU2Core_AD_a_SOURCES_DIST =  \
 	../src/variable_direct_turbulent.cpp \
 	../src/variable_direct_elasticity.cpp \
 	../src/variable_structure.cpp ../src/variable_template.cpp
-am__objects_2 =  \
-	../src/libSU2Core_AD_a-data_manufactured_solutions.$(OBJEXT) \
-	../src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
+am__objects_2 = ../src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_AD_a-fluid_model.$(OBJEXT) \
 	../src/libSU2Core_AD_a-fluid_model_pig.$(OBJEXT) \
 	../src/libSU2Core_AD_a-fluid_model_pvdw.$(OBJEXT) \
@@ -379,6 +373,7 @@ am__objects_2 =  \
 	../src/libSU2Core_AD_a-integration_time.$(OBJEXT) \
 	../src/libSU2Core_AD_a-driver_direct_multizone.$(OBJEXT) \
 	../src/libSU2Core_AD_a-driver_direct_singlezone.$(OBJEXT) \
+	../src/libSU2Core_AD_a-driver_adjoint_singlezone.$(OBJEXT) \
 	../src/libSU2Core_AD_a-driver_structure.$(OBJEXT) \
 	../src/libSU2Core_AD_a-iteration_structure.$(OBJEXT) \
 	../src/libSU2Core_AD_a-numerics_adjoint_mean.$(OBJEXT) \
@@ -438,7 +433,6 @@ libSU2Core_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
 @BUILD_DIRECTDIFF_TRUE@libSU2Core_DIRECTDIFF_a_DEPENDENCIES =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__DEPENDENCIES_1)
 am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
-	../include/data_manufactured_solutions.hpp \
 	../include/definition_structure.hpp ../include/fluid_model.hpp \
 	../include/fluid_model.inl \
 	../include/integration_structure.hpp \
@@ -457,13 +451,13 @@ am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
 	../include/transfer_structure.inl \
-	../src/data_manufactured_solutions.cpp \
 	../src/definition_structure.cpp ../src/fluid_model.cpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
 	../src/driver_direct_multizone.cpp \
 	../src/driver_direct_singlezone.cpp \
+	../src/driver_adjoint_singlezone.cpp \
 	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
@@ -506,7 +500,7 @@ am__libSU2Core_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/variable_direct_turbulent.cpp \
 	../src/variable_direct_elasticity.cpp \
 	../src/variable_structure.cpp ../src/variable_template.cpp
-am__objects_3 = ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.$(OBJEXT) \
+am__objects_3 =  \
 	../src/libSU2Core_DIRECTDIFF_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-fluid_model.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-fluid_model_pig.$(OBJEXT) \
@@ -517,6 +511,7 @@ am__objects_3 = ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.$(OBJ
 	../src/libSU2Core_DIRECTDIFF_a-integration_time.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-driver_direct_multizone.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-driver_direct_singlezone.$(OBJEXT) \
+	../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-driver_structure.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-iteration_structure.$(OBJEXT) \
 	../src/libSU2Core_DIRECTDIFF_a-numerics_adjoint_mean.$(OBJEXT) \
@@ -836,7 +831,6 @@ AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 noinst_LIBRARIES = $(am__append_2) $(am__append_4) $(am__append_6)
 libSU2Core_sources = \
-  ../include/data_manufactured_solutions.hpp \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -861,7 +855,6 @@ libSU2Core_sources = \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
-  ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
@@ -872,6 +865,7 @@ libSU2Core_sources = \
   ../src/integration_time.cpp \
   ../src/driver_direct_multizone.cpp \
   ../src/driver_direct_singlezone.cpp \
+  ../src/driver_adjoint_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
@@ -1000,8 +994,6 @@ clean-noinstLIBRARIES:
 ../src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ../src/$(DEPDIR)
 	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2Core_a-data_manufactured_solutions.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-definition_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-fluid_model.$(OBJEXT): ../src/$(am__dirstamp) \
@@ -1021,6 +1013,8 @@ clean-noinstLIBRARIES:
 ../src/libSU2Core_a-driver_direct_multizone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-driver_direct_singlezone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-driver_adjoint_singlezone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1133,8 +1127,6 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	$(AM_V_at)-rm -f libSU2Core.a
 	$(AM_V_AR)$(libSU2Core_a_AR) libSU2Core.a $(libSU2Core_a_OBJECTS) $(libSU2Core_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libSU2Core.a
-../src/libSU2Core_AD_a-data_manufactured_solutions.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-definition_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-fluid_model.$(OBJEXT): ../src/$(am__dirstamp) \
@@ -1154,6 +1146,8 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 ../src/libSU2Core_AD_a-driver_direct_multizone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-driver_direct_singlezone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_AD_a-driver_adjoint_singlezone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_AD_a-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1266,8 +1260,6 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 	$(AM_V_at)-rm -f libSU2Core_AD.a
 	$(AM_V_AR)$(libSU2Core_AD_a_AR) libSU2Core_AD.a $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libSU2Core_AD.a
-../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-definition_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-fluid_model.$(OBJEXT):  \
@@ -1287,6 +1279,8 @@ libSU2Core_AD.a: $(libSU2Core_AD_a_OBJECTS) $(libSU2Core_AD_a_DEPENDENCIES) $(EX
 ../src/libSU2Core_DIRECTDIFF_a-driver_direct_multizone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-driver_direct_singlezone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_DIRECTDIFF_a-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1473,8 +1467,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-driver_direct_multizone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-driver_structure.Po@am__quote@
@@ -1537,8 +1531,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-variable_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-variable_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_AD_a-variable_template.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_direct_multizone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_structure.Po@am__quote@
@@ -1601,8 +1595,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-variable_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-variable_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-variable_template.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_direct_multizone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po@am__quote@
@@ -1681,20 +1675,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-../src/libSU2Core_a-data_manufactured_solutions.o: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-data_manufactured_solutions.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_a-data_manufactured_solutions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-
-../src/libSU2Core_a-data_manufactured_solutions.obj: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-data_manufactured_solutions.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_a-data_manufactured_solutions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
 
 ../src/libSU2Core_a-definition_structure.o: ../src/definition_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-definition_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-definition_structure.Tpo -c -o ../src/libSU2Core_a-definition_structure.o `test -f '../src/definition_structure.cpp' || echo '$(srcdir)/'`../src/definition_structure.cpp
@@ -1835,6 +1815,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/libSU2Core_a-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+
+../src/libSU2Core_a-driver_adjoint_singlezone.o: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_adjoint_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_a-driver_adjoint_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+
+../src/libSU2Core_a-driver_adjoint_singlezone.obj: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_adjoint_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_a-driver_adjoint_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
 
 ../src/libSU2Core_a-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_structure.Tpo -c -o ../src/libSU2Core_a-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
@@ -2578,20 +2572,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-variable_template.obj `if test -f '../src/variable_template.cpp'; then $(CYGPATH_W) '../src/variable_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_template.cpp'; fi`
 
-../src/libSU2Core_AD_a-data_manufactured_solutions.o: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-data_manufactured_solutions.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_AD_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_AD_a-data_manufactured_solutions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-
-../src/libSU2Core_AD_a-data_manufactured_solutions.obj: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-data_manufactured_solutions.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_AD_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_AD_a-data_manufactured_solutions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
-
 ../src/libSU2Core_AD_a-definition_structure.o: ../src/definition_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-definition_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-definition_structure.Tpo -c -o ../src/libSU2Core_AD_a-definition_structure.o `test -f '../src/definition_structure.cpp' || echo '$(srcdir)/'`../src/definition_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-definition_structure.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-definition_structure.Po
@@ -2731,6 +2711,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/libSU2Core_AD_a-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+
+../src/libSU2Core_AD_a-driver_adjoint_singlezone.o: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-driver_adjoint_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_AD_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_AD_a-driver_adjoint_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+
+../src/libSU2Core_AD_a-driver_adjoint_singlezone.obj: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-driver_adjoint_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_AD_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_AD_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_AD_a-driver_adjoint_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
 
 ../src/libSU2Core_AD_a-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_AD_a-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_AD_a-driver_structure.Tpo -c -o ../src/libSU2Core_AD_a-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
@@ -3474,20 +3468,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_AD_a-variable_template.obj `if test -f '../src/variable_template.cpp'; then $(CYGPATH_W) '../src/variable_template.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_template.cpp'; fi`
 
-../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.o: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.o `test -f '../src/data_manufactured_solutions.cpp' || echo '$(srcdir)/'`../src/data_manufactured_solutions.cpp
-
-../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.obj: ../src/data_manufactured_solutions.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/data_manufactured_solutions.cpp' object='../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-data_manufactured_solutions.obj `if test -f '../src/data_manufactured_solutions.cpp'; then $(CYGPATH_W) '../src/data_manufactured_solutions.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/data_manufactured_solutions.cpp'; fi`
-
 ../src/libSU2Core_DIRECTDIFF_a-definition_structure.o: ../src/definition_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-definition_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-definition_structure.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-definition_structure.o `test -f '../src/definition_structure.cpp' || echo '$(srcdir)/'`../src/definition_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-definition_structure.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-definition_structure.Po
@@ -3627,6 +3607,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/libSU2Core_DIRECTDIFF_a-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+
+../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.o: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.o `test -f '../src/driver_adjoint_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_adjoint_singlezone.cpp
+
+../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.obj: ../src/driver_adjoint_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_adjoint_singlezone.cpp' object='../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_adjoint_singlezone.obj `if test -f '../src/driver_adjoint_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_adjoint_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_adjoint_singlezone.cpp'; fi`
 
 ../src/libSU2Core_DIRECTDIFF_a-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_DIRECTDIFF_a-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_DIRECTDIFF_a-driver_structure.Tpo -c -o ../src/libSU2Core_DIRECTDIFF_a-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
