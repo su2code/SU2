@@ -1289,7 +1289,7 @@ bool COutput::WriteScreen_Header(CConfig *config) {
     return true;
   }
   
-  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     return false;
   }
@@ -1318,7 +1318,7 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1327,14 +1327,14 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq[1]) && 
+  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(ScreenWrt_Freq[1])) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, ScreenWrt_Freq[2]) &&
+  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(ScreenWrt_Freq[2])) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;
@@ -1351,7 +1351,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq[0])&& 
+  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(HistoryWrt_Freq[0]))&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1360,14 +1360,14 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq[1]) && 
+  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(HistoryWrt_Freq[1])) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, HistoryWrt_Freq[2]) &&
+  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(HistoryWrt_Freq[2])) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;

@@ -174,7 +174,7 @@ inline bool CDriverOutput::WriteScreen_Output(CConfig *config) {
 
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq[0])&& 
+  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -183,7 +183,7 @@ inline bool CDriverOutput::WriteScreen_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq[1]) && 
+  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(ScreenWrt_Freq[1])) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
@@ -200,7 +200,7 @@ inline bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq[0])&& 
+  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(HistoryWrt_Freq[0]))&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -209,7 +209,7 @@ inline bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq[1]) && 
+  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(HistoryWrt_Freq[1])) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
