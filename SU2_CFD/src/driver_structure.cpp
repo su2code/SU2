@@ -619,7 +619,6 @@ void CDriver::Postprocessing() {
     delete [] ConvHist_file;
     }
   }
-  delete [] ConvHist_file;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
