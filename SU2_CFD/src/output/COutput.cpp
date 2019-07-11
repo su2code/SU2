@@ -1149,6 +1149,10 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   unsigned long iPoint = 0, jPoint = 0;
   long iVertex = 0;
   
+  /*--- Reset the offset cache and index --- */
+  Offset_Cache_Index = 0;
+  Offset_Cache.clear();
+  
   if (fem_output){
     
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
@@ -1168,6 +1172,10 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
+        if (VolumeOutput_List.size() != Offset_Cache.size()){
+          SU2_MPI::Error("Number of volume output fields does not match the offset cache size.", CURRENT_FUNCTION);
+        }
+        
         jPoint++;
         
       }
@@ -1181,7 +1189,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
       /*--- Load the volume data into the Local_Data() array. --- */
       
       LoadVolumeData(config, geometry, solver, jPoint);
-      
+
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
           iVertex = geometry->node[iPoint]->GetVertex(iMarker);
@@ -1193,9 +1201,15 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
           }
         }
       }
+      
+      if (VolumeOutput_List.size() != Offset_Cache.size()){
+        SU2_MPI::Error("Number of volume output fields does not match the offset cache size.", CURRENT_FUNCTION);
+      }      
+      
       jPoint++;
     }
   }
+
 }
 
 void COutput::Postprocess_HistoryData(CConfig *config){
