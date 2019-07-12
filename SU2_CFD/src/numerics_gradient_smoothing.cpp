@@ -144,59 +144,12 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
-      if (nDim == 2) {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
-      }
-      else if (nDim == 3) {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
-      }
-
-      for (iVar = 0; iVar < nDim; iVar++) {
-        for (jVar = 0; jVar < bDim; jVar++) {
-          Aux_Mat[iVar][jVar] = 0.0;
-          for (kVar = 0; kVar < bDim; kVar++) {
-            Aux_Mat[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
-          }
-        }
-      }
-
       /*--- Assumming symmetry ---*/
       for (jNode = iNode; jNode < nNode; jNode++) {
-        if (nDim == 2) {
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
-        }
-        else if (nDim ==3) {
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
-        }
 
         for (iVar = 0; iVar < nDim; iVar++) {
           for (jVar = 0; jVar < nDim; jVar++) {
-            KAux_ab[iVar][jVar] = 0.0;
-            for (kVar = 0; kVar < bDim; kVar++) {
-              KAux_ab[iVar][jVar] += Weight * Aux_Mat[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
-            }
+            KAux_ab[iVar][jVar] = Weight * Jac_X * GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][jDim];
           }
         }
 
@@ -227,14 +180,14 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
         val_HiHj = Weight * Ni_Vec[iNode] * Ni_Vec[jNode];
-        element->Add_HiHj(val_HiHj,iNode, jNode);
+        element->Add_HiHj(val_HiHj, iNode, jNode);
       }
     }
 
   }
 
   /*--- contribution from Neumann boundary terms ---*/
-
+  /*
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 
@@ -261,6 +214,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     }
 
   }
+  */
 
   delete [] val_DHiHj;
 
