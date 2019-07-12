@@ -7645,7 +7645,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      if ((AoA_Counter <= Update_Alpha) && !AoA_FD_Change) Update_AoA = true;
       else Update_AoA = false;
     }
     
