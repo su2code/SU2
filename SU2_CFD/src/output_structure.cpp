@@ -18543,7 +18543,8 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
 
   nLocalPoint = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const unsigned short kind_marker = config->GetMarker_All_KindBC(iMarker);
+    if (kind_marker == INLET_FLOW || kind_marker == SUPERSONIC_INLET) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -18612,7 +18613,8 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
 
   su2double *Coords_Local; jPoint = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const unsigned short kind_marker = config->GetMarker_All_KindBC(iMarker);
+    if (kind_marker == INLET_FLOW || kind_marker == SUPERSONIC_INLET) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -18839,11 +18841,24 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
   for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
 
     /*--- Access the default data for this marker. ---*/
-
+    
+    const unsigned short kind_marker = config->GetMarker_All_KindBC(iMarker);
     string Marker_Tag   = Marker_Tags_InletFile[iMarker];
-    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
-    su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    su2double state_vars[2];
+    const su2double* flow_vars;
+    if (kind_marker == INLET_FLOW) {
+
+      state_vars[0] = config->GetInlet_Ttotal(Marker_Tag);
+      state_vars[1] = config->GetInlet_Ptotal(Marker_Tag);
+      flow_vars = config->GetInlet_FlowDir(Marker_Tag);
+
+    } else if (kind_marker == SUPERSONIC_INLET) {
+
+      state_vars[0] = config->GetInlet_Temperature(Marker_Tag);
+      state_vars[1] = config->GetInlet_Pressure(Marker_Tag);
+      flow_vars = config->GetInlet_Velocity(Marker_Tag);
+
+    }
 
     /*--- Header information for this marker. ---*/
 
@@ -18861,9 +18876,9 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
       for (iDim = 0; iDim < nDim; iDim++) {
         node_file << InletCoords[iDim][iPoint] << "\t";
       }
-      node_file << t_total << "\t" << p_total;
+      node_file << state_vars[0] << "\t" << state_vars[1];
       for (iDim = 0; iDim < nDim; iDim++) {
-        node_file << "\t" << flow_dir[iDim];
+        node_file << "\t" << flow_vars[iDim];
       }
       for (iVar = 0; iVar < nVar_Turb; iVar++) {
         node_file << "\t" << turb_val[iVar];

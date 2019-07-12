@@ -7865,33 +7865,6 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
   unsigned short P_position       = nDim+1;
   unsigned short FlowDir_position = nDim+2;
 
-  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
-
-  su2double norm = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    norm += pow(val_inlet[FlowDir_position + iDim], 2);
-  }
-  norm = sqrt(norm);
-
-  /*--- The tolerance here needs to be loose.  When adding a very
-   * small number (1e-10 or smaller) to a number close to 1.0, floating
-   * point roundoff errors can occur. ---*/
-
-  if (abs(norm - 1.0) > 1e-6) {
-    ostringstream error_msg;
-    error_msg << "ERROR: Found these values in columns ";
-    error_msg << FlowDir_position << " - ";
-    error_msg << FlowDir_position + nDim - 1 << endl;
-    error_msg << std::scientific;
-    error_msg << "  [" << val_inlet[FlowDir_position];
-    error_msg << ", " << val_inlet[FlowDir_position + 1];
-    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
-    error_msg << "]" << endl;
-    error_msg << "  These values should be components of a unit vector for direction," << endl;
-    error_msg << "  but their magnitude is: " << norm << endl;
-    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
-  }
-
   /*--- Store the values in our inlet data structures. ---*/
 
   Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
@@ -7922,7 +7895,8 @@ su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
   unsigned short P_position       = nDim+1;
   unsigned short FlowDir_position = nDim+2;
   
-  if (val_kind_marker == INLET_FLOW) {
+  if (val_kind_marker == INLET_FLOW ||
+      val_kind_marker == SUPERSONIC_INLET) {
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
@@ -7969,7 +7943,8 @@ su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
 
 void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  const unsigned short kind_marker = config->GetMarker_All_KindBC(iMarker);
+  if (kind_marker == INLET_FLOW) {
     
     string Marker_Tag   = config->GetMarker_All_TagBound(iMarker);
     su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
@@ -7981,6 +7956,20 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+    }
+
+  } else if (kind_marker == SUPERSONIC_INLET) {
+
+    string Marker_Tag   = config->GetMarker_All_TagBound(iMarker);
+    const su2double Temperature = config->GetInlet_Temperature(Marker_Tag);
+    const su2double Pressure    = config->GetInlet_Pressure(Marker_Tag);
+    const su2double* Vel        = config->GetInlet_Velocity(Marker_Tag);
+
+    for (unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = Temperature;
+      Inlet_Ptotal[iMarker][iVertex] = Pressure;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = Vel[iDim];
     }
     
   } else {
@@ -11001,33 +10990,6 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   su2double *Normal = new su2double[nDim];
   su2double *Velocity = new su2double[nDim];
   
-  /*--- Supersonic inlet flow: there are no outgoing characteristics,
-   so all flow variables can be imposed at the inlet.
-   First, retrieve the specified values for the primitive variables. ---*/
-  
-  Temperature = config->GetInlet_Temperature(Marker_Tag);
-  Pressure    = config->GetInlet_Pressure(Marker_Tag);
-  Vel         = config->GetInlet_Velocity(Marker_Tag);
-  
-  /*--- Non-dim. the inputs if necessary. ---*/
-  
-  Temperature /= config->GetTemperature_Ref();
-  Pressure    /= config->GetPressure_Ref();
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
-  
-  /*--- Density at the inlet from the gas law ---*/
-  
-  Density = Pressure/(Gas_Constant*Temperature);
-  
-  /*--- Compute the energy from the specified state ---*/
-
-  Velocity2 = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity2 += Velocity[iDim]*Velocity[iDim];
-  Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-  if (tkeNeeded) Energy += GetTke_Inf();
-  
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -11035,6 +10997,33 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     /*--- Allocate the value at the outlet ---*/
     
     V_inlet = GetCharacPrimVar(val_marker, iVertex);
+
+    /*--- Supersonic inlet flow: there are no outgoing characteristics,
+     so all flow variables can be imposed at the inlet.
+     First, retrieve the specified values for the primitive variables. ---*/
+    
+    Pressure    = Inlet_Ptotal[val_marker][iVertex];
+    Temperature = Inlet_Ttotal[val_marker][iVertex];
+    Vel         = Inlet_FlowDir[val_marker][iVertex];
+    
+    /*--- Non-dim. the inputs if necessary. ---*/
+    
+    Temperature /= config->GetTemperature_Ref();
+    Pressure    /= config->GetPressure_Ref();
+    for (iDim = 0; iDim < nDim; iDim++)
+      Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
+    
+    /*--- Density at the inlet from the gas law ---*/
+    
+    Density = Pressure/(Gas_Constant*Temperature);
+    
+    /*--- Compute the energy from the specified state ---*/
+
+    Velocity2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Velocity2 += Velocity[iDim]*Velocity[iDim];
+    Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
+    if (tkeNeeded) Energy += GetTke_Inf();
     
     /*--- Primitive variables, using the derived quantities ---*/
     
