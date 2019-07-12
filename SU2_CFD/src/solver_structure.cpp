@@ -1888,8 +1888,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_VARS:
-      COUNT_PER_POINT  = nPrimVar;
+    case PRESSURE_VAR:
+      COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2025,9 +2025,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MASS_FLUX:
             bufDSend[buf_offset] = node[iPoint]->GetMassFlux();
           break;
-          case PRIMITIVE_VARS:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = node[iPoint]->GetPrimitive(iVar);
+          case PRESSURE_VAR:
+            bufDSend[buf_offset] = node[iPoint]->GetPrimitive(0);
           break;  
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2185,9 +2184,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MASS_FLUX:
             node[iPoint]->SetMassFlux(bufDRecv[buf_offset]);
           break;
-          case PRIMITIVE_VARS:
-            for (iVar = 0; iVar < nPrimVar; iVar++) 
-              node[iPoint]->SetPrimitive(iVar, bufDRecv[buf_offset+iVar]);
+          case PRESSURE_VAR:
+            node[iPoint]->SetPressure_val(bufDRecv[buf_offset]);
           break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

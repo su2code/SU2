@@ -533,6 +533,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
+      //Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
       Jacobian.AddVal2Diag(iPoint, Delta);
      }
     else {
@@ -646,7 +647,16 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
      int ranknp = SU2_MPI::GetRank();
 
    Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;Global_Delta_Time = 1.E6;
-   
+   /*bool write = (Iteration % 1000000 == 0);
+  ofstream TimeStepFile;
+  stringstream iter;
+  stringstream fname;
+  if (write) {
+	  iter<<Iteration;
+	  string iters = iter.str();
+	  fname<<"TimeStep/TimeStepP"<<iters<<".txt";
+	  TimeStepFile.open(fname.str(),ios::out);
+  }*/
    
    /*---------Compute eigen value-------------*/
    
@@ -691,23 +701,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
     Lambda = abs(Poisson_Coeff*Area);
     
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
-    
-    /*if (ranknp == 0) {
-		cout<<iPoint<<"\t"<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
-		cout<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(0)<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(1);
-		cout<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(0)<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff_nb(1);
-		cout<<"\t"<<geometry->node[iPoint]->GetVolume()<<endl;
-		
-		cout<<jPoint<<"\t"<<geometry->node[jPoint]->GetCoord(0)<<"\t"<<geometry->node[jPoint]->GetCoord(1)<<"\t";
-		cout<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(0)<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(1);
-		cout<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(0)<<"\t"<<solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff_nb(1);
-		cout<<"\t"<<geometry->node[jPoint]->GetVolume()<<endl;
-		
-		cout<<Poisson_Coeff<<"\t"<<Area<<endl;
-		cout<<endl;
-	}*/
-    
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);    
    }
     /*--- Loop boundary edges ---*/
    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -746,7 +740,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
 	if (Vol != 0.0) {
 		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
-				
+		//if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Vol<<endl;
 		/*--- Min-Max-Logic ---*/
 		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
 		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
@@ -762,6 +756,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
    }
    
    delete [] Normal;
+   //if (write) TimeStepFile.close();
 
 }
 

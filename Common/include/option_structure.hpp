@@ -2013,7 +2013,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MASS_FLUX            = 27,  /*!< \brief Mass flux in a CV communication. */
   MOM_COEFF		  	   = 28,  /*!< \brief Momentum eq coefficient communication. */
-  PRIMITIVE_VARS       = 29   /*!< \brief Primitive variable communication. */
+  PRESSURE_VAR	       = 29   /*!< \brief Primitive variable communication. */
 };
 
 /*!
