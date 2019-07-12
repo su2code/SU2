@@ -152,7 +152,7 @@ private:
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   SolidBoundary,                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  PeriodicBoundary;                      /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
+  PeriodicBoundary;                   /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
   long *Vertex;                       /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
   su2double *Coord,                   /*!< \brief vector with the coordinates of the node. */
   *Coord_Old,                         /*!< \brief Old coordinates vector for geometry smoothing. */

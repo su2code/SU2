@@ -1042,14 +1042,12 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
            on the other marker in the periodic pair. ---*/
           
           iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          
+
           /*--- If we have not visited this point last, increment our
            number of points that must be sent to a particular proc. ---*/
           
-          if ((nPoint_Flag[iRank] != (int)iPoint)) {
-            nPoint_Flag[iRank]    = (int)iPoint;
-            nPoint_Send_All[iRank+1] += 1;
-          }
+          nPoint_Flag[iRank]        = (int)iPoint;
+          nPoint_Send_All[iRank+1] += 1;
           
         }
       }
@@ -1215,7 +1213,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   /*--- Allocate arrays for receiving the periodic point index and marker
    index to the recv rank so that it can store the local values. ---*/
-  
+
   unsigned long *idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]*nPackets];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++)
     idRecv[iRecv] = 0;

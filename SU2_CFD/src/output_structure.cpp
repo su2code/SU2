@@ -12890,6 +12890,57 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_Momentum_z");
         Variable_Names.push_back("Error_Energy");
       }
+      
+      if (solver[FLOW_SOL]->VerificationSolution->ExactPrimitiveGradientKnown()) {
+        nVar_Par += 3*nVar_Consv_Par*nDim;
+        Variable_Names.push_back("GradT_x");
+        Variable_Names.push_back("GradT_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("GradT_z");
+
+        Variable_Names.push_back("GradVelx_x");
+        Variable_Names.push_back("GradVelx_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVelx_z");
+
+        Variable_Names.push_back("GradVely_x");
+        Variable_Names.push_back("GradVely_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("GradVely_z");
+
+        Variable_Names.push_back("GradP_x");
+        Variable_Names.push_back("GradP_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("GradP_z");
+
+        Variable_Names.push_back("Verification_GradT_x");
+        Variable_Names.push_back("Verification_GradT_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_GradT_z");
+
+        Variable_Names.push_back("Verification_GradVelx_x");
+        Variable_Names.push_back("Verification_GradVelx_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_GradVelx_z");
+
+        Variable_Names.push_back("Verification_GradVely_x");
+        Variable_Names.push_back("Verification_GradVely_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_GradVely_z");
+
+        Variable_Names.push_back("Verification_GradP_x");
+        Variable_Names.push_back("Verification_GradP_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Verification_GradP_z");
+
+        Variable_Names.push_back("Error_GradT_x");
+        Variable_Names.push_back("Error_GradT_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_GradT_z");
+
+        Variable_Names.push_back("Error_GradVelx_x");
+        Variable_Names.push_back("Error_GradVelx_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_GradVelx_z");
+
+        Variable_Names.push_back("Error_GradVely_x");
+        Variable_Names.push_back("Error_GradVely_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_GradVely_z");
+
+        Variable_Names.push_back("Error_GradP_x");
+        Variable_Names.push_back("Error_GradP_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Error_GradP_z");
+      }
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13149,31 +13200,77 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (solver[FLOW_SOL]->VerificationSolution) {
           if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
-          
+            
             /*--- Get the physical time if necessary. ---*/
             su2double time = 0.0;
             if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
-          
+            
             /* Set the pointers to the coordinates and solution of this DOF. */
             const su2double *coor = geometry->node[iPoint]->GetCoord();
             su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
             su2double mmsSol[5]   = {0.0,0.0,0.0,0.0,0.0};
             su2double error[5]    = {0.0,0.0,0.0,0.0,0.0};
-          
+            
             /* Get the verification solution. */
             solver[FLOW_SOL]->VerificationSolution->GetSolution(coor, time, mmsSol);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = mmsSol[jVar];
               iVar++;
             }
-          
+            
             /* Get local error from the verification solution class. */
             solver[FLOW_SOL]->VerificationSolution->GetLocalError(coor, time, solDOF, error);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = error[jVar];
               iVar++;
             }
-
+            
+          }
+          
+          if (solver[FLOW_SOL]->VerificationSolution->ExactPrimitiveGradientKnown()) {
+            
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+            
+            /* Set the pointers to the coordinates and solution of this DOF. */
+            const su2double *coor = geometry->node[iPoint]->GetCoord();
+            su2double **gradient  = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+            
+            /* First, write the primitive gradients from the solution. */
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              for (iDim = 0; iDim < nDim; iDim ++){
+                Local_Data[jPoint][iVar] = gradient[jVar][iDim];
+                iVar++;
+              }
+            }
+            
+            /* Now compute the gradient error and write the difference and
+             the verification gradients to the output. */
+            su2double **mmsGrad = new su2double* [nVar_First];
+            su2double **error   = new su2double* [nVar_First];
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              mmsGrad[jVar] = new su2double [nDim];
+              error[jVar]   = new su2double [nDim];
+            }
+            
+            /* Get the verification primitive gradients. */
+            solver[FLOW_SOL]->VerificationSolution->GetPrimitiveGradient(coor, time, mmsGrad);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              for (iDim = 0; iDim < nDim; iDim ++){
+                Local_Data[jPoint][iVar] = mmsGrad[jVar][iDim];
+                iVar++;
+              }
+            }
+            
+            /* Get local gradient error from the verification solution class. */
+            solver[FLOW_SOL]->VerificationSolution->GetPrimitiveGradientLocalError(coor, time, mmsGrad, error);
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              for (iDim = 0; iDim < nDim; iDim ++){
+                Local_Data[jPoint][iVar] = error[jVar][iDim];
+                iVar++;
+              }
+            }
           }
         }
         
@@ -21501,7 +21598,7 @@ void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometr
       /* Store the global connectivities. */
       const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
       for(unsigned short k=0; k<kk; ++k, ++kNode)
-        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
+        Conn_SubElem[kNode] = (int)(connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1);
     }
 
     /* Check if the second sub-element is of the required type. */
@@ -21515,7 +21612,7 @@ void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometr
       /* Store the global connectivities. */
       const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
       for(unsigned short k=0; k<kk; ++k, ++kNode)
-        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
+        Conn_SubElem[kNode] = (int)(connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1);
     }
   }
 
@@ -21637,7 +21734,7 @@ void COutput::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, 
             /* Store the global connectivities. */
             const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;
             for(unsigned short k=0; k<kk; ++k, ++kNode)
-              Conn_SubElem[kNode] = globalID[surfElem[i].DOFsSolFace[connSubFaces[k]]];
+              Conn_SubElem[kNode] = (int)globalID[surfElem[i].DOFsSolFace[connSubFaces[k]]];
           }
         }
       }
@@ -22252,11 +22349,11 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
 
   /* Modify the locally stored surface connectivities. */
   for(unsigned long i=0; i<(nParallel_Line*N_POINTS_LINE); ++i)
-    Conn_BoundLine_Par[i] = mapGlobalVol2Surf.find(Conn_BoundLine_Par[i])->second;
+    Conn_BoundLine_Par[i] = (int)mapGlobalVol2Surf.find(Conn_BoundLine_Par[i])->second;
 
   for(unsigned long i=0; i<(nParallel_BoundTria*N_POINTS_TRIANGLE); ++i)
-    Conn_BoundTria_Par[i] = mapGlobalVol2Surf.find(Conn_BoundTria_Par[i])->second;
+    Conn_BoundTria_Par[i] = (int)mapGlobalVol2Surf.find(Conn_BoundTria_Par[i])->second;
 
   for(unsigned long i=0; i<(nParallel_BoundQuad*N_POINTS_QUADRILATERAL); ++i)
-    Conn_BoundQuad_Par[i] = mapGlobalVol2Surf.find(Conn_BoundQuad_Par[i])->second;
+    Conn_BoundQuad_Par[i] = (int)mapGlobalVol2Surf.find(Conn_BoundQuad_Par[i])->second;
 }

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -2038,6 +2038,7 @@ enum ENUM_VERIFICATION_SOLUTIONS {
   MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
   MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
   MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  MMS_NS_PERIODIC          = 67,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a quad with periodic BC's. */
   USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
 };
 static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
@@ -2049,6 +2050,7 @@ static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map 
 ("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
 ("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
 ("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
+("MMS_NS_PERIODIC",          MMS_NS_PERIODIC)
 ("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
 ("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
 ("MMS_INC_EULER",            MMS_INC_EULER)

@@ -105,6 +105,7 @@ lib_sources = \
   ../include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp \
   ../include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp \
   ../include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp \
+  ../include/toolboxes/MMS/CMMSNSPeriodicSolution.hpp \
   ../include/toolboxes/MMS/CNSUnitQuadSolution.hpp \
   ../include/toolboxes/MMS/CRinglebSolution.hpp \
   ../include/toolboxes/MMS/CTGVSolution.hpp \
@@ -147,6 +148,7 @@ lib_sources = \
   ../src/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.cpp \
   ../src/toolboxes/MMS/CMMSNSUnitQuadSolution.cpp \
   ../src/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.cpp \
+  ../src/toolboxes/MMS/CMMSNSPeriodicSolution.cpp \
   ../src/toolboxes/MMS/CNSUnitQuadSolution.cpp \
   ../src/toolboxes/MMS/CRinglebSolution.cpp \
   ../src/toolboxes/MMS/CTGVSolution.cpp \

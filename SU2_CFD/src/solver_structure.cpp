@@ -44,6 +44,7 @@
 #include "../../Common/include/toolboxes/MMS/CMMSNSTwoHalfSpheresSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.hpp"
+#include "../../Common/include/toolboxes/MMS/CMMSNSPeriodicSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CNSUnitQuadSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
@@ -5330,6 +5331,8 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_UNIT_QUAD_WALL_BC:
       VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
+    case MMS_NS_PERIODIC:
+      VerificationSolution = new CMMSNSPeriodicSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_TWO_HALF_CIRCLES:
       VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_TWO_HALF_SPHERES:

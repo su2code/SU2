@@ -69,6 +69,7 @@
 		400CEC2C21FA80180019B790 /* driver_direct_singlezone.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2A21FA80180019B790 /* driver_direct_singlezone.cpp */; };
 		400CEC2E21FA81A10019B790 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */; };
 		E90D35F7203F9C5800A3290D /* fluid_model_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */; };
+		E91300C822CC608500247B88 /* CMMSNSPeriodicSolution.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E91300C722CC608500247B88 /* CMMSNSPeriodicSolution.cpp */; };
 		E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */; };
 		E9225F771FCBC36D002F3682 /* variable_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F751FCBC36D002F3682 /* variable_adjoint_elasticity.cpp */; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
@@ -230,6 +231,8 @@
 		400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
 		400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
 		E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fluid_model_inc.cpp; path = ../../SU2_CFD/src/fluid_model_inc.cpp; sourceTree = "<group>"; };
+		E91300C722CC608500247B88 /* CMMSNSPeriodicSolution.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMMSNSPeriodicSolution.cpp; path = ../../../Common/src/toolboxes/MMS/CMMSNSPeriodicSolution.cpp; sourceTree = "<group>"; };
+		E91300C922CC60A300247B88 /* CMMSNSPeriodicSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMMSNSPeriodicSolution.hpp; path = ../../Common/include/toolboxes/MMS/CMMSNSPeriodicSolution.hpp; sourceTree = "<group>"; };
 		E91CAD081B8C117A00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
 		E91CAD091B8C117A00EE3FCC /* mesh_NACA0012_inv.su2 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mesh_NACA0012_inv.su2; sourceTree = "<group>"; };
 		E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_elasticity.cpp; path = ../../SU2_CFD/src/solver_adjoint_elasticity.cpp; sourceTree = "<group>"; };
@@ -473,6 +476,7 @@
 				E9C2835722A701B5007B4E59 /* CInviscidVortexSolution.hpp */,
 				E9C2835222A701B5007B4E59 /* CMMSIncEulerSolution.hpp */,
 				E9C2835C22A701B6007B4E59 /* CMMSIncNSSolution.hpp */,
+				E91300C922CC60A300247B88 /* CMMSNSPeriodicSolution.hpp */,
 				E9C2835122A701B5007B4E59 /* CMMSNSTwoHalfCirclesSolution.hpp */,
 				E9C2835022A701B5007B4E59 /* CMMSNSTwoHalfSpheresSolution.hpp */,
 				E9C2835322A701B5007B4E59 /* CMMSNSUnitQuadSolution.hpp */,
@@ -667,6 +671,7 @@
 				E9C2833B22A70006007B4E59 /* CInviscidVortexSolution.cpp */,
 				E9C2833D22A70006007B4E59 /* CMMSIncEulerSolution.cpp */,
 				E9C2833422A70006007B4E59 /* CMMSIncNSSolution.cpp */,
+				E91300C722CC608500247B88 /* CMMSNSPeriodicSolution.cpp */,
 				E9C2833E22A70006007B4E59 /* CMMSNSTwoHalfCirclesSolution.cpp */,
 				E9C2833A22A70006007B4E59 /* CMMSNSTwoHalfSpheresSolution.cpp */,
 				E9C2833C22A70006007B4E59 /* CMMSNSUnitQuadSolution.cpp */,
@@ -766,6 +771,7 @@
 				05F8F2682008A1C8000FEA01 /* python_wrapper_structure.cpp in Sources */,
 				E9C2834D22A70006007B4E59 /* CVerificationSolution.cpp in Sources */,
 				E9C2834922A70006007B4E59 /* CMMSNSUnitQuadSolution.cpp in Sources */,
+				E91300C822CC608500247B88 /* CMMSNSPeriodicSolution.cpp in Sources */,
 				E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */,
 				05E6DC0117EB62A100FA1F7E /* definition_structure.cpp in Sources */,
 				05E6DC0317EB62A100FA1F7E /* integration_structure.cpp in Sources */,

@@ -100,6 +100,13 @@ void CVerificationSolution::GetSolution(const su2double *val_coords,
   SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
 }
 
+void CVerificationSolution::GetPrimitiveGradient(const su2double *val_coords,
+                                                 const su2double val_t,
+                                                 su2double       **val_gradient) {
+  
+  SU2_MPI::Error("Function must be overwritten by the derived class", CURRENT_FUNCTION);
+}
+
 void CVerificationSolution::GetInitialCondition(const su2double *val_coords,
                                                 su2double       *val_solution) {
   
@@ -128,6 +135,8 @@ bool CVerificationSolution::IsManufacturedSolution(void) {return false;}
 
 bool CVerificationSolution::ExactSolutionKnown(void) {return true;}
 
+bool CVerificationSolution::ExactPrimitiveGradientKnown(void) {return false;}
+
 void CVerificationSolution::GetLocalError(const su2double *val_coords,
                                           const su2double val_t,
                                           const su2double *val_solution,
@@ -143,6 +152,25 @@ void CVerificationSolution::GetLocalError(const su2double *val_coords,
   
   for (unsigned short iVar=0; iVar<nVar; ++iVar)
     val_error[iVar] = val_solution[iVar] - val_error[iVar];
+  
+}
+
+void CVerificationSolution::GetPrimitiveGradientLocalError(const su2double *val_coords,
+                                                           const su2double val_t,
+                                                           su2double       **val_gradient,
+                                                           su2double       **val_error) {
+  
+  /*--- Get the value of the gradient solution first.
+   Use val_error to store this solution. ---*/
+  
+  GetPrimitiveGradient(val_coords, val_t, val_error);
+  
+  /*--- Compute the local error as the difference between the current
+   primitive gradient and the analytic primitive gradient. ---*/
+  
+  for (unsigned short iVar=0; iVar<nVar; ++iVar)
+    for (unsigned short iDim=0; iDim<nDim; ++iDim)
+      val_error[iVar][iDim] = val_gradient[iVar][iDim] - val_error[iVar][iDim];
   
 }
 

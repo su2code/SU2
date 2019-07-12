@@ -127,6 +127,16 @@ public:
                                 su2double       *val_source);
 
   /*!
+   * \brief Get the exact primitive gradients at the current position and time.
+   * \param[in] val_coords       - Cartesian coordinates of the current position.
+   * \param[in] val_t            - Current physical time.
+   * \param[in] val_gradient     - Array[nVar][nDim] where the exact gradients are stored.
+   */
+  virtual void GetPrimitiveGradient(const su2double *val_coords,
+                                    const su2double val_t,
+                                    su2double       **val_gradient);
+  
+  /*!
    * \brief Whether or not this verification solution is a manufactured solution.
    * \return  - False as default value. Overwrite this function for a
                 manufactured solution.
@@ -141,6 +151,13 @@ public:
   virtual bool ExactSolutionKnown(void);
   
   /*!
+   * \brief Whether or not the exact primitive gradients are known for this verification solution.
+   * \return  - False as default value. Overwrite this function if the exact
+   solution is not known.
+   */
+  virtual bool ExactPrimitiveGradientKnown(void);
+  
+  /*!
    * \brief Get the local error defined as the local solution minus the verification solution.
    * \param[in]  val_coords   - Cartesian coordinates of the current position.
    * \param[in]  val_solution - Array where the exact solution is stored.
@@ -148,8 +165,19 @@ public:
    */
   void GetLocalError(const su2double *val_coords,
                      const su2double val_t,
-                     const su2double *GetLocalErrorval_solution,
+                     const su2double *val_solution,
                      su2double       *val_error);
+  
+  /*!
+   * \brief Get the local error defined as the local primitive gradients minus the verification primitive gradients.
+   * \param[in]  val_coords   - Cartesian coordinates of the current position.
+   * \param[in]  val_gradient - Array where the exact primitive gradients are stored.
+   * \param[out] val_error    - Array where the local error is stored.
+   */
+  void GetPrimitiveGradientLocalError(const su2double *val_coords,
+                                      const su2double val_t,
+                                      su2double       **val_gradient,
+                                      su2double       **val_error);
 
   /*!
    * \brief Set the global RMS error for verification cases.
