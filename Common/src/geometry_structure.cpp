@@ -9705,7 +9705,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
       vector<cgsize_t> nPoinPerElem(nElems[s],0);
       vector<cgsize_t> elemGlobalID(nElems[s],0);
 
-      vector<bool> isMixed(nElems[s],false);
+      bool isMixed = false;
       
       /*--- Determine the size of the vector needed to read the connectivity
        data from the CGNS file. ---*/
@@ -9759,18 +9759,21 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
       
       /*--- Loop through all of the elements in this section to get more
        information and to decide whether it has internal elements. ---*/
-      
+
+      if (elemType == MIXED) {
+        isMixed = true;
+      }
+
       unsigned long counter = 0;
       for (iElem = 0; iElem < nElems[s]; iElem++) {
         
         /*--- If we have a mixed element section, we need to check the elem
          type one by one. Set the flag to true if mixed. ---*/
         
-        if (elemType == MIXED) {
+        if (isMixed) {
           elmt_type = ElementType_t(connElemCGNS[counter]);
           npe = connOffsetCGNS[iElem+1]-connOffsetCGNS[iElem]-1;
           counter++; for (int jj = 0; jj < npe; jj++) counter++;
-          isMixed[iElem] = true;
         } else {
           elmt_type = elemType;
         }
@@ -9864,7 +9867,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
          the CGNS 1-based convention. We may also need to remove the first
          entry if this is a mixed element section. ---*/
         
-        if (isMixed[iElem]) counterCGNS++;
+        if (isMixed) counterCGNS++;
         for (iNode = 0; iNode < (unsigned long)nPoinPerElem[iElem]; iNode++) {
           connElemTemp[nn] = connElemCGNS[counterCGNS + iNode] - 1; nn++;
         }
@@ -9875,7 +9878,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
       /*--- Force free the memory for the conn from the CGNS file. ---*/
       
       vector<cgsize_t>().swap(connElemCGNS);
-      vector<bool>().swap(isMixed);
       
       /*--- We now have the connectivity stored in linearly partitioned
        chunks. We need to loop through and decide how many elements we
@@ -10108,8 +10110,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
         vector<unsigned short> nPoinPerElem(nElems[s],0);
         
         vector<unsigned long> elemGlobalID(nElems[s],0);
-        
-        vector<bool> isMixed(nElems[s],false);
         
         /*--- First increment the markers ---*/
         
