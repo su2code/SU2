@@ -555,6 +555,7 @@ private:
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
+  su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -4026,6 +4027,12 @@ public:
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Restart_Frequency(void);
+  
+  /*!
+   * \brief Get the relaxation factor for iterative linear smoothers.
+   * \return Relaxation factor.
+   */
+  su2double GetLinear_Solver_Smoother_Relaxation(void) const;
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
