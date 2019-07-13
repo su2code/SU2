@@ -424,6 +424,40 @@ ScalarType *CSysVector<ScalarType>::GetBlock(unsigned long val_ipoint) {
 }
 
 template<class ScalarType>
+template<class T>
+void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
+  
+  /*--- This is a method and not the overload of an operator to make sure who
+   calls it knows the consequence to the derivative information (lost) ---*/
+
+  /*--- check if self-assignment, otherwise perform deep copy ---*/
+  if ((const void*)this == (const void*)&other) return;
+
+  /*--- determine if (re-)allocation is needed ---*/
+  if (nElm != other.GetLocSize() && vec_val != NULL) {
+    delete [] vec_val;
+    vec_val = NULL;
+  }
+
+  /*--- copy ---*/
+  nElm = other.GetLocSize();
+  nElmDomain = other.GetNElmDomain();
+  nBlk = other.GetNBlk();
+  nBlkDomain = other.GetNBlkDomain();
+  nVar = other.GetNVar();
+
+  if (vec_val == NULL)
+    vec_val = new ScalarType[nElm];
+
+  for (unsigned long i = 0; i < nElm; i++)
+    vec_val[i] = SU2_TYPE::GetValue(other[i]);
+
+#ifdef HAVE_MPI
+  nElmGlobal = other.GetSize();
+#endif
+}
+
+template<class ScalarType>
 ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType> & v) {
   
   /*--- check for consistent sizes ---*/
@@ -450,10 +484,13 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
 template CSysVector<su2double> operator*(const su2double&, const CSysVector<su2double>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
 template su2double dotProd<su2double>(const CSysVector<su2double> & u, const CSysVector<su2double> & v);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
 template CSysVector<passivedouble> operator*(const passivedouble&, const CSysVector<passivedouble>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
+template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
 template passivedouble dotProd<passivedouble>(const CSysVector<passivedouble> & u, const CSysVector<passivedouble> & v);
 #endif
