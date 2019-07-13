@@ -54,6 +54,8 @@
 #include "matrix_structure.hpp"
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
+#include "linear_algebra/CMatrixVectorProduct.hpp"
+#include "linear_algebra/CPreconditioner.hpp"
 
 using namespace std;
 
@@ -85,6 +87,7 @@ private:
   bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
   bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
+  bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
   VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
   VectorType A_x;    /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
@@ -111,7 +114,10 @@ private:
    * so, feel free to delete this and replace it as needed with the
    * appropriate global function
    */
-  ScalarType Sign(const ScalarType & x, const ScalarType & y) const;
+  inline ScalarType Sign(const ScalarType & x, const ScalarType & y) const {
+    if (y == 0.0) return 0.0;
+    return fabs(x) * (y < 0.0 ? -1.0 : 1.0);
+  }
   
   /*!
    * \brief applys a Givens rotation to a 2-vector
@@ -211,7 +217,7 @@ public:
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
@@ -226,12 +232,12 @@ public:
   /*!
    * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
+   * \param[in] residual - norm of final residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
    */
@@ -242,18 +248,34 @@ public:
 	/*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
-   * \param[in, out] x - on entry the intial guess, on exit the solution
+   * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
-   * \param[in] residual
+   * \param[in] residual - norm of final residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                   PrecondType & precond, ScalarType tol, unsigned long m,
                                   ScalarType *residual, bool monitoring, CConfig *config);
+  
+  /*!
+   * \brief Generic smoother (modified Richardson iteration with preconditioner)
+   * \param[in] b - the right hand size vector
+   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] precond - object that defines preconditioner
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum number of iterations
+   * \param[in] residual - norm of final residual
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
+                                   PrecondType & precond, ScalarType tol, unsigned long m,
+                                   ScalarType *residual, bool monitoring, CConfig *config);
   
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -281,8 +303,6 @@ public:
    * \brief Get the final residual.
    * \return The residual at the end of Solve
    */
-  ScalarType GetResidual(void) const;
+  inline ScalarType GetResidual(void) const { return Residual; }
 
 };
-
-#include "linear_solvers_structure.inl"
