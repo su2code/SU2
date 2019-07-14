@@ -1,5 +1,10 @@
 #pragma once
-#include "../../../Common/include/geometry_structure.hpp"
+
+#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
+
+class CGeometry;
+class CConfig;
 
 class CParallelDataSorter{
 protected:

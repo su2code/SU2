@@ -50,6 +50,8 @@
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
 
 COutput::COutput(CConfig *config) {
   

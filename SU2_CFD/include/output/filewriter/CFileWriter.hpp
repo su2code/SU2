@@ -1,17 +1,24 @@
 #pragma once
-#include "../../../Common/include/geometry_structure.hpp"
-#include "CParallelDataSorter.hpp"
+#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
 #include <sys/stat.h>
+#include <vector>
+#include <string>
+#include <fstream>
+
+#include "../../output/filewriter/CParallelDataSorter.hpp"
+
+using namespace std;
 
 class CFileWriter{
 protected:
 
-  vector<string> fieldnames;
+  std::vector<std::string> fieldnames;
   unsigned short nDim;
   
   int rank, size;
   
-  string file_ext;
+  std::string file_ext;
   
   su2double StartTime, StopTime, UsedTime, Bandwidth, file_size;
   
@@ -21,7 +28,7 @@ public:
    * \param fields
    * \param nDim
    */  
-  CFileWriter(vector<string> fields, unsigned short nDim);
+  CFileWriter(std::vector<std::string> fields, unsigned short nDim);
   
   /*!
    * \brief ~CFileWriter
@@ -33,7 +40,7 @@ public:
    * \param filename
    * \param data_sorter
    */
-  virtual void Write_Data(string filename, CParallelDataSorter* data_sorter){}
+  virtual void Write_Data(std::string filename, CParallelDataSorter* data_sorter){}
   
   /*!
    * \brief Get_Bandwidth

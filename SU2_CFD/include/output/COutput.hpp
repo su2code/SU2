@@ -40,28 +40,19 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 
-#ifdef HAVE_CGNS
-  #include "cgnslib.h"
-#endif
-#ifdef HAVE_TECIO
-  #include "TECIO.h"
-#endif
 #include <fstream>
 #include <cmath>
 #include <time.h>
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <vector>
 
-#include "../solver_structure.hpp"
-#include "../integration_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
-#include "../../../Common/include/fem_standard_element.hpp"
-#include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
+class CGeometry;
+class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
 

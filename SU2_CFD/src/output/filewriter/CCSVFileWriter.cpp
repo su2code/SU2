@@ -1,4 +1,5 @@
 #include "../../../include/output/filewriter/CCSVFileWriter.hpp"
+#include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
 CCSVFileWriter::CCSVFileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){

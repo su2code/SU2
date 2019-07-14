@@ -37,6 +37,9 @@
 
 #include "../../include/output/COutputLegacy.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 COutputLegacy::COutputLegacy(CConfig *config) {
 
   rank = SU2_MPI::GetRank();

@@ -1,8 +1,5 @@
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
-
-
-
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){
 

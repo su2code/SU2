@@ -37,6 +37,9 @@
 
 #include "../../include/output/CFlowIncOutput.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 CFlowIncOutput::CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
 
   nDim = geometry->GetnDim();

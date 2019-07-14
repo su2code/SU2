@@ -37,6 +37,9 @@
 
 #include "../../include/output/CAdjFlowIncOutput.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
   cont_adj = config->GetContinuous_Adjoint();
