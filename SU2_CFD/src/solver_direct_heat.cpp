@@ -130,8 +130,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation) MG level: " << iMesh << "." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }

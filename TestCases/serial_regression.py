@@ -1052,7 +1052,7 @@ def main():
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.new_output= True
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
+    statbeam3d.test_vals = [-8.498245, -8.230816, -8.123810, 64095.0] #last 4 columns
     statbeam3d.su2_exec  = "SU2_CFD"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001
@@ -1095,16 +1095,16 @@ def main():
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)    
 
-    # # FSI, 2D airfoil with RBF interpolation
-    # airfoilRBF           = TestCase('airfoil_fsi_rbf')
-    # airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
-    # airfoilRBF.cfg_file  = "config.cfg"
-    # airfoilRBF.test_iter = 50
-    # airfoilRBF.test_vals = [-8.000964, -2.600088, 0.276433, 0.000824] #last 4 columns
-    # airfoilRBF.su2_exec  = "SU2_CFD"
-    # airfoilRBF.timeout   = 1600
-    # airfoilRBF.tol       = 0.00001
-    # test_list.append(airfoilRBF)
+    # FSI, 2D airfoil with RBF interpolation
+    airfoilRBF           = TestCase('airfoil_fsi_rbf')
+    airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
+    airfoilRBF.cfg_file  = "config.cfg"
+    airfoilRBF.test_iter = 29
+    airfoilRBF.test_vals = [-13.228126, -3.738614, -11.639760, 1404500.0] #last 4 columns
+    airfoilRBF.su2_exec  = "SU2_CFD"
+    airfoilRBF.timeout   = 1600
+    airfoilRBF.tol       = 0.00001
+    test_list.append(airfoilRBF)
    
     # ##########################
     # ### Zonal multiphysics ###

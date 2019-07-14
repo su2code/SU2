@@ -987,8 +987,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -3315,8 +3314,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
