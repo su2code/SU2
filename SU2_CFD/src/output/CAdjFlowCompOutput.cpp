@@ -37,6 +37,9 @@
 
 #include "../../include/output/CAdjFlowOutput.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
   nDim = geometry->GetnDim();

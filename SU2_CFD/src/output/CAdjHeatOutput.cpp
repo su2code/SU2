@@ -37,6 +37,9 @@
 
 #include "../../include/output/CAdjHeatOutput.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 CAdjHeatOutput::CAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
   nDim = geometry->GetnDim();

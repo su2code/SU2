@@ -37,6 +37,9 @@
 
 #include "../../include/output/CElasticityOutput.hpp"
 
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
 CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.

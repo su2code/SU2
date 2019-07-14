@@ -40,6 +40,8 @@
 
 #include "CFlowOutput.hpp"
 
+class CVariable;
+
 /*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
  *  \author R. Sanchez, T. Albring.

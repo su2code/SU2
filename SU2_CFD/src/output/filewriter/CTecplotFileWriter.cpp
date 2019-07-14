@@ -1,6 +1,5 @@
 #include "../../../include/output/filewriter/CTecplotFileWriter.hpp"
 
-
 CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
   CFileWriter(fields, nDim){
 

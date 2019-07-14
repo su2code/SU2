@@ -36,6 +36,7 @@
  */
 
 #include "../../include/output/CMeshOutput.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
 
 CMeshOutput::CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 

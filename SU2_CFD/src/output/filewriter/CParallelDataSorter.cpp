@@ -1,5 +1,4 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
 
 CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
   
