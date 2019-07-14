@@ -1,5 +1,5 @@
 /*!
- * \file variable_direct_mean_inc.cpp
+ * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
@@ -35,12 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
 
 CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
-  
+
   /*--- Array initialization ---*/
-  
+
   Primitive          = NULL;
   Gradient_Primitive = NULL;
   Limiter_Primitive  = NULL;
@@ -52,17 +52,17 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
 
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
 
   Solution_BGS_k = NULL;
- 
+
 }
 
-CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
+                                     unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
+                                     CVariable(val_nDim, val_nvar, config) {
+
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-  
+
   bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                        (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
@@ -71,49 +71,47 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
-  
+
   Primitive          = NULL;
   Gradient_Primitive = NULL;
   Limiter_Primitive  = NULL;
 
   Grad_AuxVar = NULL;
-  
+
   nPrimVar     = 0;
   nPrimVarGrad = 0;
-  
+
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
 
-  Undivided_Laplacian = NULL;
-
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  
+
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
 
   /*--- Allocate residual structures ---*/
-  
+
   Res_TruncError = new su2double [nVar];
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Res_TruncError[iVar] = 0.0;
   }
-  
+
   /*--- Only for residual smoothing (multigrid) ---*/
-  
+
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
+
   if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
-  
+
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-  
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
     Undivided_Laplacian = new su2double [nVar];
   }
-  
+
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
@@ -124,14 +122,14 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
-  
+
   Solution_Max = new su2double [nPrimVarGrad];
   Solution_Min = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Solution_Max[iVar] = 0.0;
     Solution_Min[iVar] = 0.0;
   }
-  
+
   /*--- Solution and old solution initialization ---*/
 
   Solution[0] = val_pressure;
@@ -144,7 +142,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Solution_Old[nDim+1] = val_temperature;
 
   /*--- Allocate and initialize solution for dual time strategy ---*/
-  
+
   if (dual_time) {
     Solution_time_n[0]  =  val_pressure;
     Solution_time_n1[0] =  val_pressure;
@@ -157,13 +155,13 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   }
 
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
-  
+
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
   /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta)
    * We need P, and rho for running the adjoint problem ---*/
-  
+
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new su2double [nDim];
@@ -188,9 +186,11 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 
 }
 
-CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
+                                     CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-  
+
   bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous      = config->GetViscous();
@@ -199,50 +199,48 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
-  
+
   Primitive          = NULL;
   Gradient_Primitive = NULL;
   Limiter_Primitive  = NULL;
 
   Grad_AuxVar = NULL;
-  
+
   nPrimVar     = 0;
   nPrimVarGrad = 0;
-  
+
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
- 
+
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  
+
   /*--- Allocate residual structures ---*/
 
   Res_TruncError = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
     Res_TruncError[iVar] = 0.0;
   }
-  
+
   /*--- Only for residual smoothing (multigrid) ---*/
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
+
   if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
-  
+
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
     Undivided_Laplacian = new su2double [nVar];
-  
+
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  
+
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
@@ -250,33 +248,33 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
-  
+
   Solution_Max = new su2double [nPrimVarGrad];
   Solution_Min = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Solution_Max[iVar] = 0.0;
     Solution_Min[iVar] = 0.0;
   }
-  
+
   /*--- Solution initialization ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_solution[iVar];
     Solution_Old[iVar] = val_solution[iVar];
   }
-  
+
   /*--- Allocate and initialize solution for dual time strategy ---*/
-  
+
   if (dual_time) {
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution_time_n[iVar] = val_solution[iVar];
       Solution_time_n1[iVar] = val_solution[iVar];
     }
   }
-  
+
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
 
   Primitive = new su2double [nPrimVar];
@@ -284,7 +282,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
         We need P, and rho for running the adjoint problem ---*/
-  
+
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new su2double [nDim];
@@ -296,7 +294,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-  
+
   Solution_BGS_k = NULL;
   if (fsi || multizone){
       Solution_BGS_k  = new su2double [nVar];
@@ -319,15 +317,13 @@ CIncEulerVariable::~CIncEulerVariable(void) {
     delete [] Gradient_Primitive;
   }
 
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
-  
   if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
 
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
   unsigned short iVar, iDim;
-  
+
   for (iVar = 0; iVar < val_primvar; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
@@ -337,23 +333,23 @@ void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 su2double CIncEulerVariable::GetProjVel(su2double *val_vector) {
   su2double ProjVel;
   unsigned short iDim;
-  
+
   ProjVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     ProjVel += Primitive[iDim+1]*val_vector[iDim];
-  
+
   return ProjVel;
 }
 
 bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
-      
+
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
 
   /*--- Store the density from the previous iteration. ---*/
-  
+
   Density_Old = GetDensity();
-  
+
   /*--- Set the value of the pressure ---*/
 
   SetPressure();
@@ -372,18 +368,18 @@ bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   FluidModel->SetTDState_T(Temperature);
 
   /*--- Set the value of the density ---*/
-  
+
   check_dens = SetDensity(FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
-  
+
   if (check_dens || check_temp) {
-    
+
     /*--- Copy the old solution ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
-    
+
     /*--- Recompute the primitive variables ---*/
 
     Temperature = Solution[nDim+1];
@@ -398,7 +394,7 @@ bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   }
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
+
   SetVelocity();
 
   /*--- Set specific heats (only necessary for consistency with preconditioning). ---*/
@@ -407,158 +403,5 @@ bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   SetSpecificHeatCv(FluidModel->GetCv());
 
   return physical;
-  
-}
-
-CIncNSVariable::CIncNSVariable(void) : CIncEulerVariable() { }
-
-CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
-                         unsigned short val_nDim, unsigned short val_nvar,
-                         CConfig *config) : CIncEulerVariable(val_pressure, val_velocity, val_temperature, val_nDim, val_nvar, config) {
-  
-  DES_LengthScale = 0.0;
 
 }
-
-CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
-                         unsigned short val_nvar, CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
-  
-  DES_LengthScale = 0.0;
-  
-}
-
-CIncNSVariable::~CIncNSVariable(void) { }
-
-bool CIncNSVariable::SetVorticity(void) {
-  
-  Vorticity[0] = 0.0; Vorticity[1] = 0.0;
-  
-  Vorticity[2] = Gradient_Primitive[2][0]-Gradient_Primitive[1][1];
-  
-  if (nDim == 3) {
-    Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
-    Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
-  }
-  
-  return false;
-  
-}
-
-bool CIncNSVariable::SetStrainMag(void) {
-  
-  su2double Div;
-  unsigned short iDim;
-  
-  AD::StartPreacc();
-  AD::SetPreaccIn(Gradient_Primitive, nDim+1, nDim);
-
-  Div = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Div += Gradient_Primitive[iDim+1][iDim];
-  }
-  
-  StrainMag = 0.0;
-  
-  /*--- Add diagonal part ---*/
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
-  }
-  
-  /*--- Add off diagonals ---*/
-
-  StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
-
-  if (nDim == 3) {
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
-    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
-  }
-  
-  StrainMag = sqrt(2.0*StrainMag);
-
-  AD::SetPreaccOut(StrainMag);
-  AD::EndPreacc();
-
-  return false;
-  
-}
-
-
-bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
-      
-  unsigned short iVar;
-  bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-  
-  Density_Old = GetDensity();
-  
-  /*--- Set the value of the pressure ---*/
-  
-  SetPressure();
-
-  /*--- Set the value of the temperature directly ---*/
-
-  su2double Temperature = Solution[nDim+1];
-  check_temp = SetTemperature(Temperature);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
-
-  /*--- Use the fluid model to compute the new value of density. ---*/
-
-  FluidModel->SetTDState_T(Temperature);
-
-  /*--- Set the value of the density ---*/
-  
-  check_dens = SetDensity(FluidModel->GetDensity());
-
-  /*--- Non-physical solution found. Revert to old values. ---*/
-  
-  if (check_dens || check_temp) {
-    
-    /*--- Copy the old solution ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
-    
-    /*--- Recompute the primitive variables ---*/
-
-    Temperature = Solution[nDim+1];
-    SetTemperature(Temperature);
-    FluidModel->SetTDState_T(Temperature);
-    SetDensity(FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
-  }
-
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocity();
-
-  /*--- Set laminar viscosity ---*/
-  
-  SetLaminarViscosity(FluidModel->GetLaminarViscosity());
-  
-  /*--- Set eddy viscosity locally and in the fluid model. ---*/
-  
-  SetEddyViscosity(eddy_visc);
-  FluidModel->SetEddyViscosity(eddy_visc);
-
-  /*--- Set thermal conductivity (effective value if RANS). ---*/
-  
-  SetThermalConductivity(FluidModel->GetThermalConductivity());
-
-  /*--- Set specific heats ---*/
-
-  SetSpecificHeatCp(FluidModel->GetCp());
-  SetSpecificHeatCv(FluidModel->GetCv());
-
-  return physical;
-  
-}
-

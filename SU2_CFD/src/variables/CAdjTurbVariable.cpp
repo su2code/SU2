@@ -1,7 +1,7 @@
 /*!
- * \file linear_solvers_structure.inl
- * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
- * \author J. Hicken, F. Palacios, T. Economon
+ * \file CAdjTurbVariable.cpp
+ * \brief Definition of the solution fields.
+ * \author F. Palacios, A. Bueno
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,24 +35,51 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../../include/variables/CAdjTurbVariable.hpp"
 
-template<class ScalarType>
-inline ScalarType CSysSolve<ScalarType>::Sign(const ScalarType & x, const ScalarType & y) const {
-  if (y == 0.0)
-    return 0.0;
-  else {
-//    return (y < 0 ? -fabs(x) : fabs(x));
-    if (y < 0) return -fabs(x);
-    else return fabs(x);
-  }
+CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
+
+  /*--- Array initialization ---*/
+
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
+
 }
 
-template<class ScalarType>
-inline ScalarType CSysSolve<ScalarType>::GetResidual(void) const { return Residual; }
+CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar,
+                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+  unsigned short iVar;
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {}
+  /*--- Array initialization ---*/
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {}
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
+
+  /*--- Initialization of variables ---*/
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = val_psinu_inf;
+    Solution_Old[iVar] = val_psinu_inf;
+  }
+
+  Residual_Old = new su2double [nVar];
+
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+
+  Limiter = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+
+}
+
+CAdjTurbVariable::~CAdjTurbVariable(void) {
+
+  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
+  if (EddyViscSens  != NULL) delete [] EddyViscSens;
+
+}

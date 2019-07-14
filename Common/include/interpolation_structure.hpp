@@ -50,14 +50,6 @@
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
 
-#ifdef HAVE_LAPACK
-/*--- Lapack / Blas routines used in RBF interpolation. ---*/
-extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
-extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
-extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
-                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
-#endif
-
 using namespace std;
 
 

@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_elasticity.cpp
+ * \file CDiscAdjFEAVariable.cpp
  * \brief Definition of the variables for FEM adjoint elastic structural problems.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
 
@@ -69,10 +69,10 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
 
 }
 
-CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim, unsigned short val_nvar,
+                                         CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
-  bool fsi     = config->GetFSI_Simulation();
+  bool fsi = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = NULL;
   Dynamic_Derivative_n        = NULL;
@@ -126,10 +126,11 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
 
 }
 
-CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val_solution_accel, su2double* val_solution_vel, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val_solution_accel, su2double* val_solution_vel,
+                                         unsigned short val_ndim, unsigned short val_nvar, CConfig *config) :
+                                         CVariable(val_ndim, val_nvar, config){
 
-  bool fsi     = config->GetFSI_Simulation();
+  bool fsi = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = new su2double[nVar];
   Dynamic_Derivative_n        = new su2double[nVar];
@@ -243,4 +244,3 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Solution_BGS_k           != NULL) delete [] Solution_BGS_k;
 
 }
-

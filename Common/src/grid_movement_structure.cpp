@@ -9528,130 +9528,35 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
   unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
+
+  Solution[0] = 0.0;
+  Solution[1] = 0.0;
+  if (nDim==3) Solution[2] = 0.0;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iNode]->GetDomain()) {
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Solution);
+    StiffMatrix.EnforceSolutionAtNode(iNode, Solution, LinSysRes);
 
-      if (nDim == 2) {
-        Solution[0] = 0.0;  Solution[1] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;
-      }
-      else {
-        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-        if (iNode != jPoint) {
-          StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-        }
-        else{
-          StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-        }
-      }
-
-      /*--- Delete the full column for node iNode ---*/
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-        if (iNode != iPoint) {
-          StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-        }
-      }
-    }
-    else {
-      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-      for (iPoint = 0; iPoint < nPoint; iPoint++) StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-    }
   }
 
 }
 
 void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-  unsigned short iDim, jDim;
-
   unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Get the displacement of the node ---*/
-
-    for (iDim = 0; iDim < nDim; iDim++)
-       Solution[iDim] = LinSysSol.GetBlock(iNode, iDim);
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-        if (iNode != jPoint) {
-          StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-        }
-        else{
-          StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-        }
-      }
-    }
-
-    /*--- Always delete the iNode column, even for halos ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-      valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
-
-      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-      if (valJacobian_ij_00 != 0.0 ){
-
-        /*--- Retrieve the Jacobian term ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
-          }
-        }
-
-        /*--- Multiply by the imposed displacement ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++){
-            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Solution[jDim];
-          }
-        }
-
-        /*--- For the whole column, except the diagonal term ---*/
-        if (iNode != iPoint) {
-          /*--- The term is substracted from the residual (right hand side) ---*/
-          LinSysRes.SubtractBlock(iPoint, Residual);
-          /*--- The Jacobian term is now set to 0 ---*/
-          StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-        }
-      }
-    }
+    /*--- Enforce solution ---*/
+    StiffMatrix.EnforceSolutionAtNode(iNode, LinSysSol.GetBlock(iNode), LinSysRes);
 
   }
 
