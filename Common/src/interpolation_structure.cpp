@@ -37,6 +37,19 @@
 
 #include "../include/interpolation_structure.hpp"
 
+#if defined(HAVE_MKL)
+#include "mkl.h"
+#ifndef HAVE_LAPACK
+#define HAVE_LAPACK
+#endif
+#elif defined(HAVE_LAPACK)
+/*--- Lapack / Blas routines used in RBF interpolation. ---*/
+extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
+                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
+#endif
+
 CInterpolator::CInterpolator(void) {
   
   size = SU2_MPI::GetSize();
@@ -3687,7 +3700,7 @@ void CSymmetricMatrix::Invert(const bool is_spd)
   if(!is_spd) LUDecompose();
   else CholeskyDecompose(true);
   CalcInv(true);
-#endif // HAVE_LAPACK
+#endif
 }
 
 void CSymmetricMatrix::MatVecMult(passivedouble *v)
@@ -3722,9 +3735,7 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
   }
 
 #ifdef HAVE_LAPACK
-  
-  char side[1]={'R'}, uplo[1]={'L'}; // Right side because mat_vec in row major order
-  passivedouble *val_full, alpha=1, beta=0;
+  passivedouble *val_full, alpha=1.0, beta=0.0;
   
   /*--- Copy packed storage to full storage to use BLAS level 3 routine ---*/
   val_full = new passivedouble [sz*sz];
@@ -3737,7 +3748,12 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
     }
   }
 
+#ifndef HAVE_MKL
+  char side[1]={'R'}, uplo[1]={'L'}; // Right side because mat_vec in row major order
   dsymm_(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
+#else
+  cblas_dsymm(CblasRowMajor, CblasRight, CblasLower, N, sz, alpha, val_full, sz, mat_vec, N, beta, tmp_res, N);
+#endif
   
   delete [] val_full;
   
