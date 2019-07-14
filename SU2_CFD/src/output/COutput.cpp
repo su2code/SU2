@@ -1191,15 +1191,14 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
       LoadVolumeData(config, geometry, solver, jPoint);
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Plotting(iMarker) == YES) {
-          iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-          if (iVertex != -1){ 
-            
-            /*--- Load the surface data into the Local_Data() array. --- */
-            
-            LoadSurfaceData(config, geometry, solver, jPoint, iMarker, iVertex);
-          }
+        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1){ 
+          
+          /*--- Load the surface data into the Local_Data() array. --- */
+          
+          LoadSurfaceData(config, geometry, solver, jPoint, iMarker, iVertex);
         }
+        
       }
       
       if (VolumeOutput_List.size() != Offset_Cache.size()){

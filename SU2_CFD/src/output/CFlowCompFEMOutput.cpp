@@ -215,7 +215,7 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE"); 
   }
   
-  if (config->GetKind_Solver() == FEM_LES || config->GetKind_SGS_Model() != IMPLICIT_LES) {
+  if (config->GetKind_Solver() == FEM_LES && (config->GetKind_SGS_Model() != IMPLICIT_LES)) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
   }
 }
