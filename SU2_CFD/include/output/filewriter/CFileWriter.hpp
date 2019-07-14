@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <fstream>
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
