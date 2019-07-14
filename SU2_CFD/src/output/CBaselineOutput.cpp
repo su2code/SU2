@@ -99,7 +99,7 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 
   // Add all the remaining fields
   
-  for (iField = nDim-1; iField < nRequestedVolumeFields; iField++){
+  for (iField = nDim; iField < nRequestedVolumeFields; iField++){
     AddVolumeOutput(RequestedVolumeFields[iField], RequestedVolumeFields[iField], "SOLUTION");
   }
   
