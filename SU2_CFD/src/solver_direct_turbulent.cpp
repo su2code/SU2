@@ -3836,15 +3836,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
   if (limiter_turb) SetSolution_Limiter(geometry, config);
-  
-  
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
 
 }
 
