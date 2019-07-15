@@ -35,10 +35,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/linear_solvers_structure_b.hpp"
-#include "../include/linear_solvers_structure.hpp"
-#include "../include/vector_structure.hpp"
-#include "../include/matrix_structure.hpp"
+#include "../../include/linear_algebra/CSysSolve_b.hpp"
+#include "../../include/linear_algebra/CSysSolve.hpp"
+#include "../../include/linear_algebra/CSysMatrix.hpp"
+#include "../../include/linear_algebra/CSysVector.hpp"
 
 #ifdef CODI_REVERSE_TYPE
 template<class ScalarType>

@@ -38,15 +38,15 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "../mpi_structure.hpp"
 #include <limits>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
 
-#include "config_structure.hpp"
-#include "geometry_structure.hpp"
-#include "vector_structure.hpp"
+#include "../config_structure.hpp"
+#include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
 
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"

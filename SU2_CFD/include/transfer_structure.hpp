@@ -51,7 +51,6 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/vector_structure.hpp"
 #include "solver_structure.hpp"
 
 using namespace std;

@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/vector_structure.hpp"
+#include "../../include/linear_algebra/CSysVector.hpp"
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {

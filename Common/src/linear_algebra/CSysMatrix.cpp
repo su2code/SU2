@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/matrix_structure.inl"
+#include "../../include/linear_algebra/CSysMatrix.inl"
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
