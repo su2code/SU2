@@ -147,6 +147,7 @@ protected:
   std::vector<string>                           VolumeOutput_List;
   std::vector<short>                            Offset_Cache;
   unsigned short                                Offset_Cache_Index;
+  bool                                          Offset_Cache_Checked;
   
   std::vector<string> RequestedHistoryFields;
   unsigned short nRequestedHistoryFields;
@@ -489,36 +490,12 @@ protected:
    * \param[in] name - Name of the field.
    * \param[in] value - The new value of this field.
    */
-  inline void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
-
-    if (VolumeOutput_List.size() != Offset_Cache.size()){ 
-      
-      /*--- Build up the offset cache to speed up subsequent 
-       * calls of this routine since the order of calls is 
-       * the same for every value of iPoint --- */
-      
-      if (VolumeOutput_Map.count(name) > 0){
-        const short Offset = VolumeOutput_Map[name].Offset;
-        Offset_Cache.push_back(Offset);        
-        if (Offset != -1){
-          Local_Data[iPoint][Offset] = value;
-        }
-      } else {
-        SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
-      }
-    } else {
-      
-      /*--- Use the offset cache for the access ---*/
-      
-      const short Offset = Offset_Cache[Offset_Cache_Index++];
-      if (Offset != -1){
-        Local_Data[iPoint][Offset] = value;
-      }   
-      if (Offset_Cache_Index == Offset_Cache.size()){
-        Offset_Cache_Index = 0;
-      }
-    }
-  }
+  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  
+  /*!
+   * \brief CheckOffsetCache
+   */
+  void CheckOffsetCache();
   
   /*!
    * \brief CheckHistoryOutput
