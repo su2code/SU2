@@ -37,6 +37,8 @@
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../include/variables/CEulerVariable.hpp"
+#include "../include/variables/CNSVariable.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
