@@ -39,9 +39,9 @@
 #pragma once
 
 #include "../config_structure.hpp"
-#include "../vector_structure.hpp"
-#include "../matrix_structure.hpp"
 #include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
+#include "CSysMatrix.hpp"
 
 /*!
  * \class CMatrixVectorProduct

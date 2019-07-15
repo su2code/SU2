@@ -41,7 +41,7 @@
 
 #pragma once
 
-#include "matrix_structure.hpp"
+#include "CSysMatrix.hpp"
 
 template<class ScalarType>
 inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {

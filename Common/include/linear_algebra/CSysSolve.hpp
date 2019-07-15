@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "../mpi_structure.hpp"
 
 #include <climits>
 #include <limits>
@@ -49,13 +49,13 @@
 #include <iomanip>
 #include <string>
 
-#include "option_structure.hpp"
-#include "vector_structure.hpp"
-#include "matrix_structure.hpp"
-#include "config_structure.hpp"
-#include "geometry_structure.hpp"
-#include "linear_algebra/CMatrixVectorProduct.hpp"
-#include "linear_algebra/CPreconditioner.hpp"
+#include "../option_structure.hpp"
+#include "../config_structure.hpp"
+#include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
+#include "CSysMatrix.hpp"
+#include "CMatrixVectorProduct.hpp"
+#include "CPreconditioner.hpp"
 
 using namespace std;
 
