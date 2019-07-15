@@ -16,9 +16,11 @@ su2_deps     = []
 mpi_dep = [dependency('mpi', language:'c', required: false), 
            dependency('mpi', language:'cpp', required: false)]
 
-codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
-codi_rev_args = '-DCODI_REVERSE_TYPE'
-codi_for_args = '-DCODI_FORWARD_TYPE'
+if get_option('enable-autodiff') or get_option('enable-directdiff')
+  codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
+  codi_rev_args = '-DCODI_REVERSE_TYPE'
+  codi_for_args = '-DCODI_FORWARD_TYPE'
+endif
 
 # Add cgns library
 if get_option('enable-cgns')
