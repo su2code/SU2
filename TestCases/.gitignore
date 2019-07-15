@@ -20,7 +20,6 @@
 *.cgns
 *.tgz
 COPYING
-README.md
 *.autotest
 config_*.cfg
 *.eqn
