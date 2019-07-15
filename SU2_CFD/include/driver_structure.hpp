@@ -209,9 +209,6 @@ public:
    * \brief Definition and allocation of all interface classes.
    */
   void Interface_Preprocessing();
-
-  
-  void SetTransferTypes();
   
   /*!
    * \brief Definition and allocation of all solver classes.
