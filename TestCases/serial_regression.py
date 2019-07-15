@@ -933,7 +933,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.255896] #last 4 columns
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.253885] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -946,7 +946,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.400174, 0.352029, 0.407521] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.400117, 0.352029, 0.407521] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -998,7 +998,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208747, 1.128612] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.208652, 1.128008] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -1087,7 +1087,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.731033, -5.527944] #last 4 columns
+    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641487] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1532,7 +1532,7 @@ def main():
     pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
     pywrapper_aeroelastic.new_output  = True
     pywrapper_aeroelastic.timeout   = 1600
-    pywrapper_aeroelastic.tol       = 0.000001
+    pywrapper_aeroelastic.tol       = 0.00001
     pywrapper_aeroelastic.unsteady  = True
     test_list.append(pywrapper_aeroelastic)
     pass_list.append(pywrapper_aeroelastic.run_test())
