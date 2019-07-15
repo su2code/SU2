@@ -1973,82 +1973,35 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
                                        unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
-  unsigned long iVar, jVar;
   
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  Solution[0] = 0.0;
+  Solution[1] = 0.0;
+  if (nDim==3) Solution[2] = 0.0;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Get node index ---*/
-    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      if (nDim == 2) {
-        Solution[0] = 0.0;  Solution[1] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;
-      }
-      else {
-        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-      }
-      
-      node[iPoint]->SetSolution(Solution);
-      
-      if (dynamic) {
-        node[iPoint]->SetSolution_Vel(Solution);
-        node[iPoint]->SetSolution_Accel(Solution);
-      }
-      
-      
-      /*--- Initialize the reaction vector ---*/
-      LinSysReact.SetBlock(iPoint, Residual);
-      
-      LinSysRes.SetBlock(iPoint, Residual);
-      LinSysSol.SetBlock(iPoint, Solution);
-      
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-      
-      /*--- Delete the columns for a particular node ---*/
-      
-      for (iVar = 0; iVar < nPoint; iVar++) {
-        if (iVar==iPoint) {
-          Jacobian.SetBlock(iVar,iPoint,mId_Aux);
-        }
-        else {
-          Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
-        }
-      }
-      
-      /*--- Delete the rows for a particular node ---*/
-      for (jVar = 0; jVar < nPoint; jVar++) {
-        if (iPoint!=jVar) {
-          Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
-        }
-      }
-      
-      /*--- If the problem is dynamic ---*/
-      /*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
-      
-      if(dynamic) {
-        
-        node[iPoint]->SetSolution_time_n(Solution);
-        node[iPoint]->SetSolution_Vel_time_n(Solution);
-        node[iPoint]->SetSolution_Accel_time_n(Solution);
-        
-      }
-      
-    } else {
-      
-      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-      
-      for (iVar = 0; iVar < nPoint; iVar++) Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
-      
+
+    /*--- Set and enforce solution at current and previous time-step ---*/
+    node[iPoint]->SetSolution(Solution);
+
+    if (dynamic) {
+      node[iPoint]->SetSolution_Vel(Solution);
+      node[iPoint]->SetSolution_Accel(Solution);
+      node[iPoint]->SetSolution_time_n(Solution);
+      node[iPoint]->SetSolution_Vel_time_n(Solution);
+      node[iPoint]->SetSolution_Accel_time_n(Solution);
     }
-    
+
+    LinSysSol.SetBlock(iPoint, Solution);
+    LinSysReact.SetBlock(iPoint, Solution);
+    Jacobian.EnforceSolutionAtNode(iPoint, Solution, LinSysRes);
+
   }
-  
+
 }
 
 void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
@@ -2084,8 +2037,8 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container
 void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                             unsigned short val_marker) {
 
-  unsigned short iDim, jDim;
-
+  unsigned short iDim;
+  unsigned long iNode, iVertex;
   su2double DispDirVal = config->GetDisp_Dir_Value(config->GetMarker_All_TagBound(val_marker));
   su2double DispDirMult = config->GetDisp_Dir_Multiplier(config->GetMarker_All_TagBound(val_marker));
   su2double *Disp_Dir_Local= config->GetDisp_Dir(config->GetMarker_All_TagBound(val_marker));
@@ -2147,84 +2100,14 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
   for (iDim = 0; iDim < nDim; iDim++)
     Disp_Dir[iDim] = TotalDisp * Disp_Dir_Unit[iDim];
 
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = Disp_Dir[0];  Solution[1] = Disp_Dir[1];
-        Residual[0] = Disp_Dir[0];  Residual[1] = Disp_Dir[1];
-      }
-      else {
-        Solution[0] = Disp_Dir[0];  Solution[1] = Disp_Dir[1];  Solution[2] = Disp_Dir[2];
-        Residual[0] = Disp_Dir[0];  Residual[1] = Disp_Dir[1];  Residual[2] = Disp_Dir[2];
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-        if (iNode != jPoint) {
-          Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-        }
-        else{
-          Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-        }
-      }
-
-    }
-
-    /*--- Always delete the iNode column, even for halos ---*/
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
-
-      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-      if (valJacobian_ij_00 != 0.0 ){
-
-        /*--- Retrieve the Jacobian term ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-          }
-        }
-
-        /*--- Multiply by the imposed displacement ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++){
-            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
-          }
-        }
-
-        if (iNode != iPoint) {
-          /*--- The term is substracted from the residual (right hand side) ---*/
-          LinSysRes.SubtractBlock(iPoint, Residual);
-          /*--- The Jacobian term is now set to 0 ---*/
-          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-        }
-
-      }
-
-    }
-
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Disp_Dir);
+    Jacobian.EnforceSolutionAtNode(iNode, Disp_Dir, LinSysRes);
   }
 
 }

@@ -110,7 +110,10 @@ public:
   /*!
 	 * \brief Sets to zero all the entries of the vector.
 	 */
-	void SetValZero(void);
+	inline void SetValZero(void) {
+    for (unsigned long i = 0; i < nElm; i++)
+      vec_val[i] = 0.0;
+	}
   
   /*!
    * \brief constructor from array
@@ -146,32 +149,38 @@ public:
   /*!
    * \brief return the number of local elements in the CSysVector
    */
-  unsigned long GetLocSize() const;
+  inline unsigned long GetLocSize() const { return nElm; }
   
   /*!
    * \brief return the number of local elements in the CSysVector without ghost cells
    */
-  unsigned long GetNElmDomain() const;
+  inline unsigned long GetNElmDomain() const { return nElmDomain; }
   
   /*!
    * \brief return the size of the CSysVector (over all processors)
    */
-  unsigned long GetSize() const;
+  inline unsigned long GetSize() const {
+#ifdef HAVE_MPI
+    return nElmGlobal;
+#else
+    return (unsigned long)nElm;
+#endif
+  }
   
   /*!
    * \brief return the number of variables at each block (typically number per node)
    */
-  unsigned short GetNVar() const;
+  inline unsigned short GetNVar() const { return nVar; }
   
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned long GetNBlk() const;
+  inline unsigned long GetNBlk() const { return nBlk; }
 	
 	/*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned long GetNBlkDomain() const;
+  inline unsigned long GetNBlkDomain() const { return nBlkDomain; }
   
   /*!
    * \brief set calling CSysVector to scaling of another CSysVector
@@ -260,13 +269,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  ScalarType & operator[](const unsigned long & i);
+  inline ScalarType & operator[](const unsigned long & i) { return vec_val[i]; }
   
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  const ScalarType & operator[](const unsigned long & i) const;
+  inline const ScalarType & operator[](const unsigned long & i) const { return vec_val[i]; }
     
   /*!
    * \brief the L2 norm of the CSysVector
@@ -360,49 +369,3 @@ public:
  */
 template<class ScalarType>
 CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<ScalarType> & u);
-
-/*!
- * \class CMatrixVectorProduct
- * \brief abstract base class for defining matrix-vector products
- * \author J. Hicken.
- *
- * The Krylov-subspace solvers require only matrix-vector products and
- * not the actual matrix/Jacobian.  We need some way to indicate which
- * function will perform the product.  However, sometimes the
- * functions that define the product will require different numbers
- * and types of inputs.  For example, the forward-difference
- * approximation to a Jacobian-vector product requires the vector that
- * defines the Jacobian and a perturbation parameter.  The
- * CMatrixVectorProduct class is used to derive child classes that can
- * handle the different types of matrix-vector products and still be
- * passed to a single implementation of the Krylov solvers.
- */
-template<class ScalarType>
-class CMatrixVectorProduct {
-public:
-  virtual ~CMatrixVectorProduct() = 0; ///< class destructor
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v)
-  const = 0; ///< matrix-vector product operation
-};
-template<class ScalarType>
-inline CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
-
-/*!
- * \class CPreconditioner
- * \brief abstract base class for defining preconditioning operation
- * \author J. Hicken.
- *
- * See the remarks regarding the CMatrixVectorProduct class.  The same
- * idea applies here to the preconditioning operation.
- */
-template<class ScalarType>
-class CPreconditioner {
-public:
-  virtual ~CPreconditioner() = 0; ///< class destructor
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v)
-  const = 0; ///< preconditioning operation
-};
-template<class ScalarType>
-inline CPreconditioner<ScalarType>::~CPreconditioner() {}
-
-#include "vector_structure.inl"
