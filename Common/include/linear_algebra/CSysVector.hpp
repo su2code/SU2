@@ -68,15 +68,15 @@ template<class ScalarType>
 class CSysVector {
 
 private:
-	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
-	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
+  unsigned long nElm;       /*!< \brief total number of elements (or number elements on this processor) */
+  unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
 #ifdef HAVE_MPI
   unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
 #endif
-	unsigned short nVar; /*!< \brief number of elements in a block */
-	unsigned long nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
-	unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
-  ScalarType* vec_val; /*!< \brief storage for the element values */
+  unsigned short nVar;      /*!< \brief number of elements in a block */
+  unsigned long nBlk;       /*!< \brief number of blocks (or number of blocks on this processor) */
+  unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
+  ScalarType* vec_val;      /*!< \brief storage for the element values */
 
 public:
 
@@ -108,12 +108,12 @@ public:
   CSysVector(const CSysVector & u);
 
   /*!
-	 * \brief Sets to zero all the entries of the vector.
-	 */
-	inline void SetValZero(void) {
+   * \brief Sets to zero all the entries of the vector.
+   */
+  inline void SetValZero(void) {
     for (unsigned long i = 0; i < nElm; i++)
       vec_val[i] = 0.0;
-	}
+  }
 
   /*!
    * \brief constructor from array
@@ -177,7 +177,7 @@ public:
    */
   inline unsigned long GetNBlk() const { return nBlk; }
 
-	/*!
+  /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
   inline unsigned long GetNBlkDomain() const { return nBlkDomain; }
@@ -291,60 +291,60 @@ public:
   void CopyToArray(ScalarType* u_array);
 
   /*!
-	 * \brief Subtract val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where subtract the residual.
+   * \brief Subtract val_residual to the residual.
+   * \param[in] val_ipoint - index of the point where subtract the residual.
    * \param[in] val_residual - Value to subtract to the residual.
-	 */
+   */
   void SubtractBlock(unsigned long val_ipoint, ScalarType *val_residual);
 
   /*!
-	 * \brief Add val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where add the residual.
+   * \brief Add val_residual to the residual.
+   * \param[in] val_ipoint - index of the point where add the residual.
    * \param[in] val_residual - Value to add to the residual.
-	 */
+   */
   void AddBlock(unsigned long val_ipoint, ScalarType *val_residual);
 
   /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \brief Set val_residual to the residual.
+   * \param[in] val_ipoint - index of the point where set the residual.
    * \param[in] val_var - inde of the residual to be set.
    * \param[in] val_residual - Value to set to the residual.
-	 */
+   */
   void SetBlock(unsigned long val_ipoint, unsigned short val_var, ScalarType val_residual);
 
   /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \brief Set val_residual to the residual.
+   * \param[in] val_ipoint - index of the point where set the residual.
    * \param[in] val_residual - Value to set to the residual.
-	 */
+   */
   void SetBlock(unsigned long val_ipoint, ScalarType *val_residual);
 
   /*!
-	 * \brief Set the residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
+   * \brief Set the residual to zero.
+   * \param[in] val_ipoint - index of the point where set the residual.
+   */
   void SetBlock_Zero(unsigned long val_ipoint);
 
   /*!
-	 * \brief Set the velocity residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 * \param[in] val_var - inde of the residual to be set.
-	 */
+   * \brief Set the velocity residual to zero.
+   * \param[in] val_ipoint - index of the point where set the residual.
+   * \param[in] val_var - inde of the residual to be set.
+   */
   void SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var);
 
   /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \brief Get the value of the residual.
+   * \param[in] val_ipoint - index of the point where set the residual.
    * \return Pointer to the residual.
-	 */
+   */
   ScalarType *GetBlock(unsigned long val_ipoint);
 
   /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \brief Get the value of the residual.
+   * \param[in] val_ipoint - index of the point where set the residual.
    * \param[in] val_var - inde of the residual to be set.
    * \return Value of the residual.
-	 */
+   */
   ScalarType GetBlock(unsigned long val_ipoint, unsigned short val_var);
 
   /*!

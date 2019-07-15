@@ -74,8 +74,8 @@ const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief mach
 template<class ScalarType>
 class CSysMatrix {
 private:
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank;     /*!< \brief MPI Rank. */
+  int size;     /*!< \brief MPI Size. */
   unsigned long nPoint,   /*!< \brief Number of points in the grid. */
   nPointDomain,           /*!< \brief Number of points in the grid. */
   nVar,                   /*!< \brief Number of variables. */
@@ -268,7 +268,6 @@ private:
    * \param[in] **val_block - Block to set to A(i, j).
    */
   inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
-
 
   /*!
    * \brief Set the transposed value of a block in the sparse matrix.
@@ -503,7 +502,7 @@ public:
     unsigned long iVar, index;
 
     for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      if (col_ind[index] == block_i) { // Only elements on the diagonal
         for (iVar = 0; iVar < nVar; iVar++)
           matrix[index*nVar*nVar+iVar*nVar+iVar] += PassiveAssign<ScalarType,OtherType>(val_matrix);
         break;
@@ -523,7 +522,7 @@ public:
     unsigned long iVar, jVar, index;
 
     for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-      if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      if (col_ind[index] == block_i) { // Only elements on the diagonal
 
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
