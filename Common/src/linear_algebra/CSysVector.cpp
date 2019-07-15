@@ -244,7 +244,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<Scal
   nElm = u.nElm;
   nElmDomain = u.nElmDomain;
   nBlk = u.nBlk;
-	nBlkDomain = u.nBlkDomain;
+  nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
 
   for (unsigned long i = 0; i < nElm; i++)

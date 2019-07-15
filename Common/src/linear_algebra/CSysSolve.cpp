@@ -297,7 +297,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     precond(r, z);
 
     /*--- Calculate Gram-Schmidt coefficient beta,
-		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+     beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
 
     beta = 1.0 / r_dot_z;
     r_dot_z = dotProd(r, z);
@@ -334,7 +334,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   }
 
   (*residual) = norm_r;
-	return (unsigned long) i;
+  return (unsigned long) i;
 
 }
 
@@ -363,7 +363,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Allocate if not allocated yet
    Note: elements in w and z are initialized to x to avoid creating
-	 a temporary CSysVector object for the copy constructor ---*/
+   a temporary CSysVector object for the copy constructor ---*/
 
   if (!gmres_ready) {
     W.resize(m+1, x);
@@ -383,8 +383,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType norm0 = b.norm();
 
-  /*---  Calculate the initial residual (actually the negative residual)
-	 and compute its norm ---*/
+  /*---  Calculate the initial residual (actually the negative residual) and compute its norm ---*/
 
   mat_vec(x, W[0]);
   W[0] -= b;
@@ -401,7 +400,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   }
 
   /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
-	 holds the negative residual, as mentioned above) ---*/
+   holds the negative residual, as mentioned above) ---*/
 
   W[0] /= -beta;
 
@@ -441,9 +440,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     ModGramSchmidt(i, H, W);
 
-    /*---  Apply old Givens rotations to new column of the Hessenberg matrix
-		 then generate the new Givens rotation matrix and apply it to
-		 the last two elements of H[:][i] and g ---*/
+    /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
+     new Givens rotation matrix and apply it to the last two elements of H[:][i] and g ---*/
 
     for (int k = 0; k < i; k++)
       ApplyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
