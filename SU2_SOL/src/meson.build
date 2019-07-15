@@ -1,13 +1,13 @@
 su2_sol_src = ['SU2_SOL.cpp']
 su2_cfd_obj = su2_cfd.extract_objects(['solver_structure.cpp',
                                        'output_structure.cpp',
-				       'output_cgns.cpp',
-				       'output_tecplot.cpp',
-				       'output_fieldview.cpp',
-				       'output_su2.cpp',
-				       'output_paraview.cpp',
-				       'variable_structure.cpp'])
-
+                                       'output_cgns.cpp',
+                                       'output_fieldview.cpp',
+                                       'output_paraview.cpp',
+                                       'output_tecplot.cpp',
+                                       'output_su2.cpp',                   
+				       'variables/CBaselineVariable.cpp',
+				       'variables/CVariable.cpp'])
 
 su2_sol = executable('SU2_SOL',
                      su2_sol_src, 
