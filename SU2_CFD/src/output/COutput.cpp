@@ -1154,6 +1154,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   /*--- Reset the offset cache and index --- */
   Offset_Cache_Index = 0;
   Offset_Cache.clear();
+  Offset_Cache_Checked = false;
   
   if (fem_output){
     
@@ -1174,9 +1175,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
-        if (VolumeOutput_List.size() != Offset_Cache.size()){
-          SU2_MPI::Error("Number of volume output fields does not match the offset cache size.", CURRENT_FUNCTION);
-        }
+        CheckOffsetCache();
         
         jPoint++;
         
@@ -1201,16 +1200,76 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
           LoadSurfaceData(config, geometry, solver, jPoint, iMarker, iVertex);
         }
         
-      }
+      } 
       
-      if (VolumeOutput_List.size() != Offset_Cache.size()){
-        SU2_MPI::Error("Number of volume output fields does not match the offset cache size.", CURRENT_FUNCTION);
-      }      
+      CheckOffsetCache();
       
       jPoint++;
     }
   }
 
+}
+
+void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+  
+  if (VolumeOutput_List.size() != Offset_Cache.size()){ 
+    
+    /*--- Build up the offset cache to speed up subsequent 
+     * calls of this routine since the order of calls is 
+     * the same for every value of iPoint --- */
+    
+    if (VolumeOutput_Map.count(name) > 0){
+      const short Offset = VolumeOutput_Map[name].Offset;
+      Offset_Cache.push_back(Offset);        
+      if (Offset != -1){
+        Local_Data[iPoint][Offset] = value;
+      }
+    } else {
+      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+    }
+  } else {
+    
+    /*--- Use the offset cache for the access ---*/
+    
+    const short Offset = Offset_Cache[Offset_Cache_Index++];
+    if (Offset != -1){
+      Local_Data[iPoint][Offset] = value;
+    }   
+    if (Offset_Cache_Index == Offset_Cache.size()){
+      Offset_Cache_Index = 0;
+    }
+  }
+  
+}
+
+void COutput::CheckOffsetCache(){
+  
+  if (!Offset_Cache_Checked){
+    vector<short> Offset_Cache_Copy = Offset_Cache;
+    
+    /*--- Remove the -1 offset --- */
+    
+    Offset_Cache_Copy.erase(std::remove(Offset_Cache_Copy.begin(), Offset_Cache_Copy.end(), -1), 
+                            Offset_Cache_Copy.end());
+    
+    /*--- Check if all offsets are unique. If thats not the case, then SetVolumeOutputValue() was called
+       * more than once for the same output field. --- */
+    
+    vector<short>::iterator it = std::unique( Offset_Cache_Copy.begin(), Offset_Cache_Copy.end() );
+    if (it != Offset_Cache_Copy.end() ){
+      SU2_MPI::Error("Offset cache contains duplicate entries.", CURRENT_FUNCTION);
+    }
+    
+    /*--- Check if the size of the offset cache matches the size of the volume output list. 
+       * If that is not the case, then probably SetVolumeOutputValue() was not called for all fields declared with
+       * AddVolumeOutput(). ---*/
+    
+    if (VolumeOutput_List.size() != Offset_Cache.size()){
+      SU2_MPI::Error("Offset cache size and volume output size do not match.", CURRENT_FUNCTION);
+    }
+  }
+  Offset_Cache_Checked = true;
+  
 }
 
 void COutput::Postprocess_HistoryData(CConfig *config){

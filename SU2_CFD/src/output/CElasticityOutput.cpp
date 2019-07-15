@@ -224,13 +224,15 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION");
   
-  AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
-  AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
-  if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
-  
-  AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
-  AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
-  if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
+  if(dynamic){
+    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
+    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
+    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
+    
+    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
+    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
+    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
+  }
   
   AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS");
   AddVolumeOutput("STRESS-YY",    "Syy", "STRESS");
