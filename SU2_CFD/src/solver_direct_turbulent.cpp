@@ -340,6 +340,16 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
   
 }
 
+void CTurbSolver::BC_Supersonic_Inlet(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics,
+                                      CConfig *config,
+                                      unsigned short val_marker) {
+  BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config,
+           val_marker);
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar;
