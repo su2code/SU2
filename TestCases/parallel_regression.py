@@ -915,11 +915,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-<<<<<<< HEAD
     rotating_cylinders.test_vals = [3.000000, 0.000000, 0.716123, 1.095620, 1.136616] #last 4 columns
-=======
-    rotating_cylinders.test_vals = [-1.254634, 4.531678, 0.000000, 0.000000] #last 4 columns
->>>>>>> origin/develop
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
