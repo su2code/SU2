@@ -1296,6 +1296,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
+  /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
+  addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
   /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
@@ -1434,6 +1436,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
   addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
+  /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
+  addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
+  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 1.0);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -5862,41 +5868,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Euler implicit method for the flow equations." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
             case FGMRES:
             case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
+              if (Kind_Linear_Solver == BCGSTAB)
+                cout << "BCGSTAB is used for solving the linear system." << endl;
+              else
+                cout << "FGMRES is used for solving the linear system." << endl;
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
               }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-               break;
-            case SMOOTHER_JACOBI:
-              cout << "A Jacobi method is used for smoothing the linear system." << endl;
               break;
-            case SMOOTHER_ILU:
-              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LUSGS:
-              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LINELET:
-              cout << "A Linelet method is used for smoothing the linear system." << endl;
+            case SMOOTHER:
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case LINELET: cout << "A Linelet"; break;
+                case LU_SGS:  cout << "A LU-SGS"; break;
+                case JACOBI:  cout << "A Jacobi"; break;
+              }
+              cout << " method is used for smoothing the linear system." << endl;
               break;
           }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
         case CLASSICAL_RK4_EXPLICIT:
           cout << "Classical RK4 explicit method for the flow equations." << endl;

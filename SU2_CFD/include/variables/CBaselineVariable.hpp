@@ -1,7 +1,7 @@
 /*!
- * \file variable_adjoint_turbulent.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios, A. Bueno
+ * \file CBaselineVariable.hpp
+ * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,51 +35,34 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#pragma once
 
-CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-}
+#include "CVariable.hpp"
 
-CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+/*!
+ * \class CBaselineVariable
+ * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon.
+ */
+class CBaselineVariable : public CVariable {
+public:
 
-  unsigned short iVar;
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBaselineVariable(void);
 
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-  /*--- Initialization of variables ---*/
-  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_psinu_inf;
-    Solution_Old[iVar] = val_psinu_inf;
-  }
-  
-  Residual_Old = new su2double [nVar];
-  
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config);
 
-  Limiter = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Limiter[iVar] = 0.0;
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CBaselineVariable(void);
 
-}
-
-CAdjTurbVariable::~CAdjTurbVariable(void) {
-  
-  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-  if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
-}
+};
