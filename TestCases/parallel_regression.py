@@ -863,7 +863,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631532] #last 4 columns
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.188747, -10.631539] #last 4 columns
     uniform_flow.su2_exec  = "parallel_computation.py -f"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -941,7 +941,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.720012, -1.607989] #last 4 columns
+    bars_SST_2D.test_vals = [13.000000, -0.719501, -1.608959] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1098,7 +1098,7 @@ def main():
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
     pywrapper_unsteadyCHT.unsteady      = True
-    pywrapper_unsteadyCHT.new_output    = False
+    pywrapper_unsteadyCHT.new_output    = True
     test_list.append(pywrapper_unsteadyCHT)
 
     # Rigid motion
