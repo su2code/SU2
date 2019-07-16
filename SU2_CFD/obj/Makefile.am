@@ -108,6 +108,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
+  ../src/numerics_direct_mesh.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
@@ -123,6 +124,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
   ../src/solver_adjoint_elasticity.cpp \
+  ../src/solver_adjoint_mesh.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_mean_fem.cpp \
@@ -130,6 +132,7 @@ libSU2Core_sources = \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_direct_mesh.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
@@ -139,12 +142,14 @@ libSU2Core_sources = \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
   ../src/variable_adjoint_elasticity.cpp \
+  ../src/variable_adjoint_mesh.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
   ../src/variable_direct_mean_inc.cpp \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_elasticity.cpp \
+  ../src/variable_direct_mesh.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 

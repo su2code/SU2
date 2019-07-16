@@ -115,11 +115,11 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
       case RIGID_MOTION: case DEFORMING:
       case EXTERNAL: case EXTERNAL_ROTATION:
       case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
-      case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
       case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
+      case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
   }
@@ -514,9 +514,10 @@ void CMultizoneDriver::Update() {
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
+      if (integration_container[iZone][INST_0][iSol] != NULL){
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
     }
   }
 
@@ -627,14 +628,14 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, iZone, INST_0, 0, ExtIter );
     }
   }
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, numerics_container, solver_container,
         config_container, val_iZone, INST_0, 0, ExtIter);
 
 }
@@ -674,8 +675,14 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
   }
-  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS) {
+  else if (transfer_types[donorZone][targetZone] == STRUCTURAL_DISPLACEMENTS_LEGACY) {
     transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+    UpdateMesh = true;
+  }
+  else if (transfer_types[donorZone][targetZone] == BOUNDARY_DISPLACEMENTS) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][MESH_SOL],
                                                                        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                                                                        config_container[donorZone], config_container[targetZone]);
     UpdateMesh = true;

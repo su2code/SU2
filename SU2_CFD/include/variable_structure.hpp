@@ -183,6 +183,12 @@ public:
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
+  virtual void SetSolution_Old(void);
+
+  /*!
+   * \brief Set the value of the old solution.
+   * \param[in] val_solution_old - Pointer to the residual vector.
+   */
   void SetSolution_Old(su2double *val_solution_old);
 
   /*!
@@ -2110,7 +2116,17 @@ public:
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   virtual void SetSolution_time_n(su2double *val_solution_time_n);
-  
+
+  /*!
+   * \brief Set the value of the old solution n-1.
+   */
+  virtual void SetSolution_time_n1(void);
+
+  /*!
+   * \brief Set the value of the old solution.
+   * \param[in] val_solution_time_n - Pointer to the residual vector.
+   */
+  virtual void SetSolution_time_n1(unsigned short val_var, su2double val_solution);
   
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
@@ -2334,6 +2350,105 @@ public:
    */
    virtual su2double GetReference_Geometry(unsigned short iVar);
 
+  /*!
+   * \brief A virtual member. Get the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the original coordinate iDim.
+   */
+  virtual su2double GetMesh_Coord(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Get the undeformed coordinates.
+   * \return Pointer to the reference coordinates.
+   */
+  virtual su2double *GetMesh_Coord();
+
+  /*!
+   * \brief A virtual member. Set the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord[nDim]
+   */
+  virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord);
+
+    /*!
+   * \brief A virtual member. Get the value of the wall distance in reference coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the wall distance in reference coordinates.
+   */
+  virtual su2double GetWallDistance(void);
+
+  /*!
+   * \brief A virtual member. Set the value of the wall distance in reference coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  virtual void SetWallDistance(su2double val_dist);
+
+  /*!
+   * \brief A virtual member. Register the reference coordinates of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  virtual void Register_MeshCoord(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
+   */
+  virtual void GetAdjoint_MeshCoord(su2double *adj_mesh);
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  virtual su2double GetBound_Disp(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  virtual void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  virtual void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
+
+  /*!
+   * \brief A virtual member. Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  virtual su2double* GetBoundDisp_Direct();
+
+  /*!
+   * \brief A virtual member. Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  virtual void SetBoundDisp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
+   */
+  virtual void SetBoundDisp_Sens(su2double *val_sens);
+
+  /*!
+   * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  virtual su2double GetBoundDisp_Sens(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Register the boundary displacements of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  virtual void Register_BoundDisp(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.
+   */
+  virtual void GetAdjoint_BoundDisp(su2double *adj_disph);
+
    /*!
     * \brief A virtual member.
     */
@@ -2358,6 +2473,16 @@ public:
    * \brief A virtual member.
    */
   virtual void RegisterSolution_Accel_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterFlowTraction();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double ExtractFlowTraction_Sensitivity(unsigned short iDim);
 
   /*!
    * \brief A virtual member.
@@ -2508,6 +2633,34 @@ public:
   virtual su2double GetSolution_Old_Vel(unsigned short iVar);
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetFlowTractionSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetFlowTractionSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  virtual void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  virtual su2double GetSourceTerm_DispAdjoint(unsigned short iDim);
 
 };
 
@@ -3079,16 +3232,13 @@ public:
 
 /*!
  * \class CFEABoundVariable
- * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \brief Main class for defining the load variables on the FEA boundaries.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
 class CFEABoundVariable : public CFEAVariable {
 protected:
-
-  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
 
   su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
   su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
@@ -3105,9 +3255,11 @@ public:
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] isInterface - Determines if the node belongs to an interface marker
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                    CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3145,6 +3297,48 @@ public:
   su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
 
   /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CFEAFSIBoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \ingroup Structural Finite Element Analysis Variables
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CFEAFSIBoundVariable : public CFEABoundVariable {
+protected:
+
+  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CFEAFSIBoundVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAFSIBoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                        CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEAFSIBoundVariable(void);
+
+  /*!
    * \brief Set the flow traction at a node on the structural side
    */
   void Set_FlowTraction(su2double *val_flowTraction);
@@ -3175,9 +3369,14 @@ public:
   void Clear_FlowTraction(void);
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Register the flow tractions as input variable.
    */
-  bool Get_isVertex(void);
+  void RegisterFlowTraction();
+
+  /*!
+   * \brief Extract the flow traction derivatives.
+   */
+  su2double ExtractFlowTraction_Sensitivity(unsigned short iDim);
 
 };
 
@@ -5161,6 +5360,433 @@ public:
      * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
      */
     su2double Get_BGSSolution_k(unsigned short iDim);
+
+    /*!
+     * \brief Get whether this node is on the boundary
+     */
+    virtual bool Get_isVertex(void);
+};
+
+/*!
+ * \class CDiscAdjFEABoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
+ * \ingroup Discrete_Adjoint
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjFEABoundVariable : public CDiscAdjFEAVariable {
+protected:
+
+  su2double *FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
+  su2double *SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement adjoint
+                                                    coming from external solvers. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDiscAdjFEABoundVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjFEABoundVariable(void);
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  void SetFlowTractionSensitivity(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  su2double GetFlowTractionSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  su2double GetSourceTerm_DispAdjoint(unsigned short iDim);
+
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CMeshVariable : public CVariable {
+protected:
+
+  unsigned short nDim;
+
+  su2double WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
+
+  su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
+
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshVariable(void);
+
+  /*!
+   * \brief Get the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the original coordinate iDim.
+   */
+  su2double GetMesh_Coord(unsigned short iDim);
+
+  /*!
+   * \brief Get the undeformed coordinates.
+   * \return Pointer to the reference coordinates.
+   */
+  su2double *GetMesh_Coord();
+
+  /*!
+   * \brief Set the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord[nDim]
+   */
+  void SetMesh_Coord(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief Move Displacement into Displacement_Old.
+   */
+  void SetSolution_Old(void);
+
+  /*!
+   * \brief Move Displacement into Displacement_n.
+   */
+  void SetSolution_time_n(void);
+
+  /*!
+   * \brief Set the value of the displacement at time n.
+   * \param[in] iDim - Index of Displacement_n[nDim]
+   * \param[in] val_coord - Value of Displacement_n[nDim]
+   */
+  void SetSolution_time_n(unsigned short iDim, su2double val_disp);
+
+  /*!
+   * \brief Move Displacement_n into Displacement_n1.
+   */
+  void SetSolution_time_n1(void);
+
+  /*!
+   * \brief Set the value of the displacement at time n-1.
+   * \param[in] iDim - Index of Displacement_n1[nDim]
+   * \param[in] val_coord - Value of Displacement_n1[nDim]
+   */
+  void SetSolution_time_n1(unsigned short iDim, su2double val_disp);
+
+  /*!
+   * \brief Get the value of the wall distance in reference coordinates.
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \return Value of the wall distance in reference coordinates.
+   */
+  su2double GetWallDistance(void);
+
+  /*!
+   * \brief Set the value of the wall distance in reference coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  void SetWallDistance(su2double val_dist);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  virtual bool Get_isVertex(void);
+
+  /*!
+   * \brief Register the reference coordinates of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  void Register_MeshCoord(bool input);
+
+  /*!
+   * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
+   */
+  void GetAdjoint_MeshCoord(su2double *adj_mesh);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshVariable : public CVariable {
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshVariable(void);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  virtual bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CMeshBoundVariable
+ * \brief Main class for defining the variables of the mesh movement at the moving boundaries.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CMeshBoundVariable : public CMeshVariable {
+protected:
+
+  su2double *Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshBoundVariable(void);
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  su2double GetBound_Disp(unsigned short iDim);
+
+  /*!
+   * \brief Set the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return True. The node is at the boundary.
+   */
+  bool Get_isVertex(void);
+
+  /*!
+   * \brief Register the boundary displacements of the mesh.
+   * \param[in] input - Defines whether we are registering the variable as input or as output.
+   */
+  void Register_BoundDisp(bool input);
+
+  /*!
+   * \brief Recover the value of the adjoint of the boundary displacements.
+   */
+  void GetAdjoint_BoundDisp(su2double *adj_disph);
+
+};
+
+/*!
+ * \class CDiscAdjMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CDiscAdjMeshBoundVariable : public CDiscAdjMeshVariable {
+protected:
+
+  su2double* Bound_Disp_Sens;     /*!< \brief Store the reference coordinates of the mesh. */
+  su2double* Bound_Disp_Direct;   /*!< \brief Store the reference boundary displacements of the mesh. */
+
+  su2double* Solution_BGS_k;      /*!< \brief BGS solution to compute overall convergence. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshBoundVariable(void);
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary displacement.
+   */
+  su2double* GetBoundDisp_Direct();
+
+  /*!
+   * \brief Set the solution for the boundary displacements.
+   * \param[in] val_BoundDisp - Pointer to the boundary displacements.
+   */
+  void SetBoundDisp_Direct(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
+   */
+  void SetBoundDisp_Sens(su2double *val_sens);
+
+  /*!
+   * \brief Get the value of the sensitivity with respect to the undeformed coordinates.
+   * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
+   * \return Value of the original Mesh_Coord_Sens iDim.
+   */
+  su2double GetBoundDisp_Sens(unsigned short iDim);
+
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return True. The node is at the boundary.
+   */
+  bool Get_isVertex(void);
+
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
+};
+
+/*!
+ * \class CMeshElementVariable
+ * \brief Main class for defining the elements of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CMeshElement {
+protected:
+
+  su2double Ref_Volume;       /*!< \brief Store the reference coordinates of the mesh. */
+  su2double Curr_Volume;      /*!< \brief Store the current coordinates of the mesh. */
+
+  su2double WallDistance;     /*!< \brief Store the distance of the center of the element to the wall. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshElement(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshElement(void);
+
+  /*!
+   * \brief Get the value of the element volume with undeformed coordinates.
+   * \return Value of the element volume with reference coordinates.
+   */
+  su2double GetRef_Volume(void);
+
+  /*!
+   * \brief Set the value of the element volume with undeformed coordinates.
+   * \param[in] val_volume - Value of the reference volume.
+   */
+  void SetRef_Volume(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element volume with deformed coordinates.
+   * \return Value of the element volume with deformed coordinates.
+   */
+  su2double GetCurr_Volume(void);
+
+  /*!
+   * \brief Set the value of the element distance to the nearest wall with deformed coordinates.
+   * \param[in] val_volume - Value of the element distance to the nearest wall.
+   */
+  void SetCurr_Volume(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element distance to the nearest wall with undeformed coordinates.
+   * \return Value of the element distance to the nearest wall with reference coordinates.
+   */
+  su2double GetWallDistance(void);
+
+  /*!
+   * \brief Set the value of the element distance to the nearest wall with undeformed coordinates.
+   * \param[in] val_volume - Value of the element distance to the nearest wall.
+   */
+  void SetWallDistance(su2double val_volume);
 
 };
 

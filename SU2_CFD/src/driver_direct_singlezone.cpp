@@ -172,6 +172,9 @@ void CSinglezoneDriver::Run() {
 
 void CSinglezoneDriver::Postprocess() {
 
+    iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, geometry_container, solver_container,
+        numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
     /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
@@ -289,7 +292,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, numerics_container, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
   }
 
 }

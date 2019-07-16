@@ -204,7 +204,7 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+  nMarker_Interface,				/*!< \brief Number of interface markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -247,7 +247,7 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_Interface,				/*!< \brief Interface markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -682,6 +682,7 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_Interface,       /*!< \brief Global index for interface surfaces using the grid information. */
   *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -694,6 +695,7 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_Interface,       /*!< \brief Global index for interface surfaces using the config information. */
   *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -999,6 +1001,7 @@ private:
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
+  bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -2958,10 +2961,10 @@ public:
   unsigned short GetnMarker_NearFieldBound(void);
   
   /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
+   * \brief Get the total number of interface markers.
+   * \return Total number of interface markers.
    */
-  unsigned short GetnMarker_InterfaceBound(void);
+  unsigned short GetnMarker_Interface(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -3509,6 +3512,14 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> belongs to the interface <i>val_moving</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker belongs to the interface.
+   */
+  void SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface);
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3630,6 +3641,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+  /*!
+   * \brief Get the interface information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the interface.
+   * \return 0 or 1 depending if the marker belongs to the interface.
+   */
+  unsigned short GetMarker_All_Interface(unsigned short val_marker);
 
   /*!
    * \brief Get the Python customization for a marker <i>val_marker</i>.
@@ -6202,6 +6220,12 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
+   * \brief Get the interface information from the config definition for the marker <i>val_marker</i>.
+   * \return Interface information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Interface(string val_marker);
+
+  /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6557,6 +6581,12 @@ public:
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Moving(string val_marker);
+
+  /*!
+   * \brief Get the internal index for an interface boundary <i>val_marker</i>.
+   * \return Internal index for a interface boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Interface(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6565,6 +6595,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the interface boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Interface_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -8779,6 +8817,12 @@ public:
    * \return 	Order of predictor
    */
   unsigned short GetPredictorOrder(void);
+
+  /*!
+   * \brief Get whether loads will come from a python wrapper.
+   * \return  Bool: determines if loads will come from a python wrapper.
+   */
+  bool GetpyFSI(void);
 
   /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
