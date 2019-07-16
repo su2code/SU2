@@ -1156,7 +1156,6 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   /*--- Reset the offset cache and index --- */
   Offset_Cache_Index = 0;
   Offset_Cache.clear();
-  Offset_Cache_Checked = false;
   
   if (fem_output){
     
@@ -1205,16 +1204,27 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
       
       LoadVolumeData(config, geometry, solver, iPoint);
 
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1){ 
-          
-          /*--- Load the surface data into the Local_Data() array. --- */
-          
-          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
-        }
-      } 
     }
+    
+    /*--- Reset the offset cache and index --- */
+    Offset_Cache_Index = 0;
+    Offset_Cache.clear();    
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        
+        if (iVertex == 0){
+          Build_Offset_Cache = true;
+        } else {
+          Build_Offset_Cache = false;
+        }
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+        
+      }   
+    } 
   }
 }
 
