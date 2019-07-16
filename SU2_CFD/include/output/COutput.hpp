@@ -147,7 +147,8 @@ protected:
   std::vector<string>                           VolumeOutput_List;
   std::vector<short>                            Offset_Cache;
   unsigned short                                Offset_Cache_Index;
-  bool                                          Offset_Cache_Checked;
+  bool                                          Offset_Cache_Checked,
+                                                Build_Offset_Cache;
   
   std::vector<string> RequestedHistoryFields;
   unsigned short nRequestedHistoryFields;
