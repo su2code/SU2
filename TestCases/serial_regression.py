@@ -1543,7 +1543,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
+    pywrapper_fsi2d.test_vals = [2.000000, 0.000000, -4.017814, -6.059791] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.timeout   = 1600
@@ -1570,7 +1570,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-4.691612, -2.206047, -2.288896, 0.777467] #last 4 columns
+    pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259671, -0.040632, 0.144135] #last 4 columns
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600
