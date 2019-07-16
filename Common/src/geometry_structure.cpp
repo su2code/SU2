@@ -16017,14 +16017,27 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     /*--- Read extra inofmration ---*/
     
-    getline(Surface_file, text_line);
-    text_line.erase (0,9);
-    su2double AoASens = atof(text_line.c_str());
-    config->SetAoA_Sens(AoASens);
+//    getline(Surface_file, text_line);
+//    text_line.erase (0,9);
+//    su2double AoASens = atof(text_line.c_str());
+//    config->SetAoA_Sens(AoASens);
     
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
+    
+    vector<string> split_line;
+    
+    char delimiter = ',';
+    split_line = PrintingToolbox::split(text_line, delimiter);
+    
+    std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
+    
+    if (it == split_line.end()){
+      SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
+    }
+    
+    int sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -16032,7 +16045,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
-      point_line >> iPoint >> Sensitivity;
+      point_line >> iPoint;
+      
+      for (int i = 1; i <= sens_index; i++)
+        point_line >> Sensitivity;
       
       if (PointInDomain[iPoint]) {
         
