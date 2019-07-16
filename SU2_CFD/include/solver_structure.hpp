@@ -1234,12 +1234,6 @@ public:
   virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
 
   /*!
-   * \brief Allocate the sliding state arrays.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
-  
-  /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
@@ -5368,12 +5362,6 @@ public:
   su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
   /*!
-   * \brief Allocate the sliding state arrays.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
-  
-  /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
@@ -8191,12 +8179,6 @@ public:
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 
   /*!
-   * \brief Allocate the sliding state arrays.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
-  
-  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
@@ -9354,12 +9336,6 @@ public:
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 
-  /*!
-   * \brief Allocate the sliding state arrays.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker);  
-  
   /*!
    * \brief Set custom turbulence variables at the vertex of an inlet.
    * \param[in] iMarker - Marker identifier.

@@ -2349,8 +2349,6 @@ inline void CIncEulerSolver::SetSlidingState(unsigned short val_marker, unsigned
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
 }
 
-inline void CSolver::InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker) {}
-
 inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ }
 
 inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }

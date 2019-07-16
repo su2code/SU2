@@ -800,7 +800,7 @@ def main():
     aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
-    aeroelastic.tol       = 0.000001
+    aeroelastic.tol       = 0.00001
     aeroelastic.unsteady  = True
     aeroelastic.new_output = True
     test_list.append(aeroelastic) 
