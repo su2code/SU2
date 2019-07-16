@@ -540,6 +540,21 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
@@ -6726,23 +6741,6 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   }
 }
 
-void CIncEulerSolver::InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker){
-  
-  unsigned long iPoint;
-  unsigned short iVar;
-
-  SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-  SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-  
-  for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-    SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-    
-    SlidingStateNodes[iMarker][iPoint] = 0;
-    for (iVar = 0; iVar < nPrimVar+1; iVar++)
-      SlidingState[iMarker][iPoint][iVar] = NULL;
-  }
-}
-
 CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
   /*--- Basic array initialization ---*/
@@ -7271,7 +7269,21 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
+    
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
