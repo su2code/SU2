@@ -35,22 +35,22 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/vector_structure.hpp"
+#include "../../include/linear_algebra/CSysVector.hpp"
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
-  
+
   vec_val = NULL;
-  
+
 }
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType & val) {
-  
+
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
   nVar = 1;
-  
+
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
     char buf[100];
@@ -61,12 +61,12 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType 
   vec_val = new ScalarType[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
-  
+
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
 }
 
 template<class ScalarType>
@@ -76,53 +76,53 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
   nVar = numVar;
-  
+
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
-	
+
   vec_val = new ScalarType[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
-  
+
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
 }
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(const CSysVector<ScalarType> & u) {
-  
+
   /*--- Copy size information, allocate memory, and initialize values ---*/
   nElm = u.nElm; nElmDomain = u.nElmDomain;
   nBlk = u.nBlk; nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
-  
+
   vec_val = new ScalarType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
-  
+
 #ifdef HAVE_MPI
   nElmGlobal = u.nElmGlobal;
 #endif
-  
+
 }
 
 template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType* u_array) {
-  
+
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
   nVar = 1;
-  
+
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    char buf[100];    
+    char buf[100];
     SPRINTF(buf, "Invalid input: size = %lu", size );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
@@ -135,7 +135,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType*
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
 }
 
 template<class ScalarType>
@@ -145,7 +145,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
   nVar = numVar;
-  
+
   /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
@@ -161,42 +161,42 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
 }
 
 template<class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
   delete [] vec_val;
-  
+
   nElm = 0; nElmDomain = 0;
   nBlk = 0; nBlkDomain = 0;
   nVar = 0;
-  
+
 }
 
 template<class ScalarType>
 void CSysVector<ScalarType>::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const ScalarType & val) {
-  
+
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
   nVar = numVar;
-  
+
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
-	
+
   vec_val = new ScalarType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
-  
+
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
+
 }
 
 template<class ScalarType>
@@ -232,7 +232,7 @@ void CSysVector<ScalarType>::Equals_AX_Plus_BY(const ScalarType & a, CSysVector<
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<ScalarType> & u) {
-  
+
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if (this == &u) return *this;
 
@@ -244,16 +244,16 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const CSysVector<Scal
   nElm = u.nElm;
   nElmDomain = u.nElmDomain;
   nBlk = u.nBlk;
-	nBlkDomain = u.nBlkDomain;
+  nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
 
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
-  
+
 #ifdef HAVE_MPI
   nElmGlobal = u.nElmGlobal;
 #endif
-  
+
   return *this;
 }
 
@@ -266,7 +266,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator=(const ScalarType & va
 
 template<class ScalarType>
 CSysVector<ScalarType> CSysVector<ScalarType>::operator+(const CSysVector<ScalarType> & u) const {
-  
+
   /*--- Use copy constructor and compound addition-assignment ---*/
   CSysVector<ScalarType> sum(*this);
   sum += u;
@@ -275,7 +275,7 @@ CSysVector<ScalarType> CSysVector<ScalarType>::operator+(const CSysVector<Scalar
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<ScalarType> & u) {
-  
+
   /*--- Check for consistent sizes, then add elements ---*/
   if (nElm != u.nElm) {
     SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
@@ -287,7 +287,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator+=(const CSysVector<Sca
 
 template<class ScalarType>
 CSysVector<ScalarType> CSysVector<ScalarType>::operator-(const CSysVector<ScalarType> & u) const {
-  
+
   /*--- Use copy constructor and compound subtraction-assignment ---*/
   CSysVector<ScalarType> diff(*this);
   diff -= u;
@@ -296,7 +296,7 @@ CSysVector<ScalarType> CSysVector<ScalarType>::operator-(const CSysVector<Scalar
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<ScalarType> & u) {
-  
+
   /*--- Check for consistent sizes, then subtract elements ---*/
   if (nElm != u.nElm) {
     SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
@@ -308,7 +308,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator-=(const CSysVector<Sca
 
 template<class ScalarType>
 CSysVector<ScalarType> CSysVector<ScalarType>::operator*(const ScalarType & val) const {
-  
+
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
   CSysVector<ScalarType> prod(*this);
@@ -318,7 +318,7 @@ CSysVector<ScalarType> CSysVector<ScalarType>::operator*(const ScalarType & val)
 
 template<class ScalarType>
 CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<ScalarType> & u) {
-  
+
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
   CSysVector<ScalarType> prod(u);
@@ -328,7 +328,7 @@ CSysVector<ScalarType> operator*(const ScalarType & val, const CSysVector<Scalar
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(const ScalarType & val) {
-  
+
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] *= val;
   return *this;
@@ -336,7 +336,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator*=(const ScalarType & v
 
 template<class ScalarType>
 CSysVector<ScalarType> CSysVector<ScalarType>::operator/(const ScalarType & val) const {
-  
+
   /*--- use copy constructor and compound scalar
    division-assignment ---*/
   CSysVector quotient(*this);
@@ -346,7 +346,7 @@ CSysVector<ScalarType> CSysVector<ScalarType>::operator/(const ScalarType & val)
 
 template<class ScalarType>
 CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(const ScalarType & val) {
-  
+
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] /= val;
   return *this;
@@ -354,7 +354,7 @@ CSysVector<ScalarType> & CSysVector<ScalarType>::operator/=(const ScalarType & v
 
 template<class ScalarType>
 ScalarType CSysVector<ScalarType>::norm() const {
-  
+
   /*--- just call dotProd on this*, then sqrt ---*/
   ScalarType val = dotProd(*this, *this);
   if (val < 0.0) {
@@ -365,7 +365,7 @@ ScalarType CSysVector<ScalarType>::norm() const {
 
 template<class ScalarType>
 void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) {
-  
+
   for (unsigned long i = 0; i < nElm; i++)
     u_array[i] = vec_val[i];
 }
@@ -373,7 +373,7 @@ void CSysVector<ScalarType>::CopyToArray(ScalarType* u_array) {
 template<class ScalarType>
 void CSysVector<ScalarType>::AddBlock(unsigned long val_ipoint, ScalarType *val_residual) {
   unsigned short iVar;
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
 }
@@ -381,7 +381,7 @@ void CSysVector<ScalarType>::AddBlock(unsigned long val_ipoint, ScalarType *val_
 template<class ScalarType>
 void CSysVector<ScalarType>::SubtractBlock(unsigned long val_ipoint, ScalarType *val_residual) {
   unsigned short iVar;
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
 }
@@ -389,7 +389,7 @@ void CSysVector<ScalarType>::SubtractBlock(unsigned long val_ipoint, ScalarType 
 template<class ScalarType>
 void CSysVector<ScalarType>::SetBlock(unsigned long val_ipoint, ScalarType *val_residual) {
   unsigned short iVar;
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
 }
@@ -426,7 +426,7 @@ ScalarType *CSysVector<ScalarType>::GetBlock(unsigned long val_ipoint) {
 template<class ScalarType>
 template<class T>
 void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
-  
+
   /*--- This is a method and not the overload of an operator to make sure who
    calls it knows the consequence to the derivative information (lost) ---*/
 
@@ -459,25 +459,25 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
 
 template<class ScalarType>
 ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType> & v) {
-  
+
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
     SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
-  
+
   /*--- find local inner product and, if a parallel run, sum over all
    processors (we use nElemDomain instead of nElem) ---*/
   ScalarType loc_prod = 0.0;
   for (unsigned long i = 0; i < u.nElmDomain; i++)
     loc_prod += u.vec_val[i]*v.vec_val[i];
   ScalarType prod = 0.0;
-  
+
 #ifdef HAVE_MPI
   SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   prod = loc_prod;
 #endif
-  
+
   return prod;
 }
 
