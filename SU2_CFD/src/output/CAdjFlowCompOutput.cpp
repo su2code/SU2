@@ -332,19 +332,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     }
   }
   /// END_GROUP
-  
-  /// BEGIN_GROUP: GRID_VELOCITY, DESCRIPTION: The grid velocity in case of a moving grid.  
-  if (config->GetGrid_Movement()){
-    /// DESCRIPTION: Grid velocity x-component.
-    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY"); 
-    /// DESCRIPTION: Grid velocity y-component.
-    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY"); 
-    if (nDim == 3)    
-      /// DESCRIPTION: Grid velocity z-component.
-      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY"); 
-  }
-  /// END_GROUP
-  
+
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables. 
   /// DESCRIPTION: Residual of the adjoint density.
   AddVolumeOutput("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");  

@@ -139,6 +139,8 @@ COutput::COutput(CConfig *config) {
   Convergence_FSI    = false;
   Convergence_FullMG = false;
   
+  Build_Offset_Cache = false;
+  
 }
 
 COutput::~COutput(void) {
@@ -1173,9 +1175,13 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
 
       for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
         
-        LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
+        if (jPoint == 0){
+          Build_Offset_Cache = true;
+        } else {
+          Build_Offset_Cache = false;
+        }
         
-        CheckOffsetCache();
+        LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
         jPoint++;
         
@@ -1186,10 +1192,18 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
+      /*--- Build the offset cache if it is the first point --- */
+      
+      if (iPoint == 0){
+        Build_Offset_Cache = true;
+      } else {
+        Build_Offset_Cache = false;
+      }
+      
       /*--- Check for halos & write only if requested ---*/
       /*--- Load the volume data into the Local_Data() array. --- */
       
-      LoadVolumeData(config, geometry, solver, jPoint);
+      LoadVolumeData(config, geometry, solver, iPoint);
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         iVertex = geometry->node[iPoint]->GetVertex(iMarker);
@@ -1197,22 +1211,16 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
           
           /*--- Load the surface data into the Local_Data() array. --- */
           
-          LoadSurfaceData(config, geometry, solver, jPoint, iMarker, iVertex);
+          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
         }
-        
       } 
-      
-      CheckOffsetCache();
-      
-      jPoint++;
     }
   }
-
 }
 
 void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
   
-  if (VolumeOutput_List.size() != Offset_Cache.size()){ 
+  if (Build_Offset_Cache){ 
     
     /*--- Build up the offset cache to speed up subsequent 
      * calls of this routine since the order of calls is 
