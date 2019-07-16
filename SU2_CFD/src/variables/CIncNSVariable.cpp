@@ -88,6 +88,9 @@ bool CIncNSVariable::SetStrainMag(void) {
   for (iDim = 0; iDim < nDim; iDim++) {
     StrainMag += pow(Gradient_Primitive[iDim+1][iDim] - 1.0/3.0*Div, 2.0);
   }
+  if (nDim == 2) {
+    StrainMag += pow(1.0/3.0*Div, 2.0);
+  }
 
   /*--- Add off diagonals ---*/
 
