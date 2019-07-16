@@ -1011,7 +1011,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.720012, -1.607989] #last 3 columns
+    bars_SST_2D.test_vals = [13.000000, -0.719501, -1.608959] #last 3 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1099,10 +1099,11 @@ def main():
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
-    airfoilRBF.test_iter = 29
-    airfoilRBF.test_vals = [-13.228126, -3.738614, -11.639760, 1404500.0] #last 4 columns
+    airfoilRBF.test_iter = 0
+    airfoilRBF.test_vals = [0.000000, 1.442130, -2.231734] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
+    airfoilRBF.multizone = True
     airfoilRBF.tol       = 0.00001
     test_list.append(airfoilRBF)
    
