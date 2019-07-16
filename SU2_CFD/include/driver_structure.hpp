@@ -1602,6 +1602,11 @@ public:
    */
   void SecondaryRecording(void);
 
+  /*!
+   * \brief Run an iteration of the solver.
+   */
+  bool DirectIteration(unsigned long TimeIter);
+
 };
 
 

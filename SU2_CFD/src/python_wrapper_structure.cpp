@@ -1206,3 +1206,141 @@ vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker,
   return MeshCoord_passive;
 
 }
+
+bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
+
+  config_container[ZONE_0]->SetDiscrete_Adjoint(false);
+
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case DISC_ADJ_EULER: config_container[ZONE_0]->SetKind_Solver(EULER); break;
+    case DISC_ADJ_NAVIER_STOKES: config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
+    case DISC_ADJ_RANS: config_container[ZONE_0]->SetKind_Solver(RANS); break;
+  }
+
+  COutput *output_direct = new COutput(config_container[ZONE_0]);
+
+  /*--- Mesh movement ---*/
+
+  direct_iteration->Deform_Mesh(geometry_container,numerics_container,solver_container,config_container,ZONE_0,INST_0,NONE);
+
+  /*--- Zone preprocessing ---*/
+
+  direct_iteration->Preprocess(output_direct, integration_container, geometry_container, solver_container,
+                               numerics_container, config_container, surface_movement, grid_movement,
+                               FFDBox, ZONE_0, INST_0);
+
+  /*--- Set the iteration ---*/
+
+  config_container[ZONE_0]->SetExtIter(TimeIter);
+
+  /*--- Iterate the direct solver ---*/
+
+  direct_iteration->Iterate(output_direct, integration_container, geometry_container, solver_container, numerics_container,
+                            config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- Postprocess the direct solver ---*/
+
+  direct_iteration->Postprocess(output_direct, integration_container, geometry_container, solver_container,
+                                numerics_container, config_container, surface_movement, grid_movement,
+                                FFDBox, ZONE_0, INST_0);
+
+   /*--- Update the direct solver ---*/
+
+  direct_iteration->Update(output_direct, integration_container, geometry_container, solver_container,
+                           numerics_container, config_container, surface_movement, grid_movement,
+                           FFDBox, ZONE_0, INST_0);
+
+  /*--- Monitor the direct solver ---*/
+  bool StopCalc = false;
+  bool steady = (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence();
+
+  /*--- Write the convergence history for the fluid (only screen output) ---*/
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+
+  if (steady) output_direct->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, ZONE_0, INST_0);
+
+  /*--- File output ---*/
+
+  bool output_files = false;
+
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
+
+  if (
+
+      /*--- General if statements to print output statements ---*/
+
+//      (ExtIter+1 >= nExtIter) || (StopCalc) ||
+
+      /*--- Fixed CL problem ---*/
+
+      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
+       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == TimeIter)) ||
+
+      /*--- Steady problems ---*/
+
+      ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
+       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+
+      /*--- No inlet profile file found. Print template. ---*/
+
+      (config_container[ZONE_0]->GetWrt_InletFile())
+
+      ) {
+
+    output_files = true;
+
+  }
+
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < TimeIter) output_files = false;
+    if (config_container[ZONE_0]->GetnExtIter() - 1 == TimeIter) output_files = true;
+  }
+
+  /*--- write the solution ---*/
+
+  if (output_files) {
+
+    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+
+    output_direct->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
+
+    /*--- Execute the routine for writing special output. ---*/
+    output_direct->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+
+
+    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+  }
+
+  config_container[ZONE_0]->SetDiscrete_Adjoint(true);
+
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_EULER); break;
+    case NAVIER_STOKES: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES); break;
+    case RANS: config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_RANS); break;
+  }
+
+  return StopCalc;
+}
