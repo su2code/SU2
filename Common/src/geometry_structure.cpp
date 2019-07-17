@@ -6868,7 +6868,8 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
    on a node-by-node basis into a single vector container. First, we sort
    the entries and remove the duplicates we find for each node, then we
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
-  
+
+  unsigned long total_adj_size = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- For each point, sort the adjacency in ascending order
@@ -6879,7 +6880,14 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
     it = unique(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
     local_size = it - adj_nodes[iPoint].begin();
     adj_nodes[iPoint].resize(local_size);
-    
+    total_adj_size += local_size;
+  }
+  /*--- reserve allocated space to improve push_back behavior
+  in the following loop */
+  adjacency_vector.reserve(total_adj_size);
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    local_size = adj_nodes[iPoint].size();
     /*--- Move the sorted adjacency into a 1-D vector for all
      points in order to make creating the copy for ParMETIS easier. ---*/
     
