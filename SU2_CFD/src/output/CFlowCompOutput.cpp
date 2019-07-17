@@ -269,6 +269,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /*--- Add Cp diff fields ---*/
   
   Add_CpInverseDesignOutput(config);
+  
+  /*--- Add combo obj value --- */
+  
+  AddHistoryOutput("COMBO", "ComboObj", FORMAT_SCIENTIFIC, "COMBO", TYPE_COEFFICIENT);
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -616,6 +620,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
   
   Set_CpInverseDesign(flow_solver, geometry, config);
+  
+  /*--- Set combo obj value --- */
+  
+  SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
   
 }
 

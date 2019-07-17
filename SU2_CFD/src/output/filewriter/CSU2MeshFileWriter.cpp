@@ -192,7 +192,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
     
     /*--- Read the boundary information ---*/
     
-    if (nZone > 1){
+    if (nZone == 1){
       str = "boundary";
     } else {
       str = "boundary_" + PrintingToolbox::to_string(iZone);
@@ -201,6 +201,10 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
     str += ".dat";
     
     input_file.open(str.c_str(), ios::out);
+        
+    if (!input_file.is_open()){
+      SU2_MPI::Error(string("Cannot find ") + str, CURRENT_FUNCTION);
+    }
     
     /*--- Read grid file with format SU2 ---*/
     
@@ -213,7 +217,7 @@ void CSU2MeshFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
         
         text_line.erase (0,6); nMarker_ = atoi(text_line.c_str());
         output_file << "NMARK= " << nMarker_ << endl;
-        
+                
         for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
           
           getline (input_file, text_line);
