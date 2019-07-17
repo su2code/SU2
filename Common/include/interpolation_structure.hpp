@@ -48,7 +48,6 @@
 
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
-#include "vector_structure.hpp"
 
 using namespace std;
 

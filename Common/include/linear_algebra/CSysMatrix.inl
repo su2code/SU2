@@ -41,7 +41,7 @@
 
 #pragma once
 
-#include "matrix_structure.hpp"
+#include "CSysMatrix.hpp"
 
 template<class ScalarType>
 inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
@@ -55,9 +55,9 @@ inline ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long bloc
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
-  
+
   unsigned long iVar, index;
-  
+
   for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
       for (iVar = 0; iVar < nVar*nEqn; iVar++)
@@ -65,7 +65,7 @@ inline void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, un
       break;
     }
   }
-  
+
 }
 
 template<class ScalarType>
@@ -86,14 +86,14 @@ inline void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long b
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
-  
+
   for (unsigned long index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     if (col_ind_ilu[index] == block_j) {
       MatrixSubtraction(&ILU_matrix[index*nVar*nEqn], val_block, &ILU_matrix[index*nVar*nEqn]);
       break;
     }
   }
-  
+
 }
 
 template<class T, bool alpha, bool beta, bool transp>
@@ -338,10 +338,10 @@ inline void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, Sca
 
 template<class ScalarType>
 inline void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transpose) {
-  
+
   const ScalarType* mat = GetBlock(block_i, block_i);
   MatrixInverse(mat, invBlock);
-  
+
   if (transpose) // swap off-diag
     for (unsigned long iVar = 0; iVar < nVar-1; ++iVar)
       for (unsigned long jVar = iVar+1; jVar < nVar; ++jVar) {
