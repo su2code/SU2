@@ -35,13 +35,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 #include "../config_structure.hpp"
-#include "../vector_structure.hpp"
-#include "../matrix_structure.hpp"
 #include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
+#include "CSysMatrix.hpp"
 
 /*!
  * \class CPreconditioner
@@ -72,15 +72,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CJacobiPreconditioner();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
@@ -93,12 +93,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CJacobiPreconditioner() {}
-  
+
   /*!
    * \brief operator that defines the preconditioner operation
    * \param[in] u - CSysVector that is being preconditioned
@@ -120,15 +120,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CILUPreconditioner();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
@@ -141,12 +141,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CILUPreconditioner() {}
-  
+
   /*!
    * \brief operator that defines the preconditioner operation
    * \param[in] u - CSysVector that is being preconditioned
@@ -168,15 +168,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CLU_SGSPreconditioner();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
@@ -189,12 +189,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CLU_SGSPreconditioner() {}
-  
+
   /*!
    * \brief operator that defines the preconditioner operation
    * \param[in] u - CSysVector that is being preconditioned
@@ -216,15 +216,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CLineletPreconditioner();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
@@ -237,12 +237,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CLineletPreconditioner() {}
-  
+
   /*!
    * \brief operator that defines the preconditioner operation
    * \param[in] u - CSysVector that is being preconditioned
