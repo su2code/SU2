@@ -10474,6 +10474,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
             cout << nElem_Bound[iMarker]  << " boundary elements in index ";
             cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
           }
+          //TODO need a 2D container class to standardize
           bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
           
           for (unsigned long jElem = 0; jElem < nElems[s]; jElem++ ) {
