@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "../mpi_structure.hpp"
 
 #include <climits>
 #include <limits>
@@ -49,13 +49,13 @@
 #include <iomanip>
 #include <string>
 
-#include "option_structure.hpp"
-#include "vector_structure.hpp"
-#include "matrix_structure.hpp"
-#include "config_structure.hpp"
-#include "geometry_structure.hpp"
-#include "linear_algebra/CMatrixVectorProduct.hpp"
-#include "linear_algebra/CPreconditioner.hpp"
+#include "../option_structure.hpp"
+#include "../config_structure.hpp"
+#include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
+#include "CSysMatrix.hpp"
+#include "CMatrixVectorProduct.hpp"
+#include "CPreconditioner.hpp"
 
 using namespace std;
 
@@ -118,7 +118,7 @@ private:
     if (y == 0.0) return 0.0;
     return fabs(x) * (y < 0.0 ? -1.0 : 1.0);
   }
-  
+
   /*!
    * \brief applys a Givens rotation to a 2-vector
    * \param[in] s - sine of the Givens rotation angle
@@ -127,7 +127,7 @@ private:
    * \param[in,out] h2 - second element of 2x1 vector being transformed
    */
   void ApplyGivens(const ScalarType & s, const ScalarType & c, ScalarType & h1, ScalarType & h2);
-  
+
   /*!
    * \brief generates the Givens rotation matrix for a given 2-vector
    * \param[in,out] dx - element of 2x1 vector being transformed
@@ -139,7 +139,7 @@ private:
    * "Matrix Computations" by Golub and van Loan.
    */
   void GenerateGivens(ScalarType & dx, ScalarType & dy, ScalarType & s, ScalarType & c);
-  
+
   /*!
    * \brief finds the solution of the upper triangular system Hsbg*x = rhs
    *
@@ -153,7 +153,7 @@ private:
    */
   void SolveReduced(const int & n, const vector<vector<ScalarType> > & Hsbg,
                     const vector<ScalarType> & rhs, vector<ScalarType> & x);
-  
+
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
    * \author Based on Kesheng John Wu's mgsro subroutine in Saad's SPARSKIT
@@ -173,7 +173,7 @@ private:
    *
    */
   void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w);
-  
+
   /*!
    * \brief writes header information for a CSysSolve residual history
    * \param[in] solver - string describing the solver
@@ -183,7 +183,7 @@ private:
    * \pre the ostream object os should be open
    */
   void WriteHeader(const string & solver, const ScalarType & restol, const ScalarType & resinit);
-  
+
   /*!
    * \brief writes residual convergence data for one iteration to a stream
    * \param[in] iter - current iteration
@@ -193,14 +193,14 @@ private:
    * \pre the ostream object os should be open
    */
   void WriteHistory(const int & iter, const ScalarType & res, const ScalarType & resinit);
-  
+
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
   void HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol);
-  
+
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
    * \param[out] LinSysSol - Linear system solution
@@ -208,13 +208,13 @@ private:
   void HandleTemporariesOut(CSysVector<su2double> & LinSysSol);
 
 public:
-  
+
   /*!
    * \brief default constructor of the class.
    * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
    */
   CSysSolve(const bool mesh_deform_mode = false);
-  
+
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
    * \param[in,out] x - on entry the intial guess, on exit the solution
@@ -228,7 +228,7 @@ public:
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                              PrecondType & precond, ScalarType tol, unsigned long m,
                              ScalarType *residual, bool monitoring, CConfig *config);
-	
+
   /*!
    * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
@@ -244,8 +244,8 @@ public:
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                  PrecondType & precond, ScalarType tol, unsigned long m,
                                  ScalarType *residual, bool monitoring, CConfig *config);
-	
-	/*!
+
+  /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
    * \param[in,out] x - on entry the intial guess, on exit the solution
@@ -260,7 +260,7 @@ public:
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                   PrecondType & precond, ScalarType tol, unsigned long m,
                                   ScalarType *residual, bool monitoring, CConfig *config);
-  
+
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)
    * \param[in] b - the right hand size vector
@@ -276,7 +276,7 @@ public:
   unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, ProductType & mat_vec,
                                    PrecondType & precond, ScalarType tol, unsigned long m,
                                    ScalarType *residual, bool monitoring, CConfig *config);
-  
+
   /*!
    * \brief Solve the linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system
@@ -287,7 +287,7 @@ public:
    */
   unsigned long Solve(MatrixType & Jacobian, CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
                       CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Solve the adjoint linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system
@@ -298,7 +298,7 @@ public:
    */
   unsigned long Solve_b(MatrixType & Jacobian, CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
                         CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Get the final residual.
    * \return The residual at the end of Solve

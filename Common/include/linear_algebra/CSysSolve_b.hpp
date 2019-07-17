@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "config_structure.hpp"
+#include "../config_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
 template<class ScalarType>
