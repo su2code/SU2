@@ -8182,7 +8182,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_PARMETIS
   /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
   vector< vector<unsigned long> >::iterator it2;
-  adj_nodes.clear()
+  adj_nodes.clear();
   adj_nodes.resize(nPoint, vector<unsigned long>(0));
 #endif
 #endif
