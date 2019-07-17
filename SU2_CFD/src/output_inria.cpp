@@ -201,7 +201,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
   /* Get index of adaptation parameter if performing error estimation */
 
-  if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+  if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       idxVar += nDim + 2; // Add laminar viscosity, skin friction, heat flux
@@ -367,7 +367,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 
   /*--- Write METR ---*/
 
-  if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+  if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
 
     /*--- Write metric tensor ---*/
 

@@ -93,6 +93,7 @@ public:
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
+                          unsigned short val_nZone,
                           unsigned short val_nDim, 
                           SU2_Comm MPICommunicator);
 

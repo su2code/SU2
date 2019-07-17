@@ -40,8 +40,9 @@
 CErrorEstimationDriver::CErrorEstimationDriver(void) { }
 
 CErrorEstimationDriver::CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
+                                               unsigned short val_nZone,
                                                unsigned short val_nDim, 
-                                               SU2_Comm MPICommunicator):nDim(val_nDim), fsi(false), fem_solver(false) {
+                                               SU2_Comm MPICommunicator):nZone(val_nZone), nDim(val_nDim), fsi(false), fem_solver(false) {
 
   SU2_MPI::SetComm(MPICommunicator);
 
@@ -272,6 +273,8 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   output = new COutput(config_container[ZONE_0]);
 
 }
+
+CErrorEstimationDriver::~CErrorEstimationDriver(void) { }
 
 void CErrorEstimationDriver::Input_Preprocessing(CConfig **config_container, CGeometry ****geometry_container, bool val_periodic) {
 

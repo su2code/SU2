@@ -157,7 +157,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	  Solution_Adj_Old = new su2double [nVar];
 	}
 
-  if ((config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET) || config->GetWrt_InriaMesh()){
+  if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET || config->GetWrt_InriaMesh()){
     AnisoGrad = new su2double[nDim*nVar*nDim];
     AnisoHess = new su2double[3*(nDim-1)*nVar*nDim];
     AnisoMetr = new su2double[3*(nDim-1)];

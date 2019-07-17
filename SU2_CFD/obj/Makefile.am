@@ -60,12 +60,12 @@ endif
 
 libSU2Core_sources = \
   ../include/definition_structure.hpp \
-  ../include/error_estimation_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
   ../include/driver_structure.hpp \
+  ../include/error_estimation_structure.hpp \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
@@ -85,7 +85,6 @@ libSU2Core_sources = \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
   ../src/definition_structure.cpp \
-  ../src/error_estimation_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
@@ -97,6 +96,7 @@ libSU2Core_sources = \
   ../src/driver_direct_singlezone.cpp \
   ../src/driver_adjoint_singlezone.cpp \
   ../src/driver_structure.cpp \
+  ../src/error_estimation_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
