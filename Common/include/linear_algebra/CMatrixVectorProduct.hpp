@@ -39,9 +39,9 @@
 #pragma once
 
 #include "../config_structure.hpp"
-#include "../vector_structure.hpp"
-#include "../matrix_structure.hpp"
 #include "../geometry_structure.hpp"
+#include "CSysVector.hpp"
+#include "CSysMatrix.hpp"
 
 /*!
  * \class CMatrixVectorProduct
@@ -81,15 +81,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CSysMatrixVectorProduct();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the products
@@ -102,12 +102,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CSysMatrixVectorProduct() {}
-  
+
   /*!
    * \brief operator that defines the CSysMatrix-CSysVector product
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
@@ -129,15 +129,15 @@ private:
   CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
   CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-  
+
   /*!
    * \brief Default constructor of the class
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
    */
   CSysMatrixVectorProductTransposed();
-  
+
 public:
-  
+
   /*!
    * \brief constructor of the class
    * \param[in] matrix_ref - matrix reference that will be used to define the products
@@ -150,12 +150,12 @@ public:
     geometry = geometry_ref;
     config = config_ref;
   }
-  
+
   /*!
    * \brief destructor of the class
    */
   ~CSysMatrixVectorProductTransposed() {}
-  
+
   /*!
    * \brief operator that defines the CSysMatrix-CSysVector product
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
