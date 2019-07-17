@@ -1231,7 +1231,11 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   /*--- Set the iteration ---*/
 
-  config_container[ZONE_0]->SetExtIter(TimeIter);
+  config_container[ZONE_0]->SetOuterIter(TimeIter);
+
+  /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+  direct_iteration->Solve(output, integration_container, geometry_container, solver_container,
+                          numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Iterate the direct solver ---*/
 
@@ -1243,6 +1247,13 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
   direct_iteration->Postprocess(output_direct, integration_container, geometry_container, solver_container,
                                 numerics_container, config_container, surface_movement, grid_movement,
                                 FFDBox, ZONE_0, INST_0);
+
+  /*--- A corrector step can help preventing numerical instabilities ---*/
+
+  if (config_container[ZONE_0]->GetRelaxation())
+    direct_iteration->Relaxation(output, integration_container, geometry_container, solver_container,
+                                                    numerics_container, config_container, surface_movement, grid_movement, 
+                                                    FFDBox, ZONE_0, INST_0);
 
    /*--- Update the direct solver ---*/
 
