@@ -6791,17 +6791,10 @@ void CPhysicalGeometry::PrepareOffsets(unsigned long val_npoint_global) {
   nPoint_Lin = new unsigned long[size];
   nPoint_Cum = new unsigned long[size+1];
   
-  unsigned long total_points = 0;
+  unsigned long quotient = val_npoint_global/size;
+  unsigned long remainder = val_npoint_global%size;
   for (int ii = 0; ii < size; ii++) {
-    nPoint_Lin[ii] = val_npoint_global/size;
-    total_points  += nPoint_Lin[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long remainder = val_npoint_global - total_points;
-  for (unsigned long ii = 0; ii < remainder; ii++) {
-    nPoint_Lin[ii]++;
+    nPoint_Lin[ii] = quotient + int(ii < remainder);
   }
   
   /*--- Store the local number of nodes on each proc in the linear
