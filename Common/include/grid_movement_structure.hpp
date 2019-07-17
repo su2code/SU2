@@ -50,10 +50,9 @@
 
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
-#include "matrix_structure.hpp"
-#include "vector_structure.hpp"
-#include "linear_solvers_structure.hpp"
-#include "linear_solvers_structure_b.hpp"
+#include "linear_algebra/CSysMatrix.hpp"
+#include "linear_algebra/CSysVector.hpp"
+#include "linear_algebra/CSysSolve.hpp"
 #include "element_structure.hpp"
 
 using namespace std;

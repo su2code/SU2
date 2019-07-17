@@ -1700,10 +1700,7 @@ enum ENUM_LINEAR_SOLVER {
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
   RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
-  SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
-  SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  SMOOTHER = 8,  /*!< \brief Iterative smoother. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1713,10 +1710,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
 ("RESTARTED_FGMRES", RESTARTED_FGMRES)
-("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
-("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
-("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU", SMOOTHER_ILU);
+("SMOOTHER", SMOOTHER);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
