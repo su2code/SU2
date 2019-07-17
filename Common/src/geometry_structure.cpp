@@ -6792,7 +6792,7 @@ void CPhysicalGeometry::PrepareOffsets(unsigned long val_npoint_global) {
   nPoint_Cum = new unsigned long[size+1];
   
   unsigned long quotient = val_npoint_global/size;
-  unsigned long remainder = val_npoint_global%size;
+  int remainder = int(val_npoint_global%size);
   for (int ii = 0; ii < size; ii++) {
     nPoint_Lin[ii] = quotient + int(ii < remainder);
   }
