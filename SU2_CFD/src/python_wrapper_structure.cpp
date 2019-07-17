@@ -1355,3 +1355,20 @@ bool CDiscAdjSinglezoneDriver::DirectIteration(unsigned long TimeIter) {
 
   return StopCalc;
 }
+
+CConfig* CDriver::GetConfig(unsigned short val_iZone) {
+  return config_container[val_iZone];
+}
+
+CGeometry* CDriver::GetGeometry(unsigned short val_iZone, 
+                                unsigned short val_iInst, 
+                                unsigned short val_iMesh) {
+  return geometry_container[val_iZone][val_iInst][val_iMesh];
+}
+
+CSolver* CDriver::GetSolver(unsigned short val_iZone, 
+                            unsigned short val_iInst, 
+                            unsigned short val_iMesh, 
+                            unsigned short val_iSol) {
+  return solver_container[val_iZone][val_iInst][val_iMesh][val_iSol];
+}

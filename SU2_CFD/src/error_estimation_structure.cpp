@@ -39,6 +39,79 @@
 
 CErrorEstimationDriver::CErrorEstimationDriver(void) { }
 
+CErrorEstimationDriver::CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
+                                               unsigned short val_nDim, 
+                                               SU2_Comm MPICommunicator):nDim(val_nDim), fsi(false), fem_solver(false) {
+
+  SU2_MPI::SetComm(MPICommunicator);
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  geometry_container            = NULL;
+  solver_container              = NULL;
+  config_container              = NULL;
+  output                        = NULL;
+  nInst                         = NULL;
+
+  /*--- Definition of the containers for all possible zones. ---*/
+
+  geometry_container            = new CGeometry***[nZone];
+  solver_container              = new CSolver****[nZone];
+  config_container              = new CConfig*[nZone];
+  nInst                         = new unsigned short[nZone];
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone]                   = NULL;
+    geometry_container[iZone]                 = NULL;
+    config_container[iZone]                   = disc_adj_driver->GetConfig(iZone);
+    nInst[iZone]                              = 1;
+  }
+
+  /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
+   based data structure is constructed, i.e. node and cell neighbors are
+   identified and linked, and face areas are computed ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    geometry_container[iZone] = new CGeometry** [nInst[iZone]];
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      geometry_container[iZone][iInst] = NULL;
+      geometry_container[iZone][iInst] = new CGeometry* [MESH_0+1];
+      geometry_container[iZone][iInst][MESH_0] = disc_adj_driver->GetGeometry(iZone, iInst, MESH_0);
+
+    }
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
+    The solver classes are specific to a particular set of governing equations,
+    and they contain the subroutines with instructions for computing each spatial
+    term of the PDE, i.e. loops over the edges to compute convective and viscous
+    fluxes, loops over the nodes to compute source terms, and routines for
+    imposing various boundary condition type for the PDE. ---*/
+
+    solver_container[iZone] = new CSolver*** [nInst[iZone]];
+
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      solver_container[iZone][iInst] = NULL;
+      solver_container[iZone][iInst] = new CSolver** [MESH_0+1];
+      solver_container[iZone][iInst][MESH_0] = NULL;
+      solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        solver_container[iZone][iInst][MESH_0][iSol] = disc_adj_driver->GetSolver(iZone, iInst, MESH_0, iSol);
+
+    } // End of loop over iInst
+
+  }
+
+}
+
 CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
                                                unsigned short val_nZone,
                                                unsigned short val_nDim, 

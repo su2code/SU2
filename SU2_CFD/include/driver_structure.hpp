@@ -791,6 +791,26 @@ public:
   vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex);
 
   /*!
+   * \brief Return a pointer to a config container.
+   */
+  CConfig* GetConfig(unsigned short val_iZone);
+
+  /*!
+   * \brief Return a pointer to a geometry container.
+   */
+  CGeometry* GetGeometry(unsigned short val_iZone, 
+                         unsigned short val_iInst, 
+                         unsigned short val_iMesh);
+
+  /*!
+   * \brief Return a pointer to a solver container.
+   */
+  CSolver* GetSolver(unsigned short val_iZone, 
+                     unsigned short val_iInst, 
+                     unsigned short val_iMesh, 
+                     unsigned short val_iSol);
+
+  /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
   virtual void Run_GaussSeidel(){};

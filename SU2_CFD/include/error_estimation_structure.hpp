@@ -42,6 +42,7 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
+#include "../../SU2_CFD/include/driver_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
 
@@ -84,6 +85,16 @@ public:
    * \brief Constructor of the class.
    */
   CErrorEstimationDriver(void);
+
+  /*! 
+   * \brief Constructor of the class.
+   * \param[in] disc_adj_driver - Single zone discrete adjoint driver.
+   * \param[in] val_nDim - Number of dimensions.   
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_adj_driver,
+                          unsigned short val_nDim, 
+                          SU2_Comm MPICommunicator);
 
   /*! 
    * \brief Constructor of the class.

@@ -49,6 +49,7 @@ threads="1"
 %{
 
 #include "../../SU2_CFD/include/driver_structure.hpp"
+#include "../../SU2_CFD/include/error_estimation_structure.hpp"
 
 %}
 
@@ -97,3 +98,6 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 
 // CDriver class
 %include "../../SU2_CFD/include/driver_structure.hpp"
+
+// CErrorEstimationDriver class
+%include "../../SU2_CFD/include/error_estimation_structure.hpp"
