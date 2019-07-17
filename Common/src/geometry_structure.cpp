@@ -10474,7 +10474,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
             cout << nElem_Bound[iMarker]  << " boundary elements in index ";
             cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
           }
-          //TODO need a 2D container class to standardize
           bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
           
           for (unsigned long jElem = 0; jElem < nElems[s]; jElem++ ) {
@@ -10622,7 +10621,7 @@ void CPhysicalGeometry::ReadCGNSPoints(CConfig *config, int val_fn,
   cgsize_t range_max = (cgsize_t)end_node[rank];
   
   /*--- Create buffer to hold the grid coordinates for our rank. ---*/
-  
+  //TODO create a lightweight 2D container to standardize following buffer
   passivedouble **gridCoords = new passivedouble*[val_ncoords];
   passivedouble  *gridBuffer = new passivedouble[val_ncoords*nPoint];
   for (int k = 0; k < val_ncoords; k++)
