@@ -49,7 +49,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
-  unsigned short nZone, nDim;
+  unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo, zone_specific;
   
@@ -89,11 +89,7 @@ int main(int argc, char *argv[]) {
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
-  if (config->GetKind_Solver() == MULTIZONE)
-    nZone  = config->GetnConfigFiles();
-  else
-    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  nZone    = config->GetnZone();
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
   zone_specific = config->GetBoolZoneSpecific();
@@ -101,7 +97,10 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
-  if (config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint())) {
+
+  if (((config->GetSinglezone_Driver() || (nZone == 1 && config->GetDiscrete_Adjoint()))
+    && config->GetUnsteady_Simulation() != HARMONIC_BALANCE && (!turbo)) || (turbo && config->GetDiscrete_Adjoint())) {
+
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 
@@ -109,22 +108,22 @@ int main(int argc, char *argv[]) {
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     if (config->GetDiscrete_Adjoint())
-       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, nDim, MPICommunicator);
+       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     else
-       driver = new CSinglezoneDriver(config_file_name, nZone, nDim, MPICommunicator);
+       driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
 
   }
-  else if (config->GetKind_Solver() == MULTIZONE) {
+  else if (config->GetMultizone_Problem() && !turbo && !fsi) {
 
     /*--- Multizone Driver. ---*/
 
-    driver = new CMultizoneDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
@@ -134,7 +133,7 @@ int main(int argc, char *argv[]) {
     /*--- If the problem is a discrete adjoint FSI problem ---*/
     if (disc_adj_fsi) {
       if (stat_fsi) {
-        driver = new CDiscAdjFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFSIDriver(config_file_name, nZone, MPICommunicator);
       }
       else {
         SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
@@ -142,11 +141,11 @@ int main(int argc, char *argv[]) {
     }
     /*--- If the problem is a direct FSI problem ---*/
     else{
-      driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CFSIDriver(config_file_name, nZone, MPICommunicator);
     }
 
   } else if (zone_specific) {
-    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
@@ -154,13 +153,13 @@ int main(int argc, char *argv[]) {
 
     if (turbo) {
 
-      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
 
     } else {
 
       /*--- Instantiate the class for external aerodynamics ---*/
 
-      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
       
     }
     
