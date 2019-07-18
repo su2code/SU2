@@ -67,11 +67,11 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     nIterMesh = 0;
 
     /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-
+    if (config->GetVolumetric_Movement()){
+      LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+      LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+      StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+    }
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) { }
@@ -326,13 +326,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
+    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
     
     /*--- Set number of iterations in the mesh update. ---*/
 
     Set_nIterMesh(Tot_Iter);
 
-    if (rank == MASTER_NODE) {
+    if (rank == MASTER_NODE && Screen_Output) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
@@ -343,14 +343,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume) {
+void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output) {
   
   unsigned long iElem, ElemCounter = 0, PointCorners[8];
   su2double Volume = 0.0, CoordCorners[8][3];
   unsigned short nNodes = 0, iNodes, iDim;
   bool RightVol = true;
   
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE && Screen_Output)
     cout << "Computing volumes of the grid elements." << endl;
   
   MaxVolume = -1E22; MinVolume = 1E22;
@@ -416,7 +416,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
     geometry->elem[iElem]->SetVolume(Volume);
   }
   
-  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+  if ((ElemCounter != 0) && (rank == MASTER_NODE) && (Screen_Output))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
   
 }
@@ -528,6 +528,8 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
   su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
   
+  bool Screen_Output  = config->GetDeform_Output();
+  
   /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
   
   if (nDim == 2) StiffMatrix_nElem = 8;
@@ -539,8 +541,8 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   
   /*--- Compute min volume in the entire mesh. ---*/
   
-  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
-  if (rank == MASTER_NODE) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
+  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+  if (rank == MASTER_NODE && Screen_Output) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
   
   /*--- Compute the distance to the nearest surface if needed
    as part of the stiffness calculation.. ---*/
@@ -548,7 +550,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) ||
       (config->GetDeform_Limit() < 1E6)) {
     ComputeSolid_Wall_Distance(geometry, config, MinDistance, MaxDistance);
-    if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
+    if (rank == MASTER_NODE && Screen_Output) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
   
   /*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
@@ -1910,11 +1912,6 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   dt   = config->GetDelta_UnstTimeND();
   Lref = config->GetLength_Ref();
 
-  /*--- For harmonic balance, motion is the same in each zone (at each instance).
-   *    This is used for calls to the config container ---*/
-  if (harmonic_balance)
-    iZone = ZONE_0;
-  
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
     /*--- Set the first adjoint mesh position to the final direct one ---*/
@@ -1928,12 +1925,10 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref());
-  Omega[1]  = (config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref());
-  Omega[2]  = (config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref());
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
 
   /*-- Set dt for harmonic balance cases ---*/
   if (harmonic_balance) {
@@ -2005,7 +2000,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
     
     newGridVel[0] = GridVel[0] + Omega[1]*rotCoord[2] - Omega[2]*rotCoord[1];
     newGridVel[1] = GridVel[1] + Omega[2]*rotCoord[0] - Omega[0]*rotCoord[2];
-    newGridVel[2] = GridVel[2] + Omega[0]*rotCoord[1] - Omega[1]*rotCoord[0];
+    if (nDim == 3) newGridVel[2] = GridVel[2] + Omega[0]*rotCoord[1] - Omega[1]*rotCoord[0];
     
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
@@ -2079,24 +2074,15 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
 
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-    iZone = ZONE_0;
+  /*--- Pitching origin, frequency, and amplitude from config. ---*/	
+  
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim]   = config->GetPitching_Ampl(iDim)*DEG2RAD;
+    Phase[iDim]  = config->GetPitching_Phase(iDim)*DEG2RAD;
   }
 
-  /*--- Pitching origin, frequency, and amplitude from config. ---*/  
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
-  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
-  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
-  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
-  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
-  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
-  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
-  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
-  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
 
   if (harmonic_balance) {    
     /*--- period of oscillation & compute time interval using nTimeInstances ---*/
@@ -2200,7 +2186,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     
     newGridVel[0] = GridVel[0] + alphaDot[1]*rotCoord[2] - alphaDot[2]*rotCoord[1];
     newGridVel[1] = GridVel[1] + alphaDot[2]*rotCoord[0] - alphaDot[0]*rotCoord[2];
-    newGridVel[2] = GridVel[2] + alphaDot[0]*rotCoord[1] - alphaDot[1]*rotCoord[0];
+    if (nDim == 3) newGridVel[2] = GridVel[2] + alphaDot[0]*rotCoord[1] - alphaDot[1]*rotCoord[0];
     
     /*--- Store new node location & grid velocity. Add center location.
      Do not store the grid velocity if this is an adjoint calculation.---*/
@@ -2223,7 +2209,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
-  su2double *GridVel, newGridVel[3], xDot[3];
+  su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
@@ -2235,21 +2221,13 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
   
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-    iZone = ZONE_0;
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetPlunging_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim]   = config->GetPlunging_Ampl(iDim)/Lref;
   }
   
   /*--- Plunging frequency and amplitude from config. ---*/
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref());
-  Omega[1]  = (config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref());
-  Omega[2]  = (config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref());
-  Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
-  Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
-  Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
   
   if (harmonic_balance) {
     /*--- period of oscillation & time interval using nTimeInstances ---*/
@@ -2313,7 +2291,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     
     newGridVel[0] = GridVel[0] + xDot[0];
     newGridVel[1] = GridVel[1] + xDot[1];
-    newGridVel[2] = GridVel[2] + xDot[2];
+   if (nDim == 3) newGridVel[2] = GridVel[2] + xDot[2];
     
     /*--- Store new node location & grid velocity. Do not store the grid
      velocity if this is an adjoint calculation. ---*/
@@ -2328,9 +2306,10 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
   
-  config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
-  config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
-  config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim) + deltaX[iDim];
+  } 
+  config->SetMotion_Origin(Center);
   
   /*--- As the body origin may have moved, print it to the console ---*/
   
@@ -2373,18 +2352,12 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-    iZone = ZONE_0;
-  }
-
   /*--- Get motion center and translation rates from config ---*/
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  xDot[0]   = config->GetTranslation_Rate_X(iZone);
-  xDot[1]   = config->GetTranslation_Rate_Y(iZone);
-  xDot[2]   = config->GetTranslation_Rate_Z(iZone);
+  
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    xDot[iDim]   = config->GetTranslation_Rate(iDim);
+  }
   
   if (harmonic_balance) {
     /*--- period of oscillation & time interval using nTimeInstances ---*/
@@ -2452,9 +2425,11 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
   
-  config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
-  config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
-  config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim) + deltaX[iDim];
+  } 
+  config->SetMotion_Origin(Center);
+
   
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
@@ -5656,15 +5631,12 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
       
       /*--- Get prescribed wall speed from config for this marker ---*/
       
-      Center[0] = config->GetMotion_Origin_X(jMarker);
-      Center[1] = config->GetMotion_Origin_Y(jMarker);
-      Center[2] = config->GetMotion_Origin_Z(jMarker);
-      Omega[0]  = config->GetRotation_Rate_X(jMarker)/Omega_Ref;
-      Omega[1]  = config->GetRotation_Rate_Y(jMarker)/Omega_Ref;
-      Omega[2]  = config->GetRotation_Rate_Z(jMarker)/Omega_Ref;
-      xDot[0]   = config->GetTranslation_Rate_X(jMarker)/Vel_Ref;
-      xDot[1]   = config->GetTranslation_Rate_Y(jMarker)/Vel_Ref;
-      xDot[2]   = config->GetTranslation_Rate_Z(jMarker)/Vel_Ref;
+      for (iDim = 0; iDim < 3; iDim++){
+        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+        Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/Omega_Ref;
+        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim)/Vel_Ref;
+      }
+      
       
       if (rank == MASTER_NODE && iter == 0) {
         cout << " Storing grid velocity for marker: ";
@@ -5717,6 +5689,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
+  unsigned short iDim;
   
   /*--- Initialize the delta variation in coordinates ---*/
   VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
@@ -5744,13 +5717,12 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
         Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
-        if (Marker_Tag == Moving_Tag) {
+        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
 
-          /*--- Translation velocity from config. ---*/
-          
-          xDot[0]   = config->GetTranslation_Rate_X(jMarker);
-          xDot[1]   = config->GetTranslation_Rate_Y(jMarker);
-          xDot[2]   = config->GetTranslation_Rate_Z(jMarker);
+          for (iDim = 0; iDim < 3; iDim++){
+            xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+          }
           
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
@@ -5796,12 +5768,10 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      Center[0] = config->GetMotion_Origin_X(jMarker) + VarCoord[0];
-      Center[1] = config->GetMotion_Origin_Y(jMarker) + VarCoord[1];
-      Center[2] = config->GetMotion_Origin_Z(jMarker) + VarCoord[2];
-      config->SetMotion_Origin_X(jMarker, Center[0]);
-      config->SetMotion_Origin_Y(jMarker, Center[1]);
-      config->SetMotion_Origin_Z(jMarker, Center[2]);
+      for (iDim = 0; iDim < 3; iDim++){
+        Center[iDim] += VarCoord[iDim];
+      }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -5822,11 +5792,12 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
                                            unsigned long iter, unsigned short iZone) {
   
   su2double deltaT, time_new, time_old, Lref;
-  su2double Center[3], VarCoord[3], Omega[3], Ampl[3];
+  su2double Center[3] = {0.0, 0.0, 0.0}, VarCoord[3], Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
+  unsigned short iDim;
   
   /*--- Initialize the delta variation in coordinates ---*/
   VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
@@ -5855,17 +5826,15 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
         Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
-        if (Marker_Tag == Moving_Tag) {
+        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
           
           /*--- Plunging frequency and amplitude from config. ---*/
           
-          Omega[0]  = config->GetPlunging_Omega_X(jMarker)/config->GetOmega_Ref();
-          Omega[1]  = config->GetPlunging_Omega_Y(jMarker)/config->GetOmega_Ref();
-          Omega[2]  = config->GetPlunging_Omega_Z(jMarker)/config->GetOmega_Ref();
-          Ampl[0]   = config->GetPlunging_Ampl_X(jMarker)/Lref;
-          Ampl[1]   = config->GetPlunging_Ampl_Y(jMarker)/Lref;
-          Ampl[2]   = config->GetPlunging_Ampl_Z(jMarker)/Lref;
-          
+          for (iDim = 0; iDim < 3; iDim++){
+            Ampl[iDim]   = config->GetMarkerPlunging_Ampl(jMarker, iDim)/Lref;
+            Omega[iDim]  = config->GetMarkerPlunging_Omega(jMarker, iDim)/config->GetOmega_Ref();
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+          }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
           // Note that the MASTER_NODE might not contain all the markers being moved.
@@ -5911,12 +5880,10 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      Center[0] = config->GetMotion_Origin_X(jMarker) + VarCoord[0];
-      Center[1] = config->GetMotion_Origin_Y(jMarker) + VarCoord[1];
-      Center[2] = config->GetMotion_Origin_Z(jMarker) + VarCoord[2];
-      config->SetMotion_Origin_X(jMarker, Center[0]);
-      config->SetMotion_Origin_Y(jMarker, Center[1]);
-      config->SetMotion_Origin_Z(jMarker, Center[2]);
+      for (iDim = 0; iDim < 3; iDim++){
+        Center[iDim] += VarCoord[iDim];
+      }
+      config->SetMarkerMotion_Origin(Center, jMarker);      
     }
   }
   
@@ -5974,23 +5941,16 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
         Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
-        if (Marker_Tag == Moving_Tag) {
+        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
           
           /*--- Pitching origin, frequency, and amplitude from config. ---*/
           
-          Center[0] = config->GetMotion_Origin_X(jMarker);
-          Center[1] = config->GetMotion_Origin_Y(jMarker);
-          Center[2] = config->GetMotion_Origin_Z(jMarker);
-          Omega[0]  = config->GetPitching_Omega_X(jMarker)/config->GetOmega_Ref();
-          Omega[1]  = config->GetPitching_Omega_Y(jMarker)/config->GetOmega_Ref();
-          Omega[2]  = config->GetPitching_Omega_Z(jMarker)/config->GetOmega_Ref();
-          Ampl[0]   = config->GetPitching_Ampl_X(jMarker)*DEG2RAD;
-          Ampl[1]   = config->GetPitching_Ampl_Y(jMarker)*DEG2RAD;
-          Ampl[2]   = config->GetPitching_Ampl_Z(jMarker)*DEG2RAD;
-          Phase[0]  = config->GetPitching_Phase_X(jMarker)*DEG2RAD;
-          Phase[1]  = config->GetPitching_Phase_Y(jMarker)*DEG2RAD;
-          Phase[2]  = config->GetPitching_Phase_Z(jMarker)*DEG2RAD;
-          
+          for (iDim = 0; iDim < 3; iDim++){
+            Ampl[iDim]   = config->GetMarkerPitching_Ampl(jMarker, iDim)*DEG2RAD;
+            Omega[iDim]  = config->GetMarkerPitching_Omega(jMarker, iDim)/config->GetOmega_Ref();
+            Phase[iDim]  = config->GetMarkerPitching_Phase(jMarker, iDim)*DEG2RAD;
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+          }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
           // Note that the MASTER_NODE might not contain all the markers being moved.
@@ -6123,17 +6083,14 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
         Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
-        if (Marker_Tag == Moving_Tag) {
+        if (Marker_Tag == Moving_Tag && (config->GetKind_SurfaceMovement(jMarker) == DEFORMING)) {
           
           /*--- Rotation origin and angular velocity from config. ---*/
           
-          Center[0] = config->GetMotion_Origin_X(jMarker);
-          Center[1] = config->GetMotion_Origin_Y(jMarker);
-          Center[2] = config->GetMotion_Origin_Z(jMarker);
-          Omega[0]  = config->GetRotation_Rate_X(jMarker)/config->GetOmega_Ref();
-          Omega[1]  = config->GetRotation_Rate_Y(jMarker)/config->GetOmega_Ref();
-          Omega[2]  = config->GetRotation_Rate_Z(jMarker)/config->GetOmega_Ref();
-          
+          for (iDim = 0; iDim < 3; iDim++){
+            Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/config->GetOmega_Ref();
+            Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+          }
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
           // Note that the MASTER_NODE might not contain all the markers being moved.
@@ -6228,9 +6185,9 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
         
-      Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
-      Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
-      Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
+      for (iDim = 0; iDim < 3; iDim++){
+        Center_Aux[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      }
       
       /*--- Calculate non-dim. position from rotation center ---*/
       
@@ -6256,9 +6213,11 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       for (iDim = 0; iDim < nDim; iDim++)
         VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
       if (nDim == 2) VarCoord[nDim] = 0.0;
-      config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
-      config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
-      config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
+      
+      for (iDim = 0; iDim < 3; iDim++){
+        Center_Aux[iDim] += VarCoord[iDim];
+      }
+      config->SetMarkerMotion_Origin(Center_Aux, jMarker);      
     }
   }
 
@@ -6318,10 +6277,10 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
   
   /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
-  if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
+  if (config->GetKind_GridMovement() == AEROELASTIC_RIGID_MOTION) {
     su2double Omega, dt, psi;
     dt = config->GetDelta_UnstTimeND();
-    Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
+    Omega  = (config->GetRotation_Rate(3)/config->GetOmega_Ref());
     psi = Omega*(dt*ExtIter);
     
     /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
@@ -6389,6 +6348,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   bool adjoint = config->GetContinuous_Adjoint();
+  unsigned short iDim = 0;
   
   /*--- Retrieve values from the config file ---*/
   
@@ -6396,12 +6356,10 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   
-  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
-  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
-  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
-  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
-  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
-  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega[iDim] = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Ampl[iDim] = config->GetPitching_Ampl(iDim)*DEG2RAD;
+  }
   
   /*--- Compute delta time based on physical time step ---*/
   
@@ -6562,8 +6520,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
   /*--- If rotating as well, prepare the rotation matrix ---*/
   
-  if (config->GetGrid_Movement() &&
-      config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
+  if (config->GetKind_GridMovement() == EXTERNAL_ROTATION) {
     
     /*--- Variables needed only for rotation ---*/
     
@@ -6572,16 +6529,16 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     su2double cosPhi, sinPhi, cosPsi, sinPsi;
     
     /*--- Center of rotation & angular velocity vector from config ---*/
-    Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone);
-    Center[2] = config->GetMotion_Origin_Z(iZone);
+    Center[0] = config->GetMotion_Origin(0);
+    Center[1] = config->GetMotion_Origin(1);
+    Center[2] = config->GetMotion_Origin(2);
     
     /*--- Angular velocity vector from config ---*/
     
     dt = static_cast<su2double>(iter)*config->GetDelta_UnstTimeND();
-    Omega[0]  = config->GetRotation_Rate_X(iZone);
-    Omega[1]  = config->GetRotation_Rate_Y(iZone);
-    Omega[2]  = config->GetRotation_Rate_Z(iZone);
+    Omega[0]  = config->GetRotation_Rate(0);
+    Omega[1]  = config->GetRotation_Rate(1);
+    Omega[2]  = config->GetRotation_Rate(2);
     
     /*--- For the unsteady adjoint, use reverse time ---*/
     if (adjoint) {
@@ -6642,8 +6599,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
          rotation matrix. It is assumed that the coordinates in
          Coord_Old have already been rotated using SetRigid_Rotation(). ---*/
         
-        if (config->GetGrid_Movement() &&
-            config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
+        if (config->GetKind_GridMovement() == EXTERNAL_ROTATION) {
           
           /*--- Calculate non-dim. position from rotation center ---*/
           
@@ -8469,7 +8425,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
   char zonename[33];
   int FFDBox_cgns_file;
   int cell_dim, phys_dim;
-  int cgns_base, cgns_family, cgns_zone, cgns_err, dummy;
+  int cgns_base=0, cgns_family, cgns_zone, cgns_err, dummy;
   const char * basename;
 
   /*--- FFD output is always 3D (even in 2D problems),
@@ -9149,6 +9105,9 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 
 
 CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement(), System(true) {
+  
+    size = SU2_MPI::GetSize();
+    rank = SU2_MPI::GetRank();
 
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
@@ -9321,7 +9280,7 @@ CElasticityMovement::~CElasticityMovement(void) {
 }
 
 
-void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
+void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative){
 
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
@@ -9340,10 +9299,13 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
+    
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output)
+      cout << "Computing volumes of the grid elements." << endl;
 
     /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output) {
       if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
       else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
     }
@@ -9386,7 +9348,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
 
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint) && screen_output) {
       cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
@@ -9472,7 +9434,9 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0 || 
+         config->GetMarker_All_Moving(iMarker)) 
+        && (Kind_SU2 == SU2_CFD)) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -9497,7 +9461,9 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Apply displacement boundary conditions to the FSI interfaces. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0 || 
+         config->GetMarker_All_Moving(iMarker)) 
+        && (Kind_SU2 == SU2_CFD)) {
       SetMoving_Boundary(geometry, config, iMarker);
     }
   }
@@ -9511,7 +9477,8 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+        && !config->GetMarker_All_Moving(iMarker)) {
 
       /*--- We must note that the FSI surfaces are not clamped ---*/
       if (config->GetMarker_All_ZoneInterface(iMarker) == 0){
@@ -9570,14 +9537,9 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
   su2double val_Coord;
   int EL_KIND = 0;
 
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
   bool RightVol = true;
 
   su2double ElemVolume;
-
-  if ((rank == MASTER_NODE) && (!discrete_adjoint))
-    cout << "Computing volumes of the grid elements." << endl;
 
   MaxVolume = -1E22; MinVolume = 1E22;
 
