@@ -111,6 +111,13 @@ CErrorEstimationDriver::CErrorEstimationDriver(CDiscAdjSinglezoneDriver* disc_ad
 
   }
 
+  /*--- Definition of the output class (one for all zones). The output class
+   manages the writing of all restart, volume solution, surface solution,
+   surface comma-separated value, and convergence history files (both in serial
+   and in parallel). ---*/
+
+  output = new COutput(config_container[ZONE_0]);
+
 }
 
 CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
@@ -1244,6 +1251,44 @@ void CErrorEstimationDriver::Output() {
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
   
+}
+
+void CErrorEstimationDriver::SetAdaptationData() {
+
+  /*--- Set Kind_Solver to primal since adaptation requires Mach (or pressure) ---*/
+
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case DISC_ADJ_EULER: config_container[ZONE_0]->SetKind_Solver(EULER); break;
+    case DISC_ADJ_NAVIER_STOKES: config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES); break;
+    case DISC_ADJ_RANS: config_container[ZONE_0]->SetKind_Solver(RANS); break;
+  }
+
+  /*--- Set DiscreteAdjoint flag to false so we write to correct files ---*/
+
+  config_container[ZONE_0]->SetDiscrete_Adjoint(false);
+
+  if (rank == MASTER_NODE) cout << endl << "--------------------------- Sort Metric Data ---------------------------" << endl;
+
+    /*--- Execute the routines for collecting the restart data. ---*/
+
+  output->SetResult_Parallel(solver_container, geometry_container, config_container, 1);
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+}
+
+passivedouble CErrorEstimationDriver::GetAdaptationData(unsigned short val_iVar, unsigned long val_iPoint) {
+
+  passivedouble Parallel_Data = output->GetResult_Parallel(val_iVar, val_iPoint);
+
+  return Parallel_Data;
+
+}
+
+unsigned short CErrorEstimationDriver::GetnVarPar() {
+
+  unsigned short nVarPar = output->GetnVarPar();
+  return nVarPar;
 }
 
 void CErrorEstimationDriver::Postprocessing() {

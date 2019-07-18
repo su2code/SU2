@@ -70,6 +70,7 @@ threads="1"
 namespace std {
    %template() vector<int>;
    %template() vector<double>;
+   %template() vector<vector<double> >;
    %template() vector<string>;
    %template() map<string, int>;
    %template() map<string, string>;

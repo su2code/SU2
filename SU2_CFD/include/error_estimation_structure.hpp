@@ -168,6 +168,21 @@ public:
   void Output(void);
 
   /*!
+   * \brief Sort the data needed for adaptation.
+   */
+  void SetAdaptationData(void);
+
+  /*!
+   * \brief Collect the data needed for adaptation.
+   */
+  passivedouble GetAdaptationData(unsigned short val_iVar, unsigned long val_iPoint);
+
+  /*!
+   * \brief Get the number of variables.
+   */
+  unsigned short GetnVarPar(void);
+
+  /*!
    * \brief Deallocation routine
    */
   void Postprocessing(void);

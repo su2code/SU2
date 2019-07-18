@@ -299,6 +299,12 @@ unsigned long CDriver::GetExtIter(){
   return ExtIter;
 }
 
+unsigned long CDriver::GetnPointDomain(unsigned short val_iZone, unsigned short val_iInst, unsigned short val_iMesh) {
+
+  unsigned long nPointDomain = geometry_container[val_iZone][val_iInst][val_iMesh]->GetnPointDomain();
+  return nPointDomain;
+}
+
 passivedouble CDriver::GetUnsteady_TimeStep(){
 
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetDelta_UnstTime());

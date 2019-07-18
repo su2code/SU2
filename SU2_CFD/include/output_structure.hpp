@@ -145,6 +145,7 @@ class COutput {
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
+  vector<vector<passivedouble> > Adap_Data;
 
   su2double **Data;
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
@@ -516,6 +517,31 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SetInriaMesh(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Organizes the all the solutions for AMG.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetResult_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
+                          unsigned short val_nZone);
+
+  /*!
+   * \brief Returns a sorted solution value for AMG for the current processor.
+   */
+  passivedouble GetResult_Parallel(unsigned short val_iVar, unsigned long val_iPoint);
+
+  /*!
+   * \brief Cleans up the sorted solutions.
+   */
+  void CleanResult_Parallel(void);
+
+  /*!
+   * \brief Get the number of variables.
+   */
+  unsigned short GetnVarPar(void);
 
   /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.

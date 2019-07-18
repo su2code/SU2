@@ -44,6 +44,7 @@ import shutil
 from optparse import OptionParser	# use a parser for configuration
 import pysu2            # imports the SU2 wrapped module
 import pysu2ad          # imports the SU2 adjoint-wrapped module
+import numpy as np
 from math import *
 
 # -------------------------------------------------------------------
@@ -121,7 +122,7 @@ def main():
   TimeIter = SU2Driver.GetExtIter()
   nTimeIter = SU2Driver.GetnExtIter()
 
-  # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
+  # Time loop is defined in Python so that we have access to SU2 functionalities at each time step
   if rank == 0:
     print("\n--------------------------- Begin Flow Solver ---------------------------\n")
   sys.stdout.flush()
@@ -164,6 +165,39 @@ def main():
       break
     # Update control parameters
     TimeIter += 1
+
+  # Initialize the error estimation driver
+  try:
+    SU2Error = pysu2ad.CErrorEstimationDriver(SU2Driver, options.nZone, options.nDim, comm);
+  except TypeError as exception:
+    print('A TypeError occured in pysu2.CDriver : ',exception)
+    if options.with_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
+
+  if rank == 0:
+    print("\n------------------------- Begin Error Estimation ------------------------\n")
+  sys.stdout.flush()
+  if options.with_MPI == True:
+    comm.Barrier()
+
+  # Compute the metric
+  SU2Error.ComputeMetric()
+
+  # Sort the data for AMG
+  SU2Error.SetAdaptationData()
+
+  # Retrieve the solution data
+  nPoint_Local = SU2Driver.GetnPointDomain(0, 0, 0)
+  nVar_Par = SU2Error.GetnVarPar()
+
+  Sol = np.zeros((nPoint_Local, nVar_Par))
+  for iPoint in range(0, nPoint_Local):
+    for iVar in range(0, nVar_Par):
+      Sol[iPoint,iVar] = SU2Error.GetAdaptationData(iVar, iPoint)
+    print(Sol[iPoint,:])
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()

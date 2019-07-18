@@ -723,3 +723,112 @@ void COutput::SetInriaMesh(CConfig *config, CGeometry *geometry) {
   
 }
 
+void COutput::SetResult_Parallel(CSolver *****solver_container,
+                                 CGeometry ****geometry,
+                                 CConfig **config,
+                                 unsigned short val_nZone) {
+
+  unsigned short iZone, iVar, iInst;
+  unsigned long iPoint;
+  unsigned short nInst = 1;
+  bool compressible = true;
+
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+
+    /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
+    unsigned short KindSolver = config[iZone]->GetKind_Solver();
+    bool fem_solver = ((KindSolver == FEM_EULER) ||
+                       (KindSolver == FEM_NAVIER_STOKES) ||
+                       (KindSolver == FEM_RANS) ||
+                       (KindSolver == FEM_LES));
+    
+    for (iInst = 0; iInst < nInst; iInst++){
+
+      bool cont_adj = config[iZone]->GetContinuous_Adjoint();
+      bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
+
+      /*--- Check for compressible/incompressible flow problems. ---*/
+
+      compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
+
+      /*--- First, prepare the offsets needed throughout below. ---*/
+
+      PrepareOffsets(config[iZone], geometry[iZone][iInst][MESH_0]);
+
+
+      /*--- This switch statement will become a call to a virtual function
+       defined within each of the "physics" output child classes that loads
+       the local data for that particular problem alone. ---*/
+
+      if (rank == MASTER_NODE)
+        cout << "Loading solution output data locally on each rank." << endl;
+
+      switch (config[iZone]->GetKind_Solver()) {
+        case EULER : case NAVIER_STOKES: case RANS :
+          if (compressible)
+            LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          else
+            LoadLocalData_IncFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          break;
+        case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+          LoadLocalData_AdjFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          break;
+        case FEM_ELASTICITY: case DISC_ADJ_FEM:
+          LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          break;
+        case HEAT_EQUATION_FVM:
+          LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+          break;
+        case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+          LoadLocalData_FEM(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
+        default: break;
+      }
+      
+      /*--- After loading the data local to a processor, we perform a sorting,
+       i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
+      
+      if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
+
+      if (fem_solver)
+        SortOutputData_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
+      else
+        SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
+
+      Adap_Data.resize(nVar_Par);
+      for(unsigned short iVar = 0; iVar < nVar_Par; ++iVar) {
+        Adap_Data[iVar].resize(nParallel_Poin);
+        for(unsigned long iPoin = 0; iPoin < nParallel_Poin; ++iPoin) {
+          Adap_Data[iVar][iPoin] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoin]);
+        }
+      }
+
+      /*--- Deallocate the nodal data needed for writing restarts. ---*/
+
+      DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
+
+      /*--- Clear the variable names list. ---*/
+
+      Variable_Names.clear();
+      
+    }
+
+  }
+
+}
+
+passivedouble COutput::GetResult_Parallel(unsigned short val_iVar, unsigned long val_iPoint) {
+
+  return Adap_Data[val_iVar][val_iPoint];
+}
+
+void COutput::CleanResult_Parallel( ){
+
+  vector<vector<passivedouble> >().swap(Adap_Data);
+
+}
+
+unsigned short COutput::GetnVarPar(){
+
+  return nVar_Par;
+}
