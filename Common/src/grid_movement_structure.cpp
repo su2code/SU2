@@ -8431,7 +8431,7 @@ void CFreeFormDefBox::SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool 
   char zonename[33];
   int FFDBox_cgns_file;
   int cell_dim, phys_dim;
-  int cgns_base, cgns_family, cgns_zone, cgns_err, dummy;
+  int cgns_base=0, cgns_family, cgns_zone, cgns_err, dummy;
   const char * basename;
 
   /*--- FFD output is always 3D (even in 2D problems),

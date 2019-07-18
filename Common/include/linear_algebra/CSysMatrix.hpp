@@ -437,7 +437,7 @@ public:
   template<class OtherType>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
 
-    unsigned long iVar, jVar, index;
+    unsigned long iVar, index;
 
     for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
       if (col_ind[index] == block_j) {

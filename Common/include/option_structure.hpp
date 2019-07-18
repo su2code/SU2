@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -2071,7 +2071,7 @@ private:
 public:
   COptionBase() {};
   virtual  ~COptionBase() = 0;
-  //  virtual string SetValue(string) {SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
+
   virtual string SetValue(vector<string> value){this->value = value; return "";}
   vector<string> GetValue() {return value;}
   virtual void SetDefault() = 0;
