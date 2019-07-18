@@ -829,8 +829,6 @@ inline void CSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geom
 
 inline void CSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) { }
