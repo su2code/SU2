@@ -44,8 +44,7 @@
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
+                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false) {
 
 
   unsigned short jZone, iSol;
@@ -182,7 +181,6 @@ CDriver::CDriver(char* confFile,
 
       for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         geometry_container[iZone][iInst][iMesh]->MatchNearField(config_container[iZone]);
-        geometry_container[iZone][iInst][iMesh]->MatchInterface(config_container[iZone]);
         geometry_container[iZone][iInst][iMesh]->MatchActuator_Disk(config_container[iZone]);
       }
       
@@ -212,6 +210,8 @@ CDriver::CDriver(char* confFile,
     }
 
   }
+
+  nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
@@ -402,7 +402,7 @@ CDriver::CDriver(char* confFile,
       grid_movement[iZone][iInst] = NULL;
 
     if (!fem_solver && (config_container[iZone]->GetGrid_Movement() ||
-                        (config_container[iZone]->GetDirectDiff() == D_DESIGN))) {
+                        (config_container[iZone]->GetDirectDiff() == D_DESIGN)) && !config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
       if (rank == MASTER_NODE)
         cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -446,9 +446,9 @@ CDriver::CDriver(char* confFile,
       }
     }
 
-    if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
+    if (config_container[iZone]->GetSurface_Movement(FLUID_STRUCTURE_STATIC)){
       if (rank == MASTER_NODE)
-        cout << "Setting moving mesh structure for static FSI problems." << endl;
+        cout << "Setting moving mesh structure for FSI problems." << endl;
       /*--- Instantiate the container for the grid movement structure ---*/
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
         grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
@@ -472,9 +472,14 @@ CDriver::CDriver(char* confFile,
        Not for the FEM solver, because this is handled later, because
        the integration points must be known. ---*/
   if( !fem_solver ) {
-    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+    
+    initStaticMovement = false;
+    
+    for (iZone = 0; iZone < nZone; iZone ++){
+      Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
+      initStaticMovement = (config_container[iZone]->GetGrid_Movement() && (config_container[iZone]->GetSurface_Movement(MOVING_WALL)
                           || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
+    }
 
 
     if(initStaticMovement){
@@ -810,7 +815,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, false);
+  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -822,12 +827,15 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (driver_config->GetKind_Solver() == MULTIZONE){
+    if (driver_config->GetnConfigFiles() > 0){
+      if (rank == MASTER_NODE){
+        cout  << endl << "Parsing sub-config file for zone " << iZone << endl;
+      }
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
     }
 
     /*--- Set the MPI communicator ---*/
@@ -837,12 +845,15 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
     }
   }
+
+  /*--- Definition of the geometry class to store the primal grid in the
+ partitioning process. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -870,16 +881,20 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
      partitioning process. ---*/
 
       CGeometry *geometry_aux = NULL;
+      
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      
+      /*--- Set the dimension ---*/
+      
+      nDim = geometry_aux->GetnDim();
 
       /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
 
       CSolver *solver_aux = NULL;
       if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
-
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
@@ -1181,7 +1196,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
       DGMesh->CoordinatesSolDOFs();
 
       /*--- Initialize the static mesh movement, if necessary. ---*/
-      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
       const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
                                       (Kind_Grid_Movement == MOVING_WALL    ||
                                        Kind_Grid_Movement == ROTATING_FRAME ||
@@ -3604,72 +3619,76 @@ void CDriver::Interface_Preprocessing() {
 }
 
 void CDriver::InitStaticMeshMovement(){
-
+  
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
-
+  
   for (iZone = 0; iZone < nZone; iZone++) {
-    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
-
+    Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
+    
     switch (Kind_Grid_Movement) {
-
-    case MOVING_WALL:
-
-      /*--- Fixed wall velocities: set the grid velocities only one time
+      
+      case ROTATING_FRAME:
+        
+        /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
-        cout << endl << " Setting the moving wall velocities." << endl;
-
-      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
-          config_container[iZone], iZone, 0);
-
-      /*--- Update the grid velocities on the coarser multigrid levels after
-           setting the moving wall velocities for the finest mesh. ---*/
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
-      break;
-
-
-    case ROTATING_FRAME:
-
-      /*--- Steadily rotating frame: set the grid velocities just once
-         before the first iteration flow solver. ---*/
-
-      if (rank == MASTER_NODE) {
-        cout << endl << " Setting rotating frame grid velocities";
-        cout << " for zone " << iZone << "." << endl;
-      }
-
-      /*--- Set the grid velocities on all multigrid levels for a steadily
+        
+        if (rank == MASTER_NODE) {
+          cout << endl << " Setting rotating frame grid velocities";
+          cout << " for zone " << iZone << "." << endl;
+        }
+        
+        /*--- Set the grid velocities on all multigrid levels for a steadily
            rotating reference frame. ---*/
-
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-        geometry_container[iZone][INST_0][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
-        geometry_container[iZone][INST_0][iMGlevel]->SetShroudVelocity(config_container[iZone]);
-      }
-
-      break;
-
-    case STEADY_TRANSLATION:
-
-      /*--- Set the translational velocity and hold the grid fixed during
+        
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
+          geometry_container[iZone][INST_0][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+          geometry_container[iZone][INST_0][iMGlevel]->SetShroudVelocity(config_container[iZone]);
+        }
+        
+        break;
+        
+      case STEADY_TRANSLATION:
+        
+        /*--- Set the translational velocity and hold the grid fixed during
          the calculation (similar to rotating frame, but there is no extra
          source term for translation). ---*/
-
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+        
+        /*--- Set the translational velocity on all grid levels. ---*/
+        
+        for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
+          geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iZone, true);
+        
+        
+        
+        break;
+        
+      default:
+        break;
+    }
+    
+    if (config_container[iZone]->GetnMarker_Moving() > 0){
+      
+      /*--- Fixed wall velocities: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
       if (rank == MASTER_NODE)
-        cout << endl << " Setting translational grid velocities." << endl;
-
-      /*--- Set the translational velocity on all grid levels. ---*/
-
-      for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-        geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iZone, true);
-
-
-
-      break;
+        cout << endl << " Setting the moving wall velocities." << endl;
+      
+      surface_movement[iZone]->Moving_Walls(geometry_container[iZone][INST_0][MESH_0],
+                                            config_container[iZone], iZone, 0);
+      
+      /*--- Update the grid velocities on the coarser multigrid levels after
+         setting the moving wall velocities for the finest mesh. ---*/
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
+      
     }
   }
 }
+
 
 void CDriver::TurbomachineryPreprocessing(){
 
@@ -4078,7 +4097,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -4182,8 +4201,8 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 }
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
-                                             unsigned short val_nDim, SU2_Comm MPICommunicator):
-                                             CFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+                                             SU2_Comm MPICommunicator):
+                                             CFluidDriver(confFile, val_nZone, MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
@@ -4323,10 +4342,10 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
-        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
+        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
         if(abs(rot_z_final) > 0.0){
           rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          config_container[iZone]->SetRotation_Rate(2, rot_z);
           if(rank == MASTER_NODE && print && ExtIter > 0) {
             cout << endl << " Updated rotating frame grid velocities";
             cout << " for zone " << iZone << "." << endl;
@@ -4404,10 +4423,8 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
-    unsigned short val_nDim,
     SU2_Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
-        val_nDim,
         MPICommunicator) {
   unsigned short kInst;
 
@@ -4956,10 +4973,8 @@ void CHBDriver::ComputeHB_Operator() {
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                            val_nZone,
-                                                           val_nDim,
                                                            MPICommunicator) {
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -5452,10 +5467,8 @@ void CFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     unsigned short val_nDim,
                                      SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                             val_nZone,
-                                                                            val_nDim,
                                                                             MPICommunicator) {
 
   unsigned short iVar;
@@ -7018,10 +7031,8 @@ void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned sh
 
 CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   unsigned short val_nDim,
                                                    SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                                        val_nZone,
-                                                                                       val_nDim,
                                                                                        MPICommunicator) { }
 
 CMultiphysicsZonalDriver::~CMultiphysicsZonalDriver(void) { }

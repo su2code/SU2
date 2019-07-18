@@ -970,7 +970,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
         nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
                 (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
-        su2double *X = new su2double[nNodes*nDim];
+        su2double *X = new su2double[nNodes*(nDim+1)];
         faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
         for (iDonor=0; iDonor<nNodes; iDonor++) {
           jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
@@ -1087,7 +1087,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   su2double *x_tmp = new su2double[nDim+1];
   su2double *Q     = new su2double[nDonor*nDonor];
   su2double *R     = new su2double[nDonor*nDonor];
-  su2double *A     = new su2double[nDim+1*nDonor];
+  su2double *A     = new su2double[(nDim+2)*nDonor];
   su2double *A2    = NULL;
   su2double *x2    = new su2double[nDim+1];
   
