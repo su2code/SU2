@@ -663,6 +663,8 @@ inline su2double CVariable::GetBound_Disp(unsigned short iDim) { return 0.0; }
 
 inline void CVariable::SetBound_Disp(su2double *val_BoundDisp) { }
 
+inline void CVariable::SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) { }
+
 inline su2double *CVariable::GetBoundDisp_Direct(void) { return NULL; }
 
 inline void CVariable::SetBoundDisp_Direct(su2double *val_BoundDisp) { }
@@ -1129,26 +1131,26 @@ inline void CFEAVariable::Clear_BodyForces_Res(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Body[iVar] = 0.0;
 }
 
-inline void CFEABoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
+inline void CFEAFSIBoundVariable::Set_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = val_flowTraction[iVar];
 }
 
-inline void CFEABoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
+inline void CFEAFSIBoundVariable::Add_FlowTraction(su2double *val_flowTraction) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
 
-inline su2double CFEABoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
+inline su2double CFEAFSIBoundVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar]; }
 
-inline void CFEABoundVariable::Clear_FlowTraction(void) {
+inline void CFEAFSIBoundVariable::Clear_FlowTraction(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction[iVar] = 0.0;
 }
 
-inline void CFEABoundVariable::Set_FlowTraction_n(void) {
+inline void CFEAFSIBoundVariable::Set_FlowTraction_n(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)  FlowTraction_n[iVar] = FlowTraction[iVar];
 }
 
-inline su2double CFEABoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
+inline su2double CFEAFSIBoundVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar]; }
 
 inline bool CFEABoundVariable::Get_isVertex(void) { return true; }
 
@@ -1277,12 +1279,12 @@ inline void CFEAVariable::RegisterSolution_Accel_time_n() {
 	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
 }
 
-inline void CFEABoundVariable::RegisterFlowTraction() {
+inline void CFEAFSIBoundVariable::RegisterFlowTraction() {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       AD::RegisterInput(FlowTraction[iVar]);
 }
 
-inline su2double CFEABoundVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {
+inline su2double CFEAFSIBoundVariable::ExtractFlowTraction_Sensitivity(unsigned short iDim) {
       su2double val_sens; val_sens = SU2_TYPE::GetDerivative(FlowTraction[iDim]); return val_sens;
 }
 
@@ -1671,6 +1673,18 @@ inline void CDiscAdjFEABoundVariable::SetFlowTractionSensitivity(unsigned short 
 
 inline su2double CDiscAdjFEABoundVariable::GetFlowTractionSensitivity(unsigned short iDim) { return FlowTraction_Sens[iDim]; }
 
+inline void CVariable::SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){ }
+
+inline su2double CVariable::GetSourceTerm_DispAdjoint(unsigned short iDim) { return 0.0; }
+
+inline void CDiscAdjFEABoundVariable::SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){
+  SourceTerm_DispAdjoint[iDim] = val;
+}
+
+inline su2double CDiscAdjFEABoundVariable::GetSourceTerm_DispAdjoint(unsigned short iDim) {
+  return SourceTerm_DispAdjoint[iDim];
+}
+
 inline bool CDiscAdjFEAVariable::Get_isVertex(void) { return false; }
 
 inline bool CDiscAdjFEABoundVariable::Get_isVertex(void) { return true; }
@@ -1728,6 +1742,10 @@ inline su2double CMeshBoundVariable::GetBound_Disp(unsigned short iDim) { return
 
 inline void CMeshBoundVariable::SetBound_Disp(su2double *val_BoundDisp) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++) Boundary_Displacement[iDim] = val_BoundDisp[iDim];
+}
+
+inline void CMeshBoundVariable::SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) {
+  Boundary_Displacement[iDim] = val_BoundDisp;
 }
 
 inline bool CMeshBoundVariable::Get_isVertex(void) { return true; }

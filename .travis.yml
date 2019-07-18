@@ -19,7 +19,6 @@ branches:
         - feature_pytorch
 
 python:
-    #- 2.7
     - 3.6
 
 env:
@@ -35,7 +34,7 @@ env:
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --disable-tecio"
+        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --enable-PY_WRAPPER --disable-tecio"
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
@@ -58,7 +57,7 @@ before_install:
     - hash -r
     - conda config --set always_yes yes --set changeps1 no
     - conda update -q conda
-    - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
+    - conda install -q -c anaconda python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
 
     # to avoid interference with MPI
     - test -n $CC  && unset CC
@@ -82,7 +81,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_python_AD https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases

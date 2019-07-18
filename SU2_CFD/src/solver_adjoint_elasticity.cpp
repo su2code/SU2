@@ -199,16 +199,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   }
   else{
     bool isVertex;
-    bool registerFlowTraction = config->GetRegister_FlowTraction();
     long indexVertex;
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       isVertex = false;
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (indexVertex != -1){isVertex = true; break;}
+        if (config->GetMarker_All_Interface(iMarker) == YES) {
+          indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (indexVertex != -1){isVertex = true; break;}
+        }
       }
-      if (isVertex && registerFlowTraction)
+      if (isVertex)
         node[iPoint] = new CDiscAdjFEABoundVariable(Solution, nDim, nVar, config);
       else
         node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
@@ -522,7 +523,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           direct_solver->RegisterVariables(geometry,config);
 
         /*--- Register the flow traction sensitivities ---*/
-        if (config->GetRegister_FlowTraction()){
+        if (config->GetnMarker_Interface() > 0){
           for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
             direct_solver->node[iPoint]->RegisterFlowTraction();
           }
@@ -817,7 +818,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       direct_solver->ExtractAdjoint_Variables(geometry,config);
 
     /*--- Extract the flow traction sensitivities ---*/
-    if (config->GetRegister_FlowTraction()){
+    if (config->GetnMarker_Interface() > 0){
       su2double val_sens;
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
         for (unsigned short iDim = 0; iDim < nDim; iDim++){
@@ -836,6 +837,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi = config->GetFSI_Simulation();
+  bool interface = (config->GetnMarker_Interface() > 0);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -850,6 +852,12 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
+    }
+
+    if(interface){
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar] += node[iPoint]->GetSourceTerm_DispAdjoint(iVar);
       }
     }
 

@@ -172,19 +172,16 @@ CFEAVariable::~CFEAVariable(void) {
 
 CFEABoundVariable::CFEABoundVariable(void) : CFEAVariable() {
 
-  FlowTraction          = NULL;    // Nodal traction due to the fluid (fsi)
   Residual_Ext_Surf     = NULL;    // Residual component due to external surface forces
-
-  FlowTraction_n        = NULL;    // Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
   Residual_Ext_Surf_n   = NULL;    // Residual component due to external surface forces at time n (for gen-alpha methods)
 
 }
 
-CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
+CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                                     CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
 
   unsigned short iVar;
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-  bool fsi_analysis = (config->GetFSI_Simulation() || config->GetpyFSI());
 
   /*--- Surface residual ---*/
   Residual_Ext_Surf = new su2double [nVar];
@@ -192,28 +189,12 @@ CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim
     Residual_Ext_Surf[iVar] = 0.0;
   }
 
-  /*--- Flow traction ---*/
-  FlowTraction   =  NULL;
-  if (fsi_analysis){
-    FlowTraction =  new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      FlowTraction[iVar]   = 0.0;
-    }
-  }
-
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
-  FlowTraction_n      = NULL;
   if (gen_alpha) {
     Residual_Ext_Surf_n    = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Residual_Ext_Surf_n[iVar] = 0.0;
-    }
-    if (fsi_analysis){
-      FlowTraction_n = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-         FlowTraction_n[iVar] = 0.0;
-      }
     }
   }
 
@@ -221,10 +202,44 @@ CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim
 
 CFEABoundVariable::~CFEABoundVariable(void) {
 
-  if (FlowTraction          != NULL) delete [] FlowTraction;
   if (Residual_Ext_Surf     != NULL) delete [] Residual_Ext_Surf;
+  if (Residual_Ext_Surf_n   != NULL) delete [] Residual_Ext_Surf_n;
 
+}
+
+CFEAFSIBoundVariable::CFEAFSIBoundVariable(void) : CFEABoundVariable() {
+
+  FlowTraction          = NULL;    // Nodal traction due to the fluid (fsi)
+  FlowTraction_n        = NULL;    // Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
+
+}
+
+CFEAFSIBoundVariable::CFEAFSIBoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                                          CConfig *config) : CFEABoundVariable(val_fea, val_nDim, val_nvar, config) {
+
+  unsigned short iVar;
+  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
+
+  /*--- Flow traction ---*/
+  FlowTraction = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    FlowTraction[iVar]   = 0.0;
+  }
+
+  /*--- Generalized alpha integration method requires storing the old residuals ---*/
+  FlowTraction_n = NULL;
+  if (gen_alpha) {
+    FlowTraction_n = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      FlowTraction_n[iVar] = 0.0;
+    }
+  }
+
+}
+
+CFEAFSIBoundVariable::~CFEAFSIBoundVariable(void) {
+
+  if (FlowTraction          != NULL) delete [] FlowTraction;
   if (FlowTraction_n         != NULL) delete [] FlowTraction_n;
-  if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
 
 }

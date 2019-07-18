@@ -47,8 +47,11 @@ CDriver::CDriver(char* confFile,
                  unsigned short val_nDim,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false), fem_solver(false) {
 
-#ifdef CODI_REVERSE_TYPE
-  SU2_MPI::Init_AMPI();
+  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
+#ifdef HAVE_MPI
+  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+    SU2_MPI::Init_AMPI();
+  #endif
 #endif
 
   unsigned short jZone, iSol;
@@ -185,7 +188,6 @@ CDriver::CDriver(char* confFile,
 
       for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
         geometry_container[iZone][iInst][iMesh]->MatchNearField(config_container[iZone]);
-        geometry_container[iZone][iInst][iMesh]->MatchInterface(config_container[iZone]);
         geometry_container[iZone][iInst][iMesh]->MatchActuator_Disk(config_container[iZone]);
       }
       
@@ -346,6 +348,10 @@ CDriver::CDriver(char* confFile,
       integration_container[iZone][iInst] = NULL;
 
       integration_container[iZone][iInst] = new CIntegration*[MAX_SOLS];
+
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        integration_container[iZone][iInst][iSol] = NULL;
+
       Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
           config_container[iZone], iInst);
     }
@@ -1020,6 +1026,7 @@ void CDriver::Geometrical_Preprocessing() {
       if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
       geometry_container[iZone][iInst][MESH_0]->Check_Periodicity(config_container[iZone]);
 
+      geometry_container[iZone][iInst][MESH_0]->SetMGLevel(MESH_0);
       if ((config_container[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
         cout << "Setting the multigrid structure." << endl;
 
@@ -1061,6 +1068,10 @@ void CDriver::Geometrical_Preprocessing() {
         /*--- Find closest neighbor to a surface point ---*/
 
         geometry_container[iZone][iInst][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
+
+        /*--- Store our multigrid index. ---*/
+        
+        geometry_container[iZone][iInst][iMGlevel]->SetMGLevel(iMGlevel);
 
         /*--- Protect against the situation that we were not able to complete
        the agglomeration for this level, i.e., there weren't enough points.
@@ -1612,8 +1623,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool restart      = config->GetRestart();
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
-  bool grid_movement = (config->GetGrid_Movement() &&
-                       (config->GetKind_GridMovement() == ELASTICITY));
+  bool grid_movement = (config->GetKind_GridMovement() == ELASTICITY);
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1720,7 +1730,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     }
   }
 
-  if (restart && grid_movement && update_geo){
+  if ((restart || restart_flow) && grid_movement && update_geo){
     /*--- Always restart with the last state ---*/
     val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
     solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -2776,14 +2786,12 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
           case NEO_HOOKEAN :
             switch (config->GetMaterialCompressibility()) {
               case COMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-              case INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
               default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
           case KNOWLES:
             switch (config->GetMaterialCompressibility()) {
               case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
-              case INCOMPRESSIBLE_MAT : numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
               default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
@@ -2821,7 +2829,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       if (!(properties_file.fail())) {
 
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_NHCOMP]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
-          numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_NHINC]   = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_IDEALDE] = new CFEM_IdealDE(nDim, nVar_FEM, config);
           numerics_container[val_iInst][MESH_0][FEA_SOL][MAT_KNOWLES] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
 
@@ -3561,10 +3568,19 @@ void CDriver::Interface_Preprocessing() {
         if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
       }
       else if (structural_donor && fluid_target && (!discrete_adjoint)) {
-        transfer_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS;
-        nVarTransfer = 0;
-        transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
-        if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+        if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL){
+          transfer_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
+          nVarTransfer = 0;
+          transfer_container[donorZone][targetZone] = new CTransfer_BoundaryDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+          if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. "<< endl;
+        }
+        /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
+        else{
+          transfer_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
+          nVarTransfer = 0;
+          transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+          if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+        }
       }
       else if (fluid_donor && structural_target && discrete_adjoint) {
         transfer_types[donorZone][targetZone] = FLOW_TRACTION;
@@ -3894,9 +3910,17 @@ void CDriver::StartSolver(){
 
 void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
-  /*--- Set the value of the external iteration. ---*/
+  /*--- Set the value of the external iteration and physical time. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetExtIter(ExtIter);
+  
+    if (config_container[iZone]->GetUnsteady_Simulation())
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(ExtIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+  
+  }
   
 
   /*--- Read the target pressure ---*/
@@ -4211,12 +4235,9 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
-    unsigned short val_nZone,
-    unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
-        val_nZone,
-        val_nDim,
-        MPICommunicator) { }
+CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
+                                             unsigned short val_nDim, SU2_Comm MPICommunicator):
+                                             CFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
@@ -7069,7 +7090,7 @@ void CMultiphysicsZonalDriver::Run() {
 
       if (iZone != jZone) {
         bool not_capable_fsi        = (   (transfer_types[iZone][jZone] == FLOW_TRACTION)
-                                      ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS)
+                                      ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS_LEGACY)
                                       ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS_DISC_ADJ));
         bool not_capable_turbo      = transfer_types[iZone][jZone] == MIXING_PLANE;
         bool not_capable_ConsVar    = transfer_types[iZone][jZone] == CONSERVATIVE_VARIABLES;

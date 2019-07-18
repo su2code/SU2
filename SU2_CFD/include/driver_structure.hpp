@@ -303,7 +303,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void ResetConvergence() { };
+  virtual void ResetConvergence();
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
@@ -665,6 +665,12 @@ public:
   vector<string> GetAllMovingMarkersTag();
 
   /*!
+   * \brief Get all the interface boundary marker tags.
+   * \return List of moving boundary markers tags.
+   */
+  vector<string> GetAllInterfaceMarkersTag();
+
+  /*!
    * \brief Get all the heat transfer boundary markers tags.
    * \return List of heat transfer boundary markers tags.
    */
@@ -696,7 +702,12 @@ public:
    * \param[in] DispY - Value of the mesh displacement in the direction Y.
    * \param[in] DispZ - Value of the mesh displacement in the direction Z.
    */
-  void SetMeshDisplacement(unsigned short iMarker, unsigned short iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+  void SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+
+  /*!
+   * \brief Communicate the boundary mesh displacements in a python call
+   */
+  void CommunicateMeshDisplacement(void);
 
   /*!
    * \brief Return the sensitivities of the mesh boundary vertices.
@@ -751,6 +762,45 @@ public:
   vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex);
 
   /*!
+   * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
+   * strategy is in place).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   */
+  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the adjoint of the flow tractions (from the extra step -
+   * the repeated methods should be unified once the postprocessing strategy is in place).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
+   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
+   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
+   */
+  void SetFlowLoad_Adjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                    passivedouble val_AdjointY, passivedouble val_AdjointZ);
+
+  /*!
+   * \brief Set the adjoint of the structural displacements (from an outside source)
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_AdjointX - Value of the adjoint in the direction X.
+   * \param[in] val_AdjointY - Value of the adjoint in the direction Y.
+   * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
+   */
+  void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short iVertex, passivedouble val_AdjointX,
+                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
+
+  /*!
+   * \brief Get the undeformed mesh coordinates
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Undeformed Vertex Coordinates
+   */
+  vector<passivedouble> GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
   virtual void Run_GaussSeidel(){};
@@ -796,11 +846,6 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the multizone solver.
-   */
-  void ResetConvergence();
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
@@ -1507,6 +1552,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Total number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDiscAdjSinglezoneDriver(char* confFile,
@@ -1521,29 +1567,29 @@ public:
 
   /*!
    * \brief Preprocess the single-zone iteration
+   * \param[in] TimeIter - index of the current time-step.
    */
   void Preprocess(unsigned long TimeIter);
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-
-  void Run();
+  void Run(void);
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess();
+  void Postprocess(void);
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-
   void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void  DirectRun(unsigned short kind_recording);
 
@@ -1576,28 +1622,27 @@ public:
   /*!
    * \brief Set the objective function.
    */
-  void SetObjFunction();
+  void SetObjFunction(void);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction();
+  void SetAdj_ObjFunction(void);
 
   /*!
    * \brief Print out the direct residuals.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void Print_DirectResidual(unsigned short kind_recording);
 
   /*!
    * \brief Record the main computational path.
    */
-
   void MainRecording(void);
 
   /*!
    * \brief Record the secondary computational path.
    */
-
   void SecondaryRecording(void);
 
 };

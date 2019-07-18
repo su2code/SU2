@@ -327,6 +327,10 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline void CConfig::SetPhysicalTime(su2double val_t) { PhysicalTime = val_t; }
+
+inline su2double CConfig::GetPhysicalTime(void) { return PhysicalTime; }
+
 inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
 
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
@@ -1353,6 +1357,8 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
+inline string CConfig::GetMarker_Interface_TagBound(unsigned short val_marker) { return Marker_Interface[val_marker]; }
+
 inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
 
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
@@ -1392,6 +1398,8 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface) { Marker_All_Interface[val_marker] = val_interface; }
+
 inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
@@ -1426,6 +1434,8 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_Interface(unsigned short val_marker) { return Marker_All_Interface[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker) { return Marker_All_PyCustom[val_marker];}
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
@@ -1436,7 +1446,7 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
-inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+inline unsigned short CConfig::GetnMarker_Interface(void) { return nMarker_Interface; }
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
@@ -1655,26 +1665,6 @@ inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 inline bool CConfig::GetWrite_Conv_FSI(void) { return Write_Conv_FSI; }
 
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
-
-inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
-
-inline su2double* CConfig::GetPeriodicCenter(unsigned short val_index) { return Periodic_Center[val_index]; }
-
-inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) {
-  for (unsigned short i = 0; i < 3; i++) Periodic_Center[val_index][i] = center[i];
-}
-
-inline su2double* CConfig::GetPeriodicRotation(unsigned short val_index) { return Periodic_Rotation[val_index]; }
-
-inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) {
-    for (unsigned short i = 0; i < 3; i++) Periodic_Rotation[val_index][i] = rotation[i];
-}
-
-inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
-
-inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {
-  for (unsigned short i = 0; i < 3; i++) Periodic_Translate[val_index][i] = translate[i];
-}
 
 inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 
@@ -1906,8 +1896,6 @@ inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
 inline bool CConfig::GetpyFSI(void) { return pyFSI; }
 
-inline bool CConfig::GetRegister_FlowTraction(void) { return RegisterFlowTraction; }
-
 inline bool CConfig::GetRelaxation(void) { return Relaxation; }
 
 inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
@@ -2017,6 +2005,8 @@ inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
+
+inline unsigned short CConfig::GetVerification_Solution(void) {return Kind_Verification_Solution;}
 
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 

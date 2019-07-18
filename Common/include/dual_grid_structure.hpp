@@ -168,7 +168,7 @@ private:
   bool Agglomerate_Indirect,					/*!< \brief This flag indicates if the indirect points can be agglomerated. */
   Agglomerate;                        /*!< \brief This flag indicates if the element has been agglomerated. */
   bool Move;                          /*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
-  unsigned short color;               /*!< \brief Color of the point in the partitioning strategy. */
+  unsigned long color;                /*!< \brief Color of the point in the partitioning strategy. */
   su2double Wall_Distance;            /*!< \brief Distance to the nearest wall. */
   su2double SharpEdge_Distance;       /*!< \brief Distance to a sharp edge. */
   su2double Curvature;                /*!< \brief Value of the surface curvature (SU2_GEO). */
@@ -494,7 +494,7 @@ public:
 	 * \note Each domain has a different color.
 	 * \param[in] val_color - Color of the point.
 	 */
-	void SetColor(unsigned short val_color);
+	void SetColor(unsigned long val_color);
 	
 	/*! 
 	 * \brief Set the number of neighbor (artificial dissipation).
@@ -512,7 +512,7 @@ public:
 	 * \brief Get the color of a point, the color indicates to which subdomain the point belong to.
 	 * \return Color of the point.
 	 */
-	unsigned short GetColor(void);
+	unsigned long GetColor(void);
 	
 	/*! 
 	 * \brief Get the global index in a parallel computation.

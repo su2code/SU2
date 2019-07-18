@@ -203,7 +203,7 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+  nMarker_Interface,				/*!< \brief Number of interface markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -246,7 +246,7 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_Interface,				/*!< \brief Interface markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -405,6 +405,7 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  su2double PhysicalTime;                       /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
   unsigned short nLevels_TimeAccurateLTS;       /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;              /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;                   /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
@@ -680,6 +681,7 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_Interface,       /*!< \brief Global index for interface surfaces using the grid information. */
   *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -692,6 +694,7 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_Interface,       /*!< \brief Global index for interface surfaces using the config information. */
   *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -997,7 +1000,6 @@ private:
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
-  bool RegisterFlowTraction;  /*!< \brief Determine if Flow Tractions must be registered for adjoint applications. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -1080,6 +1082,7 @@ private:
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
+  unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -2961,10 +2964,10 @@ public:
   unsigned short GetnMarker_NearFieldBound(void);
   
   /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
+   * \brief Get the total number of interface markers.
+   * \return Total number of interface markers.
    */
-  unsigned short GetnMarker_InterfaceBound(void);
+  unsigned short GetnMarker_Interface(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -3153,6 +3156,18 @@ public:
    * \return Current internal iteration.
    */
   unsigned long GetIntIter(void);
+
+  /*!
+   * \brief Set the current physical time.
+   * \param[in] val_t - Current physical time.
+   */
+  void SetPhysicalTime(su2double val_t);
+  
+  /*!
+   * \brief Get the current physical time.
+   * \return Current physical time.
+   */
+  su2double GetPhysicalTime(void);
   
   /*!
    * \brief Get the frequency for writing the solution file.
@@ -3489,6 +3504,14 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> belongs to the interface <i>val_moving</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker belongs to the interface.
+   */
+  void SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface);
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3610,6 +3633,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+  /*!
+   * \brief Get the interface information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the interface.
+   * \return 0 or 1 depending if the marker belongs to the interface.
+   */
+  unsigned short GetMarker_All_Interface(unsigned short val_marker);
 
   /*!
    * \brief Get the Python customization for a marker <i>val_marker</i>.
@@ -6156,6 +6186,12 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
+   * \brief Get the interface information from the config definition for the marker <i>val_marker</i>.
+   * \return Interface information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Interface(string val_marker);
+
+  /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6511,6 +6547,12 @@ public:
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Moving(string val_marker);
+
+  /*!
+   * \brief Get the internal index for an interface boundary <i>val_marker</i>.
+   * \return Internal index for a interface boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Interface(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6519,6 +6561,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the interface boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Interface_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6535,60 +6585,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Analyze_TagBound(unsigned short val_marker);
-  
-  /*!
-   * \brief Set the total number of SEND_RECEIVE periodic transformations.
-   * \param[in] val_index - Total number of transformations.
-   */
-  void SetnPeriodicIndex(unsigned short val_index);
-  
-  /*!
-   * \brief Get the total number of SEND_RECEIVE periodic transformations.
-   * \return Total number of transformations.
-   */
-  unsigned short GetnPeriodicIndex(void);
-  
-  /*!
-   * \brief Set the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] center - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicCenter(unsigned short val_index, su2double* center);
-  
-  /*!
-   * \brief Get the rotation center for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing coordinates of the center point.
-   */
-  su2double* GetPeriodicCenter(unsigned short val_index);
-  
-  /*!
-   * \brief Set the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] rotation - Pointer to a vector containing the rotation angles.
-   */
-  void SetPeriodicRotation(unsigned short val_index, su2double* rotation);
-  
-  /*!
-   * \brief Get the rotation angles for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return A vector containing the angles of rotation.
-   */
-  su2double* GetPeriodicRotation(unsigned short val_index);
-  
-  /*!
-   * \brief Set the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \param[in] translate - Pointer to a vector containing the coordinate of the center.
-   */
-  void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
-
-  /*!
-   * \brief Get the translation vector for a periodic transformation.
-   * \param[in] val_index - Index corresponding to the periodic transformation.
-   * \return The translation vector.
-   */
-  su2double* GetPeriodicTranslate(unsigned short val_index);
   
   /*!
    * \brief Get the total temperature at a nacelle boundary.
@@ -8792,12 +8788,6 @@ public:
   bool GetpyFSI(void);
 
   /*!
-   * \brief Get whether the flow tractions are registered for adjoint applications
-   * \return  Bool: determines if flow loads will be registered.
-   */
-  bool GetRegister_FlowTraction(void);
-
-  /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
    * \return Boolean for using Persson's shock capturing method in Euler flow DG-FEM
    */
@@ -9069,6 +9059,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+
+  /*!
+   * \brief Get the verification solution.
+   * \return The verification solution to be used.
+   */
+  unsigned short GetVerification_Solution(void);
   
   /*!
    * \brief Get topology optimization.

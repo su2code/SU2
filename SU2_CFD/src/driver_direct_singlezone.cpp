@@ -116,6 +116,15 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
   config_container[ZONE_0]->SetExtIter(TimeIter);
 
+  /*--- Store the current physical time in the config container, as
+   this can be used for verification / MMS. This should also be more
+   general once the drivers are more stable. ---*/
+  
+  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+  else
+    config_container[ZONE_0]->SetPhysicalTime(0.0);
+  
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
   if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
@@ -162,6 +171,9 @@ void CSinglezoneDriver::Run() {
 }
 
 void CSinglezoneDriver::Postprocess() {
+
+    iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, geometry_container, solver_container,
+        numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- A corrector step can help preventing numerical instabilities ---*/
 

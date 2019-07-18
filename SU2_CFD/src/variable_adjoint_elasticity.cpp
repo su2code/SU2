@@ -248,6 +248,7 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
 CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable() : CDiscAdjFEAVariable(){
 
   FlowTraction_Sens = NULL;
+  SourceTerm_DispAdjoint = NULL;
 
 }
 
@@ -257,8 +258,10 @@ CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(su2double* val_solution, unsi
 
   unsigned short iDim;
   FlowTraction_Sens = new su2double[nDim];
+  SourceTerm_DispAdjoint = new su2double[nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     FlowTraction_Sens[iDim] = val_solution[iDim];
+    SourceTerm_DispAdjoint[iDim] = 0.0;
   }
 
 }
@@ -266,5 +269,6 @@ CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(su2double* val_solution, unsi
 CDiscAdjFEABoundVariable::~CDiscAdjFEABoundVariable(){
 
   if (FlowTraction_Sens != NULL) delete [] FlowTraction_Sens;
+  if (SourceTerm_DispAdjoint != NULL) delete [] SourceTerm_DispAdjoint;
 
 }

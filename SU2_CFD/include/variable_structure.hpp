@@ -2278,6 +2278,13 @@ public:
   virtual void SetBound_Disp(su2double *val_BoundDisp);
 
   /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  virtual void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
+
+  /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
@@ -2511,6 +2518,20 @@ public:
    * \return value of the Sensitivity
    */
   virtual su2double GetFlowTractionSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  virtual void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  virtual su2double GetSourceTerm_DispAdjoint(unsigned short iDim);
 
 };
 
@@ -3082,16 +3103,13 @@ public:
 
 /*!
  * \class CFEABoundVariable
- * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \brief Main class for defining the load variables on the FEA boundaries.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
 class CFEABoundVariable : public CFEAVariable {
 protected:
-
-  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
 
   su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
   su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
@@ -3108,9 +3126,11 @@ public:
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] isInterface - Determines if the node belongs to an interface marker
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                    CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -3148,6 +3168,48 @@ public:
   su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
 
   /*!
+   * \brief Get whether this node is on the boundary
+   */
+  bool Get_isVertex(void);
+
+};
+
+/*!
+ * \class CFEAFSIBoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
+ * \ingroup Structural Finite Element Analysis Variables
+ * \author R. Sanchez.
+ * \version 6.2.0 "Falcon"
+ */
+class CFEAFSIBoundVariable : public CFEABoundVariable {
+protected:
+
+  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CFEAFSIBoundVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAFSIBoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                        CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEAFSIBoundVariable(void);
+
+  /*!
    * \brief Set the flow traction at a node on the structural side
    */
   void Set_FlowTraction(su2double *val_flowTraction);
@@ -3176,11 +3238,6 @@ public:
    * \brief Clear the flow traction residual
    */
   void Clear_FlowTraction(void);
-
-  /*!
-   * \brief Get whether this node is on the boundary
-   */
-  bool Get_isVertex(void);
 
   /*!
    * \brief Register the flow tractions as input variable.
@@ -5191,7 +5248,9 @@ public:
 class CDiscAdjFEABoundVariable : public CDiscAdjFEAVariable {
 protected:
 
-  su2double *FlowTraction_Sens;    /*!< \brief Sensitivity of the traction from the fluid field. */
+  su2double *FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
+  su2double *SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement adjoint
+                                                    coming from external solvers. */
 
 public:
 
@@ -5227,6 +5286,20 @@ public:
    * \return value of the Sensitivity
    */
   su2double GetFlowTractionSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val);
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  su2double GetSourceTerm_DispAdjoint(unsigned short iDim);
 
   /*!
    * \brief Get whether this node is on the boundary
@@ -5419,6 +5492,13 @@ public:
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   void SetBound_Disp(su2double *val_BoundDisp);
+
+  /*!
+   * \brief Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp);
 
   /*!
    * \brief Determine whether the node is a moving vertex.
