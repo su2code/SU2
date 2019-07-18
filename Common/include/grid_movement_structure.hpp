@@ -1158,8 +1158,9 @@ public:
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Screen_Output - determines if text is written to screen
 	 */
-  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output);
 
   /*!
 	 * \brief Compute the minimum distance to the nearest solid surface.
@@ -1258,7 +1259,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Set the derivatives of the boundary nodes.
@@ -1383,7 +1384,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.

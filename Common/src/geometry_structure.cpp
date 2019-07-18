@@ -3586,6 +3586,7 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
 }
 
@@ -3627,6 +3628,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -3653,7 +3655,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
+    cout << endl <<"---------------- Read Grid File Information ( ZONE "  << config->GetiZone() << " ) ------------------" << endl;
 
   if( fem_solver ) {
     switch (val_format) {
@@ -7191,7 +7193,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     nElem_Bound[iMarker] = nElem_Bound_Copy[iMarker];
   }
-  for (iMarker = nMarker_Physical; iMarker < nMarker; iMarker++) {
+
+  for (iMarker = nMarker_Physical; iMarker < nMarker; iMarker++) {    
     Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
     config->SetMarker_All_TagBound(iMarker, "SEND_RECEIVE");
@@ -7265,9 +7268,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+        if (config->GetSolid_Wall(iMarker))
           node[Point_Surface]->SetSolidBoundary(true);
         
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
@@ -9026,7 +9027,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         iMarker=0;
         PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
         BoundaryTable.AddColumn("Index", 6);
-        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Marker", 35);
         BoundaryTable.AddColumn("Elements", 14);
         if (rank == MASTER_NODE){
           BoundaryTable.PrintHeader();
@@ -11278,9 +11279,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
 
     /* Check for a viscous wall. */
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-      (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if( config->GetViscous_Wall(iMarker)) {
 
       /* Loop over the surface elements of this marker. */
       for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -13760,205 +13759,6 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
 }
 
-void CPhysicalGeometry::MatchInterface(CConfig *config) {
-  
-  su2double epsilon = 1e-1;
-  
-  unsigned short nMarker_InterfaceBound = config->GetnMarker_InterfaceBound();
-  
-  if (nMarker_InterfaceBound != 0) {
-    
-    unsigned short iMarker, iDim, jMarker, pMarker = 0;
-    unsigned long iVertex, iPoint, pVertex = 0, pPoint = 0, jVertex, jPoint, iPointGlobal, jPointGlobal, jVertex_, pPointGlobal = 0;
-    su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
-    int iProcessor, pProcessor = 0;
-    unsigned long nLocalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
-    int nProcessor = size;
-
-    unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-    unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-    
-    if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." << endl;
-    
-    /*--- Compute the number of vertex that have interfase boundary condition
-     without including the ghost nodes ---*/
-    
-    nLocalVertex_Interface = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (node[iPoint]->GetDomain()) nLocalVertex_Interface ++;
-        }
-    
-    Buffer_Send_nVertex[0] = nLocalVertex_Interface;
-    
-    /*--- Send Interface vertex information --*/
-    
-#ifndef HAVE_MPI
-    MaxLocalVertex_Interface = nLocalVertex_Interface;
-    Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
-#else
-    SU2_MPI::Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#endif
-    
-    su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Interface*nDim];
-    unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
-    unsigned long *Buffer_Send_GlobalIndex  = new unsigned long [MaxLocalVertex_Interface];
-    unsigned long *Buffer_Send_Vertex  = new unsigned long [MaxLocalVertex_Interface];
-    unsigned long *Buffer_Send_Marker  = new unsigned long [MaxLocalVertex_Interface];
-    
-    su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Interface*nDim];
-    unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-    unsigned long *Buffer_Receive_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-    unsigned long *Buffer_Receive_Vertex = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-    unsigned long *Buffer_Receive_Marker = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-    
-    unsigned long nBuffer_Coord = MaxLocalVertex_Interface*nDim;
-    unsigned long nBuffer_Point = MaxLocalVertex_Interface;
-    unsigned long nBuffer_GlobalIndex = MaxLocalVertex_Interface;
-    unsigned long nBuffer_Vertex = MaxLocalVertex_Interface;
-    unsigned long nBuffer_Marker = MaxLocalVertex_Interface;
-    
-    for (iVertex = 0; iVertex < MaxLocalVertex_Interface; iVertex++) {
-      Buffer_Send_Point[iVertex] = 0;
-      Buffer_Send_GlobalIndex[iVertex] = 0;
-      Buffer_Send_Vertex[iVertex] = 0;
-      Buffer_Send_Marker[iVertex] = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-    }
-    
-    /*--- Copy coordinates and point to the auxiliar vector --*/
-    
-    nLocalVertex_Interface = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
-          if (node[iPoint]->GetDomain()) {
-            Buffer_Send_Point[nLocalVertex_Interface] = iPoint;
-            Buffer_Send_GlobalIndex[nLocalVertex_Interface] = iPointGlobal;
-            Buffer_Send_Vertex[nLocalVertex_Interface] = iVertex;
-            Buffer_Send_Marker[nLocalVertex_Interface] = iMarker;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_Coord[nLocalVertex_Interface*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-            nLocalVertex_Interface++;
-          }
-        }
-    
-#ifndef HAVE_MPI
-    for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
-      Buffer_Receive_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
-    for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
-      Buffer_Receive_Point[iBuffer_Point] = Buffer_Send_Point[iBuffer_Point];
-    for (unsigned long iBuffer_GlobalIndex = 0; iBuffer_GlobalIndex < nBuffer_GlobalIndex; iBuffer_GlobalIndex++)
-      Buffer_Receive_GlobalIndex[iBuffer_GlobalIndex] = Buffer_Send_GlobalIndex[iBuffer_GlobalIndex];
-    for (unsigned long iBuffer_Vertex = 0; iBuffer_Vertex < nBuffer_Vertex; iBuffer_Vertex++)
-      Buffer_Receive_Vertex[iBuffer_Vertex] = Buffer_Send_Vertex[iBuffer_Vertex];
-    for (unsigned long iBuffer_Marker = 0; iBuffer_Marker < nBuffer_Marker; iBuffer_Marker++)
-      Buffer_Receive_Marker[iBuffer_Marker] = Buffer_Send_Marker[iBuffer_Marker];
-#else
-    SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#endif
-    
-    
-    /*--- Compute the closest point to a Near-Field boundary point ---*/
-    
-    maxdist_local = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
-        
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
-          
-          if (node[iPoint]->GetDomain()) {
-            
-            /*--- Coordinates of the boundary point ---*/
-            
-            Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-            
-            /*--- Loop over all the boundaries to find the pair ---*/
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-              for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Interface+jVertex];
-                jPointGlobal = Buffer_Receive_GlobalIndex[iProcessor*MaxLocalVertex_Interface+jVertex];
-                jVertex_ = Buffer_Receive_Vertex[iProcessor*MaxLocalVertex_Interface+jVertex];
-                jMarker = Buffer_Receive_Marker[iProcessor*MaxLocalVertex_Interface+jVertex];
-                
-                if (jPointGlobal != iPointGlobal) {
-                  
-                  /*--- Compute the distance ---*/
-                  
-                  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
-                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                  } dist = sqrt(dist);
-                  
-                  if (((dist < mindist) && (iProcessor != rank)) ||
-                      ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; pPointGlobal = jPointGlobal;
-                    pVertex = jVertex_; pMarker = jMarker;
-                    if (dist == 0.0) break;
-                  }
-                }
-              }
-            
-            /*--- Store the value of the pair ---*/
-            
-            maxdist_local = max(maxdist_local, mindist);
-            vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
-            
-            if (mindist > epsilon) {
-              cout.precision(10);
-              cout << endl;
-              cout << "   Bad match for point " << iPoint << ".\tNearest";
-              cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iPointGlobal, pVertex, pMarker, pProcessor);
-              maxdist_local = min(maxdist_local, 0.0);
-            }
-            
-          }
-        }
-      }
-    }
-    
-#ifndef HAVE_MPI
-    maxdist_global = maxdist_local;
-#else
-    SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-    
-    if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
-    
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_Point;
-    
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_Point;
-    
-    delete[] Buffer_Send_nVertex;
-    delete[] Buffer_Receive_nVertex;
-
-    delete [] Buffer_Send_GlobalIndex;
-    delete [] Buffer_Send_Vertex;
-    delete [] Buffer_Send_Marker;
-
-    delete [] Buffer_Receive_GlobalIndex;
-    delete [] Buffer_Receive_Vertex;
-    delete [] Buffer_Receive_Marker;
-    
-  }
-  
-}
-
 void CPhysicalGeometry::MatchNearField(CConfig *config) {
   
   su2double epsilon = 1e-1;
@@ -15796,15 +15596,15 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+  
   L_Ref     = config->GetLength_Ref();
   
   /*--- Print some information to the console ---*/
@@ -15878,11 +15678,9 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   su2double xDot[3] = {0.0,0.0,0.0};
   
   /*--- Get the translational velocity vector from config ---*/
-  
-  xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1] = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2] = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
-  
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
+  }
   /*--- Print some information to the console ---*/
   
   if (rank == MASTER_NODE && print) {
@@ -19648,15 +19446,15 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
   RotVel = new su2double [3];
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+  
   L_Ref     = config->GetLength_Ref();
   
   /*--- Loop over all nodes and set the rotational velocity. ---*/
@@ -19720,9 +19518,9 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned shor
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
+  }
   
   /*--- Loop over all nodes and set the translational velocity ---*/
   
