@@ -830,10 +830,6 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
       config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, true);
     }
 
-    /*--- Set the MPI communicator ---*/
-
-    config_container[iZone]->SetMPICommunicator(MPICommunicator);
-
   }
 
   /*--- Set the multizone part of the problem. ---*/
@@ -3369,7 +3365,7 @@ void CDriver::Interface_Preprocessing() {
 
         /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
-        SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
       if (rank == MASTER_NODE) {
         for (iRank = 0; iRank < nProcessor; iRank++) {
@@ -3381,9 +3377,9 @@ void CDriver::Interface_Preprocessing() {
           }
         }
 
-        SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
-        SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
       if (rank == MASTER_NODE){
         for (iRank = 0; iRank < nProcessor; iRank++){
@@ -3395,7 +3391,7 @@ void CDriver::Interface_Preprocessing() {
           }
         }
 
-        SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
 #else
       Donor_check  = markDonor;
@@ -5244,8 +5240,8 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
+  MPI_Comm_size(SU2_MPI::GetComm(), &size);
 #endif
 
   unsigned short iMarker;
@@ -6694,7 +6690,7 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
   /*--- Convergence criteria ---*/
 
   sbuf_conv[0] = adjoint_convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   /*-- Compute global convergence criteria in the master node --*/
 
@@ -6704,7 +6700,7 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
     else sbuf_conv[0] = 0;
   }
 
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 
   if (sbuf_conv[0] == 1) { adjoint_convergence = true;}
   else { adjoint_convergence = false;}
@@ -6946,7 +6942,7 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   /*--- Convergence criteria ---*/
 
   sbuf_conv[0] = Convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   /*-- Compute global convergence criteria in the master node --*/
 
@@ -6956,7 +6952,7 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
     else sbuf_conv[0] = 0;
   }
 
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 
   if (sbuf_conv[0] == 1) { Convergence = true;}
   else { Convergence = false;}

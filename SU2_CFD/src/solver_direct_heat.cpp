@@ -60,7 +60,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
@@ -305,7 +305,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   int counter = 0;
@@ -382,7 +382,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
   if (rbuf_NotMatching != 0) {
     if (rank == MASTER_NODE) {
@@ -392,8 +392,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Barrier(SU2_MPI::GetComm());
+    MPI_Abort(SU2_MPI::GetComm(),1);
     MPI_Finalize();
 #endif
   }
@@ -761,8 +761,8 @@ void CHeatSolverFVM::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
     }
   }
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
     for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
       Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
@@ -1314,8 +1314,8 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 #ifdef HAVE_MPI
   MyAllBound_HeatFlux = AllBound_HeatFlux;
   MyAllBound_AvgTemperature = AllBound_AvgTemperature;
-  SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_AvgTemperature, &AllBound_AvgTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyAllBound_AvgTemperature, &AllBound_AvgTemperature, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   if (Total_HeatFlux_Areas_Monitor != 0.0) {
@@ -1497,13 +1497,13 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Min_Delta_Time = rbuf_time;
 
     sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Max_Delta_Time = rbuf_time;
 #endif
   }
@@ -1513,8 +1513,8 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Global_Delta_Time = rbuf_time;
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -1529,8 +1529,8 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Global_Delta_UnstTimeND = rbuf_time;
 #endif
     config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);

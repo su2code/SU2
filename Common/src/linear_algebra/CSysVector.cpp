@@ -64,7 +64,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType 
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
 }
@@ -90,7 +90,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
 }
@@ -133,7 +133,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType*
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
 }
@@ -159,7 +159,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
 }
@@ -194,7 +194,7 @@ void CSysVector<ScalarType>::Initialize(const unsigned long & numBlk, const unsi
 
 #ifdef HAVE_MPI
   unsigned long nElmLocal = (unsigned long)nElm;
-  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
 }
@@ -473,7 +473,7 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   ScalarType prod = 0.0;
 
 #ifdef HAVE_MPI
-  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
   prod = loc_prod;
 #endif

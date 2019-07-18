@@ -55,8 +55,8 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 #endif
   
   nPointTotal = geometry->GetnPoint();
@@ -132,7 +132,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     Profile_File.close();
   }
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   
   /*--- Loop through the map and write the results to the file ---*/
@@ -144,7 +144,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
       Profile_File.close();
     }
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
   
@@ -167,8 +167,8 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 #endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
@@ -237,7 +237,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
     Profile_File.close();
   }
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   
   /*--- Loop through the map and write the results to the file ---*/
@@ -251,7 +251,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
       Profile_File.close();
     }
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
   

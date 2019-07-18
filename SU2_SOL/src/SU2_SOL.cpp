@@ -54,9 +54,6 @@ int main(int argc, char *argv[]) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
 #endif
 
   rank = SU2_MPI::GetRank();
@@ -124,8 +121,6 @@ int main(int argc, char *argv[]) {
     else{
       config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, true);
     }
-
-    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
 

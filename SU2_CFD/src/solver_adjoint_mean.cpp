@@ -341,7 +341,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 #ifdef HAVE_MPI
   Area_Monitored = 0.0;
-  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
   Area_Monitored = myArea_Monitored;
 #endif
@@ -508,7 +508,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
       
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm());
       
 #endif
       
@@ -537,7 +537,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
           
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
           
 #endif
           
@@ -551,7 +551,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -609,7 +609,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       
       SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
+                     iDomain,  SU2_MPI::GetComm());
       
 #endif
       
@@ -657,7 +657,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -679,7 +679,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       /*--- Receive the buffers with the coords, global index, and colors ---*/
       
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, SU2_MPI::GetComm(), &status_);
       
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index vertex and markers ---*/
@@ -713,7 +713,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -768,7 +768,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -824,7 +824,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
       
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm());
       
 #endif
       
@@ -853,7 +853,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
           
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
           
 #endif
           
@@ -867,7 +867,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -924,7 +924,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       
       SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
+                     iDomain,  SU2_MPI::GetComm());
       
 #endif
       
@@ -972,7 +972,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -994,7 +994,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       /*--- Receive the buffers with the coords, global index, and colors ---*/
       
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, SU2_MPI::GetComm(), &status_);
       
       
       /*--- Loop over all of the points that we have recv'd and store the
@@ -1029,7 +1029,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -1132,7 +1132,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
       
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
       
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm());
       
 #endif
       
@@ -1161,8 +1161,8 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
           
-          SU2_MPI::Probe(jDomain, rank, MPI_COMM_WORLD, &status);
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Probe(jDomain, rank, SU2_MPI::GetComm(), &status);
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
           
 #endif
           
@@ -1176,7 +1176,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -1233,7 +1233,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
       
       SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
+                     iDomain,  SU2_MPI::GetComm());
       
 #endif
       
@@ -1281,7 +1281,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -1303,7 +1303,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
       /*--- Receive the buffers with the coords, global index, and colors ---*/
       
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, SU2_MPI::GetComm(), &status_);
       
       
       /*--- Loop over all of the points that we have recv'd and store the
@@ -1338,7 +1338,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
   
@@ -2013,7 +2013,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
@@ -3047,12 +3047,12 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
   su2double MyTotal_Sens_BPress  = Total_Sens_BPress;    Total_Sens_BPress = 0.0;
   
-  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   
 #endif
   
@@ -5131,7 +5131,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
@@ -5418,7 +5418,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
  #ifdef HAVE_MPI
    Area_Monitored = 0.0;
-   SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
  #else
    Area_Monitored = myArea_Monitored;
  #endif
@@ -5552,7 +5552,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
@@ -6307,11 +6307,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   su2double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
   
-  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   
 #endif
 

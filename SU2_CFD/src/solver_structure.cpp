@@ -2216,8 +2216,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   if (config->GetComm_Level() == COMM_FULL) {
     
     unsigned long Local_nPointDomain = geometry->GetnPointDomain();
-    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     
   } else {
     
@@ -2262,9 +2262,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
         sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
     
-    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
     
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -2319,8 +2319,8 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
   Local_nPointDomain = geometry->GetnPointDomain();
 
 
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2355,9 +2355,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
       sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
   }
 
-  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -3327,8 +3327,8 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       }
       
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #else
       for (iVar = 0; iVar < nVar; iVar++) {
         GlobalMinSolution[iVar] = LocalMinSolution[iVar];
@@ -3976,7 +3976,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
@@ -4049,7 +4049,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 #ifndef HAVE_MPI
     rbuf_NotMatching = sbuf_NotMatching;
 #else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (rbuf_NotMatching != 0) {
       SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
@@ -4130,7 +4130,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -4145,7 +4145,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -4310,7 +4310,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -4327,7 +4327,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -4357,7 +4357,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Broadcast the string names of the variables. ---*/
 
   SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
-                 MASTER_NODE, MPI_COMM_WORLD);
+                 MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
@@ -4524,7 +4524,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- All ranks open the file using MPI. ---*/
 
-		ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+		ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
 		/*--- Error check opening the file. ---*/
 
@@ -4541,7 +4541,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -4573,7 +4573,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Communicate metadata. ---*/
 
-		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
 		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
               doesn't work with passive data)---*/
@@ -4581,7 +4581,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		for (unsigned short iVar = 0; iVar < 8; iVar++)
 			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
 		/*--- All ranks close the file after writing. ---*/
 
@@ -4650,7 +4650,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -4665,7 +4665,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -5207,7 +5207,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
 #else
     global_failure = local_failure;
 #endif
@@ -5499,7 +5499,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -5517,7 +5517,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -5590,7 +5590,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -5605,7 +5605,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -5942,7 +5942,7 @@ CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nDOFsGlobal = nDOFsLocOwned;
 #endif
@@ -6034,7 +6034,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -6051,7 +6051,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -6121,7 +6121,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -6136,7 +6136,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -6248,7 +6248,7 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
 #ifdef HAVE_MPI
   unsigned short sbuf_NotMatching = rbuf_NotMatching;
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   if (rbuf_NotMatching != 0)

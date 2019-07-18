@@ -563,8 +563,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
   if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
   
-  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   
   /*--- Send and Recv buffers ---*/
   
@@ -659,19 +659,19 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   /*--- Send the information to the master node ---*/
   
-  SU2_MPI::Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Press, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Press, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (solver == EULER || solver == FEM_EULER) SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Press, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Press, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  if (solver == EULER || solver == FEM_EULER) SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if ((solver == NAVIER_STOKES) || (solver == RANS) || (solver == FEM_NAVIER_STOKES) || (solver == FEM_RANS) || (solver == FEM_LES)) {
-    SU2_MPI::Gather(Buffer_Send_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   }
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   
   /*--- The master node unpacks the data and writes the surface CSV file ---*/
   
@@ -936,8 +936,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
   
-  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   
   su2double *Buffer_Send_Coord_x = new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_Coord_y= new su2double[MaxLocalVertex_Surface];
@@ -1035,22 +1035,22 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   nBuffer_Scalar = MaxLocalVertex_Surface;
   
   /*--- Send the information to the Master node ---*/
-  SU2_MPI::Gather(Buffer_Send_Coord_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Coord_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalPoint, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Sensitivity, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sensitivity, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_PsiRho, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiRho, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Phi_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Phi_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Phi_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Coord_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Coord_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Coord_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_GlobalPoint, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Sensitivity, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sensitivity, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_PsiRho, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiRho, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Phi_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Phi_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Phi_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (config->GetKind_Regime() == COMPRESSIBLE)
-      SU2_MPI::Gather(Buffer_Send_PsiE, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiE, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_PsiE, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiE, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (config->GetDiscrete_Adjoint()) {
-    SU2_MPI::Gather(Buffer_Send_Sens_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Sens_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Sens_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Sens_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     if (nDim == 3) {
-      SU2_MPI::Gather(Buffer_Send_Sens_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Sens_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     }
   }
   
@@ -1429,8 +1429,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Communicate the total number of nodes on this domain. ---*/
   
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   
   if (rank == MASTER_NODE) {
     nGlobal_Doma = 0;
@@ -1513,12 +1513,12 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   /*--- Gather the coordinate data on the master node using MPI. ---*/
   
-  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (nDim == 3) {
-    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   }
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   
   /*--- The master node unpacks and sorts this variable by global index ---*/
   
@@ -1625,8 +1625,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
   
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalElem = nLocalElem;
   Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
@@ -1690,9 +1690,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   maxAddedPeriodic = nAddedPeriodic;
   Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
@@ -1712,7 +1712,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                      Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
 #endif
@@ -1812,8 +1812,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- Gather the element connectivity information. ---*/
   
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
   for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
@@ -1998,8 +1998,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
   
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalElem = nLocalElem;
   Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
@@ -2059,9 +2059,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   maxAddedPeriodic = nAddedPeriodic;
   Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
@@ -2081,7 +2081,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                      Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++) Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
 #endif
@@ -2175,8 +2175,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   /*--- Gather the element connectivity information. ---*/
   
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
   for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
@@ -2507,8 +2507,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
   
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalPoint = nLocalPoint;
   Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
@@ -2635,7 +2635,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- Gather the data on the master node. ---*/
     
 #ifdef HAVE_MPI
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
     for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -2643,7 +2643,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
       if (config->GetWrt_Limiters()) {
 #ifdef HAVE_MPI
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
         for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
 #endif
@@ -2651,7 +2651,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
       if (config->GetWrt_Residuals()) {
 #ifdef HAVE_MPI
-        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
         for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
 #endif
@@ -2661,7 +2661,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     if (iVar == 0) {
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
 #endif
@@ -2735,10 +2735,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (geometry->GetnDim() == 3) {
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       }
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
@@ -2808,9 +2808,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -2871,7 +2871,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -2922,7 +2922,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
 #endif
@@ -2991,10 +2991,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (geometry->GetnDim() == 3) {
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       }
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
@@ -3077,8 +3077,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
         Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -3135,7 +3135,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -3187,7 +3187,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         /*--- Gather the data on the master node. ---*/
         
 #ifdef HAVE_MPI
-        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
         for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -3265,9 +3265,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (!config->GetDiscrete_Adjoint())
-        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       if (!config->GetDiscrete_Adjoint())
@@ -3322,10 +3322,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (nDim == 3)
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -3384,10 +3384,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (geometry->GetnDim() == 3) {
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       }
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
@@ -3447,10 +3447,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (geometry->GetnDim() == 3) {
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       }
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
@@ -3513,9 +3513,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -3574,9 +3574,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -3630,7 +3630,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -3679,10 +3679,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
 
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
       if (nDim == 3)
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
@@ -3740,7 +3740,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         /*--- Gather the data on the master node. ---*/
         
 #ifdef HAVE_MPI
-        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
         for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
@@ -3928,8 +3928,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   
   nBuffer_Scalar = MaxLocalPoint;
   
@@ -3987,9 +3987,9 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- Gather the data on the master node. ---*/
     
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     if (iVar == 0) {
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
     }
     
     /*--- The master node unpacks and sorts this variable by global index ---*/
@@ -8276,7 +8276,7 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -8469,8 +8469,8 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
      file was written). ---*/
     
 #ifdef HAVE_MPI
-    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #endif
     
   }
@@ -8655,7 +8655,7 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
      file was written). ---*/
 
 #ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
     }
@@ -8787,7 +8787,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
      file was written). ---*/
     
 #ifdef HAVE_MPI
-    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #endif
     
     /*--- Write an csv surface file, done in parallel ---*/
@@ -9234,7 +9234,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   nPointLocal = geometry->GetnPoint();
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nPointGlobal = nPointLocal;
 #endif
@@ -9360,7 +9360,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
 #ifdef HAVE_MPI
   su2double MyPressDiff = PressDiff;   PressDiff = 0.0;
-  SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
   /*--- Update the total Cp difference coeffient ---*/
@@ -9386,7 +9386,7 @@ void COutput::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *ge
   
   nPointLocal = geometry->GetnPoint();
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nPointGlobal = nPointLocal;
 #endif
@@ -9511,7 +9511,7 @@ void COutput::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *ge
   
 #ifdef HAVE_MPI
   su2double MyHeatFluxDiff = HeatFluxDiff;   HeatFluxDiff = 0.0;
-  SU2_MPI::Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
   /*--- Update the total HeatFlux difference coeffient ---*/
@@ -9651,7 +9651,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
 #else
   
   int nProcessor;
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &nProcessor);
   
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
@@ -9681,9 +9681,9 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   
   /*--- Send Near-Field vertex information --*/
   
-  SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   delete [] Buffer_Send_nVertex;
   
   su2double *Buffer_Send_Xcoord = new su2double[MaxLocalVertex_NearField];
@@ -9746,12 +9746,12 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   
   /*--- Send all the information --*/
   
-  SU2_MPI::Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   delete [] Buffer_Send_Xcoord;
   delete [] Buffer_Send_Ycoord;
   delete [] Buffer_Send_Zcoord;
@@ -10141,7 +10141,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   
   /*--- Send the value of the NearField coefficient to all the processors ---*/
   
-  SU2_MPI::Bcast(&InverseDesign, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&InverseDesign, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   
   /*--- Store the value of the NearField coefficient ---*/
   
@@ -10241,8 +10241,8 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
     if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
     MaxLocalVertex_Surface = nLocalVertex_Surface;
     Buffer_Recv_nVertex[MASTER_NODE] = Buffer_Send_nVertex[MASTER_NODE];
@@ -10389,19 +10389,19 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
     
 #ifdef HAVE_MPI
     
-    SU2_MPI::Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_PT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_PT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_TT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_TT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_P, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_P, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_T, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_T, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_q, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_q, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_PT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_PT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_TT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_TT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_P, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_P, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_T, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_T, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_q, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_q, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     
 #else
     
@@ -11260,7 +11260,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   /*--- Output only using the Master Node ---*/
@@ -14773,8 +14773,8 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   nGlobal_Elem_Par = nTotal_Elem;
   nSurf_Elem_Par   = nTotal_Surf_Elem;
 #else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
 }
@@ -14872,9 +14872,9 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   maxAddedPeriodic = nAddedPeriodic;
   Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
@@ -14894,7 +14894,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                      Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
     Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
@@ -14973,7 +14973,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -15085,7 +15085,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15237,7 +15237,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -15253,7 +15253,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -15269,7 +15269,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -15285,7 +15285,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config,
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -15473,9 +15473,9 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   maxAddedPeriodic = nAddedPeriodic;
   Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
@@ -15495,7 +15495,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                      Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
     Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
@@ -15574,7 +15574,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -15684,7 +15684,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15835,7 +15835,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -15851,7 +15851,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -15867,7 +15867,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -15883,7 +15883,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -16025,7 +16025,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -16120,7 +16120,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -16250,7 +16250,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -16266,7 +16266,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -16282,7 +16282,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -16298,7 +16298,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -16356,7 +16356,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   nGlobal_Poin_Par = nParallel_Poin;
 #else
   SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
   /*--- Free temporary memory from communications ---*/
@@ -16446,7 +16446,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -16608,7 +16608,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -16789,7 +16789,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -16805,7 +16805,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -16874,7 +16874,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -16909,7 +16909,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   nGlobal_Surf_Poin = nSurf_Poin_Par;
 #else
   SU2_MPI::Allreduce(&nSurf_Poin_Par, &nGlobal_Surf_Poin, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
   /*--- Now that we know every proc's global offset for the number of
@@ -16986,9 +16986,9 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   maxAddedPeriodic = nAddedPeriodic;
   Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
@@ -17008,7 +17008,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
                      Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
     Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
@@ -17086,7 +17086,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -17162,7 +17162,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17275,7 +17275,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(globalRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -17291,7 +17291,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(globalSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -17307,7 +17307,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(renumbRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -17323,7 +17323,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(renumbSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -17506,7 +17506,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17599,7 +17599,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -17615,7 +17615,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -17676,7 +17676,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -17692,7 +17692,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -17845,7 +17845,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   }
   
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   
   /*--- All processors open the file. ---*/
@@ -17886,8 +17886,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     /*--- Flush the file and wait for all processors to arrive. ---*/
     restart_file.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
     
   }
@@ -18090,14 +18090,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    to write a fresh restart file, so we delete any existing files and create
    a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname,
                          MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                          MPI_INFO_NULL, &fhw);
   }
@@ -18193,7 +18193,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 #ifdef HAVE_MPI
   su2double my_file_size = file_size;
   SU2_MPI::Allreduce(&my_file_size, &file_size, 1,
-                     MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
   /*--- Compute and store the bandwidth ---*/
@@ -18234,8 +18234,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
 
   int rank = MASTER_NODE, iProcessor, nProcessor = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
+  MPI_Comm_size(SU2_MPI::GetComm(), &nProcessor);
 #endif
 
   bool isPeriodic;
@@ -18269,7 +18269,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -18331,8 +18331,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalVertex_Surface = nLocalVertex_Surface;
   Buffer_Recv_nVertex[0] = Buffer_Send_nVertex[0];
@@ -18382,8 +18382,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   /*--- Send the information to the master node ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, Buffer_Recv_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, Buffer_Recv_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (iVertex = 0; iVertex < Buffer_Recv_nVertex[0]; iVertex++) {
     Buffer_Recv_GlobalIndex[iVertex] = Buffer_Send_GlobalIndex[iVertex];
@@ -18561,8 +18561,8 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 #else
   Buffer_Recv_nPoin[0] = Buffer_Send_nPoin[0];
   MaxLocalPoint        = nLocalPoint;
@@ -18657,12 +18657,12 @@ void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- Gather the coordinate data on the master node using MPI. ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_X, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_X, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Y, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Y, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_X, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_X, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Y, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Y, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (nDim == 3) {
-    SU2_MPI::Gather(Buffer_Send_Z, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Z, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Z, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Z, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   }
-  SU2_MPI::Gather(Buffer_Send_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, Buffer_Recv_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, Buffer_Recv_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (iPoint = 0; iPoint < MaxLocalPoint; iPoint++) {
     Buffer_Recv_X[iPoint] = Buffer_Send_X[iPoint];
@@ -19159,19 +19159,19 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
 #ifdef HAVE_MPI
   if (config->GetComm_Level() == COMM_FULL) {
-    SU2_MPI::Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Mach_Local, Surface_Mach_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Temperature_Local, Surface_Temperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Density_Local, Surface_Density_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_StreamVelocity2_Local, Surface_StreamVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_TransvVelocity2_Local, Surface_TransvVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Pressure_Local, Surface_Pressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Mach_Local, Surface_Mach_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Temperature_Local, Surface_Temperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Density_Local, Surface_Density_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_StreamVelocity2_Local, Surface_StreamVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_TransvVelocity2_Local, Surface_TransvVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Pressure_Local, Surface_Pressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 #else
   
@@ -19591,8 +19591,8 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   /*--- Communicate the total number of nodes on this domain. ---*/
 
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
     nGlobal_Doma = 0;
@@ -19672,12 +19672,12 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 
   /*--- Gather the coordinate data on the master node using MPI. ---*/
 
-  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_X, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_X, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (nDim == 3) {
-    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   }
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master node unpacks and sorts this variable by global index ---*/
 
@@ -19845,8 +19845,8 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalElem = nLocalElem;
   Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
@@ -19896,8 +19896,8 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   /*--- Gather the element connectivity information. ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
   for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
@@ -20120,8 +20120,8 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalElem = nLocalElem;
   Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
@@ -20167,8 +20167,8 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   /*--- Gather the element connectivity information. ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #else
   for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
   for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
@@ -20337,8 +20337,8 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalPoint = nLocalPoint;
   Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
@@ -20402,14 +20402,14 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
     /*--- Gather the data on the master node. ---*/
 
 #ifdef HAVE_MPI
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
     for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
 
     if (iVar == 0) {
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
 #endif
@@ -20505,8 +20505,8 @@ void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CS
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[size];
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&Buffer_Send_nPoint, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPoint, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
   MaxLocalPoint = nLocalPoint;
   Buffer_Recv_nPoint[0] = Buffer_Send_nPoint[0];
@@ -20570,14 +20570,14 @@ void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CS
     /*--- Gather the data on the master node. ---*/
 
 #ifdef HAVE_MPI
-    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 #else
     for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
 #endif
 
     if (iVar == 0) {
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 #else
       for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_GlobalIndex[iPoint] = Buffer_Send_GlobalIndex[iPoint];
 #endif
@@ -20801,8 +20801,8 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
        file was written). ---*/
 
 #ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
     } else {
@@ -20981,7 +20981,7 @@ void COutput::SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geomet
        file was written). ---*/
     
 #ifdef HAVE_MPI
-      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 #endif
     }
   }
@@ -21277,7 +21277,7 @@ void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
     nGlobalPoint_Sort = nLocalPoint_Sort;
 #endif
@@ -21315,7 +21315,7 @@ void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
     nGlobalPoint_Sort = nLocalPoint_Sort;
 #endif
@@ -21416,8 +21416,8 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
   nGlobal_Elem_Par = nTotal_Elem;
   nSurf_Elem_Par   = nTotal_Surf_Elem;
 #else
-  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nSurf_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
   
 }
@@ -21753,7 +21753,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -21878,7 +21878,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -21894,7 +21894,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -21910,7 +21910,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -21926,7 +21926,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -21984,7 +21984,7 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
   nGlobal_Poin_Par = nParallel_Poin;
 #else
   SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /*--- Free temporary memory from communications ---*/
@@ -22081,7 +22081,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Alltoall(nDOFSend.data(), 1, MPI_UNSIGNED_LONG,
-                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   nDOFRecv[rank] = nDOFSend[rank];
 #endif
@@ -22102,7 +22102,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Isend(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, rank, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, rank, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }
@@ -22114,7 +22114,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
     if(nDOFRecv[i] && (i != rank)) {
       recvBuf[i].resize(nDOFRecv[i]);
       SU2_MPI::Irecv(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, i, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, i, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -22167,7 +22167,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
         needed for writing the surface solution files later. ---*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nSurf_Poin_Par, &nGlobal_Surf_Poin, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nGlobal_Surf_Poin = nSurf_Poin_Par;
 #endif
@@ -22184,7 +22184,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
 
   SU2_MPI::Allgather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG,
                      nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 
   for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
 #endif
@@ -22213,7 +22213,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
   for(int i=0; i<size; ++i) {
     if(nDOFRecv[i] && (i != rank)) {
       SU2_MPI::Isend(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, rank+1, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, rank+1, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -22224,7 +22224,7 @@ void COutput::SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry) {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Irecv(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, i+1, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, i+1, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }

@@ -2069,7 +2069,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   Paraview_File.close();
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -2100,7 +2100,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     }
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -2108,16 +2108,16 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   unsigned long nTot_Line, nTot_BoundTria, nTot_BoundQuad, nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
 #ifdef HAVE_MPI
-  SU2_MPI::Reduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_BoundTria, &nTot_BoundTria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_BoundQuad, &nTot_BoundQuad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&nParallel_Line, &nTot_Line, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_BoundTria, &nTot_BoundTria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_BoundQuad, &nTot_BoundQuad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
-  SU2_MPI::Reduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Reduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&nParallel_Tria, &nTot_Tria, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_Quad, &nTot_Quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_Tetr, &nTot_Tetr, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_Hexa, &nTot_Hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_Pris, &nTot_Pris, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nParallel_Pyra, &nTot_Pyra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #else
   nTot_Line      = nParallel_Line;
   nTot_BoundTria = nParallel_BoundTria;
@@ -2144,7 +2144,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Write connectivity data. ---*/
@@ -2232,7 +2232,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -2245,7 +2245,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -2265,7 +2265,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
   
@@ -2278,7 +2278,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   unsigned short varStart = 2;
@@ -2305,7 +2305,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -2315,7 +2315,7 @@ found = Variable_Names[iField].find("_z");
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -2330,7 +2330,7 @@ found = Variable_Names[iField].find("_z");
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -2357,7 +2357,7 @@ found = Variable_Names[iField].find("_z");
         }
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
 
@@ -2373,7 +2373,7 @@ found = Variable_Names[iField].find("_z");
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -2395,7 +2395,7 @@ found = Variable_Names[iField].find("_z");
         }
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
       
@@ -2878,14 +2878,14 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
    to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
   
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname,
                          MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                          MPI_INFO_NULL, &fhw);
   }
@@ -2960,7 +2960,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
   
   SU2_MPI::Alltoall(&(nPoint_Snd[1]), 1, MPI_INT,
-                    &(nPoint_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
   
   /*--- Put the counters into cumulative storage format. ---*/
   
@@ -3036,11 +3036,11 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   if (surf_sol) {
     
     SU2_MPI::Allreduce(&nParallel_Line,      &nTot_Line,      1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_BoundTria, &nTot_BoundTria, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_BoundQuad, &nTot_BoundQuad, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     
     myElem        = (nParallel_Line   + nParallel_BoundTria   +
                      nParallel_BoundQuad);
@@ -3053,17 +3053,17 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   } else {
     
     SU2_MPI::Allreduce(&nParallel_Tria, &nTot_Tria, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_Quad, &nTot_Quad, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_Tetr, &nTot_Tetr, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_Hexa, &nTot_Hexa, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_Pris, &nTot_Pris, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&nParallel_Pyra, &nTot_Pyra, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     
     myElem        = (nParallel_Tria + nParallel_Quad + nParallel_Tetr +
                      nParallel_Hexa + nParallel_Pris + nParallel_Pyra);
@@ -3097,10 +3097,10 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
   
   SU2_MPI::Alltoall(&(nElem_Snd[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
   
   SU2_MPI::Alltoall(&(nElemStorage_Snd[1]), 1, MPI_INT,
-                    &(nElemStorage_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElemStorage_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
   
   /*--- Put the counters into cumulative storage format. ---*/
   
