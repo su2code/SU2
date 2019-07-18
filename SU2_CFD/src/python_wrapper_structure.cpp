@@ -279,6 +279,16 @@ unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned sho
 
 }
 
+unsigned long CDriver::GetNodeIndex(unsigned short iMarker, unsigned short iVertex) {
+
+  unsigned long iPoint;
+
+  iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+  return iPoint;
+
+}
+
 bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint;
@@ -1108,8 +1118,101 @@ unsigned short CDiscAdjSinglezoneDriver::GetnDiff_Inputs() {
   return config->GetnDiff_Inputs();
 }
 
+vector<passivedouble> CSinglezoneDriver::GetDiff_Inputs_Vars(unsigned short index) {
+//  TODO Does getting Diff_Inputs_Vars from any solver in solver container always work?
+//    (using all 0 indices for now)
+  unsigned short iVec;
+
+  vector<su2double> temp = solver_container[0][0][0][FLOW_SOL]->GetDiff_Inputs_Vars(index);
+  vector<passivedouble> vec(temp.size());
+
+  for (iVec = 0; iVec < temp.size(); iVec++) {
+    vec[iVec] = SU2_TYPE::GetValue(temp[iVec]);
+  }
+
+  return vec;
+}
+
+void CSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
+  unsigned short iZone, iInst, iMGlevel;
+
+  // TODO Using iInst only equal to 0 for now (first idx in solver_container)
+  iInst = 0;
+
+  // TODO Using only FLOW_SOL for now, iterate over solvers?
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
+      solver_container[iZone][iInst][iMGlevel][FLOW_SOL]->SetDiff_Inputs_Vars(val, index);
+    }
+  }
+}
+
+
+void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
+  unsigned short iZone, iInst, iMGlevel;
+
+  // TODO Using iInst only equal to 0 for now (first idx in solver_container)
+  iInst = 0;
+
+  // TODO Using only FLOW_SOL for now, iterate over solvers?
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
+      solver_container[iZone][iInst][iMGlevel][FLOW_SOL]->RegisterVariables(
+        geometry_container[iZone][iInst][iMGlevel], config_container[iZone], true);
+    }
+  }
+}
+
+vector<passivedouble> CSinglezoneDriver::GetDiff_Outputs_Vars(unsigned short index) {
+//  TODO Does getting Diff_Outputs_Vars from any solver in solver container always work?
+//    (using all 0 indices for now)
+  unsigned short iVec;
+
+  solver_container[0][0][0][FLOW_SOL]->SetDiff_Outputs_Vars(config_container[0]);
+  vector<su2double> temp = solver_container[0][0][0][FLOW_SOL]->GetDiff_Outputs_Vars(index);
+  vector<passivedouble> vec(temp.size());
+
+  for (iVec = 0; iVec < temp.size(); iVec++) {
+    vec[iVec] = SU2_TYPE::GetValue(temp[iVec]);
+  }
+
+  return vec;
+}
+
+vector<passivedouble> CDiscAdjSinglezoneDriver::GetDiff_Inputs_Vars(unsigned short index) {
+  unsigned short iVec;
+
+  vector<su2double> temp = solver[ADJFLOW_SOL]->GetDiff_Inputs_Vars(index);
+  vector<passivedouble> vec(temp.size());
+
+  for (iVec = 0; iVec < temp.size(); iVec++) {
+    vec[iVec] = SU2_TYPE::GetValue(temp[iVec]);
+  }
+
+  return vec;
+}
+
 void CDiscAdjSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
-  solver[ADJFLOW_SOL]->SetDiff_Inputs_Vars(val, index);
+//  solver[ADJFLOW_SOL]->SetDiff_Inputs_Vars(val, index);
+  unsigned short iZone, iInst, iMGlevel;
+
+  // TODO Using iInst only equal to 0 for now (first idx in solver_container)
+  iInst = 0;
+
+  // TODO Using only FLOW_SOL for now, iterate over solvers?
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
+      solver_container[iZone][iInst][iMGlevel][FLOW_SOL]->SetDiff_Inputs_Vars(val, index);
+      solver_container[iZone][iInst][iMGlevel][ADJFLOW_SOL]->SetDiff_Inputs_Vars(val, index);
+    }
+    solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->SetDiff_Inputs_Vars(val, index);
+//    solver_container[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetDiff_Inputs_Vars(val, index);
+//    solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->SetDiff_Inputs_Vars(val, index);
+  }
+}
+
+void CDiscAdjSinglezoneDriver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
+  solver[ADJFLOW_SOL]->SetBackprop_Derivs(derivs, index);
 }
 
 // TODO Remove after debugging

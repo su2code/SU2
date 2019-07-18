@@ -441,6 +441,8 @@ public:
    */
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
 
+  unsigned long GetNodeIndex(unsigned short iMarker, unsigned short iVertex);
+
   /*!
    * \brief Get the pressure at a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
@@ -1466,8 +1468,15 @@ public:
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
+  vector<passivedouble> GetDiff_Inputs_Vars(unsigned short index);
 
-};
+  void SetDiff_Inputs_Vars(vector<passivedouble> diff_input, unsigned short index);
+
+  void ApplyDiff_Inputs_Vars();
+
+  vector<passivedouble> GetDiff_Outputs_Vars(unsigned short index);
+
+  };
 
 /*!
  * \class CDiscAdjSinglezoneDriver
@@ -1536,7 +1545,7 @@ public:
   /*!
    * \brief Run one iteration of the solver.
    */
-  void DirectRun(unsigned short kind_recording);
+  void  DirectRun(unsigned short kind_recording);
 
   vector<passivedouble> GetTotal_Sens_Diff_Inputs(unsigned short index);
 
@@ -1544,6 +1553,8 @@ public:
 
   // TODO Remove after debugging
   passivedouble Get_ObjFunc();
+
+  vector<passivedouble> GetDiff_Inputs_Vars(unsigned short index);
 
   void SetDiff_Inputs_Vars(vector<passivedouble> diff_input, unsigned short index);
 
@@ -1556,6 +1567,11 @@ public:
    * \brief Set a weight for the objective function.
    */
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
+
+  /*!
+   * \brief Set the derivatives to be passed into the backward pass when using DIFF_OUTPUTS.
+   */
+  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 
   /*!
    * \brief Set the objective function.

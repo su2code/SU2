@@ -607,6 +607,12 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
   Diff_Inputs_Vars.resize(config->GetnDiff_Inputs());
 
+  Diff_Outputs_Vars.reserve(config->GetnDiff_Outputs());
+  Diff_Outputs_Vars.resize(config->GetnDiff_Outputs());
+
+  Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
+  Diff_Outputs_Backprop_Derivs.resize(config->GetnDiff_Outputs());
+
   // Store iMesh for re-running SetNondimensionalization after registering variables
   iMesh_Store = iMesh;
 
@@ -5247,6 +5253,7 @@ void CIncEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   
 }
 
+
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
@@ -5303,26 +5310,6 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
-//      case DO_RHO:
-//
-//      case DO_RHOU1:
-//      case DO_RHOU2:
-//      case DO_RHOU3:
-//      case DO_RHOE:
-//      case DO_PRESS:
-//      case DO_AOA:
-//      case DO_SA:
-//      case DO_K:
-//      case DO_W:
-//      case DO_TEMP:
-//      case DO_UTOL:
-//      case DO_RTOL:
-//      case DO_ETOL:
-//      case DO_DISPX:
-//      case DO_DISPY:
-//      case DO_DISPZ:
-//      case DO_VSM:
-//        break;
       default:
         break;
 
@@ -5380,10 +5367,26 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     case CUSTOM_OBJFUNC:
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
+    case DIFF_OUTPUTS:
+      // XXX For now should only work with 1 marker
+      SetDiff_Outputs_Vars(config);
+      Evaluate_DiffOutputs_Obj(config);
+      break;
     default:
       break;
   }
-  
+
+}
+
+void CIncEulerSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
+  unsigned short iDiff_Outputs, iVec, nVec;
+
+  for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
+    nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
+    for (iVec = 0; iVec < nVec; iVec++) {
+      Total_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
+    }
+  }
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
@@ -7540,10 +7543,75 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 
 void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
+  unsigned short iDiff_Inputs;
+  bool reset_nondimensionalization = false;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+//      case DI_REYNOLDS:
+//        if (reset) {
+//          config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
+//          reset_nondimensionalization = true;
+//        }
+//        break;
+      case DI_AOA:
+        if (reset) {
+          config->SetAoA(Diff_Inputs_Vars[iDiff_Inputs][0]);
+          reset_nondimensionalization = true;
+        }
+        break;
+      case DI_MACH:
+        if (reset) {
+          config->SetMach(Diff_Inputs_Vars[iDiff_Inputs][0]);
+          reset_nondimensionalization = true;
+        }
+        break;
+
+        // TODO For vector cases dont forget to reserve before pushing back values
+
+      default:
+        break;
+    }
+  }
+
+  if (reset_nondimensionalization) {
+    delete FluidModel;
+    FluidModel = NULL;
+    SetNondimensionalization(config, iMesh_Store);
+  }
+
 }
 
 void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+  // TODO Account for non scalar cases
 
+  unsigned short iDiff_Inputs;
+  passivedouble Local_Sens;
+
+  for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
+    unsigned short iVec, nVec;
+
+    switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_VELOCITY_FREESTREAM:
+        nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
+        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
+        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
+
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+#ifdef HAVE_MPI
+          // TODO Should it always be MPI Allreduce/MPI_SUM here?
+          SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec],  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
+#endif
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
 }
 
 
@@ -7560,6 +7628,61 @@ void CIncEulerSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned sh
   for (iVec = 0; iVec < nVec; iVec++) {
     Diff_Inputs_Vars[index][iVec] = val[iVec];
   }
+}
+
+vector<su2double> CIncEulerSolver::GetDiff_Outputs_Vars(unsigned short index) {
+  return Diff_Outputs_Vars[index];
+}
+
+void CIncEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
+  unsigned short iDiff_Outputs, iVec, nVec;
+
+  for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
+    // TODO Do you need to reset the Vars every time so that they have the value thats in the graph?
+
+    switch (config->GetDiff_Outputs()[iDiff_Outputs]) {
+      case DO_LIFT_COEFFICIENT:
+        nVec = 1;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_CL[0];  // Only works with one marker for now
+        break;
+      case DO_DRAG_COEFFICIENT:
+        nVec = 1;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_CD[0];  // Only works with one marker for now
+        // TODO Fixed CL and CM Modes (see Evaluate Obj Func below)
+        break;
+      case DO_TOTAL_HEATFLUX:
+        nVec = 1;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_HF_Visc[0];  // Only works with one marker for now
+        break;
+
+      case DO_TEMP:
+        nVec = nPoint;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetTemperature();
+        }
+        break;
+    }
+  }
+}
+
+void CIncEulerSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
+  unsigned short iVec, nVec;
+
+  nVec = derivs.size();
+  Diff_Outputs_Backprop_Derivs[index].reserve(nVec);
+  Diff_Outputs_Backprop_Derivs[index].resize(nVec);
+  for (iVec = 0; iVec < nVec; iVec++) {
+    Diff_Outputs_Backprop_Derivs[index][iVec] = derivs[iVec];
+  }
+  // TODO Check if size of passed vector is correct here? (Or in Evaluate_DiffOutputs_Obj?)
 }
 
 
@@ -8159,6 +8282,12 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Diff_Inputs_Vars.reserve(config->GetnDiff_Inputs());
   Diff_Inputs_Vars.resize(config->GetnDiff_Inputs());
+
+  Diff_Outputs_Vars.reserve(config->GetnDiff_Outputs());
+  Diff_Outputs_Vars.resize(config->GetnDiff_Outputs());
+
+  Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
+  Diff_Outputs_Backprop_Derivs.resize(config->GetnDiff_Outputs());
 
   // Store iMesh for re-running SetNondimensionalization after registering variables
   iMesh_Store = iMesh;
@@ -9507,47 +9636,18 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
 
 void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
-  // TODO Also run CIncEulerSolver's register variables?
 
+  short iMarker;
+  string marker;
   unsigned short iDiff_Inputs, nVec, iVec;
   bool reset_nondimensionalization = false;
+
+  CIncEulerSolver::RegisterVariables(geometry, config, reset);
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       // Scalar cases
-//      case DI_MACH:
-//        // TODO Would have to redo calculations
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(1);
-//        Diff_Inputs_Vars[iDiff_Inputs][0] = config->GetMach();
-//        if (!reset) {
-//          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        }
-//        config->SetMach(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        reset_nondimensionalization = true;
-//        break;
-//      case DI_AOA:
-//        // TODO Would have to redo calculations
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(1);
-//        Diff_Inputs_Vars[iDiff_Inputs][0] = config->GetAoA();
-//        if (!reset) {
-//          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        }
-//        config->SetAoA(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        reset_nondimensionalization = true;
-//        break;
-//      case DI_REYNOLDS:
-//        // TODO Have to redo something?
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(1);
-//        Diff_Inputs_Vars[iDiff_Inputs][0] = config->GetReynolds();
-//        if (!reset) {
-//          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        }
-//        config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        reset_nondimensionalization = true;
-//        break;
       case DI_MU_CONSTANT:
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(1);
-//        Diff_Inputs_Vars[iDiff_Inputs][0] = config->GetMu_Constant();
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
         }
@@ -9555,8 +9655,6 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         reset_nondimensionalization = true;
         break;
       case DI_PRANDTL_LAM:
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(1);
-//        Diff_Inputs_Vars[iDiff_Inputs][0] = config->GetPrandtl_Lam();
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
         }
@@ -9564,13 +9662,39 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         reset_nondimensionalization = true;
         break;
 
-        // Vector cases
+      case DI_INLET_VEL:
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (iMarker == -1) break;  // XXX Breaking for MPI case where inlets are distributed
+
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        config->SetInlet_Ptotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
+
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
+          Inlet_Ptotal[iMarker][iVertex] = config->GetInlet_Ptotal(marker);
+        }
+        reset_nondimensionalization = true;
+        break;
+      case DI_INLET_TEMP:
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        config->SetInlet_Ttotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
+
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
+          Inlet_Ttotal[iMarker][iVertex] = config->GetInlet_Ttotal(marker);
+        }
+        reset_nondimensionalization = true;
+        break;
+
+      // Vector cases
       case DI_VELOCITY_FREESTREAM:
         nVec = geometry->GetnDim();
-//        Diff_Inputs_Vars[iDiff_Inputs].reserve(nVec);
-//        Diff_Inputs_Vars[iDiff_Inputs].resize(nVec);
         for (iVec = 0; iVec < nVec; iVec++) {
-//          Diff_Inputs_Vars[iDiff_Inputs][iVec] = config->GetVelocity_FreeStream()[iVec];
           if (!reset) {
             AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
           }
@@ -9591,30 +9715,31 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 }
 
 void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  // TODO Account for non scalar cases
 
   unsigned short iDiff_Inputs;
   passivedouble Local_Sens;
+
+  CIncEulerSolver::ExtractAdjoint_Variables(geometry, config);
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
     unsigned short iVec, nVec;
 
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-//      case DI_MACH:
-//      case DI_AOA:
-//      case DI_REYNOLDS:
-      case DI_MU_CONSTANT:
       case DI_PRANDTL_LAM:
-      case DI_VELOCITY_FREESTREAM:
+      case DI_MU_CONSTANT:
+      case DI_INLET_VEL:
+      case DI_INLET_TEMP:
+
         nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
         Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
         Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
 
+        // TODO Vectorize MPI communication?  (Do whole vector at once)
         for (iVec = 0; iVec < nVec; iVec++) {
           Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
 #ifdef HAVE_MPI
-          // TODO Should it be MPI Allreduce/MPI_SUM here?
-          SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec],  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+          // TODO Should it always be MPI Allreduce/MPI_SUM here?
+          SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
           Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
 #endif

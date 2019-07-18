@@ -135,9 +135,14 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
-  // XXX Temporary, should pull probably only after direct soler has actually computed it.
-  // XXX But how to initialize it then?
+  /*--- Initialize arrays for flexible differentiation. ---*/
+
+  // TODO Temporary, should pull probably only after direct soler has actually computed it.
+  //  But how to initialize it then?
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
+
+  Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
+  Diff_Outputs_Backprop_Derivs.resize(config->GetnDiff_Outputs());
 
 }
 
@@ -272,6 +277,11 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
     }
   }
 }
+
+void CDiscAdjSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
+  direct_solver->SetBackprop_Derivs(derivs, index);
+}
+
 
 vector<su2double> CDiscAdjSolver::GetDiff_Inputs_Vars(unsigned short index) {
   return direct_solver->GetDiff_Inputs_Vars(index);

@@ -2055,6 +2055,12 @@ inline unsigned short CConfig::GetnDiff_Inputs(void) { return nDiff_Inputs; }
 
 inline unsigned short* CConfig::GetDiff_Inputs(void) { return Diff_Inputs; }
 
+inline string* CConfig::GetDiff_Inputs_Markers(void) { return Diff_Inputs_Markers; }
+
+inline unsigned short CConfig::GetnDiff_Outputs(void) { return nDiff_Outputs; }
+
+inline unsigned short* CConfig::GetDiff_Outputs(void) { return Diff_Outputs; }
+
 inline string CConfig::GetMarkerTag_ZoneInterface(unsigned short val_iMarker) { return Marker_ZoneInterface[val_iMarker]; }
 
 inline bool CConfig::GetTime_Domain(void) { return Time_Domain; }

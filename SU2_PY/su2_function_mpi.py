@@ -33,6 +33,7 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
 
     adjoint_driver.Preprocess(0)
     adjoint_driver.Run()
+    comm.Barrier()
 
 
 def main():

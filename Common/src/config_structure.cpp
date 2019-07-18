@@ -373,6 +373,8 @@ void CConfig::SetPointersNull(void) {
   Config_Filenames = NULL;
 
   Diff_Inputs = NULL;
+  Diff_Inputs_Markers = NULL;
+  Diff_Outputs = NULL;
 
   /*--- Marker Pointers ---*/
 
@@ -2369,7 +2371,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("UQ_PERMUTE", uq_permute, false);
 
 	/* DESCRIPTION: List of variables to differentiate with respect to */
-	addEnumListOption("DIFF_INPUTS", nDiff_Inputs, Diff_Inputs, DiffInput_Var_Map);
+	addEnumMarkerListOption("DIFF_INPUTS", nDiff_Inputs, Diff_Inputs, Diff_Inputs_Markers, DiffInputs_Var_Map);
+
+  /* DESCRIPTION: List of variables to be differentiated */
+  addEnumListOption("DIFF_OUTPUTS", nDiff_Outputs, Diff_Outputs, DiffOutputs_Var_Map);
 
   /* END_CONFIG_OPTIONS */
 
@@ -2455,8 +2460,8 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
       all_options.erase(option_name);
 
       /*--- Set the value and check error ---*/
-      
       string out = option_map[option_name]->SetValue(option_value);
+
       if (out.compare("") != 0) {
         errorString.append(out);
         errorString.append("\n");
@@ -2664,6 +2669,31 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
 
+  /*--- If using differentiable outputs, cannot use objective function ---*/
+
+  if (nDiff_Outputs > 0) {
+    if (Kind_ObjFunc != NULL) {
+      SU2_MPI::Error(string("Cannot use OBJECTIVE_FUNCTION option with DIFF_OUTPUTS, comment OBJECTIVE_FUNCTION out."),
+                     CURRENT_FUNCTION);
+    }
+    // TODO How to deal with markers and DIFF_OUTPUTS?
+//    else if (nMarker_Monitoring > 1) {
+//      SU2_MPI::Error(string("More than 1 marker for DIFF_OUTPUTS not supported for now."),
+//                     CURRENT_FUNCTION);
+//    }
+    else {
+      /* Otherwise, set Kind_ObjFunc to DIFF_OUTPUTS for internal use if using DIFF_OUTPUTS */
+      // TODO Account for case where more than 1 marker
+      Kind_ObjFunc = new unsigned short[1];
+      Kind_ObjFunc[0] = DIFF_OUTPUTS;
+      nObj=1;
+      // TODO Placeholder weight to (maybe) avoid errors, not sure if necessary
+      Weight_ObjFunc = new su2double[1];
+      Weight_ObjFunc[0] = 1.0;
+      nObjW=1;
+    }
+  }
+
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
   if (Weight_ObjFunc == NULL && Kind_ObjFunc == NULL) {
@@ -2673,6 +2703,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Weight_ObjFunc[0] = 1.0;
     nObj=1;
     nObjW=1;
+
   }
 
   /*--- Maker sure that arrays are the same length ---*/
@@ -7322,7 +7353,9 @@ CConfig::~CConfig(void) {
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
 
-  if (Diff_Inputs != NULL)           delete[] Diff_Inputs;
+  if (Diff_Inputs != NULL) delete[] Diff_Inputs;
+  if (Diff_Inputs_Markers != NULL) delete[] Diff_Inputs_Markers;
+  if (Diff_Outputs != NULL) delete[] Diff_Outputs;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
@@ -7946,6 +7979,13 @@ su2double CConfig::GetInlet_Ttotal(string val_marker) {
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ttotal[iMarker_Inlet];
+}
+
+void CConfig::SetInlet_Ttotal(su2double val_temp, string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
+    if (Marker_Inlet[iMarker_Inlet] == val_marker)
+      Inlet_Ttotal[iMarker_Inlet] = val_temp;
 }
 
 su2double CConfig::GetInlet_Ptotal(string val_marker) {

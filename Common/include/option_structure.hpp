@@ -1398,24 +1398,7 @@ enum ENUM_OBJECTIVE {
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION=62,              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
-  DO_RHO=63,       /*!< \brief Density. */
-  DO_RHOU1=64,     /*!< \brief Momentum-x. */
-  DO_RHOU2=65,     /*!< \brief Momentum-y. */
-  DO_RHOU3=66,     /*!< \brief Momentum-z. */
-  DO_RHOE=67,      /*!< \brief Rho-E. */
-  DO_PRESS=68,     /*!< \brief Pressure. */
-  DO_AOA=69,       /*!< \brief Angle of attack. */
-  DO_SA=70,        /*!< \brief Spalart-Allmaras Nu. */
-  DO_K=71,         /*!< \brief k-w Kinetic energy. */
-  DO_W=72,         /*!< \brief k-w Rate of dissipation. */
-  DO_TEMP=73,      /*!< \brief Temperature. */
-  DO_UTOL=74,       /*!< \brief Elasticity displacement norm. */
-  DO_RTOL=75,       /*!< \brief Elasticity residual norm. */
-  DO_ETOL=76,       /*!< \brief Elasticity energy norm. */
-  DO_DISPX=77,        /*!< \brief Norm of the displacement vector - x component. */
-  DO_DISPY=78,       /*!< \brief Norm of the displacement vector - y component. */
-  DO_DISPZ=79,        /*!< \brief Norm of the displacement vector - z component. */
-  DO_VMS=80        /*!< \brief Elasticity Maximum Von Mises stress. */
+  DIFF_OUTPUTS=63,       /*!< \brief Use the (separately) defined differential outputs for objective. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1465,24 +1448,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
 ("REFERENCE_NODE", REFERENCE_NODE)
 ("VOLUME_FRACTION", VOLUME_FRACTION)
-("DENSITY", DO_RHO)
-("MOMENTUM-X", DO_RHOU1)
-("MOMENTUM-Y", DO_RHOU2)
-("MOMENTUM-Z", DO_RHOU3)
-("RHO-E", DO_RHOE)
-("PRESSURE", DO_PRESS)
-("AOA", DO_AOA)
-("SA-NU", DO_SA)
-("K-W_KINETIC", DO_K)
-("K-W_DISSIPATION", DO_W)
-("TEMPERATURE", DO_TEMP)
-("UTOL", DO_UTOL)
-("RTOL", DO_RTOL)
-("ETOL", DO_ETOL)
-("DISPX", DO_DISPX)
-("DISPY", DO_DISPY)
-("DISPZ", DO_DISPZ)
-("VON_MISES_STRESS", DO_VMS);
+("DIFF_OUTPUTS", DIFF_OUTPUTS);
 
 
 /*!
@@ -1957,7 +1923,7 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 /*!
  * \brief The differentiable input variables.
  */
-enum ENUM_DIFFINPUT_VAR {
+enum ENUM_DIFFINPUTS_VAR {
   DI_NO_DERIVATIVE = 0,
   DI_MACH = 1,   /*!< \brief Derivative with respect to the mach number */
   DI_AOA = 2,		 /*!< \brief Derivative with respect to the angle of attack */
@@ -1976,9 +1942,11 @@ enum ENUM_DIFFINPUT_VAR {
   DI_EFIELD = 15,
   DI_PRANDTL_LAM = 16,
   DI_MU_CONSTANT = 17,
-  DI_VELOCITY_FREESTREAM = 18
+  DI_VELOCITY_FREESTREAM = 18,
+  DI_INLET_VEL = 19,
+  DI_INLET_TEMP = 20
 };
-static const map<string, ENUM_DIFFINPUT_VAR> DiffInput_Var_Map = CCreateMap<string, ENUM_DIFFINPUT_VAR>
+static const map<string, ENUM_DIFFINPUTS_VAR> DiffInputs_Var_Map = CCreateMap<string, ENUM_DIFFINPUTS_VAR>
 ("NONE", DI_NO_DERIVATIVE)
 ("MACH", DI_MACH)
 ("AOA", DI_AOA)
@@ -1997,7 +1965,146 @@ static const map<string, ENUM_DIFFINPUT_VAR> DiffInput_Var_Map = CCreateMap<stri
 ("ELECTRIC_FIELD", DI_EFIELD)
 ("PRANDTL_LAM", DI_PRANDTL_LAM)
 ("MU_CONSTANT", DI_MU_CONSTANT)
-("VELOCITY_FREESTREAM", DI_VELOCITY_FREESTREAM);
+("VELOCITY_FREESTREAM", DI_VELOCITY_FREESTREAM)
+("INLET_VEL", DI_INLET_VEL)
+("INLET_TEMP", DI_INLET_TEMP);
+
+/*!
+ * \brief The differentiable output variables.
+ */
+enum ENUM_DIFFOUTPUTS_VAR {
+  DO_DRAG_COEFFICIENT = 1, 	      /*!< \brief Drag objective function definition. */
+  DO_LIFT_COEFFICIENT = 2, 	      /*!< \brief Lift objective function definition. */
+  DO_SIDEFORCE_COEFFICIENT = 3,	  /*!< \brief Side force objective function definition. */
+  DO_EFFICIENCY = 4,		            /*!< \brief Efficiency objective function definition. */
+  DO_INVERSE_DESIGN_PRESSURE = 5,	/*!< \brief Pressure objective function definition (inverse design). */
+  DO_INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
+  DO_TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
+  DO_MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
+  DO_TOTAL_AVG_TEMPERATURE = 70,   /*!< \brief Total averaged temperature. */
+  DO_MOMENT_X_COEFFICIENT = 9,	    /*!< \brief Pitching moment objective function definition. */
+  DO_MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
+  DO_MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
+  DO_EQUIVALENT_AREA = 12,		      /*!< \brief Equivalent area objective function definition. */
+  DO_NEARFIELD_PRESSURE = 13,	    /*!< \brief NearField Pressure objective function definition. */
+  DO_FORCE_X_COEFFICIENT = 14,	    /*!< \brief X-direction force objective function definition. */
+  DO_FORCE_Y_COEFFICIENT = 15,	    /*!< \brief Y-direction force objective function definition. */
+  DO_FORCE_Z_COEFFICIENT = 16,	    /*!< \brief Z-direction force objective function definition. */
+  DO_THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
+  DO_TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
+  DO_FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
+  DO_BUFFET_SENSOR = 20,             /*!< \brief Sensor for detecting separation. */
+  DO_SURFACE_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
+  DO_SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
+  DO_SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  DO_SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
+  DO_SURFACE_UNIFORMITY = 52,           /*!< \brief Flow uniformity objective function definition. */
+  DO_SURFACE_SECONDARY = 53,           /*!< \brief Secondary flow strength objective function definition. */
+  DO_SURFACE_MOM_DISTORTION = 54,           /*!< \brief Momentum distortion objective function definition. */
+  DO_SURFACE_SECOND_OVER_UNIFORM = 55,   /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
+  DO_SURFACE_PRESSURE_DROP = 56, 	    /*!< \brief Pressure drop objective function definition. */
+  DO_CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
+  DO_TOTAL_PRESSURE_LOSS = 39,
+  DO_KINETIC_ENERGY_LOSS = 40,
+  DO_TOTAL_EFFICIENCY = 41,
+  DO_TOTAL_STATIC_EFFICIENCY = 42,
+  DO_EULERIAN_WORK = 43,
+  DO_TOTAL_ENTHALPY_IN = 44,
+  DO_FLOW_ANGLE_IN = 45,
+  DO_FLOW_ANGLE_OUT = 46,
+  DO_MASS_FLOW_IN = 47,
+  DO_MASS_FLOW_OUT = 48,
+  DO_PRESSURE_RATIO = 49,
+  DO_ENTROPY_GENERATION = 50,
+  DO_REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
+  DO_REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
+  DO_VOLUME_FRACTION=62,              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
+  DO_RHO=63,       /*!< \brief Density. */
+  DO_RHOU1=64,     /*!< \brief Momentum-x. */
+  DO_RHOU2=65,     /*!< \brief Momentum-y. */
+  DO_RHOU3=66,     /*!< \brief Momentum-z. */
+  DO_RHOE=67,      /*!< \brief Rho-E. */
+  DO_PRESS=68,     /*!< \brief Pressure. */
+  DO_AOA=69,       /*!< \brief Angle of attack. */
+  DO_SA=70,        /*!< \brief Spalart-Allmaras Nu. */
+  DO_K=71,         /*!< \brief k-w Kinetic energy. */
+  DO_W=72,         /*!< \brief k-w Rate of dissipation. */
+  DO_TEMP=73,      /*!< \brief Temperature. */
+  DO_UTOL=74,       /*!< \brief Elasticity displacement norm. */
+  DO_RTOL=75,       /*!< \brief Elasticity residual norm. */
+  DO_ETOL=76,       /*!< \brief Elasticity energy norm. */
+  DO_DISPX=77,        /*!< \brief Norm of the displacement vector - x component. */
+  DO_DISPY=78,       /*!< \brief Norm of the displacement vector - y component. */
+  DO_DISPZ=79,        /*!< \brief Norm of the displacement vector - z component. */
+  DO_VMS=80        /*!< \brief Elasticity Maximum Von Mises stress. */
+};
+
+static const map<string, ENUM_DIFFOUTPUTS_VAR> DiffOutputs_Var_Map = CCreateMap<string, ENUM_DIFFOUTPUTS_VAR>
+  ("DRAG", DO_DRAG_COEFFICIENT)
+  ("LIFT", DO_LIFT_COEFFICIENT)
+  ("SIDEFORCE", DO_SIDEFORCE_COEFFICIENT)
+  ("EFFICIENCY", DO_EFFICIENCY)
+  ("INVERSE_DESIGN_PRESSURE", DO_INVERSE_DESIGN_PRESSURE)
+  ("INVERSE_DESIGN_HEATFLUX", DO_INVERSE_DESIGN_HEATFLUX)
+  ("MOMENT_X", DO_MOMENT_X_COEFFICIENT)
+  ("MOMENT_Y", DO_MOMENT_Y_COEFFICIENT)
+  ("MOMENT_Z", DO_MOMENT_Z_COEFFICIENT)
+  ("EQUIVALENT_AREA", DO_EQUIVALENT_AREA)
+  ("NEARFIELD_PRESSURE", DO_NEARFIELD_PRESSURE)
+  ("FORCE_X", DO_FORCE_X_COEFFICIENT)
+  ("FORCE_Y", DO_FORCE_Y_COEFFICIENT)
+  ("FORCE_Z", DO_FORCE_Z_COEFFICIENT)
+  ("THRUST", DO_THRUST_COEFFICIENT)
+  ("TORQUE", DO_TORQUE_COEFFICIENT)
+  ("TOTAL_HEATFLUX", DO_TOTAL_HEATFLUX)
+  ("MAXIMUM_HEATFLUX", DO_MAXIMUM_HEATFLUX)
+  ("TOTAL_AVG_TEMPERATURE", DO_TOTAL_AVG_TEMPERATURE)
+  ("FIGURE_OF_MERIT", DO_FIGURE_OF_MERIT)
+  ("BUFFET", DO_BUFFET_SENSOR)
+  ("SURFACE_TOTAL_PRESSURE", DO_SURFACE_TOTAL_PRESSURE)
+  ("SURFACE_STATIC_PRESSURE", DO_SURFACE_STATIC_PRESSURE)
+  ("SURFACE_MASSFLOW", DO_SURFACE_MASSFLOW)
+  ("SURFACE_MACH", DO_SURFACE_MACH)
+  ("SURFACE_UNIFORMITY", DO_SURFACE_UNIFORMITY)
+  ("SURFACE_SECONDARY", DO_SURFACE_SECONDARY)
+  ("SURFACE_MOM_DISTORTION", DO_SURFACE_MOM_DISTORTION)
+  ("SURFACE_SECOND_OVER_UNIFORM", DO_SURFACE_SECOND_OVER_UNIFORM)
+  ("SURFACE_PRESSURE_DROP", DO_SURFACE_PRESSURE_DROP)
+  ("CUSTOM_OBJFUNC", DO_CUSTOM_OBJFUNC)
+  ("TOTAL_EFFICIENCY", DO_TOTAL_EFFICIENCY)
+  ("TOTAL_STATIC_EFFICIENCY", DO_TOTAL_STATIC_EFFICIENCY)
+  ("TOTAL_PRESSURE_LOSS", DO_TOTAL_PRESSURE_LOSS)
+  ("EULERIAN_WORK", DO_EULERIAN_WORK)
+  ("TOTAL_ENTHALPY_IN", DO_TOTAL_ENTHALPY_IN)
+  ("FLOW_ANGLE_IN", DO_FLOW_ANGLE_IN)
+  ("FLOW_ANGLE_OUT", DO_FLOW_ANGLE_OUT)
+  ("MASS_FLOW_IN", DO_MASS_FLOW_IN)
+  ("MASS_FLOW_OUT", DO_MASS_FLOW_OUT)
+  ("PRESSURE_RATIO",  DO_PRESSURE_RATIO)
+  ("ENTROPY_GENERATION",  DO_ENTROPY_GENERATION)
+  ("KINETIC_ENERGY_LOSS", DO_KINETIC_ENERGY_LOSS)
+  ("REFERENCE_GEOMETRY", DO_REFERENCE_GEOMETRY)
+  ("REFERENCE_NODE", DO_REFERENCE_NODE)
+  ("VOLUME_FRACTION", DO_VOLUME_FRACTION)
+  ("DENSITY", DO_RHO)
+  ("MOMENTUM-X", DO_RHOU1)
+  ("MOMENTUM-Y", DO_RHOU2)
+  ("MOMENTUM-Z", DO_RHOU3)
+  ("RHO-E", DO_RHOE)
+  ("PRESSURE", DO_PRESS)
+  ("AOA", DO_AOA)
+  ("SA-NU", DO_SA)
+  ("K-W_KINETIC", DO_K)
+  ("K-W_DISSIPATION", DO_W)
+  ("TEMPERATURE", DO_TEMP)
+  ("UTOL", DO_UTOL)
+  ("RTOL", DO_RTOL)
+  ("ETOL", DO_ETOL)
+  ("DISPX", DO_DISPX)
+  ("DISPY", DO_DISPY)
+  ("DISPZ", DO_DISPZ)
+  ("VON_MISES_STRESS", DO_VMS);
+
 
 enum ENUM_RECORDING {
   FLOW_CONS_VARS   = 1,
@@ -2434,6 +2541,7 @@ public:
 
   ~COptionEnumList() {};
   string SetValue(vector<string> option_value) {
+
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
@@ -2455,6 +2563,78 @@ public:
       enums[i] = this->m[option_value[i]];
     }
     this->field = enums;
+    return "";
+  }
+
+  void SetDefault() {
+    // No default to set
+    size = 0;
+  }
+};
+
+template <class Tenum>
+class COptionEnumMarkerList : public COptionBase {
+
+  map<string, Tenum> m;
+  unsigned short * & field; // Reference to the feildname
+  string * & markers;
+  string name; // identifier for the option
+  unsigned short & size;
+
+public:
+  COptionEnumMarkerList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, string * & marker_field, unsigned short & list_size) : field(option_field), markers(marker_field), size(list_size) {
+    this->m = m;
+    this->name = option_field_name;
+  }
+
+  ~COptionEnumMarkerList() {};
+  string SetValue(vector<string> option_value) {
+    if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
+      this->size = 0;
+      return "";
+    }
+
+    // size is the length of the option list
+    this->size = option_value.size();
+    unsigned short * enums = new unsigned short[size];
+    string * marker_strs = new string[size];
+    for (int i  = 0; i < this->size; i++) {
+
+      // divide into value part and marker part (in brackets "< >") if available
+      string::size_type pos;
+      string marker_part = "";
+      pos = option_value[i].find_first_of("<");
+      if (pos != string::npos) {
+        marker_part = option_value[i].substr(pos+1, string::npos);
+        option_value[i] = option_value[i].substr(0, pos);
+        pos = marker_part.find_first_of(">");
+        if (pos == string::npos || option_value[i].length() == 0) {
+          // TODO Write specific error messages
+          string str = "Invalid marker specification.";
+          return str;
+        }
+        marker_part = marker_part.substr(0, pos);
+      }
+
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[i]) == m.end()) {
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[i]);
+        str.append(". Check current SU2 options in config_template.cfg.");
+        return str;
+      }
+      // If it is there, set the option value
+      enums[i] = this->m[option_value[i]];
+
+      // parse marker part
+      marker_strs[i] = marker_part;
+
+    }
+
+    this->field = enums;
+    this->markers = marker_strs;
     return "";
   }
 

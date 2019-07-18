@@ -146,6 +146,8 @@ protected:
 
   vector< vector<passivedouble> > Total_Sens_Diff_Inputs;    /*!< \brief Total sensitivities to the differentiation inputs. */
   vector< vector<su2double> > Diff_Inputs_Vars;    /*!< \brief Differentiation input variables to be registered with AD. */
+  vector< vector<su2double> > Diff_Outputs_Backprop_Derivs;    /*!< \brief Used as a hack to backprop derivatives into SU2. */
+  vector< vector<su2double> > Diff_Outputs_Vars;    /*!< \brief Differentiation output variables. */
 
 
 public:
@@ -4484,6 +4486,12 @@ public:
 
   virtual void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 
+  virtual vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
+
+  virtual void SetDiff_Outputs_Vars(CConfig *config);
+
+  virtual void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
+
 };
 
 /*!
@@ -5230,8 +5238,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Evaluate_ObjFunc(CConfig *config);
-  
-  /*!
+
+  void Evaluate_DiffOutputs_Obj(CConfig *config);
+
+    /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
    *
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -7061,6 +7071,12 @@ public:
 
   void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
 
+  vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
+
+  void SetDiff_Outputs_Vars(CConfig *config);
+
+  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
+
 };
 
 /*!
@@ -7547,18 +7563,20 @@ public:
    */
   void Evaluate_ObjFunc(CConfig *config);
 
-  /*!
-   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
+  void Evaluate_DiffOutputs_Obj(CConfig *config);
+
+      /*!
+     * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
+     * \brief Impose via the residual the Euler wall boundary condition.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] numerics - Description of the numerical method.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] val_marker - Surface marker where the boundary condition is applied.
+     */
   void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker);
-  
+
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8519,6 +8537,12 @@ public:
   vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
 
   void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
+
+  vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
+
+  void SetDiff_Outputs_Vars(CConfig *config);
+
+  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 
 };
 
@@ -13099,6 +13123,8 @@ public:
   vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
 
   void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
+
+  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 };
 
 /*!

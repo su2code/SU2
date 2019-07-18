@@ -1105,6 +1105,10 @@ private:
   unsigned short nDiff_Inputs;  /*!< \brief Number of inputs that are differentiated with respect to
  */
   unsigned short *Diff_Inputs;          /*!< \brief List of enums defining which inputs should be differentiated with respect to */
+  string *Diff_Inputs_Markers;          /*!< \brief List of markers related to the respectively indexed diff input, if required */
+
+  unsigned short nDiff_Outputs;  /*!< \brief Number of outputs that are differentiated */
+  unsigned short *Diff_Outputs;          /*!< \brief List of enums defining which outputs should be differentiated */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -1214,6 +1218,16 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+    option_map.insert( pair<string, COptionBase*>(name, val) );
+  }
+
+  // input_size is the number of options read in from the config file
+  template <class Tenum>
+  void addEnumMarkerListOption(const string name, unsigned short & input_size, unsigned short * & option_field, string * & marker_field, const map<string, Tenum> & enum_map) {
+    input_size = 0;
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionEnumMarkerList<Tenum>(name, enum_map, option_field, marker_field, input_size);
     option_map.insert( pair<string, COptionBase*>(name, val) );
   }
   
@@ -5066,7 +5080,7 @@ public:
    * \return Weight of objective function.
    */
   su2double GetWeight_ObjFunc(unsigned short val_obj);
-  
+
   /*!
    * \author H. Kline
    * \brief Set the weight of objective function. There are several options: Drag coefficient,
@@ -5075,7 +5089,7 @@ public:
    * \return Weight of objective function.
    */
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
-  
+
   /*!
    * \author H. Kline
    * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
@@ -6638,6 +6652,8 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
   void SetInlet_Ptotal(su2double val_pressure, string val_marker);
+
+  void SetInlet_Ttotal(su2double val_temp, string val_marker);
 
   /*!
    * \brief Get the total pressure at an nacelle boundary.
@@ -9148,10 +9164,28 @@ public:
   unsigned short* GetDiff_Inputs(void);
 
   /*!
+   * \brief Get the list of markers related to diff inputs, if required
+   * \return List of markers related to diff inputs, if required
+   */
+  string* GetDiff_Inputs_Markers(void);
+
+  /*!
    * \brief Get the number of inputs that are differentiated with respect to
    * \return Number of inputs that are differentiated with respect to
    */
   unsigned short GetnDiff_Inputs(void);
+
+  /*!
+   * \brief Get the list of outputs that are differentiated
+   * \return List of outputs that are differentiated
+   */
+  unsigned short* GetDiff_Outputs(void);
+
+  /*!
+   * \brief Get the number of outputs that are differentiated
+   * \return Number of outputs that are differentiated with respect to
+   */
+  unsigned short GetnDiff_Outputs(void);
 
   /*!
    * \brief Get the restart iteration

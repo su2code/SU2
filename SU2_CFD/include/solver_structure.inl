@@ -1198,9 +1198,20 @@ inline void CSolver::SetRotatePeriodic(bool val_rotate_periodic) { rotate_period
 
 inline vector< vector<passivedouble> > CSolver::GetTotal_Sens_Diff_Inputs(void) {return Total_Sens_Diff_Inputs;}
 
-inline vector<su2double> CSolver::GetDiff_Inputs_Vars(unsigned short index) { }
+// TODO Is this dummy default necessary?
+inline void CSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) { }
 
+// TODO Is this dummy default necessary?
+inline vector<su2double> CSolver::GetDiff_Inputs_Vars(unsigned short index) { return Diff_Inputs_Vars[index]; }
+
+// TODO Is this dummy default necessary?
 inline void CSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) { }
+
+// TODO Is this dummy default necessary?
+inline vector<su2double> CSolver::GetDiff_Outputs_Vars(unsigned short index) { return Diff_Outputs_Vars[index]; }
+
+// TODO Is this dummy default necessary?
+inline void CSolver::SetDiff_Outputs_Vars(CConfig *config) { }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
