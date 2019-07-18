@@ -18,7 +18,7 @@ TEMP_CFG_BASENAME = 'tmp_cfg.cfg'
 class SU2MPIFunction(torch.autograd.Function):
     """Function that uses the SU2 in-memory python wrapper."""
 
-    def __init__(self, config_file, dims=2, num_zones=1, num_procs=4):
+    def __init__(self, config_file, dims=2, num_zones=1, num_procs=1):
         assert num_zones == 1, 'Only supports 1 zone for now.'
         self.num_zones = num_zones
         self.dims = dims
@@ -42,10 +42,13 @@ class SU2MPIFunction(torch.autograd.Function):
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
         self.adjoint_driver = None
 
-        intercomm = MPI.COMM_SELF.Spawn(sys.executable,
-                                        args=str(Path(__file__).parent / 'su2_function_mpi.py'),
-                                        maxprocs=num_procs-1)  # XXX -1 because this process is also a worker
-        self.comm = intercomm.Merge(high=False)
+        if num_procs > 1:
+            intercomm = MPI.COMM_SELF.Spawn(sys.executable,
+                                            args=str(Path(__file__).parent / 'su2_function_mpi.py'),
+                                            maxprocs=num_procs-1)  # XXX -1 because this process is also a worker
+            self.comm = intercomm.Merge(high=False)
+        else:
+            self.comm = MPI.COMM_WORLD
         assert self.comm.Get_rank() == 0, 'Rank is expected to be 0.'
         self.comm.bcast([self.num_zones, self.dims, self.num_diff_outputs], root=0)
 
