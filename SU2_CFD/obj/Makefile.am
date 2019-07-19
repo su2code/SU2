@@ -111,6 +111,7 @@ libSU2Core_sources = \
   ../src/driver_direct_singlezone.cpp \
   ../src/driver_adjoint_singlezone.cpp \
   ../src/driver_structure.cpp \
+  ../src/driver_dummy.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
