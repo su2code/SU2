@@ -7163,7 +7163,7 @@ void CIncEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         break;
 
       case DO_TEMP:
-        nVec = nPoint;
+        nVec = nPointDomain;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
         for (iVec = 0; iVec < nVec; iVec++) {
