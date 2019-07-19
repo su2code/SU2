@@ -421,6 +421,11 @@ public:
 	 */
 	CGeometry(void);
 
+  /*!
+	 * \brief Constructor of the class.
+	 */
+	CGeometry(CConfig *config, unsigned short nDim);
+
 	/*! 
 	 * \brief Destructor of the class.
 	 */
@@ -3021,6 +3026,25 @@ public:
 	 */
 	void Update(unsigned long val_update_point, CGeometry *fine_grid);
 
+};
+
+/*!
+ * \brief The CDummyGeometry class
+ */
+class CDummyGeometry : public CGeometry{
+  
+public:
+  /*!
+   * \brief CDummyGeometry
+   * \param config
+   * \param nDim
+   */
+  CDummyGeometry(CConfig *config, unsigned short nDim);
+  
+  /*!
+  */
+  ~CDummyGeometry();
+  
 };
 
 #include "geometry_structure.inl"
