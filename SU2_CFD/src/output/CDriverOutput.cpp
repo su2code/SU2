@@ -129,9 +129,9 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
   string name, header, group;
 
   if (config[ZONE_0]->GetTime_Domain()){
-    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER", "");
+    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER", "Time iteration index");
   }
-  AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER", "");
+  AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER", "Outer iteration index");
   
   
   /*--- Set the fields ---*/

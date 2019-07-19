@@ -136,11 +136,8 @@ CDriver::CDriver(char* confFile,
    identified and linked, face areas and volumes of the dual mesh cells are
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
-
   /*--- Determine whether or not the FEM solver is used, which decides the
-   type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+ type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
   fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
                 (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
                 (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
@@ -148,18 +145,63 @@ CDriver::CDriver(char* confFile,
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  
+  if (!driver_config->GetDryRun()){
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
+    
 
-  if( fem_solver ) {
-    switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
-      case DG: {
-        Geometrical_Preprocessing_DGFEM();
-        break;
+    
+    if( fem_solver ) {
+      switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
+        case DG: {
+            Geometrical_Preprocessing_DGFEM();
+            break;
+          }
+      }
+    }
+    else {
+      Geometrical_Preprocessing();
+    }
+    
+  } else {
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"-------------------------  Using Dummy Geometry  ------------------------" << endl;
+    
+    
+    for (iZone = 0; iZone < nZone; iZone++) {
+      
+      /*--- Read the number of instances for each zone ---*/
+      
+      nInst[iZone] = config_container[iZone]->GetnTimeInstances();
+      
+      geometry_container[iZone] = new CGeometry** [nInst[iZone]];
+      
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        
+        config_container[iZone]->SetiInst(iInst);
+        
+        geometry_container[iZone][iInst] = NULL;
+        geometry_container[iZone][iInst] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+        
+        if (!fem_solver){
+          for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+            
+            geometry_container[iZone][iInst][iMesh] = new CDummyGeometry(config_container[iZone], nDim);
+            
+          }
+        } else {
+          
+          geometry_container[iZone][iInst][MESH_0] = new CDummyMeshFEM_DG(config_container[iZone], nDim);
+
+        }
       }
     }
   }
-  else {
-    Geometrical_Preprocessing();
-  }
+  
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -217,11 +259,6 @@ CDriver::CDriver(char* confFile,
     }
 
   }
-  
-  nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-
-  nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
   if( fem_solver ) Partition_Analysis_FEM(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
@@ -863,12 +900,17 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
     else{
       config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
     }
-
+    
     /*--- Set the MPI communicator ---*/
 
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
+  
+  /*--- Get the dimension from the first zone --- */
+  
+  nDim = CConfig::GetnDim(config_container[ZONE_0]->GetMesh_FileName(),
+                          config_container[ZONE_0]->GetMesh_FileFormat());  
 
   /*--- Set the multizone part of the problem. ---*/
   if (driver_config->GetMultizone_Problem()){
@@ -878,20 +920,20 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
     }
   }
 
+
+}
+
+void CDriver::Geometrical_Preprocessing() {
+
+  unsigned short iZone, iInst, iMGlevel;
+  unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
+  unsigned long iPoint;
+  bool fea = false;
+  
   /*--- Definition of the geometry class to store the primal grid in the
  partitioning process. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Determine whether or not the FEM solver is used, which decides the
-     type of geometry classes that are instantiated. ---*/
-    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)         ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_LES)           ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -911,55 +953,25 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-      
-      /*--- Set the dimension ---*/
-      
-      nDim = geometry_aux->GetnDim();
-
-      /*--- For the FEM solver with time-accurate local time-stepping, use
-       a dummy solver class to retrieve the initial flow state. ---*/
-
-      CSolver *solver_aux = NULL;
-      if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
 
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
-      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
       /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
       geometry_container[iZone][iInst] = NULL;
       geometry_container[iZone][iInst] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-
-
-      if( fem_solver ) {
-        switch( config_container[iZone]->GetKind_FEM_Flow() ) {
-          case DG: {
-            geometry_container[iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
-            break;
-          }
-
-          default: {
-            SU2_MPI::Error("Unknown FEM flow solver.", CURRENT_FUNCTION);
-            break;
-          }
-        }
-      }
-      else {
-
-        /*--- Build the grid data structures using the ParMETIS coloring. ---*/
-        
-        geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-
-      }
-
+      
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+      
+      geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+     
       /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
       delete geometry_aux;
-      if (solver_aux != NULL) delete solver_aux;
-
+      
       /*--- Add the Send/Receive boundaries ---*/
       geometry_container[iZone][iInst][MESH_0]->SetSendReceive(config_container[iZone]);
 
@@ -969,15 +981,6 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator) {
     }
 
   }
-
-}
-
-void CDriver::Geometrical_Preprocessing() {
-
-  unsigned short iZone, iInst, iMGlevel;
-  unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
-  unsigned long iPoint;
-  bool fea = false;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -1178,6 +1181,63 @@ void CDriver::Geometrical_Preprocessing() {
 }
 
 void CDriver::Geometrical_Preprocessing_DGFEM() {
+  
+  /*--- Definition of the geometry class to store the primal grid in the
+ partitioning process. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Read the number of instances for each zone ---*/
+
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
+
+    geometry_container[iZone] = new CGeometry** [nInst[iZone]];
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      config_container[iZone]->SetiInst(iInst);
+
+      /*--- Definition of the geometry class to store the primal grid in the
+     partitioning process. ---*/
+
+      CGeometry *geometry_aux = NULL;
+      
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+
+      /*--- For the FEM solver with time-accurate local time-stepping, use
+       a dummy solver class to retrieve the initial flow state. ---*/
+
+      CSolver *solver_aux = NULL;
+      solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
+
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      
+      geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+      
+      /*--- Allocate the memory of the current domain, and divide the grid
+     between the ranks. ---*/
+
+      geometry_container[iZone][iInst] = NULL;
+      geometry_container[iZone][iInst] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+
+      geometry_container[iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+
+      /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
+
+      delete geometry_aux;
+      if (solver_aux != NULL) delete solver_aux;
+
+      /*--- Add the Send/Receive boundaries ---*/
+      geometry_container[iZone][iInst][MESH_0]->SetSendReceive(config_container[iZone]);
+
+      /*--- Add the Send/Receive boundaries ---*/
+      geometry_container[iZone][iInst][MESH_0]->SetBoundaries(config_container[iZone]);
+
+    }
+
+  }
 
   /*--- Loop over the number of zones of the fine grid. ---*/
 
@@ -4242,6 +4302,8 @@ void CDriver::Output(unsigned long ExtIter) {
 }
 
 CDriver::~CDriver(void) {}
+
+CDriver::CDriver(void) {}
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator) { }
 

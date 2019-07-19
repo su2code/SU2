@@ -104,6 +104,7 @@ protected:
     TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
     TYPE_AUTO_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
     TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    TYPE_AUTO_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
     TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
