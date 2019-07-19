@@ -129,9 +129,9 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
   string name, header, group;
 
   if (config[ZONE_0]->GetTime_Domain()){
-    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER");
+    AddHistoryOutput("TIME_ITER", "Time_Iter", FORMAT_INTEGER,  "ITER", "");
   }
-  AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER");
+  AddHistoryOutput("OUTER_ITER", "Outer_Iter", FORMAT_INTEGER,  "ITER", "");
   
   
   /*--- Set the fields ---*/
@@ -152,7 +152,7 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
         header = ZoneHistoryFields[ZoneHistoryNames[iField]].FieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
         group  = ZoneHistoryFields[ZoneHistoryNames[iField]].OutputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
         
-        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].ScreenFormat, group, ZoneHistoryFields[ZoneHistoryNames[iField]].FieldType );
+        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].ScreenFormat, group, "", ZoneHistoryFields[ZoneHistoryNames[iField]].FieldType );
       }
     }
   }

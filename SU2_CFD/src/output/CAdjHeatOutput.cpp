@@ -104,17 +104,17 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  FORMAT_FIXED, "RMS_RES", "", TYPE_RESIDUAL); 
   /// END_GROUP
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  FORMAT_FIXED, "MAX_RES", "", TYPE_RESIDUAL);
 
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", "", TYPE_COEFFICIENT); 
   /// END_GROUP
   
 }

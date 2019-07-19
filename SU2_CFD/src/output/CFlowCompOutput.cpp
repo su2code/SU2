@@ -111,26 +111,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
-  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the density.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
-  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
-  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the energy.", TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
-    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", TYPE_RESIDUAL);
     break;
   default: break;
   }
@@ -138,26 +138,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
    
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the density.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,"MAX_RES", "Maximum residual of the z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the energy.", TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", TYPE_RESIDUAL); 
     break;
   default: break;
   }
@@ -165,26 +165,26 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  FORMAT_FIXED,   "BGS_RES", "BGS residual of the density.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the momentum x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the momentum y-component.",  TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", FORMAT_FIXED, "BGS_RES", "BGS residual of the z-component.",  TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the energy.",  TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", TYPE_RESIDUAL); 
     break;
   default: break;
   }
@@ -203,33 +203,33 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
    
 
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
  
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
-  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Aero CD drag", TYPE_COEFFICIENT);
   /// DESCRIPTION: Solid CD drag  
-  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Solid CD drag ", TYPE_COEFFICIENT);
   /// DESCRIPTION: Radial distortion 
-  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Radial distortion ", TYPE_COEFFICIENT);
   /// DESCRIPTION: Circumferential distortion
-  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", "Circumferential distortion", TYPE_COEFFICIENT);
   /// END_GROUP
   
   /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
   /// DESCRIPTION: Merit  
-  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
+  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME", "Merit", TYPE_COEFFICIENT);
   /// DESCRIPTION: CT 
-  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
+  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", "CT", TYPE_COEFFICIENT);
   /// DESCRIPTION: CQ  
-  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
+  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", "CQ", TYPE_COEFFICIENT);
   /// END_GROUP
   
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.  
   /// DESCRIPTION: Equivalent area    
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
+  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", TYPE_COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function      
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
+  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", TYPE_COEFFICIENT);
   /// END_GROUP
   /// 
   
@@ -247,7 +247,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   
   /*--- Add combo obj value --- */
   
-  AddHistoryOutput("COMBO", "ComboObj", FORMAT_SCIENTIFIC, "COMBO", TYPE_COEFFICIENT);
+  AddHistoryOutput("COMBO", "ComboObj", FORMAT_SCIENTIFIC, "COMBO", "Combined obj. function value.", TYPE_COEFFICIENT);
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
