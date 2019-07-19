@@ -9137,8 +9137,8 @@ public:
   bool GetWrt_ForcesBreakdown(void);
 
   /*!
-   * \brief GetDryRun
-   * \return 
+   * \brief Boolean to check whether dry run mode is enabled
+   * \return YES if dry run mode is enabled.
    */
   bool GetDryRun();
 
