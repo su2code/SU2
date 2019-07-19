@@ -1500,19 +1500,8 @@ public:
 class CUpwCUSP_Flow : public CNumerics {
   
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  *ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
-  cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  LamdaNeg, LamdaPos, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
-  **Jacobian;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
+  bool implicit;
   
 public:
   
@@ -1541,24 +1530,26 @@ public:
 };
 
 /*!
- * \class CUpwRoe_Flow
- * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \class CUpwRoeBase_Flow
+ * \brief Intermediate base class for Roe schemes on ideal gas.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
  */
-class CUpwRoe_Flow : public CNumerics {
-private:
+class CUpwRoeBase_Flow : public CNumerics {
+protected:
   bool implicit, grid_movement, roe_low_dissipation;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon, MaxLambda, Delta;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
-  unsigned short iVar, jVar, kVar, iDim;
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j, *Conservatives_i, *Conservatives_j;
+  su2double *Diff_U, *Lambda, **P_Tensor, **invP_Tensor;
+  su2double *RoeVelocity, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  
+  /*!
+   * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) = 0;
   
 public:
   
@@ -1567,6 +1558,51 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   */
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwRoeBase_Flow(void);
+  
+  /*!
+   * \brief Compute the flux from node i to node j, part common to most Roe schemes.
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+};
+
+/*!
+ * \class CUpwRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno, F. Palacios
+ */
+class CUpwRoe_Flow : public CUpwRoeBase_Flow {
+private:
+  /*!
+   * \brief Add standard Roe dissipation to the flux.
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
    */
   CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
@@ -1574,15 +1610,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwRoe_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
 };
 
@@ -1653,43 +1680,30 @@ public:
  * \author E. Molina, A. Bueno, F. Palacios
  * \version 6.2.0 "Falcon"
  */
-class CUpwL2Roe_Flow : public CNumerics {
+class CUpwL2Roe_Flow : public CUpwRoeBase_Flow {
 private:
-    bool implicit, grid_movement;
-    su2double *Diff_U;
-    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-    su2double *ProjFlux_i, *ProjFlux_j;
-    su2double *delta_wave, *delta_vel;
-    su2double *Lambda, *Epsilon, MaxLambda, Delta;
-    su2double **P_Tensor, **invP_Tensor;
-    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
-    unsigned short iDim, iVar, jVar, kVar;
+  /*!
+   * \brief Add L^2 Roe dissipation to the flux (low-Mach scheme).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
     
 public:
-    
-    /*!
-     * \brief Constructor of the class.
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-    CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-    /*!
-     * \brief Destructor of the class.
-     */
-    ~CUpwL2Roe_Flow(void);
-    
-    /*!
-     * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-     * \param[in] config - Definition of the particular problem.
-     */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwL2Roe_Flow(void);
 };
 
 /*!
@@ -1699,43 +1713,30 @@ public:
  * \author E. Molina, A. Bueno, F. Palacios
  * \version 6.2.0 "Falcon"
  */
-class CUpwLMRoe_Flow : public CNumerics {
+class CUpwLMRoe_Flow : public CUpwRoeBase_Flow {
 private:
-    bool implicit, grid_movement;
-    su2double *Diff_U;
-    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-    su2double *ProjFlux_i, *ProjFlux_j;
-    su2double *delta_wave, *delta_vel;
-    su2double *Lambda, *Epsilon, MaxLambda, Delta;
-    su2double **P_Tensor, **invP_Tensor;
-    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
-    unsigned short iDim, iVar, jVar, kVar;
+  /*!
+   * \brief Add LMRoe dissipation to the flux (low-Mach scheme).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
     
 public:
-    
-    /*!
-     * \brief Constructor of the class.
-     * \param[in] val_nDim - Number of dimensions of the problem.
-     * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
-    CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-    /*!
-     * \brief Destructor of the class.
-     */
-    ~CUpwLMRoe_Flow(void);
-    
-    /*!
-     * \brief Compute the Roe's flux between two nodes i and j.
-     * \param[out] val_residual - Pointer to the total residual.
-     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-     * \param[in] config - Definition of the particular problem.
-     */
-    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwLMRoe_Flow(void);
 };
 
 /*!
@@ -1983,27 +1984,91 @@ public:
 };
 
 /*!
+ * \class CUpwAUSMPLUS_SLAU_Base_Flow
+ * \brief Base class for AUSM+up(2) and SLAU(2) convective schemes.
+ * \ingroup ConvDiscr
+ * \author Amit Sachdeva
+ */
+class CUpwAUSMPLUS_SLAU_Base_Flow : public CNumerics {
+protected:
+  bool implicit;
+  bool UseAccurateJacobian;
+  bool HasAnalyticalDerivatives;
+  su2double FinDiffStep;
+  
+  su2double MassFlux, DissFlux, Pressure;
+  su2double *Velocity_i, *Velocity_j;
+  su2double *psi_i, *psi_j;
+  su2double dmdot_dVi[6], dmdot_dVj[6], dpres_dVi[6], dpres_dVj[6];
+  
+  /*--- Roe variables (for approximate Jacobian) ---*/
+  su2double *Lambda, *Epsilon, *RoeVelocity, **P_Tensor, **invP_Tensor;
+  
+  /*!
+   * \brief Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this method.
+   * \note See the body of the (empty) default implementation for instructions on how to implement the method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  virtual void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure) = 0;
+  
+  /*!
+   * \brief Compute the flux Jacobians of the Roe scheme to use as an approximation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+  /*!
+   * \brief Compute the flux Jacobians using a mix of finite differences and manual differentiation.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void AccurateJacobian(CConfig *config, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUS_SLAU_Base_Flow(void);
+  
+  /*!
+   * \brief Compute the AUSM+ and SLAU family of schemes.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CUpwAUSMPLUSUP_Flow
  * \brief Class for solving an approximate Riemann AUSM+ -up.
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP_Flow : public CNumerics {
+class CUpwAUSMPLUSUP_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
-  bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, Pu, fa;
-  su2double Kp, Ku, sigma, alpha, beta, param1, mfP, mfM;
+  su2double Kp, Ku, sigma;
+  
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2019,15 +2084,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwAUSMPLUSUP_Flow(void);
-  
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2036,22 +2092,17 @@ public:
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
-class CUpwAUSMPLUSUP2_Flow : public CNumerics {
+class CUpwAUSMPLUSUP2_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
 private:
-  bool implicit;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double sq_veli, sq_velj, mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
-  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
-  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+  su2double Kp, sigma;
+  
+  /*!
+   * \brief Mass flux and pressure for the AUSM+up2 scheme.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2068,14 +2119,6 @@ public:
    */
   ~CUpwAUSMPLUSUP2_Flow(void);
   
-  /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2084,21 +2127,18 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_diss;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+class CUpwSLAU_Flow : public CUpwAUSMPLUS_SLAU_Base_Flow {
+protected:
+  bool slau_low_diss;
+  bool slau2;
+  
+  /*!
+   * \brief Mass flux and pressure for the SLAU and SLAU2 schemes.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] mdot - The mass flux.
+   * \param[out] pressure - The pressure at the control volume face.
+   */
+  void ComputeMassAndPressureFluxes(CConfig *config, su2double &mdot, su2double &pressure);
   
 public:
   
@@ -2114,15 +2154,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2131,24 +2163,8 @@ public:
  * \ingroup ConvDiscr
  * \author E. Molina
  */
-class CUpwSLAU2_Flow : public CNumerics {
-private:
-  bool implicit, slau_low_dissipation;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double mL, mR, mF, pF;
-  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
-  
+class CUpwSLAU2_Flow : public CUpwSLAU_Flow {
 public:
-  
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -2161,15 +2177,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwSLAU2_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
@@ -2620,33 +2628,152 @@ public:
 };
 
 /*!
- * \class CCentJST_Flow
- * \brief Class for centered shceme - JST.
+ * \class CCentBase_Flow
+ * \brief Intermediate class to define centered schemes.
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CCentJST_KE_Flow : public CNumerics {
-  
-private:
+class CCentBase_Flow : public CNumerics {
+
+protected:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  ProjGridVel;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
-  
-  
+  bool grid_movement;              /*!< \brief Consider grid movement. */
+  bool implicit;                   /*!< \brief Implicit calculation (compute Jacobians). */
+  su2double fix_factor;            /*!< \brief Fix factor for dissipation Jacobians (more diagonal dominance). */
+
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at nodes i and j and mean. */
+  su2double ProjVelocity_i, ProjVelocity_j;          /*!< \brief Velocities in the face normal direction. */
+  su2double sq_vel_i,  sq_vel_j;                     /*!< \brief Squared norm of the velocity vectors. */
+  su2double Energy_i,  Energy_j,  MeanEnergy;        /*!< \brief Energy at nodes i and j and mean. */
+  su2double MeanDensity, MeanPressure, MeanEnthalpy; /*!< \brief Mean density, pressure, and enthalpy. */
+  su2double *ProjFlux;                               /*!< \brief Projected inviscid flux. */
+
+  su2double *Diff_U, *Diff_Lapl;                        /*!< \brief Differences of conservatives and undiv. Laplacians. */
+  su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eingenvalues. */
+  su2double Param_p, Phi_i, Phi_j, StretchingFactor;    /*!< \brief Streching parameters. */
+  su2double cte_0, cte_1;                               /*!< \brief Constants for the scalar dissipation Jacobian. */
+
+  su2double ProjGridVel; /*!< \brief Projected grid velocity. */
+
+  /*!
+   * \brief Hook method for derived classes to define preaccumulated variables, optional to implement.
+   * \return true if any variable was set as preacc. input, in which case the residual will be output.
+   */
+  virtual bool SetPreaccInVars(void) {return false;}
+
+  /*!
+   * \brief Derived classes must implement this method, called in ComputeResidual after inviscid part.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  virtual void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) = 0;
+
+  /*!
+   * \brief Add the contribution of a scalar dissipation term to the Jacobians.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i.
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j.
+   */
+  void ScalarDissipationJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+
 public:
-  
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CCentBase_Flow(void);
+
+  /*!
+   * \brief Compute the flow residual using a centered method with artificial dissipation.
+   * \param[out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+};
+
+/*!
+ * \class CCentLax_Flow
+ * \brief Class for computing the Lax-Friedrich centered scheme.
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ */
+class CCentLax_Flow : public CCentBase_Flow {
+private:
+  su2double Param_Kappa_0; /*!< \brief Artificial dissipation parameter. */
+  su2double sc0;           /*!< \brief Streching parameter. */
+  su2double Epsilon_0;     /*!< \brief Artificial dissipation coefficient. */
+
+  /*!
+   * \brief Lax-Friedrich first order dissipation term.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentLax_Flow(void);
+
+};
+
+/*!
+ * \class CCentJST_KE_Flow
+ * \brief Class for centered scheme - JST_KE (no 4th dissipation order term).
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ */
+class CCentJST_KE_Flow : public CCentBase_Flow {
+
+private:
+  su2double Param_Kappa_2; /*!< \brief Artificial dissipation parameter. */
+  su2double sc2;           /*!< \brief Streching parameter. */
+  su2double Epsilon_2;     /*!< \brief Artificial dissipation coefficient. */
+
+  /*!
+   * \brief JST_KE second order dissipation term.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
+public:
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2654,22 +2781,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJST_KE_Flow(void);
-  
-  /*!
-   * \brief Compute the flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+
 };
 
 /*!
@@ -2678,28 +2795,29 @@ public:
  * \ingroup ConvDiscr
  * \author F. Palacios
  */
-class CCentJST_Flow : public CNumerics {
+class CCentJST_Flow : public CCentBase_Flow {
   
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  ProjGridVel;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
-  
-  
+  su2double Param_Kappa_2, Param_Kappa_4; /*!< \brief Artificial dissipation parameters. */
+  su2double sc2, sc4;                     /*!< \brief Streching parameters. */
+  su2double Epsilon_2, Epsilon_4;         /*!< \brief Artificial dissipation coefficients. */
+
+  /*!
+   * \brief JST second and forth order dissipation terms.
+   * \param[in,out] val_residual - Pointer to the convective flux contribution to the residual.
+   * \param[in,out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in,out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   */
+  void DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j);
+
+  /*!
+   * \brief Set input variables for AD preaccumulation.
+   * \return true, as we will define inputs.
+   */
+  bool SetPreaccInVars(void);
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -2707,22 +2825,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CCentJST_Flow(void);
-  
-  /*!
-   * \brief Compute the flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
+
 };
 
 /*!
@@ -2864,59 +2972,6 @@ public:
 
   /*!
    * \brief Compute the flow residual using a JST method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                       CConfig *config);
-};
-
-
-
-/*!
- * \class CCentLax_Flow
- * \brief Class for computing the Lax-Friedrich centered scheme.
- * \ingroup ConvDiscr
- * \author F. Palacios
- */
-class CCentLax_Flow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, /*!< \brief Difference of conservative variables. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-  Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
-  Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
-  su2double ProjGridVel;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentLax_Flow(void);
-  
-  /*!
-   * \brief Compute the flow residual using a Lax method.
    * \param[out] val_resconv - Pointer to the convective residual.
    * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
