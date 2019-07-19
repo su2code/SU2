@@ -109,6 +109,8 @@ protected:
 
 public:
 	
+  CDriver();
+  
   /*! 
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -1581,3 +1583,17 @@ public:
 
 };
 
+
+class CDummyDriver : public CDriver {
+  
+public:
+  
+  CDummyDriver (char* confFile,
+               unsigned short val_nZone,
+               SU2_Comm MPICommunicator);
+  
+  ~CDummyDriver(){}
+  
+  void StartSolver();
+  
+};

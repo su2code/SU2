@@ -1082,6 +1082,8 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
+  
+  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
 
   
   /*!
@@ -9133,6 +9135,12 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+
+  /*!
+   * \brief GetDryRun
+   * \return 
+   */
+  bool GetDryRun();
 
 };
 
