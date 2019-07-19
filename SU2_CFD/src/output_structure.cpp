@@ -12915,7 +12915,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
     /*--- Plot the metric tensor. ---*/
 
-    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
 
       if(nDim == 2){
         Variable_Names.push_back("Aniso_Metric[0]");
@@ -13207,7 +13207,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
         /*--- Load data for the metric. ---*/
 
-        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
 
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
@@ -14122,7 +14122,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Plot the metric if performing error estimation. ---*/
 
-    if(config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+    if(config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
 
       if(nDim == 2){
         Variable_Names.push_back("Aniso_Metric[0]");
@@ -14338,7 +14338,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 
         /*--- Load data for the metric. ---*/
 
-        if (config->GetError_Estimate() && config->GetKind_SU2() == SU2_MET){
+        if (config->GetError_Estimate() || config->GetKind_SU2() == SU2_MET){
           unsigned short iMetr, nMetr;
           if(nDim == 2) nMetr = 3;
           else          nMetr = 6;
@@ -15738,7 +15738,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetError_Estimate()) {
       
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
         
@@ -15838,7 +15838,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    additional data that we will send to the other procs. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES || config->GetError_Estimate()) {
       
       for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
         

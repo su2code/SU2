@@ -186,18 +186,71 @@ def main():
   # Compute the metric
   SU2Error.ComputeMetric()
 
-  # Sort the data for AMG
+  # Sort the solution data for AMG
   SU2Error.SetAdaptationData()
 
   # Retrieve the solution data
-  nPoint_Local = SU2Driver.GetnPointDomain(0, 0, 0)
-  nVar_Par = SU2Error.GetnVarPar()
+  nPoint_Local = SU2Error.GetnPoinPar()
+  nVar_Par     = SU2Error.GetnVarPar()
 
   Sol = np.zeros((nPoint_Local, nVar_Par))
   for iPoint in range(0, nPoint_Local):
     for iVar in range(0, nVar_Par):
       Sol[iPoint,iVar] = SU2Error.GetAdaptationData(iVar, iPoint)
-    print(Sol[iPoint,:])
+
+  # Sort the connectivity data for AMG
+  SU2Error.SetConnectivityData()
+
+  # Retrieve the connectivity data
+  nEdg = SU2Error.GetnEdgPar()
+  nTri = SU2Error.GetnTriPar(options.nDim)
+  nTet = SU2Error.GetnTetPar()
+
+  Edg = np.zeros((nEdg, 3), int)
+  Tri = np.zeros((nTri, 4), int)
+  Tet = np.zeros((nTet, 5), int)
+
+  for iEdg in range(0, nEdg):
+    e1, e2 = SU2Error.GetConnectivityEdg(iEdg)
+    Edg[iEdg, 0:2] = np.array([e1, e2])
+
+  for iTri in range(0, nTri):
+    t1, t2, t3 = SU2Error.GetConnectivityTri(iTri, options.nDim)
+    Tri[iTri, 0:3] = np.array([t1, t2, t3])
+
+  for iTet in range(0, nTet):
+    t1, t2, t3, t4 = SU2Error.GetConnectivityTet(iTet)
+    Tet[iTet, 0:4] = np.array([t1, t2, t3, t4])
+
+  # Gather data to rank 0
+  if options.with_MPI == True:
+    sendSolCounts = np.array(comm.gather(len(Sol)*nVar_Par, root=0))
+    sendEdgCounts = np.array(comm.gather(len(Edg)*3,        root=0))
+    sendTriCounts = np.array(comm.gather(len(Tri)*4,        root=0))
+    sendTetCounts = np.array(comm.gather(len(Tet)*5,        root=0))
+
+    if rank == 0:
+      recvSolBuf = np.empty(sum(sendSolCounts), Sol.dtype)
+      recvEdgBuf = np.empty(sum(sendEdgCounts), Edg.dtype)
+      recvTriBuf = np.empty(sum(sendTriCounts), Tri.dtype)
+      recvTetBuf = np.empty(sum(sendTetCounts), Tet.dtype)
+
+    else:
+      recvSolBuf = None
+      recvEdgBuf = None
+      recvTriBuf = None
+      recvTetBuf = None
+    
+    comm.Gatherv(sendbuf=Sol, recvbuf=(recvSolBuf, sendSolCounts), root=0)
+    comm.Gatherv(sendbuf=Edg, recvbuf=(recvEdgBuf, sendEdgCounts), root=0)
+    comm.Gatherv(sendbuf=Tri, recvbuf=(recvTriBuf, sendTriCounts), root=0)
+    comm.Gatherv(sendbuf=Tet, recvbuf=(recvTetBuf, sendTetCounts), root=0)
+
+    if rank == 0:
+      recvSolBuf = np.array(recvSolBuf).reshape(recvSolBuf.size/nVar_Par, nVar_Par)
+      recvEdgBuf = np.array(recvEdgBuf).reshape(recvEdgBuf.size/3,        3       )
+      recvTriBuf = np.array(recvTriBuf).reshape(recvTriBuf.size/4,        4       )
+      recvTetBuf = np.array(recvTetBuf).reshape(recvTetBuf.size/5,        5       )
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()

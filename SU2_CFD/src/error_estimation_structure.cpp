@@ -1267,13 +1267,13 @@ void CErrorEstimationDriver::SetAdaptationData() {
 
   config_container[ZONE_0]->SetDiscrete_Adjoint(false);
 
-  if (rank == MASTER_NODE) cout << endl << "--------------------------- Sort Metric Data ---------------------------" << endl;
+  if (rank == MASTER_NODE) cout << endl << "---------------------------- Sort Metric Data ---------------------------" << endl;
 
-    /*--- Execute the routines for collecting the restart data. ---*/
+  /*--- Execute the routines for collecting the restart data. ---*/
 
   output->SetResult_Parallel(solver_container, geometry_container, config_container, 1);
 
-  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
 }
 
@@ -1285,10 +1285,64 @@ passivedouble CErrorEstimationDriver::GetAdaptationData(unsigned short val_iVar,
 
 }
 
+void CErrorEstimationDriver::SetConnectivityData() {
+
+  if (rank == MASTER_NODE) cout << endl << "------------------------- Sort Connectivity Data ------------------------" << endl;
+
+  /*--- Execute the routines for collecting the restart data. ---*/
+
+  output->SetConnectivity_Parallel(geometry_container, config_container, 1);
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+}
+
+vector<unsigned long> CErrorEstimationDriver::GetConnectivityEdg(unsigned long val_iEdg) {
+
+  vector<unsigned long> Edg = output->GetConnEdg(val_iEdg);
+  return Edg;
+}
+
+vector<unsigned long> CErrorEstimationDriver::GetConnectivityTri(unsigned long val_iTri, unsigned short val_nDim) {
+
+  vector<unsigned long> Tri = output->GetConnTri(val_iTri, val_nDim);
+  return Tri;
+}
+
+vector<unsigned long> CErrorEstimationDriver::GetConnectivityTet(unsigned long val_iTet) {
+
+  vector<unsigned long> Tet = output->GetConnTet(val_iTet);
+  return Tet;
+}
+
+unsigned short CErrorEstimationDriver::GetnPoinPar() {
+
+  unsigned short nPoinPar = output->GetnPoinPar();
+  return nPoinPar;
+}
+
 unsigned short CErrorEstimationDriver::GetnVarPar() {
 
   unsigned short nVarPar = output->GetnVarPar();
   return nVarPar;
+}
+
+unsigned long CErrorEstimationDriver::GetnEdgPar() {
+
+  unsigned long nEdgPar = output->GetnEdgPar();
+  return nEdgPar;
+}
+
+unsigned long CErrorEstimationDriver::GetnTriPar(unsigned short val_nDim) {
+
+  unsigned long nTriPar = output->GetnTriPar(val_nDim);
+  return nTriPar;
+}
+
+unsigned long CErrorEstimationDriver::GetnTetPar() {
+
+  unsigned long nTetPar = output->GetnTetPar();
+  return nTetPar;
 }
 
 void CErrorEstimationDriver::Postprocessing() {

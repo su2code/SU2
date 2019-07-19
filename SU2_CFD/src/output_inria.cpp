@@ -828,7 +828,93 @@ void COutput::CleanResult_Parallel( ){
 
 }
 
+void COutput::SetConnectivity_Parallel(CGeometry ****geometry,
+                                       CConfig **config,
+                                       unsigned short val_nZone) {
+
+  unsigned short iZone, iInst;
+  unsigned short nInst = 1;
+
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    
+    for (iInst = 0; iInst < nInst; iInst++){
+
+      /*--- Sort volume grid connectivity. ---*/
+
+      if (rank == MASTER_NODE) cout <<"Sorting volume grid connectivity." << endl;
+
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     , true);
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL, true);
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TETRAHEDRON  , true);
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   , true);
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
+      SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
+          
+      /*--- Sort surface grid connectivity. ---*/
+          
+      if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
+          
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
+      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
+
+    }
+
+  }
+
+}
+
+vector<unsigned long> COutput::GetConnEdg(unsigned long val_iEdg) {
+
+  vector<unsigned long> Edg = {Conn_BoundLine_Par[val_iEdg*2+0], Conn_BoundLine_Par[val_iEdg*2+1]};
+  return Edg; 
+}
+
+vector<unsigned long> COutput::GetConnTri(unsigned long val_iTri, unsigned short val_nDim) {
+
+  vector<unsigned long> Tri(3);
+  if(val_nDim == 2) {
+    Tri[0] = Conn_Tria_Par[val_iTri*3+0];
+    Tri[1] = Conn_Tria_Par[val_iTri*3+1];
+    Tri[2] = Conn_Tria_Par[val_iTri*3+2];
+  }
+  else{
+    Tri[0] = Conn_BoundTria_Par[val_iTri*3+0];
+    Tri[1] = Conn_BoundTria_Par[val_iTri*3+1];
+    Tri[2] = Conn_BoundTria_Par[val_iTri*3+2];
+  }
+  return Tri;
+}
+
+vector<unsigned long> COutput::GetConnTet(unsigned long val_iTet) {
+
+  vector<unsigned long> Tet = {Conn_Tetr_Par[val_iTet*4+0], Conn_Tetr_Par[val_iTet*4+1],
+                               Conn_Tetr_Par[val_iTet*4+2], Conn_Tetr_Par[val_iTet*4+3]};
+  return Tet; 
+}
+
+unsigned short COutput::GetnPoinPar(){
+
+  return nParallel_Poin;
+}
+
 unsigned short COutput::GetnVarPar(){
 
   return nVar_Par;
+}
+
+unsigned long COutput::GetnEdgPar() {
+
+  return nParallel_Line;
+}
+
+unsigned long COutput::GetnTriPar(unsigned short val_nDim) {
+
+  if(val_nDim == 2) return nParallel_Tria;
+  else              return nParallel_BoundTria;
+}
+
+unsigned long COutput::GetnTetPar() {
+
+  return nParallel_Tetr;
 }

@@ -539,9 +539,52 @@ public:
   void CleanResult_Parallel(void);
 
   /*!
+   * \brief Organizes the connectivity for AMG.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetConnectivity_Parallel(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
+
+  /*!
+   * \brief Get the number of points.
+   */
+  unsigned short GetnPoinPar(void);
+
+  /*!
    * \brief Get the number of variables.
    */
   unsigned short GetnVarPar(void);
+
+  /*!
+   * \brief Get the connectivity of an edg.
+   */
+  vector<unsigned long> GetConnEdg(unsigned long val_iEdg);
+
+  /*!
+   * \brief Get the connectivity of a tri.
+   */
+  vector<unsigned long> GetConnTri(unsigned long val_iTri, unsigned short val_nDim);
+
+  /*!
+   * \brief Get the connectivity of a tet.
+   */
+  vector<unsigned long> GetConnTet(unsigned long val_iTet);
+
+  /*!
+   * \brief Get the number of edges.
+   */
+  unsigned long GetnEdgPar(void);
+
+  /*!
+   * \brief Get the number of tris.
+   */
+  unsigned long GetnTriPar(unsigned short val_nDim);
+
+  /*!
+   * \brief Get the number of tets.
+   */
+  unsigned long GetnTetPar(void);
 
   /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.

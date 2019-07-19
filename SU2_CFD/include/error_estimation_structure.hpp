@@ -178,9 +178,49 @@ public:
   passivedouble GetAdaptationData(unsigned short val_iVar, unsigned long val_iPoint);
 
   /*!
+   * \brief Sort the connectivity data needed for adaptation.
+   */
+  void SetConnectivityData(void);
+
+  /*!
+   * \brief Get the connectivity of an edg.
+   */
+  vector<unsigned long> GetConnectivityEdg(unsigned long val_iEdg);
+
+  /*!
+   * \brief Get the connectivity of a tri.
+   */
+  vector<unsigned long> GetConnectivityTri(unsigned long val_iTri, unsigned short val_nDim);
+
+  /*!
+   * \brief Get the connectivity of a tet.
+   */
+  vector<unsigned long> GetConnectivityTet(unsigned long val_iTet);
+
+  /*!
+   * \brief Get the number of points.
+   */
+  unsigned short GetnPoinPar(void);
+
+  /*!
    * \brief Get the number of variables.
    */
   unsigned short GetnVarPar(void);
+
+  /*!
+   * \brief Get the number of edges.
+   */
+  unsigned long GetnEdgPar(void);
+
+  /*!
+   * \brief Get the number of tris.
+   */
+  unsigned long GetnTriPar(unsigned short val_nDim);
+
+  /*!
+   * \brief Get the number of tets.
+   */
+  unsigned long GetnTetPar(void);
 
   /*!
    * \brief Deallocation routine
