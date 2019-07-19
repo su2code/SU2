@@ -12229,7 +12229,7 @@ public:
   /*!
    * \brief Set Neumann boundary conditions
    */
-  void BC_Neumann(CGeometry *geometry, Solver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
+  void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Call the linear systems solver

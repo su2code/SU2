@@ -95,7 +95,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   unsigned short iDim;
   unsigned short bDim;
 
-  su2double Weight, Jac_X;
+  su2double Weight, Jac_X, GradNiXGradNj;
 
   su2double val_HiHj;
   su2double *val_DHiHj;
@@ -149,9 +149,21 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
 
         for (iVar = 0; iVar < nDim; iVar++) {
           for (jVar = 0; jVar < nDim; jVar++) {
-            KAux_ab[iVar][jVar] = Weight * Jac_X * GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][jDim];
+            GradNiXGradNj += GradNi_Ref_Mat[iNode][iVar]* GradNi_Ref_Mat[jNode][jVar];
           }
         }
+
+        for (iVar = 0; iVar < nDim; iVar++) {
+          for (jVar = 0; jVar < nDim; jVar++) {
+            if (iVar == jVar) {
+              KAux_ab[iVar][jVar] = Weight * Jac_X * GradNiXGradNj;
+            } else {
+              KAux_ab[iVar][jVar] = 0;
+            }
+          }
+        }
+
+        GradNiXGradNj=0;
 
         element->Add_DHiDHj(KAux_ab,iNode, jNode);
         /*--- Symmetric terms --*/

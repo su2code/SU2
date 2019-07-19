@@ -247,7 +247,7 @@ void CElement::AllocateStructures(const bool body_forces, const bool gradient_sm
 
   /*--- Derived classes should call this method after setting nGauss and nNodes. ---*/
 
-  unsigned short iNode, jNode, iGauss, nDimSq = nDim*nDim;
+  unsigned short iNode, jNode, iGauss, nDimSq = nDim*nDim, iDim;
 
   GaussPoint = new CGaussVariable*[nGaussPoints];
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -413,12 +413,12 @@ void CElement::Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned shor
 
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      DHiHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
+      DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
     }
   }
 }
 
-void CElement::Add_DHiHj(su2double **val, unsigned short nodeA, unsigned short nodeB) {
+void CElement::Add_DHiHj(su2double *val, unsigned short nodeA, unsigned short nodeB) {
 
   unsigned short iDim;
 
@@ -429,7 +429,7 @@ void CElement::Add_DHiHj(su2double **val, unsigned short nodeA, unsigned short n
 
 void CElement::clearElement(const bool gradient_smoothing) {
   
-  unsigned short iNode, jNode, iDim, nDimSq;
+  unsigned short iNode, jNode, iDim, jDim, nDimSq;
   
   nDimSq = nDim*nDim;
   
@@ -454,7 +454,7 @@ void CElement::clearElement(const bool gradient_smoothing) {
         for(iDim = 0; iDim < nDim; iDim++) {
           if (DHiHj != NULL) DHiHj[iNode][jNode][iDim] = 0.0;
           for(jDim = 0; jDim < nDim; jDim++) {
-            if (DHiDHj != NULL) DHiHj[iNode][jNode][iDim][jDim] = 0.0;
+            if (DHiDHj != NULL) DHiDHj[iNode][jNode][iDim][jDim] = 0.0;
           }
         }
       }

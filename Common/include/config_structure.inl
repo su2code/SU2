@@ -1464,7 +1464,7 @@ inline unsigned short CConfig::GetnMarker_DV(void) { return nMarker_DV; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
-inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_SobolevBC; }
+inline unsigned short CConfig::GetnMarker_SobolevBC(void) { return nMarker_SobolevBC; }
 
 inline unsigned short CConfig::GetnMarker_PyCustom(void) { return nMarker_PyCustom; }
 
