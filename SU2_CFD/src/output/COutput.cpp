@@ -563,7 +563,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   file_writer->Write_Data(config->GetFilename(FileName, ""), data_sorter);
   
   if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
-    cout << "Wrote " << file_writer->Get_Filesize()/1.0e6 << " MB to disk in ";
+    cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";
     cout << file_writer->Get_UsedTime() << " s. (" << file_writer->Get_Bandwidth() << " MB/s)." << endl;
   }
   
@@ -1308,23 +1308,23 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, TYPE_AUTO_RESIDUAL);
+      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, "", TYPE_AUTO_RESIDUAL);
       Average[currentField.OutputGroup] = true;
     }
     if (currentField.FieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("TAVG_"   + HistoryOutput_List[iField], "tavg["  + currentField.FieldName + "]", currentField.ScreenFormat, "TAVG_"   + currentField.OutputGroup);
-      AddHistoryOutput("D_"      + HistoryOutput_List[iField], "d["     + currentField.FieldName + "]", currentField.ScreenFormat, "D_"      + currentField.OutputGroup);  
-      AddHistoryOutput("D_TAVG_" + HistoryOutput_List[iField], "dtavg[" + currentField.FieldName + "]", currentField.ScreenFormat, "D_TAVG_" + currentField.OutputGroup);  
+      AddHistoryOutput("TAVG_"   + HistoryOutput_List[iField], "tavg["  + currentField.FieldName + "]", currentField.ScreenFormat, "TAVG_"   + currentField.OutputGroup, "");
+      AddHistoryOutput("D_"      + HistoryOutput_List[iField], "d["     + currentField.FieldName + "]", currentField.ScreenFormat, "D_"      + currentField.OutputGroup, "");  
+      AddHistoryOutput("D_TAVG_" + HistoryOutput_List[iField], "dtavg[" + currentField.FieldName + "]", currentField.ScreenFormat, "D_TAVG_" + currentField.OutputGroup, "");  
     }
   }
   
   if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT){
-    AddHistoryOutput("CAUCHY", "C["  + HistoryOutput_Map[Conv_Field].FieldName + "]", FORMAT_SCIENTIFIC, "RESIDUAL");
+    AddHistoryOutput("CAUCHY", "C["  + HistoryOutput_Map[Conv_Field].FieldName + "]", FORMAT_SCIENTIFIC, "RESIDUAL", "");
   }
   
    map<string, bool>::iterator it = Average.begin();
    for (it = Average.begin(); it != Average.end(); it++){
-     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES", TYPE_AUTO_RESIDUAL);
+     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES", "", TYPE_AUTO_RESIDUAL);
    }
   
 }
@@ -1448,21 +1448,21 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER", "Time iteration index"); 
   /// DESCRIPTION: The outer iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER", "Outer iteration index"); 
   /// DESCRIPTION: The inner iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER", "Inner iteration index"); 
   /// END_GROUP
   
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
   /// Description: The current time
-  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_FIXED, "TIME_DOMAIN");
+  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_FIXED, "TIME_DOMAIN", "Current physical time (s)");
   /// Description: The current time step
-  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_FIXED, "TIME_DOMAIN");
+  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_FIXED, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
+  AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
   
 }
 
@@ -1488,3 +1488,48 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   
 }
 
+
+void COutput::PrintHistoryFields(){ 
+  
+  if (rank == MASTER_NODE){
+    
+    PrintingToolbox::CTablePrinter HistoryFieldTable(&std::cout);
+    
+    unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
+    
+    for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+      
+      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField]];
+      
+      if (Field.Description != ""){
+        if (HistoryOutput_List[iField].size() > NameSize){
+          NameSize = HistoryOutput_List[iField].size();
+        }
+        if (Field.OutputGroup.size() > GroupSize){
+          GroupSize = Field.OutputGroup.size();
+        }
+        if (Field.Description.size() > DescrSize){
+          DescrSize = Field.Description.size();
+        }
+      }
+    }
+    
+    HistoryFieldTable.AddColumn("Name", NameSize);
+    HistoryFieldTable.AddColumn("Group Name", GroupSize);
+    HistoryFieldTable.AddColumn("Description", DescrSize);
+    HistoryFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    
+    HistoryFieldTable.PrintHeader();
+    
+    for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+      
+      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField]];
+      
+      if (Field.Description != "")
+        HistoryFieldTable << HistoryOutput_List[iField] << Field.OutputGroup << Field.Description;
+      
+    }
+    
+    HistoryFieldTable.PrintFooter();
+  }
+}

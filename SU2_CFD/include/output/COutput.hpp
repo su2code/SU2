@@ -120,9 +120,10 @@ protected:
     unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
     string              OutputGroup;  /*!< \brief The group this field belongs to. */
     unsigned short      FieldType;
+    string              Description;
     HistoryOutputField() {}           /*!< \brief Default constructor. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype){}
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype, string description):
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype), Description(description){}
   };
   
   /** \brief Structure to store information for a volume output field.
@@ -376,6 +377,8 @@ public:
   bool GetConvergence() {return Convergence;}
 
   void SetConvergence(bool conv) {Convergence = conv;}
+  
+  void PrintHistoryFields();
 
 protected:
   
@@ -423,10 +426,11 @@ protected:
    * \param[in] field_name - Header that is printed on screen and in the history file.
    * \param[in] format - The screen printing format (::ScreenOutputFormat).
    * \param[in] groupname - The name of the group this field belongs to.
+   * \param[in] description - A description of the field.
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, unsigned short field_type = TYPE_DEFAULT ){
-    HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type);
+  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, string description, unsigned short field_type = TYPE_DEFAULT ){
+    HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     HistoryOutput_List.push_back(name);
   }
   
@@ -456,7 +460,7 @@ protected:
     if (marker_names.size() != 0){
       HistoryOutputPerSurface_List.push_back(name);
       for (unsigned short i = 0; i < marker_names.size(); i++){
-        HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type));
+        HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
       }
     }
   }
