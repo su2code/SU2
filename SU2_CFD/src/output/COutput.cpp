@@ -1529,8 +1529,11 @@ void COutput::PrintHistoryFields(){
       }
     }
     
+    cout << "Output fields for the current configuration: " << endl;
+    
     HistoryFieldTable.AddColumn("Name", NameSize);
     HistoryFieldTable.AddColumn("Group Name", GroupSize);
+    HistoryFieldTable.AddColumn("Type",5);
     HistoryFieldTable.AddColumn("Description", DescrSize);
     HistoryFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
     
@@ -1540,11 +1543,68 @@ void COutput::PrintHistoryFields(){
       
       HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField]];
       
-      if (Field.Description != "")
-        HistoryFieldTable << HistoryOutput_List[iField] << Field.OutputGroup << Field.Description;
-      
+      if (Field.FieldType == TYPE_DEFAULT || Field.FieldType == TYPE_COEFFICIENT || Field.FieldType == TYPE_RESIDUAL){
+        string type;
+        switch (Field.FieldType) {
+          case TYPE_COEFFICIENT:
+            type = "C";
+            break;
+          case TYPE_RESIDUAL:
+            type = "R";
+            break;
+          default:
+            type = "D";
+            break;
+        }
+        
+        if (Field.Description != "")
+          HistoryFieldTable << HistoryOutput_List[iField] << Field.OutputGroup << type << Field.Description;
+        
+      }
     }
     
     HistoryFieldTable.PrintFooter();
+    
+    cout << "Type legend: Default (D), Residual (R), Coefficient (C)" << endl;
+    
+    cout << "Generated output fields (only first field of every group is shown):" << endl;
+    
+    PrintingToolbox::CTablePrinter ModifierTable(&std::cout);
+    
+    ModifierTable.AddColumn("Name", NameSize);
+    ModifierTable.AddColumn("Group Name", GroupSize);
+    ModifierTable.AddColumn("Type",5);
+    ModifierTable.AddColumn("Description", DescrSize);
+    ModifierTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    ModifierTable.PrintHeader();
+    
+    std::map<string, bool> GroupVisited;
+    
+    for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+      
+      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField]];
+      
+      if ((Field.FieldType == TYPE_AUTO_COEFFICIENT || Field.FieldType == TYPE_AUTO_RESIDUAL) && (GroupVisited.count(Field.OutputGroup) == 0)){
+        string type;
+        switch (Field.FieldType) {
+          case TYPE_AUTO_COEFFICIENT:
+            type = "AC";
+            break;
+          case TYPE_AUTO_RESIDUAL:
+            type = "AR";
+            break;
+          default:
+            type = "AD";
+            break;
+        }
+        
+        if (Field.Description != "")
+          ModifierTable << HistoryOutput_List[iField] << Field.OutputGroup << type << Field.Description;
+        
+        GroupVisited[Field.OutputGroup] = true;
+      }
+    }   
+    ModifierTable.PrintFooter();
+
   }
 }
