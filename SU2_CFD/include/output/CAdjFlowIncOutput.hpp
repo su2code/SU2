@@ -50,7 +50,7 @@ private:
   
   bool cont_adj;
 
-  unsigned short nDim, turb_model;
+  unsigned short turb_model;
   bool heat, weakly_coupled_heat;
   
 public:
@@ -60,7 +60,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjFlowIncOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

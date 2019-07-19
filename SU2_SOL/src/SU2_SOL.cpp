@@ -288,8 +288,8 @@ int main(int argc, char *argv[]) {
         config_container[iZone]->SetExtIter(TimeIter);
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
         
-        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0], solver_container[iZone][INST_0], iZone);
-        output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
+        output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
         
       }
 
@@ -347,8 +347,8 @@ int main(int argc, char *argv[]) {
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
         solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0], solver_container[iZone][INST_0], iZone);
-        output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
+        output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
       
       }
       for (iZone = 0; iZone < nZone; iZone++){
@@ -434,8 +434,8 @@ int main(int argc, char *argv[]) {
                                iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
           solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
-          output[ZONE_0] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], ZONE_0);
-          output[ZONE_0]->PreprocessVolumeOutput(config_container[ZONE_0],geometry_container[ZONE_0][INST_0]);
+          output[ZONE_0] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0]->GetnDim(), solver_container[ZONE_0][INST_0]);
+          output[ZONE_0]->PreprocessVolumeOutput(config_container[ZONE_0]);
          
           SolutionInstantiatedFlow = true;
         }
@@ -450,8 +450,8 @@ int main(int argc, char *argv[]) {
                                iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_1]->GetnExtIter()))) {
           solver_container[ZONE_1][INST_0] = new CBaselineSolver(geometry_container[ZONE_1][INST_0], config_container[ZONE_1]);
-          output[ZONE_1] = new CBaselineOutput(config_container[ZONE_1], geometry_container[ZONE_1][INST_0], solver_container[ZONE_1][INST_0], ZONE_1);
-          output[ZONE_1]->PreprocessVolumeOutput(config_container[ZONE_1],geometry_container[ZONE_1][INST_0]);
+          output[ZONE_1] = new CBaselineOutput(config_container[ZONE_1], geometry_container[ZONE_1][INST_0]->GetnDim(), solver_container[ZONE_1][INST_0]);
+          output[ZONE_1]->PreprocessVolumeOutput(config_container[ZONE_1]);
           SolutionInstantiatedFEM = true;
         }
           solver_container[ZONE_1][INST_0]->LoadRestart_FSI(geometry_container[ZONE_1][INST_0], config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
@@ -606,8 +606,8 @@ int main(int argc, char *argv[]) {
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-                  output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0], solver_container[iZone][INST_0], iZone);
-                  output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+                  output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
+                  output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
                   
                   SolutionInstantiated[iZone] = true;
                 }
@@ -652,8 +652,8 @@ int main(int argc, char *argv[]) {
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
           solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst], iZone);          
-          output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][iInst]);
+          output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst]->GetnDim(), solver_container[iZone][iInst]);          
+          output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
 
           /*--- Print progress in solution writing to the screen. ---*/
           if (rank == MASTER_NODE) {
@@ -725,8 +725,8 @@ int main(int argc, char *argv[]) {
                                        iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                        iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-                  output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0], solver_container[iZone][INST_0], iZone);
-                  output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+                  output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
+                  output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
                   
                   SolutionInstantiated = true;
                 }
@@ -768,8 +768,8 @@ int main(int argc, char *argv[]) {
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
         solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0], solver_container[iZone][INST_0], iZone);
-        output[iZone]->PreprocessVolumeOutput(config_container[iZone],geometry_container[iZone][INST_0]);
+        output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
+        output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
         
       }
       

@@ -40,38 +40,11 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
-
-  nDim = geometry->GetnDim();  
-  
-  nVar = solver[FLOW_SOL]->GetnVar();
-  
+CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim) {
+    
   turb_model = config->GetKind_Turb_Model();
   
   grid_movement = config->GetGrid_Movement(); 
-  
-  su2double Gas_Constant, Mach2Vel, Mach_Motion;
-  unsigned short iDim;
-  su2double Gamma = config->GetGamma();
-      
-  /*--- Set the non-dimensionalization for coefficients. ---*/
-  
-  RefArea = config->GetRefArea();
-  
-  if (grid_movement) {
-    Gas_Constant = config->GetGas_ConstantND();
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-  }
-  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
@@ -225,7 +198,9 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
 void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
   
   unsigned short iDim;
-  
+
+  unsigned short nVar = solver[FLOW_SOL]->GetnVar();
+    
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
 

@@ -41,9 +41,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CBaselineOutput::CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone) : COutput(config) {
-
-  nDim = geometry->GetnDim();
+CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim) {
   
   unsigned short iField = 0;
 

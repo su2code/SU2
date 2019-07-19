@@ -64,7 +64,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+  CFlowCompFEMOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

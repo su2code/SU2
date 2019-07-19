@@ -74,6 +74,12 @@ public:
   unsigned long GetnPoints(){return nParallel_Poin;}
   
   /*!
+   * \brief Get the number of points to sort.
+   * \return local number of points.
+   */
+  unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
+  
+  /*!
    * \brief Get the global number of points (accumulated from all ranks)
    * \return Global number of points.
    */

@@ -38,7 +38,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config) : COutput (config){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim) : COutput (config, nDim){
   
 }
 

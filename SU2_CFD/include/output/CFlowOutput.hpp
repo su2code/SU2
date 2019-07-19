@@ -48,7 +48,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config);
+  CFlowOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

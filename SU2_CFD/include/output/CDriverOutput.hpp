@@ -73,7 +73,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDriverOutput(CConfig *driver_config, CConfig** config);
+  CDriverOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

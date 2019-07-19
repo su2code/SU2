@@ -40,14 +40,12 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
   
-  nDim = geometry->GetnDim();
-
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
