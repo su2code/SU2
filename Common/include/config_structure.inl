@@ -2047,6 +2047,8 @@ inline unsigned short* CConfig::GetDiff_Inputs(void) { return Diff_Inputs; }
 
 inline string* CConfig::GetDiff_Inputs_Markers(void) { return Diff_Inputs_Markers; }
 
+inline string* CConfig::GetDiff_Outputs_Markers(void) { return Diff_Outputs_Markers; }
+
 inline unsigned short CConfig::GetnDiff_Outputs(void) { return nDiff_Outputs; }
 
 inline unsigned short* CConfig::GetDiff_Outputs(void) { return Diff_Outputs; }

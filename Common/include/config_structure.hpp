@@ -1105,13 +1105,12 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
-  unsigned short nDiff_Inputs;  /*!< \brief Number of inputs that are differentiated with respect to
- */
+  unsigned short nDiff_Inputs;  /*!< \brief Number of inputs that are differentiated with respect to */
   unsigned short *Diff_Inputs;          /*!< \brief List of enums defining which inputs should be differentiated with respect to */
   string *Diff_Inputs_Markers;          /*!< \brief List of markers related to the respectively indexed diff input, if required */
-
   unsigned short nDiff_Outputs;  /*!< \brief Number of outputs that are differentiated */
   unsigned short *Diff_Outputs;          /*!< \brief List of enums defining which outputs should be differentiated */
+  string *Diff_Outputs_Markers;          /*!< \brief List of markers related to the respectively indexed diff input, if required */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9176,6 +9175,12 @@ public:
    * \return List of outputs that are differentiated
    */
   unsigned short* GetDiff_Outputs(void);
+
+  /*!
+   * \brief Get the list of markers related to diff outputs, if required
+   * \return List of markers related to diff outputs, if required
+   */
+  string* GetDiff_Outputs_Markers(void);
 
   /*!
    * \brief Get the number of outputs that are differentiated

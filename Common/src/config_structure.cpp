@@ -382,6 +382,7 @@ void CConfig::SetPointersNull(void) {
   Diff_Inputs = NULL;
   Diff_Inputs_Markers = NULL;
   Diff_Outputs = NULL;
+  Diff_Outputs_Markers = NULL;
 
   /*--- Marker Pointers ---*/
 
@@ -2379,7 +2380,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addEnumMarkerListOption("DIFF_INPUTS", nDiff_Inputs, Diff_Inputs, Diff_Inputs_Markers, DiffInputs_Var_Map);
 
   /* DESCRIPTION: List of variables to be differentiated */
-  addEnumListOption("DIFF_OUTPUTS", nDiff_Outputs, Diff_Outputs, DiffOutputs_Var_Map);
+  addEnumMarkerListOption("DIFF_OUTPUTS", nDiff_Outputs, Diff_Outputs, Diff_Outputs_Markers, DiffOutputs_Var_Map);
 
   /* END_CONFIG_OPTIONS */
 
@@ -7385,6 +7386,7 @@ CConfig::~CConfig(void) {
   if (Diff_Inputs != NULL) delete[] Diff_Inputs;
   if (Diff_Inputs_Markers != NULL) delete[] Diff_Inputs_Markers;
   if (Diff_Outputs != NULL) delete[] Diff_Outputs;
+  if (Diff_Outputs_Markers != NULL) delete[] Diff_Outputs_Markers;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
