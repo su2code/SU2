@@ -3174,13 +3174,10 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
       }
     }
   }
-  
-
 
   /*--- Run the surface deformation with DV_Value = 0.0 (no deformation at all) ---*/
 
   SetSurface_Deformation(geometry, config);
-
 }
 
 void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
