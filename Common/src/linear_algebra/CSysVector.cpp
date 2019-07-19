@@ -52,7 +52,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType 
   nVar = 1;
 
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
-  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
+  if ( (nElm < 0) || (nElm >= UINT_MAX) ) {
     char buf[100];
     SPRINTF(buf, "Invalid input: size = %lu", size );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -78,7 +78,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
   nVar = numVar;
 
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
-  if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
+  if ( (nElm < 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -121,7 +121,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & size, const ScalarType*
   nVar = 1;
 
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
-  if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
+  if ( (nElm < 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "Invalid input: size = %lu", size );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -147,7 +147,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
   nVar = numVar;
 
   /*--- check for invalid input, then allocate memory and initialize values ---*/
-  if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
+  if ( (nElm < 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
@@ -182,7 +182,7 @@ void CSysVector<ScalarType>::Initialize(const unsigned long & numBlk, const unsi
   nVar = numVar;
 
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
-  if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
+  if ( (nElm < 0) || (nElm >= ULONG_MAX) ) {
     char buf[100];
     SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);

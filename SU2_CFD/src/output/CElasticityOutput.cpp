@@ -152,7 +152,7 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER",  "Number of iterations of the linear solver.");
   
   // Residuals
 
