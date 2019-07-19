@@ -8201,7 +8201,7 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         // TODO Fixed CL and CM Modes (see Evaluate Obj Func below)
         break;
       case DO_PRESS:
-        nVec = nPoint;
+        nVec = nPointDomain;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
         for (iVec = 0; iVec < nVec; iVec++) {
