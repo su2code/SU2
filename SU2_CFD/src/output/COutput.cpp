@@ -1308,25 +1308,40 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
     HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, "", TYPE_AUTO_RESIDUAL);
+      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup, "Relative residual.", TYPE_AUTO_RESIDUAL);
       Average[currentField.OutputGroup] = true;
     }
+  }
+  
+  map<string, bool>::iterator it = Average.begin();
+  for (it = Average.begin(); it != Average.end(); it++){
+    AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_" + it->first , "Average residual over all solution variables.", TYPE_AUTO_RESIDUAL);
+  }  
+  
+  for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+    HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
     if (currentField.FieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("TAVG_"   + HistoryOutput_List[iField], "tavg["  + currentField.FieldName + "]", currentField.ScreenFormat, "TAVG_"   + currentField.OutputGroup, "");
-      AddHistoryOutput("D_"      + HistoryOutput_List[iField], "d["     + currentField.FieldName + "]", currentField.ScreenFormat, "D_"      + currentField.OutputGroup, "");  
-      AddHistoryOutput("D_TAVG_" + HistoryOutput_List[iField], "dtavg[" + currentField.FieldName + "]", currentField.ScreenFormat, "D_TAVG_" + currentField.OutputGroup, "");  
+      AddHistoryOutput("TAVG_"   + HistoryOutput_List[iField], "tavg["  + currentField.FieldName + "]", currentField.ScreenFormat, "TAVG_"   + currentField.OutputGroup, "Time averaged values.", TYPE_AUTO_COEFFICIENT);
+    }
+  }
+  for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+    HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
+    if (currentField.FieldType == TYPE_COEFFICIENT){
+      AddHistoryOutput("D_"      + HistoryOutput_List[iField], "d["     + currentField.FieldName + "]", currentField.ScreenFormat, "D_"      + currentField.OutputGroup, "Derivative value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
+    }
+  }
+  
+  for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+    HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
+    if (currentField.FieldType == TYPE_COEFFICIENT){
+      AddHistoryOutput("D_TAVG_" + HistoryOutput_List[iField], "dtavg[" + currentField.FieldName + "]", currentField.ScreenFormat, "D_TAVG_" + currentField.OutputGroup, "Derivative of the time averaged value (DIRECT_DIFF=YES)", TYPE_AUTO_COEFFICIENT);  
     }
   }
   
   if (HistoryOutput_Map[Conv_Field].FieldType == TYPE_COEFFICIENT){
-    AddHistoryOutput("CAUCHY", "C["  + HistoryOutput_Map[Conv_Field].FieldName + "]", FORMAT_SCIENTIFIC, "RESIDUAL", "");
+    AddHistoryOutput("CAUCHY", "C["  + HistoryOutput_Map[Conv_Field].FieldName + "]", FORMAT_SCIENTIFIC, "CAUCHY","Cauchy residual value of field set with CONV_FIELD." ,TYPE_AUTO_COEFFICIENT);
   }
-  
-   map<string, bool>::iterator it = Average.begin();
-   for (it = Average.begin(); it != Average.end(); it++){
-     AddHistoryOutput("AVG_" + it->first, "avg[" + AverageGroupName[it->first] + "]", FORMAT_FIXED, "AVG_RES", "", TYPE_AUTO_RESIDUAL);
-   }
-  
+
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
