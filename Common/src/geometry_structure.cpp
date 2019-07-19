@@ -19988,6 +19988,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config, unsigned short nDim){
   nPointNode = 0;
   nElem      = 0;
   nMarker    = 0;
+  nZone = config->GetnZone();
   
   nElem_Bound         = NULL;
   Tag_to_Marker       = NULL;
