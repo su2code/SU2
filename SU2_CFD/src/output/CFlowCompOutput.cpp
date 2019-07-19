@@ -231,7 +231,15 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Nearfield obj. function      
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", TYPE_COEFFICIENT);
   /// END_GROUP
-  /// 
+
+  ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
+  /// DESCRIPTION: Total heatflux
+  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Maximal heatflux  
+  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    FORMAT_SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Temperature
+  AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
+  /// END_GROUP
   
   /*--- Add analyze surface history fields --- */
   
@@ -582,6 +590,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     default: break;
     }
   }
+  
+  SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
+  SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
  
