@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - develop
+        - meson_build
 
 python:
     - 3.6
