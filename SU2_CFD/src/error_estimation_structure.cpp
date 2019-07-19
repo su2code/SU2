@@ -1345,6 +1345,18 @@ unsigned long CErrorEstimationDriver::GetnTetPar() {
   return nTetPar;
 }
 
+unsigned short CErrorEstimationDriver::GetnMarker_All() {
+
+  unsigned short nMarker_All = config_container[ZONE_0]->GetnMarker_All();
+  return nMarker_All;
+}
+
+string CErrorEstimationDriver::GetMarker_All_TagBound(unsigned short val_iMarker) {
+
+  string Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(val_iMarker);
+  return Marker_Tag;
+}
+
 void CErrorEstimationDriver::Postprocessing() {
 
   if (rank == MASTER_NODE)

@@ -223,6 +223,16 @@ public:
   unsigned long GetnTetPar(void);
 
   /*!
+   * \brief Get the number of markers.
+   */
+  unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the marker tag.
+   */
+  string GetMarker_All_TagBound(unsigned short val_iMarker);
+
+  /*!
    * \brief Deallocation routine
    */
   void Postprocessing(void);

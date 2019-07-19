@@ -45,6 +45,8 @@ from optparse import OptionParser	# use a parser for configuration
 import pysu2            # imports the SU2 wrapped module
 import pysu2ad          # imports the SU2 adjoint-wrapped module
 import numpy as np
+import pyamg
+from SU2 import amginria as su2amg
 from math import *
 
 # -------------------------------------------------------------------
@@ -251,6 +253,53 @@ def main():
       recvEdgBuf = np.array(recvEdgBuf).reshape(recvEdgBuf.size/3,        3       )
       recvTriBuf = np.array(recvTriBuf).reshape(recvTriBuf.size/4,        4       )
       recvTetBuf = np.array(recvTetBuf).reshape(recvTetBuf.size/5,        5       )
+
+      # Transfer all data structures to mesh dict for pyAMG
+      print("Transferring mesh and solution data to pyAMG.")
+      mesh = dict()
+
+      mesh['dimension']  = options.nDim
+      mesh['Edges']      = recvEdgBuf
+      mesh['Triangles']  = recvTriBuf
+      mesh['Tetrahedra'] = recvTetBuf
+      mesh['Corners']    = []
+
+      mesh['solution']   = recvSolBuf[:,options.nDim:]
+
+      if options.nDim == 2:
+        mesh['xy']       = recvSolBuf[:,0:2]
+        mesh['metric']   = recvSolBuf[:,-3:]
+      else:
+        mesh['xyz']      = recvSolBuf[:,0:3]
+        mesh['metric']   = recvSolBuf[:,-6:]
+
+      # Get markers
+      nMarker_All = SU2Error.GetnMarker_All()
+      mesh['markers'] = np.empty(nMarker_All, 'string')
+      for iMarker in range(nMarker_All):
+        mesh['markers'][iMarker] = SU2Error.GetMarker_All_TagBound(iMarker)
+
+      # Remesh options
+      remesh_options                = {}
+      remesh_options['Lp']          = 1
+      remesh_options['gradation']   = 1.8
+      remesh_options['hmax']        = 10.0
+      remesh_options['hmin']        = 1.0e-8
+      remesh_options['target']      = 2500
+      remesh_options['logfile']     = "amg.log"
+
+      # Run pyAMG
+      print("Running pyAMG.")
+      try:
+        mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
+      except:
+          sys.stderr("## ERROR : pyamg failed.\n")
+          raise
+
+      current_mesh = "mesh_new.meshb"
+      current_solution = "mesh_new.solb" 
+
+      su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
