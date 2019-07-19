@@ -6938,6 +6938,7 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config, unsigned short nDim): CMeshF
   nPointNode = 0;
   nElem      = 0;
   nMarker    = 0;
+  nZone = config->GetnZone();
   
   nVolElemOwned = 0;
   nVolElemTot = 0;
