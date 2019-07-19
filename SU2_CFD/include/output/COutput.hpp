@@ -193,7 +193,7 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *config);
+  COutput(CConfig *config, unsigned short nDim);
   
   /*! 
    * \brief Destructor of the class. 
@@ -205,7 +205,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void PreprocessVolumeOutput(CConfig *config, CGeometry *geometry);   
+  void PreprocessVolumeOutput(CConfig *config);   
   
   /*!
    * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.

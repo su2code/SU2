@@ -61,7 +61,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CElasticityOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

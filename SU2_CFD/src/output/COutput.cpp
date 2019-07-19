@@ -53,8 +53,9 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-COutput::COutput(CConfig *config) {
+COutput::COutput(CConfig *config, unsigned short nDim) {
   
+  this->nDim = nDim;
   
   if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) 
      || config->GetBoolTurbomachinery() || config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
@@ -342,13 +343,6 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
 void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_container){
   
-  /*--- Collect that data defined in the subclasses from the different processors ---*/
-  
-  if (rank == MASTER_NODE)
-    cout << endl << "Loading solution output data locally on each rank." << endl;
-  
-  CollectVolumeData(config, geometry, solver_container);
- 
   /*---- Construct a data sorter object to partition and distribute
    *  the local data into linear chunks across the processors ---*/
   
@@ -360,7 +354,19 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
     
     data_sorter = new CFVMDataSorter(config, geometry, GlobalField_Counter, Local_Data);
     
-  }
+  }  
+
+  /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
+   * before writing it to file ---*/
+   
+  Local_Data.resize(data_sorter->GetnLocalPointSort(), std::vector<su2double>(GlobalField_Counter, 0.0));
+  
+  /*--- Collect that data defined in the subclasses from the different processors ---*/
+  
+  if (rank == MASTER_NODE)
+    cout << endl << "Loading solution output data locally on each rank." << endl;
+  
+  CollectVolumeData(config, geometry, solver_container);
   
   /*--- Sort the data, needed for volume and surface output ---*/
   
@@ -1033,7 +1039,7 @@ void COutput::CheckHistoryOutput(){
   }
 }
 
-void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
+void COutput::PreprocessVolumeOutput(CConfig *config){
 
 //  /*--- Make sure that coordinates are always in the volume output --- */
   
@@ -1112,38 +1118,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     }
     cout << endl;
   }
-  
-  unsigned long nPoint = 0;
-  
-  if (fem_output){
-    
-    /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-    
-    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-    
-    unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-    
-    CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-    
-    /*--- Access the solution by looping over the owned volume elements. ---*/
-    
-    for(unsigned long l=0; l<nVolElemOwned; ++l) {
-      
-      for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {        
-       
-        nPoint++;
-        
-      }
-    }
-  } else {
-    nPoint = geometry->GetnPoint();
-  }
-  
-  /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
-   * before writing it to file ---*/
-   
-  Local_Data.resize(nPoint, std::vector<su2double>(GlobalField_Counter, 0.0));
   
 }
 

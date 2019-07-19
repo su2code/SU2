@@ -39,9 +39,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-
-  nDim = geometry->GetnDim();
+CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
 
   multizone = config->GetMultizone_Problem();
 

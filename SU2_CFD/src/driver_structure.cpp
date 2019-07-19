@@ -127,6 +127,9 @@ CDriver::CDriver(char* confFile,
    and it is determined whether a problem is single physics or multiphysics. . ---*/
 
   Input_Preprocessing(MPICommunicator);
+  
+  if (rank == MASTER_NODE) cout << endl << "-------------------------- Output Preprocessing ---------------------------" << endl;
+  Output_Preprocessing();  
 
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
    based data structure is constructed, i.e. node and cell neighbors are
@@ -502,9 +505,6 @@ CDriver::CDriver(char* confFile,
 
   if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
   PythonInterface_Preprocessing();
-
-  if (rank == MASTER_NODE) cout << endl << "-------------------------- Output Preprocessing ---------------------------" << endl;
-  Output_Preprocessing();
 
 //  output = new COutput(config_container[ZONE_0]);
 
@@ -3734,21 +3734,21 @@ void CDriver::Output_Preprocessing(){
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE)
-        output[iZone] = new CFlowCompOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CFlowCompOutput(config_container[iZone], nDim);
       else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE)
-        output[iZone] = new CFlowIncOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CFlowIncOutput(config_container[iZone], nDim);
       break;
 
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
         cout << ": heat output structure." << endl;
-      output[iZone] = new CHeatOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CHeatOutput(config_container[iZone], nDim);
       break;
 
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      output[iZone] = new CElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CElasticityOutput(config_container[iZone], nDim);
       break;
       
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -3756,45 +3756,45 @@ void CDriver::Output_Preprocessing(){
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE){      
-        output[iZone] = new CAdjFlowCompOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CAdjFlowCompOutput(config_container[iZone], nDim);
       } else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE){
-        output[iZone] = new CAdjFlowIncOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CAdjFlowIncOutput(config_container[iZone], nDim);
       }
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
-      output[iZone] = new CAdjElasticityOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CAdjElasticityOutput(config_container[iZone], nDim);
       break;
       
     case DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint heat output structure." << endl;
-      output[iZone] = new CAdjHeatOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CAdjHeatOutput(config_container[iZone], nDim);
       break;
       
     case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      output[iZone] = new CFlowCompFEMOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+      output[iZone] = new CFlowCompFEMOutput(config_container[iZone], nDim);
       break;
       
     default:
       if (rank == MASTER_NODE)
         cout << ": default output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      output[iZone] = new COutput(config_container[iZone], nDim);
       break;
     }
     
     output[iZone]->PreprocessHistoryOutput(config_container[iZone]);
     
-    output[iZone]->PreprocessVolumeOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0]);
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
 
   }
 
   if (driver_config->GetMultizone_Problem()){
-    driver_output = new CDriverOutput(driver_config, config_container);
+    driver_output = new CDriverOutput(driver_config, config_container, nDim);
     driver_output->PreprocessMultizoneHistoryOutput(output, config_container);
   }
   

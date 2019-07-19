@@ -40,10 +40,8 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-  
-  nDim = geometry->GetnDim();
- 
+CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+   
   turb_model = config->GetKind_Turb_Model();
   
   cont_adj = config->GetContinuous_Adjoint();
