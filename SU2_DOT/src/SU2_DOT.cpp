@@ -692,7 +692,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       }
       
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
     localGradient = my_Gradient;
 #endif
@@ -822,7 +822,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
       localGradient = my_Gradient;
 #endif

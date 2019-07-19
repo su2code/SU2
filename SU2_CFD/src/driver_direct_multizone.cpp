@@ -239,7 +239,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Run a predictor step ---*/
@@ -390,8 +390,8 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
+  MPI_Comm_size(SU2_MPI::GetComm(), &size);
 #endif
 
   unsigned short iRes, iVar;

@@ -889,7 +889,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   }
   
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   
   /*--- Each processor opens the file. ---*/
@@ -921,7 +921,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
     }
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
   
@@ -1008,7 +1008,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
     }
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
   
@@ -1121,7 +1121,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   if (err) cout << "Error opening Tecplot file '" << filename << "'" << endl;
 
 #ifdef HAVE_MPI
-  err = tecMPIInitialize(file_handle, MPI_COMM_WORLD, MASTER_NODE);
+  err = tecMPIInitialize(file_handle, SU2_MPI::GetComm(), MASTER_NODE);
   if (err) cout << "Error initializing Tecplot parallel output." << endl;
 #endif
   
@@ -1243,7 +1243,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     for (size_t i = 0; i < num_halo_nodes; ++i)
       ++num_nodes_to_receive[neighbor_partitions[i] - 1];
     vector<int> num_nodes_to_send(size);
-    SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
+    SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, SU2_MPI::GetComm());
 
     /* Now send the global node numbers whose data we need,
        and receive the same from all other ranks.
@@ -1266,7 +1266,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     if (sorted_halo_nodes.empty()) sorted_halo_nodes.resize(1); /* Avoid crash. */
     SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
                        &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
-                       MPI_COMM_WORLD);
+                       SU2_MPI::GetComm());
     
     /* Now actually send and receive the data */
     vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * nVar_Par));
@@ -1289,7 +1289,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     }
     SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                        &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
-                       MPI_COMM_WORLD);
+                       SU2_MPI::GetComm());
   }
   else {
     /* Zone will be gathered to and output by MASTER_NODE */
@@ -1319,7 +1319,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
       vector<passivedouble> var_data;
       vector<unsigned long> num_surface_points(size);
       if (surf_sol)
-        SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, &num_surface_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, &num_surface_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       for(int iRank = 0; iRank < size; ++iRank) {
         int64_t rank_num_points;
         if (surf_sol)
@@ -1347,7 +1347,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
           }
           else { /* Receive data from other rank. */
             var_data.resize(max((int64_t)1, nVar_Par * rank_num_points));
-            SU2_MPI::Recv(&var_data[0], nVar_Par * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            SU2_MPI::Recv(&var_data[0], nVar_Par * rank_num_points, MPI_DOUBLE, iRank, iRank, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
             for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
@@ -1358,7 +1358,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
     }
     else { /* Send data to MASTER_NODE */
       if (surf_sol)
-        SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&nSurf_Poin_Par, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       vector<passivedouble> var_data;
       size_t var_data_size = nVar_Par * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
       var_data.reserve(var_data_size);
@@ -1370,7 +1370,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
           for(unsigned long i = 0; i < nParallel_Poin; ++i)
             var_data.push_back(SU2_TYPE::GetValue(Parallel_Data[iVar][i]));
       if (var_data.size() > 0)
-        SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
+        SU2_MPI::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, SU2_MPI::GetComm());
     }
   }
 
@@ -1482,7 +1482,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
 
       vector<unsigned long> connectivity_sizes(size);
       unsigned long unused = 0;
-      SU2_MPI::Gather(&unused, 1, MPI_UNSIGNED_LONG, &connectivity_sizes[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&unused, 1, MPI_UNSIGNED_LONG, &connectivity_sizes[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       vector<int64_t> connectivity;
       for(int iRank = 0; iRank < size; ++iRank) {
         if (iRank == rank) {
@@ -1537,7 +1537,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
           }
         } else { /* Receive node map and write out. */
           connectivity.resize(max((unsigned long)1, connectivity_sizes[iRank]));
-          SU2_MPI::Recv(&connectivity[0], connectivity_sizes[iRank], MPI_UNSIGNED_LONG, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(&connectivity[0], connectivity_sizes[iRank], MPI_UNSIGNED_LONG, iRank, iRank, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
           err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, connectivity_sizes[iRank], &connectivity[0]);
           if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
         }
@@ -1551,7 +1551,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
         connectivity_size = 2 * nParallel_Line + 4 * nParallel_BoundTria + 4 * nParallel_BoundQuad;
       else
         connectivity_size = 4 * (nParallel_Tria + nParallel_Quad);
-      SU2_MPI::Gather(&connectivity_size, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&connectivity_size, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       vector<int64_t> connectivity;
       connectivity.reserve(connectivity_size);
       if (surf_sol) {
@@ -1594,7 +1594,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
         }
       }
       if (connectivity.empty()) connectivity.resize(1); /* Avoid crash */
-      SU2_MPI::Send(&connectivity[0], connectivity_size, MPI_UNSIGNED_LONG, MASTER_NODE, rank, MPI_COMM_WORLD);
+      SU2_MPI::Send(&connectivity[0], connectivity_size, MPI_UNSIGNED_LONG, MASTER_NODE, rank, SU2_MPI::GetComm());
     }
   }
 #else

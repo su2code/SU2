@@ -395,7 +395,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nDOFsGlobal = nDOFsLocOwned;
 #endif
@@ -1358,7 +1358,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &nDOFsPerRank[1], 1,
-                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   nDOFsPerRank[1] = nDOFsLocOwned;
 #endif
@@ -1409,7 +1409,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Send the data using non-blocking sends to avoid deadlock. */
     int dest = ranksSend[i];
     SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /* Create a map of the receive rank to the index in ranksRecv. */
@@ -1423,7 +1423,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1433,7 +1433,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
        and determine the actual index of this rank in ranksRecv. */
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     map<int,int>::const_iterator MI = rankToIndRecvBuf.find(source);
     source = MI->second;
@@ -1455,7 +1455,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -1563,7 +1563,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Send the data using non-blocking sends to avoid deadlock. */
     int dest = ranksRecv[i];
     SU2_MPI::Isend(invSendBuf[i].data(), invSendBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &invSendReqs[i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &invSendReqs[i]);
   }
 
   /* Create a map of the inverse receive (i.e. the original send) rank
@@ -1579,7 +1579,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1589,7 +1589,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
        and determine the actual index of this rank in ranksSend. */
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     map<int,int>::const_iterator MI = rankToIndSendBuf.find(source);
     source = MI->second;
@@ -1616,7 +1616,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
   /*--- Sequential implementation. Just add the data of the halo DOFs
@@ -1758,7 +1758,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     const int ind  = MI->second;
 
     SU2_MPI::Isend(sendBuf[ind].data(), sendBuf[ind].size(), MPI_UNSIGNED_LONG,
-                   dest, dest+2, MPI_COMM_WORLD, &sendReqs[i]);
+                   dest, dest+2, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /* Loop over the ranks from which I receive data to be processed. The number
@@ -1770,7 +1770,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+2, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1782,7 +1782,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     sendReturnBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank+2, MPI_COMM_WORLD, &status);
+                  source, rank+2, SU2_MPI::GetComm(), &status);
 
     /* Loop over the data just received and fill the return send buffer
        with the color of the DOFs. */
@@ -1798,7 +1798,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Send the return buffer back to the calling rank. Again use non-blocking
        sends to avoid deadlock. */
     SU2_MPI::Isend(sendReturnBuf[i].data(), sendReturnBuf[i].size(), MPI_INT,
-                   source, source+3, MPI_COMM_WORLD, &sendReturnReqs[i]);
+                   source, source+3, SU2_MPI::GetComm(), &sendReturnReqs[i]);
   }
 
   /* Complete the first round of non-blocking sends. */
@@ -1810,7 +1810,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Block until a message arrives and determine the source of the message
        and its index in the original send buffers. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+3, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     MI = rankCommToInd.find(source);
@@ -1820,7 +1820,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
        a blocking receive. */
     vector<int> recvBuf(sendBuf[ind].size());
     SU2_MPI::Recv(recvBuf.data(), recvBuf.size(), MPI_INT,
-                  source, rank+3, MPI_COMM_WORLD, &status);
+                  source, rank+3, SU2_MPI::GetComm(), &status);
 
     /* Loop over the data just received and add them to the map
        mapMatrixIndToColor .*/
@@ -1833,7 +1833,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -2473,7 +2473,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       }
 
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
     }
 
@@ -2790,7 +2790,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       /* Send the data using non-blocking sends. */
       int dest = ranksSendMPI[timeLevel][i];
       int tag  = dest + timeLevel;
-      SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+      SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
 
@@ -2802,7 +2802,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       int tag    = rank + timeLevel;
       SU2_MPI::Irecv(commRecvBuf[timeLevel][i].data(),
                      commRecvBuf[timeLevel][i].size(),
-                     MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
   }
@@ -3035,7 +3035,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       /* Send the data using non-blocking sends. */
       int dest = ranksRecvMPI[timeLevel][i];
       int tag  = dest + timeLevel + 20;
-      SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+      SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
 
@@ -3047,7 +3047,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       int tag    = rank + timeLevel + 20;
       SU2_MPI::Irecv(commSendBuf[timeLevel][i].data(),
                      commSendBuf[timeLevel][i].size(),
-                     MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
   }
@@ -3245,7 +3245,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
       unsigned long MyErrorCounter = ErrorCounter;
-      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
       if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
     }
@@ -3764,10 +3764,10 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 
@@ -4183,7 +4183,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(URef, TolSolADER.data(), nVar, MPI_DOUBLE, MPI_MAX,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for(unsigned short i=0; i<nVar; ++i) TolSolADER[i] = URef[i];
 #endif
@@ -7105,7 +7105,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -7303,7 +7303,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
     vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       if (rbufRes[iVar] != rbufRes[iVar])
@@ -7315,11 +7315,11 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The global maximum norms must be obtained. ---*/
     rbufRes.resize(nVar*size);
     SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
-                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+                       nVar, MPI_DOUBLE, SU2_MPI::GetComm());
 
     vector<unsigned long> rbufPoint(nVar*size);
     SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
-                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                       nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     vector<su2double> sbufCoor(nDim*nVar);
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
@@ -7329,7 +7329,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
     vector<su2double> rbufCoor(nDim*nVar*size);
     SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
-                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+                       nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       for(int proc=0; proc<size; ++proc)
@@ -9497,7 +9497,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
 #ifdef HAVE_MPI
   unsigned short sbuf_NotMatching = rbuf_NotMatching;
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   if (rbuf_NotMatching != 0)
@@ -9542,7 +9542,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long nBadDOFsLoc = nBadDOFs;
-    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
     if((rank == MASTER_NODE) && (nBadDOFs != 0))
@@ -10381,7 +10381,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -10408,7 +10408,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double localMax = AllBound_MaxHeatFlux_Visc;
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                       MPI_MAX, MPI_COMM_WORLD);
+                       MPI_MAX, SU2_MPI::GetComm());
   }
 #endif
 
@@ -10834,10 +10834,10 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 
