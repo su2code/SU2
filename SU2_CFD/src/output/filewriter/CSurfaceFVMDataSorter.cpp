@@ -1252,10 +1252,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   
   unsigned long *index = new unsigned long[size];
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
-  
-  unsigned long *haloIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
-  
+
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
   
