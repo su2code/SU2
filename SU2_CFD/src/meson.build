@@ -40,7 +40,8 @@ su2_cfd_src = files(['driver_adjoint_singlezone.cpp',
                      'transfer_structure.cpp',
                      'solver_adjoint_discrete.cpp',
                      'numerics_direct_elasticity_nonlinear.cpp',
-                     'SU2_CFD.cpp'])
+                     'SU2_CFD.cpp',
+                     'driver_dummy.cpp'])
 
 su2_cfd_src += files(['output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
