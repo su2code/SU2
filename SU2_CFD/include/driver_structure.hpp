@@ -433,12 +433,14 @@ public:
    */
   passivedouble GetUnsteady_TimeStep();
 
-  /*!
-   * \brief Get the global index of a vertex on a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \return Vertex global index.
-   */
+  vector<passivedouble> GetAllGlobalIndices();
+
+    /*!
+     * \brief Get the global index of a vertex on a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex identifier.
+     * \return Vertex global index.
+     */
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
 
   unsigned long GetNodeIndex(unsigned short iMarker, unsigned short iVertex);
@@ -1596,9 +1598,6 @@ public:
   vector<passivedouble> GetTotal_Sens_Diff_Inputs(unsigned short index);
 
   unsigned short GetnDiff_Inputs();
-
-  // TODO Remove after debugging
-  passivedouble Get_ObjFunc();
 
   vector<passivedouble> GetDiff_Inputs_Vars(unsigned short index);
 
