@@ -8213,7 +8213,7 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
 }
 
 void CEulerSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
-  unsigned short iVec, nVec;
+  unsigned long iVec, nVec;
 
   nVec = derivs.size();
   Diff_Outputs_Backprop_Derivs[index].reserve(nVec);

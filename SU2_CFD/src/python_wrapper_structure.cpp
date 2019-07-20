@@ -268,6 +268,22 @@ unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker){
 
 }
 
+vector<passivedouble> CDriver::GetAllGlobalIndices() {
+
+  unsigned long iPoint, nPointDomain;
+  vector<passivedouble> allGlobalInds;
+
+  nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+  allGlobalInds.reserve(nPointDomain);
+  allGlobalInds.resize(nPointDomain);
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    allGlobalInds[iPoint] = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+  }
+
+  return allGlobalInds;
+}
+
 unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex) {
 
   unsigned long iPoint, GlobalIndex;
@@ -1284,8 +1300,8 @@ void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
 }
 
 vector<passivedouble> CSinglezoneDriver::GetDiff_Outputs_Vars(unsigned short index) {
-//  TODO Does getting Diff_Outputs_Vars from any solver in solver container always work?
-//    (using all 0 indices for now)
+  //TODO Does getting Diff_Outputs_Vars from any solver in solver container always work?
+  //  (using all 0 indices for now)
   unsigned short iVec;
 
   solver_container[0][0][0][FLOW_SOL]->SetDiff_Outputs_Vars(config_container[0]);
@@ -1332,10 +1348,24 @@ void CDiscAdjSinglezoneDriver::SetDiff_Inputs_Vars(vector<passivedouble> val, un
 }
 
 void CDiscAdjSinglezoneDriver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
-  solver[ADJFLOW_SOL]->SetBackprop_Derivs(derivs, index);
+  unsigned long nPointDomain, iPoint, iGlobal;
+  vector<passivedouble> local_derivs;
+
+  if (derivs.size() == geometry_container[ZONE_0][INST_0][MESH_0]->GetGlobal_nPointDomain()) {
+
+    nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+    local_derivs.reserve(nPointDomain);
+    local_derivs.resize(nPointDomain);
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      iGlobal = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+      local_derivs[iPoint] = derivs[iGlobal];
+    }
+  }
+  else {
+    local_derivs = derivs;
+  }
+
+  solver[ADJFLOW_SOL]->SetBackprop_Derivs(local_derivs, index);
 }
 
-// TODO Remove after debugging
-passivedouble CDiscAdjSinglezoneDriver::Get_ObjFunc() {
-  return SU2_TYPE::GetValue(ObjFunc);
-}
