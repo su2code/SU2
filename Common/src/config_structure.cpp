@@ -343,6 +343,10 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
         if (cg_nzones(fn, i, &nzones)) cg_error_exit();
         
       }
+
+      /*--- Close the CGNS file. ---*/
+
+      if ( cg_close(fn) ) cg_error_exit();
       
       /*--- Set the number of zones as read from the CGNS file ---*/
       
@@ -625,6 +629,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Moving mesh pointers ---*/
   
   nKind_SurfaceMovement = 0;
+  Kind_SurfaceMovement = NULL;
   LocationStations   = NULL;
   Motion_Origin     = NULL;   
   Translation_Rate       = NULL;  
@@ -6901,10 +6906,8 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
-  if (GetGrid_Movement() && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
-  }
+  if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
+  if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
   
  /*--- Free memory for airfoil sections ---*/
 
@@ -7331,6 +7334,7 @@ CConfig::~CConfig(void) {
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
 
+  if (Kind_SurfaceMovement != NULL) delete [] Kind_SurfaceMovement;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
