@@ -133,17 +133,22 @@ public:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(SU2_Comm MPICommunicator);
+  void Input_Preprocessing(CConfig *&config, CConfig *driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
-  void Geometrical_Preprocessing();
+  void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry);
   
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
    */
-  void Geometrical_Preprocessing_DGFEM();
+  void Geometrical_Preprocessing_DGFEM(CConfig *config, CGeometry **&geometry);
+
+  /*!
+   * \brief Geometrical_Preprocessing_FVM
+   */
+  void Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry);
   
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
@@ -151,7 +156,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void Iteration_Preprocessing();
+  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -159,7 +164,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+  void Solver_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***&solver);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -167,7 +172,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Restart(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
+  void Solver_Restart(CSolver ***solver, CGeometry **geometry, CConfig *config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -183,7 +188,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Preprocessing(CIntegration ***integration_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+  void Integration_Preprocessing(CConfig *config, CIntegration **&integration);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -196,7 +201,7 @@ public:
   /*!
    * \brief Definition and allocation of all interface classes.
    */
-  void Interface_Preprocessing();
+  void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry, unsigned short **transfer_types, CTransfer ***&transfer, CInterpolator ***&interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -205,7 +210,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CNumerics *****numerics_container, CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+  void Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -217,9 +222,20 @@ public:
   void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
+   * \brief GridMovement_Preprocessing
+   * \param config
+   * \param geometry
+   * \param solver
+   * \param iteration
+   * \param grid_movement
+   * \param surface_movement
+   */
+  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement);
+
+  /*!
    * \brief Initialize Python interface functionalities
    */
-  void PythonInterface_Preprocessing();
+  void PythonInterface_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver);
 
   /*!
    * \brief Deallocation routine
@@ -229,12 +245,15 @@ public:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void InitStaticMeshMovement();
+  void StaticMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSurfaceMovement *surface_movement);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void TurbomachineryPreprocessing(void);
+  void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver, CTransfer*** transfer);
+
+  
+  void Output_Preprocessing(CConfig **config, COutput *&output);
 
   /*!
    * \brief A virtual member.
