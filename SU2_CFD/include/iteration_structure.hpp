@@ -97,10 +97,9 @@ public:
    * \param[in] IntIter - Current sudo time iteration number.
    * \param[in] ExtIter - Current physical time iteration number.
    */
-  virtual void SetGrid_Movement(CGeometry ****geometry_container, CSurfaceMovement **surface_movement,
-                      CVolumetricMovement ***grid_movement, CFreeFormDefBox ***FFDBox,
-                      CSolver *****solver_container, CConfig **config_container,
-                      unsigned short val_iZone, unsigned short val_iInst, unsigned long IntIter, unsigned long ExtIter);
+  virtual void SetGrid_Movement(CGeometry **geometry, CSurfaceMovement *surface_movement,
+                      CVolumetricMovement *grid_movement,
+                      CSolver ***solver, CConfig *config, unsigned long IntIter, unsigned long ExtIter);
   
   /*!
    * \brief A virtual member.
