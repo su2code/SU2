@@ -58,48 +58,7 @@ bin_PROGRAMS += ../bin/SU2_CFD_AD
 noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
-libSU2Core_sources = \
-  ../include/definition_structure.hpp \
-  ../include/fluid_model.hpp \
-  ../include/fluid_model.inl \
-  ../include/integration_structure.hpp \
-  ../include/integration_structure.inl \
-  ../include/driver_structure.hpp \
-  ../include/iteration_structure.hpp \
-  ../include/numerics_structure.hpp \
-  ../include/numerics_structure.inl \
-  ../include/output_structure.hpp \
-  ../include/output_structure.inl \
-  ../include/sgs_model.hpp \
-  ../include/sgs_model.inl \
-  ../include/solver_structure.hpp \
-  ../include/solver_structure.inl \
-  ../include/SU2_CFD.hpp \
-  ../include/task_definition.hpp \
-  ../include/task_definition.inl \
-  ../include/transport_model.hpp \
-  ../include/transport_model.inl \
-  ../src/variables/CFEABoundVariable.hpp \
-  ../src/variables/CHeatFVMVariable.hpp \
-  ../src/variables/CVariable.hpp \
-  ../src/variables/CAdjNSVariable.hpp \
-  ../src/variables/CTurbSSTVariable.hpp \
-  ../src/variables/CAdjTurbVariable.hpp \
-  ../src/variables/CTransLMVariable.hpp \
-  ../src/variables/CDiscAdjFEAVariable.hpp \
-  ../src/variables/CIncEulerVariable.hpp \
-  ../src/variables/CTurbVariable.hpp \
-  ../src/variables/CNSVariable.hpp \
-  ../src/variables/CBaselineVariable.hpp \
-  ../src/variables/CTurbSAVariable.hpp \
-  ../src/variables/CFEAVariable.hpp \
-  ../src/variables/CAdjEulerVariable.hpp \
-  ../src/variables/CDiscAdjVariable.hpp \
-  ../src/variables/CIncNSVariable.hpp \
-  ../src/variables/CEulerVariable.hpp \
-  ../include/transfer_structure.hpp \
-  ../include/transfer_structure.inl \
-  ../src/definition_structure.cpp \
+libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
@@ -107,10 +66,10 @@ libSU2Core_sources = \
   ../src/fluid_model_inc.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
-  ../src/driver_direct_multizone.cpp \
-  ../src/driver_direct_singlezone.cpp \
-  ../src/driver_adjoint_singlezone.cpp \
-  ../src/driver_structure.cpp \
+  ../src/drivers/CMultizoneDriver.cpp \
+  ../src/drivers/CSinglezoneDriver.cpp \
+  ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
+  ../src/drivers/CDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
