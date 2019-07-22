@@ -155,7 +155,18 @@ CDriver::CDriver(char* confFile,
     }
 
   }
+  
+  if(fsi && (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetDiscrete_Adjoint())){
+    if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
 
+    for (iZone = 0; iZone < nZone; iZone++) {
+    	for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
+                       config_container[iZone], true);
+    	}
+    }
+
+  }
   /*--- Definition of the interface and transfer conditions between different zones.
    *--- The transfer container is defined for zones paired one to one.
    *--- This only works for a multizone FSI problem (nZone > 1).
