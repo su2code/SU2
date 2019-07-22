@@ -135,7 +135,14 @@ CDriver::CDriver(char* confFile,
        the residual at each node, R(U) and then integrates the equations to a
        steady state or time-accurately. ---*/
       
-      Integration_Preprocessing(config_container[iZone], integration_container[iZone][iInst]);      
+      Integration_Preprocessing(config_container[iZone], integration_container[iZone][iInst]);   
+      
+      /*--- Instantiate the type of physics iteration to be executed within each zone. For
+       example, one can execute the same physics across multiple zones (mixing plane),
+       different physics in different zones (fluid-structure interaction), or couple multiple
+       systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
+      
+      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);      
       
       /*--- Dynamic mesh processing.  ---*/
       
@@ -144,13 +151,6 @@ CDriver::CDriver(char* confFile,
       /*--- Static mesh processing.  ---*/
       
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], surface_movement[iZone]);
-      
-      /*--- Instantiate the type of physics iteration to be executed within each zone. For
-       example, one can execute the same physics across multiple zones (mixing plane),
-       different physics in different zones (fluid-structure interaction), or couple multiple
-       systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
-      
-      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
       
     }
 
@@ -165,8 +165,8 @@ CDriver::CDriver(char* confFile,
                        config_container[iZone], true);
     	}
     }
-
   }
+  
   /*--- Definition of the interface and transfer conditions between different zones.
    *--- The transfer container is defined for zones paired one to one.
    *--- This only works for a multizone FSI problem (nZone > 1).
