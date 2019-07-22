@@ -1228,7 +1228,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 }
 
 
-void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                   CConfig *config) {
 
   bool euler, ns, turbulent,
@@ -1303,10 +1303,10 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
     bool no_profile = false;
 
     if (euler || ns || adj_euler || adj_ns || disc_adj) {
-      solver_container[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, FLOW_SOL, INLET_FLOW);
+      solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
     }
     if (turbulent || adj_turb || disc_adj_turb) {
-      solver_container[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, TURB_SOL, INLET_FLOW);
+      solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
 
     if (template_solver) {
@@ -1343,9 +1343,9 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (euler || ns || adj_euler || adj_ns || disc_adj)
-          solver_container[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+          solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (turbulent)
-          solver_container[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+          solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
       }
     }
     
@@ -1496,7 +1496,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
 }
 
-void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry,
+void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
                                     CConfig *config, unsigned short val_iInst) {
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
@@ -1565,53 +1565,53 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     /*--- DeAllocate solution for a template problem ---*/
     
     if (template_solver) {
-      delete solver_container[val_iInst][iMGlevel][TEMPLATE_SOL];
+      delete solver[val_iInst][iMGlevel][TEMPLATE_SOL];
     }
 
     /*--- DeAllocate solution for adjoint problem ---*/
     
     if (adj_euler || adj_ns || disc_adj) {
-      delete solver_container[val_iInst][iMGlevel][ADJFLOW_SOL];
+      delete solver[val_iInst][iMGlevel][ADJFLOW_SOL];
       if (disc_adj_turb || adj_turb) {
-        delete solver_container[val_iInst][iMGlevel][ADJTURB_SOL];
+        delete solver[val_iInst][iMGlevel][ADJTURB_SOL];
       }
       if (heat_fvm) {
-        delete solver_container[val_iInst][iMGlevel][ADJHEAT_SOL];
+        delete solver[val_iInst][iMGlevel][ADJHEAT_SOL];
       }
     }
 
     if (disc_adj_heat) {
-      delete solver_container[val_iInst][iMGlevel][ADJHEAT_SOL];
+      delete solver[val_iInst][iMGlevel][ADJHEAT_SOL];
     }
 
     /*--- DeAllocate solution for direct problem ---*/
     
     if (euler || ns) {
-      delete solver_container[val_iInst][iMGlevel][FLOW_SOL];
+      delete solver[val_iInst][iMGlevel][FLOW_SOL];
     }
 
     if (turbulent) {
       if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
-        delete solver_container[val_iInst][iMGlevel][TURB_SOL];
+        delete solver[val_iInst][iMGlevel][TURB_SOL];
       }
       if (transition) {
-        delete solver_container[val_iInst][iMGlevel][TRANS_SOL];
+        delete solver[val_iInst][iMGlevel][TRANS_SOL];
       }
     }
     if (heat_fvm) {
-      delete solver_container[val_iInst][iMGlevel][HEAT_SOL];
+      delete solver[val_iInst][iMGlevel][HEAT_SOL];
     }
     if (fem) {
-      delete solver_container[val_iInst][iMGlevel][FEA_SOL];
+      delete solver[val_iInst][iMGlevel][FEA_SOL];
     }
     if (disc_adj_fem) {
-      delete solver_container[val_iInst][iMGlevel][ADJFEA_SOL];
+      delete solver[val_iInst][iMGlevel][ADJFEA_SOL];
     }
     
-    delete [] solver_container[val_iInst][iMGlevel];
+    delete [] solver[val_iInst][iMGlevel];
   }
   
-  delete [] solver_container[val_iInst];
+  delete [] solver[val_iInst];
 
 }
 
@@ -1699,7 +1699,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integra
 
 }
 
-void CDriver::Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
+void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, fem,
       fem_euler, fem_ns, fem_turbulent,
       heat_fvm, template_solver, transition, disc_adj, disc_adj_fem, disc_adj_heat;
@@ -1743,29 +1743,29 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container, 
   }
 
   /*--- DeAllocate solution for a template problem ---*/
-  if (template_solver) integration_container[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
+  if (template_solver) integration[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
   /*--- DeAllocate solution for direct problem ---*/
-  if (euler || ns) delete integration_container[val_iInst][FLOW_SOL];
-  if (turbulent) delete integration_container[val_iInst][TURB_SOL];
-  if (transition) delete integration_container[val_iInst][TRANS_SOL];
-  if (heat_fvm) delete integration_container[val_iInst][HEAT_SOL];
-  if (fem) delete integration_container[val_iInst][FEA_SOL];
-  if (disc_adj_fem) delete integration_container[val_iInst][ADJFEA_SOL];
-  if (disc_adj_heat) delete integration_container[val_iInst][ADJHEAT_SOL];
+  if (euler || ns) delete integration[val_iInst][FLOW_SOL];
+  if (turbulent) delete integration[val_iInst][TURB_SOL];
+  if (transition) delete integration[val_iInst][TRANS_SOL];
+  if (heat_fvm) delete integration[val_iInst][HEAT_SOL];
+  if (fem) delete integration[val_iInst][FEA_SOL];
+  if (disc_adj_fem) delete integration[val_iInst][ADJFEA_SOL];
+  if (disc_adj_heat) delete integration[val_iInst][ADJHEAT_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
-  if (adj_euler || adj_ns || disc_adj) delete integration_container[val_iInst][ADJFLOW_SOL];
-  if (adj_turb) delete integration_container[val_iInst][ADJTURB_SOL];
+  if (adj_euler || adj_ns || disc_adj) delete integration[val_iInst][ADJFLOW_SOL];
+  if (adj_turb) delete integration[val_iInst][ADJTURB_SOL];
 
   /*--- DeAllocate integration container for finite element flow solver. ---*/
-  if (fem_euler || fem_ns) delete integration_container[val_iInst][FLOW_SOL];
+  if (fem_euler || fem_ns) delete integration[val_iInst][FLOW_SOL];
   //if (fem_turbulent)     delete integration_container[val_iInst][FEM_TURB_SOL];
 
   if (fem_turbulent)
     SU2_MPI::Error("No turbulent FEM solver yet", CURRENT_FUNCTION);
 
-  delete [] integration_container[val_iInst];
+  delete [] integration[val_iInst];
 }
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics) {
@@ -2591,8 +2591,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
 
 }
 
-void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
-                                      CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
+                                      CSolver ***solver, CGeometry **geometry,
                                       CConfig *config, unsigned short val_iInst) {
   
   unsigned short iMGlevel, iSol;
@@ -2662,17 +2662,17 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     switch (config->GetKind_ConvNumScheme_Template()) {
       case SPACE_CENTERED : case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_TERM];
+          delete numerics[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_TERM];
         break;
     }
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-      delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][VISC_TERM];
+      delete numerics[val_iInst][iMGlevel][TEMPLATE_SOL][VISC_TERM];
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-      delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM];
+      delete numerics[val_iInst][iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM];
       /*--- Definition of the boundary condition method ---*/
-      delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM];
+      delete numerics[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM];
     }
     
   }
@@ -2688,27 +2688,27 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_Flow()) {
-            case LAX : case JST :  case JST_KE : delete numerics_container[val_iInst][MESH_0][FLOW_SOL][CONV_TERM]; break;
+            case LAX : case JST :  case JST_KE : delete numerics[val_iInst][MESH_0][FLOW_SOL][CONV_TERM]; break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+            delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
           
         }
         if (incompressible) {
           /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Centered_Flow()) {
-            case LAX : case JST : delete numerics_container[val_iInst][MESH_0][FLOW_SOL][CONV_TERM]; break;
+            case LAX : case JST : delete numerics[val_iInst][MESH_0][FLOW_SOL][CONV_TERM]; break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+            delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
           
         }
         break;
@@ -2719,8 +2719,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           switch (config->GetKind_Upwind_Flow()) {
             case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP: case L2ROE: case LMROE: case SLAU: case SLAU2: case AUSMPLUSUP:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
-                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+                delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+                delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
               }
               
               break;
@@ -2732,8 +2732,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           switch (config->GetKind_Upwind_Flow()) {
             case FDS:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
-                delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+                delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+                delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
               }
               break;
           }
@@ -2745,20 +2745,20 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible||incompressible) {
       /*--- Compressible flow Ideal gas ---*/
-      delete numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM];
+      delete numerics[val_iInst][MESH_0][FLOW_SOL][VISC_TERM];
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM];
+        delete numerics[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM];
       
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
+        delete numerics[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
       
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
+      delete numerics[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
+      delete numerics[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
     }
     
   }
@@ -2772,8 +2772,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case AUSM: case TURKEL: case HLLC: case MSW: /* Note that not all need to be deleted. */
 
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
-          delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+          delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
+          delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
         }
         break;
     }
@@ -2789,7 +2789,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (spalart_allmaras || neg_spalart_allmaras ||menter_sst|| comp_spalart_allmaras || e_spalart_allmaras || e_comp_spalart_allmaras)
-            delete numerics_container[val_iInst][iMGlevel][TURB_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][TURB_SOL][CONV_TERM];
         }
         break;
     }
@@ -2798,12 +2798,12 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     
       if (spalart_allmaras || neg_spalart_allmaras ||menter_sst|| comp_spalart_allmaras || e_spalart_allmaras || e_comp_spalart_allmaras){
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          delete numerics_container[val_iInst][iMGlevel][TURB_SOL][VISC_TERM];
-          delete numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
-          delete numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
+          delete numerics[val_iInst][iMGlevel][TURB_SOL][VISC_TERM];
+          delete numerics[val_iInst][iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
+          delete numerics[val_iInst][iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
           /*--- Definition of the boundary condition method ---*/
-          delete numerics_container[val_iInst][iMGlevel][TURB_SOL][CONV_BOUND_TERM];
-          delete numerics_container[val_iInst][iMGlevel][TURB_SOL][VISC_BOUND_TERM];
+          delete numerics[val_iInst][iMGlevel][TURB_SOL][CONV_BOUND_TERM];
+          delete numerics[val_iInst][iMGlevel][TURB_SOL][VISC_BOUND_TERM];
 
       }
     }
@@ -2817,19 +2817,19 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_TERM];
+          delete numerics[val_iInst][iMGlevel][TRANS_SOL][CONV_TERM];
         }
         break;
     }
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-      delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM];
+      delete numerics[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM];
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-      delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM];
-      delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM];
+      delete numerics[val_iInst][iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM];
+      delete numerics[val_iInst][iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM];
       /*--- Definition of the boundary condition method ---*/
-      delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM];
+      delete numerics[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM];
     }
   }
 
@@ -2838,20 +2838,20 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-      delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][VISC_TERM];
-      delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][VISC_BOUND_TERM];
+      delete numerics[val_iInst][iMGlevel][HEAT_SOL][VISC_TERM];
+      delete numerics[val_iInst][iMGlevel][HEAT_SOL][VISC_BOUND_TERM];
 
       switch (config->GetKind_ConvNumScheme_Heat()) {
         case SPACE_UPWIND :
 
-          delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][CONV_TERM];
-          delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][CONV_BOUND_TERM];
+          delete numerics[val_iInst][iMGlevel][HEAT_SOL][CONV_TERM];
+          delete numerics[val_iInst][iMGlevel][HEAT_SOL][CONV_BOUND_TERM];
           break;
 
         case SPACE_CENTERED :
 
-          delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][CONV_TERM];
-          delete numerics_container[val_iInst][iMGlevel][HEAT_SOL][CONV_BOUND_TERM];
+          delete numerics[val_iInst][iMGlevel][HEAT_SOL][CONV_TERM];
+          delete numerics[val_iInst][iMGlevel][HEAT_SOL][CONV_BOUND_TERM];
         break;
       }
     }
@@ -2872,15 +2872,15 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
-              delete numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM];
+              delete numerics[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM];
               break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
           
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
+            delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
           
         }
         
@@ -2890,14 +2890,14 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
-              delete numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
+              delete numerics[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
           
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
+            delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
           
         }
         
@@ -2912,8 +2912,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           switch (config->GetKind_Upwind_AdjFlow()) {
             case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
-                delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
+                delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
+                delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
               }
               break;
           }
@@ -2928,8 +2928,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       
       /*--- Compressible flow ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_TERM];
-        delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM];
       }
     }
     
@@ -2940,8 +2940,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       
       if (compressible || incompressible) {
         
-        delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM];
-        delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM];
         
       }
     }
@@ -2957,7 +2957,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
           if (spalart_allmaras) {
-            delete numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][CONV_TERM];
+            delete numerics[val_iInst][iMGlevel][ADJTURB_SOL][CONV_TERM];
           }
         break;
     }
@@ -2966,12 +2966,12 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
         /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-        delete numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][VISC_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJTURB_SOL][VISC_TERM];
         /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-        delete numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM];
-        delete numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM];
         /*--- Definition of the boundary condition method ---*/
-        delete numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM];
+        delete numerics[val_iInst][iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM];
       }
     }
   }
@@ -2980,19 +2980,19 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   if (fem) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    delete numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM];
+    delete numerics[val_iInst][MESH_0][FEA_SOL][FEA_TERM];
     
   }
   
   /*--- Definition of the Class for the numerical method: numerics_container[INST_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-      delete [] numerics_container[val_iInst][iMGlevel][iSol];
+      delete [] numerics[val_iInst][iMGlevel][iSol];
     }
-    delete[] numerics_container[val_iInst][iMGlevel];
+    delete[] numerics[val_iInst][iMGlevel];
   }
   
-  delete[] numerics_container[val_iInst];
+  delete[] numerics[val_iInst];
 
 }
 
