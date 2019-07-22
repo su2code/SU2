@@ -1774,6 +1774,19 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
 	CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*! 
+   * \overload
+   * \brief Loads the adjacency data from AMG. 
+   * \param[in] EdgAdap - Vector of edg adjacency.
+   * \param[in] TriAdap - Vector of tri adjacency.
+   * \param[in] TetAdap - Vector of tet adjacency.
+   * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_iZone - Domain to be loaded.
+   * \param[in] val_nZone - Total number of domains.
+   */
+  CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+                    unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \overload

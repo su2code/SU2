@@ -817,6 +817,18 @@ public:
                      unsigned short val_iSol);
 
   /*!
+   * \brief Preprocess the adapted geometry from the python wrapper.
+   */
+  void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
+                                   char* confFile,
+                                   vector<vector<unsigned long> > EdgAdap,
+                                   vector<vector<unsigned long> > TriAdap,
+                                   vector<vector<unsigned long> > TetAdap,
+                                   unsigned short val_nDim, 
+                                   unsigned short val_iZone, 
+                                   unsigned short val_nZone);
+
+  /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
   virtual void Run_GaussSeidel(){};

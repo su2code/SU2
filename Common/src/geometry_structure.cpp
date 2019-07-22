@@ -3766,6 +3766,130 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
+CPhysicalGeometry::CPhysicalGeometry(vector<unsigned long> EdgAdap, vector<unsigned long> TriAdap, vector<unsigned long> TetAdap,
+                                     unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();  
+  
+  Local_to_Global_Point = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
+  
+  /*--- Arrays for defining the turbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
+
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  unsigned short iDim, iMarker, iNodes;
+  unsigned long iPoint, iElem_Bound;
+  su2double *NewCoord;
+  nZone = val_nZone;
+  ofstream boundary_file;
+  string Grid_Marker;
+  
+  string val_mesh_filename  = config->GetMesh_FileName();
+  unsigned short val_format = config->GetMesh_FileFormat();
+
+  /*--- Determine whether or not a FEM discretization is used ---*/
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                           (config->GetKind_Solver() == FEM_RANS)           ||
+                           (config->GetKind_Solver() == FEM_LES)            ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+  /*--- Initialize counters for local/global points & elements ---*/
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
+
+  if( fem_solver ) {
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      case CGNS:
+        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  else {
+
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      case CGNS:
+        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+
+  /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
+  
+  assert((nDim == 2) || (nDim == 3));
+  
+  /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
+  
+  if (config->GetKind_SU2() == SU2_CFD) {
+    
+    NewCoord = new su2double [nDim];
+    
+    /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
+    
+    if (config->GetSystemMeasurements() == US) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
+        }
+        node[iPoint]->SetCoord(NewCoord);
+      }
+    }
+    
+    delete [] NewCoord;
+    
+  }
+  
+}
+
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
                                      CConfig *config) {
 
