@@ -3425,7 +3425,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
 void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CSurfaceMovement* surface_movement){
   
-  unsigned short iMGlevel;
+  unsigned short iMGlevel, iMGfine;
   unsigned short Kind_Grid_Movement;
   
   unsigned short iZone = config->GetiZone();
@@ -3490,7 +3490,8 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
       /*--- Update the grid velocities on the coarser multigrid levels after
         setting the moving wall velocities for the finest mesh. ---*/
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
-        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[MESH_0], config);
+        iMGfine = iMGlevel-1;        
+        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
       }
     }
   } else {
