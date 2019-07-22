@@ -185,7 +185,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void Solver_Postprocessing(CSolver ****solver, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -201,7 +201,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void Integration_Postprocessing(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -224,7 +224,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void Numerics_Postprocessing(CNumerics *****numerics, CSolver ***solver, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief GridMovement_Preprocessing
@@ -645,7 +645,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+  void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                     CConfig *config);
 
   /*!
