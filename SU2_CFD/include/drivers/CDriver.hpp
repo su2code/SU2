@@ -131,9 +131,14 @@ public:
   virtual void Run() { };
 
   /*!
+   * \brief Init_Containers
+   */
+  void SetContainers_Null();
+  
+  /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(CConfig *&config, CConfig *driver_config);
+  void Input_Preprocessing(CConfig **&config, CConfig *&driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.

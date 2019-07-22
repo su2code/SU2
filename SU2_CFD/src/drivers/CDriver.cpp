@@ -62,98 +62,14 @@ CDriver::CDriver(char* confFile,
   StartTime = MPI_Wtime();
 #endif
   
-  /*--- Create pointers to all of the classes that may be used throughout
-   the SU2_CFD code. In general, the pointers are instantiated down a
-   hierarchy over all zones, multigrid levels, equation sets, and equation
-   terms as described in the comments below. ---*/
-
-  ConvHist_file                  = NULL;
-  iteration_container            = NULL;
-  output                         = NULL;
-  integration_container          = NULL;
-  geometry_container             = NULL;
-  solver_container               = NULL;
-  numerics_container             = NULL;
-  config_container               = NULL;
-  surface_movement               = NULL;
-  grid_movement                  = NULL;
-  FFDBox                         = NULL;
-  interpolator_container         = NULL;
-  transfer_container             = NULL;
-  transfer_types                 = NULL;
-  nInst                          = NULL;
-
-
-  /*--- Definition and of the containers for all possible zones. ---*/
-
-  iteration_container            = new CIteration**[nZone];
-  solver_container               = new CSolver****[nZone];
-  integration_container          = new CIntegration***[nZone];
-  numerics_container             = new CNumerics*****[nZone];
-  config_container               = new CConfig*[nZone];
-  geometry_container             = new CGeometry***[nZone];
-  surface_movement               = new CSurfaceMovement*[nZone];
-  grid_movement                  = new CVolumetricMovement**[nZone];
-  FFDBox                         = new CFreeFormDefBox**[nZone];
-  interpolator_container         = new CInterpolator**[nZone];
-  transfer_container             = new CTransfer**[nZone];
-  transfer_types                 = new unsigned short*[nZone];
-  nInst                          = new unsigned short[nZone];
-  driver_config                  = NULL;
-
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone]               = NULL;
-    integration_container[iZone]          = NULL;
-    numerics_container[iZone]             = NULL;
-    config_container[iZone]               = NULL;
-    geometry_container[iZone]             = NULL;
-    surface_movement[iZone]               = NULL;
-    grid_movement[iZone]                  = NULL;
-    FFDBox[iZone]                         = NULL;
-    interpolator_container[iZone]         = NULL;
-    transfer_container[iZone]             = NULL;
-    transfer_types[iZone]                 = new unsigned short[nZone];
-    nInst[iZone]                          = 1;
-  }
+  /*--- Initialize containers with null --- */
   
-  /*--- Initialize the configuration of the driver ---*/
-
-  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);
+  SetContainers_Null();
   
   /*--- Preprocessing of the config files. In this routine, the config file is read
    and it is determined whether a problem is single physics or multiphysics. . ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    
-    if (rank == MASTER_NODE){
-      cout  << endl << "Parsing config file for zone " << iZone << endl;
-    }
-    
-    Input_Preprocessing(config_container[iZone], driver_config);
-    
-  }
-
-  /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetMultizone_Problem()){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      /*--- Set the interface markers for multizone ---*/
-      config_container[iZone]->SetMultizone(driver_config, config_container);
-    }
-  }
   
-  /*--- Determine whether or not the FEM solver is used, which decides the
- type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
-
-  fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
-                (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
-
-  
+  Input_Preprocessing(config_container, driver_config);
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -322,6 +238,66 @@ CDriver::CDriver(char* confFile,
 #endif
 
 }
+
+void CDriver::SetContainers_Null(){
+  
+  /*--- Create pointers to all of the classes that may be used throughout
+   the SU2_CFD code. In general, the pointers are instantiated down a
+   hierarchy over all zones, multigrid levels, equation sets, and equation
+   terms as described in the comments below. ---*/
+
+  ConvHist_file                  = NULL;
+  iteration_container            = NULL;
+  output                         = NULL;
+  integration_container          = NULL;
+  geometry_container             = NULL;
+  solver_container               = NULL;
+  numerics_container             = NULL;
+  config_container               = NULL;
+  surface_movement               = NULL;
+  grid_movement                  = NULL;
+  FFDBox                         = NULL;
+  interpolator_container         = NULL;
+  transfer_container             = NULL;
+  transfer_types                 = NULL;
+  nInst                          = NULL;
+
+
+  /*--- Definition and of the containers for all possible zones. ---*/
+
+  iteration_container            = new CIteration**[nZone];
+  solver_container               = new CSolver****[nZone];
+  integration_container          = new CIntegration***[nZone];
+  numerics_container             = new CNumerics*****[nZone];
+  config_container               = new CConfig*[nZone];
+  geometry_container             = new CGeometry***[nZone];
+  surface_movement               = new CSurfaceMovement*[nZone];
+  grid_movement                  = new CVolumetricMovement**[nZone];
+  FFDBox                         = new CFreeFormDefBox**[nZone];
+  interpolator_container         = new CInterpolator**[nZone];
+  transfer_container             = new CTransfer**[nZone];
+  transfer_types                 = new unsigned short*[nZone];
+  nInst                          = new unsigned short[nZone];
+  driver_config                  = NULL;
+
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone]               = NULL;
+    integration_container[iZone]          = NULL;
+    numerics_container[iZone]             = NULL;
+    config_container[iZone]               = NULL;
+    geometry_container[iZone]             = NULL;
+    surface_movement[iZone]               = NULL;
+    grid_movement[iZone]                  = NULL;
+    FFDBox[iZone]                         = NULL;
+    interpolator_container[iZone]         = NULL;
+    transfer_container[iZone]             = NULL;
+    transfer_types[iZone]                 = new unsigned short[nZone];
+    nInst[iZone]                          = 1;
+  }
+
+}
+
 
 void CDriver::Postprocessing() {
 
@@ -552,26 +528,58 @@ void CDriver::Postprocessing() {
 }
 
 
-void CDriver::Input_Preprocessing(CConfig *&config, CConfig *driver_config) {
+void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 
   char zone_file_name[MAX_STRING_SIZE];
   
-  /*--- Definition of the configuration option class for all zones. In this
+  /*--- Initialize the configuration of the driver ---*/
+
+  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false);  
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    if (rank == MASTER_NODE){
+      cout  << endl << "Parsing config file for zone " << iZone << endl;
+    }
+    /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
-  
-  if (driver_config->GetnConfigFiles() > 0){
     
-    strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-    config= new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, true);
-  }
-  else{
-    config= new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
+    if (driver_config->GetnConfigFiles() > 0){
+      
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, true);
+    }
+    else{
+      config[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
+    }
+    
+    /*--- Set the MPI communicator ---*/
+    
+    config[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
   }
   
-  /*--- Set the MPI communicator ---*/
   
-  config->SetMPICommunicator(SU2_MPI::GetComm());
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetMultizone_Problem()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
+  /*--- Determine whether or not the FEM solver is used, which decides the
+ type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+
+  fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+  
 }
 
 void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry){
@@ -5239,7 +5247,6 @@ void CFSIDriver::Update() {
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
 
-  unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
   ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
   /*-----------------------------------------------------------------*/
@@ -6062,7 +6069,6 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
 void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-  unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
   unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
 
   /*-----------------------------------------------------------------*/
