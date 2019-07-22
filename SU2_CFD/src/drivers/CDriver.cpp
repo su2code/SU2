@@ -111,13 +111,6 @@ CDriver::CDriver(char* confFile,
       
       Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);  
       
-      /*--- Instantiate the type of physics iteration to be executed within each zone. For
-       example, one can execute the same physics across multiple zones (mixing plane),
-       different physics in different zones (fluid-structure interaction), or couple multiple
-       systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
-      
-      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
-      
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
        and they contain the subroutines with instructions for computing each spatial
@@ -126,14 +119,6 @@ CDriver::CDriver(char* confFile,
        imposing various boundary condition type for the PDE. ---*/
       
       Solver_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
-      
-      /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
-       The integration class orchestrates the execution of the spatial integration
-       subroutines contained in the solver class (including multigrid) for computing
-       the residual at each node, R(U) and then integrates the equations to a
-       steady state or time-accurately. ---*/
-      
-      Integration_Preprocessing(config_container[iZone], integration_container[iZone][iInst]);
       
       /*--- Definition of the numerical method class:
        numerics_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
@@ -144,6 +129,14 @@ CDriver::CDriver(char* confFile,
       
       Numerics_Preprocessing(config_container[iZone], solver_container[iZone][iInst], numerics_container[iZone][iInst]);
       
+      /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
+       The integration class orchestrates the execution of the spatial integration
+       subroutines contained in the solver class (including multigrid) for computing
+       the residual at each node, R(U) and then integrates the equations to a
+       steady state or time-accurately. ---*/
+      
+      Integration_Preprocessing(config_container[iZone], integration_container[iZone][iInst]);      
+      
       /*--- Dynamic mesh processing.  ---*/
       
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst], 
@@ -152,10 +145,16 @@ CDriver::CDriver(char* confFile,
       
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], surface_movement[iZone]);
       
+      /*--- Instantiate the type of physics iteration to be executed within each zone. For
+       example, one can execute the same physics across multiple zones (mixing plane),
+       different physics in different zones (fluid-structure interaction), or couple multiple
+       systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
+      
+      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
+      
     }
 
   }
-
 
   /*--- Definition of the interface and transfer conditions between different zones.
    *--- The transfer container is defined for zones paired one to one.
