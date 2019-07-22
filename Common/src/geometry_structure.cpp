@@ -3766,8 +3766,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(vector<unsigned long> EdgAdap, vector<unsigned long> TriAdap, vector<unsigned long> TetAdap,
-                                     unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
+                                     CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();  

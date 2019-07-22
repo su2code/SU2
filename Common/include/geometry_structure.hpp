@@ -1786,7 +1786,7 @@ public:
    * \param[in] val_nZone - Total number of domains.
    */
   CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
-                    unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
+                    CConfig *config, unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \overload
