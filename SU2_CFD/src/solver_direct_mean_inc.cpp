@@ -4535,13 +4535,21 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
 void CIncEulerSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
   unsigned short iDiff_Outputs, iVec, nVec;
+  su2double Local_ComboObj = 0.0;
 
   for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
     nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
     for (iVec = 0; iVec < nVec; iVec++) {
-      Total_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
+      Local_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
     }
   }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&Local_ComboObj,  &Total_ComboObj, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  Total_ComboObj = Local_ComboObj;
+#endif
+
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
