@@ -52,6 +52,7 @@ def run_forward(comm, forward_driver, inputs, num_diff_outputs):
             else:
                 outputs[i] = None
 
+    forward_driver.Postprocessing()
     return tuple(outputs)
 
 
@@ -68,6 +69,7 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
     comm.Barrier()
     grads = tuple(torch.tensor(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
                   for i in range(adjoint_driver.GetnDiff_Inputs()))
+    adjoint_driver.Postprocessing()
     return grads
 
 
@@ -83,28 +85,21 @@ def main():
         run_type = comm.bcast(None, root=0)
         if run_type == RunCode.STOP:
             break
+
         config = comm.bcast(None, root=0)
 
         if run_type == RunCode.RUN_FORWARD:
-            if forward_driver is not None:
-                forward_driver.Postprocessing()
             inputs = comm.bcast(None, root=0)
             forward_driver = pysu2.CSinglezoneDriver(config, num_zones, dims, comm)
             run_forward(comm, forward_driver, inputs, num_diff_outputs)
 
         elif run_type == RunCode.RUN_ADJOINT:
             assert inputs is not None, 'Run forward simulation before running the adjoint.'
-            if adjoint_driver is not None:
-                adjoint_driver.Postprocessing()
             grad_outputs = comm.bcast(None, root=0)
             adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(config, num_zones, dims, comm)
             run_adjoint(comm, adjoint_driver, inputs, grad_outputs)
             inputs = None
 
-    if forward_driver is not None:
-        forward_driver.Postprocessing()
-    if adjoint_driver is not None:
-        adjoint_driver.Postprocessing()
     comm.Disconnect()
     intercomm.Disconnect()
 
