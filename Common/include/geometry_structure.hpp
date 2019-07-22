@@ -3039,7 +3039,7 @@ public:
    * \param config
    * \param nDim
    */
-  CDummyGeometry(CConfig *config, unsigned short nDim);
+  CDummyGeometry(CConfig *config);
   
   /*!
   */
