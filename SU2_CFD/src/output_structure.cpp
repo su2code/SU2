@@ -13264,7 +13264,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             }
             
             /* Get local gradient error from the verification solution class. */
-            solver[FLOW_SOL]->VerificationSolution->GetPrimitiveGradientLocalError(coor, time, mmsGrad, error);
+            solver[FLOW_SOL]->VerificationSolution->GetPrimitiveGradientLocalError(coor, time, gradient, error);
             for (jVar = 0; jVar < nVar_First; jVar++) {
               for (iDim = 0; iDim < nDim; iDim ++){
                 Local_Data[jPoint][iVar] = error[jVar][iDim];

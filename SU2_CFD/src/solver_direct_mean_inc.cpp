@@ -601,6 +601,13 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    unsigned short nNeighbor = (geometry->node[iPoint]->GetnPeriodicNeighbor() +
+                                geometry->node[iPoint]->GetnNeighbor());
+    geometry->node[iPoint]->SetnNeighbor(nNeighbor);
+  }
+  geometry->InitiateComms(geometry, config, NEIGHBORS);
+  geometry->CompleteComms(geometry, config, NEIGHBORS);
   SetImplicitPeriodic(euler_implicit);
   if (iMesh == MESH_0) SetRotatePeriodic(true);
   
@@ -7368,6 +7375,13 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
   }
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    unsigned short nNeighbor = (geometry->node[iPoint]->GetnPeriodicNeighbor() +
+                                geometry->node[iPoint]->GetnNeighbor());
+    geometry->node[iPoint]->SetnNeighbor(nNeighbor);
+  }
+  geometry->InitiateComms(geometry, config, NEIGHBORS);
+  geometry->CompleteComms(geometry, config, NEIGHBORS);
   SetImplicitPeriodic(euler_implicit);
   if (iMesh == MESH_0) SetRotatePeriodic(true);
   

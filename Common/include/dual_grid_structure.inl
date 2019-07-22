@@ -84,6 +84,10 @@ inline su2double CPoint::GetPeriodicVolume (void) { return Periodic_Volume; }
 
 inline void CPoint::SetPeriodicVolume (su2double val_volume) { Periodic_Volume = val_volume; }
 
+inline unsigned short CPoint::GetnPeriodicNeighbor (void) { return Periodic_nNeighbor; }
+
+inline void CPoint::SetnPeriodicNeighbor (unsigned short val_nNeighbor) { Periodic_nNeighbor = val_nNeighbor; }
+
 inline su2double CPoint::GetMaxLength(void) {return MaxLength;}
 
 inline bool CPoint::GetMove (void) { return Move; }

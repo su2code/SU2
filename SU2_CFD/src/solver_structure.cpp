@@ -471,11 +471,30 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (!geometry->node[Neighbor_Point]->GetPeriodicBoundary())
               nNeighbor++;
               
+                // check for a scenario with adjacent periodic markers where
+                // one of the nodes sits on two periodic faces (corner point).
+
+//                vector<unsigned short> bc;
+//                for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//                  if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//                      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//                        jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//                        if ((jPoint == Neighbor_Point)) bc.push_back(iMarker);
+//                        // && (iPeriodic != iMarker)
+//                      }
+//                  }
+//                }
+//
+//                 //if ((find(bc.begin(), bc.end(),iPeriodic) != bc.end()) && (bc.size() > 1) ) nNeighbor++;
+//                 if ((find(bc.begin(), bc.end(),iPeriodic) == bc.end())) {
+//                  nNeighbor++;
+//              }
+              
             }
             
             /*--- Store the number of neighbors in bufffer. ---*/
             
-            bufSSend[buf_offset] = nNeighbor;
+            bufSSend[buf_offset] = nNeighbor + geometry->node[iPoint]->GetnPeriodicNeighbor();
             
             break;
             
@@ -1448,9 +1467,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short nPeriodic = config->GetnMarker_Periodic();
-  unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
+  unsigned short iDim, jDim, iVar, jVar, iPeriodic, iNeighbor, nNeighbor;
   
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset, total_index;
+  unsigned long iPoint, jPoint, iRecv, nRecv, offset, buf_offset, total_index;
   
   int source, iMessage, jRecv;
   
@@ -1539,9 +1558,35 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               
               /*--- Store the extra neighbors on the periodic face. ---*/
               
-              nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
+              nNeighbor = (geometry->node[iPoint]->GetnPeriodicNeighbor() +
                            bufSRecv[buf_offset]);
-              geometry->node[iPoint]->SetnNeighbor(nNeighbor);
+              
+              /*--- Correction in the event that we have adjacent periodic
+               markers where one of the corners will have a repeated edge
+               that should be removed. We only do this on the second and
+               third pass for adjacent periodic markers. ---*/
+              
+//              if (val_periodic_index > 1) {
+//
+//                /* Check for a scenario with adjacent periodic markers where
+//                 one of the nodes sits on two periodic faces (corner point). */
+//                
+//                vector<unsigned short> Marker_List;
+//                for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//                  if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//                    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+//                      jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//                      if (jPoint == iPoint) Marker_List.push_back(iMarker);
+//                    }
+//                  }
+//                }
+//               // if (Marker_List.size() >= 2) nNeighbor -= val_periodic_index-1;
+//                //if (Marker_List.size() == 3) nNeighbor--;
+//              }
+              
+              /*--- Final storage of the neighbors. ---*/
+              
+              geometry->node[iPoint]->SetnPeriodicNeighbor(nNeighbor);
               
               break;
               

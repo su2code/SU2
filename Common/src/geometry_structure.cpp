@@ -872,7 +872,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
             break;
           case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnPoint();
+            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

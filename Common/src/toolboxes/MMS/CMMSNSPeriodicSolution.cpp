@@ -142,7 +142,7 @@ void CMMSNSPeriodicSolution::GetPrimitiveGradient(const su2double *val_coords,
   
   /* Analytic values for the primitive variable gradients.
    The source code for the gradient values is generated in Python.
-   See the file CMMSEulerPeriodicSolution.py in the directory
+   See the file CMMSNSPeriodicSolution.py in the directory
    CreateMMSSourceTerms for the details on how to do this.*/
   
   /* Easier storage of the x- and y-coordinates. */
@@ -185,9 +185,9 @@ void CMMSNSPeriodicSolution::GetMMSSourceTerm(const su2double *val_coords,
   const su2double x = val_coords[0];
   const su2double y = val_coords[1];
   
-  /*--- The source code for the source terms is generated in Python.
-   See the file CMMSEulerPeriodicSolution.py in the directory
-   CreateMMSSourceTerms for the details how to do this. ---*/
+  /* The source code for the source terms is generated in Python.
+   See the file CMMSNSPeriodicSolution.py in the directory
+   CreateMMSSourceTerms for the details how to do this. */
   val_source[0]      = 2*k*cos(k*(x + y));
   val_source[1]      = k*((Gamma - 1.0)*(2.0*pow(a + sin(k*(x + y)), 1.0) - 1) + 2)*cos(k*(x + y));
   val_source[2]      = k*((Gamma - 1.0)*(2.0*pow(a + sin(k*(x + y)), 1.0) - 1) + 2)*cos(k*(x + y));

@@ -59,10 +59,10 @@ protected:
 
 private:
 
-  su2double *Error_RMS;                        /*!< \brief Vector with the global RMS error for each variable in a verification case. */
-  su2double *Error_Max;                        /*!< \brief Vector with the global max error for each variable in a verification case. */
-  unsigned long *Error_Point_Max;              /*!< \brief Global index for the node with the max error in a verification case. */
-  su2double **Error_Point_Max_Coord;           /*!< \brief Coordinates for the node with the max error in a verification case. */
+  su2double *Error_RMS;               /*!< \brief Vector with the global RMS error for each variable in a verification case. */
+  su2double *Error_Max;               /*!< \brief Vector with the global max error for each variable in a verification case. */
+  unsigned long *Error_Point_Max;     /*!< \brief Global index for the node with the max error in a verification case. */
+  su2double **Error_Point_Max_Coord;  /*!< \brief Coordinates for the node with the max error in a verification case. */
   
 public:
   

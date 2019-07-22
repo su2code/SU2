@@ -44,7 +44,7 @@
 /*!
  * \class CMMSNSPeriodicSolution
  * \brief Class to define the required data for the manufactured solution of the
- laminar Navier-Stokes equations on a periodic quad (1x1).
+ laminar Navier-Stokes equations on a periodic quad [-1,1]x[-1,1].
  * \author T. Economon, E. van der Weide
  */
 class CMMSNSPeriodicSolution: public CVerificationSolution {
