@@ -128,16 +128,11 @@ CDriver::CDriver(char* confFile,
     
     if (rank == MASTER_NODE){
       cout  << endl << "Parsing config file for zone " << iZone << endl;
-  }
-
+    }
+    
     Input_Preprocessing(config_container[iZone], driver_config);
-
+    
   }
-
-  /*--- Get the dimension from the first zone --- */
-
-  nDim = CConfig::GetnDim(config_container[ZONE_0]->GetMesh_FileName(),
-                          config_container[ZONE_0]->GetMesh_FileFormat());  
 
   /*--- Set the multizone part of the problem. ---*/
   if (driver_config->GetMultizone_Problem()){
@@ -145,8 +140,8 @@ CDriver::CDriver(char* confFile,
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
     }
-      }
-
+  }
+  
   /*--- Determine whether or not the FEM solver is used, which decides the
  type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
 
@@ -669,6 +664,10 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
   
+  /*--- Set the dimension --- */
+  
+  nDim = geometry_aux->GetnDim();
+  
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
   
   geometry_aux->SetColorGrid_Parallel(config);
@@ -875,6 +874,10 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
   
   geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+  
+  /*--- Set the dimension --- */
+  
+  nDim = geometry_aux->GetnDim();  
   
   /*--- For the FEM solver with time-accurate local time-stepping, use
        a dummy solver class to retrieve the initial flow state. ---*/
