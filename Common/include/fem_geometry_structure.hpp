@@ -1383,7 +1383,7 @@ class CDummyMeshFEM_DG : public CMeshFEM_DG {
   
 public:
   
-  CDummyMeshFEM_DG(CConfig *config, unsigned short nDim);
+  CDummyMeshFEM_DG(CConfig *config);
   
   ~CDummyMeshFEM_DG();
   

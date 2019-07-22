@@ -106,7 +106,8 @@ protected:
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
-
+  bool dummy_geometry;
+  
 public:
 	
   CDriver();
@@ -120,7 +121,7 @@ public:
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          SU2_Comm MPICommunicator);
+          SU2_Comm MPICommunicator, bool dummy_geo);
 
   /*!
    * \brief Destructor of the class.
@@ -133,14 +134,19 @@ public:
   virtual void Run() { };
 
   /*!
+   * \brief Init_Containers
+   */
+  void SetContainers_Null();
+  
+  /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing(CConfig *&config, CConfig *driver_config);
+  void Input_Preprocessing(CConfig **&config, CConfig *&driver_config);
 
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
-  void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry);
+  void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry, bool dummy);
   
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
@@ -1335,36 +1341,4 @@ public:
    */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
-};
-
-
-
-
-/*!
- * \brief CDummyDriver class that constructs the driver without running a solver.
- */
-class CDummyDriver : public CDriver {
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CDummyDriver (char* confFile,
-               unsigned short val_nZone,
-               SU2_Comm MPICommunicator);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDummyDriver(){}
-  
-  /*!
-   * \brief Does nothing except printing the information that no solver is running.
-   */
-  void StartSolver();
-  
 };

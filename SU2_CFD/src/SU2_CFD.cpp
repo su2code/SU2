@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   bool dry_run;
   std::string filename = "default";
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
-                                       "Only execute preprocessing steps without running the solver.");
+                                       "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
   
   CLI11_PARSE(app, argc, argv);

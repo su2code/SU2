@@ -19977,7 +19977,7 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   
 }
 
-CDummyGeometry::CDummyGeometry(CConfig *config, unsigned short nDim){
+CDummyGeometry::CDummyGeometry(CConfig *config){
   
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
@@ -20086,13 +20086,12 @@ CDummyGeometry::CDummyGeometry(CConfig *config, unsigned short nDim){
   
   Tag_to_Marker = new string[config->GetnMarker_All()];
   
-  this->nDim = nDim;
-  
-  
   for (unsigned short iRank = 0; iRank < size; iRank++){
     nPoint_P2PRecv[iRank] = 0;
     nPoint_P2PSend[iRank] = 0;
   }
+  
+  nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
 }
 
