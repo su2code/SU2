@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -148,6 +148,60 @@ namespace AD{
    * for each output variable to the AD tape.
    */
   void EndPreacc();
+  
+  /*!
+   * \brief Initializes an externally differentiated function. Input and output variables are set with SetExtFuncIn/SetExtFuncOut
+   * \param[in] storePrimalInput - Specifies whether the primal input values are stored for the reverse call of the external function.
+   * \param[in] storePrimalOutput - Specifies whether the primal output values are stored for the reverse call of the external function.
+   */
+  void StartExtFunc(bool storePrimalInput, bool storePrimalOutput);
+  
+  /*!
+   * \brief Sets the scalar input of a externally differentiated function.
+   * \param[in] data - the scalar input variable.
+   */
+  void SetExtFuncIn(su2double &data);
+  
+  /*!
+   * \brief Sets the input variables of a externally differentiated function using a 1D array.
+   * \param[in] data - the input 1D array.
+   * \param[in] size - number of rows.
+   */
+  void SetExtFuncIn(const su2double* data, const int size);
+  
+  /*!
+  * \brief  Sets the input variables of a externally differentiated function using a 2D array.
+  * \param[in] data - the input 2D array.
+  * \param[in] size_x - number of rows.
+  * \param[in] size_y - number of columns.
+  */
+  void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y);
+
+  /*!
+   * \brief Sets the scalar output of a externally differentiated function.
+   * \param[in] data - the scalar output variable.
+   */
+  void SetExtFuncOut(su2double &data);
+
+  /*!
+   * \brief Sets the output variables of a externally differentiated function using a 1D array.
+   * \param[in] data - the output 1D array.
+   * \param[in] size - number of rows.
+   */
+  void SetExtFuncOut(su2double* data, const int size);
+
+  /*!
+  * \brief  Sets the output variables of a externally differentiated function using a 2D array.
+  * \param[in] data - the output 2D array.
+  * \param[in] size_x - number of rows.
+  * \param[in] size_y - number of columns.
+  */
+  void SetExtFuncOut(su2double** data, const int size_x, const int size_y);
+  
+  /*!
+   * \brief Ends an external function section by deleting the structures.
+   */
+  void EndExtFunc();
 
 }
 

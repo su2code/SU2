@@ -1,7 +1,7 @@
 ## \file merge.py
 #  \brief python package for merging meshes
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -17,7 +17,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -84,6 +84,8 @@ def merge( config ):
     # # MERGING # #
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         merge_multizone(konfig)
+    elif konfig['OUTPUT_FORMAT'] == 'PARAVIEW_BINARY':
+        pass
     else:
         if 'WRT_UNSTEADY' in special_cases:
             merge_unsteady(konfig)
@@ -123,7 +125,7 @@ def merge_solution( config ):
 def merge_multizone( config, begintime=0, endtime=None ):
 
     if not endtime:
-        endtime = config.EXT_ITER
+        endtime = config.TIME_ITER
     
     SU2_SOL_FSI( config )
     

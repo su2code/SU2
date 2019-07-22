@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -51,6 +51,7 @@
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"
@@ -65,3 +66,10 @@ using namespace std;
  * \param[in] config - Definition of the particular problem.
  */
 void Partition_Analysis(CGeometry *geometry, CConfig *config);
+
+/*!
+ * \brief Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config);

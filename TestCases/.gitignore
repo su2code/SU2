@@ -14,6 +14,7 @@
 *.vtk
 *.csv
 *.plt
+*.szplt
 *.pw
 *.IGS
 *.cgns
@@ -22,6 +23,5 @@ COPYING
 README.md
 *.autotest
 config_*.cfg
-*.ref*
 *.eqn
 *.pkl

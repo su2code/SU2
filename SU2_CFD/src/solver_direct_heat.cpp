@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -36,548 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-
-CHeatSolver::CHeatSolver(void) : CSolver() { }
-
-CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
-  
-  unsigned short iDim, iVar, nLineLets;
-  unsigned long iPoint;
-  
-  nPoint =        geometry->GetnPoint();
-  nPointDomain =  geometry->GetnPointDomain();
-  nDim    =       geometry->GetnDim();
-  node    =       new CVariable*[nPoint];
-  nVar    =       1;
-  
-  Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-  Solution     = new su2double[nVar];
-  Res_Sour     = new su2double[nVar];
-  Residual_Max = new su2double[nVar]; Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
-  
-  /*--- Point to point stiffness matrix (only for triangles)---*/
-  
-  StiffMatrix_Elem = new su2double*[nDim+1];
-  for (iVar = 0; iVar < nDim+1; iVar++) {
-    StiffMatrix_Elem[iVar] = new su2double [nDim+1];
-  }
-  
-  StiffMatrix_Node = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    StiffMatrix_Node[iVar] = new su2double [nVar];
-  }
-  
-  /*--- Initialization of matrix structures ---*/
-  
-  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Linear Elasticity)." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-  
-  /*--- Initialization of linear solver structures ---*/
-  
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-  /*--- Heat coefficient for all of the markers ---*/
-  
-  CHeat = new su2double[config->GetnMarker_All()];
-  Total_CHeat = 0.0;
-  
-  /*--- Check for a restart (not really used), initialize from zero otherwise ---*/
-  
-  bool restart = (config->GetRestart());
-  if (!restart) {
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      
-      /*--- Zero initial condition for testing source terms & forcing BCs ---*/
-      
-      Solution[0] = 0.0;
-      Solution[1] = 0.0;
-      
-      node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);
-      
-      /*--- Copy solution to old containers if using dual time ---*/
-      
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) {
-        node[iPoint]->Set_Solution_time_n();
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
-        node[iPoint]->Set_Solution_time_n();
-        node[iPoint]->Set_Solution_time_n1();
-      }
-      
-    }
-  } else {
-    
-    cout << "Heat restart file not currently configured!!" << endl;
-    
-    string mesh_filename = config->GetSolution_FlowFileName();
-    ifstream restart_file;
-    
-    char *cstr; cstr = new char [mesh_filename.size()+1];
-    strcpy (cstr, mesh_filename.c_str());
-    restart_file.open(cstr, ios::in);
-    
-    if (restart_file.fail()) {
-      SU2_MPI::Error("There is no Heat restart file", CURRENT_FUNCTION);
-    }
-    unsigned long index;
-    string text_line;
-    
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      getline(restart_file, text_line);
-      istringstream point_line(text_line);
-      point_line >> index >> Solution[0] >> Solution[1];
-      node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);
-    }
-    restart_file.close();
-  }
-  
-}
-
-CHeatSolver::~CHeatSolver(void) {
-  
-  unsigned short iVar;
-  
-  for (iVar = 0; iVar < nDim+1; iVar++)
-    delete [] StiffMatrix_Elem[iVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] StiffMatrix_Node[iVar];
-  
-  delete [] StiffMatrix_Elem;
-  delete [] StiffMatrix_Node;
-  
-}
-
-void CHeatSolver::Preprocessing(CGeometry *geometry,
-                                CSolver **solver_container,
-                                CConfig   *config,
-                                unsigned short iMesh,
-                                unsigned short iRKStep,
-                                unsigned short RunTime_EqSystem, bool Output) {
-  
-  unsigned long iPoint;
-  
-  /*--- Set residuals and matrix entries to zero ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    LinSysSol.SetBlock_Zero(iPoint);
-    LinSysAux.SetBlock_Zero(iPoint);
-    LinSysRes.SetBlock_Zero(iPoint);
-  }
-  
-  /*--- Zero out the entries in the various matrices ---*/
-  StiffMatrixSpace.SetValZero();
-  StiffMatrixTime.SetValZero();
-  Jacobian.SetValZero();
-  
-}
-
-void CHeatSolver::Source_Residual(CGeometry *geometry,
-                                  CSolver **solver_container,
-                                  CNumerics *numerics, CNumerics *second_numerics,
-                                  CConfig   *config,
-                                  unsigned short iMesh) {
-
-  if (config->GetUnsteady_Simulation() != STEADY) {
-
-    unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-    su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-    su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-    unsigned short iDim;
-
-    /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-    if (config->GetUnsteady_Simulation() == TIME_STEPPING) Time_Num = config->GetDelta_UnstTimeND();
-    else Time_Num = 1E30;
-    
-    /*--- Loop through elements to compute contributions from the matrix
-     blocks involving time. These contributions are also added to the
-     Jacobian w/ the time step. Spatial source terms are also computed. ---*/
-    
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-      
-      /*--- Get node numbers and their coordinate vectors ---*/
-      
-      Point_0 = geometry->elem[iElem]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
-      Point_1 = geometry->elem[iElem]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
-      Point_2 = geometry->elem[iElem]->GetNode(2);  Coord_2 = geometry->node[Point_2]->GetCoord();
-      
-      /*--- Compute area and volume ---*/
-      
-      if (nDim == 2) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-          b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-        }
-        Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-      }
-      else {
-        Point_3 = geometry->elem[iElem]->GetNode(3);
-        Coord_3 = geometry->node[Point_3]->GetCoord();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-          b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-          c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-        }
-        d[0] = a[1]*b[2]-a[2]*b[1];
-        d[1] = -(a[0]*b[2]-a[2]*b[0]);
-        d[2] = a[0]*b[1]-a[1]*b[0];
-        Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-      }
-      
-      /*--- Block contributions to the Jacobian (includes time step) ---*/
-      
-      if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local/Time_Num); }
-      else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local/Time_Num); }
-      Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      if (nDim == 3) Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
-      
-      if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local/Time_Num); }
-      else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local/Time_Num); }
-      
-      Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      if (nDim == 3) {
-        Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-      }
-      
-    }
-    
-  }
-  
-}
-
-void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-  
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, total_index, iPoint;
-  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
-  
-  if (nDim == 2 ) {
-    
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-      
-      Point_0 = geometry->elem[iElem]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
-      Point_1 = geometry->elem[iElem]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
-      Point_2 = geometry->elem[iElem]->GetNode(2);  Coord_2 = geometry->node[Point_2]->GetCoord();
-      
-      numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-      numerics->ComputeResidual(StiffMatrix_Elem, config);
-      
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      
-    }
-  }
-  
-  if (nDim == 3 ) {
-    
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-      
-      Point_0 = geometry->elem[iElem]->GetNode(0);   Coord_0 = geometry->node[Point_0]->GetCoord();
-      Point_1 = geometry->elem[iElem]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
-      Point_2 = geometry->elem[iElem]->GetNode(2);   Coord_2 = geometry->node[Point_2]->GetCoord();
-      Point_3 = geometry->elem[iElem]->GetNode(3);  Coord_3 = geometry->node[Point_3]->GetCoord();
-      
-      numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-      numerics->ComputeResidual(StiffMatrix_Elem, config);
-      
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrixSpace.AddBlock(Point_0, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrixSpace.AddBlock(Point_1, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrixSpace.AddBlock(Point_2, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrixSpace.AddBlock(Point_3, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrixSpace.AddBlock(Point_3, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrixSpace.AddBlock(Point_3, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrixSpace.AddBlock(Point_3, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
-      
-    }
-  }
-  
-  if (config->GetUnsteady_Simulation() != STEADY) {
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      total_index = iPoint*nVar;
-      LinSysSol[total_index] = node[iPoint]->GetSolution(0);
-      LinSysAux[total_index] = 0.0;
-    }
-    
-    StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysAux);
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      total_index = iPoint*nVar;
-      Residual[0] = LinSysAux[total_index];
-      LinSysRes.SubtractBlock(iPoint, Residual);
-    }
-  }
-  
-}
-
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  unsigned long iPoint, iVertex, total_index;
-  su2double Twall;
-  
-  /*--- Identify the boundary ---*/
-  
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  /*--- Retrieve the specified wall temperature ---*/
-  
-  Twall = config->GetIsothermal_Temperature(Marker_Tag);
-  
-  /*--- Set the solution at the boundary nodes and zero the residual ---*/
-  
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    Solution[0] = Twall;
-    
-    node[iPoint]->SetSolution(Solution);
-    node[iPoint]->SetSolution_Old(Solution);
-
-    /*--- Unsteady solution, the equation is solved in terms of increments ---*/
-    if (config->GetUnsteady_Simulation() != STEADY) Residual[0] = 0.0;
-    
-    LinSysRes.SetBlock(iPoint, Residual);
-    LinSysSol.SetBlock(iPoint, Residual);
-
-    total_index = iPoint*nVar;
-    Jacobian.DeleteValsRowi(total_index);
-    
-  }
-  
-}
-
-
-void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                       unsigned short iMesh, unsigned short RunTime_EqSystem) {
-  
-  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, d[3] = {0.0,0.0,0.0}, Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-  unsigned short iDim, iVar;
-  su2double TimeJac = 0.0;
-  
-  /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-  Time_Num = config->GetDelta_UnstTimeND();
-  
-  /*--- Loop through elements to compute contributions from the matrix
-   blocks involving time. These contributions are also added to the
-   Jacobian w/ the time step. Spatial source terms are also computed. ---*/
-  
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    
-    /*--- Get node numbers and their coordinate vectors ---*/
-    
-    Point_0 = geometry->elem[iElem]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
-    Point_1 = geometry->elem[iElem]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
-    Point_2 = geometry->elem[iElem]->GetNode(2);  Coord_2 = geometry->node[Point_2]->GetCoord();
-    
-    /*--- Compute area and volume ---*/
-
-    if (nDim == 2) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-      }
-      Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-    }
-    else {
-      Point_3 = geometry->elem[iElem]->GetNode(3);
-      Coord_3 = geometry->node[Point_3]->GetCoord();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-        b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-        c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-      }
-      d[0] = a[1]*b[2]-a[2]*b[1]; d[1] = -(a[0]*b[2]-a[2]*b[0]); d[2] = a[0]*b[1]-a[1]*b[0];
-      Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-    }
-    
-    /*--- Block contributions to the Jacobian (includes time step) ---*/
-        
-    if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
-    if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-      
-    if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local*TimeJac); }
-    else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local*TimeJac); }
-    
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-    if (nDim == 3) { Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node); }
-      
-    if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local*TimeJac); }
-    else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local*TimeJac); }
-    
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    if (nDim == 3) {
-      Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-    }
-    
-  }
-  
-  unsigned long iPoint, total_index;
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-  
-  /*--- loop over points ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Solution at time n-1, n and n+1 ---*/
-    
-    U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-    U_time_n   = node[iPoint]->GetSolution_time_n();
-    U_time_nP1 = node[iPoint]->GetSolution();
-    
-    /*--- Compute residual ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-        LinSysSol[total_index] = ( U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] + (1.0/3.0)*U_time_nM1[iVar] );
-    }
-  }
-  
-  /*--- Contribution to the residual ---*/
-  
-  StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysAux);
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    total_index = iPoint*nVar;
-    Residual[0] = LinSysAux[total_index];
-    LinSysRes.SubtractBlock(iPoint, Residual);
-  }
-  
-}
-
-void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  unsigned short iVar;
-  unsigned long iPoint, total_index;
-  
-  /*--- Build implicit system ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysSol[total_index] = 0.0;
-    }
-    
-  }
-  
-  /*--- Initialize residual and solution at the ghost points ---*/
-  
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-  }
-  
-  /*--- Solve or smooth the linear system ---*/
-  
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
-  /*--- Update solution (system written in terms of increments) ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (config->GetUnsteady_Simulation() == STEADY) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      else node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-    }
-  }
-  
-  /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
-  
-  /*---  Compute the residual Ax-f ---*/
-  
-  Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-  
-  /*--- Set maximum residual to zero ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  
-  /*--- Compute the residual ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-    }
-  }
-  
-  /*--- Compute the root mean square residual ---*/
-  
-  SetResidual_RMS(geometry, config);
-  
-}
+#include "../include/variables/CHeatFVMVariable.hpp"
 
 CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
 
@@ -589,13 +48,16 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned short iVar, iDim, nLineLets, iMarker;
   unsigned long iPoint, iVertex;
 
+  bool multizone = config->GetMultizone_Problem();
+
   int rank = MASTER_NODE;
 
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool heat_equation      = config->GetKind_Solver() == HEAT_EQUATION_FVM;
+  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
+                        (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -668,8 +130,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation) MG level: " << iMesh << "." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }
@@ -758,6 +219,21 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
     config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
   }
 
+  if (multizone){
+    /*--- Initialize the BGS residuals. ---*/
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+  }
+
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       if (flow)
         node[iPoint] = new CHeatFVMVariable(config->GetTemperature_FreeStreamND(), nDim, nVar, config);
@@ -765,7 +241,10 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
         node[iPoint] = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
   /*--- MPI solution ---*/
-  Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
 }
 
 CHeatSolverFVM::~CHeatSolverFVM(void) { }
@@ -804,7 +283,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool heat_equation = config->GetKind_Solver() == HEAT_EQUATION_FVM;
+  bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION_FVM) ||
+                        (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -839,18 +319,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   if (flow) {
 
-    if (config->GetKind_Turb_Model() == SA || config->GetKind_Turb_Model() == SA_NEG) {
-      if (nDim == 2) skipVars += 6;
-      if (nDim == 3) skipVars += 8;
-    }
-    else if (config->GetKind_Turb_Model() == SST ) {
-      if (nDim == 2) skipVars += 7;
-      if (nDim == 3) skipVars += 9;
-    }
-    else {
-      if (nDim == 2) skipVars += 5;
-      if (nDim == 3) skipVars += 7;
-    }
+    if (nDim == 2) skipVars += 5;
+    if (nDim == 3) skipVars += 7;
   }
   else if (heat_equation) {
 
@@ -932,8 +402,10 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-
-  solver[MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  
+  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -952,7 +424,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       }
       solver[iMesh][HEAT_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
 
@@ -1012,90 +485,11 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
   }
 
   /*--- MPI parallelization ---*/
-
-  Set_MPI_Undivided_Laplacian(geometry, config);
-
+  
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  
   delete [] Diff;
-
-}
-
-void CHeatSolverFVM::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  MPI_Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Undivided_Laplacian = new su2double [nBufferR_Vector];
-      Buffer_Send_Undivided_Laplacian = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = Buffer_Send_Undivided_Laplacian[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Undivided_Laplacian;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-
-        /*--- Only copy conserved variables - no transformation necessary. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex];
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetUndivided_Laplacian(iVar, Solution[iVar]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Undivided_Laplacian;
-
-    }
-
-  }
 
 }
 
@@ -1175,6 +569,10 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
 
+        Temp_i_Grad = node[iPoint]->GetGradient();
+        Temp_j_Grad = node[jPoint]->GetGradient();
+        numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
+
         Temp_i = node[iPoint]->GetSolution(0);
         Temp_j = node[jPoint]->GetSolution(0);
 
@@ -1252,6 +650,10 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
+  bool turb = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+
+  eddy_viscosity_i = 0.0;
+  eddy_viscosity_j = 0.0;
   laminar_viscosity = config->GetMu_ConstantND();
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
@@ -1278,9 +680,10 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Eddy viscosity to compute thermal conductivity ---*/
     if (flow) {
-      eddy_viscosity_i = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-      eddy_viscosity_j = solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity();
-
+      if (turb) {
+        eddy_viscosity_i = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+        eddy_viscosity_j = solver_container[TURB_SOL]->node[jPoint]->GetmuT();
+      }
       thermal_diffusivity_i = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_i/Prandtl_Turb);
       thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
     }
@@ -1344,7 +747,8 @@ void CHeatSolverFVM::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
 
             Local_Surface_Areas[iMarker_HeatFlux] += Area;
 
@@ -1630,7 +1034,10 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain;
 
-  bool flow                 = (config->GetKind_Solver() != HEAT_EQUATION);
+  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
+               || (config->GetKind_Solver() == RANS)
+               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
+               || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool grid_movement        = config->GetGrid_Movement();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -1642,48 +1049,46 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     if (geometry->node[iPoint]->GetDomain()) {
 
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-        if(flow) {
-            conv_numerics->SetNormal(Normal);
+      if(flow) {
+          conv_numerics->SetNormal(Normal);
 
-            /*--- Retrieve solution at this boundary node ---*/
+          /*--- Retrieve solution at this boundary node ---*/
 
-            V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+          V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
-            /*--- Retrieve the specified velocity for the inlet. ---*/
+          /*--- Retrieve the specified velocity for the inlet. ---*/
 
-            V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_outlet[iDim+1] = solver_container[FLOW_SOL]->node[Point_Normal]->GetPrimitive(iDim+1);
+          V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_outlet[iDim+1] = solver_container[FLOW_SOL]->node[Point_Normal]->GetPrimitive(iDim+1);
 
-            conv_numerics->SetPrimitive(V_domain, V_outlet);
+          conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-            if (grid_movement)
-              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+          if (grid_movement)
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-            conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), node[Point_Normal]->GetSolution(0));
+          conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), node[Point_Normal]->GetSolution(0));
 
-            /*--- Compute the residual using an upwind scheme ---*/
+          /*--- Compute the residual using an upwind scheme ---*/
 
-            conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-            /*--- Update residual value ---*/
+          /*--- Update residual value ---*/
 
-            LinSysRes.AddBlock(iPoint, Residual);
+          LinSysRes.AddBlock(iPoint, Residual);
 
-            /*--- Jacobian contribution for implicit integration ---*/
+          /*--- Jacobian contribution for implicit integration ---*/
 
-            if (implicit)
-              Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        }
-
-        // viscous contribution is still missing...
+          if (implicit)
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
     }
   }
 
@@ -1832,7 +1237,8 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
 
           dist = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
@@ -1869,7 +1275,8 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
 
           dist = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
@@ -1934,10 +1341,12 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turb = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  eddy_viscosity    = 0.0;
   laminar_viscosity = config->GetMu_ConstantND();
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
@@ -1982,7 +1391,10 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
     thermal_diffusivity = config->GetThermalDiffusivity_Solid();
     if(flow) {
-      eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+      if(turb) {
+        eddy_viscosity = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+      }
+
       thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
     }
 
@@ -2019,7 +1431,10 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       thermal_diffusivity = config->GetThermalDiffusivity_Solid();
       if(flow) {
-        eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+        if(turb) {
+          eddy_viscosity = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+        }
+
         thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
       }
 
@@ -2049,14 +1464,18 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Time step setting method ---*/
 
-      if (config->GetKind_TimeStep_Heat() == MINIMUM)
-        Local_Delta_Time = min(Local_Delta_Time_Inv, Local_Delta_Time_Visc);
-      else if (config->GetKind_TimeStep_Heat() == CONVECTIVE)
-        Local_Delta_Time = Local_Delta_Time_Inv;
-      else if (config->GetKind_TimeStep_Heat() == VISCOUS)
-        Local_Delta_Time = Local_Delta_Time_Visc;
-      else if (config->GetKind_TimeStep_Heat() == BYFLOW)
+      if (config->GetKind_TimeStep_Heat() == BYFLOW && flow) {
         Local_Delta_Time = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
+      }
+      else if (config->GetKind_TimeStep_Heat() == MINIMUM) {
+        Local_Delta_Time = min(Local_Delta_Time_Inv, Local_Delta_Time_Visc);
+      }
+      else if (config->GetKind_TimeStep_Heat() == CONVECTIVE) {
+        Local_Delta_Time = Local_Delta_Time_Inv;
+      }
+      else if (config->GetKind_TimeStep_Heat() == VISCOUS) {
+        Local_Delta_Time = Local_Delta_Time_Visc;
+      }
 
       /*--- Min-Max-Logic ---*/
 
@@ -2074,7 +1493,7 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   }
 
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
@@ -2163,8 +1582,9 @@ void CHeatSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
-
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
@@ -2247,8 +1667,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- Solve or smooth the linear system ---*/
 
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -2258,277 +1677,12 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
-
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+  
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
-
-}
-
-void CHeatSolverFVM::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  MPI_Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
-        }
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-
-    }
-
-  }
-
-}
-
-void CHeatSolverFVM::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  MPI_Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-
-    }
-
-  }
-}
-
-void CHeatSolverFVM::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-
-  su2double **Gradient = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Gradient[iVar] = new su2double[nDim];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  MPI_Status status;
-#endif
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
-      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Gradient;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy conserved variables before performing transformation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
-
-        /*--- Need to rotate the gradients for all conserved variables. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (nDim == 2) {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-          else {
-            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
-          }
-        }
-
-        /*--- Store the received information ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            node[iPoint]->SetGradient(iVar, iDim, Gradient[iVar][iDim]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Gradient;
-
-    }
-
-  }
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Gradient[iVar];
-  delete [] Gradient;
 
 }
 
@@ -2561,8 +1715,9 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
           }
         }
         solver_container[iMesh][HEAT_SOL]->node[iPoint]->SetSolution(Solution);
-      }
-      solver_container[iMesh][HEAT_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      }      
+      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
     delete [] Solution;
   }
@@ -2666,4 +1821,30 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
       }
     }
   }
+}
+
+void CHeatSolverFVM::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
 }

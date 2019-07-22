@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -183,11 +183,10 @@ class Config(ordered_bunch):
         param_dv['PARAM'] = def_dv['PARAM']
         param_dv['FFDTAG'] = def_dv['FFDTAG']
         param_dv['SIZE']   = def_dv['SIZE']
-
-        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
-                      'DV_VALUE_OLD'     : dv_old              ,
-                      'DV_VALUE_NEW'     : dv_new              })
         
+        self.update({ 'DV_VALUE_OLD'     : dv_old              ,
+                      'DV_VALUE_NEW'     : dv_new              })
+
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
     def __ne__(self,konfig):
@@ -392,7 +391,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())                
                 # split by comma, map to float, store in dictionary
-                data_dict[this_param] = map(float,this_value.split(","))
+                data_dict[this_param] = list(map(float,this_value.split(",")))
                 break              
 
             # float parameters
@@ -488,7 +487,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())
                 #split by ; 
-                this_def={}
+                this_def=OrderedDict()
                 this_value = this_value.split(";")
                 
                 for  this_obj in this_value:       
@@ -584,6 +583,14 @@ def read_config(filename):
         
     #: for line
 
+    if 'OPT_CONSTRAINT' in data_dict: 
+        if 'BUFFET' in data_dict['OPT_CONSTRAINT']['EQUALITY'] or 'BUFFET' in data_dict['OPT_CONSTRAINT']['INEQUALITY']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
+    if 'OPT_OBJECTIVE' in data_dict:
+        if 'BUFFET' in data_dict['OPT_OBJECTIVE']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
     #hack - twl
     if 'DV_VALUE_NEW' not in data_dict:
         data_dict['DV_VALUE_NEW'] = [0]
@@ -626,6 +633,8 @@ def read_config(filename):
         data_dict['FREESTREAM_PRESSURE'] = 101325.0
     if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
+    if 'MARKER_OUTLET' not in data_dict:
+        data_dict['MARKER_OUTLET'] = '(NONE)'
 
     #
     # Multipoints requires some particular default values
@@ -699,6 +708,19 @@ def read_config(filename):
         Temperature_List +=  str(Temperature_Value)
       Temperature_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
+
+    if 'MULTIPOINT_OUTLET_VALUE' not in data_dict:
+      if 'NONE' in data_dict['MARKER_OUTLET']:
+        Outlet_Value = 0.0
+      else:
+        Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      Outlet_Value_List = "("
+      for i in range(multipoints):
+        if i != 0: Outlet_Value_List +=  ", "
+        Outlet_Value_List +=  str(Outlet_Value)
+      Outlet_Value_List += ")"
+      data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
+      
 
     #
     # Default values for optimization parameters (needed for some eval functions

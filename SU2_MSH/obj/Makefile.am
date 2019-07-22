@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_MSH
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -53,27 +53,7 @@ ___bin_SU2_MSH_LDADD = ../../Common/lib/libSU2.a
 ___bin_SU2_MSH_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_MSH_LDADD += @su2_externals_LIBS@
 
-# if BUILD_HDF5
-___bin_SU2_MSH_CXXFLAGS += @HDF5_CXX@
-___bin_SU2_MSH_LDADD += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-___bin_SU2_MSH_CXXFLAGS += @SZIP_CXX@
-___bin_SU2_MSH_LDADD += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-___bin_SU2_MSH_CXXFLAGS += @ZLIB_CXX@
-___bin_SU2_MSH_LDADD += @ZLIB_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 ___bin_SU2_MSH_CXXFLAGS += @MUTATIONPP_CXX@
 ___bin_SU2_MSH_LDADD += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-___bin_SU2_MSH_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_MSH_LDADD += @JSONCPP_LD@
 # endif

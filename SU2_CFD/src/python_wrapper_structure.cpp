@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -797,99 +797,6 @@ map<string, string> CDriver::GetAllBoundaryMarkersType(){
   return allBoundariesTypeMap;
 }
 
-void CGeneralDriver::ResetConvergence() {
-
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-    integration_container[ZONE_0][INST_0][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][INST_0][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][INST_0][TRANS_SOL]->SetConvergence(false);
-    break;
-
-  case WAVE_EQUATION:
-    integration_container[ZONE_0][INST_0][WAVE_SOL]->SetConvergence(false);
-    break;
-
-  case HEAT_EQUATION:
-    integration_container[ZONE_0][INST_0][HEAT_SOL]->SetConvergence(false);
-    break;
-
-  case POISSON_EQUATION:
-    break;
-
-  case FEM_ELASTICITY:
-    integration_container[ZONE_0][INST_0][FEA_SOL]->SetConvergence(false);
-    break;
-
-  case DISC_ADJ_FEM:
-    integration_container[ZONE_0][INST_0][ADJFEA_SOL]->SetConvergence(false);
-    break;
-
-  case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) )
-      integration_container[ZONE_0][INST_0][ADJTURB_SOL]->SetConvergence(false);
-    break;
-
-  }
-
-}
-
-void CGeneralDriver::StaticMeshUpdate() {
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-  grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], true);
-
-  if(rank == MASTER_NODE) cout << "No grid velocity to be computed : static grid deformation." << endl;
-
-  if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-  grid_movement[ZONE_0][INST_0]->UpdateMultiGrid(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
-
-}
-
-void CGeneralDriver::SetInitialMesh() {
-
-  unsigned long iPoint;
-
-  StaticMeshUpdate();
-
-  /*--- Propagate the initial deformation to the past ---*/
-  //if (!restart) {
-  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
-      for(iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); iPoint++) {
-      //solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-      //solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-      geometry_container[ZONE_0][INST_0][iMesh]->node[iPoint]->SetVolume_n();
-      geometry_container[ZONE_0][INST_0][iMesh]->node[iPoint]->SetVolume_nM1();
-      geometry_container[ZONE_0][INST_0][iMesh]->node[iPoint]->SetCoord_n();
-      geometry_container[ZONE_0][INST_0][iMesh]->node[iPoint]->SetCoord_n1();
-    }
-  }
-  //}
-}
-
-void CGeneralDriver::BoundaryConditionsUpdate(){
-
-  int rank = MASTER_NODE;
-  unsigned short iZone;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if(rank == MASTER_NODE) cout << "Updating boundary conditions." << endl;
-  for(iZone = 0; iZone < nZone; iZone++){
-    geometry_container[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone][INST_0], config_container[iZone]);
-  }
-}
-
 void CFluidDriver::ResetConvergence() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
@@ -899,17 +806,6 @@ void CFluidDriver::ResetConvergence() {
       integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
-      break;
-
-    case WAVE_EQUATION:
-      integration_container[iZone][INST_0][WAVE_SOL]->SetConvergence(false);
-      break;
-
-    case HEAT_EQUATION:
-      integration_container[iZone][INST_0][HEAT_SOL]->SetConvergence(false);
-      break;
-
-    case POISSON_EQUATION:
       break;
 
     case FEM_ELASTICITY:

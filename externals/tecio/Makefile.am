@@ -1,71 +1,50 @@
-pkg_cppflags = @TECIO_CPPFLAGS@ -DUSEENUM -DTHREED -DMAKEARCHIVE -DNO_ASSERTS
-pkg_sources  = \
-	include/TECIO.h \
-	include/TECXXX.h \
-	tecsrc/ALLOC.h \
-	tecsrc/ARRLIST.h \
-	tecsrc/AUXDATA.h \
-	tecsrc/CHARTYPE.h \
-	tecsrc/DATAIO.h \
-	tecsrc/DATAIO4.h \
-	tecsrc/DATASET.h \
-	tecsrc/DATASET0.h \
-	tecsrc/DATASHR.h \
-	tecsrc/DATAUTIL.h \
-	tecsrc/FACE.h \
-	tecsrc/FILESTREAM.h \
-	tecsrc/GEOM.h \
-	tecsrc/GEOM2.h \
-	tecsrc/GLOBAL.h \
-	tecsrc/INPUT.h \
-	tecsrc/MASTER.h \
-	tecsrc/Q_MSG.h \
-	tecsrc/Q_UNICODE.h \
-	tecsrc/SET.h \
-	tecsrc/STRLIST.h \
-	tecsrc/STRUTIL.h \
-	tecsrc/SYSTEM.h \
-	tecsrc/TASSERT.h \
-	tecsrc/TECIO.h \
-	tecsrc/TECXXX.h \
-	tecsrc/TEXT.h \
-	tecsrc/TranslatedString.h \
-	tecsrc/VERSION.h \
-	tecsrc/W__BASE.h \
-	tecsrc/stdafx.h \
-	tecsrc/TranslatedString.cpp \
-	tecsrc/alloc.cpp \
-	tecsrc/arrlist.cpp \
-	tecsrc/auxdata.cpp \
-	tecsrc/dataio.cpp \
-	tecsrc/dataio4.cpp \
-	tecsrc/dataset.cpp \
-	tecsrc/dataset0.cpp \
-	tecsrc/datautil.cpp \
-	tecsrc/filestream.cpp \
-	tecsrc/geom2.cpp \
-	tecsrc/q_msg.cpp \
-	tecsrc/q_unicode.cpp \
-	tecsrc/set.cpp \
-	tecsrc/strlist.cpp \
-	tecsrc/strutil.cpp \
-	tecsrc/tassert.cpp \
-	tecsrc/tecxxx.cpp
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for external libraries
+# \author B. Kirk, T. Economon, F. Palacios
+# \version 6.1.0 "Falcon"
+#
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
+#
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+#
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+#
+################################################################################
 
+# Build any requested libraries from the provided source
+SUBDIRS =
 
+if BUILD_TECIO
+if BUILD_TECIOMPI
+  SUBDIRS += teciompisrc
+else
+  SUBDIRS += teciosrc
+endif
+endif
 
-
-######################################################################
-AUTOMAKE_OPTIONS = subdir-objects
-
-AM_CPPFLAGS  = $(pkg_cppflags) -fPIC # any defined package-specific include paths
-AM_CFLAGS    =
-AM_CXXFLAGS  =
-AM_LDFLAGS   = $(libmesh_LDFLAGS)
-
-noinst_LIBRARIES = libtecio.a
-
-libtecio_a_SOURCES  = $(pkg_sources)
-libtecio_a_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
-libtecio_a_CXXFLAGS = $(CXXFLAGS_DBG)
-libtecio_a_CFLAGS   = $(CFLAGS_DBG)

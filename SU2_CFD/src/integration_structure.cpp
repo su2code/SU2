@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -77,6 +77,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     case SPACE_UPWIND:
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
       break;
+    case FINITE_ELEMENT:
+      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+      break;
   }
   
   /*--- Compute viscous residuals ---*/
@@ -103,7 +106,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
-
 
   /*--- Weak boundary conditions ---*/
   
@@ -177,7 +179,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-
+  
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -195,7 +197,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
-        solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case CHT_WALL_INTERFACE: 
         if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
@@ -205,7 +207,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         }
         break;
-    } 
+    }
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. ---*/
+  
+  if (config->GetnMarker_Periodic() > 0) {
+    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  }
+  
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
@@ -220,6 +232,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
     bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
+    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
     unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -232,7 +245,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
     /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && initial_calc) ||
+    if ((linear_analysis && (initial_calc || dynamic)) ||
       (linear_analysis && restart && initial_calc_restart)) {
       solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
@@ -437,7 +450,9 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+
+    solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
+    solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
@@ -473,7 +488,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
         Cauchy_Value = 0.0;
         Cauchy_Counter = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Serie[iCounter] = 0.0;
+          Cauchy_Serie[iCounter] = 0.0;
       }
       
       Old_Func = New_Func;
@@ -489,7 +504,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       if (Iteration  >= config->GetCauchy_Elems()) {
         Cauchy_Value = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Value += Cauchy_Serie[iCounter];
+          Cauchy_Value += Cauchy_Serie[iCounter];
       }
       
       if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
@@ -601,7 +616,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     string Marker_Tag, Monitoring_Tag;
     int nProcessor = size;
 
-    /*--- Only if mater node allocate memory ---*/
+    /*--- Only if master node allocate memory ---*/
     
     if (rank == MASTER_NODE) {
       plunge_all = new su2double[nProcessor];
@@ -726,7 +741,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
   
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
@@ -786,7 +801,7 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
 
   su2double val_I, Max_Val_I;
 
@@ -839,7 +854,7 @@ void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *
 }
 
 
-void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter) {
   
   su2double FEA_check[2] = {0.0, 0.0};
   su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;
@@ -860,13 +875,13 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
-  if (iFSIIter == 0) {
+  if (iOuterIter == 0) {
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
     
   }
-  else if (iFSIIter > 0) {
+  else if (iOuterIter > 0) {
     
     // We loop only over the points that belong to the processor
     nPointDomain = fea_geometry->GetnPointDomain();
@@ -905,7 +920,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     /*--- Store the FSI residual ---*/
     fea_solver->SetFSI_Residual(deltaURes_recv);
 
-    if (iFSIIter == 1) {
+    if (iOuterIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
       logResidualFSI_initial = log10(deltaURes_recv);
       
@@ -979,19 +994,19 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     fea_solver->SetRelaxCoeff(WAitken);
 
     cout.precision(6);
-    if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
-    else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+    if (iOuterIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+    else if (iOuterIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
     else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
-    cout.width(8); cout << iFSIIter;
+    cout.width(8); cout << iOuterIter;
     cout.width(15); cout << iExtIter;
     cout.width(15); cout << WAitken;
     cout.width(15);
-    if (iFSIIter == 0) cout << " ";
-    else if (iFSIIter == 1) cout << logResidualFSI_initial;
+    if (iOuterIter == 0) cout << " ";
+    else if (iOuterIter == 1) cout << logResidualFSI_initial;
     else cout << logResidualFSI;
     cout.width(15);
-    if (iFSIIter < 2) cout << " ";
+    if (iOuterIter < 2) cout << " ";
     else cout << magResidualFSI;
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl;

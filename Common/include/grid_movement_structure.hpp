@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -21,7 +21,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -50,9 +50,9 @@
 
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
-#include "matrix_structure.hpp"
-#include "vector_structure.hpp"
-#include "linear_solvers_structure.hpp"
+#include "linear_algebra/CSysMatrix.hpp"
+#include "linear_algebra/CSysVector.hpp"
+#include "linear_algebra/CSysSolve.hpp"
 #include "element_structure.hpp"
 
 using namespace std;
@@ -671,6 +671,14 @@ public:
   void SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original);
 
   /*!
+   * \brief Set the CGNS file of the FFD chuck structure.
+   * \param[in] iFFDBox - Index of the FFD box.
+   * \param[in] original - Original box (before deformation).
+   */
+  void SetCGNS(CGeometry *geometry, unsigned short iFFDBox, bool original);
+
+
+  /*!
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
    */
@@ -967,9 +975,10 @@ protected:
 
 	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
-  CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
 public:
 
@@ -1149,8 +1158,9 @@ public:
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Screen_Output - determines if text is written to screen
 	 */
-  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output);
 
   /*!
 	 * \brief Compute the minimum distance to the nearest solid surface.
@@ -1249,7 +1259,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Set the derivatives of the boundary nodes.
@@ -1306,7 +1316,7 @@ public:
  * \class CElasticityMovement
  * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
  * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
- * \version 4.2.0 "Cardinal"
+ * \version 6.2.0 "Falcon"
  */
 class CElasticityMovement : public CVolumetricMovement {
 protected:
@@ -1329,9 +1339,15 @@ protected:
   su2double MinVolume;
   su2double MaxVolume;
 
-  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+#ifndef CODI_FORWARD_TYPE
+  CSysSolve<passivedouble>  System;
+  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#else
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix;
+#endif
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
   su2double E;                  /*!< \brief Young's modulus of elasticity. */
   su2double Nu;                 /*!< \brief Poisson's ratio. */
@@ -1368,7 +1384,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool screen_output, bool Derivative = false);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1412,13 +1428,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Solve_System(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume for the stiffness matrix for grid deformation.

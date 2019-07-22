@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -59,14 +59,9 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {
     filename = config->GetVolSens_FileName().c_str();
@@ -505,14 +500,9 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
   

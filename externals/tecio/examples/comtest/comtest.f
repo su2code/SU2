@@ -34,6 +34,7 @@ C  tecio.for instead of tecio.inc.
       REAL*8      SolTime
       INTEGER*4   Debug,I,J,K,L,III,NPts,NElm,DIsDouble,VIsDouble
       INTEGER*4   IMax,JMax,KMax,NM(4,12),FileType
+      INTEGER*4   FileFormat
       INTEGER*4   StrandID,ParentZn
       INTEGER*4   SharingZone(3)
       REAL*8      XP, YP, ZP, FH, LineSpacing, PatternLength
@@ -52,21 +53,23 @@ C  tecio.for instead of tecio.inc.
       POINTER     (NullPtr,Null)
       INTEGER*4   Null(*)
 
-      Debug     = 2
-      VIsDouble = 0
-      FileType  = 0
-      DIsDouble = 0
-      NULCHAR   = CHAR(0)
-      Zero      = 0
-      NullPtr   = 0
+      Debug      = 2
+      VIsDouble  = 0
+      FileType   = 0
+      FileFormat = 0 ! 0 = PLT, 1 = SZPLT
+      DIsDouble  = 0
+      NULCHAR    = CHAR(0)
+      Zero       = 0
+      NullPtr    = 0
 C
 C Open field.plt and write the header information.
 C 
-      I = TECINI112('DATASET WITH 1 ORDERED ZONE, '//
+      I = TECINI142('DATASET WITH 1 ORDERED ZONE, '//
      &              '1 QUAD ZONE OVER 2 TIME STEPS'//NULCHAR,
      &              'X Y P'//NULCHAR,
-     &              'field.plt'//NULCHAR,
+     &              'comtestf-field.plt'//NULCHAR,
      &              '.'//NULCHAR,
+     &               FileFormat,
      &               FileType,
      &               Debug,
      &               VIsDouble)
@@ -74,10 +77,11 @@ C
 C  Open line.plt and write the header information.
 C  
       VIsDouble = 1
-      I = TECINI112('DATASET WITH ONE I-ORDERED ZONE'//NULCHAR,
+      I = TECINI142('DATASET WITH ONE I-ORDERED ZONE'//NULCHAR,
      &              'X Y'//NULCHAR,
-     &              'line.plt'//NULCHAR,
+     &              'comtestf-line.plt'//NULCHAR,
      &              '.'//NULCHAR,
+     &               FileFormat,
      &               FileType,
      &               Debug,
      &               VIsDouble)
@@ -96,7 +100,7 @@ C
 C  Make sure writing to file #1.
 C  
       III = 1
-      I = TECFIL112(III)
+      I = TECFIL142(III)
 
 C  
 C  Write the zone header information for the ordered zone.
@@ -107,7 +111,7 @@ C
       SolTime = 10.0
       StrandID = 1
       ParentZn = 0
-	I = TECZNE112('Ordered Zone 1'//NULCHAR,
+      I = TECZNE142('Ordered Zone 1'//NULCHAR,
      &               0, ! ZONETYPE
      &               IMax,
      &               JMax,
@@ -133,9 +137,9 @@ C
 C  Write out the field data for the ordered zone.
 C  
       III = IMax*JMax
-      I   = TECDAT112(III,X,DIsDouble)
-      I   = TECDAT112(III,Y,DIsDouble)
-      I   = TECDAT112(III,P,DIsDouble)
+      I   = TECDAT142(III,X,DIsDouble)
+      I   = TECDAT142(III,Y,DIsDouble)
+      I   = TECDAT142(III,P,DIsDouble)
 
 C   
 C  Calculate values for the I-ordered zone.
@@ -150,7 +154,7 @@ C  Switch to the 'line.plt' file (file number 2)
 C  and write out the line plot data.
 C  
       III = 2
-      I = TECFIL112(III)
+      I = TECFIL142(III)
 C  
 C  Write the zone header information for the XY-data.
 C  
@@ -159,7 +163,7 @@ C
       KMax = 1
       SolTime = 0.0
       StrandID = 0
-      I = TECZNE112('XY Line plot'//NULCHAR,
+      I = TECZNE142('XY Line plot'//NULCHAR,
      &              0,
      &              IMax,
      &              JMax,
@@ -185,15 +189,15 @@ C  Write out the line plot.
 C  
       DIsDouble = 1
       III = IMax
-      I   = TECDAT112(III,XLDummy,DIsDouble)
-      I   = TECDAT112(III,YLDummy,DIsDouble)
+      I   = TECDAT142(III,XLDummy,DIsDouble)
+      I   = TECDAT142(III,YLDummy,DIsDouble)
 
 C  
 C  Switch back to the field plot file and write out
 C  the finite-element zone.
 C  
       III = 1
-      I = TECFIL112(III)
+      I = TECFIL142(III)
 C
 C  Move the coordinates so this zone's not on top of the other
 C
@@ -211,7 +215,7 @@ C
       KMax      = 1  
       SolTime   = 10.0
       StrandID  = 2
-      I = TECZNE112('Finite Zone 1'//NULCHAR,
+      I = TECZNE142('Finite Zone 1'//NULCHAR,
      &              3,  ! FEQUADRILATERAL
      &              NPts,
      &              NElm,
@@ -239,9 +243,9 @@ C
       JMax      = 5
       III       = IMax*JMax
       DIsDouble = 0
-      I    = TECDAT112(III,X,DIsDouble)
-      I    = TECDAT112(III,Y,DIsDouble)
-      I    = TECDAT112(III,P,DIsDouble)
+      I    = TECDAT142(III,X,DIsDouble)
+      I    = TECDAT142(III,Y,DIsDouble)
+      I    = TECDAT142(III,P,DIsDouble)
 
 C  
 C  Calculate and then write out the connectivity list.
@@ -259,7 +263,7 @@ C
           NM(4,K) = L+IMax
    40 Continue
 
-      I = TECNOD112(NM)
+      I = TECNOD142(NM)
 C
 C  Calculate vlues for the new solution variable.
 C
@@ -278,7 +282,7 @@ C
       SharingZone(1) = 1
       SharingZone(2) = 1
       SharingZone(3) = 0
-      I = TECZNE112('Ordered Zone 2'//NULCHAR,
+      I = TECZNE142('Ordered Zone 2'//NULCHAR,
      &              0,  ! ORDERED
      &              IMax,
      &              JMax,
@@ -306,7 +310,7 @@ C
       JMax      = 5
       III       = IMax*JMax
       DIsDouble = 0
-      I   = TECDAT112(III,P,DIsDouble)
+      I   = TECDAT142(III,P,DIsDouble)
 C
 C  Calculate values for the new solution variable.
 C
@@ -323,7 +327,7 @@ C
       SharingZone(1) = 2
       SharingZone(2) = 2
       SharingZone(3) = 0
-      I = TECZNE112('Finite Zone 2'//NULCHAR,
+      I = TECZNE142('Finite Zone 2'//NULCHAR,
      &              3,  ! FEQUADRILATERAL
      &              NPts,
      &              NElm,
@@ -351,7 +355,7 @@ C
       JMax      = 5
       III       = IMax*JMax
       DIsDouble = 0
-      I   = TECDAT112(III,P,DIsDouble)
+      I   = TECDAT142(III,P,DIsDouble)
 
 C  
 C  Prepare to write out text record. Text is positioned
@@ -377,7 +381,7 @@ C
       LineSpacing      = 1.5
       TextColor        = 0 
     
-      III =  TECTXT112(XP,
+      III =  TECTXT142(XP,
      &                 YP,
      &                 0.0d0,
      &                 PositionCoordSys,
@@ -402,7 +406,7 @@ C
 
 C  
 C  Prepare to write out geometry record (circle). Circle is 
-C  positioned at 25, 25 in frame units and has a radius of 30.
+C  positioned at 25, 25 in frame units and has a radius of 20.
 C  Circle is drawn using a dashed line pattern.
 C  
 
@@ -413,10 +417,10 @@ C
       IsFilled            = 0
       Color               = 0
       FillColor           = 7
-      GeomType            = 2 
+      GeomType            = 3 
       LinePattern         = 1 
       LineThickness       = 0.3
-      PatternLength       = 1
+      PatternLength       = 1.5
       NumEllipsePts       = 72
       ArrowheadStyle      = 0
       ArrowheadAttachment = 0
@@ -425,12 +429,12 @@ C
       NumSegments         = 1
       NumSegPts(1)        = 1
     
-      XGeomData(1) = 30
+      XGeomData(1) = 20
       YGeomData(1) = 0.0
       ZGeomData(1) = 0.0
     
     
-      III =  TECGEO112(XP,
+      III =  TECGEO142(XP,
      &                 YP,
      &                 ZP,
      &                 PositionCoordSys,
@@ -460,13 +464,13 @@ C
 C 
 C  Close out file 1.
 C 
-      I = TECEND112() 
+      I = TECEND142() 
 
 C  
 C  Close out file 2.
 C  
       III = 2
-      I = TECFIL112(III)
-      I = TECEND112() 
+      I = TECFIL142(III)
+      I = TECEND142() 
       STOP
       END

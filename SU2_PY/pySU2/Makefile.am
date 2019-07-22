@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python wrapper.
 # \author D. Thomas
-# \version 6.1.0 "Falcon"
+# \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -77,26 +77,15 @@ real: ${SWIG_SO_REAL}
 
 EXTRA_CC_FLAGS = -fPIC -O3
 
-#External includes
-METIS_INCLUDE = -I${abs_top_srcdir}/externals/metis/include
-PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
-TECIO_INCLUDE = -I${abs_top_srcdir}/externals/tecio/include
-
-#External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB =
-if BUILD_TECIO
-  TECIO_LIB += ${abs_top_builddir}/externals/tecio/libtecio.a
-endif
-
 #SU2Core lib
 SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
 		${abs_top_builddir}/Common/lib/libSU2.a
 
 # Set the linking flags to use
-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB} ${PY_LIB}
+pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB}
 
 # Set the command line flags to use for compilation
-pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
+pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} @su2_externals_INCLUDES@ ${pySU2_INCLUDE}
 
 SO_LINK_FLAGS= -fPIC -shared 
 
