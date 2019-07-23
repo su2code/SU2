@@ -4371,6 +4371,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
                    string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
   }
+
+  if(Viscous && nMarker_Euler != 0) {
+    SU2_MPI::Error(string("Euler wall boundary conditions using MARKER_EULER cannot be used with viscous flows.\n") +
+                   string("To simulate slip walls for viscous flow use MARKER_SYM."), CURRENT_FUNCTION);
+  }
   
 }
 

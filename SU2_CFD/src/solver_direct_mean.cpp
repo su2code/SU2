@@ -7820,8 +7820,11 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
 }
 
-void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
+                                 CSolver        **solver_container,
+                                 CNumerics      *numerics,
+                                 CConfig        *config,
+                                 unsigned short val_marker) {
   
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
@@ -7833,8 +7836,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
   
   Normal = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -7883,7 +7884,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       /*--- Compute the boundary state b ---*/
 
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim]; //Force the velocity to be tangential to the surface.
+        Velocity_b[iDim] = Velocity_i[iDim] - ProjVelocity_i * UnitNormal[iDim]; // Force the velocity to be tangential to the surface.
 
       if (grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();
@@ -7898,12 +7899,9 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
       /*--- Compute the residual ---*/
 
-      turb_ke = 0.0;
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-
       Density_b = Density_i;
-      StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
-      Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b + turb_ke;
+      StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i;
+      Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b;
 
       FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
@@ -7920,13 +7918,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         Residual[nVar-1] += Pressure_b*ProjGridVel*Area;
-      }
-
-      /*--- Add the Reynolds stress tensor contribution ---*/
-
-      if (tkeNeeded) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] += (2.0/3.0)*Density_b*turb_ke*NormalArea[iDim];
       }
       
       /*--- Add value to the residual ---*/
@@ -7963,13 +7954,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         /*--- Compute flux Jacobian in state b ---*/
 
         numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
-
-        // Check for grid movement, should be already considered since Jacobian b is computed from u_b
-        // if (grid_movement) {
-        // Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
-        // for (iDim = 0; iDim < nDim; iDim++)
-        // Jacobian_b[nVar-1][iDim+1] -= ProjGridVel * UnitNormal[iDim];
-        // }
 
         /*--- Compute numerical flux Jacobian at node i ---*/
 
@@ -11431,57 +11415,62 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
-
-  /*---------------------------------------------------------------------------------------------*/
-  /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
-  /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
-  /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
-  /*---                The "Normal" in SU2 isan Area-Normal and is most likely not constant   ---*/
-  /*---                on the symmetry-plane.                                                 ---*/
-  /*---------------------------------------------------------------------------------------------*/
-
-  /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-  geometry->vertex[val_marker][0]->GetNormal(Normal); 
-  for (iDim = 0; iDim < nDim; iDim++)
-    Normal[iDim] = -Normal[iDim];
-
-  /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt (Area);
-  
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = -Normal[iDim]/Area;
-
-  /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
-  if (config->GetViscous()) {
-    switch( nDim ) {
-      case 2: {
-        Tangential[0] = -UnitNormal[1];
-        Tangential[1] =  UnitNormal[0];
-        break;
-      }
-      case 3: {
-        /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
-        unsigned short Largest, Arbitrary, Zero;
-        if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
-                abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
-        else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
-                abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
-        else                                              {Largest=2;Arbitrary=1;Zero=0;}
-
-        Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-        Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-        Tangential[Zero] =  0.0;
-        break;
-      }
-    }
-  }
   
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
+    /*---------------------------------------------------------------------------------------------*/
+    /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
+    /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
+    /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
+    /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
+    /*---                on the symmetry-plane.                                                 ---*/
+    /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
+    /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
+    /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
+    /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
+    /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
+    /*---------------------------------------------------------------------------------------------*/
+
+    /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
+    for (iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
+
+    /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt (Area);
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = -Normal[iDim]/Area;
+
+    /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+    if (config->GetViscous()) {
+      switch( nDim ) {
+        case 2: {
+          Tangential[0] = -UnitNormal[1];
+          Tangential[1] =  UnitNormal[0];
+          break;
+        }
+        case 3: {
+          /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
+          unsigned short Largest, Arbitrary, Zero;
+          if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
+                  abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
+          else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
+                  abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
+          else                                              {Largest=2;Arbitrary=1;Zero=0;}
+
+          Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+          Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+          Tangential[Zero] =  0.0;
+          break;
+        }
+      }
+    }
+
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
