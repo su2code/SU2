@@ -1008,7 +1008,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
+    fsi2d.test_vals = [2.000000, 0.500000, -6.878235, -0.260653] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
@@ -1454,7 +1454,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
+    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -6.878235, -0.260653] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
