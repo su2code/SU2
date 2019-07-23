@@ -4523,32 +4523,12 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     case DIFF_OUTPUTS:
-      // XXX For now should only work with 1 marker
       SetDiff_Outputs_Vars(config);
-      Evaluate_DiffOutputs_Obj(config);
+      Total_ComboObj+=Evaluate_DiffOutputs_Obj(config);
       break;
     default:
       break;
   }
-
-}
-
-void CIncEulerSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
-  unsigned short iDiff_Outputs, iVec, nVec;
-  su2double Local_ComboObj = 0.0;
-
-  for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
-    nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
-    for (iVec = 0; iVec < nVec; iVec++) {
-      Local_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
-    }
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Local_ComboObj,  &Total_ComboObj, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  Total_ComboObj = Local_ComboObj;
-#endif
 
 }
 
@@ -7049,7 +7029,6 @@ void CIncEulerSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *co
 
 }
 
-
 void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
   unsigned short iDiff_Inputs;
@@ -7057,12 +7036,6 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-//      case DI_REYNOLDS:
-//        if (reset) {
-//          config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//          reset_nondimensionalization = true;
-//        }
-//        break;
       case DI_AOA:
         if (reset) {
           config->SetAoA(Diff_Inputs_Vars[iDiff_Inputs][0]);
@@ -7092,55 +7065,13 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
 }
 
 void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  // TODO Account for non scalar cases
-
   unsigned short iDiff_Inputs;
-  passivedouble Local_Sens;
-
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-    unsigned short iVec, nVec;
-
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-      case DI_VELOCITY_FREESTREAM:
-        nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
-        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
-        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
-
-        for (iVec = 0; iVec < nVec; iVec++) {
-          Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-#ifdef HAVE_MPI
-          // TODO Should it always be MPI Allreduce/MPI_SUM here?
-          SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec],  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
-#endif
-        }
-        break;
-
       default:
         break;
     }
   }
-}
-
-
-vector<su2double> CIncEulerSolver::GetDiff_Inputs_Vars(unsigned short index) {
-  return Diff_Inputs_Vars[index];
-}
-
-void CIncEulerSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
-  unsigned short iVec, nVec;
-
-  nVec = val.size();
-  Diff_Inputs_Vars[index].reserve(nVec);
-  Diff_Inputs_Vars[index].resize(nVec);
-  for (iVec = 0; iVec < nVec; iVec++) {
-    Diff_Inputs_Vars[index][iVec] = val[iVec];
-  }
-}
-
-vector<su2double> CIncEulerSolver::GetDiff_Outputs_Vars(unsigned short index) {
-  return Diff_Outputs_Vars[index];
 }
 
 void CIncEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
@@ -7181,19 +7112,6 @@ void CIncEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
     }
   }
 }
-
-void CIncEulerSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
-  unsigned long iVec, nVec;
-
-  nVec = derivs.size();
-  Diff_Outputs_Backprop_Derivs[index].reserve(nVec);
-  Diff_Outputs_Backprop_Derivs[index].resize(nVec);
-  for (iVec = 0; iVec < nVec; iVec++) {
-    Diff_Outputs_Backprop_Derivs[index][iVec] = derivs[iVec];
-  }
-  // TODO Check if size of passed vector is correct here? (Or in Evaluate_DiffOutputs_Obj?)
-}
-
 
 CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
@@ -9258,34 +9176,16 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 }
 
 void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iDiff_Inputs;
-  passivedouble Local_Sens;
-
   CIncEulerSolver::ExtractAdjoint_Variables(geometry, config);
 
+  unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-    unsigned short iVec, nVec;
-
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       case DI_PRANDTL_LAM:
       case DI_MU_CONSTANT:
       case DI_INLET_VEL:
       case DI_INLET_TEMP:
-        nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
-        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
-        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
-
-        // TODO Vectorize MPI communication?  (Do whole vector at once)
-        for (iVec = 0; iVec < nVec; iVec++) {
-          Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-#ifdef HAVE_MPI
-          // TODO Should it always be MPI Allreduce/MPI_SUM here?
-          SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
-#endif
-        }
+        SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 
       default:
