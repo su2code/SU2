@@ -1,7 +1,6 @@
 import sys
 import shutil
 from pathlib import Path
-from optparse import OptionParser
 
 import torch
 import numpy as np
@@ -9,7 +8,9 @@ import numpy as np
 from mpi4py import MPI
 
 import SU2
-import pysu2ad as pysu2
+import pysu2
+import pysu2ad
+
 from su2_function_mpi import RunCode, run_forward, run_adjoint
 
 
@@ -77,8 +78,8 @@ class SU2MPIFunction(torch.autograd.Function):
         self.comm.bcast(self.adjoint_config, root=0)
         self.comm.bcast(grad_outputs, root=0)  # TODO Any way to optimize? Potentially big
 
-        adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(self.adjoint_config, self.num_zones,
-                                                        self.dims, self.comm)
+        adjoint_driver = pysu2ad.CDiscAdjSinglezoneDriver(self.adjoint_config, self.num_zones,
+                                                          self.dims, self.comm)
         grads = run_adjoint(self.comm, adjoint_driver, self.saved_tensors, grad_outputs)
         return grads
 
@@ -269,35 +270,3 @@ def modify_config(config, new_params, outfile=None):
     if outfile is not None:
         temp_config.write(outfile)
     return temp_config
-
-
-if __name__ == '__main__':
-    # Command Line Options
-    parser = OptionParser()
-    parser.add_option("-f", "--file", dest="filename",
-                      help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--partitions", dest="partitions", default=1,
-                      help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-s", "--step", dest="step", default=1E-4,
-                      help="DOT finite difference STEP", metavar="STEP")
-    parser.add_option("-v", "--validate", dest="validate", default="False",
-                      help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
-    parser.add_option("-z", "--zones", dest="nzones", default="1",
-                      help="Number of Zones", metavar="ZONES")
-
-    (options, args) = parser.parse_args()
-    options.partitions = int(options.partitions)
-    options.step = float(options.step)
-    options.validate = options.validate.upper() == 'TRUE'
-    options.nzones = int(options.nzones)
-
-    f = SU2Function(options.filename,
-                    options.partitions,
-                    options.step,
-                    options.nzones)
-
-    n_dvs = sum(f.project.config['DEFINITION_DV']['SIZE'])
-    direct = f(torch.zeros(n_dvs, requires_grad=True))
-    dummy_loss = direct.sum()
-    dummy_loss.backward()
-    print('Done')
