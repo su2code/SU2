@@ -301,6 +301,19 @@ def main():
 
       su2amg.write_mesh(current_mesh, current_solution, mesh_new)
 
+      if options.nDim == 2:
+        EdgAdap = mesh_new['Edges'].tolist()
+        TriAdap = mesh_new['Triangles'].tolist()
+        TetAdap = [[]]
+      else:
+        EdgAdap = [[]]
+        TriAdap = mesh_new['Triangles'].tolist()
+        TetAdap = mesh_new['Tetrahedra'].tolist()
+
+      SU2Driver.Adapted_Input_Preprocessing(comm, options.filename,
+                                            EdgAdap, TriAdap, TetAdap,
+                                            options.nDim, 0, options.nZone)
+
   # Postprocess the solver and exit cleanly
   SU2Driver.Postprocessing()
 
