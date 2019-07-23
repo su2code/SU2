@@ -4608,7 +4608,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
+  su2double Pressure = 0.0, *Normal = NULL, Area, *NormalArea;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -4639,7 +4639,6 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       /*--- Compute the residual ---*/
 
       Pressure = node[iPoint]->GetPressure();
-      Density  = node[iPoint]->GetDensity();
 
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
