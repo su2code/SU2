@@ -109,7 +109,7 @@ CDriver::CDriver(char* confFile,
        identified and linked, face areas and volumes of the dual mesh cells are
        computed, and the multigrid levels are created using an agglomeration procedure. ---*/
       
-      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);  
+      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dummy_geometry);  
       
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
