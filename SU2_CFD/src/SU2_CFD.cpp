@@ -51,7 +51,18 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo, zone_specific, dry_run;
+  bool fsi, turbo, zone_specific;
+  bool dry_run = false;
+  std::string filename = "default";
+  
+  /*--- Command line parsing ---*/
+  
+  CLI::App app{"SU2 v6.2.0 \"Falcon\", The Open-Source CFD Code"};
+  app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n" 
+                                       "Only execute preprocessing steps using a dummy geometry.");
+  app.add_option("configfile", filename, "A config file.")->check(CLI::ExistingFile);
+  
+  CLI11_PARSE(app, argc, argv);
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -79,9 +90,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
-
-  if (argc == 2) { strcpy(config_file_name, argv[1]); }
-  else { strcpy(config_file_name, "default.cfg"); }
+  strcpy(config_file_name, filename.c_str());
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
@@ -93,8 +102,6 @@ int main(int argc, char *argv[]) {
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
   zone_specific = config->GetBoolZoneSpecific();
-  dry_run  = config->GetDryRun();
-  
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem

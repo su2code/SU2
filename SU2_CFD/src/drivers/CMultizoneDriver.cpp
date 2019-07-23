@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
+#include "../include/drivers/CMultizoneDriver.hpp"
 #include "../include/definition_structure.hpp"
 
 
@@ -43,7 +43,8 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          MPICommunicator) {
+                                                          MPICommunicator, 
+                                                          false) {
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
@@ -254,7 +255,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output[iZone], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Predictor(output_container[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
@@ -309,7 +310,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output_container[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -372,7 +373,7 @@ void CMultizoneDriver::Run_Jacobi() {
       driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output_container[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -391,7 +392,7 @@ void CMultizoneDriver::Run_Jacobi() {
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
     if (config_container[val_iZone]->GetRelaxation())
-      iteration_container[val_iZone][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
+      iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
 }
@@ -419,7 +420,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     
     /*--- make sure that everything is loaded into the output container ---*/
     
-    output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0],solver_container[iZone][INST_0][MESH_0], config_container[iZone]);
     
   }
   
@@ -435,7 +436,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- Print out the convergence data to screen and history file ---*/
-  driver_output->SetMultizoneHistory_Output(output, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
+  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   return driver_output->GetConvergence();
 
@@ -463,7 +464,7 @@ void CMultizoneDriver::Update() {
     /*--- If a mesh update is required due to the transfer of data ---*/
     if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
-    iteration_container[iZone][INST_0]->Update(output[iZone], integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
@@ -563,23 +564,23 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         config_container[iZone]->SetiInst(iInst);
         
-        output[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
+        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
         
         /*--- Write restart files ---*/
         
-        output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
         
         /*--- Write visualization files ---*/
         
         if (Wrt_Vol)
-          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
         
         if (Wrt_Surf)
-          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
         if (Wrt_CSV)
-          output[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
         
-        output[iZone]->DeallocateData_Parallel();
+        output_container[iZone]->DeallocateData_Parallel();
         
       }
       
@@ -613,15 +614,18 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 
+                                                               grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
+                                                               config_container[iZone], 0, ExtIter);
     }
   }
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
-        config_container, val_iZone, INST_0, 0, ExtIter);
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
+                                                           grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
+                                                           config_container[val_iZone], 0, ExtIter);
 
 }
 

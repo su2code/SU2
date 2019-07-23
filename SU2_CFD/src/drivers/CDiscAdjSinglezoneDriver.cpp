@@ -35,9 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
-#include "../include/definition_structure.hpp"
-
+#include "../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -133,7 +131,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Preprocess the adjoint iteration ---*/
 
-  iteration->Preprocess(output[ZONE_0], integration_container, geometry_container,
+  iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
@@ -187,12 +185,12 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->Iterate(output[ZONE_0], integration_container, geometry_container,
+    iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
     /*--- Monitor the pseudo-time ---*/
-    StopCalc = iteration->Monitor(output[ZONE_0], integration_container, geometry_container,
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
@@ -201,7 +199,7 @@ void CDiscAdjSinglezoneDriver::Run() {
     AD::ClearAdjoints();
 
     if (config->GetTime_Domain())
-      output[ZONE_0]->SetHistory_Output(geometry_container[ZONE_0][INST_0][MESH_0], 
+      output_container[ZONE_0]->SetHistory_Output(geometry_container[ZONE_0][INST_0][MESH_0], 
                                         solver_container[ZONE_0][INST_0][MESH_0], 
                                         config_container[ZONE_0], 
                                         config_container[ZONE_0]->GetTimeIter(),
@@ -230,7 +228,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   if (config->GetKind_Solver() == DISC_ADJ_FEM){
 
     /*--- Apply the boundary condition to clamped nodes ---*/
-    iteration->Postprocess(output[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+    iteration->Postprocess(output_container[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
 
   }
 
@@ -276,7 +274,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output[ZONE_0], ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
 
@@ -409,7 +407,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Zone preprocessing ---*/
 
-  direct_iteration->Preprocess(output[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Run one single iteration ---*/
 
@@ -417,11 +415,11 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(output[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 
-  direct_iteration->Postprocess(output[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Print the direct residual to screen ---*/
 
