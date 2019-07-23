@@ -24,6 +24,7 @@ common_src =files(['geometry_structure_fem_part.cpp',
            'mpi_structure.cpp',
            'fem_cgns_elements.cpp'])
 
+subdir('linear_algebra')
 subdir('toolboxes')
 subdir('linear_algebra')
 common     = static_library('SU2Common', 
