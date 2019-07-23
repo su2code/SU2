@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
   unsigned short nZone;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo, zone_specific;
-  bool dry_run;
+  bool dry_run = false;
   std::string filename = "default";
   
   /*--- Command line parsing ---*/
