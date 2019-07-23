@@ -51,7 +51,7 @@ if mpi_dep[0].found() and mpi_dep[1].found() and get_option('enable-mpi')
   su2_cpp_args += '-DHAVE_PARMETIS' 
   
   # add medi dependency
-  if get_option('enable-autodiff')
+  if get_option('enable-autodiff') or get_option('enable-directdiff')
     codi_dep += declare_dependency(include_directories: ['externals/medi/include', 'externals/medi/src'])
   endif
 endif
