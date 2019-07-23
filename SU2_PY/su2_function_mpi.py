@@ -80,7 +80,6 @@ def main():
 
     num_zones, dims, num_diff_outputs = comm.bcast(None, root=0)
 
-    forward_driver, adjoint_driver = None, None
     inputs = None
     while True:
         run_type = comm.bcast(None, root=0)
