@@ -3831,7 +3831,7 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<unsigned long> > EdgAdap, vec
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
+    cout << endl <<"------------------ Load Adapted Grid File Information -------------------" << endl;
 
   if( fem_solver ) {
     switch (val_format) {

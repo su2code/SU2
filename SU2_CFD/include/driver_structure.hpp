@@ -821,6 +821,7 @@ public:
    */
   void Adapted_Input_Preprocessing(SU2_Comm MPICommunicator,
                                    char* confFile,
+                                   vector<vector<passivedouble> > SolAdap,
                                    vector<vector<unsigned long> > EdgAdap,
                                    vector<vector<unsigned long> > TriAdap,
                                    vector<vector<unsigned long> > TetAdap,

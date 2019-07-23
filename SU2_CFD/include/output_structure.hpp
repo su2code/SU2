@@ -531,7 +531,7 @@ public:
   /*!
    * \brief Returns a sorted solution value for AMG for the current processor.
    */
-  passivedouble GetResult_Parallel(unsigned short val_iVar, unsigned long val_iPoint);
+  vector<vector<passivedouble> > GetResult_Parallel(void);
 
   /*!
    * \brief Cleans up the sorted solutions.
@@ -547,44 +547,24 @@ public:
   void SetConnectivity_Parallel(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
-   * \brief Get the number of points.
+   * \brief Get the connectivity of edges.
    */
-  unsigned short GetnPoinPar(void);
+  vector<vector<unsigned long> > GetConnEdg(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Get the number of variables.
+   * \brief Get the connectivity of tris.
    */
-  unsigned short GetnVarPar(void);
+  vector<vector<unsigned long> > GetConnTri(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Get the connectivity of an edg.
+   * \brief Get the connectivity of tets.
    */
-  vector<unsigned long> GetConnEdg(unsigned long val_iEdg);
+  vector<vector<unsigned long> > GetConnTet(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Get the connectivity of a tri.
+   * \brief Cleans up the connectivity.
    */
-  vector<unsigned long> GetConnTri(unsigned long val_iTri, unsigned short val_nDim);
-
-  /*!
-   * \brief Get the connectivity of a tet.
-   */
-  vector<unsigned long> GetConnTet(unsigned long val_iTet);
-
-  /*!
-   * \brief Get the number of edges.
-   */
-  unsigned long GetnEdgPar(void);
-
-  /*!
-   * \brief Get the number of tris.
-   */
-  unsigned long GetnTriPar(unsigned short val_nDim);
-
-  /*!
-   * \brief Get the number of tets.
-   */
-  unsigned long GetnTetPar(void);
+  void CleanConnectivity_Parallel(void);
 
   /*!
    * \brief Write a native SU2 restart file (ASCII) in parallel.

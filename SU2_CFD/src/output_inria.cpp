@@ -795,11 +795,11 @@ void COutput::SetResult_Parallel(CSolver *****solver_container,
       else
         SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
 
-      Adap_Data.resize(nVar_Par);
-      for(unsigned short iVar = 0; iVar < nVar_Par; ++iVar) {
-        Adap_Data[iVar].resize(nParallel_Poin);
-        for(unsigned long iPoin = 0; iPoin < nParallel_Poin; ++iPoin) {
-          Adap_Data[iVar][iPoin] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoin]);
+      Adap_Data.resize(nParallel_Poin);
+      for(unsigned long iPoin = 0; iPoin < nParallel_Poin; ++iPoin) {
+        Adap_Data[iPoin].resize(nVar_Par);
+        for(unsigned short iVar = 0; iVar < nVar_Par; ++iVar) {
+          Adap_Data[iPoin][iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoin]);
         }
       }
 
@@ -817,9 +817,9 @@ void COutput::SetResult_Parallel(CSolver *****solver_container,
 
 }
 
-passivedouble COutput::GetResult_Parallel(unsigned short val_iVar, unsigned long val_iPoint) {
+vector<vector<passivedouble> > COutput::GetResult_Parallel() {
 
-  return Adap_Data[val_iVar][val_iPoint];
+  return Adap_Data;
 }
 
 void COutput::CleanResult_Parallel( ){
@@ -849,14 +849,6 @@ void COutput::SetConnectivity_Parallel(CGeometry ****geometry,
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], HEXAHEDRON   , true);
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PRISM        , true);
       SortVolumetricConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], PYRAMID      , true);
-          
-      /*--- Sort surface grid connectivity. ---*/
-          
-      if (rank == MASTER_NODE) cout <<"Sorting surface grid connectivity." << endl;
-          
-      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], LINE         );
-      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], TRIANGLE     );
-      SortSurfaceConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], QUADRILATERAL);
 
     }
 
@@ -864,57 +856,95 @@ void COutput::SetConnectivity_Parallel(CGeometry ****geometry,
 
 }
 
-vector<unsigned long> COutput::GetConnEdg(unsigned long val_iEdg) {
+vector<vector<unsigned long> > COutput::GetConnEdg(CConfig *config, CGeometry *geometry) {
 
-  vector<unsigned long> Edg = {Conn_BoundLine_Par[val_iEdg*2+0], Conn_BoundLine_Par[val_iEdg*2+1]};
+  unsigned short iMarker, iElem;  
+  unsigned short nMarker = config->GetnMarker_All();
+
+  vector<vector<unsigned long> > Edg;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+      CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+      switch ( bnd->GetVTK_Type() ) {
+        case LINE:
+          const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+          const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+          const vector<unsigned long> tmp = {idx0, idx1, iMarker+2};
+          Edg.push_back(tmp);
+          break;
+      }
+    }
+  }
+
   return Edg; 
 }
 
-vector<unsigned long> COutput::GetConnTri(unsigned long val_iTri, unsigned short val_nDim) {
+vector<vector<unsigned long> > COutput::GetConnTri(CConfig *config, CGeometry *geometry) {
 
-  vector<unsigned long> Tri(3);
-  if(val_nDim == 2) {
-    Tri[0] = Conn_Tria_Par[val_iTri*3+0];
-    Tri[1] = Conn_Tria_Par[val_iTri*3+1];
-    Tri[2] = Conn_Tria_Par[val_iTri*3+2];
+  unsigned short iMarker, iElem;  
+  unsigned short nMarker = config->GetnMarker_All(), nDim = geometry->GetnDim();
+
+  vector<vector<unsigned long> > Tri;
+
+  if(nDim == 2) {
+    for(iElem = 0; iElem < nParallel_Tria; ++iElem) {
+      const unsigned long idx0 = Conn_Tria_Par[iElem*3+0];
+      const unsigned long idx1 = Conn_Tria_Par[iElem*3+1];
+      const unsigned long idx2 = Conn_Tria_Par[iElem*3+2];
+      const unsigned long ref   = 0;
+      const vector<unsigned long> tmp = {idx0, idx1, idx2, ref};
+      Tri.push_back(tmp);
+    }
   }
-  else{
-    Tri[0] = Conn_BoundTria_Par[val_iTri*3+0];
-    Tri[1] = Conn_BoundTria_Par[val_iTri*3+1];
-    Tri[2] = Conn_BoundTria_Par[val_iTri*3+2];
+  else {
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        CPrimalGrid* bnd = geometry->bound[iMarker][iElem];
+        switch ( bnd->GetVTK_Type() ) {
+          case TRIANGLE:
+            const unsigned long idx0 = geometry->node[bnd->GetNode(0)]->GetGlobalIndex()+1;
+            const unsigned long idx1 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+            const unsigned long idx2 = geometry->node[bnd->GetNode(1)]->GetGlobalIndex()+1;
+            const unsigned long ref  = iMarker+2;
+            const vector<unsigned long> tmp = {idx0, idx1, idx2, ref};
+            Tri.push_back(tmp);
+            break;
+        }
+      }
+    }
   }
-  return Tri;
+
+  return Tri; 
 }
 
-vector<unsigned long> COutput::GetConnTet(unsigned long val_iTet) {
+vector<vector<unsigned long> > COutput::GetConnTet(CConfig *config, CGeometry *geometry) {
 
-  vector<unsigned long> Tet = {Conn_Tetr_Par[val_iTet*4+0], Conn_Tetr_Par[val_iTet*4+1],
-                               Conn_Tetr_Par[val_iTet*4+2], Conn_Tetr_Par[val_iTet*4+3]};
+  unsigned short iElem;  
+
+  vector<vector<unsigned long> > Tet;
+
+  for(iElem = 0; iElem < nParallel_Tetr; ++iElem) {
+    const unsigned long idx0 = Conn_Tetr_Par[iElem*4+0];
+    const unsigned long idx1 = Conn_Tetr_Par[iElem*4+1];
+    const unsigned long idx2 = Conn_Tetr_Par[iElem*4+2];
+    const unsigned long idx3 = Conn_Tetr_Par[iElem*4+3];
+    const unsigned long ref   = 0;
+    const vector<unsigned long> tmp = {idx0, idx1, idx2, idx3, ref};
+    Tet.push_back(tmp);
+  }
+
   return Tet; 
 }
 
-unsigned short COutput::GetnPoinPar(){
+void COutput::CleanConnectivity_Parallel( ){
 
-  return nParallel_Poin;
-}
+  if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+  if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+  if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+  if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+  if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+  if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
 
-unsigned short COutput::GetnVarPar(){
-
-  return nVar_Par;
-}
-
-unsigned long COutput::GetnEdgPar() {
-
-  return nParallel_Line;
-}
-
-unsigned long COutput::GetnTriPar(unsigned short val_nDim) {
-
-  if(val_nDim == 2) return nParallel_Tria;
-  else              return nParallel_BoundTria;
-}
-
-unsigned long COutput::GetnTetPar() {
-
-  return nParallel_Tetr;
 }

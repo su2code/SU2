@@ -1379,11 +1379,7 @@ CSolver* CDriver::GetSolver(unsigned short val_iZone,
   return solver_container[val_iZone][val_iInst][val_iMesh][val_iSol];
 }
 
-// void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile,
-//                                           unsigned long** EdgAdap, unsigned long** TriAdap, unsigned long** TetAdap,
-//                                           unsigned long nEdgAdap,  unsigned long nTriAdap,  unsigned long nTetAdap,
-//                                           unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) {
-void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile,
+void CDriver::Adapted_Input_Preprocessing(SU2_Comm MPICommunicator, char* confFile, vector<vector<passivedouble> > SolAdap,
                                           vector<vector<unsigned long> > EdgAdap, vector<vector<unsigned long> > TriAdap, vector<vector<unsigned long> > TetAdap,
                                           unsigned short val_nDim, unsigned short val_iZone, unsigned short val_nZone) {
 

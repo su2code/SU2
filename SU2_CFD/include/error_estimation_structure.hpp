@@ -175,7 +175,7 @@ public:
   /*!
    * \brief Collect the data needed for adaptation.
    */
-  passivedouble GetAdaptationData(unsigned short val_iVar, unsigned long val_iPoint);
+  vector<vector<passivedouble> > GetAdaptationData(void);
 
   /*!
    * \brief Sort the connectivity data needed for adaptation.
@@ -183,44 +183,19 @@ public:
   void SetConnectivityData(void);
 
   /*!
-   * \brief Get the connectivity of an edg.
+   * \brief Get the connectivity of edges.
    */
-  vector<unsigned long> GetConnectivityEdg(unsigned long val_iEdg);
+  vector<vector<unsigned long> > GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
-   * \brief Get the connectivity of a tri.
+   * \brief Get the connectivity of tris.
    */
-  vector<unsigned long> GetConnectivityTri(unsigned long val_iTri, unsigned short val_nDim);
+  vector<vector<unsigned long> > GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
-   * \brief Get the connectivity of a tet.
+   * \brief Get the connectivity of tets.
    */
-  vector<unsigned long> GetConnectivityTet(unsigned long val_iTet);
-
-  /*!
-   * \brief Get the number of points.
-   */
-  unsigned short GetnPoinPar(void);
-
-  /*!
-   * \brief Get the number of variables.
-   */
-  unsigned short GetnVarPar(void);
-
-  /*!
-   * \brief Get the number of edges.
-   */
-  unsigned long GetnEdgPar(void);
-
-  /*!
-   * \brief Get the number of tris.
-   */
-  unsigned long GetnTriPar(unsigned short val_nDim);
-
-  /*!
-   * \brief Get the number of tets.
-   */
-  unsigned long GetnTetPar(void);
+  vector<vector<unsigned long> > GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Get the number of markers.
@@ -231,6 +206,11 @@ public:
    * \brief Get the marker tag.
    */
   string GetMarker_All_TagBound(unsigned short val_iMarker);
+
+  /*!
+   * \brief Delete the sorted solution and connectivity data.
+   */
+  void Clean_Result_Connectivity(void);
 
   /*!
    * \brief Deallocation routine

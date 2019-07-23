@@ -1277,9 +1277,9 @@ void CErrorEstimationDriver::SetAdaptationData() {
 
 }
 
-passivedouble CErrorEstimationDriver::GetAdaptationData(unsigned short val_iVar, unsigned long val_iPoint) {
+vector<vector<passivedouble> > CErrorEstimationDriver::GetAdaptationData() {
 
-  passivedouble Parallel_Data = output->GetResult_Parallel(val_iVar, val_iPoint);
+  vector<vector<passivedouble> > Parallel_Data = output->GetResult_Parallel();
 
   return Parallel_Data;
 
@@ -1297,52 +1297,22 @@ void CErrorEstimationDriver::SetConnectivityData() {
 
 }
 
-vector<unsigned long> CErrorEstimationDriver::GetConnectivityEdg(unsigned long val_iEdg) {
+vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityEdg(unsigned short val_iZone, unsigned short val_iInst) {
 
-  vector<unsigned long> Edg = output->GetConnEdg(val_iEdg);
+  vector<vector<unsigned long> > Edg = output->GetConnEdg(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);
   return Edg;
 }
 
-vector<unsigned long> CErrorEstimationDriver::GetConnectivityTri(unsigned long val_iTri, unsigned short val_nDim) {
+vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTri(unsigned short val_iZone, unsigned short val_iInst) {
 
-  vector<unsigned long> Tri = output->GetConnTri(val_iTri, val_nDim);
+  vector<vector<unsigned long> > Tri = output->GetConnTri(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);
   return Tri;
 }
 
-vector<unsigned long> CErrorEstimationDriver::GetConnectivityTet(unsigned long val_iTet) {
+vector<vector<unsigned long> > CErrorEstimationDriver::GetConnectivityTet(unsigned short val_iZone, unsigned short val_iInst) {
 
-  vector<unsigned long> Tet = output->GetConnTet(val_iTet);
+  vector<vector<unsigned long> > Tet = output->GetConnTet(config_container[val_iZone], geometry_container[val_iZone][val_iInst][MESH_0]);
   return Tet;
-}
-
-unsigned short CErrorEstimationDriver::GetnPoinPar() {
-
-  unsigned short nPoinPar = output->GetnPoinPar();
-  return nPoinPar;
-}
-
-unsigned short CErrorEstimationDriver::GetnVarPar() {
-
-  unsigned short nVarPar = output->GetnVarPar();
-  return nVarPar;
-}
-
-unsigned long CErrorEstimationDriver::GetnEdgPar() {
-
-  unsigned long nEdgPar = output->GetnEdgPar();
-  return nEdgPar;
-}
-
-unsigned long CErrorEstimationDriver::GetnTriPar(unsigned short val_nDim) {
-
-  unsigned long nTriPar = output->GetnTriPar(val_nDim);
-  return nTriPar;
-}
-
-unsigned long CErrorEstimationDriver::GetnTetPar() {
-
-  unsigned long nTetPar = output->GetnTetPar();
-  return nTetPar;
 }
 
 unsigned short CErrorEstimationDriver::GetnMarker_All() {
@@ -1355,6 +1325,12 @@ string CErrorEstimationDriver::GetMarker_All_TagBound(unsigned short val_iMarker
 
   string Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(val_iMarker);
   return Marker_Tag;
+}
+
+void CErrorEstimationDriver::Clean_Result_Connectivity() {
+
+  output->CleanResult_Parallel();
+  output->CleanConnectivity_Parallel();
 }
 
 void CErrorEstimationDriver::Postprocessing() {
