@@ -35,15 +35,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
+#include "../include/drivers/CSinglezoneDriver.hpp"
 #include "../include/definition_structure.hpp"
-
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          MPICommunicator) {
+                                                          MPICommunicator,
+                                                          false) {
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
@@ -152,7 +152,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())
-    iteration_container[ZONE_0][INST_0]->Predictor(output[ZONE_0], integration_container, geometry_container, solver_container,
+    iteration_container[ZONE_0][INST_0]->Predictor(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Perform a dynamic mesh update if required. ---*/
@@ -167,7 +167,7 @@ void CSinglezoneDriver::Run() {
   config_container[ZONE_0]->SetOuterIter(OuterIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-  iteration_container[ZONE_0][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
+  iteration_container[ZONE_0][INST_0]->Solve(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
@@ -177,14 +177,14 @@ void CSinglezoneDriver::Postprocess() {
     /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
-      iteration_container[ZONE_0][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
+      iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
 
 void CSinglezoneDriver::Update() {
 
-  iteration_container[ZONE_0][INST_0]->Update(output[ZONE_0], integration_container, geometry_container,
+  iteration_container[ZONE_0][INST_0]->Update(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
@@ -274,22 +274,22 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       
       config_container[ZONE_0]->SetiInst(iInst);
       
-      output[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
+      output_container[ZONE_0]->Load_Data(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][iInst][MESH_0]);
       
       /*--- Write restart files ---*/
       
-      output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
+      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
       
       /*--- Write visualization files ---*/
       
       if (Wrt_Vol)
-        output[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
       if (Wrt_Surf)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
       if (Wrt_CSV)
-        output[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
       
-      output[ZONE_0]->DeallocateData_Parallel();
+      output_container[ZONE_0]->DeallocateData_Parallel();
       
     }
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -319,8 +319,9 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
-  }
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
+                                                          grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
+                                                          config_container[ZONE_0], 0, ExtIter);  }
 
 }
 
@@ -339,7 +340,7 @@ bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
   
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
   
-  InnerConvergence = output[ZONE_0]->GetConvergence();
+  InnerConvergence = output_container[ZONE_0]->GetConvergence();
   
   /*--- Check whether the inner solver has converged --- */
 
@@ -367,7 +368,7 @@ bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
 
   /*--- Reset the inner convergence --- */
   
-  output[ZONE_0]->SetConvergence(false);
+  output_container[ZONE_0]->SetConvergence(false);
 
   return StopCalc;
 }

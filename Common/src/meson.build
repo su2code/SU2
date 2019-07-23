@@ -26,7 +26,6 @@ common_src =files(['geometry_structure_fem_part.cpp',
 
 subdir('linear_algebra')
 subdir('toolboxes')
-subdir('linear_algebra')
 common     = static_library('SU2Common', 
                             common_src,
                             install : false, 

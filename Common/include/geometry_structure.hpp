@@ -2752,7 +2752,7 @@ public:
 	 * \param[in] iMesh - Level of the multigrid.
 	 * \param[in] iZone - Current zone in the mesh.
 	 */	
-	CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst);
+	CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class.
@@ -3044,7 +3044,7 @@ public:
    * \param config
    * \param nDim
    */
-  CDummyGeometry(CConfig *config, unsigned short nDim);
+  CDummyGeometry(CConfig *config);
   
   /*!
   */

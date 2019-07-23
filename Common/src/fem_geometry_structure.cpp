@@ -6927,7 +6927,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
   }
 }
 
-CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config, unsigned short nDim): CMeshFEM_DG() {
+CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
@@ -7052,7 +7052,9 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config, unsigned short nDim): CMeshF
   } 
   
   boundaries.resize(config->GetnMarker_All());
-    
+      
+  nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
 }
 
 CDummyMeshFEM_DG::~CDummyMeshFEM_DG(){}
