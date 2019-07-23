@@ -69,9 +69,9 @@ class SU2MPIFunction(torch.autograd.Function):
         self.comm.bcast(self.forward_config, root=0)
         self.comm.bcast(inputs, root=0)  # TODO Any way to optimize? Potentially big
 
-        worker_driver = pysu2.CSinglezoneDriver(self.forward_config, self.num_zones,
-                                                self.dims, self.comm)
-        outputs = run_forward(self.comm, worker_driver, inputs, self.num_diff_outputs)
+        driver = pysu2.CSinglezoneDriver(self.forward_config, self.num_zones,
+                                         self.dims, self.comm)
+        outputs = run_forward(self.comm, driver, inputs, self.num_diff_outputs)
         return outputs
 
     def backward(self, *grad_outputs, **kwargs):

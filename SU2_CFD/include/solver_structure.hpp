@@ -3934,7 +3934,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-  
+
+  virtual void SetTotal_Sens_Diff_Inputs(unsigned short iDiff_Inputs);
+
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
@@ -4392,6 +4394,8 @@ public:
   virtual void SetDiff_Outputs_Vars(CConfig *config);
 
   virtual void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
+
+  virtual su2double Evaluate_DiffOutputs_Obj(CConfig *config);
 
 protected:
   /*!
@@ -5073,8 +5077,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Evaluate_ObjFunc(CConfig *config);
-
-  void Evaluate_DiffOutputs_Obj(CConfig *config);
 
     /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -6933,15 +6935,7 @@ public:
 
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
-  vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
-
-  void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
-
-  vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
-
   void SetDiff_Outputs_Vars(CConfig *config);
-
-  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.
@@ -7382,8 +7376,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Evaluate_ObjFunc(CConfig *config);
-
-  void Evaluate_DiffOutputs_Obj(CConfig *config);
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -8385,15 +8377,7 @@ public:
 
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
-  vector<su2double> GetDiff_Inputs_Vars(unsigned short index);
-
-  void SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index);
-
-  vector<su2double> GetDiff_Outputs_Vars(unsigned short index);
-
   void SetDiff_Outputs_Vars(CConfig *config);
-
-  void SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.

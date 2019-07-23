@@ -8121,28 +8121,11 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 }
 
 void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-
   unsigned short iDiff_Inputs;
-  passivedouble Local_Sens;
-
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-    unsigned short iVec, nVec;
-
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       case DI_VELOCITY_FREESTREAM:
-        nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
-        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
-        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
-
-        for (iVec = 0; iVec < nVec; iVec++) {
-          Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-#ifdef HAVE_MPI
-          // TODO Should it be MPI Allreduce/MPI_SUM here?
-        SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec],  1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
-#endif
-        }
+        SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 
       default:
@@ -8150,25 +8133,6 @@ void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     }
   }
 
-}
-
-vector<su2double> CEulerSolver::GetDiff_Inputs_Vars(unsigned short index) {
-  return Diff_Inputs_Vars[index];
-}
-
-void CEulerSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
-  unsigned short iVec, nVec;
-
-  nVec = val.size();
-  Diff_Inputs_Vars[index].reserve(nVec);
-  Diff_Inputs_Vars[index].resize(nVec);
-  for (iVec = 0; iVec < nVec; iVec++) {
-    Diff_Inputs_Vars[index][iVec] = val[iVec];
-  }
-}
-
-vector<su2double> CEulerSolver::GetDiff_Outputs_Vars(unsigned short index) {
-  return Diff_Outputs_Vars[index];
 }
 
 void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
@@ -8210,18 +8174,6 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         break;
     }
   }
-}
-
-void CEulerSolver::SetBackprop_Derivs(vector<passivedouble> derivs, unsigned short index) {
-  unsigned long iVec, nVec;
-
-  nVec = derivs.size();
-  Diff_Outputs_Backprop_Derivs[index].reserve(nVec);
-  Diff_Outputs_Backprop_Derivs[index].resize(nVec);
-  for (iVec = 0; iVec < nVec; iVec++) {
-    Diff_Outputs_Backprop_Derivs[index][iVec] = derivs[iVec];
-  }
-  // TODO Check if size of passed vector is correct here? (Or in Evaluate_DiffOutputs_Obj?)
 }
 
 void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
@@ -8346,27 +8298,14 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     case DIFF_OUTPUTS:
-      // XXX For now should only work with 1 marker
       SetDiff_Outputs_Vars(config);
-      Evaluate_DiffOutputs_Obj(config);
+      Total_ComboObj+=Evaluate_DiffOutputs_Obj(config);
       break;
     default:
       break;
   }
   
 }
-
-void CEulerSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
-  unsigned short iDiff_Outputs, iVec, nVec;
-
-  for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
-    nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
-    for (iVec = 0; iVec < nVec; iVec++) {
-      Total_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];
-    }
-  }
-}
-
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
@@ -18046,31 +17985,14 @@ void CNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool res
 }
 
 void CNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-
-  unsigned short iDiff_Inputs;
-  passivedouble Local_Sens;
-
   CEulerSolver::ExtractAdjoint_Variables(geometry, config);
 
+  unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
-    unsigned short iVec, nVec;
-
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       case DI_PRANDTL_LAM:
       case DI_MU_CONSTANT:
-        nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
-        Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
-        Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
-
-        for (iVec = 0; iVec < nVec; iVec++) {
-          Local_Sens = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-#ifdef HAVE_MPI
-          // TODO Should it be MPI Allreduce/MPI_SUM here?
-        SU2_MPI::Allreduce(&Local_Sens,  &Total_Sens_Diff_Inputs[iDiff_Inputs][iVec],  1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-          Total_Sens_Diff_Inputs[iDiff_Inputs][iVec] = Local_Sens;
-#endif
-        }
+        SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 
       default:
