@@ -88,7 +88,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-10.384532, -9.835738, 0.282580, 0.012694] #last 4 columns
+    oneram6.test_vals = [-10.514359, -9.970915, 0.282580, 0.012694] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.tol       = 0.00001
