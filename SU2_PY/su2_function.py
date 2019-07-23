@@ -1,3 +1,4 @@
+import os
 import sys
 import shutil
 from pathlib import Path
@@ -33,7 +34,7 @@ class SU2MPIFunction(torch.autograd.Function):
                                    dtype=np.int)
 
         new_configs = {'MATH_PROBLEM': 'DIRECT'}
-        self.forward_config = 'forward_' + TEMP_CFG_BASENAME
+        self.forward_config = 'forward_{}_{}'.format(os.getpid(), TEMP_CFG_BASENAME)
         shutil.copy(config_file, self.forward_config)
         modify_config(base_config, new_configs, outfile=self.forward_config)
         # XXX create local single-rank forward_driver to get access to full mesh,
@@ -42,7 +43,7 @@ class SU2MPIFunction(torch.autograd.Function):
                                                       self.dims, MPI.COMM_SELF)
 
         new_configs = {'MATH_PROBLEM': 'DISCRETE_ADJOINT'}
-        self.adjoint_config = 'adjoint_' + TEMP_CFG_BASENAME
+        self.adjoint_config = 'adjoint_{}_{}'.format(os.getpid(), TEMP_CFG_BASENAME)
         shutil.copy(config_file, self.adjoint_config)
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
 
@@ -84,6 +85,8 @@ class SU2MPIFunction(torch.autograd.Function):
         return grads
 
     def __del__(self):
+        os.remove(self.forward_config)
+        os.remove(self.adjoint_config)
         if self.comm.Get_size() > 1:
             self.comm.bcast(RunCode.STOP, root=0)
             # TODO Disconnects hanging on cluster
