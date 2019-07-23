@@ -7829,7 +7829,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
   su2double *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
-  ProjGridVel = 0.0, turb_ke;
+  ProjGridVel = 0.0;
   su2double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
   su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   su2double **Jacobian_b, **DubDu;
