@@ -5,6 +5,7 @@ from optparse import OptionParser
 
 import torch
 import numpy as np
+
 from mpi4py import MPI
 
 import SU2
@@ -43,7 +44,6 @@ class SU2MPIFunction(torch.autograd.Function):
         self.adjoint_config = 'adjoint_' + TEMP_CFG_BASENAME
         shutil.copy(config_file, self.adjoint_config)
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
-        self.adjoint_driver = None
 
         if num_procs > 1:
             self.intercomm = MPI.COMM_SELF.Spawn(sys.executable,
@@ -61,7 +61,6 @@ class SU2MPIFunction(torch.autograd.Function):
         if len(inputs) != self.num_diff_inputs:
             raise TypeError('{} inputs were provided, but the config file ({}) defines {} diff inputs.'
                             .format(len(inputs), self.config_file, self.num_diff_inputs))
-
         self.save_for_backward(*inputs)
 
         self.comm.bcast(RunCode.RUN_FORWARD, root=0)
@@ -74,25 +73,23 @@ class SU2MPIFunction(torch.autograd.Function):
         return outputs
 
     def backward(self, *grad_outputs, **kwargs):
-
         self.comm.bcast(RunCode.RUN_ADJOINT, root=0)
         self.comm.bcast(self.adjoint_config, root=0)
         self.comm.bcast(grad_outputs, root=0)  # TODO Any way to optimize? Potentially big
 
-        self.adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(self.adjoint_config, self.num_zones,
-                                                             self.dims, self.comm)
-        grads = run_adjoint(self.comm, self.adjoint_driver, self.saved_tensors, grad_outputs)
+        adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(self.adjoint_config, self.num_zones,
+                                                        self.dims, self.comm)
+        grads = run_adjoint(self.comm, adjoint_driver, self.saved_tensors, grad_outputs)
         return grads
 
     def __del__(self):
         if self.comm.Get_size() > 1:
             self.comm.bcast(RunCode.STOP, root=0)
-            self.comm.Disconnect()
-            self.intercomm.Disconnect()
+            # TODO Disconnects hanging on cluster
+            # self.comm.Disconnect()
+            # self.intercomm.Disconnect()
         if self.forward_driver is not None:
             self.forward_driver.Postprocessing()
-        # if self.adjoint_driver is not None:
-        #     self.adjoint_driver.Postprocessing()
         # super().__del__()
 
 

@@ -9208,6 +9208,7 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         config->SetMu_Constant(Diff_Inputs_Vars[iDiff_Inputs][0]);
         reset_nondimensionalization = true;
         break;
+
       case DI_PRANDTL_LAM:
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
@@ -9217,44 +9218,32 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         break;
 
       case DI_INLET_VEL:
-        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
-        iMarker = config->GetMarker_All_TagBound(marker);
-        if (iMarker == -1) break;  // XXX Breaking for MPI case where inlets are distributed
-
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
         }
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (iMarker == -1) break;  // For MPI case where inlets are distributed
         config->SetInlet_Ptotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
-
         for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
           Inlet_Ptotal[iMarker][iVertex] = config->GetInlet_Ptotal(marker);
         }
         reset_nondimensionalization = true;
         break;
+
       case DI_INLET_TEMP:
-        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
-        iMarker = config->GetMarker_All_TagBound(marker);
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
         }
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (iMarker == -1) break;  // For MPI case where inlets are distributed
         config->SetInlet_Ttotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
-
         for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
           Inlet_Ttotal[iMarker][iVertex] = config->GetInlet_Ttotal(marker);
         }
         reset_nondimensionalization = true;
         break;
-
-      // Vector cases
-      case DI_VELOCITY_FREESTREAM:
-        nVec = geometry->GetnDim();
-        for (iVec = 0; iVec < nVec; iVec++) {
-          if (!reset) {
-            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
-          }
-          config->SetVelocity_FreeStream(Diff_Inputs_Vars[iDiff_Inputs][iVec], iVec);
-        }
-        reset_nondimensionalization = true;
 
       default:
         break;
@@ -9283,7 +9272,6 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
       case DI_MU_CONSTANT:
       case DI_INLET_VEL:
       case DI_INLET_TEMP:
-
         nVec = Diff_Inputs_Vars[iDiff_Inputs].size();
         Total_Sens_Diff_Inputs[iDiff_Inputs].reserve(nVec);
         Total_Sens_Diff_Inputs[iDiff_Inputs].resize(nVec);
