@@ -98,10 +98,10 @@ def main():
             grad_outputs = comm.bcast(None, root=0)
             adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(config, num_zones, dims, comm)
             run_adjoint(comm, adjoint_driver, inputs, grad_outputs)
-            inputs = None
 
-    comm.Disconnect()
-    intercomm.Disconnect()
+    # TODO Disconnects hanging on cluster
+    # comm.Disconnect()
+    # intercomm.Disconnect()
 
 
 if __name__ == '__main__':
