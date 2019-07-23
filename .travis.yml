@@ -4,7 +4,9 @@
 dist: trusty
 sudo: required
 
-language: python
+language: c++
+
+cache: ccache
 
 compiler:
     - gcc
