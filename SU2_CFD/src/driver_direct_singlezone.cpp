@@ -41,10 +41,8 @@
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -121,7 +119,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    general once the drivers are more stable. ---*/
   
   if (config_container[ZONE_0]->GetUnsteady_Simulation())
-    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
   

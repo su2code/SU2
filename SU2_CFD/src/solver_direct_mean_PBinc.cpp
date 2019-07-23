@@ -38,6 +38,8 @@
  
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../include/variables/CPBIncEulerVariable.hpp"
+#include "../include/variables/CPBIncNSVariable.hpp"
  
 CPBIncEulerSolver::CPBIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -279,13 +281,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-    
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-    
+        
   }
   
   else {
@@ -5281,13 +5277,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-    
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-    
+        
   }
   
   else {
@@ -5822,7 +5812,9 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
     
     /*--- Incompressible flow, primitive variables --- */
 
-    physical = node[iPoint]->SetPrimVar(Density_Inf, eddy_visc, turb_ke, FluidModel);
+    physical = node[iPoint]->SetPrimVar(Density_Inf, FluidModel->GetLaminarViscosity(), eddy_visc, turb_ke, config);
+    
+    FluidModel->SetEddyViscosity(eddy_visc);
     
     /*--- Record any non-physical points. ---*/
 
@@ -5834,8 +5826,6 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
     
   }
   
-  //node[PRef_Point]->SetPressure_val(config->GetPRef_Value());
-
   return ErrorCounter;
 	
 	

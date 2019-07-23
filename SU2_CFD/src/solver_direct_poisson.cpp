@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CPBIncEulerVariable.hpp"
 
 CPoissonSolverFVM::CPoissonSolverFVM(void) : CSolver() { }
 
