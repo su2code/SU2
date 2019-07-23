@@ -74,6 +74,7 @@ install:
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
+    - meson build --reconfigure --optimization=2
     - ninja -v -C build install
 
     # Add environmental variables according to the configure step
