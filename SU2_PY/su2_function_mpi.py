@@ -2,7 +2,8 @@ import shutil
 from enum import IntEnum
 
 import torch
-import pysu2ad as pysu2
+import pysu2
+import pysu2ad
 from mpi4py import MPI
 
 
@@ -27,7 +28,7 @@ def run_forward(comm, forward_driver, inputs, num_diff_outputs):
     if comm.Get_rank() == 0:
         shutil.move("./restart_flow.dat", "./solution_flow.dat")
 
-    outputs = [torch.tensor(forward_driver.GetDiff_Outputs_Vars(i))
+    outputs = [inputs[0].new_tensor(forward_driver.GetDiff_Outputs_Vars(i))
                for i in range(num_diff_outputs)]
 
     for i in range(num_diff_outputs):
@@ -67,7 +68,7 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
     adjoint_driver.Preprocess(0)
     adjoint_driver.Run()
     comm.Barrier()
-    grads = tuple(torch.tensor(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
+    grads = tuple(inputs[0].new_tensor(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
                   for i in range(adjoint_driver.GetnDiff_Inputs()))
     adjoint_driver.Postprocessing()
     return grads
@@ -96,7 +97,7 @@ def main():
         elif run_type == RunCode.RUN_ADJOINT:
             assert inputs is not None, 'Run forward simulation before running the adjoint.'
             grad_outputs = comm.bcast(None, root=0)
-            adjoint_driver = pysu2.CDiscAdjSinglezoneDriver(config, num_zones, dims, comm)
+            adjoint_driver = pysu2ad.CDiscAdjSinglezoneDriver(config, num_zones, dims, comm)
             run_adjoint(comm, adjoint_driver, inputs, grad_outputs)
 
     # TODO Disconnects hanging on cluster
