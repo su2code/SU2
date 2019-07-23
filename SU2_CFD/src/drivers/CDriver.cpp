@@ -155,18 +155,7 @@ CDriver::CDriver(char* confFile,
     }
 
   }
-  
-  if(fsi && (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetDiscrete_Adjoint())){
-    if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-    	for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
-                       config_container[iZone], true);
-    	}
-    }
-  }
-  
   /*--- Definition of the interface and transfer conditions between different zones.
    *--- The transfer container is defined for zones paired one to one.
    *--- This only works for a multizone FSI problem (nZone > 1).
@@ -181,6 +170,16 @@ CDriver::CDriver(char* confFile,
                             transfer_types, transfer_container, interpolator_container);
   }
   
+  if(fsi && (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetDiscrete_Adjoint())){
+    if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+    	for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
+                       config_container[iZone], true);
+    	}
+    }
+  }
   
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
     if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
@@ -589,7 +588,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
-  
+  fsi = config_container[ZONE_0]->GetFSI_Simulation(); 
 }
 
 void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry){
