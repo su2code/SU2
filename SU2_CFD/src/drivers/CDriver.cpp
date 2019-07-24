@@ -333,15 +333,6 @@ void CDriver::Postprocessing() {
       cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
     if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
       cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
-
-    /*--- Close the convergence history file. ---*/
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        ConvHist_file[iZone][iInst].close();
-      }
-      delete [] ConvHist_file[iZone];
-    }
-
   }
   delete [] ConvHist_file;
 
@@ -4243,7 +4234,16 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
   }
 }
 
-CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
+CTurbomachineryDriver::~CTurbomachineryDriver(void) {
+  /*--- Close the convergence history file. ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      ConvHist_file[iZone][iInst].close();
+    }
+    delete [] ConvHist_file[iZone];
+  }
+  
+}
 
 void CTurbomachineryDriver::Run() {
 
@@ -4500,6 +4500,13 @@ CHBDriver::~CHBDriver(void) {
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
   for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != NULL) delete [] D[kInst];
   if (D[kInst] != NULL) delete [] D;
+  /*--- Close the convergence history file. ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      ConvHist_file[iZone][iInst].close();
+    }
+    delete [] ConvHist_file[iZone];
+  }
 
 }
 
