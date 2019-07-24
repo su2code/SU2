@@ -31,6 +31,8 @@ env:
 
         # Parallel build and test
         - CONFIGURE_COMMAND="meson.py build --optimization=2 --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
+          CC=mpicc
+          CXX=mpicxx
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
@@ -39,6 +41,8 @@ env:
 
         # Parallel build and test for AD:
         - CONFIGURE_COMMAND="meson.py build --optimization=2 --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-directdiff=true"
+          CC=mpicc
+          CXX=mpicxx
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
@@ -60,8 +64,8 @@ before_install:
     - conda install -q -c anaconda python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
 
     # to avoid interference with MPI
-    - test -n $CC  && unset CC
-    - test -n $CXX && unset CXX
+    #- test -n $CC  && unset CC
+    #- test -n $CXX && unset CXX
 
 install:
     # build ninja
