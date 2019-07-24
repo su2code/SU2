@@ -1,0 +1,29 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- azure-pipelines
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+    # Temporarily fixes Travis CI issue with paths for Python packages
+    - bash: export PATH=/usr/bin:$PATH
+
+    # Install the necessary packages using apt-get with sudo
+    - bash: sudo apt-get update -qq
+    - bash: sudo apt-get install -qq build-essential libopenmpi-dev
+ 
+    # Install Python dependencies
+    # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
+    - bash: wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash: bash miniconda.sh -b -p $HOME/miniconda
+    - bash: export PATH="$HOME/miniconda/bin:$PATH"
+    - bash: hash -r
+    - bash: conda config --set always_yes yes --set changeps1 no
+    - bash: conda update -q conda
+    - bash: conda install -q -c anaconda python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
+
