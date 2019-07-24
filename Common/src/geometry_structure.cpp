@@ -20145,6 +20145,7 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   
   nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
+  config->SetnSpanWiseSections(0);
 }
 
 CDummyGeometry::~CDummyGeometry(){}
