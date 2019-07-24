@@ -10,19 +10,17 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-    - bash: export PATH=/usr/bin:$PATH
+    - bash: 
             sudo apt-get update -qq
             sudo apt-get install -qq build-essential libopenmpi-dev
             wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-            bash miniconda.sh -b -p $HOME/miniconda
+            miniconda.sh -b -p $HOME/miniconda
             export PATH="$HOME/miniconda/bin:$PATH"
             hash -r
             conda config --set always_yes yes --set changeps1 no
             conda update -q conda
             conda install -q -c anaconda python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
       displayName: Install anaconda
-      env:
-       PATH: /usr/bin:$PATH
     - bash: CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
             CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$PWD --enable-PY_WRAPPER --disable-tecio"
             echo $CONFIGURE_COMMAND
