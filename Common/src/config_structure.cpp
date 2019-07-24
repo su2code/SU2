@@ -750,7 +750,9 @@ void CConfig::SetPointersNull(void) {
   nSpanMaxAllZones = 1;
 
   Wrt_InletFile = false;
-  
+ 
+  Restart_Bandwidth_Agg = 0.0;
+ 
 }
 
 void CConfig::SetRunTime_Options(void) {
