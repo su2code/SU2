@@ -52,8 +52,6 @@ def run_forward(comm, forward_driver, inputs, num_diff_outputs):
                 outputs[i][global_inds] = outputs[i].clone()  # order by global_inds
             else:
                 outputs[i] = None
-
-    forward_driver.Postprocessing()
     return tuple(outputs)
 
 
@@ -70,38 +68,39 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
     comm.Barrier()
     grads = tuple(inputs[0].new_tensor(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
                   for i in range(adjoint_driver.GetnDiff_Inputs()))
-    adjoint_driver.Postprocessing()
     return grads
 
 
 def main():
     intercomm = MPI.Comm.Get_parent()
-    comm = intercomm.Merge(high=True)
 
-    num_zones, dims, num_diff_outputs = comm.bcast(None, root=0)
+    num_zones, dims, num_diff_outputs = intercomm.bcast(None, root=0)
 
     inputs = None
     while True:
-        run_type = comm.bcast(None, root=0)
+        run_type = intercomm.bcast(None, root=0)
         if run_type == RunCode.STOP:
             break
-
-        config = comm.bcast(None, root=0)
+        config = intercomm.bcast(None, root=0)
 
         if run_type == RunCode.RUN_FORWARD:
-            inputs = comm.bcast(None, root=0)
-            forward_driver = pysu2.CSinglezoneDriver(config, num_zones, dims, comm)
-            run_forward(comm, forward_driver, inputs, num_diff_outputs)
+            inputs = intercomm.bcast(None, root=0)
+            forward_driver = pysu2.CSinglezoneDriver(config, num_zones, dims, MPI.COMM_WORLD)
+            outputs = run_forward(MPI.COMM_WORLD, forward_driver, inputs, num_diff_outputs)
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                intercomm.send(outputs, dest=0)
+            forward_driver.Postprocessing()
 
         elif run_type == RunCode.RUN_ADJOINT:
             assert inputs is not None, 'Run forward simulation before running the adjoint.'
-            grad_outputs = comm.bcast(None, root=0)
-            adjoint_driver = pysu2ad.CDiscAdjSinglezoneDriver(config, num_zones, dims, comm)
-            run_adjoint(comm, adjoint_driver, inputs, grad_outputs)
+            grad_outputs = intercomm.bcast(None, root=0)
+            adjoint_driver = pysu2ad.CDiscAdjSinglezoneDriver(config, num_zones, dims, MPI.COMM_WORLD)
+            grads = run_adjoint(MPI.COMM_WORLD, adjoint_driver, inputs, grad_outputs)
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                intercomm.send(grads, dest=0)
+            adjoint_driver.Postprocessing()
 
-    # TODO Disconnects hanging on cluster
-    # comm.Disconnect()
-    # intercomm.Disconnect()
+    intercomm.Disconnect()
 
 
 if __name__ == '__main__':
