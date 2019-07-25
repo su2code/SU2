@@ -13577,11 +13577,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Thermal_Conductivity");
     }
     
-    if (pressure_based) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Pressure_Correction");
-    }
-
     if (solver[FLOW_SOL]->VerificationSolution) {
       if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
         nVar_Par += 2*nVar_Consv_Par;
@@ -13602,9 +13597,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += 2;
       Variable_Names.push_back("Vorticity_x");
       Variable_Names.push_back("Vorticity_y");
-      if (geometry->GetnDim() == 3) {
-		  nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
-	  }
+	  nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
 
       if (geometry->GetnDim() == 3) {
         nVar_Par +=1;
@@ -13720,7 +13713,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
 		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
 		  if (nDim == 3) {
-			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(3); iVar++;
+			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(2); iVar++;
 		  }
 	  }
 	  else {
@@ -13857,10 +13850,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
         }
                  
-        if (pressure_based) {
-          Local_Data[jPoint][iVar] = solver[POISSON_SOL]->node[iPoint]->GetSolution(0); iVar++;
-        }
-
         if (solver[FLOW_SOL]->VerificationSolution) {
           if (solver[FLOW_SOL]->VerificationSolution->ExactSolutionKnown()) {
           
@@ -13896,7 +13885,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
-          
           if (nDim == 3){
             for (iDim = 0; iDim < nDim; iDim++) {
               for (unsigned short jDim = 0; jDim < nDim; jDim++) {
