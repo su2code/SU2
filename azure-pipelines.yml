@@ -17,7 +17,7 @@ steps:
       sudo apt-get update -qq
       sudo apt-get install -qq build-essential libopenmpi-dev
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-      miniconda.sh -b -p $HOME/miniconda
+      bash miniconda.sh -b -p $HOME/miniconda
       export PATH="$HOME/miniconda/bin:$PATH"
       hash -r
       conda config --set always_yes yes --set changeps1 no
@@ -29,7 +29,7 @@ steps:
     script: |
       export PATH="$HOME/miniconda/bin:$PATH"
       # Configure, make, and install SU2
-      CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR  --disable-tecio"
+      CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --enable-PY_WRAPPER --prefix=$TRAVIS_BUILD_DIR  --disable-tecio"
       ./bootstrap
       autoreconf -f -i
       $CONFIGURE_COMMAND
