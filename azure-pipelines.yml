@@ -33,10 +33,24 @@ steps:
       autoreconf -f -i
       $CONFIGURE_COMMAND
       make -j 4
-      make install
-      
-      export SU2_RUN=$TRAVIS_BUILD_DIR/bin
-      export SU2_HOME=$TRAVIS_BUILD_DIR
+      make install    
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Get the test cases
+      git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+      cp -R ./TestData/* ./TestCases/
+       # Get the tutorial cases
+      git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
+         
+      export SU2_RUN=$PWD/bin
+      export SU2_HOME=$PWD
       export PATH=$PATH:$SU2_RUN
       export PYTHONPATH=$PYTHONPATH:$SU2_RUN
-        
+       
+      # Enter the SU2/TestCases/ directory, which is now ready to run
+      cd TestCases/
+      
+      python parallel_regression.py
+  
