@@ -109,9 +109,7 @@ protected:
   bool dummy_geometry;
   
 public:
-	
-  CDriver();
-  
+
   /*! 
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
