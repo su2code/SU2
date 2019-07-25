@@ -29,10 +29,11 @@ steps:
     script: |
       export PATH="$HOME/miniconda/bin:$PATH"
       # Configure, make, and install SU2
-      CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER --disable-tecio"./bootstrap
+      CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR  --disable-tecio"
+      ./bootstrap
       autoreconf -f -i
       $CONFIGURE_COMMAND
-      make -j 4
+      make -j 10
       make install    
 - task: Bash@3
   inputs:
