@@ -1913,6 +1913,35 @@ public:
   void PrepareCGNSAdjacency(CConfig *config);
   
   /*!
+   * \brief Routine to check the type of a CGNS element and to obtain other information about its containing section.
+   * \param[in] config        - definition of the particular problem.
+   * \param[in] val_elem_type - current CGNS element type (input).
+   * \param[in] val_vtk_type  - VTK index identifier (output).
+   * \return String name of the current element type.
+   */
+#ifdef HAVE_CGNS
+  string GetCGNSElementType(CConfig     *config,
+                          ElementType_t val_elem_type,
+                          int           *val_vtk_type);
+#endif
+  
+  /*!
+   * \brief Routine to check whether a CGNS section is an interior or boundary section.
+   * \param[in] config        - definition of the particular problem.
+   * \param[in] val_fn        - CGNS file identifier.
+   * \param[in] val_base      - current CGNS database index.
+   * \param[in] val_zone      - current CGNS zone index.
+   * \param[in] val_section   - current CGNS section index.
+   * \param[in] val_interior  - boolean flag for whether this is an interior or boundary section to be returned.
+   */
+  void GetCGNSSectionType(CConfig *config,
+                          int     val_fn,
+                          int     val_base,
+                          int     val_zone,
+                          int     val_section,
+                          bool    *val_interior);
+  
+  /*!
    * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
