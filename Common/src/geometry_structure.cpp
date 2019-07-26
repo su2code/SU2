@@ -6883,13 +6883,17 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
     local_size = it - adj_nodes[iPoint].begin();
     adj_nodes[iPoint].resize(local_size);
     total_adj_size += local_size;
+    
   }
-  /*--- reserve allocated space to improve push_back behavior
-  in the following loop */
+  
+  /*--- Reserve allocated space to improve push_back behavior
+  in the following loop. ---*/
+  
   adjacency_vector.reserve(total_adj_size);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     local_size = adj_nodes[iPoint].size();
+    
     /*--- Move the sorted adjacency into a 1-D vector for all
      points in order to make creating the copy for ParMETIS easier. ---*/
     
@@ -6919,10 +6923,6 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
 
   for (iPoint = 0; iPoint < adjacency_size; iPoint++)
     adjacency[iPoint] = (idx_t)adjacency_vector[iPoint];
-
-  /*--- Sync up the ranks before we call ParMETIS. ---*/
-  
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
  
 #endif
 #endif
@@ -9295,40 +9295,31 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
    Mickael Philit, July 2019. ---*/
   
 #ifdef HAVE_CGNS
-  
-  string Marker_Tag;
-  ifstream mesh_file;
-  unsigned long VTK_Type = 0, iMarker = 0;
-  unsigned long nMarker_Max = config->GetnMarker_Max();
-  unsigned long iPoint = 0, iElem = 0, interiorElems = 0;
-  nZone = val_nZone;
-  
+
   /*--- Local variables needed when calling the CGNS mid-level API. ---*/
   
+  unsigned long iMarker = 0;
+  unsigned long nMarker_Max = config->GetnMarker_Max();
+  unsigned long iPoint = 0, iElem = 0, interiorElems = 0;
+  unsigned long iProcessor, iNode, jNode, nPointCGNS, nElemCGNS, nVertexCGNS;
   unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
+  
   int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
-  
-  int nMarkers = 0, npe;
+  int nMarkers = 0, iProc, npe, vtk_type;
   int cell_dim = 0, phys_dim = 0, nbndry, parent_flag, file_type;
+  
   char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
-  
+
+  string Marker_Tag, elem_name;
+
+  ifstream mesh_file;
+
+  cgsize_t startE, endE, ElementDataSize = 0;
   cgsize_t* cgsize; cgsize = new cgsize_t[3];
-  
+
   ZoneType_t zonetype;
   
   ElementType_t elemType;
-  
-  cgsize_t startE, endE;
-  string currentElem;
-  
-  cgsize_t ElementDataSize = 0;
-  
-  /*--- Initialize counters for local/global points & elements ---*/
-
-  unsigned long iProcessor;
-  unsigned long iNode, jNode;
-  unsigned long nPointCGNS, nElemCGNS, nVertexCGNS;
-  int iProc;
   
   /*--- Initialize counters for local/global points & elements ---*/
   
@@ -9345,7 +9336,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   /*--- Helper variables for controlling data layout for connectivity. ---*/
   
   unsigned long connSize = 10;
-  unsigned long skip = 2;
+  unsigned long skip     = 2;
+  
+  /* Set the zone number from the input value. */
+  
+  nZone = val_nZone;
   
   /*--- The CGNS reader assumes a single database. We use the value for
    iZone input to the function with +1 for the 1-based indexing in CGNS. ---*/
@@ -9526,79 +9521,27 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   for (int s = 0; s < nsections; s++) {
     
     /*--- Read the connectivity details for this section. ---*/
-    
+
     if (cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
                         &elemType, &startE, &endE, &nbndry,
                         &parent_flag)) cg_error_exit();
-    
+
     /*--- Compute the total element count in this section (global). ---*/
-    
+
     unsigned long element_count = (endE-startE+1);
+
+    /* Get the details for the CGNS element type in this section. */
     
-    /*--- Check the cell type so that we can determine whether this is
-     a surface or volume element section. ---*/
+    elem_name = GetCGNSElementType(config, elemType, &vtk_type);
     
-    isVolume[s] = true;
+    /* Check whether ths is an interior or exterior section. */
     
-    switch (elemType) {
-      case NODE:
-        currentElem   = "Vertex";
-        SU2_MPI::Error("Vertex elements detected in section " +
-                       string(sectionNames[s].data()) + ". Please remove.",
-                       CURRENT_FUNCTION);
-        break;
-      case BAR_2:
-        currentElem   = "Line";
-        if (nDim == 2) isVolume[s] = false;
-        if (nDim == 3)
-          SU2_MPI::Error("Line elements detected in section " +
-                         string(sectionNames[s].data()) + " for a 3D mesh." +
-                         " Please remove.", CURRENT_FUNCTION);
-        break;
-      case BAR_3:
-        currentElem   = "Line";
-        if (nDim == 2) isVolume[s] = false;
-        if (nDim == 3)
-          SU2_MPI::Error("Line elements detected in section " +
-                         string(sectionNames[s].data()) + " for a 3D mesh." +
-                         " Please remove.", CURRENT_FUNCTION);
-        break;
-      case TRI_3:
-        currentElem   = "Triangle";
-        if (nDim == 3) isVolume[s] = false;
-        break;
-      case QUAD_4:
-        currentElem   = "Quadrilateral";
-        if (nDim == 3) isVolume[s] = false;
-        break;
-      case TETRA_4:
-        currentElem   = "Tetrahedron";
-        break;
-      case HEXA_8:
-        currentElem   = "Hexahedron";
-        break;
-      case PENTA_6:
-        currentElem   = "Prism";
-        break;
-      case PYRA_5:
-        currentElem   = "Pyramid";
-        break;
-      case MIXED:
-        currentElem   = "Mixed";
-        break;
-      case HEXA_20:
-        SU2_MPI::Error(string("HEXA-20 element type not supported\n"),
-                       CURRENT_FUNCTION);
-        break;
-      default:
-        char buf1[100];
-        SPRINTF(buf1, "Unknown elem type: (type %d)\n", elemType);
-        SU2_MPI::Error(string(buf1), CURRENT_FUNCTION);
-        break;
-    }
-    
+    bool interior;
+    GetCGNSSectionType(config, fn, iBase, iZone, s+1, &interior);
+    isVolume[s] = interior;
+
     if ((element_count < (unsigned long)size) && isVolume[s]) {
-      SU2_MPI::Error(string("Section has fewer volume element than cores.") +
+      SU2_MPI::Error(string("Section has fewer interior elements than cores.") +
                      string("\nPlease rerun the calculation with fewer cores."),
                      CURRENT_FUNCTION);
     }
@@ -9615,7 +9558,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
     if (rank == MASTER_NODE) {
       cout << "Section " << string(sectionNames[s].data());
       cout << " contains " << element_count << " elements";
-      cout << " of type " << currentElem << "." << endl;
+      cout << " of type " << elem_name << "." << endl;
     }
     
   }
@@ -9731,6 +9674,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
       /*--- Retrieve the connectivity information and store. Note that
        we are only accessing our rank's piece of the data here in the
        partial read function in the CGNS API. ---*/
+      
       if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) { 
         if (cg_poly_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
                                           (cgsize_t)elemE[rank], connElemCGNS.data(),
@@ -9740,10 +9684,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
                                      (cgsize_t)elemE[rank], connElemCGNS.data(),
                                      NULL) != CG_OK) cg_error_exit();
       }
-      
-      /*--- Sync up the ranks after accessing the CGNS data. ---*/
-  
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
       
       /*--- Print some information to the console. ---*/
       
@@ -9791,58 +9731,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
         
         elemGlobalID[iElem] = elemB[rank] + iElem - 1 - elemOffset[s];
         
-        switch (elmt_type) {
-          case NODE:
-            currentElem   = "Vertex";
-            elemTypes[iElem] = 1;
-            break;
-          case BAR_2:
-            currentElem   = "Line";
-            elemTypes[iElem] = 3;
-            break;
-          case BAR_3:
-            currentElem   = "Line";
-            elemTypes[iElem] = 3;
-            break;
-          case TRI_3:
-            currentElem   = "Triangle";
-            elemTypes[iElem] = 5;
-            break;
-          case QUAD_4:
-            currentElem   = "Quadrilateral";
-            elemTypes[iElem] = 9;
-            break;
-          case TETRA_4:
-            currentElem   = "Tetrahedron";
-            elemTypes[iElem] = 10;
-            break;
-          case HEXA_8:
-            currentElem   = "Hexahedron";
-            elemTypes[iElem] = 12;
-            break;
-          case PENTA_6:
-            currentElem   = "Prism";
-            elemTypes[iElem] = 13;
-            break;
-          case PYRA_5:
-            currentElem   = "Pyramid";
-            elemTypes[iElem] = 14;
-            break;
-          case HEXA_20:
-            SU2_MPI::Error(string("HEXA-20 element type not supported\n"),
-                           CURRENT_FUNCTION);
-            break;
-          default:
-            char buf1[100];
-            SPRINTF(buf1, "Unknown elem type: (type %d, npe=%d)\n",
-                    elemType, npe);
-            SU2_MPI::Error(string(buf1), CURRENT_FUNCTION);
-            break;
-        }
+        /* Get the VTK type for this element. */
+        
+        elem_name = GetCGNSElementType(config, elmt_type, &vtk_type);
+        elemTypes[iElem] = vtk_type;
         
       }
 
       /*--- Force free the memory for the conn offset from the CGNS file. ---*/
+      
       vector<cgsize_t>().swap(connOffsetCGNS);
 
       /*--- These are internal elems. Allocate memory on each proc. ---*/
@@ -9862,7 +9759,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
         /*--- First, store the global element ID and the VTK type. ---*/
         
         connElemTemp[nn] = elemGlobalID[iElem]; nn++;
-        connElemTemp[nn] = elemTypes[iElem]; nn++;
+        connElemTemp[nn] = elemTypes[iElem];    nn++;
         
         /*--- Store the connectivity values. Note we subtract one from
          the CGNS 1-based convention. We may also need to remove the first
@@ -10044,10 +9941,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
       /*--- Complete the non-blocking communications. ---*/
       
       CompleteCommsAll(nSends, connSendReq, nRecvs, connRecvReq);
-
-      /*--- Sync up the ranks after communicating. ---*/
-  
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
       
       /*--- Store the connectivity for this rank in the proper data
        structure before post-processing below. First, allocate the
@@ -10122,6 +10015,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
                              &elemType, &startE, &endE, &nbndry,
                              &parent_flag) ) cg_error_exit();
         
+        /*--- Print some information to the console. ---*/
+
         if (rank == MASTER_NODE) {
           cout << "Loading surface section " << string(sectionNames[s].data());
           cout <<  " from file." << endl;
@@ -10148,54 +10043,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
          specify the VTK identifier for that element.
          SU2 recognizes elements by their VTK number. ---*/
         
-        char buf1[100], buf2[100], buf3[100];
-        
-        switch (elemType) {
-          case NODE:
-            elemTypeVTK[s] = 1;
-            break;
-          case BAR_2:
-            elemTypeVTK[s] = 3;
-            break;
-          case BAR_3:
-            elemTypeVTK[s] = 3;
-            break;
-          case TRI_3:
-            elemTypeVTK[s] = 5;
-            break;
-          case QUAD_4:
-            elemTypeVTK[s] = 9;
-            break;
-          case TETRA_4:
-            elemTypeVTK[s] = 10;
-            break;
-          case HEXA_8:
-            elemTypeVTK[s] = 12;
-            break;
-          case PENTA_6:
-            elemTypeVTK[s] = 13;
-            break;
-          case PYRA_5:
-            elemTypeVTK[s] = 14;
-            break;
-          case HEXA_20:
-            SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
-            SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
-            SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
-                           string(buf1) + string(buf2), CURRENT_FUNCTION);
-            break;
-          case MIXED:
-            currentElem = "Mixed";
-            elemTypeVTK[s] = -1;
-            break;
-          default:
-            SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
-            SPRINTF(buf2, "Section %d\n", s);
-            SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
-            SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3),
-                           CURRENT_FUNCTION);
-            break;
-        }
+        elem_name = GetCGNSElementType(config, elemType, &vtk_type);
+        elemTypeVTK[s] = vtk_type;
         
         /*--- In case of mixed data type, allocate place for 8 nodes
          maximum (hex), plus element type. ---*/
@@ -10210,16 +10059,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
         connElems[s] = new cgsize_t[nElems[s]*connSize];
         
         /*--- Retrieve the connectivity information and store. ---*/
+        
         if (elemType == MIXED || elemType == NGON_n || elemType == NFACE_n) {
           vector<cgsize_t> connOffsetTemp(nElems[s]+1, 0);
-          if (cg_poly_elements_read(fn, iBase, iZone, s+1,
-                               connElemTemp.data(), connOffsetTemp.data(), NULL))
-            cg_error_exit();
-
-        } else { 
+          if (cg_poly_elements_partial_read(fn, iBase, iZone, s+1, startE,
+                                            endE, connElemTemp.data(),
+                                            connOffsetTemp.data(), NULL) != CG_OK)
+          cg_error_exit();
+        } else {
           if (cg_elements_read(fn, iBase, iZone, s+1,
                                connElemTemp.data(), NULL))
-            cg_error_exit();
+          cg_error_exit();
         }
         
         /*--- Copy these values into the larger array for
@@ -10303,11 +10153,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
         /*--- Get the VTK type for this element. This is stored in the
          first entry of the connectivity structure. ---*/
         
-        VTK_Type = connElems[s][jElem*connSize + 1];
+        vtk_type = connElems[s][jElem*connSize + 1];
         
         /*--- Instantiate this element in the proper SU2 data structure. ---*/
         
-        switch(VTK_Type) {
+        switch(vtk_type) {
             
           case TRIANGLE:
             
@@ -10488,22 +10338,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
               
               ElementType_t elmt_type = ElementType_t(connElems[s][jElem*connSize + 1]);
               cg_npe( elmt_type, &npe);
-              
-              switch (elmt_type) {
-                case NODE:    VTK_Type = 1;  break;
-                case BAR_2:   VTK_Type = 3;  break;
-                case BAR_3:   VTK_Type = 3;  break;
-                case TRI_3:   VTK_Type = 5;  break;
-                case QUAD_4:  VTK_Type = 9;  break;
-                case TETRA_4: VTK_Type = 10; break;
-                case HEXA_8:  VTK_Type = 12; break;
-                case PENTA_6: VTK_Type = 13; break;
-                case PYRA_5:  VTK_Type = 14; break;
-                default:
-                  SU2_MPI::Error("Kind of element not suppported!",
-                                 CURRENT_FUNCTION);
-                  break;
-              }
+              elem_name = GetCGNSElementType(config, elmt_type, &vtk_type);
               
               /*--- Transfer the nodes for this element. ---*/
               
@@ -10515,7 +10350,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
               
               /*--- Not a mixed section. We know the element type. ---*/
               
-              VTK_Type = connElems[s][jElem*connSize + 1];
+              vtk_type = connElems[s][jElem*connSize + 1];
               
               /*--- Transfer the nodes for this element. ---*/
               
@@ -10527,7 +10362,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
             
             /*--- Instantiate the boundary elements. ---*/
             
-            switch(VTK_Type) {
+            switch(vtk_type) {
               case LINE:
                 if (nDim == 3) {
                   SU2_MPI::Error("Remove line boundary elems from the mesh.",
@@ -10960,6 +10795,157 @@ void CPhysicalGeometry::PrepareCGNSAdjacency(CConfig *config) {
 #endif
 #endif
   
+}
+
+#ifdef HAVE_CGNS
+string CPhysicalGeometry::GetCGNSElementType(CConfig       *config,
+                                           ElementType_t val_elem_type,
+                                           int           *val_vtk_type) {
+  
+  
+  /* For a specified section, check the element type and return
+   several pieces of information: the string name for the element,
+   the associated VTK type number, and whether this section
+   contains interior or boundary elements. */
+  
+  string elem_name;
+  
+  switch (val_elem_type) {
+    case NODE:
+      elem_name      = "Vertex";
+      *val_vtk_type  = 1;
+      SU2_MPI::Error("Vertex elements detected. Please remove.",
+                     CURRENT_FUNCTION);
+      break;
+    case BAR_2:
+      elem_name     = "Line";
+      *val_vtk_type = 3;
+      if (nDim == 3)
+        SU2_MPI::Error("Line elements detected in a 3D mesh. Please remove.",
+                       CURRENT_FUNCTION);
+      break;
+    case BAR_3:
+      elem_name     = "Line";
+      *val_vtk_type = 3;
+      if (nDim == 3)
+        SU2_MPI::Error("Line elements detected in a 3D mesh. Please remove.",
+                       CURRENT_FUNCTION);
+      break;
+    case TRI_3:
+      elem_name     = "Triangle";
+      *val_vtk_type = 5;
+      break;
+    case QUAD_4:
+      elem_name     = "Quadrilateral";
+      *val_vtk_type = 9;
+      break;
+    case TETRA_4:
+      elem_name     = "Tetrahedron";
+      *val_vtk_type = 10;
+      break;
+    case HEXA_8:
+      elem_name     = "Hexahedron";
+      *val_vtk_type = 12;
+      break;
+    case PENTA_6:
+      elem_name     = "Prism";
+      *val_vtk_type = 13;
+      break;
+    case PYRA_5:
+      elem_name     = "Pyramid";
+      *val_vtk_type = 14;
+      break;
+    case MIXED:
+      elem_name     = "Mixed";
+      *val_vtk_type = -1;
+      break;
+    default:
+      char buf1[100];
+      SPRINTF(buf1, "Unsupported or unknown elem type: (type %d)\n",
+              val_elem_type);
+      SU2_MPI::Error(string(buf1), CURRENT_FUNCTION);
+      break;
+  }
+  
+  return elem_name;
+  
+}
+#endif
+
+void CPhysicalGeometry::GetCGNSSectionType(CConfig *config,
+                                           int     val_fn,
+                                           int     val_base,
+                                           int     val_zone,
+                                           int     val_section,
+                                           bool    *val_interior) {
+  
+#ifdef HAVE_CGNS
+  
+  /* For a specified section, check the element type and return
+   several pieces of information: the string name for the element,
+   the associated VTK type number, and whether this section
+   contains interior or boundary elements. */
+  
+  int nbndry, parent_flag;
+  cgsize_t startE, endE, sizeNeeded;
+  ElementType_t elemType;
+  vector<char> sectionName(CGNS_STRING_SIZE);
+  
+  /*--- Read the connectivity details for this section. ---*/
+  
+  if (cg_section_read(val_fn, val_base, val_zone, val_section,
+                      sectionName.data(), &elemType, &startE, &endE, &nbndry,
+                      &parent_flag)) cg_error_exit();
+  
+  /* We assume that each section contains interior elements by default.
+   If we find 1D elements in a 2D problem or 2D elements in a 3D
+   problem, then we know the section must contain boundary elements.
+   We assume that each section is composed of either entirely interior
+   or entirely boundary elements. */
+  
+  *val_interior = true;
+  
+  if (elemType == MIXED) {
+    
+    /* For a mixed section, we check the type of the first element
+     so that we can correctly label this section as an interior or
+     boundary element section. Here, we also assume that a section
+     can not hold both interior and boundary elements. First, get
+     the size required to read a single element from the section. */
+    
+    if (cg_ElementPartialSize(val_fn, val_base, val_zone, val_section, startE,
+                              startE, &sizeNeeded) != CG_OK)
+      cg_error_exit();
+    
+    /* A couple of auxiliary vectors for mixed element sections. */
+    
+    vector<cgsize_t> connElemCGNS(sizeNeeded);
+    vector<cgsize_t> connOffsetCGNS(2,0);
+    
+    /* Retrieve the connectivity information for the first element. */
+    
+    if (cg_poly_elements_partial_read(val_fn, val_base, val_zone, val_section,
+                                      startE, startE, connElemCGNS.data(),
+                                      connOffsetCGNS.data(), NULL) != CG_OK)
+      cg_error_exit();
+    
+    /* The element type is in the first position of the connectivity
+     information that we retrieved from the CGNS file. */
+    
+    elemType = ElementType_t(connElemCGNS[0]);
+    
+  }
+  
+  /* Check for 1D elements in 2D problems, or for 2D elements in
+   3D problems. If found, mark the section as a boundary section. */
+  
+  if ((nDim == 2) &&
+      (elemType == BAR_2 || elemType == BAR_3))  *val_interior = false;
+  if ((nDim == 3) &&
+      (elemType == TRI_3 || elemType == QUAD_4)) *val_interior = false;
+  
+#endif
+
 }
 
 void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
