@@ -3172,7 +3172,7 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 	
 	unsigned short iVar, jVar, iDim, jDim;
 	unsigned long iPoint, jPoint, iNeigh;
-	su2double Mom_Coeff[3], Mom_Coeff_nb[3];
+	su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
 	int ranknp = SU2_MPI::GetRank();
 	
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3180,6 +3180,8 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
       for (iVar = 0; iVar < nVar; iVar++) {
         Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
       }     
+      Vol = geometry->node[iPoint]->GetVolume();
+	  delT = node[iPoint]->GetDelta_Time();
       
       node[iPoint]->Set_Mom_Coeff_nbZero();
           
@@ -3190,7 +3192,7 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 		  }
 	  }
 	  for (iVar = 0; iVar < nVar; iVar++) {
-		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar);
+		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar) - Vol/delT;
 		  Mom_Coeff[iVar] = node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff[iVar];
 	  }
 	  
@@ -3956,7 +3958,8 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		node[iPoint]->SetVelocity();
 		/*--- Pressure corrections ---*/
 		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-		Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
+		//Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
+		Current_Pressure += config->GetRelaxation_Factor_Flow()*(Pressure_Correc[iPoint] - PCorr_Ref);
 		node[iPoint]->SetPressure_val(Current_Pressure);
    }
    
