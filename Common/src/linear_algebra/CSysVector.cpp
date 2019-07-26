@@ -41,6 +41,11 @@ template<class ScalarType>
 CSysVector<ScalarType>::CSysVector(void) {
 
   vec_val = NULL;
+  nElm = 0;
+  nElmDomain = 0;
+  nVar = 0;
+  nBlk = 0;
+  nBlkDomain = 0;
 
 }
 
