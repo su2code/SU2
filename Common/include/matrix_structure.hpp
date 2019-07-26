@@ -578,6 +578,9 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
+
+  // function for debugging only
+  void printMat(ofstream &file);
   
 };
 

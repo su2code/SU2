@@ -2389,6 +2389,25 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
   
 }
 
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::printMat(ofstream &file) {
+
+  unsigned long iVar, jVar;
+  auto row=0;
+  for (auto entr=0; entr<nnz; entr++) {
+    if (entr >= row_ptr[row+1]) {
+      row++;
+    }
+    ScalarType* block = GetBlock(row, col_ind[entr]);
+    for (iVar=0; iVar < nVar; iVar++ ) {
+      for (jVar=0; jVar < nVar; jVar++ ) {
+        file << row*nVar+iVar << " " << col_ind[entr]*nVar+jVar << " " << block[iVar*nVar+jVar] << std::endl;
+      }
+    }
+  }
+}
+
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;
 template void  CSysMatrix<su2double>::InitiateComms(CSysVector<su2double>&, CGeometry*, CConfig*, unsigned short);

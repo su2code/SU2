@@ -40,18 +40,18 @@
 
 CGradSmoothing::CGradSmoothing(void) : CFEAElasticity () {
 
-  unsigned short iVar;
+  unsigned short iDim;
   Aux_Mat = NULL;
   if (nDim == 2) {
     Aux_Mat = new su2double* [nDim];
-    for (iVar = 0; iVar < nDim; iVar++) {
-      Aux_Mat[iVar]      = new su2double[3];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Aux_Mat[iDim]      = new su2double[3];
     }
   }
   else if (nDim == 3) {
     Aux_Mat = new su2double* [nDim];
-    for (iVar = 0; iVar < nDim; iVar++) {
-      Aux_Mat[iVar]      = new su2double[6];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Aux_Mat[iDim]      = new su2double[6];
     }
   }
 
@@ -60,18 +60,18 @@ CGradSmoothing::CGradSmoothing(void) : CFEAElasticity () {
 CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
   : CFEAElasticity(val_nDim, val_nDim, config) {
 
-  unsigned short iVar;
+  unsigned short iDim;
   Aux_Mat = NULL;
   if (nDim == 2) {
     Aux_Mat = new su2double* [nDim];
-    for (iVar = 0; iVar < nDim; iVar++) {
-      Aux_Mat[iVar]      = new su2double[3];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Aux_Mat[iDim]      = new su2double[3];
     }
   }
   else if (nDim == 3) {
     Aux_Mat = new su2double* [nDim];
-    for (iVar = 0; iVar < nDim; iVar++) {
-      Aux_Mat[iVar]      = new su2double[6];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Aux_Mat[iDim]      = new su2double[6];
     }
   }
 
@@ -79,9 +79,9 @@ CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
 
 CGradSmoothing::~CGradSmoothing(void) {
 
-  unsigned short iVar;
-  for (iVar = 0; iVar < nDim; iVar++) {
-    delete [] Aux_Mat[iVar];
+  unsigned short iDim;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] Aux_Mat[iDim];
   }
   delete [] Aux_Mat;
 
@@ -89,10 +89,9 @@ CGradSmoothing::~CGradSmoothing(void) {
 
 void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
-  unsigned short iVar, jVar, kVar;
+  unsigned short iDim, jDim, kDim;
   unsigned short iGauss, nGauss;
   unsigned short iNode, jNode, nNode;
-  unsigned short iDim;
   unsigned short bDim;
 
   su2double Weight, Jac_X, GradNiXGradNj;
@@ -105,24 +104,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   SetElement_Properties(element, config);
 
   Compute_Constitutive_Matrix(element, config);
-
-  /*--- Initialize auxiliary matrices ---*/
-
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
-
-  for (iVar = 0; iVar < bDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
-      Ba_Mat[iVar][jVar] = 0.0;
-      Bb_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < nDim; iVar++) {
-    for (jVar = 0; jVar < bDim; jVar++) {
-      Aux_Mat[iVar][jVar] = 0.0;
-    }
-  }
 
   element->clearElement(true);       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   element->ComputeGrad_Linear();
@@ -139,6 +120,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+        // std::cout << "GradNi: " << iNode << ", " << iDim << ", " << GradNi_Ref_Mat[iNode][iDim] << ", " << element->GetRef_Coord(iNode,iDim) << std::endl;
       }
     }
 
@@ -147,18 +129,19 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
       /*--- Assumming symmetry ---*/
       for (jNode = iNode; jNode < nNode; jNode++) {
 
-        for (iVar = 0; iVar < nDim; iVar++) {
-          for (jVar = 0; jVar < nDim; jVar++) {
-            GradNiXGradNj += GradNi_Ref_Mat[iNode][iVar]* GradNi_Ref_Mat[jNode][jVar];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            GradNiXGradNj += GradNi_Ref_Mat[iNode][iDim]* GradNi_Ref_Mat[jNode][jDim];
           }
         }
 
-        for (iVar = 0; iVar < nDim; iVar++) {
-          for (jVar = 0; jVar < nDim; jVar++) {
-            if (iVar == jVar) {
-              KAux_ab[iVar][jVar] = Weight * Jac_X * GradNiXGradNj;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            if (iDim == jDim) {
+              KAux_ab[iDim][jDim] = Weight * Jac_X * GradNiXGradNj;
+              // std::cout << "Grad Term: " << iGauss << ", " << iNode << ", " << jNode << ", " << Weight << ", " << Jac_X << ", " << GradNiXGradNj << std::endl;
             } else {
-              KAux_ab[iVar][jVar] = 0;
+              KAux_ab[iDim][jDim] = 0;
             }
           }
         }
@@ -192,6 +175,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
         val_HiHj = Weight * Ni_Vec[iNode] * Ni_Vec[jNode];
+        // std::cout << "Function Term: " << iGauss << ", " << iNode << ", " << jNode << ", " << Weight << ", " << Jac_X << ", " << val_HiHj << std::endl;
         element->Add_HiHj(val_HiHj, iNode, jNode);
       }
     }

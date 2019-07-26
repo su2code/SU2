@@ -173,6 +173,10 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
   LinSysRes.printVec(rhs);
   rhs.close();
 
+  ofstream matrix ("matrix.dat");
+  Jacobian.printMat(matrix);
+  matrix.close();
+
   Solve_Linear_System(geometry, config);
 
   ofstream result ("result.txt");
@@ -237,11 +241,14 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
         //DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_ij[iVar][jVar] = DHiDHj[iVar][jVar];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          // std::cout << "Jacobian Block: " << iNode << ", " << jNode << "| ";
+          for (jDim = 0; jDim < nDim; jDim++) {
+            Jacobian_ij[iDim][jDim] = DHiDHj[iDim][jDim];
+            // std::cout << Jacobian_ij[iDim][jDim] << " ";
           }
-          Jacobian_ij[iVar][iVar] -= HiHj;
+          Jacobian_ij[iDim][iDim] -= HiHj;
+          // std::cout << " | " << HiHj << std::endl;
         }
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
       }

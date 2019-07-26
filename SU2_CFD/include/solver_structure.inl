@@ -2319,6 +2319,8 @@ inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
 
 inline su2double CFEASolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return geometry->node[indexNode]->GetCoord(iDim);}
 
+inline su2double CGradientSmoothingSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return geometry->node[indexNode]->GetCoord(iDim);}
+
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}

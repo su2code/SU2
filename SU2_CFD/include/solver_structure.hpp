@@ -12241,6 +12241,14 @@ public:
    */
   void Set_Sensitivities(CGeometry *geometry, CSolver *solver, CConfig *config);
 
+  /*!
+   * \brief Get the value of the reference coordinate to set on the element structure.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
+   */
+  su2double Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim);
+
 };
 
 
