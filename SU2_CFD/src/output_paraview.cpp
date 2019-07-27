@@ -2949,23 +2949,23 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   }
   
   int *nPoint_Snd = new int[size+1];
-  int *nPoint_Cum = new int[size+1];
+  int *nPointC = new int[size+1];
   
-  nPoint_Snd[0] = 0; nPoint_Cum[0] = 0;
+  nPoint_Snd[0] = 0; nPointC[0] = 0;
   for (int ii=1; ii < size; ii++) {
-    nPoint_Snd[ii] = myPoint; nPoint_Cum[ii] = 0;
+    nPoint_Snd[ii] = myPoint; nPointC[ii] = 0;
   }
-  nPoint_Snd[size] = myPoint; nPoint_Cum[size] = 0;
+  nPoint_Snd[size] = myPoint; nPointC[size] = 0;
   
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
   
   SU2_MPI::Alltoall(&(nPoint_Snd[1]), 1, MPI_INT,
-                    &(nPoint_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPointC[1]), 1, MPI_INT, MPI_COMM_WORLD);
   
   /*--- Put the counters into cumulative storage format. ---*/
   
   for (int ii = 0; ii < size; ii++) {
-    nPoint_Cum[ii+1] += nPoint_Cum[ii];
+    nPointC[ii+1] += nPointC[ii];
   }
   
   SPRINTF(str_buf, "POINTS %i float\n", SU2_TYPE::Int(GlobalPoint));
@@ -3003,7 +3003,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Compute the offset for this rank's linear partition of the
    data in bytes. ---*/
   
-  disp2 = disp + NCOORDS*nPoint_Cum[rank]*sizeof(float);
+  disp2 = disp + NCOORDS*nPointC[rank]*sizeof(float);
   
   /*--- Set the view for the MPI file write, i.e., describe the
    location in the file that this rank "sees" for writing its
@@ -3018,7 +3018,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   /*--- Update the displacement position for MPI IO. ---*/
   
-  disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
+  disp += NCOORDS*nPointC[size]*sizeof(float);
   
   /*--- Free the derived datatype and coordinate array. ---*/
   
@@ -3435,7 +3435,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       /*--- Compute the offset for this rank's linear partition of the
        data in bytes. ---*/
       
-      disp2 = disp + NCOORDS*nPoint_Cum[rank]*sizeof(float);
+      disp2 = disp + NCOORDS*nPointC[rank]*sizeof(float);
       
       /*--- Set the view for the MPI file write, i.e., describe the
        location in the file that this rank "sees" for writing its
@@ -3450,7 +3450,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       /*--- Update the displacement position for MPI IO. ---*/
       
-      disp += NCOORDS*nPoint_Cum[size]*sizeof(float);
+      disp += NCOORDS*nPointC[size]*sizeof(float);
       
       /*--- Free the derived datatype and coordinate array. ---*/
       
@@ -3503,7 +3503,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       /*--- Compute the offset for this rank's linear partition of the
        data in bytes. ---*/
       
-      disp2 = disp + nPoint_Cum[rank]*sizeof(float);
+      disp2 = disp + nPointC[rank]*sizeof(float);
       
       /*--- Set the view for the MPI file write, i.e., describe the
        location in the file that this rank "sees" for writing its
@@ -3518,7 +3518,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       /*--- Update the displacement position for MPI IO. ---*/
       
-      disp += nPoint_Cum[size]*sizeof(float);
+      disp += nPointC[size]*sizeof(float);
       
       /*--- Free the derived datatype and coordinate array. ---*/
       
@@ -3538,7 +3538,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   delete [] nElem_Snd;        delete [] nElem_Cum;
   delete [] nElemStorage_Snd; delete [] nElemStorage_Cum;
-  delete [] nPoint_Snd;       delete [] nPoint_Cum;
+  delete [] nPoint_Snd;       delete [] nPointC;
   
 #endif
   
