@@ -1525,17 +1525,19 @@ const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS f
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-  TECPLOT = 1,  		     /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY = 2,    /*!< \brief Tecplot binary format for the solution output. */
-  FIELDVIEW = 3,  		   /*!< \brief FieldView format for the solution output. */
-  FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
-  CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
-  CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY = 8,    /*!< \brief Paraview binary format for the solution output. */
-  SU2_MESH      = 9,      /*!< \brief SU2 mesh format (only used internally). */
-  SU2_RESTART_BINARY = 10,/*!< \brief SU2 binary restart format (only used internally). */
-  SU2_RESTART_ASCII = 11  /*!< \brief SU2 ASCII restart format (only used internally). */
+  TECPLOT = 1,  		       /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY = 2,      /*!< \brief Tecplot binary format for the solution output. */
+  FIELDVIEW = 3,  		     /*!< \brief FieldView format for the solution output. */
+  FIELDVIEW_BINARY = 4,    /*!< \brief FieldView binary format for the solution output. */
+  CSV = 5,			           /*!< \brief Comma-separated values format for the solution output. */
+  CGNS_SOL = 6,  	      	 /*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 7,  		       /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_BINARY = 8,     /*!< \brief Paraview binary format for the solution output. */
+  SU2_MESH      = 9,       /*!< \brief SU2 mesh format (only used internally). */
+  SU2_RESTART_BINARY = 10, /*!< \brief SU2 binary restart format (only used internally). */
+  SU2_RESTART_ASCII = 11,  /*!< \brief SU2 ASCII restart format (only used internally). */
+  STL = 12,			           /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY = 13	         /*!< \brief STL binary format for surface solution output. */
 };
 
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
@@ -1546,7 +1548,9 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CSV", CSV)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW)
-("PARAVIEW_BINARY", PARAVIEW_BINARY);
+("PARAVIEW_BINARY", PARAVIEW_BINARY)
+("STL", STL)
+("STL_BINARY", STL_BINARY);
 
 /*!
  * \brief type of volume sensitivity file formats (inout to SU2_DOT)
