@@ -333,15 +333,6 @@ void CDriver::Postprocessing() {
       cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
     if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
       cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
-
-    /*--- Close the convergence history file. ---*/
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        ConvHist_file[iZone][iInst].close();
-      }
-      delete [] ConvHist_file[iZone];
-    }
-
   }
   delete [] ConvHist_file;
 
@@ -3661,24 +3652,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     driver_output->PreprocessMultizoneHistoryOutput(output, config);
   }
   
-  /*--- LEGACY OUTPUT (going to be removed soon) --- */
-  
-  if  ((!config_container[ZONE_0]->GetMultizone_Problem() && !config_container[ZONE_0]->GetSinglezone_Driver()) || 
-       config_container[ZONE_0]->GetBoolTurbomachinery() || config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
-    /*--- Open the convergence history file ---*/
-    ConvHist_file = NULL;
-    ConvHist_file = new ofstream*[nZone];
-    for (iZone = 0; iZone < nZone; iZone++) {
-      ConvHist_file[iZone] = NULL;
-      if (rank == MASTER_NODE){
-        ConvHist_file[iZone] = new ofstream[nInst[iZone]];
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-          output[iZone]->GetLegacyOutput()->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-          config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
-        }
-      }
-    }
-  }
+
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetRestart_Iter();
@@ -4239,9 +4213,37 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
                                              SU2_Comm MPICommunicator):
-                                             CFluidDriver(confFile, val_nZone, MPICommunicator) { }
+                                             CFluidDriver(confFile, val_nZone, MPICommunicator) {
+  
+  output_legacy = new COutputLegacy(config_container[ZONE_0]);
+  
+  /*--- LEGACY OUTPUT (going to be removed soon) --- */
+  
+  /*--- Open the convergence history file ---*/
+  ConvHist_file = NULL;
+  ConvHist_file = new ofstream*[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    ConvHist_file[iZone] = NULL;
+    if (rank == MASTER_NODE){
+      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
+      }
+    }
+  }
+}
 
-CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
+CTurbomachineryDriver::~CTurbomachineryDriver(void) {
+  /*--- Close the convergence history file. ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      ConvHist_file[iZone][iInst].close();
+    }
+    delete [] ConvHist_file[iZone];
+  }
+  
+}
 
 void CTurbomachineryDriver::Run() {
 
@@ -4307,7 +4309,7 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
-  output_container[ZONE_0]->GetLegacyOutput()->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
+ output_legacy->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
 
 }
 
@@ -4346,7 +4348,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)    
-      output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
@@ -4471,7 +4473,24 @@ CHBDriver::CHBDriver(char* confFile,
   D = NULL;
   /*--- allocate dynamic memory for the Harmonic Balance operator ---*/
   D = new su2double*[nInstHB]; for (kInst = 0; kInst < nInstHB; kInst++) D[kInst] = new su2double[nInstHB];
-
+  
+  output_legacy = new COutputLegacy(config_container[ZONE_0]);
+  
+  /*--- Open the convergence history file ---*/
+  ConvHist_file = NULL;
+  ConvHist_file = new ofstream*[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    ConvHist_file[iZone] = NULL;
+    if (rank == MASTER_NODE){
+      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+        output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
+      }
+    }
+  }
+  
+  
 }
 
 CHBDriver::~CHBDriver(void) {
@@ -4481,6 +4500,13 @@ CHBDriver::~CHBDriver(void) {
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
   for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != NULL) delete [] D[kInst];
   if (D[kInst] != NULL) delete [] D;
+  /*--- Close the convergence history file. ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      ConvHist_file[iZone][iInst].close();
+    }
+    delete [] ConvHist_file[iZone];
+  }
 
 }
 

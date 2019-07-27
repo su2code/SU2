@@ -828,6 +828,9 @@ public:
  * \author S. Vitale
  */
 class CTurbomachineryDriver : public CFluidDriver {
+private:
+  COutputLegacy* output_legacy;
+  
 public:
 
   /*!
@@ -880,7 +883,7 @@ public:
 class CHBDriver : public CDriver {
 
 private:
-
+  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double **D; /*!< \brief Harmonic Balance operator. */
 

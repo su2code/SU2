@@ -121,6 +121,9 @@ CSolver::CSolver(void) {
   rotate_periodic   = false;
   implicit_periodic = false;
   
+  nPrimVarGrad = 0;
+  nPrimVar     = 0;
+  
 }
 
 CSolver::~CSolver(void) {

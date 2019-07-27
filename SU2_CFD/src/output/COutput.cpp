@@ -57,12 +57,7 @@
 COutput::COutput(CConfig *config, unsigned short nDim) {
   
   this->nDim = nDim;
-  
-  if((!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()) 
-     || config->GetBoolTurbomachinery() || config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
-    output_legacy = new COutputLegacy(config);
-  }
-  
+
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
