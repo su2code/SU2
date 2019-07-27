@@ -45,6 +45,7 @@
 #include "../../include/output/filewriter/CTecplotFileWriter.hpp"
 #include "../../include/output/filewriter/CTecplotBinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CCSVFileWriter.hpp"
+#include "../../include/output/filewriter/CSTLFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
@@ -406,6 +407,18 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
           
       break;
     
+    case STL:
+
+      sorter->SortConnectivity(config, geometry, true);
+      
+      if (rank == MASTER_NODE) {
+          cout << "Writing STL file." << endl;     
+      }
+         
+      filewriter = new CSTLFileWriter(Variable_Names, nDim, geometry, config);
+          
+      break;
+
   case SU2_RESTART_ASCII:
     
     if (rank == MASTER_NODE) {

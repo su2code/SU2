@@ -200,6 +200,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
   bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
   bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
+  bool Wrt_STL  = config_container[ZONE_0]->GetWrt_Stl_Sol();
   
   if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
     RestartFormat = SU2_RESTART_BINARY;
@@ -287,7 +288,9 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       if (Wrt_Surf)
         output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
       if (Wrt_CSV)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);
+      if (Wrt_STL)
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], STL);
       
       output_container[ZONE_0]->DeallocateData_Parallel();
       
