@@ -360,18 +360,18 @@ public:
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
   
   /*--- Partitioning-specific variables ---*/
-  map<unsigned long,unsigned long> Global_to_Local_Elem;
-  unsigned long xadj_size;
-  unsigned long adjacency_size;
-  unsigned long *beg_node;
-  unsigned long *end_node;
-  unsigned long *nPoint_Lin;
-  unsigned long *nPoint_Cum;
+  
+  map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
+  unsigned long *beg_node; /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
+  unsigned long *end_node; /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
+  unsigned long *nPointL;  /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointC;  /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  vector< vector<unsigned long> > adj_nodes;
-  idx_t * adjacency;
-  idx_t * xadj;
+  vector< vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
+  idx_t *adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  idx_t *xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
 #endif
 #endif
   

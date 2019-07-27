@@ -101,10 +101,10 @@ CGeometry::CGeometry(void) {
   
   /*--- Arrays for defining the linear partitioning ---*/
   
-  beg_node   = NULL;
-  end_node   = NULL;
-  nPoint_Lin = NULL;
-  nPoint_Cum = NULL;
+  beg_node = NULL;
+  end_node = NULL;
+  nPointL  = NULL;
+  nPointC  = NULL;
 
   /*--- Containers for customized boundary conditions ---*/
 
@@ -232,10 +232,10 @@ CGeometry::~CGeometry(void) {
   if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
   if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
   
-  if (beg_node   != NULL) delete [] beg_node;
-  if (end_node   != NULL) delete [] end_node;
-  if (nPoint_Lin != NULL) delete [] nPoint_Lin;
-  if (nPoint_Cum != NULL) delete [] nPoint_Cum;
+  if (beg_node != NULL) delete [] beg_node;
+  if (end_node != NULL) delete [] end_node;
+  if (nPointL  != NULL) delete [] nPointL;
+  if (nPointC  != NULL) delete [] nPointC;
 
   if(CustomBoundaryHeatFlux != NULL){
     for(iMarker=0; iMarker < nMarker; iMarker++){
@@ -3558,10 +3558,17 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   Global_to_Local_Marker = NULL;
 
   beg_node = NULL;
-  end_node   = NULL;
-  nPoint_Lin = NULL;
-  nPoint_Cum = NULL;
+  end_node = NULL;
+  nPointL  = NULL;
+  nPointC  = NULL;
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  adjacency = NULL;
+  xadj      = NULL;
+#endif
+#endif
+  
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -3600,9 +3607,16 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Global_to_Local_Marker = NULL;
   
   beg_node = NULL;
-  end_node   = NULL;
-  nPoint_Lin  = NULL;
-  nPoint_Cum = NULL;
+  end_node = NULL;
+  nPointL  = NULL;
+  nPointC  = NULL;
+  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  adjacency = NULL;
+  xadj      = NULL;
+#endif
+#endif
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -3784,11 +3798,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Arrays for defining the linear partitioning. ---*/
 
-  beg_node   = NULL;
-  end_node   = NULL;
-  nPoint_Lin = NULL;
-  nPoint_Cum = NULL;
+  beg_node = NULL;
+  end_node = NULL;
+  nPointL  = NULL;
+  nPointC  = NULL;
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  adjacency = NULL;
+  xadj      = NULL;
+#endif
+#endif
+  
   /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -3964,7 +3985,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   Neighbors.clear();
   Color_List.clear();
-
+  
   if (Local_Points != NULL) delete [] Local_Points;
   if (Local_Colors != NULL) delete [] Local_Colors;
   if (Local_Coords != NULL) delete [] Local_Coords;
@@ -6012,7 +6033,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                   Local_Nodes[1],
                                   Local_Nodes[2], 2);
 
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
@@ -6045,7 +6066,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                        Local_Nodes[2],
                                        Local_Nodes[3], 2);
 
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
@@ -6078,7 +6099,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                      Local_Nodes[2],
                                      Local_Nodes[3]);
 
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
@@ -6115,7 +6136,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                     Local_Nodes[6],
                                     Local_Nodes[7]);
 
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
@@ -6150,7 +6171,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                Local_Nodes[4],
                                Local_Nodes[5]);
 
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
@@ -6184,7 +6205,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                  Local_Nodes[3],
                                  Local_Nodes[4]);
       
-    elem[jElem]->SetGlobalIndex(kElem);
+      elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
       
@@ -6788,30 +6809,30 @@ void CPhysicalGeometry::PrepareOffsets(unsigned long val_npoint_global) {
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
   
-  beg_node   = new unsigned long[size];
-  end_node   = new unsigned long[size];
-  nPoint_Lin = new unsigned long[size];
-  nPoint_Cum = new unsigned long[size+1];
+  if (beg_node == NULL) beg_node = new unsigned long[size];
+  if (end_node == NULL) end_node = new unsigned long[size];
+  if (nPointL  == NULL) nPointL  = new unsigned long[size];
+  if (nPointC  == NULL) nPointC  = new unsigned long[size+1];
   
   unsigned long quotient = val_npoint_global/size;
   int remainder = int(val_npoint_global%size);
   for (int ii = 0; ii < size; ii++) {
-    nPoint_Lin[ii] = quotient + int(ii < remainder);
+    nPointL[ii] = quotient + int(ii < remainder);
   }
   
   /*--- Store the local number of nodes on each proc in the linear
    partitioning, the beginning/end index, and the linear partitioning
    within an array in cumulative storage format. ---*/
   
-  beg_node[0]   = 0;
-  end_node[0]   = beg_node[0] + nPoint_Lin[0];
-  nPoint_Cum[0] = 0;
+  beg_node[0] = 0;
+  end_node[0] = beg_node[0] + nPointL[0];
+  nPointC[0]  = 0;
   for (int iProc = 1; iProc < size; iProc++) {
-    beg_node[iProc]   = end_node[iProc-1];
-    end_node[iProc]   = beg_node[iProc] + nPoint_Lin[iProc];
-    nPoint_Cum[iProc] = nPoint_Cum[iProc-1] + nPoint_Lin[iProc-1];
+    beg_node[iProc] = end_node[iProc-1];
+    end_node[iProc] = beg_node[iProc]  + nPointL[iProc];
+    nPointC[iProc]  = nPointC[iProc-1] + nPointL[iProc-1];
   }
-  nPoint_Cum[size] = val_npoint_global;
+  nPointC[size] = val_npoint_global;
   
 }
 
@@ -6821,7 +6842,7 @@ unsigned long CPhysicalGeometry::GetLinearPartition(unsigned long val_global_ind
   
   /*--- Initial guess ---*/
   
-  iProcessor = val_global_index/nPoint_Lin[0];
+  iProcessor = val_global_index/nPointL[0];
   
   /*--- Guard against going over size. ---*/
   
@@ -6830,11 +6851,11 @@ unsigned long CPhysicalGeometry::GetLinearPartition(unsigned long val_global_ind
   
   /*--- Move up or down until we find the processor. ---*/
   
-  if (val_global_index >= nPoint_Cum[iProcessor])
-    while(val_global_index >= nPoint_Cum[iProcessor+1])
+  if (val_global_index >= nPointC[iProcessor])
+    while(val_global_index >= nPointC[iProcessor+1])
       iProcessor++;
   else
-    while(val_global_index < nPoint_Cum[iProcessor])
+    while(val_global_index < nPointC[iProcessor])
       iProcessor--;
   
   return iProcessor;
@@ -6849,10 +6870,6 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Executing the partitioning functions." << endl;
   
-  unsigned long iPoint, jPoint, local_size;
-  vector<unsigned long>::iterator it;
-  vector<unsigned long> adjacency_vector;
-  
   /*--- Post process the adjacency information in order to get it into the
    CSR format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
@@ -6862,17 +6879,17 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
   
   /*--- We can already create the array that indexes the adjacency. ---*/
   
-  xadj_size = nPoint_Lin[rank]+1;
-  xadj      = new idx_t[xadj_size];
-  xadj[0]   = 0;
+  if (xadj == NULL) xadj = new idx_t[nPointL[rank]+1];
+  xadj[0] = 0;
   
   /*--- Here, we transfer the adjacency information from a multi-dim vector
    on a node-by-node basis into a single vector container. First, we sort
    the entries and remove the duplicates we find for each node, then we
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
-
+  
   unsigned long total_adj_size = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  vector<unsigned long>::iterator it;
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- For each point, sort the adjacency in ascending order
      so that we can remove duplicates and complete the size for
@@ -6880,25 +6897,29 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
     
     sort(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
     it = unique(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
-    local_size = it - adj_nodes[iPoint].begin();
+    const unsigned long local_size = it - adj_nodes[iPoint].begin();
     adj_nodes[iPoint].resize(local_size);
     total_adj_size += local_size;
-    
+
   }
   
-  /*--- Reserve allocated space to improve push_back behavior
-  in the following loop. ---*/
+  /*--- Now that we know the size, create the final adjacency array. This
+   is the array that we will feed to ParMETIS for partitioning. ---*/
   
-  adjacency_vector.reserve(total_adj_size);
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    local_size = adj_nodes[iPoint].size();
+  if (adjacency == NULL) adjacency = new idx_t[total_adj_size];
+  
+  unsigned long kPoint = 0;
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Local size of the adjacency for the current point. ---*/
+    
+    const unsigned long local_size = adj_nodes[iPoint].size();
     
     /*--- Move the sorted adjacency into a 1-D vector for all
-     points in order to make creating the copy for ParMETIS easier. ---*/
+     points for loading into ParMETIS for partitioning next. ---*/
     
-    for (jPoint = 0; jPoint < local_size; jPoint++) {
-      adjacency_vector.push_back(adj_nodes[iPoint][jPoint]);
+    for (unsigned long jPoint = 0; jPoint < local_size; jPoint++) {
+      adjacency[kPoint] = (idx_t)adj_nodes[iPoint][jPoint]; kPoint++;
     }
     
     /*--- Increment the starting index for the next point (CSR). ---*/
@@ -6908,22 +6929,13 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
     /*--- Free vector memory as we go. ---*/
     
     vector<unsigned long>().swap(adj_nodes[iPoint]);
-
+    
   }
   
   /*--- Force free the entire old multi-dim. adjacency vector. ---*/
   
   vector< vector<unsigned long> >().swap(adj_nodes);
-
-  /*--- Now that we know the size, create the final adjacency array. This
-   is the array that we will feed to ParMETIS for partitioning. ---*/
   
-  adjacency_size = xadj[nPoint_Lin[rank]];
-  adjacency      = new idx_t[adjacency_size];
-
-  for (iPoint = 0; iPoint < adjacency_size; iPoint++)
-    adjacency[iPoint] = (idx_t)adjacency_vector[iPoint];
- 
 #endif
 #endif
   
@@ -8106,7 +8118,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       /*--- Store the local number of nodes.
        nPoint is always used to store the local number of points. ---*/
 
-      nPoint = nPoint_Lin[rank];
+      nPoint = nPointL[rank];
       
       /*--- Here we check if a point in the mesh file lies in the domain
        and if so, then store it on the local processor. We only create enough
@@ -9478,7 +9490,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   
   /*--- Store the local number of nodes for this rank. ---*/
   
-  nPoint = nPoint_Lin[rank];
+  nPoint = nPointL[rank];
   
   /*--- Read the dimension of the problem ---*/
   
@@ -15630,9 +15642,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     METIS_SetDefaultOptions(options);
     options[1] = 0;
     
-    /*--- Fill the necessary ParMETIS data arrays. Note that xadj_size and
-     adjacency_size are class data members that have been defined and set
-     earlier in the partitioning process. ---*/
+    /*--- Fill the necessary ParMETIS data arrays. We do not apply
+     any weighting during the partitioning process. ---*/
     
     for (int i = 0; i < size; i++) {
       tpwgts[i] = 1.0/((real_t)size);
@@ -15644,8 +15655,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     }
     
     /*--- Calling ParMETIS ---*/
+    
     if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-    ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
+    ParMETIS_V3_PartKway(vtxdist, xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
@@ -15663,17 +15675,17 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     /*--- Free all memory needed for the ParMETIS structures ---*/
     
-    delete [] vtxdist;
-    delete [] part;
-    delete [] tpwgts;
+    if (vtxdist != NULL) delete [] vtxdist;
+    if (part    != NULL) delete [] part;
+    if (tpwgts  != NULL) delete [] tpwgts;
     
   }
   
   /*--- Delete the memory from the geometry class that carried the
    adjacency structure. ---*/
   
-  delete [] xadj;
-  delete [] adjacency;
+  if (xadj      != NULL) delete [] xadj;
+  if (adjacency != NULL) delete [] adjacency;
   
 #endif
 #endif
