@@ -1338,7 +1338,7 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
               }
               else {
                 values_to_write.resize(rank_num_points);
-                for(unsigned long i = 0; i < rank_num_points; ++i)
+                for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
                   values_to_write[i] = SU2_TYPE::GetValue(Parallel_Data[iVar][i]);
                 err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &values_to_write[0]);
               }
@@ -1378,14 +1378,22 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
 
   unsigned short iVar;
 
+  vector<passivedouble> var_data;
+  size_t var_data_size = nVar_Par * (surf_sol ? nSurf_Poin_Par : nParallel_Poin);
+  var_data.reserve(var_data_size);
+  
   if (surf_sol) {
     for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, Parallel_Surf_Data[iVar]);
+      for(unsigned long i = 0; i < nSurf_Poin_Par; ++i)
+        var_data.push_back(SU2_TYPE::GetValue(Parallel_Surf_Data[iVar][i]));
+      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nSurf_Poin_Par, &var_data[iVar * nSurf_Poin_Par]);
       if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
     }
   } else {
     for (iVar = 0; err == 0 && iVar < nVar_Par; iVar++) {
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nParallel_Poin, Parallel_Data[iVar]);
+      for(unsigned long i = 0; i < nParallel_Poin; ++i)
+        var_data.push_back(SU2_TYPE::GetValue(Parallel_Data[iVar][i]));
+      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, nParallel_Poin, &var_data[iVar * nParallel_Poin]);
       if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
     }
   }
