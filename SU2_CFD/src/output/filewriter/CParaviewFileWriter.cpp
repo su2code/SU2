@@ -25,13 +25,20 @@ void CParaviewFileWriter::Write_Data(string filename, CParallelDataSorter *data_
 
   unsigned long iPoint, iElem;
 
-  unsigned long nSurf_Elem_Storage;
   unsigned long nGlobal_Elem_Storage;
 
   ofstream Paraview_File;
 
   int iProcessor;
- 
+  
+  /*--- Set a timer for the file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
   /*--- Open Paraview ASCII file and write the header. ---*/
   
   if (rank == MASTER_NODE) {
@@ -344,5 +351,21 @@ found = fieldnames[iField].find("_z");
   }
 
   Paraview_File.close();
+  
+  
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
+  
+  file_size = Determine_Filesize(filename);
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
 }
 

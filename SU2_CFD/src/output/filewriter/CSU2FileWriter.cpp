@@ -28,6 +28,14 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   int iProcessor;
   
+  /*--- Set a timer for the file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
   /*--- Only the master node writes the header. ---*/
   
   if (rank == MASTER_NODE) {
@@ -82,7 +90,24 @@ void CSU2FileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
 #endif
     
   }
-
+  
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
+  
+  /*--- Determine the file size ---*/
+  
+  file_size = Determine_Filesize(filename);
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
+  
   /*--- Write the metadata (master rank alone) ----*/
 
 //  if (rank == MASTER_NODE) {

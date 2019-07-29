@@ -1,8 +1,5 @@
 #include "../../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 
-
-
-
 CSU2BinaryFileWriter::CSU2BinaryFileWriter(vector<string> fields, unsigned short nDim) : 
   CFileWriter(fields, nDim){
 
@@ -32,7 +29,8 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
   
   ofstream restart_file;
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  su2double file_size = 0.0, StartTime, StopTime, UsedTime, Bandwidth;
+
+  file_size = 0.0;
   
   strcpy(fname, filename.c_str());
 
@@ -110,7 +108,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    needed for when we read the strings later. ---*/
 
   for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
-    strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
+    strncpy(str_buf, fieldnames[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
     file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
   }
@@ -122,8 +120,8 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
 
   /*--- Write the external iteration. ---*/
 
-  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
-  file_size += (su2double)sizeof(int);
+//  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
+//  file_size += (su2double)sizeof(int);
 
   /*--- Write the metadata. ---*/
 
@@ -202,7 +200,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    in cumulative storage format. ---*/
 
   disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
-          GlobalField_Counter*data_sorter->GetnPointCumulative()*sizeof(passivedouble));
+          GlobalField_Counter*data_sorter->GetnPointCumulative(rank)*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/

@@ -40,28 +40,19 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 
-#ifdef HAVE_CGNS
-  #include "cgnslib.h"
-#endif
-#ifdef HAVE_TECIO
-  #include "TECIO.h"
-#endif
 #include <fstream>
 #include <cmath>
 #include <time.h>
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <vector>
 
-#include "../solver_structure.hpp"
-#include "../integration_structure.hpp"
-#include "../../../Common/include/geometry_structure.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
-#include "../../../Common/include/fem_standard_element.hpp"
-#include "../../../Common/include/config_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
+class CGeometry;
+class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
 
@@ -111,8 +102,9 @@ protected:
   
   enum HistoryFieldType {           
     TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
-    TYPE_REL_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
+    TYPE_AUTO_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
     TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    TYPE_AUTO_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
     TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
@@ -129,9 +121,10 @@ protected:
     unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
     string              OutputGroup;  /*!< \brief The group this field belongs to. */
     unsigned short      FieldType;
+    string              Description;
     HistoryOutputField() {}           /*!< \brief Default constructor. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype){}
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype, string description):
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype), Description(description){}
   };
   
   /** \brief Structure to store information for a volume output field.
@@ -154,6 +147,10 @@ protected:
 
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
+  std::vector<short>                            Offset_Cache;
+  unsigned short                                Offset_Cache_Index;
+  bool                                          Offset_Cache_Checked,
+                                                Build_Offset_Cache;
   
   std::vector<string> RequestedHistoryFields;
   unsigned short nRequestedHistoryFields;
@@ -198,7 +195,7 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *config);
+  COutput(CConfig *config, unsigned short nDim);
   
   /*! 
    * \brief Destructor of the class. 
@@ -210,7 +207,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void PreprocessVolumeOutput(CConfig *config, CGeometry *geometry);   
+  void PreprocessVolumeOutput(CConfig *config);   
   
   /*!
    * \brief Load the data from the solvers into the local data array and sort it for the linear partitioning.
@@ -284,7 +281,7 @@ public:
   void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
   
-  void SetMultizoneHistory_Output(COutput** output, CConfig **config, unsigned long TimeIter, unsigned long OuterIter);
+  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter);
   
   /*! 
    * \brief Returns a pointer to the legacy output class needed for some old driver implementations.
@@ -385,6 +382,8 @@ public:
   bool GetConvergence() {return Convergence;}
 
   void SetConvergence(bool conv) {Convergence = conv;}
+  
+  void PrintHistoryFields();
 
 protected:
   
@@ -432,10 +431,11 @@ protected:
    * \param[in] field_name - Header that is printed on screen and in the history file.
    * \param[in] format - The screen printing format (::ScreenOutputFormat).
    * \param[in] groupname - The name of the group this field belongs to.
+   * \param[in] description - A description of the field.
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
-  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, unsigned short field_type = TYPE_DEFAULT ){
-    HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type);
+  inline void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, string description, unsigned short field_type = TYPE_DEFAULT ){
+    HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     HistoryOutput_List.push_back(name);
   }
   
@@ -465,7 +465,7 @@ protected:
     if (marker_names.size() != 0){
       HistoryOutputPerSurface_List.push_back(name);
       for (unsigned short i = 0; i < marker_names.size(); i++){
-        HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type));
+        HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
       }
     }
   }
@@ -500,15 +500,12 @@ protected:
    * \param[in] name - Name of the field.
    * \param[in] value - The new value of this field.
    */
-  inline void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
-    if (VolumeOutput_Map.count(name) > 0){
-      if (VolumeOutput_Map[name].Offset != -1){
-        Local_Data[iPoint][VolumeOutput_Map[name].Offset] = value;
-      }
-    } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
-    }
-  }
+  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  
+  /*!
+   * \brief CheckOffsetCache
+   */
+  void CheckOffsetCache();
   
   /*!
    * \brief CheckHistoryOutput
@@ -543,7 +540,13 @@ protected:
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
-  inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {return (iIter % iFreq == 0);} 
+  inline bool PrintOutput(unsigned long iIter, unsigned long iFreq) {
+    if (iFreq == 0.0){
+      return false;
+    }
+    
+    return (iIter % iFreq == 0);
+  } 
   
   /*--------------------------------- Virtual functions ---------------------------------------- */
   

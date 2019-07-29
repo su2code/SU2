@@ -38,9 +38,10 @@
 
 #include "../../include/output/CBaselineOutput.hpp"
 
-CBaselineOutput::CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone) : COutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
 
-  nDim = geometry->GetnDim();
+CBaselineOutput::CBaselineOutput(CConfig *config, unsigned short nDim, CSolver* solver) : COutput(config, nDim) {
   
   unsigned short iField = 0;
 
@@ -99,7 +100,7 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
 
   // Add all the remaining fields
   
-  for (iField = nDim-1; iField < nRequestedVolumeFields; iField++){
+  for (iField = nDim; iField < nRequestedVolumeFields; iField++){
     AddVolumeOutput(RequestedVolumeFields[iField], RequestedVolumeFields[iField], "SOLUTION");
   }
   

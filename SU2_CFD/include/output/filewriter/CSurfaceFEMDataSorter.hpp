@@ -6,9 +6,11 @@
 class CSurfaceFEMDataSorter : public CParallelDataSorter{
   
   CFEMDataSorter* volume_sorter;
+  std::vector<unsigned long> globalSurfaceDOFIDs;
     
 public:
-  CSurfaceFEMDataSorter(CConfig *config, unsigned short nFields, CFEMDataSorter* volume_sorter);
+  
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter);
   
   ~CSurfaceFEMDataSorter();
   
@@ -26,8 +28,13 @@ public:
    * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry,  bool val_sort);
-    
-  unsigned long GetGlobalIndex(unsigned long iPoint) { return Renumber2Global[iPoint]; }
+  
+  /*!
+   * \brief Get the global index of the surface point
+   * \param Local surface index
+   * \return Global index
+   */
+  unsigned long GetGlobalIndex(unsigned long iPoint) { return globalSurfaceDOFIDs[iPoint]; }
   
 private:
   

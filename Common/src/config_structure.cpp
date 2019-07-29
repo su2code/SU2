@@ -652,6 +652,7 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
+  default_wrt_freq           = NULL;
   
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
@@ -698,6 +699,10 @@ void CConfig::SetPointersNull(void) {
   top_optim_kernels       = NULL;
   top_optim_kernel_params = NULL;
   top_optim_filter_radius = NULL;
+  
+  ScreenOutput = NULL;
+  HistoryOutput = NULL;
+  VolumeOutput = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -757,6 +762,7 @@ void CConfig::SetConfig_Options() {
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  default_wrt_freq             = new su2double[3];
   
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -796,6 +802,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MULTIZONE \n DESCRIPTION: Enable multizone mode \ingroup Config*/  
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
+  /*!\brief DRY_RUN \n Description: Use dry-run mode to run construction of driver without reading geometry */
+  addBoolOption("DRY_RUN", dry_run, NO);
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
@@ -1386,6 +1394,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
+  /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
+  addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Relaxation of the flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
   /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
@@ -1526,6 +1536,10 @@ void CConfig::SetConfig_Options() {
   default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
   addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
+  /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
+  addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
+  addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 1.0);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -2418,6 +2432,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Type of output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
+  default_wrt_freq[0] = 1.0; default_wrt_freq[1] = 1.0; default_wrt_freq[2] = 1.0;
+  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
+  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, default_wrt_freq);
+  
+  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
+  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, default_wrt_freq);
+ 
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -3182,17 +3203,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (!Time_Domain){
     nTimeIter = 1;
     Time_Step = 0;
+    
+    ScreenWrtFreq[0] = 1.0;
+    HistoryWrtFreq[0] = 1.0;
+    
+    nExtIter = nIter;
   } 
   
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
+    nExtIter = nTimeIter;
   }
   
-  if (!Time_Domain){
-    nExtIter = nIter;
-  } else {
-    nExtIter = nTimeIter;
+  if (!Multizone_Problem){
+    ScreenWrtFreq[1] = 0.0;
+    HistoryWrtFreq[1] = 0.0;
   }
 
   /*--- If we're solving a purely steady problem with no prescribed grid
@@ -4380,7 +4406,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
+  iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
@@ -5831,41 +5857,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Euler implicit method for the flow equations." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
-              cout << "BCGSTAB is used for solving the linear system." << endl;
-              switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
-              }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-              break;
             case FGMRES:
             case RESTARTED_FGMRES:
-              cout << "FGMRES is used for solving the linear system." << endl;
+              if (Kind_Linear_Solver == BCGSTAB)
+                cout << "BCGSTAB is used for solving the linear system." << endl;
+              else
+                cout << "FGMRES is used for solving the linear system." << endl;
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
               }
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
-               break;
-            case SMOOTHER_JACOBI:
-              cout << "A Jacobi method is used for smoothing the linear system." << endl;
               break;
-            case SMOOTHER_ILU:
-              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LUSGS:
-              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
-              break;
-            case SMOOTHER_LINELET:
-              cout << "A Linelet method is used for smoothing the linear system." << endl;
+            case SMOOTHER:
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case LINELET: cout << "A Linelet"; break;
+                case LU_SGS:  cout << "A LU-SGS"; break;
+                case JACOBI:  cout << "A Jacobi"; break;
+              }
+              cout << " method is used for smoothing the linear system." << endl;
               break;
           }
+          cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+          cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
           break;
         case CLASSICAL_RK4_EXPLICIT:
           cout << "Classical RK4 explicit method for the flow equations." << endl;
@@ -7254,6 +7270,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
+  if (default_wrt_freq != NULL) delete [] default_wrt_freq;
   
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
@@ -7290,6 +7307,11 @@ CConfig::~CConfig(void) {
   if (top_optim_kernels != NULL) delete [] top_optim_kernels;
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
   if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
+  
+  if (ScreenOutput != NULL) delete [] ScreenOutput;
+  if (HistoryOutput != NULL) delete [] HistoryOutput;
+  if (VolumeOutput != NULL) delete [] VolumeOutput;
+  
 
 }
 

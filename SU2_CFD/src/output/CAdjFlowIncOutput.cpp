@@ -37,12 +37,13 @@
 
 #include "../../include/output/CAdjFlowIncOutput.hpp"
 
-CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
+CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
   
   cont_adj = config->GetContinuous_Adjoint();
-  
-  nDim = geometry->GetnDim();
- 
+   
   turb_model = config->GetKind_Turb_Model();
   
   heat = config->GetEnergy_Equation();
@@ -114,26 +115,26 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
-  AddHistoryOutput("RMS_ADJ_PRESSURE",    "rms[A_P]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+  AddHistoryOutput("RMS_ADJ_PRESSURE",    "rms[A_P]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint Pressure.", TYPE_RESIDUAL); 
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity x-component.
-  AddHistoryOutput("RMS_ADJ_VELOCITY-X", "rms[A_U]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_VELOCITY-X", "rms[A_U]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity y-component.
-  AddHistoryOutput("RMS_ADJ_VELOCITY-Y", "rms[A_V]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_VELOCITY-Y", "rms[A_V]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity z-component.
-  AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("RMS_ADJ_HEAT", "rms[A_T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_HEAT", "rms[A_T]", FORMAT_FIXED, "RMS_RES", " Root-mean square residual of the adjoint temperature.", TYPE_RESIDUAL);
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
-      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);      
+      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
       break;  
     case SST:
       /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
-      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", TYPE_RESIDUAL); 
       /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
-      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);   
+      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the adjoint dissipation.", TYPE_RESIDUAL);   
       break;
     default: break;
     }
@@ -142,26 +143,26 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
-  AddHistoryOutput("MAX_ADJ_PRESSURE",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_PRESSURE",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint Pressure.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint Velocity x-component
-  AddHistoryOutput("MAX_ADJ_VELOCITY-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_VELOCITY-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity x-component", TYPE_RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint Velocity y-component
-  AddHistoryOutput("MAX_ADJ_VELOCITY-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_VELOCITY-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity y-component", TYPE_RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the adjoint Velocity z-component
-  AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", TYPE_RESIDUAL); 
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("MAX_ADJ_HEAT", "max[A_T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_HEAT", "max[A_T]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the temperature.", TYPE_RESIDUAL);
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
-      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);      
+      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
       break;  
     case SST:
       /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
-      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);   
+      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", TYPE_RESIDUAL);   
       /// DESCRIPTION: Maximum residual of the adjoint dissipation.
-      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", TYPE_RESIDUAL); 
       break;
     default: break;
     }
@@ -169,27 +170,27 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables. 
-  /// DESCRIPTION: BGSimum residual of the adjoint Pressure.
-  AddHistoryOutput("BGS_ADJ_PRESSURE",    "bgs[A_Rho]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGSimum residual of the adjoint Velocity x-component
-  AddHistoryOutput("BGS_ADJ_VELOCITY-X", "bsg[A_RhoU]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: BGSimum residual of the adjoint Velocity y-component
-  AddHistoryOutput("BGS_ADJ_VELOCITY-Y", "bgs[A_RhoV]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: BGSimum residual of the adjoint Velocity z-component
-  AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: BGSimum residual of the temperature.
-  AddHistoryOutput("BGS_ADJ_HEAT", "bgs[A_T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the adjoint Pressure.
+  AddHistoryOutput("BGS_ADJ_PRESSURE",    "bgs[A_Rho]",  FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint Pressure.", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the adjoint Velocity x-component
+  AddHistoryOutput("BGS_ADJ_VELOCITY-X", "bsg[A_RhoU]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint Velocity x-component", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGS residual of the adjoint Velocity y-component
+  AddHistoryOutput("BGS_ADJ_VELOCITY-Y", "bgs[A_RhoV]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint Velocity y-component", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGS residual of the adjoint Velocity z-component
+  AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", TYPE_RESIDUAL); 
+  /// DESCRIPTION: BGS residual of the temperature.
+  AddHistoryOutput("BGS_ADJ_HEAT", "bgs[A_T]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", TYPE_RESIDUAL);
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: BGSimum residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bsg[A_nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);      
+      /// DESCRIPTION: BGS residual of the adjoint nu tilde.
+      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bsg[A_nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", TYPE_RESIDUAL);      
       break;  
     case SST:
-      /// DESCRIPTION: BGSimum residual of the adjoint kinetic energy.
-      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);   
-      /// DESCRIPTION: BGSimum residual of the adjoint dissipation.
-      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+      /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
+      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", TYPE_RESIDUAL);   
+      /// DESCRIPTION: BGS residual of the adjoint dissipation.
+      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", FORMAT_FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", TYPE_RESIDUAL); 
       break;
     default: break;
     }
@@ -199,19 +200,15 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
-  /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
-  /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
-  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
-  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the far-field pressure.", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
-  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITY", " Sensitivity of the objective function with respect to the far-field temperature.", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the inlet velocity.
-  AddHistoryOutput("SENS_VEL_IN", "Sens_Vin", FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_VEL_IN", "Sens_Vin", FORMAT_SCIENTIFIC, "SENSITIVITY", " Sensitivity of the objective function with respect to the inlet velocity.", TYPE_COEFFICIENT); 
   /// DESCRIPTION: Sensitivity of the objective function with respect to the outlet pressure.
-  AddHistoryOutput("SENS_PRESS_OUT",  "Sens_Pout",  FORMAT_SCIENTIFIC, "SENSITIVITY", TYPE_COEFFICIENT); 
+  AddHistoryOutput("SENS_PRESS_OUT",  "Sens_Pout",  FORMAT_SCIENTIFIC, "SENSITIVITY", "Sensitivity of the objective function with respect to the outlet pressure.", TYPE_COEFFICIENT); 
   /// END_GROUP
   
 }
@@ -302,8 +299,6 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
   
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
-  SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA());
-  SetHistoryOutputValue("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
   SetHistoryOutputValue("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
   SetHistoryOutputValue("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
   SetHistoryOutputValue("SENS_VEL_IN", adjflow_solver->GetTotal_Sens_ModVel());

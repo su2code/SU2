@@ -47,7 +47,6 @@
  */
 class CAdjHeatOutput : public COutput {
 private:
-  unsigned short nDim;
 
 public:
 
@@ -57,7 +56,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjHeatOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

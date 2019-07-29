@@ -2,11 +2,48 @@
 #include "../../../Common/include/fem_geometry_structure.hpp"
 
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, unsigned short nFields, CFEMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
  
   this->volume_sorter = volume_sorter;
   
   connectivity_sorted = false;
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+  
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
+  
+  /*--- Update the solution by looping over the owned volume elements. ---*/
+  
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    
+    /* Count up the number of local points we have for allocating storage. */
+    
+    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+      nLocalPoint_Sort++;
+    }
+  }
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nGlobalPoint_Sort = nLocalPoint_Sort;
+#endif
+
+  /*--- Set a final variable for the number of points in the restart
+   file. We do not write the periodic points for the FV solver, even if
+   they show up in the viz. files. ---*/
+
+  nPoint_Restart = nGlobalPoint_Sort;
+  
+  
+  /*--- Create a linear partition --- */
+  
+  CreateLinearPartition(nGlobalPoint_Sort);
   
 }
 
@@ -30,7 +67,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   /* Loop over the surface connectivities and store global
      DOF ID's in a vector. Subtract 1, because the stored
      connectivities are 1 based. */
-  std::vector<unsigned long> globalSurfaceDOFIDs;
+  globalSurfaceDOFIDs.clear();
   globalSurfaceDOFIDs.reserve(nParallel_Line*N_POINTS_LINE +
                               nParallel_Tria*N_POINTS_TRIANGLE +
                               nParallel_Quad*N_POINTS_QUADRILATERAL);
@@ -71,13 +108,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = globalSurfaceDOFIDs[i]/nPoint_Lin[0];
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor])
-      while(globalSurfaceDOFIDs[i] >= nPoint_Cum[iProcessor+1]) ++iProcessor;
-    else
-      while(globalSurfaceDOFIDs[i] <  nPoint_Cum[iProcessor])   --iProcessor;
+    unsigned long iProcessor = FindProcessor(globalSurfaceDOFIDs[i]);
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -172,7 +203,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nParallel_Poin; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - nPoint_Cum[rank];
+    const unsigned long ii = globalSurfaceDOFIDs[i] - volume_sorter->GetnPointCumulative(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
       Parallel_Data[jj][i] = volume_sorter->GetData(jj,ii);
@@ -184,7 +215,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-  nGlobal_Surf_Poin = nSurf_Poin_Par;
+  nGlobal_Poin_Par = nParallel_Poin;
 #endif
 
   /*-------------------------------------------------------------------*/
@@ -209,6 +240,7 @@ void CSurfaceFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
   map<unsigned long, unsigned long> mapGlobalVol2Surf;
   for(unsigned long i=0; i<nParallel_Poin; ++i)
     mapGlobalVol2Surf[globalSurfaceDOFIDs[i]] = offsetSurfaceDOFs + i;
+   
 
   /* Fill the receive buffers with the modified global surface DOF numbers,
      such that this information can be returned to the original ranks. */
@@ -290,11 +322,12 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
     
     unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-    nSurf_Elem_Par   = nTotal_Surf_Elem;
+    nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
     SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
     
+    connectivity_sorted = true;
 
 }
 

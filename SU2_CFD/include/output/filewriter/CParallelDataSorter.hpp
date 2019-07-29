@@ -1,5 +1,10 @@
 #pragma once
-#include "../../../Common/include/geometry_structure.hpp"
+
+#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
+
+class CGeometry;
+class CConfig;
 
 class CParallelDataSorter{
 protected:
@@ -24,13 +29,10 @@ protected:
   int *Conn_Hexa_Par;
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
-  map<unsigned long,unsigned long> Global2Renumber, 
-                                   Renumber2Global;
   
   unsigned long nGlobalPoint_Sort;
   unsigned long nLocalPoint_Sort;
   unsigned long nPoint_Restart;
-  int *Local_Halo_Sort;
 
   unsigned long *beg_node;
   unsigned long *end_node;
@@ -70,6 +72,12 @@ public:
    * \return local number of points.
    */
   unsigned long GetnPoints(){return nParallel_Poin;}
+  
+  /*!
+   * \brief Get the number of points to sort.
+   * \return local number of points.
+   */
+  unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
   
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
@@ -133,7 +141,14 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  unsigned long GetnPointCumulative(){return nPoint_Cum[rank];}
+  unsigned long GetnPointCumulative(unsigned short rank){return nPoint_Cum[rank];}
+  
+  /*!
+   * \brief Get the linear number of points
+   * \input rank - the processor rank.
+   * \return The linear number of points up to certain processor rank.
+   */
+  unsigned long GetnPointLinear(unsigned short rank){return nPoint_Lin[rank];}  
   
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
@@ -151,5 +166,17 @@ public:
    * \param[in] surf_sol - if <TRUE>, surface connectivity is deallocated, otherwise the volume connectivity.
    */
   void DeallocateConnectivity();
+  
+  /*!
+   * \brief CreateLinearPartition
+   */
+  void CreateLinearPartition(unsigned long nGlobalPoint);
+  
+  /*!
+   * \brief FindProcessor
+   * \param global_index
+   * \return 
+   */
+  unsigned short FindProcessor(unsigned long global_index);
   
 };

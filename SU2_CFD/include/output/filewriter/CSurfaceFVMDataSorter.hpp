@@ -6,9 +6,10 @@
 class CSurfaceFVMDataSorter : public CParallelDataSorter{
   
   CFVMDataSorter* volume_sorter;
-    
+  map<unsigned long,unsigned long> Renumber2Global;
+  
 public:
-  CSurfaceFVMDataSorter(CConfig *config, unsigned short nFields, CFVMDataSorter* volume_sorter);
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, unsigned short nFields, CFVMDataSorter* volume_sorter);
   
   ~CSurfaceFVMDataSorter();
   
@@ -27,6 +28,11 @@ public:
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort);
   
+  /*!
+   * \brief Get the global index of the surface point
+   * \param Local surface index
+   * \return Global index
+   */  
   unsigned long GetGlobalIndex(unsigned long iPoint) { return Renumber2Global[iPoint]; }
   
   
