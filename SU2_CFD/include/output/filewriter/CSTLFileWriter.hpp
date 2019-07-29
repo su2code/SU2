@@ -12,6 +12,8 @@ public:
   ~CSTLFileWriter();
   
   void Write_Data(string filename, CParallelDataSorter* data_sorter);
+
+  void Write_Data2(string filename, CParallelDataSorter* data_sorter);
   
 };
 

@@ -528,7 +528,7 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   if (fem_output){
     surface_sort = new CSurfaceFEMDataSorter(config, geometry, GlobalField_Counter, dynamic_cast<CFEMDataSorter*>(data_sorter));
   } else {
-    surface_sort = new CSurfaceFVMDataSorter(config, geometry,GlobalField_Counter, dynamic_cast<CFVMDataSorter*>(data_sorter));    
+    surface_sort = new CSurfaceFVMDataSorter(config, geometry, GlobalField_Counter, dynamic_cast<CFVMDataSorter*>(data_sorter));    
   }
 
   /*--- Set the file writer --- */
@@ -544,6 +544,8 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
     /*--- Write data to file --- */
   
     file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+    if(format == STL)
+      file_writer->Write_Data2(config->GetFilename(SurfaceFilename, ""), surface_sort);
   
   }
   
