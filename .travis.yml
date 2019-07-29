@@ -21,7 +21,7 @@ notifications:
             - tim.albring@scicomp.uni-kl.de 
 branches:
     only:
-        - meson_build
+        - feature_meson
 
 virtualenv:
   system_site_packages: true
