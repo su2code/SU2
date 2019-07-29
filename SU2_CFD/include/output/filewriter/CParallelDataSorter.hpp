@@ -22,8 +22,8 @@ protected:
   nParallel_Hexa,
   nParallel_Pris,
   nParallel_Pyra;
-  int *Conn_Line_Par;
-  int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
+  int *Conn_Line_Par; // TK:: no documentation at all here! Why ints and not unsigned long? it is a list of global point indices (i.e. integers). It is subsequent i.e. first 3 integers form one Tri and so forth
+  int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[2]
   int *Conn_Quad_Par;
   int *Conn_Tetr_Par;
   int *Conn_Hexa_Par;
@@ -42,7 +42,7 @@ protected:
   
   unsigned short GlobalField_Counter;
   
-  su2double** Parallel_Data;
+  su2double** Parallel_Data; // This is holding prob all the shit data!
   
   bool connectivity_sorted;  
   

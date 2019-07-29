@@ -56,7 +56,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
   
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
   
-  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()];
+  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldnames.size()]; // here I need nTriaElems*3 + nQuadElems*6
   su2double *bufD_Recv = NULL;
   
   unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface];
@@ -119,7 +119,7 @@ void CCSVFileWriter::Write_Data(string filename, CParallelDataSorter *data_sorte
         
         /*--- Write global index values. ---*/
         
-        Surf_file << bufL_Recv[index] << ", ";
+        Surf_file << bufL_Recv[index] << ", "; // What is this good for? In .csv the count is 0,1,2,...
         
         /*--- Reset index for solution data access. ---*/
         

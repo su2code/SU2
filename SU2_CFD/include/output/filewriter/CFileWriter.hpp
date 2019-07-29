@@ -42,6 +42,7 @@ public:
    * \param data_sorter
    */
   virtual void Write_Data(std::string filename, CParallelDataSorter* data_sorter){}
+  virtual void Write_Data2(std::string filename, CParallelDataSorter* data_sorter){}
   
   /*!
    * \brief Get_Bandwidth

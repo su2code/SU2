@@ -1259,10 +1259,10 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
       
-      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) { // Why not iElem and why int as loop index
         
         if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
-          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) { // Why not iPoint
             
             /*--- Get the index of the current point. ---*/
             
