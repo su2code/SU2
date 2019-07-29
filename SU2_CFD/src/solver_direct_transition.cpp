@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CTransLMVariable.hpp"
+#include "../include/variables/CTurbSAVariable.hpp"
 
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
@@ -106,8 +108,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       /*--- Initialization of the structure of the whole Jacobian ---*/
       Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
-      if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-          (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+      if (config->GetKind_Linear_Solver_Prec() == LINELET) {
         nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
         if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
       }
@@ -265,8 +266,9 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   
   /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
+    
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   

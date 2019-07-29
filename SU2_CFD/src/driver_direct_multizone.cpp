@@ -41,12 +41,8 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
-                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
-                                                          val_periodic,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -114,15 +110,19 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case DEFORMING:
-      case EXTERNAL: case EXTERNAL_ROTATION:
-      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case RIGID_MOTION: 
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
-      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
-      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
+    }
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+        config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
+        config_container[iZone]->GetSurface_Movement(DEFORMING) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
+      prefixed_motion[iZone] = true;
     }
   }
 
@@ -139,6 +139,7 @@ CMultizoneDriver::~CMultizoneDriver(void) {
   delete [] init_res;
   delete [] residual;
   delete [] residual_rel;
+  delete [] nVarZone;
 
   delete [] prefixed_motion;
 
@@ -208,6 +209,15 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetExtIter(TimeIter);
 
+    /*--- Store the current physical time in the config container, as
+     this can be used for verification / MMS. This should also be more
+     general once the drivers are more stable. ---*/
+    
+    if (unsteady)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+    
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
     if (config_container[iZone]->GetInvDesign_Cp() == YES)
