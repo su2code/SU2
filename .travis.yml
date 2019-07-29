@@ -18,10 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - tim.albring@scicomp.uni-kl.de 
+            - su2code-dev@lists.stanford.edu
+  
 branches:
     only:
-        - feature_meson
+        - develop
 
 virtualenv:
   system_site_packages: true
