@@ -27,6 +27,8 @@ virtualenv:
   system_site_packages: true
 
 env:
+    global:
+            CXXFLAGS="-Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false"
@@ -48,10 +50,10 @@ before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
     - pyenv versions
     - export PATH=/usr/bin:$PATH
-    - alias python=python3
+    - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
     # Install the necessary packages using apt-get with sudo
     - sudo apt-get update -qq
-    - sudo apt-get install -qq build-essential python-numpy python-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
+    - sudo apt-get install -qq build-essential python3-numpy python3-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
     # to avoid interference with MPI
     - test -n $CC  && unset CC
     - test -n $CXX && unset CXX
