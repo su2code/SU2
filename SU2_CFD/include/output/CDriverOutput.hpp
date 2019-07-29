@@ -74,7 +74,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDriverOutput(CConfig *driver_config, CConfig** config);
+  CDriverOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.
@@ -106,5 +106,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Output(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config);
 
 };

@@ -4,9 +4,7 @@
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> >& Local_Data) : CParallelDataSorter(config, nFields){
  
   this->Local_Data = &Local_Data;
-  
-  unsigned long iPoint;
-  
+    
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
   
@@ -26,10 +24,6 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
     }
   }
   
-  Local_Halo_Sort = new int[nLocalPoint_Sort];
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++)
-    Local_Halo_Sort[iPoint] = false;
-  
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalPoint_Sort, &nGlobalPoint_Sort, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -43,43 +37,9 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
 
   nPoint_Restart = nGlobalPoint_Sort;
   
-  /*--- Now that we know the actual number of points we need to output,
-   compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-
-  beg_node = new unsigned long[size];
-  end_node = new unsigned long[size];
-
-  nPoint_Lin = new unsigned long[size];
-  nPoint_Cum = new unsigned long[size+1];
-
-  unsigned long total_points = 0;
-  for (int ii = 0; ii < size; ii++) {
-    nPoint_Lin[ii] = nGlobalPoint_Sort/size;
-    total_points  += nPoint_Lin[ii];
-  }
-
-  /*--- Get the number of remainder points after the even division. ---*/
-
-  unsigned long remainder = nGlobalPoint_Sort - total_points;
-  for (unsigned long ii = 0; ii < remainder; ii++) {
-    nPoint_Lin[ii]++;
-  }
-
-  /*--- Store the local number of nodes on each proc in the linear
-   partitioning, the beginning/end index, and the linear partitioning
-   within an array in cumulative storage format. ---*/
-
-  beg_node[0] = 0;
-  end_node[0] = beg_node[0] + nPoint_Lin[0];
-  nPoint_Cum[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    beg_node[ii]   = end_node[ii-1];
-    end_node[ii]   = beg_node[ii] + nPoint_Lin[ii];
-    nPoint_Cum[ii] = nPoint_Cum[ii-1] + nPoint_Lin[ii-1];
-  }
-  nPoint_Cum[size] = nGlobalPoint_Sort;
+  /*--- Create a linear partition --- */
+  
+  CreateLinearPartition(nGlobalPoint_Sort);  
 }
 
 CFEMDataSorter::~CFEMDataSorter(){
@@ -88,8 +48,6 @@ CFEMDataSorter::~CFEMDataSorter(){
   delete [] end_node;
   delete [] nPoint_Cum;
   delete [] nPoint_Lin;
-  
-  delete [] Local_Halo_Sort;
   
 }
 
@@ -158,13 +116,7 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = Global_Index/nPoint_Lin[0];
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Cum[iProcessor])
-      while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
-    else
-      while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
+    iProcessor = FindProcessor(Global_Index);   
 
     /*--- If we have not visted this node yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -236,13 +188,7 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
 
     /*--- Search for the processor that owns this point. ---*/
 
-    iProcessor = Global_Index/nPoint_Lin[0];
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Cum[iProcessor])
-      while(Global_Index >= nPoint_Cum[iProcessor+1]) iProcessor++;
-    else
-      while(Global_Index <  nPoint_Cum[iProcessor])   iProcessor--;
+    iProcessor = FindProcessor(Global_Index);
 
     /*--- Load data into the buffer for sending. ---*/
 

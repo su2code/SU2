@@ -1,6 +1,5 @@
 #include "../../../include/output/filewriter/CTecplotFileWriter.hpp"
 
-
 CTecplotFileWriter::CTecplotFileWriter(vector<string> fields, unsigned short nDim, unsigned long time_iter, su2double timestep) : 
   CFileWriter(fields, nDim){
 
@@ -32,6 +31,16 @@ void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   int iProcessor;
 
   ofstream Tecplot_File;
+  
+  file_size = 0.0;
+  
+  /*--- Set a timer for the file writing. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
   
   /*--- Reduce the total number of each element. ---*/
 
@@ -213,6 +222,20 @@ void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
   
   Tecplot_File.close();
   
+  /*--- Compute and store the write time. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime-StartTime;
+  
+  file_size = Determine_Filesize(filename);
+  
+  /*--- Compute and store the bandwidth ---*/
+  
+  Bandwidth = file_size/(1.0e6)/UsedTime;
 }
 
 

@@ -37,14 +37,15 @@
 
 #include "../../include/output/CElasticityOutput.hpp"
 
-CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
+CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
   
-  nDim = geometry->GetnDim();
-
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
@@ -151,25 +152,25 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER",  "Number of iterations of the linear solver.");
   
   // Residuals
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
+  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "", "VMS");
+  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "", "LOAD_RAMP");
   
 }
 
@@ -221,13 +222,15 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION");
   
-  AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
-  AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
-  if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
-  
-  AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
-  AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
-  if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
+  if(dynamic){
+    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
+    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
+    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
+    
+    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
+    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
+    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
+  }
   
   AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS");
   AddVolumeOutput("STRESS-YY",    "Syy", "STRESS");

@@ -37,7 +37,10 @@
 
 #include "../../include/output/CAdjElasticityOutput.hpp"
 
-CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
+CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
  
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -46,8 +49,6 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, CGeometry *geometry,
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
   
-  nDim = geometry->GetnDim();
-
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
@@ -107,13 +108,13 @@ CAdjElasticityOutput::~CAdjElasticityOutput(void) {
 void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
   // Residuals
-  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", FORMAT_FIXED,   "RESIDUALS");
+  AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS", "");
+  AddHistoryOutput("ADJOINT_DISP_Z", "Res[Uz_adj]", FORMAT_FIXED,   "RESIDUALS", "");
   
   //Sensitivities
-  AddHistoryOutput("SENS_E", "Sens[E]",  FORMAT_FIXED, "SENSITIVITY");
-  AddHistoryOutput("SENS_NU","Sens[Nu]", FORMAT_FIXED, "SENSITIVITY");
+  AddHistoryOutput("SENS_E", "Sens[E]",  FORMAT_FIXED, "SENSITIVITY", "");
+  AddHistoryOutput("SENS_NU","Sens[Nu]", FORMAT_FIXED, "SENSITIVITY", "");
 
   
 }

@@ -531,7 +531,8 @@ private:
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_AdjTurb, 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  Use_Accurate_Jacobians;   /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;        /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   ZoneSpecific_Problem,   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
@@ -556,6 +557,7 @@ private:
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
+  su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -585,7 +587,8 @@ private:
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
+  Kappa_4th_Heat,     /*!< \brief 4th order dissipation coefficient for heat equation. */
+  Cent_Jac_Fix_Factor;/*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes by this factor to make the global matrix more diagonal dominant. */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -874,39 +877,31 @@ private:
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
   
-  su2double *Motion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  *Translation_Rate,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  *Pitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  *Plunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
-  su2double *MarkerMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *MarkerRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *MarkerPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
+  su2double *Motion_Origin, /*!< \brief Mesh motion origin. */
+  *Translation_Rate,        /*!< \brief Translational velocity of the mesh. */
+  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh . */
+  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching. */
+  *Pitching_Ampl,           /*!< \brief Pitching amplitude. */ 
+  *Pitching_Phase,          /*!< \brief Pitching phase offset. */ 
+  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging. */ 
+  *Plunging_Ampl;           /*!< \brief Plunging amplitude. */
+  su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
+  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
+  *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
+  *MarkerPitching_Omega,          /*!< \brief Angular frequency of marker. */
+  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */ 
+  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */ 
+  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */ 
+  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
   
-  unsigned short nMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  nTranslation,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  nRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  nPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  nPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  nPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  nPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  nPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
-  unsigned short nMarkerMotion_Origin, /*!< \brief X-coordinate of the mesh motion origin. */
-  nMarkerTranslation,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  nMarkerRotation_Rate,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  nMarkerPitching_Omega,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  nMarkerPitching_Ampl,           /*!< \brief Pitching amplitude about the x-axis. */ 
-  nMarkerPitching_Phase,          /*!< \brief Pitching phase offset about the x-axis. */ 
-  nMarkerPlunging_Omega,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */ 
-  nMarkerPlunging_Ampl;           /*!< \brief Plunging amplitude in the x-direction. */
+  unsigned short nMarkerMotion_Origin, /*!< \brief Number of values provided for mesh motion origin of marker. */
+  nMarkerTranslation,        /*!< \brief Number of values provided for translational velocity of marker. */
+  nMarkerRotation_Rate,           /*!< \brief Number of values provided for angular velocity of marker. */
+  nMarkerPitching_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
+  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
+  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
+  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
+  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
   su2double  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short
   nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
@@ -1068,6 +1063,9 @@ private:
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  su2double *default_wrt_freq;
+  su2double *HistoryWrtFreq,    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
+            *ScreenWrtFreq;     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -1085,6 +1083,8 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
+  
+  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
 
   
   /*!
@@ -4037,6 +4037,12 @@ public:
   unsigned long GetLinear_Solver_Restart_Frequency(void);
   
   /*!
+   * \brief Get the relaxation factor for iterative linear smoothers.
+   * \return Relaxation factor.
+   */
+  su2double GetLinear_Solver_Smoother_Relaxation(void) const;
+  
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4340,6 +4346,12 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjTurb(void);
+  
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
+   * \return yes/no.
+   */
+  inline bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4537,6 +4549,12 @@ public:
    * \return Calibrated constant for the JST-like method for the heat equation.
    */
   su2double GetKappa_4th_Heat(void);
+  
+  /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
+   * \return The factor.
+   */
+  inline su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -9094,6 +9112,12 @@ public:
   bool GetWrt_ForcesBreakdown(void);
 
   /*!
+   * \brief Boolean to check whether dry run mode is enabled
+   * \return YES if dry run mode is enabled.
+   */
+  bool GetDryRun();
+
+  /*!
    * \brief Get the number of screen output variables requested (maximum 6)
    */
   unsigned short GetnScreenOutput(void);
@@ -9128,10 +9152,29 @@ public:
   */
   string GetConv_Field();
   
+  /*!
+   * \brief Set_StartTime
+   * \param starttime
+   */
   void Set_StartTime(su2double starttime);
   
+  /*!
+   * \brief Get_StartTime
+   * \return 
+   */
   su2double Get_StartTime();
 
+  /*!
+   * \brief GetHistory_Wrt_Freq
+   * \return 
+   */
+  su2double* GetHistory_Wrt_Freq();
+  
+  /*!
+   * \brief GetScreen_Wrt_Freq
+   * \return 
+   */
+  su2double* GetScreen_Wrt_Freq();
 };
 
 #include "config_structure.inl"

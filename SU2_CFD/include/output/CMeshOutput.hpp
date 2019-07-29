@@ -53,7 +53,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CMeshOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

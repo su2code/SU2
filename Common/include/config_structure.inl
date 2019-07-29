@@ -1028,6 +1028,8 @@ inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solv
 
 inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
 
+inline su2double CConfig::GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
+
 inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
 
 inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation_Factor_AdjFlow; }
@@ -1579,7 +1581,7 @@ inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
-inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || (nKind_SurfaceMovement > 0); }
+inline bool CConfig::GetGrid_Movement(void) { return (Kind_GridMovement != NO_MOVEMENT) || ((nKind_SurfaceMovement > 0) && !GetSurface_Movement(FLUID_STRUCTURE_STATIC)); }
 
 inline unsigned short CConfig::GetKind_SurfaceMovement(unsigned short iMarkerMoving){return Kind_SurfaceMovement[iMarkerMoving];}
 
@@ -2054,8 +2056,14 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
+inline bool CConfig::GetDryRun() {return dry_run;}
+
 inline string CConfig::GetConv_Field(){ return ConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
 inline su2double  CConfig::Get_StartTime() {return StartTime;}
+
+inline su2double* CConfig::GetScreen_Wrt_Freq() {return ScreenWrtFreq;}
+
+inline su2double* CConfig::GetHistory_Wrt_Freq() {return HistoryWrtFreq;}

@@ -57,7 +57,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CHeatOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

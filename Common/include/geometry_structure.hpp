@@ -421,6 +421,11 @@ public:
 	 */
 	CGeometry(void);
 
+  /*!
+	 * \brief Constructor of the class.
+	 */
+	CGeometry(CConfig *config, unsigned short nDim);
+
 	/*! 
 	 * \brief Destructor of the class.
 	 */
@@ -2747,7 +2752,7 @@ public:
 	 * \param[in] iMesh - Level of the multigrid.
 	 * \param[in] iZone - Current zone in the mesh.
 	 */	
-	CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst);
+	CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class.
@@ -3026,6 +3031,25 @@ public:
 	 */
 	void Update(unsigned long val_update_point, CGeometry *fine_grid);
 
+};
+
+/*!
+ * \brief The CDummyGeometry class
+ */
+class CDummyGeometry : public CGeometry{
+  
+public:
+  /*!
+   * \brief CDummyGeometry
+   * \param config
+   * \param nDim
+   */
+  CDummyGeometry(CConfig *config);
+  
+  /*!
+  */
+  ~CDummyGeometry();
+  
 };
 
 #include "geometry_structure.inl"

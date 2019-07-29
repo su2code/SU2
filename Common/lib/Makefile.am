@@ -69,16 +69,9 @@ lib_sources = \
   ../include/grid_adaptation_structure.inl \
   ../include/grid_movement_structure.hpp \
   ../include/grid_movement_structure.inl \
-  ../include/linear_solvers_structure.hpp \
-  ../include/linear_solvers_structure.inl \
-  ../include/linear_solvers_structure_b.hpp \
   ../include/option_structure.hpp \
   ../include/primal_grid_structure.hpp \
   ../include/primal_grid_structure.inl \
-  ../include/vector_structure.hpp \
-  ../include/vector_structure.inl \
-  ../include/matrix_structure.hpp \
-  ../include/matrix_structure.inl \
   ../include/mpi_structure.hpp \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
@@ -109,6 +102,13 @@ lib_sources = \
   ../include/toolboxes/MMS/CRinglebSolution.hpp \
   ../include/toolboxes/MMS/CTGVSolution.hpp \
   ../include/toolboxes/MMS/CUserDefinedSolution.hpp \
+  ../include/linear_algebra/CSysVector.hpp \
+  ../include/linear_algebra/CSysMatrix.hpp \
+  ../include/linear_algebra/CSysMatrix.inl \
+  ../include/linear_algebra/CMatrixVectorProduct.hpp \
+  ../include/linear_algebra/CPreconditioner.inl \
+  ../include/linear_algebra/CSysSolve.hpp \
+  ../include/linear_algebra/CSysSolve_b.hpp \
   ../src/fem_cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/blas_structure.cpp \
@@ -123,12 +123,8 @@ lib_sources = \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
-  ../src/linear_solvers_structure.cpp \
   ../src/primal_grid_structure.cpp \
-  ../src/vector_structure.cpp \
-  ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
-  ../src/linear_solvers_structure_b.cpp \
   ../src/ad_structure.cpp \
   ../src/fem_gauss_jacobi_quadrature.cpp \
   ../src/gauss_structure.cpp \
@@ -151,7 +147,11 @@ lib_sources = \
   ../src/toolboxes/MMS/CNSUnitQuadSolution.cpp \
   ../src/toolboxes/MMS/CRinglebSolution.cpp \
   ../src/toolboxes/MMS/CTGVSolution.cpp \
-  ../src/toolboxes/MMS/CUserDefinedSolution.cpp
+  ../src/toolboxes/MMS/CUserDefinedSolution.cpp \
+  ../src/linear_algebra/CSysVector.cpp \
+  ../src/linear_algebra/CSysMatrix.cpp \
+  ../src/linear_algebra/CSysSolve.cpp \
+  ../src/linear_algebra/CSysSolve_b.cpp
 
 lib_cxxflags = -fPIC
 lib_ldadd =
