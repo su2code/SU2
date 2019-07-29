@@ -42,3 +42,4 @@ parmetis = static_library('parmetis',
            install : false, include_directories: parmetis_include,
 	   dependencies: [mpi_dep, metis_dep])
 
+parmetis_dep = declare_dependency(link_with: parmetis, include_directories: parmetis_include)
