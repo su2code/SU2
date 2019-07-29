@@ -638,6 +638,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           switch(config_container[iZone]->GetKind_ObjFunc()) {
 
+            case LIFT_COEFFICIENT:
+              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
+              break;
             case DRAG_COEFFICIENT:
               ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
               break;
