@@ -175,19 +175,6 @@ enum ANSWER {
 };
 
 /*!
- * \brief Verbosity level
- */
-enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
-  VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
-  VERB_HIGH = 2			/*!< \brief High level of verbosity. */
-};
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
-
-/*!
  * \brief Average method for marker analyze
  */
 enum AVERAGE_TYPE {
@@ -226,7 +213,7 @@ enum ENUM_SOLVER {
   FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIZONE = 99
+  MULTIPHYSICS = 99
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -254,7 +241,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
 ("ZONE_SPECIFIC", ZONE_SPECIFIC)
-("MULTIZONE", MULTIZONE);
+("MULTIPHYSICS", MULTIPHYSICS);
 
 /*!
  * \brief different solver types for the multizone environment component
@@ -639,38 +626,48 @@ static const map<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map 
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
-  DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
   RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-  FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure deformation. */
-  EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
-  EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
-  AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
-  MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
-  AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
   MOVING_HTP = 13,    /*!< \brief Simulation with moving HTP (rotation). */
-  FLUID_STRUCTURE_STATIC = 14 /*!< \brief Fluid structure deformation with no grid velocity. */
+
 };
 
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
-("DEFORMING", DEFORMING)
 ("RIGID_MOTION", RIGID_MOTION)
-("FLUID_STRUCTURE", FLUID_STRUCTURE)
-("EXTERNAL", EXTERNAL)
-("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
-("AEROELASTIC", AEROELASTIC)
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
-("MOVING_WALL", MOVING_WALL)
 ("MOVING_HTP", MOVING_HTP)
-("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
-("GUST", GUST)
-("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC);
+("GUST", GUST);
+
+
+
+enum ENUM_SURFACEMOVEMENT {
+  DEFORMING = 1,
+  MOVING_WALL = 2,
+  AEROELASTIC = 3,    /*!< \brief Simulation with aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 4, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  FLUID_STRUCTURE = 5,		/*!< \brief Fluid structure deformation. */
+  EXTERNAL = 6,
+  EXTERNAL_ROTATION = 7,
+  FLUID_STRUCTURE_STATIC = 8 /*!< \brief Fluid structure deformation with no grid velocity. */
+  
+};
+
+static const map<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = CCreateMap<string, ENUM_SURFACEMOVEMENT>
+("DEFORMING", DEFORMING)
+("MOVING_WALL", MOVING_WALL)
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
+("AEROELASTIC", AEROELASTIC)
+("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
+("FLUID_STRUCTURE", FLUID_STRUCTURE)
+("EXTERNAL", EXTERNAL)
+("EXTERNAL_ROTATION", EXTERNAL_ROTATION);
+
 
 /*!
  * \brief type of wind gusts
@@ -1629,7 +1626,6 @@ enum ENUM_PARAM {
   FFD_CAMBER = 14,		         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_TWIST = 15,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
   FFD_THICKNESS = 16,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 17,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
   FFD_ROTATION = 18,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CONTROL_POINT_2D = 19, /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,		     /*!< \brief Free form deformation for 3D design (camber change). */
@@ -1673,7 +1669,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("ROTATION", ROTATION)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
-("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_NACELLE", FFD_NACELLE)
@@ -1719,10 +1714,7 @@ enum ENUM_LINEAR_SOLVER {
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
   RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
-  SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
-  SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  SMOOTHER = 8,  /*!< \brief Iterative smoother. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1732,10 +1724,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
 ("RESTARTED_FGMRES", RESTARTED_FGMRES)
-("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
-("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
-("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU", SMOOTHER_ILU);
+("SMOOTHER", SMOOTHER);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1945,6 +1934,73 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
 ("CUSTOM", CUSTOM_REF);
 
 /*!
+ * \brief Vertex-based quantities exchanged during periodic marker communications.
+ */
+enum PERIODIC_QUANTITIES {
+  PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
+  PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
+  PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
+  PERIODIC_LAPLACIAN  =  4,  /*!< \brief Undivided Laplacian communication for JST (periodic only). */
+  PERIODIC_MAX_EIG    =  5,  /*!< \brief Maximum eigenvalue communication (periodic only). */
+  PERIODIC_SENSOR     =  6,  /*!< \brief Dissipation sensor communication (periodic only). */
+  PERIODIC_SOL_GG     =  7,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_PRIM_GG    =  8,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for Least Squares (periodic only). */
+  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for Least Squares (periodic only). */
+  PERIODIC_LIM_SOL_1  = 11,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_IMPLICIT   = 15   /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+};
+
+/*!
+ * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
+ */
+enum MPI_QUANTITIES {
+  SOLUTION             =  0,  /*!< \brief Conservative solution communication. */
+  SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
+  SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
+  SOLUTION_DISPONLY    =  4,  /*!< \brief Solution displacement only communication. */
+  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
+  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
+  SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
+  PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
+  PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
+  UNDIVIDED_LAPLACIAN  = 10,  /*!< \brief Undivided Laplacian communication. */
+  MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
+  SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
+  AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
+  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
+  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
+  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
+  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
+  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
+  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
+};
+
+/*!
+ * \brief MPI communication level
+ */
+enum COMM_LEVEL {
+  COMM_NONE    = 0,   /*!< \brief Disable all MPI comms. Purely for testing, as results are incorrect. */
+  COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
+  COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
+};
+static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
+("NONE",    COMM_NONE)
+("MINIMAL", COMM_MINIMAL)
+("FULL",    COMM_FULL);
+
+/*
  * \brief types of filter kernels, initially intended for structural topology optimization applications
  */
 enum ENUM_FILTER_KERNEL {
@@ -1974,15 +2030,50 @@ static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCr
 ("HEAVISIDE_UP"  , HEAVISIDE_UP)
 ("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
 
+/*!
+ * \brief the different validation solution
+ */
+enum ENUM_VERIFICATION_SOLUTIONS {
+  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+};
+static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = CCreateMap<string, ENUM_VERIFICATION_SOLUTIONS>
+("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
+("INVISCID_VORTEX",          INVISCID_VORTEX)
+("RINGLEB",                  RINGLEB)
+("NS_UNIT_QUAD",             NS_UNIT_QUAD)
+("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
+("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
+("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
+("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
+("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
+("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
+("MMS_INC_EULER",            MMS_INC_EULER)
+("MMS_INC_NS",               MMS_INC_NS)
+("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {
 private:
+  vector<string> value;
 public:
   COptionBase() {};
   virtual  ~COptionBase() = 0;
-  //  virtual string SetValue(string) {SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
-  virtual string SetValue(vector<string>) = 0;
+
+  virtual string SetValue(vector<string> value){this->value = value; return "";}
+  vector<string> GetValue() {return value;}
   virtual void SetDefault() = 0;
 
   string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name) {
@@ -2025,6 +2116,7 @@ public:
 
   ~COptionEnum() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // Check if there is more than one string
     string out = optionCheckMultipleValues(option_value, "enum", this->name);
     if (out.compare("") != 0) {
@@ -2064,6 +2156,7 @@ public:
 
   ~COptionDouble() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
@@ -2095,6 +2188,7 @@ public:
 
   ~COptionString() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
@@ -2121,6 +2215,7 @@ public:
 
   ~COptionInt() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "int", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2151,6 +2246,7 @@ public:
 
   ~COptionULong() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2181,6 +2277,7 @@ public:
 
   ~COptionUShort() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2211,6 +2308,7 @@ public:
 
   ~COptionLong() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "long", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2242,6 +2340,7 @@ public:
 
   ~COptionBool() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "bool", this->name);
     if (out.compare("") != 0) {
@@ -2278,6 +2377,7 @@ public:
 
   ~COptionEnumList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
@@ -2329,6 +2429,7 @@ public:
      if(vals != NULL) delete [] vals; 
   };
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
       string newstring;
@@ -2379,6 +2480,7 @@ public:
 
   ~COptionDoubleList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2421,6 +2523,7 @@ public:
   
   ~COptionShortList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2462,6 +2565,7 @@ public:
 
   ~COptionUShortList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2503,6 +2607,7 @@ public:
 
   ~COptionStringList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2538,6 +2643,7 @@ public:
 
   ~COptionConvect() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -2583,6 +2689,7 @@ public:
 
   ~COptionFEMConvect() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -2625,6 +2732,7 @@ public:
 
   ~COptionMathProblem() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2679,6 +2787,7 @@ public:
   ~COptionDVParam() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV = 0;
       return "";
@@ -2841,6 +2950,7 @@ public:
   ~COptionDVValue() {};
 
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV_Value = NULL;
       return "";
@@ -2946,6 +3056,7 @@ public:
   ~COptionFFDDef() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
@@ -3040,6 +3151,7 @@ public:
   ~COptionFFDDegree() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
@@ -3129,6 +3241,7 @@ public:
 
   ~COptionStringDoubleList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // There must be an even number of entries (same number of strings and doubles
     unsigned short totalVals = option_value.size();
     if ((totalVals % 2) != 0) {
@@ -3180,7 +3293,7 @@ public:
 
   ~COptionInlet() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3271,7 +3384,7 @@ public:
   ~COptionRiemann() {};
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3379,7 +3492,7 @@ public:
   ~COptionGiles() {};
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3501,7 +3614,7 @@ public:
   ~COptionExhaust() {};
   
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3568,7 +3681,7 @@ public:
 
   ~COptionPeriodic() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     const int mod_num = 11;
 
     unsigned short totalVals = option_value.size();
@@ -3733,7 +3846,7 @@ public:
 
   ~COptionTurboPerformance() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     const int mod_num = 2;
 
     unsigned long totalVals = option_value.size();
@@ -3783,7 +3896,8 @@ public:
   }
   ~COptionPython() {};
   // No checking happens with python options
-  string SetValue(vector<string>) {
+  string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     return "";
   }
   // No defaults with python options
@@ -3815,6 +3929,7 @@ public:
   
   ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     const int mod_num = 8;
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -3909,7 +4024,7 @@ public:
   ~COptionWallFunction(){}
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     /*--- First check if NONE is specified. ---*/
     unsigned short totalSize = option_value.size();
     if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {

@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank, size;
   string str;
-  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
@@ -67,6 +66,7 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
   COutput *output                     = NULL;
+  CConfig *driver_config                = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used) ---*/
@@ -81,8 +81,7 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_DEF);
 
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
   
@@ -90,6 +89,8 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
+  
+  driver_config       = NULL;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -98,6 +99,12 @@ int main(int argc, char *argv[]) {
     grid_movement[iZone]          = NULL;
   }
   
+  /*--- Initialize the configuration of the driver ---*/
+  driver_config = new CConfig(config_file_name, SU2_DEF, nZone, false);
+
+  /*--- Initialize a char to store the zone filename ---*/
+  char zone_file_name[MAX_STRING_SIZE];
+
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
@@ -108,8 +115,25 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DEF, iZone, nZone, 0, VERB_HIGH);
+    if (driver_config->GetnConfigFiles() > 0){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DEF, iZone, nZone, true);
+    }
+    else{
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DEF, iZone, nZone, true);
+    }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
+  }
+  
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetMultizone_Problem()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
@@ -123,15 +147,9 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines
-     will be entirely removed eventually in favor of the new methods. ---*/
+    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    if (periodic) {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    } else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-    }
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -192,6 +210,10 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
       
     }
+    
+    /*--- Create the point-to-point MPI communication structures. ---*/
+    
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
   }
   

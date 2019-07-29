@@ -107,7 +107,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
 
-
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -180,7 +179,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-
+  
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -198,7 +197,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
-        solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case CHT_WALL_INTERFACE: 
         if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
@@ -208,7 +207,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         }
         break;
-    } 
+    }
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. ---*/
+  
+  if (config->GetnMarker_Periodic() > 0) {
+    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  }
+  
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
@@ -441,7 +450,9 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+
+    solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
+    solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
