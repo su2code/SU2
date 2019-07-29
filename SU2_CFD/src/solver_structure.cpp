@@ -2095,7 +2095,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
-            node[iPoint]->SetmuT(bufDRecv[offset+nVar]);
+            node[iPoint]->SetmuT(bufDRecv[buf_offset+nVar]);
             break;
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
