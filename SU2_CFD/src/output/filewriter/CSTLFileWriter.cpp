@@ -25,7 +25,7 @@ CSTLFileWriter::CSTLFileWriter(vector<string> fields, unsigned short nDim, CGeom
 
             // Loop over all Nodes in one element
             for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-              iPoint = geometry->elem[iElem]->GetNode(iNode);
+              iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
               // Write one point in the vector as three doubles
               for(iDim = 0; iDim < 3; iDim++) {
