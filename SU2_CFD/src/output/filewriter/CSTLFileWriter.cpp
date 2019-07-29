@@ -251,7 +251,7 @@ void CSTLFileWriter::Write_Data2(string filename, CParallelDataSorter *data_sort
     for (iPoint = 0; iPoint < 3; iPoint++) {
       /*--- Solution data. ---*/
       for (iVar = 0; iVar < 3; iVar++){
-        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) ); // (var, GlobalPointindex)
+        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(TRIANGLE, iElem, iPoint) -1); // (var, GlobalPointindex)
         cout << "bufD_Send[index]: " << bufD_Send[index] << endl;
         index++;
       }
@@ -266,7 +266,7 @@ void CSTLFileWriter::Write_Data2(string filename, CParallelDataSorter *data_sort
 
       /*--- Solution data. ---*/
       for (iVar = 0; iVar < 3; iVar++){
-        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint])); //TK:: Here the data sort is already messy
+        bufD_Send[index] = data_sorter->GetData(iVar, data_sorter->GetElem_Connectivity(QUADRILATERAL,iElem,Nodelist[iPoint])-1); //TK:: Here the data sort is already messy
         cout << "bufD_Send[index]: " << bufD_Send[index] << endl;
         index++;
       }
