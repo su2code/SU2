@@ -3087,7 +3087,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
     surface_movement->CopyBoundary(geometry[MESH_0], config);
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
-      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, 0);
+      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, iInst);
     }
   }
   
