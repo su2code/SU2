@@ -131,8 +131,8 @@ class COutput {
   unsigned long *beg_node;
   unsigned long *end_node;
 
-  unsigned long *nPointL;
-  unsigned long *nPointC;
+  unsigned long *nPointLinear;
+  unsigned long *nPointCumulative;
   
   unsigned short nVar_Par;
   su2double **Local_Data;

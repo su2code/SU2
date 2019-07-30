@@ -944,9 +944,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
       const long localID = globalID - geometry->beg_node[rank];
-      if(localID < 0 || localID >= (long) geometry->nPointL[rank]) {
+      if(localID < 0 || localID >= (long) geometry->nPointLinear[rank]) {
         ostringstream message;
-        message << localID << " " << geometry->nPointL[rank] << endl;
+        message << localID << " " << geometry->nPointLinear[rank] << endl;
         message << "Invalid local element ID";
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
