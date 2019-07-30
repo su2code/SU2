@@ -1386,7 +1386,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 
 #ifdef HAVE_MPI
   vector<unsigned long> domain_sizes(size);
-  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, &domain_sizes[0], 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   for (int i=0; i<rank; ++i) offset += domain_sizes[i];
 #endif
 
@@ -1395,8 +1395,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
   /*--- 2 - Build a local to global map and communicate global indices of halo points.
    This is to renumber the column indices from local to global when unpacking halos. ---*/
 
-  vector<pastix_int_t> map(nPoint);
-  iota(map.begin(), map.end(), offset);
+  vector<pastix_int_t> map(nPoint-nPointDomain,0);
 
 #ifdef HAVE_MPI
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -1420,7 +1419,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
       /*--- Prepare data to send ---*/
 
       for (unsigned long iVertex = 0; iVertex < nVertexS; iVertex++)
-        Buffer_Send[iVertex] = map[ geometry->vertex[MarkerS][iVertex]->GetNode() ];
+        Buffer_Send[iVertex] = geometry->vertex[MarkerS][iVertex]->GetNode()+offset;
 
       /*--- Send and Receive data ---*/
 
@@ -1431,7 +1430,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
       /*--- Store received data---*/
 
       for (unsigned long iVertex = 0; iVertex < nVertexR; iVertex++)
-        map[ geometry->vertex[MarkerR][iVertex]->GetNode() ] = Buffer_Recv[iVertex];
+        map[ geometry->vertex[MarkerR][iVertex]->GetNode()-nPointDomain ] = Buffer_Recv[iVertex];
 
       delete [] Buffer_Send;
       delete [] Buffer_Recv;
@@ -1464,7 +1463,10 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 
       for (j = begin; j < end; ++j)
       {
-        aux[j-begin].first = pastix_int_t(map[col_ind[j]]+1);
+        if (col_ind[j] < nPointDomain)
+          aux[j-begin].first = pastix_int_t(offset+col_ind[j]+1);
+        else
+          aux[j-begin].first = pastix_int_t(map[col_ind[j]-nPointDomain]+1);
         aux[j-begin].second = j;
       }
       sort(aux.begin(), aux.end());
