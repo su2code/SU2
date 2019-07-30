@@ -473,7 +473,7 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   ScalarType prod = 0.0;
 
 #ifdef HAVE_MPI
-  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, SelectMPIType<ScalarType>(), MPI_SUM, MPI_COMM_WORLD);
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   prod = loc_prod;
 #endif
