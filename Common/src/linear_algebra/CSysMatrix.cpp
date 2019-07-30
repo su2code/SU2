@@ -392,7 +392,7 @@ void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
-  unsigned long iPoint, offset, buf_offset;
+  unsigned long iPoint, msg_offset, buf_offset;
 
   int iMessage, iSend, nSend;
 
@@ -447,9 +447,9 @@ void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
 
         case SOLUTION_MATRIX:
 
-          /*--- Compute our location in the send buffer. ---*/
+          /*--- Get the offset for the start of this message. ---*/
 
-          offset = geometry->nPoint_P2PSend[iMessage];
+          msg_offset = geometry->nPoint_P2PSend[iMessage];
 
           /*--- Total count can include multiple pieces of data per point. ---*/
 
@@ -460,11 +460,11 @@ void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
 
             /*--- Get the local index for this communicated data. ---*/
 
-            iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+            iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (offset + iSend)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
 
             /*--- Load the buffer with the data to be sent. ---*/
 
@@ -483,9 +483,9 @@ void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
 
           bufDSend = geometry->bufD_P2PRecv;
 
-          /*--- Compute our location in the send buffer. ---*/
+          /*--- Get the offset for the start of this message. ---*/
 
-          offset = geometry->nPoint_P2PRecv[iMessage];
+          msg_offset = geometry->nPoint_P2PRecv[iMessage];
 
           /*--- Total count can include multiple pieces of data per point. ---*/
 
@@ -498,11 +498,11 @@ void CSysMatrix<ScalarType>::InitiateComms(CSysVector<OtherType> & x,
              again use the recv structure to find the send point, since
              the usual recv points are now the senders in reverse mode. ---*/
 
-            iPoint = geometry->Local_Point_P2PRecv[offset + iSend];
+            iPoint = geometry->Local_Point_P2PRecv[msg_offset + iSend];
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (offset + iSend)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
 
             /*--- Load the buffer with the data to be sent. ---*/
 
@@ -539,7 +539,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
   /*--- Local variables ---*/
 
   unsigned short iVar;
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -572,9 +572,9 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
           jRecv = geometry->P2PRecv2Neighbor[source];
 
-          /*--- Get the point offset for the start of this message. ---*/
+          /*--- Get the offset for the start of this message. ---*/
 
-          offset = geometry->nPoint_P2PRecv[jRecv];
+          msg_offset = geometry->nPoint_P2PRecv[jRecv];
 
           /*--- Get the number of packets to be received in this message. ---*/
 
@@ -585,11 +585,11 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
             /*--- Get the local index for this communicated data. ---*/
 
-            iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+            iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (offset + iRecv)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
 
             /*--- Store the data correctly depending on the quantity. ---*/
 
@@ -611,9 +611,9 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
           jRecv = geometry->P2PSend2Neighbor[source];
 
-          /*--- Get the point offset for the start of this message. ---*/
+          /*--- Get the offset for the start of this message. ---*/
 
-          offset = geometry->nPoint_P2PSend[jRecv];
+          msg_offset = geometry->nPoint_P2PSend[jRecv];
 
           /*--- Get the number of packets to be received in this message. ---*/
 
@@ -624,11 +624,11 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
             /*--- Get the local index for this communicated data. ---*/
 
-            iPoint = geometry->Local_Point_P2PSend[offset + iRecv];
+            iPoint = geometry->Local_Point_P2PSend[msg_offset + iRecv];
 
             /*--- Compute the offset in the recv buffer for this point. ---*/
 
-            buf_offset = (offset + iRecv)*geometry->countPerPoint;
+            buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
 
 
             for (iVar = 0; iVar < nVar; iVar++)
