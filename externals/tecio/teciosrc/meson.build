@@ -1,4 +1,4 @@
-tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
+tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS', '-Wno-misleading-indentation', '-Wno-deprecated-copy', '-Wno-deprecated-declarations', '-Wno-class-memaccess', '-Wno-placement-new']
 
 if (build_machine.system() == 'darwin')
   tecio_cpp_flags += ['-DDARWIN', '-DMAC64']
