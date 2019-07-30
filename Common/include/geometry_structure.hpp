@@ -364,8 +364,8 @@ public:
   map<unsigned long,unsigned long> Global_to_Local_Elem; /*!< \brief Mapping of global to local index for elements. */
   unsigned long *beg_node; /*!< \brief Array containing the first node on each rank due to a linear partitioning by global index. */
   unsigned long *end_node; /*!< \brief Array containing the last node on each rank due to a linear partitioning by global index. */
-  unsigned long *nPointL;  /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
-  unsigned long *nPointC;  /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
+  unsigned long *nPointLinear;     /*!< \brief Array containing the total number of nodes on each rank due to a linear partioning by global index. */
+  unsigned long *nPointCumulative; /*!< \brief Cumulative storage array containing the total number of points on all prior ranks in the linear partitioning. */
   
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -1907,41 +1907,6 @@ public:
   unsigned long GetLinearPartition(unsigned long val_global_index);
   
   /*!
-   * \brief Routine to prepare the adjacency from a CGNS mesh for ParMETIS for graph partitioning in parallel.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void PrepareCGNSAdjacency(CConfig *config);
-  
-  /*!
-   * \brief Routine to check the type of a CGNS element and to obtain other information about its containing section.
-   * \param[in] config        - definition of the particular problem.
-   * \param[in] val_elem_type - current CGNS element type (input).
-   * \param[in] val_vtk_type  - VTK index identifier (output).
-   * \return String name of the current element type.
-   */
-#ifdef HAVE_CGNS
-  string GetCGNSElementType(CConfig     *config,
-                          ElementType_t val_elem_type,
-                          int           *val_vtk_type);
-#endif
-  
-  /*!
-   * \brief Routine to check whether a CGNS section is an interior or boundary section.
-   * \param[in] config        - definition of the particular problem.
-   * \param[in] val_fn        - CGNS file identifier.
-   * \param[in] val_base      - current CGNS database index.
-   * \param[in] val_zone      - current CGNS zone index.
-   * \param[in] val_section   - current CGNS section index.
-   * \param[in] val_interior  - boolean flag for whether this is an interior or boundary section to be returned.
-   */
-  void GetCGNSSectionType(CConfig *config,
-                          int     val_fn,
-                          int     val_base,
-                          int     val_zone,
-                          int     val_section,
-                          bool    *val_interior);
-  
-  /*!
    * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
@@ -2024,16 +1989,144 @@ public:
    */
   void Read_CGNS_Format_Parallel_FEM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
+#ifdef HAVE_CGNS
   /*!
    * \brief Parallel read of the grid points from a CGNS file into linear partitions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_fn - CGNS file identifier.
-   * \param[in] val_iBase - current CGNS database index.
-   * \param[in] val_iZone - current CGNS zone index.
+   * \param[in] config      - Definition of the particular problem.
+   * \param[in] val_fn      - CGNS file identifier.
+   * \param[in] val_iBase   - current CGNS database index.
+   * \param[in] val_iZone   - current CGNS zone index.
    * \param[in] val_ncoords - number of coordinate dimensions in the CGNS file.
+   * \param[out] gridCoords - grid coordinate array to be filled with CGNS coordinates.
    */
-  void ReadCGNSPoints(CConfig *config, int val_fn, int val_iBase, int val_iZone,
-                      int val_ncoords);
+  void ReadCGNSPoints(CConfig       *config,
+                      int           val_fn,
+                      int           val_base,
+                      int           val_zone,
+                      int           val_ncoords,
+                      passivedouble **gridCoords);
+  
+  /*!
+   * \brief Routine to read the metadata for each CGNS section and collect information, including the size and whether it is an interior or boundary section.
+   * \param[in] config         - definition of the particular problem.
+   * \param[in] val_fn         - CGNS file identifier.
+   * \param[in] val_base       - current CGNS database index.
+   * \param[in] val_zone       - current CGNS zone index.
+   * \param[in] val_sections   - total number of sections in the current CGNS zone.
+   * \param[out] interiorElems - count of global interior elements found in this zone.
+   * \param[out] isVolume      - vector of booleans to store whether each section is an interior or boundary section.
+   * \param[out] elemOffset    - global ID offset for each interior section (i.e., the total number of global elements that came before it).
+   * \param[out] sectionNames  - vector for storing the names of each boundary section (marker).
+   */
+  void ReadCGNSSections(CConfig              *config,
+                        int                   val_fn,
+                        int                   val_base,
+                        int                   val_zone,
+                        int                   &nsections,
+                        unsigned long         &interiorElems,
+                        vector<bool>          &isVolume,
+                        vector<unsigned long> &elemOffset,
+                        vector<vector<char> > &sectionNames);
+  
+  /*!
+   * \brief Routine to load the interior volume elements from one section of a CGNS file into the proper SU2 data structures.
+   * \param[in] config      - definition of the particular problem.
+   * \param[in] val_fn      - CGNS file identifier.
+   * \param[in] val_base    - current CGNS database index.
+   * \param[in] val_zone    - current CGNS zone index.
+   * \param[in] val_section - current CGNS section index.
+   * \param[in] elemOffset  - global ID offset for each interior section (i.e., the total number of global elements that came before it).
+   * \param[out] nElems     - vector containing the number of elements found within each CGNS section.
+   * \param[out] connElems  - array containing the element connectivity found within each CGNS section.
+   */
+  void ReadCGNSVolumeSection(CConfig               *config,
+                             int                   val_fn,
+                             int                   val_base,
+                             int                   val_zone,
+                             int                   val_section,
+                             vector<unsigned long> &elemOffset,
+                             vector<unsigned long> &nElems,
+                             cgsize_t              **connElems);
+  
+  /*!
+   * \brief Routine to load the surface (boundary) elements from the CGNS file into the proper SU2 data structures.
+   * \param[in] config      - definition of the particular problem.
+   * \param[in] val_fn      - CGNS file identifier.
+   * \param[in] val_base    - current CGNS database index.
+   * \param[in] val_zone    - current CGNS zone index.
+   * \param[in] val_section - current CGNS section index.
+   * \param[in] elemOffset  - global ID offset for each interior section (i.e., the total number of global elements that came before it).
+   * \param[out] nElems     - vector containing the number of elements found within each CGNS section.
+   * \param[out] connElems  - array containing the element connectivity found within each CGNS section.
+   */
+  void ReadCGNSSurfaceSection(CConfig               *config,
+                              int                   val_fn,
+                              int                   val_base,
+                              int                   val_zone,
+                              int                   val_section,
+                              vector<unsigned long> &elemOffset,
+                              vector<unsigned long> &nElems,
+                              cgsize_t              **connElems);
+  
+  /*!
+   * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
+   * \param[in]  config     - definition of the particular problem.
+   * \param[out] gridCoords - array containing the grid node coordinates found within a CGNS zone.
+   */
+  void LoadCGNSPoints(CConfig       *config,
+                      passivedouble **gridCoords);
+  
+  /*!
+   * \brief Routine to load the interior volume elements from the CGNS file into the proper SU2 data structures.
+   * \param[in]  config      - definition of the particular problem.
+   * \param[in] val_sections - total number of sections in the current CGNS zone.
+   * \param[in] nElems       - vector containing the number of elements found within each CGNS section.
+   * \param[in] connElems    - array containing the element connectivity found within each CGNS section.
+   * \param[in] sectionNames - vector for storing the names of each boundary section (marker).
+   * \param[in] isVolume     - vector of booleans to store whether each section is an interior or boundary section.
+   */
+  void LoadCGNSVolumeElements(CConfig               *config,
+                              int                   &nsections,
+                              vector<unsigned long> &nElems,
+                              cgsize_t              **connElems,
+                              vector<vector<char> > &sectionNames,
+                              vector<bool>          &isVolume);
+  
+  /*!
+   * \brief Routine to load the boundary elements (markers) from the CGNS file into the proper SU2 data structures.
+   * \param[in]  config      - definition of the particular problem.
+   * \param[in] val_sections - total number of sections in the current CGNS zone.
+   * \param[in] nMarkerCGNS  - total number of markers found within the current CGNS zone.
+   * \param[in] nElems       - vector containing the number of elements found within each CGNS section.
+   * \param[in] connElems    - array containing the element connectivity found within each CGNS section.
+   * \param[in] sectionNames - vector for storing the names of each boundary section (marker).
+   * \param[in] isVolume     - vector of booleans to store whether each section is an interior or boundary section.
+   */
+  void LoadCGNSSurfaceElements(CConfig               *config,
+                               int                   &nsections,
+                               int                   &nMarkerCGNS,
+                               vector<unsigned long> &nElems,
+                               cgsize_t              **connElems,
+                               vector<vector<char> > &sectionNames,
+                               vector<bool>          &isVolume);
+  
+  /*!
+   * \brief Routine to prepare the adjacency from a CGNS mesh for ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareCGNSAdjacency(CConfig *config);
+  
+  /*!
+   * \brief Routine to check the type of a CGNS element and to obtain other information about its containing section.
+   * \param[in]  config        - definition of the particular problem.
+   * \param[in]  val_elem_type - current CGNS element type.
+   * \param[out] val_vtk_type  - VTK index identifier.
+   * \return String name of the current element type.
+   */
+  string GetCGNSElementType(CConfig       *config,
+                            ElementType_t val_elem_type,
+                            int           &val_vtk_type);
+#endif
   
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.

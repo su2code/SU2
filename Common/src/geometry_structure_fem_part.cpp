@@ -443,7 +443,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   beg_node = new unsigned long[size];
   end_node = new unsigned long[size];
-  nPointL  = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /*--- Open grid file ---*/
 
@@ -524,23 +524,23 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             balancing for any remainder elements. ---*/
       unsigned long total_elem_accounted = 0;
       for(unsigned long i = 0; i < (unsigned long)size; i++) {
-        nPointL[i] = Global_nElem/size;
-        total_elem_accounted = total_elem_accounted + nPointL[i];
+        nPointLinear[i] = Global_nElem/size;
+        total_elem_accounted = total_elem_accounted + nPointLinear[i];
       }
 
       /*--- Get the number of remainder elements after the even division ---*/
       unsigned long rem_elem = Global_nElem - total_elem_accounted;
       for (unsigned long i = 0; i<rem_elem; i++) {
-        ++nPointL[i];
+        ++nPointLinear[i];
       }
 
       /*--- Store the local number of elements and the beginning/end index ---*/
-      nElem = nPointL[rank];
+      nElem = nPointLinear[rank];
       beg_node[0] = 0;
-      end_node[0] = beg_node[0] + nPointL[0];
+      end_node[0] = beg_node[0] + nPointLinear[0];
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
         beg_node[i] = end_node[i-1];
-        end_node[i] = beg_node[i] + nPointL[i] ;
+        end_node[i] = beg_node[i] + nPointLinear[i] ;
       }
 
       /*--- Allocate space for elements ---*/
@@ -905,7 +905,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         These arrays are the size of the number of ranks. ---*/
   beg_node = new unsigned long[size];
   end_node = new unsigned long[size];
-  nPointL  = new unsigned long[size];
+  nPointLinear  = new unsigned long[size];
 
   /* Open the CGNS file for reading and check if it went OK. */
   int fn;
@@ -1011,23 +1011,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         balancing for any remainder elements. ---*/
   unsigned long total_elem_accounted = 0;
   for(unsigned long i = 0; i < (unsigned long)size; i++) {
-    nPointL[i] = Global_nElem/size;
-    total_elem_accounted = total_elem_accounted + nPointL[i];
+    nPointLinear[i] = Global_nElem/size;
+    total_elem_accounted = total_elem_accounted + nPointLinear[i];
   }
 
   /*--- Get the number of remainder elements after the even division ---*/
   const unsigned long rem_elem = Global_nElem - total_elem_accounted;
   for (unsigned long i = 0; i<rem_elem; i++) {
-    ++nPointL[i];
+    ++nPointLinear[i];
   }
 
   /*--- Store the local number of elements and the beginning/end index ---*/
-  nElem = nPointL[rank];
+  nElem = nPointLinear[rank];
   beg_node[0] = 0;
-  end_node[0]   = beg_node[0] + nPointL[0];
+  end_node[0]   = beg_node[0] + nPointLinear[0];
   for(int i=1; i<size; i++) {
     beg_node[i] = end_node[i-1];
-    end_node[i]   = beg_node[i] + nPointL[i] ;
+    end_node[i]   = beg_node[i] + nPointLinear[i] ;
   }
 
   /*--- Allocate space for elements ---*/
