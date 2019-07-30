@@ -7,13 +7,11 @@ private:
 
 public:
   
-  CSTLFileWriter(vector<string> fields, unsigned short nDim, CGeometry *geometry, CConfig *config);
+  CSTLFileWriter(vector<string> fields, unsigned short nDim);
   
   ~CSTLFileWriter();
   
   void Write_Data(string filename, CParallelDataSorter* data_sorter);
-
-  void Write_Data2(string filename, CParallelDataSorter* data_sorter);
   
 };
 

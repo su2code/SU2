@@ -410,7 +410,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
           cout << "Writing STL file." << endl;     
       }
          
-      filewriter = new CSTLFileWriter(Variable_Names, nDim, geometry, config);
+      filewriter = new CSTLFileWriter(Variable_Names, nDim);
           
       break;
 
@@ -544,8 +544,6 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
     /*--- Write data to file --- */
   
     file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
-    if(format == STL)
-      file_writer->Write_Data2(config->GetFilename(SurfaceFilename, ""), surface_sort);
   
   }
   
