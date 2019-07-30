@@ -50,7 +50,7 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
-#include "variable_structure.hpp"
+#include "fluid_model.hpp"
 
 using namespace std;
 
@@ -960,28 +960,29 @@ public:
 	 */
 	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
-        /*!
-         * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
-         * \param[in] val_soundspeed - value of the sound speed.
-         * \param[in] val_density - value of the density.
-         * \param[out] R_c - Residual Jacoboan Matrix
-         * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
-         */
-        void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
+  /*!
+   * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
+   * \param[in] val_soundspeed - value of the sound speed.
+   * \param[in] val_density - value of the density.
+   * \param[out] R_c - Residual Jacoboan Matrix
+   * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
+   */
+  void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel,
+                               su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
 
-        /*!
-         * \brief Computate the inverse of a 3x3 matrix
-         * \param[in]  matrix     - the matrix to invert
-         * \param[out] invMatrix  - inverse matrix.
-         */
-        void InvMatrix3D(su2double **matrix, su2double **invMatrix);
+  /*!
+   * \brief Computate the inverse of a 3x3 matrix
+   * \param[in]  matrix     - the matrix to invert
+   * \param[out] invMatrix  - inverse matrix.
+   */
+  void InvMatrix3D(su2double **matrix, su2double **invMatrix);
 
-        /*!
-         * \brief Computate the inverse of a 4x4 matrix
-         * \param[in]  matrix    - the matrix to invert
-         * \param[out] invMatrix - inverse matrix.
-         */
-        void InvMatrix4D(su2double **matrix, su2double **invMatrix);
+  /*!
+   * \brief Computate the inverse of a 4x4 matrix
+   * \param[in]  matrix    - the matrix to invert
+   * \param[out] invMatrix - inverse matrix.
+   */
+  void InvMatrix4D(su2double **matrix, su2double **invMatrix);
 
 	/*!
 	 * \brief Computation of the matrix R.
@@ -1499,19 +1500,8 @@ public:
 class CUpwCUSP_Flow : public CNumerics {
   
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-  *MeanVelocity, ProjVelocity,  /*!< \brief Mean and projected velocities. */
-  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-  *ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
-  cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  LamdaNeg, LamdaPos, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
-  **Jacobian;  /*!< \brief Projected grid velocity. */
-  bool implicit, /*!< \brief Implicit calculation. */
-  grid_movement; /*!< \brief Modification for grid movement. */
+  su2double *Velocity_i, *Velocity_j, *ProjFlux_i, *ProjFlux_j;
+  bool implicit;
   
 public:
   
