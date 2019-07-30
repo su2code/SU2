@@ -690,9 +690,6 @@ public:
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
 
-  template<class OtherType>
-  void SendReceive_Solution(CSysVector<OtherType> & x, CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Initialize the matrix format that PaStiX requires.
    */

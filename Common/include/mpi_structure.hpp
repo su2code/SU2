@@ -86,10 +86,6 @@ class CBaseMPIWrapper;
 template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
 #endif
 
-/*--- Select the appropriate MPI type, to use in templated classes. ---*/
-template<class T> inline MPI_Datatype SelectMPIType() { return MPI_DOUBLE; }
-template<> inline MPI_Datatype SelectMPIType<unsigned long>() { return MPI_UNSIGNED_LONG; }
-
 /*!
  * \class CMPIWrapper
  * \brief Class for defining the MPI wrapper routines; this class features as a base class for
