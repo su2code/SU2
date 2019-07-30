@@ -46,8 +46,6 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
   bool fem_solver = false;
-  bool periodic   = false;
-  bool multizone  = false;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -88,8 +86,7 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_DOT);
 
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
   
@@ -109,13 +106,10 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_DOT, nZone, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
-
-  /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -127,14 +121,30 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    if (multizone){
+    if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
+
+  }
+  
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetMultizone_Problem()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
@@ -167,9 +177,7 @@ int main(int argc, char *argv[]) {
       if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
       else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines
-       will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
       if( fem_solver ) {
         switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -180,11 +188,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else {
-        if (periodic) {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
-        }
+        geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
       }
 
       /*--- Deallocate the memory of geometry_aux ---*/
@@ -276,6 +280,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
   geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+    
+  geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
+    
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/

@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CDiscAdjVariable.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
@@ -684,8 +685,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
 
   }
-
-//  Set_MPI_CrossTerm(geometry, config);
 
 }
 
