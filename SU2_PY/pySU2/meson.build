@@ -3,12 +3,13 @@ swig = find_program('swig')
 
 # add mpi4py include
 if get_option('enable-mpi')
-  python_dir = python.get_path('platlib')
-  message ('Looking for mpi4py in ' + python_dir)
   if get_option('python_path') != ''
     python_dir = get_option('python_path')
+  else
+    python_dir = run_command(python, '-c', 'from distutils.sysconfig import get_python_lib; print(get_python_lib())').stdout().strip()
+    message ('Looking for mpi4py in ' + python_dir)
   endif
-  mpi4py_include = python_dir + '/mpi4py/include/'
+  mpi4py_include = python_dir + '/mpi4py/include' 
 else
   mpi4py_include = ''
 endif
