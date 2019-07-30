@@ -764,7 +764,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, offset, buf_offset;
+  unsigned long iPoint, msg_offset, buf_offset;
   
   int iMessage, iSend, nSend;
   
@@ -827,9 +827,9 @@ void CGeometry::InitiateComms(CGeometry *geometry,
     
     for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
       
-      /*--- Compute our location in the send buffer. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = nPoint_P2PSend[iMessage];
+      msg_offset = nPoint_P2PSend[iMessage];
       
       /*--- Total count can include multiple pieces of data per element. ---*/
       
@@ -839,11 +839,11 @@ void CGeometry::InitiateComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iSend)*countPerPoint;
+        buf_offset = (msg_offset + iSend)*countPerPoint;
         
         switch (commType) {
           case COORDINATES:
@@ -872,7 +872,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
             break;
           case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnPoint();
+            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -897,7 +897,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short iDim;
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -929,9 +929,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
       
       jRecv = P2PRecv2Neighbor[source];
       
-      /*--- Get the point offset for the start of this message. ---*/
-      
-      offset = nPoint_P2PRecv[jRecv];
+      /*--- Get the offset in the buffer for the start of this message. ---*/
+
+      msg_offset = nPoint_P2PRecv[jRecv];
       
       /*--- Get the number of packets to be received in this message. ---*/
       
@@ -941,11 +941,11 @@ void CGeometry::CompleteComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
         
         /*--- Compute the total offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iRecv)*countPerPoint;
+        buf_offset = (msg_offset + iRecv)*countPerPoint;
         
         /*--- Store the data correctly depending on the quantity. ---*/
         
