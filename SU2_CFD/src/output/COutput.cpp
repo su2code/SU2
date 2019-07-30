@@ -407,11 +407,11 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
       sorter->SortConnectivity(config, geometry, true);
       
       if (rank == MASTER_NODE) {
-          cout << "Writing STL file." << endl;     
+          cout << "Writing STL file." << endl;
       }
-         
+
       filewriter = new CSTLFileWriter(Variable_Names, nDim);
-          
+      
       break;
 
   case SU2_RESTART_ASCII:
@@ -528,7 +528,7 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   if (fem_output){
     surface_sort = new CSurfaceFEMDataSorter(config, geometry, GlobalField_Counter, dynamic_cast<CFEMDataSorter*>(data_sorter));
   } else {
-    surface_sort = new CSurfaceFVMDataSorter(config, geometry, GlobalField_Counter, dynamic_cast<CFVMDataSorter*>(data_sorter));    
+    surface_sort = new CSurfaceFVMDataSorter(config, geometry,GlobalField_Counter, dynamic_cast<CFVMDataSorter*>(data_sorter));
   }
 
   /*--- Set the file writer --- */

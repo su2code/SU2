@@ -174,7 +174,7 @@ void CTecplotFileWriter::Write_Data(string filename, CParallelDataSorter *data_s
         Tecplot_File << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0) << "\t";
         Tecplot_File << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 1) << "\t";
         Tecplot_File << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2) << "\t";
-        Tecplot_File << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2) << "\n"; // Why twice
+        Tecplot_File << data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 2) << "\n";
       }
       
       for (iElem = 0; iElem < nParallel_Quad; iElem++) {
