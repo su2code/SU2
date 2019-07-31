@@ -1016,7 +1016,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   unsigned short iSol;
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------ Solver Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
+    cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
 
   solver = new CSolver**[config->GetnMGLevels()+1];
   
@@ -3576,10 +3576,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
   
   for (iZone = 0; iZone < nZone; iZone++){
 
-    /*--- Initial print to console for this zone. ---*/
-
-    if (rank == MASTER_NODE) cout << "Zone " << iZone;
-
+    if (rank == MASTER_NODE)
+      cout << endl <<"-------------------- Output Preprocessing ( Zone " << iZone <<" ) --------------------" << endl;
+   
     /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
     switch (config[iZone]->GetKind_Solver()) {
