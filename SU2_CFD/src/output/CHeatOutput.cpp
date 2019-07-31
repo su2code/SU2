@@ -128,16 +128,16 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
 void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
   
   // SOLUTION
-  AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION");
+  AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
 
   // Residuals  
-  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "RMS residual of the temperature");
   
 }
 
