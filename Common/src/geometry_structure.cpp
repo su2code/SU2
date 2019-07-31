@@ -3654,9 +3654,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Initialize counters for local/global points & elements ---*/
   
-  if (rank == MASTER_NODE)
-    cout << endl <<"---------------- Read Grid File Information ( ZONE "  << config->GetiZone() << " ) ------------------" << endl;
-
   if( fem_solver ) {
     switch (val_format) {
       case SU2:
@@ -18135,13 +18132,13 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   
 }
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst) : CGeometry() {
+CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
    need access to the other zones in the mesh for zone boundaries. ---*/
   
-  CGeometry *fine_grid = geometry[iZone][iInst][iMesh-1];
-  CConfig *config = config_container[iZone];
+  CGeometry *fine_grid = geometry[iMesh-1];
+  CConfig *config = config_container;
   
   /*--- Local variables ---*/
   
