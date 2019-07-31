@@ -1120,7 +1120,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   
   unsigned short iMarker = 0;
   unsigned long iPoint = 0, jPoint = 0;
-  long iVertex = 0;
+  unsigned long iVertex = 0;
   
   /*--- Reset the offset cache and index --- */
   Offset_Cache_Index = 0;
@@ -1524,7 +1524,7 @@ void COutput::PrintHistoryFields(){
       }
     }
     
-    cout << "Output fields for the current configuration: " << endl;
+    cout << "Available output fields for the current configuration in " << MultiZoneHeaderString << ":" << endl;
     
     HistoryFieldTable.AddColumn("Name", NameSize);
     HistoryFieldTable.AddColumn("Group Name", GroupSize);
