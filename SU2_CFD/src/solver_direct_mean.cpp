@@ -889,6 +889,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
+  /*--- Check if boundary markers are straight. Used for BC_Slip_Wall ---*/
+  geometry->ComputeSurf_Straightness(config);
+
 }
 
 CEulerSolver::~CEulerSolver(void) {
