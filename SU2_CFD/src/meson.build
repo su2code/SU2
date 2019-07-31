@@ -1,8 +1,4 @@
-su2_cfd_src = files(['driver_structure.cpp',
-                     'driver_direct_multizone.cpp',
-                     'driver_direct_singlezone.cpp',
-                     'driver_adjoint_singlezone.cpp',
-                     'output_structure.cpp',
+su2_cfd_src = files(['output_structure.cpp',
                      'output_cgns.cpp',
                      'output_fieldview.cpp',
                      'output_paraview.cpp',
@@ -52,7 +48,7 @@ su2_cfd_src = files(['driver_structure.cpp',
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CTransLMVariable.cpp',
-	             'variables/CAdjEulerVariable.cpp',
+	                   'variables/CAdjEulerVariable.cpp',
                      'variables/CHeatFVMVariable.cpp',
                      'variables/CTurbVariable.cpp',
                      'variables/CAdjNSVariable.cpp',
@@ -69,6 +65,10 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CIncEulerVariable.cpp',
                      'variables/CEulerVariable.cpp'])
 
+su2_cfd_src += files(['drivers/CDriver.cpp',
+                      'drivers/CMultizoneDriver.cpp',
+                      'drivers/CSinglezoneDriver.cpp',
+                      'drivers/CDiscAdjSinglezoneDriver.cpp'])
 
 su2_cfd = executable('SU2_CFD',
                      su2_cfd_src, 
