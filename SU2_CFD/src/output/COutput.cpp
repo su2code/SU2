@@ -1603,3 +1603,50 @@ void COutput::PrintHistoryFields(){
 
   }
 }
+
+void COutput::PrintVolumeFields(){
+  
+  if (rank == MASTER_NODE){
+    
+    PrintingToolbox::CTablePrinter VolumeFieldTable(&std::cout);
+    
+    unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
+    
+    for (unsigned short iField = 0; iField < VolumeOutput_List.size(); iField++){
+      
+      VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField]];
+      
+      if (Field.Description != ""){
+        if (VolumeOutput_List[iField].size() > NameSize){
+          NameSize = VolumeOutput_List[iField].size();
+        }
+        if (Field.OutputGroup.size() > GroupSize){
+          GroupSize = Field.OutputGroup.size();
+        }
+        if (Field.Description.size() > DescrSize){
+          DescrSize = Field.Description.size();
+        }
+      }
+    }
+    
+    cout << "Available output fields for the current configuration in " << MultiZoneHeaderString << ":" << endl;
+    
+    VolumeFieldTable.AddColumn("Name", NameSize);
+    VolumeFieldTable.AddColumn("Group Name", GroupSize);
+    VolumeFieldTable.AddColumn("Description", DescrSize);
+    VolumeFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    
+    VolumeFieldTable.PrintHeader();
+    
+    for (unsigned short iField = 0; iField < VolumeOutput_List.size(); iField++){
+      
+      VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField]];
+
+      if (Field.Description != "")
+        VolumeFieldTable << VolumeOutput_List[iField] << Field.OutputGroup << Field.Description;
+      
+    }
+    
+    VolumeFieldTable.PrintFooter();
+  }
+}
