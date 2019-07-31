@@ -65,21 +65,12 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
   unsigned long iPoint;
   bool stat_mesh = true;
   bool adjoint = config->GetContinuous_Adjoint();
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   /*--- Only write to screen if this option is enabled ---*/
   bool Screen_Output = config->GetDeform_Output();
   
   unsigned short val_iZone = config->GetiZone();
-  unsigned short val_iInst = config->GetiInst();
-
-  /*--- For a harmonic balance case, set "iteration number" to the zone number,
-   so that the meshes are positioned correctly for each instance. ---*/
-  if (harmonic_balance) {
-    ExtIter = val_iInst;
-    Kind_Grid_Movement = config->GetKind_GridMovement();
-  }
 
   /*--- Perform mesh movement depending on specified type ---*/
   switch (Kind_Grid_Movement) {
