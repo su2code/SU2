@@ -28,8 +28,6 @@ virtualenv:
   system_site_packages: true
 
 env:
-    global:
-            CXXFLAGS="-Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false"
@@ -63,6 +61,7 @@ install:
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
     - ./meson.py build --reconfigure --optimization=2
+    - ./meson.py build --reconfigure --warnlevel=1
     - ./ninja -C build install
 
     # Add environmental variables according to the configure step
