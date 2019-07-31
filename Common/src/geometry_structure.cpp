@@ -85,6 +85,7 @@ CGeometry::CGeometry(void) {
   edge                = NULL;
   vertex              = NULL;
   nVertex             = NULL;
+  bound_is_straight   = NULL;
   newBound            = NULL;
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
@@ -228,6 +229,7 @@ CGeometry::~CGeometry(void) {
   
   if (nElem_Bound         != NULL) delete [] nElem_Bound;
   if (nVertex             != NULL) delete [] nVertex;
+  if (bound_is_straight   != NULL) delete [] bound_is_straight;
   if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
   if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
@@ -2791,6 +2793,93 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
     }
   }
 }
+
+
+void CGeometry::ComputeSurf_Straightness(CConfig *config) {
+
+  bool RefUnitNormal_defined;
+  unsigned short iMarker,
+                 iDim;
+  unsigned long iVertex,
+                iPoint;
+  su2double epsilon = 1.0e-6,
+            Area;
+
+  su2double *Normal        = new su2double[nDim],
+            *UnitNormal    = new su2double[nDim],
+            *RefUnitNormal = new su2double[nDim];
+
+  /*--- Allocate memory and assume the less restrictive, i.e. all boundaries are not straight ---*/
+  bound_is_straight = new bool [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) 
+    bound_is_straight[iMarker] = false;
+
+  /*--- Loop over all the markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
+        config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+      
+      /*--- Assume now that this boundary marker is straight. As soon as one
+        AreaElement is found that is not aligend with a Reference then it is 
+        certain that the boundary marker is not straight and one can stop 
+        searching ---*/
+      bound_is_straight[iMarker] = true;
+      RefUnitNormal_defined = false; 
+      iVertex = 0;
+
+      while(bound_is_straight[iMarker] = true && iVertex < nVertex[iMarker]) {
+        
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        
+        if (node[iPoint]->GetDomain()) {
+          
+          vertex[iMarker][iVertex]->GetNormal(Normal);
+          /*--- Compute unit normal. ---*/
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          /*--- Check if unit normal is within tolerance of the Reference unit normal. 
+                Reference unit normal = first unit normal found. ---*/
+          if(RefUnitNormal_defined) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon )
+                bound_is_straight[iMarker] = false;
+            }
+          } else {
+            for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];
+            
+            RefUnitNormal_defined = true;
+          }
+
+        }//if domain
+      ++iVertex;
+      } //while iVertex
+
+    /*--- Print results on screen. ---*/
+    if(rank == MASTER_NODE) {
+      cout << "Boundary marker " << config->GetMarker_All_TagBound(iMarker) << " is ";
+      if(bound_is_straight[iMarker] = false) cout << " NOT ";
+      if(nDim == 2) cout << "straight." << endl;
+      if(nDim == 3) cout << "plane." << endl;
+    }
+
+    }//if sym or euler
+  }//for iMarker
+
+  
+
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
+  delete [] UnitNormal;
+  delete [] RefUnitNormal;
+}
+
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
