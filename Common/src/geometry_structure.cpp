@@ -2828,7 +2828,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config) {
       RefUnitNormal_defined = false; 
       iVertex = 0;
 
-      while(bound_is_straight[iMarker] = true && iVertex < nVertex[iMarker]) {
+      while(bound_is_straight[iMarker] == true && iVertex < nVertex[iMarker]) {
         
         iPoint = vertex[iMarker][iVertex]->GetNode();
         
@@ -2849,30 +2849,27 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config) {
           if(RefUnitNormal_defined) {
             for (iDim = 0; iDim < nDim; iDim++) {
               if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon )
-                bound_is_straight[iMarker] = false;
+                bound_is_straight[iMarker] = false; break;
             }
           } else {
-            for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];
-            
+            for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];   
             RefUnitNormal_defined = true;
           }
 
         }//if domain
-      ++iVertex;
+      iVertex++;
       } //while iVertex
 
     /*--- Print results on screen. ---*/
     if(rank == MASTER_NODE) {
-      cout << "Boundary marker " << config->GetMarker_All_TagBound(iMarker) << " is ";
-      if(bound_is_straight[iMarker] = false) cout << " NOT ";
-      if(nDim == 2) cout << "straight." << endl;
-      if(nDim == 3) cout << "plane." << endl;
+      cout << "Boundary marker " << config->GetMarker_All_TagBound(iMarker) << " is";
+      if(bound_is_straight[iMarker] == false) cout << " NOT";
+      if(nDim == 2) cout << " straight." << endl;
+      if(nDim == 3) cout << " plane." << endl;
     }
 
     }//if sym or euler
   }//for iMarker
-
-  
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;

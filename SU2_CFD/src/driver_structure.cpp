@@ -206,7 +206,14 @@ CDriver::CDriver(char* confFile,
           
         }
       }
-      
+
+      /*--- Check if Euler & Symmetry markers are straight/plane. ---*/
+      if(config_container[iZone]->GetnMarker_Euler() != 0 || config_container[iZone]->GetnMarker_SymWall() != 0) {
+        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+          if (rank == MASTER_NODE) cout << "Checking if Euler & Symmetry markers are straight/plane." << endl;
+          geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone]);
+        }
+      }
     }
 
   }
