@@ -18,15 +18,18 @@ compiler:
 notifications:
     email:
         recipients:
-            - tim.albring@scicomp.uni-kl.de 
+            - su2code-dev@lists.stanford.edu
+  
 branches:
     only:
-        - feature_meson
+        - develop
 
 virtualenv:
   system_site_packages: true
 
 env:
+    global:
+            CXXFLAGS="-Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false"
@@ -46,12 +49,11 @@ env:
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
-    - pyenv versions
     - export PATH=/usr/bin:$PATH
-    - alias python=python3
+    - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
     # Install the necessary packages using apt-get with sudo
     - sudo apt-get update -qq
-    - sudo apt-get install -qq build-essential python-numpy python-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
+    - sudo apt-get install -qq build-essential python3-numpy python3-scipy libopenmpi-dev openmpi-bin swig python3-mpi4py  
     # to avoid interference with MPI
     - test -n $CC  && unset CC
     - test -n $CXX && unset CXX
@@ -68,7 +70,7 @@ install:
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
     - meson.py build --reconfigure --optimization=2
-    - ninja -v -C build install
+    - ninja -C build install
 
     # Add environmental variables according to the configure step
     - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
@@ -82,7 +84,7 @@ before_script:
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b feature_input_output https://github.com/su2code/su2code.github.io ./Tutorials
+    - git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
