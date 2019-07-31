@@ -265,11 +265,20 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
 
 void CDiscAdjMultizoneDriver::Run() {
 
+  bool            checkSensitivity  = false;
   unsigned short  checkConvergence  = 0,
-                  jZone             = 0;
-  unsigned long   iOuter_Iter       = 0,
-                  OuterIter         = driver_config->GetnOuter_Iter();
+                  jZone             = 0,
+                  wrt_sol_freq      = config_container[ZONE_0]->GetWrt_Sol_Freq();
+  unsigned long   iIter             = 0,
+                  nIter             = 0,
+                  iOuter_Iter       = 0,
+                  iInner_Iter       = 0;
 
+  if (nZone == 1) {
+    nIter = driver_config->GetnIter();
+  } else {
+    nIter = driver_config->GetnOuter_Iter();
+  }
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -280,11 +289,17 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Loop over the number of outer iterations ---*/
 
-  for (iOuter_Iter = 0; iOuter_Iter < OuterIter; iOuter_Iter++){
+  for (iIter = 0; iIter < nIter; iIter++) {
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-      driver_config->SetOuterIter(iOuter_Iter);
-      config_container[iZone]->SetOuterIter(iOuter_Iter);
+    if (nZone == 1) {
+      iInner_Iter = iIter;
+      config_container[ZONE_0]->SetInnerIter(iInner_Iter);
+    }
+    else {
+      iOuter_Iter = iIter;
+      for (iZone = 0; iZone < nZone; iZone++) {
+        config_container[iZone]->SetOuterIter(iOuter_Iter);
+      }
     }
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
@@ -347,9 +362,10 @@ void CDiscAdjMultizoneDriver::Run() {
 
     SetResidual_RMS();
 
+
     for (iZone = 0; iZone < nZone; iZone++) {
-      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], config_container[iZone],
-				  config_container[iZone]->GetTimeIter(), config_container[iZone]->GetOuterIter(), config_container[iZone]->GetInnerIter());
+      output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0],
+                                                 config_container[iZone], config_container[iZone]->GetTimeIter(), iOuter_Iter, iInner_Iter);
     }
 
     if (nZone > 1) {
@@ -400,8 +416,15 @@ void CDiscAdjMultizoneDriver::Run() {
         break;
     }
 
-    if ((config_container[ZONE_0]->GetOuterIter()+1 >= OuterIter) ||
-        (config_container[ZONE_0]->GetOuterIter() % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)){
+    if (nZone == 1) {
+      checkSensitivity = ((iInner_Iter+1 >= nIter) ||
+                          (iInner_Iter % wrt_sol_freq == 0));
+    } else {
+      checkSensitivity = ((iOuter_Iter+1 >= nIter) ||
+                          (iOuter_Iter % wrt_sol_freq == 0));
+    }
+
+    if (checkSensitivity){
 
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
        * as argument ensures that all information from a previous recording is removed. ---*/
@@ -454,7 +477,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       for (iZone = 0; iZone < nZone; iZone++) {
 
-        iteration_container[iZone][INST_0]->Output(output_container[iZone], geometry_container, solver_container, config_container, iOuter_Iter, StopCalc, iZone, INST_0);
+        iteration_container[iZone][INST_0]->Output(output_container[iZone], geometry_container, solver_container, config_container, iIter, StopCalc, iZone, INST_0);
       }
     }
   }
