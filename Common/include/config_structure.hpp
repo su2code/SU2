@@ -2913,6 +2913,18 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the number of Euler boundary markers.
+   * \return Number of Euler boundary markers.
+   */
+  unsigned short GetnMarker_Euler(void);
+
+  /*!
+   * \brief Get the number of symmetry boundary markers.
+   * \return Number of symmetry boundary markers.
+   */
+  unsigned short GetnMarker_SymWall(void);
   
   /*!
    * \brief Get the total number of boundary markers.

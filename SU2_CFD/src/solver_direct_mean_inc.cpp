@@ -609,9 +609,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Check if boundary markers are straight. Used for BC_Slip_Wall ---*/
-  geometry->ComputeSurf_Straightness(config);
   
 }
 
@@ -5261,40 +5258,42 @@ void CIncEulerSolver::BC_Slip_Wall(CGeometry      *geometry,
     /*---------------------------------------------------------------------------------------------*/
 
     /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-    geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
-    for (iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
+    if (iVertex == 0 || !(geometry->bound_is_straight[val_marker]) ) {
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
+      for (iDim = 0; iDim < nDim; iDim++)
+        Normal[iDim] = -Normal[iDim];
 
-    /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt (Area);
+      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
     
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = -Normal[iDim]/Area;
+      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+      if (config->GetViscous()) {
+        switch( nDim ) {
+          case 2: {
+            Tangential[0] = -UnitNormal[1];
+            Tangential[1] =  UnitNormal[0];
+            break;
+          }
+          case 3: {
+            /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
+            unsigned short Largest, Arbitrary, Zero;
+            if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
+                    abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
+            else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
+                    abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
+            else                                              {Largest=2;Arbitrary=1;Zero=0;}
 
-    /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
-    if (config->GetViscous()) {
-      switch( nDim ) {
-        case 2: {
-          Tangential[0] = -UnitNormal[1];
-          Tangential[1] =  UnitNormal[0];
-          break;
-        }
-        case 3: {
-          /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
-          unsigned short Largest, Arbitrary, Zero;
-          if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
-                  abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
-          else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
-                  abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
-          else                                              {Largest=2;Arbitrary=1;Zero=0;}
-
-          Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-          Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-          Tangential[Zero] =  0.0;
-          break;
+            Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Zero] =  0.0;
+            break;
+          }
         }
       }
     }
