@@ -9,7 +9,7 @@ project('SU2', 'c', 'cpp',
 pymod = import('python')
 python = pymod.find_installation()
 
-su2_cpp_args = []
+su2_cpp_args = ['-Wno-unused-parameter', '-Wno-empty-body', '-Wno-format-security']
 su2_deps     = []
 
 # external dependencies 
