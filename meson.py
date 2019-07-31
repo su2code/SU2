@@ -33,9 +33,9 @@ def setup_environment():
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = 'bd4a639c2fe625a80946c8365bd2976a2868cf46'
+  sha_version_codi = '501dcf0305df147481630f20ce37c2e624fb351f'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = '46a97e1d6e8fdd3cb42b06534cff6acad2a49693'
+  sha_version_medi = 'a95a23ce7585905c3a731b28c1bb512028fc02bb'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
   sha_version_meson = 'c904d3eefe2a01ca60027e2a5192e1f1c7ca5d9d'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
@@ -88,7 +88,7 @@ def submodule_check(name, alt_name, github_rep, sha_tag, log, err, update = Fals
 def submodule_status(path, update):
 
   try:
-      status = check_output('git. submodule status ' + path).decode()
+      status = check_output('git submodule status ' + path).decode()
   except RuntimeError:
       raise RuntimeError
 
