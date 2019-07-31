@@ -187,7 +187,6 @@ CDriver::CDriver(char* confFile,
   }
   
   
-  if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
   PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
 
   /*--- Output preprocessing --- */
@@ -594,7 +593,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry){
 
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
+    cout << endl <<"------------------- Geometry Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
   
   if( fem_solver ) {
     switch( config->GetKind_FEM_Flow() ) {
@@ -983,10 +982,9 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   unsigned short iSol;
   
-  
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-  
+    cout << endl <<"------------------ Solver Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
+
   solver = new CSolver**[config->GetnMGLevels()+1];
   
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
@@ -1619,7 +1617,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integra
   unsigned short iSol;
   
   if (rank == MASTER_NODE)
-    cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
+    cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
   
   integration = new CIntegration* [MAX_SOLS];
   for (iSol = 0; iSol < MAX_SOLS; iSol++)
@@ -1768,6 +1766,9 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
 }
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics) {
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
 
   unsigned short iMGlevel, iSol,
       
@@ -2997,9 +2998,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
 
 void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
   
-  if (rank == MASTER_NODE) {
-    cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
-  }
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
   
   /*--- Loop over all zones and instantiate the physics iteration. ---*/
   
@@ -3009,62 +3009,62 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
       
       if(config->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
-          cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
+          cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
         iteration = new CTurboIteration(config);
         
       }
       else{
         if (rank == MASTER_NODE)
-          cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+          cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
         iteration = new CFluidIteration(config);
       }
       break;
       
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
       if (rank == MASTER_NODE)
-        cout << ": finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
+        cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
       iteration = new CFEMFluidIteration(config);
       break;
       
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
-        cout << ": heat iteration (finite volume method)." << endl;
+        cout << "Heat iteration (finite volume method)." << endl;
       iteration = new CHeatIteration(config);
       break;
       
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
-        cout << ": FEM iteration." << endl;
+        cout << "FEM iteration." << endl;
       iteration = new CFEAIteration(config);
       break;
       
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint FEM structural iteration." << endl;
+        cout << "Discrete adjoint FEM structural iteration." << endl;
       iteration = new CDiscAdjFEAIteration(config);
       break;
       
     case DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint heat iteration." << endl;
+        cout << "Discrete adjoint heat iteration." << endl;
       iteration = new CDiscAdjHeatIteration(config);
       break;
   }
