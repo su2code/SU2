@@ -17,8 +17,7 @@ endif
 swig_gen = generator(
     swig,
     output: ['@BASENAME@.cxx'],
-    arguments: su2_cpp_args + 
-    [ '-c++', '-python', '-I'+mpi4py_include, '-outdir', meson.current_build_dir(), '-o', './@OUTPUT@', '@INPUT@'],
+    arguments:  [ '-c++', '-python', '-I'+mpi4py_include, '-outdir', meson.current_build_dir(), '-o', './@OUTPUT@', '@INPUT@'],
     depfile: '@BASENAME@.d',
 )
 
