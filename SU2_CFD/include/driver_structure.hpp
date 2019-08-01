@@ -433,6 +433,10 @@ public:
    */
   passivedouble GetUnsteady_TimeStep();
 
+  /*!
+   * \brief Get a vector with the global indices of all vertices.
+   * \return Vector of all global indices.
+   */
   vector<passivedouble> GetAllGlobalIndices();
 
     /*!
@@ -810,6 +814,10 @@ public:
    */
   virtual void Run_Jacobi(){};
 
+  /*!
+   * \brief Get a vector with the coordinates of all vertices, ordered by global index.
+   * \return Vector of coordinates ordered by global index.
+   */
   vector<passivedouble> GetAllCoords(unsigned short dim);
 
 };
