@@ -137,8 +137,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize arrays for flexible differentiation. ---*/
 
-  // TODO Temporary, should pull probably only after direct soler has actually computed it.
-  //  But how to initialize it then?
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
 
   Diff_Outputs_Backprop_Derivs.reserve(config->GetnDiff_Outputs());
@@ -289,7 +287,6 @@ vector<su2double> CDiscAdjSolver::GetDiff_Inputs_Vars(unsigned short index) {
 
 void CDiscAdjSolver::SetDiff_Inputs_Vars(vector<passivedouble> val, unsigned short index) {
   direct_solver->SetDiff_Inputs_Vars(val, index);
-  // TODO Add flag and check when registering variables if the diff input vars have been set
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -643,31 +640,20 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
 
+    // TODO Add other cases like these, for sensitivities that are already computed in the code
     if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
       switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-        // TODO Add check for cases like above. E.g., when incompressible Total_Sens_Mach is undefined
         case DI_MACH:
           Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_Mach);
           break;
         case DI_AOA:
-          // XXX Adjust for radians-degrees here?
           Total_Sens_Diff_Inputs[iDiff_Inputs].resize(1);
           Total_Sens_Diff_Inputs[iDiff_Inputs][0] = SU2_TYPE::GetValue(Total_Sens_AoA * PI_NUMBER / 180.0);
           break;
         default:
           break;
       }
-    }
-
-    if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()) {
-
-    }
-
-    if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
-        (KindDirect_Solver == RUNTIME_FLOW_SYS &&
-         (!config->GetBoolTurbomachinery()))) {
-
     }
   }
 

@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 
 import torch
-import numpy as np
 
 from mpi4py import MPI
 
@@ -11,7 +10,7 @@ import SU2
 import pysu2
 import pysu2ad
 
-from su2_function_mpi import RunCode, run_forward, run_adjoint
+from su2torch.su2_function_mpi import RunCode, run_forward, run_adjoint
 
 
 TEMP_CFG_BASENAME = 'tmp_cfg.cfg'
@@ -56,6 +55,7 @@ class SU2Function(torch.autograd.Function):
             self.comm = MPI.COMM_WORLD
 
     def forward(self, *inputs, **kwargs):
+        # TODO Take batching into account
         if len(inputs) != self.num_diff_inputs:
             raise TypeError('{} inputs were provided, but the config file ({}) defines {} diff inputs.'
                             .format(len(inputs), self.config_file, self.num_diff_inputs))

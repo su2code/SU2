@@ -402,7 +402,7 @@ class Project(object):
         
         n_dv = 0
         
-        # populate fields
+        # populate train
         for i,design in enumerate(self.designs):
             for key in design.state.FUNCTIONS.keys():
                 results.FUNCTIONS[key] = []

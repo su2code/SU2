@@ -647,7 +647,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize differentiable inputs arrays ---*/
 
-  // TODO Are both reserve and resize necessary?
   Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
   Total_Sens_Diff_Inputs.resize(config->GetnDiff_Inputs());
 
@@ -7035,6 +7034,10 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
   bool reset_nondimensionalization = false;
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    if (Diff_Inputs_Vars[iDiff_Inputs].size() == 0) {
+      SU2_MPI::Error("Diff inputs has not been set at index" + to_string(iDiff_Inputs), CURRENT_FUNCTION);
+    }
+
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       case DI_AOA:
         if (reset) {
@@ -7048,8 +7051,6 @@ void CIncEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bo
           reset_nondimensionalization = true;
         }
         break;
-
-        // TODO For vector cases dont forget to reserve before pushing back values
 
       default:
         break;
@@ -7068,6 +7069,10 @@ void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *con
   unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
+      case DI_REYNOLDS:
+        SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
+        break;
+
       default:
         break;
     }
@@ -7075,17 +7080,17 @@ void CIncEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *con
 }
 
 void CIncEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
-  unsigned short iDiff_Outputs, iVec, nVec;
+  unsigned short iDiff_Outputs;
+  unsigned long iVec, nVec;
 
   for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
-    // TODO Do you need to reset the Vars every time so that they have the value thats in the graph?
-
     switch (config->GetDiff_Outputs()[iDiff_Outputs]) {
       case DO_LIFT_COEFFICIENT:
         nVec = 1;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
         Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_CL[0];  // Only works with one marker for now
+        // TODO Fixed CL and CM Modes (see Evaluate Obj Func below)
         break;
       case DO_DRAG_COEFFICIENT:
         nVec = 1;
@@ -7750,7 +7755,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize differentiable inputs arrays ---*/
 
-  // TODO Are both reserve and resize necessary?
   Total_Sens_Diff_Inputs.reserve(config->GetnDiff_Inputs());
   Total_Sens_Diff_Inputs.resize(config->GetnDiff_Inputs());
 
@@ -9111,7 +9115,8 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 
   short iMarker;
   string marker;
-  unsigned short iDiff_Inputs, nVec, iVec;
+  unsigned short iDiff_Inputs;
+  unsigned long nVec, iVec;
   bool reset_nondimensionalization = false;
 
   CIncEulerSolver::RegisterVariables(geometry, config, reset);

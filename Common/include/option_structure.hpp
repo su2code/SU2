@@ -2001,7 +2001,10 @@ enum ENUM_DIFFOUTPUTS_VAR {
   DO_DISPX=77,        /*!< \brief Norm of the displacement vector - x component. */
   DO_DISPY=78,       /*!< \brief Norm of the displacement vector - y component. */
   DO_DISPZ=79,        /*!< \brief Norm of the displacement vector - z component. */
-  DO_VMS=80        /*!< \brief Elasticity Maximum Von Mises stress. */
+  DO_VMS=80,        /*!< \brief Elasticity Maximum Von Mises stress. */
+  DO_VEL_X=81,        /*!< \brief Grid of X component of velocity. */
+  DO_VEL_Y=82,        /*!< \brief Grid of Y component of velocity. */
+  DO_VEL_Z=83,        /*!< \brief Grid of Z component of velocity. */
 };
 
 static const map<string, ENUM_DIFFOUTPUTS_VAR> DiffOutputs_Var_Map = CCreateMap<string, ENUM_DIFFOUTPUTS_VAR>
@@ -2068,7 +2071,10 @@ static const map<string, ENUM_DIFFOUTPUTS_VAR> DiffOutputs_Var_Map = CCreateMap<
   ("DISPX", DO_DISPX)
   ("DISPY", DO_DISPY)
   ("DISPZ", DO_DISPZ)
-  ("VON_MISES_STRESS", DO_VMS);
+  ("VON_MISES_STRESS", DO_VMS)
+  ("VEL_X", DO_VEL_X)
+  ("VEL_Y", DO_VEL_Y)
+  ("VEL_Z", DO_VEL_Z);
 
 
 enum ENUM_RECORDING {
@@ -2608,8 +2614,7 @@ public:
         option_value[i] = option_value[i].substr(0, pos);
         pos = marker_part.find_first_of(">");
         if (pos == string::npos || option_value[i].length() == 0) {
-          // TODO Write specific error messages
-          string str = "Invalid marker specification.";
+          string str = "Either marker bracket was not closed or marker was not specified for diff output" + option_value[i];
           return str;
         }
         marker_part = marker_part.substr(0, pos);

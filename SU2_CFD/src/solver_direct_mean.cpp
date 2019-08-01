@@ -8085,12 +8085,17 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
   bool reset_nondimensionalization = false;
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
+    if (Diff_Inputs_Vars[iDiff_Inputs].size() == 0) {
+      SU2_MPI::Error("Diff inputs has not been set at index" + to_string(iDiff_Inputs), CURRENT_FUNCTION);
+    }
+
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
 //      case DI_REYNOLDS:
-//        if (reset) {
-//          config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//          reset_nondimensionalization = true;
+//        if (!reset) {
+//          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
 //        }
+////        config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
+//        reset_nondimensionalization = true;
 //        break;
       case DI_AOA:
         if (reset) {
@@ -8105,13 +8110,13 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         }
         break;
 
-        // TODO For vector cases dont forget to reserve before pushing back values
-
       default:
         break;
     }
   }
 
+//  config->SetReynolds(1.0);
+//  reset_nondimensionalization = true;
   if (reset_nondimensionalization) {
     delete FluidModel;
     FluidModel = NULL;
@@ -8124,7 +8129,7 @@ void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
   unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-      case DI_VELOCITY_FREESTREAM:
+      case DI_REYNOLDS:
         SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 
@@ -8136,15 +8141,12 @@ void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
-  unsigned short iDiff_Outputs, iVec, nVec;
+  unsigned short iDiff_Outputs;
+  unsigned long iVec, nVec;
 
   for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
-    // TODO Do you need to reset the Vars every time so that they have the value thats in the graph?
-
     switch (config->GetDiff_Outputs()[iDiff_Outputs]) {
       case DO_LIFT_COEFFICIENT:
-//        nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
-//        for (iVec = 0; iVec < nVec; iVec++) {}
         nVec = 1;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
@@ -8170,6 +8172,30 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
         for (iVec = 0; iVec < nVec; iVec++) {
           Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetPressure();
+        }
+        break;
+      case DO_VEL_X:
+        nVec = nPointDomain;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetVelocity(0);
+        }
+        break;
+      case DO_VEL_Y:
+        nVec = nPointDomain;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetVelocity(1);
+        }
+        break;
+      case DO_VEL_Z:
+        nVec = nPointDomain;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetVelocity(2);
         }
         break;
     }
@@ -14870,7 +14896,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
-  
+
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double Density, Velocity2, Pressure, Temperature, StaticEnergy;
@@ -17969,8 +17995,6 @@ void CNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool res
         config->SetPrandtl_Lam(Diff_Inputs_Vars[iDiff_Inputs][0]);
         reset_nondimensionalization = true;
         break;
-
-        // TODO For vector cases dont forget to reserve before pushing back values
 
       default:
         break;
