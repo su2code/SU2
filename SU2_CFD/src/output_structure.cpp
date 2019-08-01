@@ -6013,8 +6013,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
 
               if (extra_heat_output) { cout.width(15); cout << Extra_Heat_Residual; cout.width(15); cout << Extra_Total_Heat; }
+              cout << endl;
+              
             }
-            cout << endl;
           }
           break;
           

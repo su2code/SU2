@@ -764,7 +764,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, offset, buf_offset;
+  unsigned long iPoint, msg_offset, buf_offset;
   
   int iMessage, iSend, nSend;
   
@@ -827,9 +827,9 @@ void CGeometry::InitiateComms(CGeometry *geometry,
     
     for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
       
-      /*--- Compute our location in the send buffer. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = nPoint_P2PSend[iMessage];
+      msg_offset = nPoint_P2PSend[iMessage];
       
       /*--- Total count can include multiple pieces of data per element. ---*/
       
@@ -839,11 +839,11 @@ void CGeometry::InitiateComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iSend)*countPerPoint;
+        buf_offset = (msg_offset + iSend)*countPerPoint;
         
         switch (commType) {
           case COORDINATES:
@@ -872,7 +872,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
             break;
           case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnPoint();
+            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -897,7 +897,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short iDim;
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -929,9 +929,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
       
       jRecv = P2PRecv2Neighbor[source];
       
-      /*--- Get the point offset for the start of this message. ---*/
-      
-      offset = nPoint_P2PRecv[jRecv];
+      /*--- Get the offset in the buffer for the start of this message. ---*/
+
+      msg_offset = nPoint_P2PRecv[jRecv];
       
       /*--- Get the number of packets to be received in this message. ---*/
       
@@ -941,11 +941,11 @@ void CGeometry::CompleteComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
         
         /*--- Compute the total offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iRecv)*countPerPoint;
+        buf_offset = (msg_offset + iRecv)*countPerPoint;
         
         /*--- Store the data correctly depending on the quantity. ---*/
         
@@ -3586,6 +3586,7 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
 }
 
@@ -3627,6 +3628,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   TangGridVelOut          = NULL;
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
+  SpanWiseValue           = NULL;
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -3652,9 +3654,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Initialize counters for local/global points & elements ---*/
   
-  if (rank == MASTER_NODE)
-    cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
-
   if( fem_solver ) {
     switch (val_format) {
       case SU2:
@@ -7315,7 +7314,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     nElem_Bound[iMarker] = nElem_Bound_Copy[iMarker];
   }
-  for (iMarker = nMarker_Physical; iMarker < nMarker; iMarker++) {
+
+  for (iMarker = nMarker_Physical; iMarker < nMarker; iMarker++) {    
     Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
     config->SetMarker_All_TagBound(iMarker, "SEND_RECEIVE");
@@ -7391,9 +7391,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+        if (config->GetSolid_Wall(iMarker))
           node[Point_Surface]->SetSolidBoundary(true);
         
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
@@ -9152,7 +9150,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         iMarker=0;
         PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
         BoundaryTable.AddColumn("Index", 6);
-        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Marker", 35);
         BoundaryTable.AddColumn("Elements", 14);
         if (rank == MASTER_NODE){
           BoundaryTable.PrintHeader();
@@ -11407,9 +11405,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
 
     /* Check for a viscous wall. */
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-      (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if( config->GetViscous_Wall(iMarker)) {
 
       /* Loop over the surface elements of this marker. */
       for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -15726,15 +15722,15 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config ---*/
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+  
   L_Ref     = config->GetLength_Ref();
   
   /*--- Print some information to the console ---*/
@@ -15808,11 +15804,9 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   su2double xDot[3] = {0.0,0.0,0.0};
   
   /*--- Get the translational velocity vector from config ---*/
-  
-  xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1] = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2] = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
-  
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
+  }
   /*--- Print some information to the console ---*/
   
   if (rank == MASTER_NODE && print) {
@@ -18267,13 +18261,13 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   
 }
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst) : CGeometry() {
+CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
    need access to the other zones in the mesh for zone boundaries. ---*/
   
-  CGeometry *fine_grid = geometry[iZone][iInst][iMesh-1];
-  CConfig *config = config_container[iZone];
+  CGeometry *fine_grid = geometry[iMesh-1];
+  CConfig *config = config_container;
   
   /*--- Local variables ---*/
   
@@ -19559,15 +19553,15 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, L_Ref;
   RotVel = new su2double [3];
+  unsigned short iDim;
   
   /*--- Center of rotation & angular velocity vector from config. ---*/
   
-  Center[0] = config->GetMotion_Origin_X(val_iZone);
-  Center[1] = config->GetMotion_Origin_Y(val_iZone);
-  Center[2] = config->GetMotion_Origin_Z(val_iZone);
-  Omega[0]  = config->GetRotation_Rate_X(val_iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(val_iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(val_iZone)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Center[iDim] = config->GetMotion_Origin(iDim);
+    Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+  
   L_Ref     = config->GetLength_Ref();
   
   /*--- Loop over all nodes and set the rotational velocity. ---*/
@@ -19631,9 +19625,9 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned shor
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
+  }
   
   /*--- Loop over all nodes and set the translational velocity ---*/
   

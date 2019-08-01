@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_MSH);
 
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
   
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, true);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, nZone, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/

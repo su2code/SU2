@@ -208,7 +208,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.282767, -6.361594, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.test_vals = [-6.319841, -6.375512, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001

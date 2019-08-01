@@ -42,99 +42,47 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = 
 
-___bin_SU2_MET_SOURCES = \
-  ../include/SU2_MET.hpp \
-  ../src/SU2_MET.cpp
-___bin_SU2_MET_CXXFLAGS =
-___bin_SU2_MET_LDADD = 
-
 if BUILD_REVERSE
-
 bin_PROGRAMS += ../bin/SU2_MET
 
-___bin_SU2_MET_LDADD += \
-  ../../SU2_CFD/src/libSU2Core_AD_a-definition_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-error_estimation_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model_pig.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model_pvdw.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model_ppr.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-fluid_model_inc.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-integration_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-integration_time.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-driver_direct_multizone.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-driver_direct_singlezone.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-driver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-iteration_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_adjoint_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_adjoint_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_heat.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_mean_inc.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_mesh.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_transition.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_elasticity_nonlinear.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_elasticity_linear.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_direct_elasticity.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-numerics_template.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_physics.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_inria.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-python_wrapper_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_adjoint_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_adjoint_mesh.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_adjoint_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_adjoint_discrete.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_adjoint_elasticity.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_heat.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_mean_fem.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_mean_inc.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_mesh.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_transition.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_direct_elasticity.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_template.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-transfer_physics.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-transfer_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-transport_model.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_adjoint_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_adjoint_mesh.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_adjoint_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_adjoint_discrete.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_adjoint_elasticity.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_heat.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_mean.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_mean_inc.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_mesh.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_transition.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_turbulent.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_direct_elasticity.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_template.$(OBJEXT) \
-  ../../Common/lib/libSU2_AD.a
+su2_dot_sources = ../include/SU2_MET.hpp \
+    ../src/SU2_MET.cpp
 
-# always link to built dependencies from ./externals
-___bin_SU2_MET_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_MET_LDADD += @su2_externals_LIBS@
-___bin_SU2_MET_LDADD += @su2_externals_LIBPTHREAD@
+su2_dot_ldadd =
+su2_dot_cxx_flags =
 
-# add reverse flags
-___bin_SU2_MET_CXXFLAGS += @REVERSE_CXX@
-___bin_SU2_MET_LDADD += @REVERSE_LIBS@ 
-
-# if BUILD_MUTATIONPP
-___bin_SU2_MET_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_MET_LDADD += @MUTATIONPP_LD@
-# endif
-
+if BUILD_NORMAL
+su2_dot_ldadd += \
+  ../../SU2_CFD/obj/libSU2Core.a \
+  ../../Common/lib/libSU2.a
 endif
 
+if BUILD_REVERSE
+su2_dot_ldadd += \
+  ../../SU2_CFD/obj/libSU2Core_AD.a \
+  ../../Common/lib/libSU2_AD.a
+endif
+
+# always link to built dependencies from ./externals
+su2_dot_cxx_flags += @su2_externals_INCLUDES@
+su2_dot_ldadd += @su2_externals_LIBS@
+su2_dot_ldadd += @su2_externals_LIBPTHREAD@
+
+# if BUILD_MUTATIONPP
+su2_dot_cxx_flags += @MUTATIONPP_CXX@
+su2_dot_ldadd += @MUTATIONPP_LD@
+# endif
+
+if BUILD_NORMAL
+___bin_SU2_MET_SOURCES = ${su2_dot_sources}
+___bin_SU2_MET_CXXFLAGS = ${su2_dot_cxx_flags}
+___bin_SU2_MET_LDADD =  ${su2_dot_ldadd}
+endif
+
+if BUILD_REVERSE
+___bin_SU2_MET_AD_SOURCES = ${su2_dot_sources}
+___bin_SU2_MET_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
+___bin_SU2_MET_AD_LDADD = @REVERSE_LIBS@ ${su2_dot_ldadd}
+endif
+
+endif
