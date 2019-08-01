@@ -5198,21 +5198,20 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
 }
 
+
 void CIncEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                     CSolver        **solver_container,
-                                    CNumerics      *numerics,
+                                    CNumerics      *conv_numerics,
+                                    CNumerics      *visc_numerics,
                                     CConfig        *config,
-                                    unsigned short val_marker) { }
+                                    unsigned short val_marker) {
+
+  BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+
+}
 
 
 void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
-                                   CSolver        **solver_container,
-                                   CNumerics      *conv_numerics,
-                                   CNumerics      *visc_numerics,
-                                   CConfig        *config,
-                                   unsigned short val_marker) { }
-
-void CIncEulerSolver::BC_Slip_Wall(CGeometry      *geometry,
                                    CSolver        **solver_container,
                                    CNumerics      *conv_numerics,
                                    CNumerics      *visc_numerics,

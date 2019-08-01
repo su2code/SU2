@@ -2795,7 +2795,7 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
 }
 
 
-void CGeometry::ComputeSurf_Straightness(CConfig *config) {
+void CGeometry::ComputeSurf_Straightness(CConfig *config, bool print_on_screen) {
 
   bool RefUnitNormal_defined;
   unsigned short iMarker,
@@ -2861,7 +2861,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config) {
       } //while iVertex
 
     /*--- Print results on screen. ---*/
-    if(rank == MASTER_NODE) {
+    if(rank == MASTER_NODE && print_on_screen) {
       cout << "Boundary marker " << config->GetMarker_All_TagBound(iMarker) << " is";
       if(bound_is_straight[iMarker] == false) cout << " NOT";
       if(nDim == 2) cout << " straight." << endl;

@@ -758,28 +758,17 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  virtual void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker);
-  
-  /*!
-   * \brief Impose the Slip Wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Slip_Wall(CGeometry      *geometry,
-                            CSolver        **solver_container,
-                            CNumerics      *conv_numerics,
-                            CNumerics      *visc_numerics,
-                            CConfig        *config,
-                            unsigned short val_marker);
+  virtual void BC_Euler_Wall(CGeometry      *geometry, 
+                             CSolver        **solver_container, 
+                             CNumerics      *conv_numerics, 
+                             CNumerics      *visc_numerics, 
+                             CConfig        *config,
+                             unsigned short val_marker);
 
   /*!
    * \brief A virtual member.
@@ -1022,8 +1011,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
+  virtual void BC_Sym_Plane(CGeometry      *geometry, 
+                            CSolver        **solver_container, 
+                            CNumerics      *conv_numerics, 
+                            CNumerics      *visc_numerics, 
+                            CConfig        *config, 
+                            unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -5002,12 +4995,17 @@ public:
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+   void BC_Euler_Wall(CGeometry      *geometry, 
+                      CSolver        **solver_container, 
+                      CNumerics      *conv_numerics, 
+                      CNumerics      *visc_numerics, 
+                      CConfig        *config,
+                      unsigned short val_marker);
   
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -7249,12 +7247,17 @@ public:
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+   void BC_Euler_Wall(CGeometry      *geometry, 
+                      CSolver        **solver_container, 
+                      CNumerics      *conv_numerics, 
+                      CNumerics      *visc_numerics, 
+                      CConfig        *config,
+                      unsigned short val_marker);
   
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -9258,12 +9261,17 @@ public:
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
+   void BC_Euler_Wall(CGeometry      *geometry, 
+                      CSolver        **solver_container, 
+                      CNumerics      *conv_numerics, 
+                      CNumerics      *visc_numerics, 
+                      CConfig        *config,
+                      unsigned short val_marker);
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
