@@ -2,7 +2,7 @@
 swig = find_program('swig')
 
 # add mpi4py include
-if get_option('enable-mpi')
+if mpi_dep[0].found() and mpi_dep[1].found()
   if get_option('python_path') != ''
     python_dir = get_option('python_path')
   else
@@ -17,7 +17,7 @@ endif
 swig_gen = generator(
     swig,
     output: ['@BASENAME@.cxx'],
-    arguments: su2_cpp_args + 
+    arguments: su2_cpp_args +
     [ '-c++', '-python', '-I'+mpi4py_include, '-outdir', meson.current_build_dir(), '-o', './@OUTPUT@', '@INPUT@'],
     depfile: '@BASENAME@.d',
 )
