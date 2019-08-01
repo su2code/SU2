@@ -151,7 +151,7 @@ def build_ninja():
   ninjapath = 'externals/ninja'
     
   try:
-    p = subprocess.Popen(['./ninja', '--version'], stdout=subprocess.PIPE, shell=False)
+    p = subprocess.Popen([sys.path[0] + '/ninja', '--version'], stdout=subprocess.PIPE, shell=False)
   except:
     print("ninja executable not found. Building ...")
     p = subprocess.Popen(['./configure.py', '--bootstrap'], stdout=subprocess.PIPE, shell=False, cwd=ninjapath)
@@ -171,7 +171,7 @@ if __name__ == '__main__':
   if os.path.exists('externals/meson/mesonbuild'):
     sys.path.insert(0, str('externals/meson'))
   
-  os.environ["NINJA"] = os.getcwd() + "/ninja"
+  os.environ["NINJA"] = sys.path[0] + "/ninja"
 
   from mesonbuild import mesonmain
 
