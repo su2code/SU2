@@ -47,10 +47,10 @@ def setup_environment():
   meson_name = 'meson'
   ninja_name= 'ninja'
 
-  alt_name_medi = 'externals/medi'
-  alt_name_codi = 'externals/codi'
-  alt_name_meson = 'externals/meson'
-  alt_name_ninja = 'externals/ninja'
+  alt_name_medi =   sys.path[0] + '/externals/medi'
+  alt_name_codi =   sys.path[0] + '/externals/codi'
+  alt_name_meson =  sys.path[0] + '/externals/meson'
+  alt_name_ninja =  sys.path[0] + '/externals/ninja'
 
   # Some log and error files
   log = open( 'config.log', 'w' )
@@ -67,11 +67,10 @@ def setup_environment():
 
 
 def submodule_check(name, alt_name, github_rep, sha_tag, log, err, update = False):
-
   try:
       status = submodule_status(alt_name, update)
       if status:
-          print('Found correct version of ' + name + ' in ' + alt_name + '.')
+          print('Found correct version of ' + name + '.')
 
   except RuntimeError:
       if all([os.path.exists(alt_name), not os.path.exists(alt_name + '/' + sha_tag)]):
@@ -88,8 +87,9 @@ def submodule_check(name, alt_name, github_rep, sha_tag, log, err, update = Fals
 def submodule_status(path, update):
 
   try:
-      status = check_output('git submodule status ' + path).decode()
-  except RuntimeError:
+      status   = check_output('git submodule status ' + path).decode()
+  except RuntimeError as e:
+      print(e)
       raise RuntimeError
 
   status_indicator = status[0][0]
