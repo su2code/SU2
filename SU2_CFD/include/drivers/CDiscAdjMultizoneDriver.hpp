@@ -41,6 +41,7 @@
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 protected:
 
+  bool retape;                      /*!< \brief Boolean whether derivative information for all zones is kept in memory.*/
   unsigned short RecordingState;    /*!< \brief The kind of recording the tape currently holds.*/
   su2double ObjFunc;                /*!< \brief The value of the objective function.*/
   int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
@@ -88,8 +89,15 @@ public:
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   * \param[in] indicator which part of a solution update will be recorded
+   * \param[in] record_zone - zone where solution update will be recorded
    */
-  void SetRecording(unsigned short kind_recording);
+  void SetRecording(unsigned short kind_recording, unsigned short tape_type, unsigned short record_zone);
+
+  /*!
+   * \brief Run one direct iteration in a zone.
+   */
+  void DirectIteration(unsigned short iZone, unsigned short kind_recording);
 
   /*!
    * \brief Set the objective function. It is virtual because it depends on the kind of physics.
@@ -105,7 +113,7 @@ public:
    * \brief Summary of all routines to evaluate the adjoints in iZone.
    * \param[in] iZone - Zone in which adjoints are evaluated depending on their (preceding) seeding.
    */
-  void ComputeZonewiseAdjoints(unsigned short iZone);
+  void ComputeAdjoints(unsigned short iZone);
 
   /*!
    * \brief Saves the current solution (adjoint) values to Solution_Old.

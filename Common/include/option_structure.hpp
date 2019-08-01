@@ -1911,6 +1911,12 @@ enum ENUM_RECORDING {
   ALL_VARIABLES = 8
 };
 
+enum ENUM_TAPE {
+  FULL_TAPE = 1,
+  OBJECTIVE_FUNCTION_TAPE = 2,
+  ZONE_SPECIFIC_TAPE = 3
+};
+
 /*!
  * \brief types of schemes for dynamic structural computations
  */
