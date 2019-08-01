@@ -9,12 +9,17 @@ project('SU2', 'c', 'cpp',
 pymod = import('python')
 python = pymod.find_installation()
 
-su2_cpp_args = ['-Wno-unused-parameter', '-Wno-empty-body', '-Wno-format-security']
+su2_cpp_args = []
 su2_deps     = []
 
+default_warning_flags = ['-Wno-unused-parameter',
+                         '-Wno-empty-body',
+                         '-Wno-format-security',
+                         '-Wno-deprecated-declarations']
+
 # external dependencies 
-mpi_dep = [dependency('mpi', language:'c', required: false), 
-           dependency('mpi', language:'cpp', required: false)]
+mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')), 
+           dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
@@ -30,7 +35,7 @@ if get_option('enable-cgns')
 endif
 
 # check if MPI dependencies are found and add them
-if mpi_dep[0].found() and mpi_dep[1].found() and get_option('enable-mpi')
+if mpi_dep[0].found() and mpi_dep[1].found() 
 
   # add MPI dependency 
   su2_deps += mpi_dep

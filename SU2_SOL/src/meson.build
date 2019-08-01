@@ -16,5 +16,5 @@ su2_sol = executable('SU2_SOL',
                      install: true,
 		     dependencies: [su2_deps, common_dep], 
 		     objects : su2_cfd_obj,
-		     cpp_args : su2_cpp_args)
+		     cpp_args :[default_warning_flags, su2_cpp_args])
 
