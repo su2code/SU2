@@ -2,7 +2,7 @@
 swig = find_program('swig')
 
 # add mpi4py include
-if get_option('enable-mpi')
+if mpi_dep[0].found() and mpi_dep[1].found()
   if get_option('python_path') != ''
     python_dir = get_option('python_path')
   else
