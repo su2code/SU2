@@ -1,7 +1,7 @@
 /*!
- * \file linear_solvers_structure.inl
- * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
- * \author J. Hicken, F. Palacios, T. Economon
+ * \file linear_solvers_structure_b.hpp
+ * \brief Routines for the linear solver used in the reverse sweep of AD.
+ * \author T. Albring
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -37,22 +37,15 @@
 
 #pragma once
 
-template<class ScalarType>
-inline ScalarType CSysSolve<ScalarType>::Sign(const ScalarType & x, const ScalarType & y) const {
-  if (y == 0.0)
-    return 0.0;
-  else {
-//    return (y < 0 ? -fabs(x) : fabs(x));
-    if (y < 0) return -fabs(x);
-    else return fabs(x);
-  }
-}
+#include "../config_structure.hpp"
 
+#ifdef CODI_REVERSE_TYPE
 template<class ScalarType>
-inline ScalarType CSysSolve<ScalarType>::GetResidual(void) const { return Residual; }
+class CSysSolve_b{
 
-template<class ScalarType>
-void CSysSolve<ScalarType>::HandleTemporariesIn(CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {}
-
-template<class ScalarType>
-void CSysSolve<ScalarType>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {}
+public:
+  static void Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m,
+                      const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n,
+                      codi::DataStore* d);
+};
+#endif
