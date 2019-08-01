@@ -975,7 +975,8 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,       /*!< \brief AD-based discrete adjoint mode. */
-  MultiphysicsDiscreteAdjoint;     /*!< \brief Use multiphysics discrete adjoint. */
+  MultiphysicsDiscreteAdjoint,  /*!< \brief Use multiphysics discrete adjoint. */
+  FullTape;                     /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
@@ -8421,6 +8422,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void);
+
+  /*!
+  * \brief Get the indicator whether we want to use full (coupled) tapes.
+  * \return the full tape indicator.
+  */
+  bool GetFull_Tape(void);
 
   /*!
    * \brief Set the indicator whether we are using the multiphysics discrete adjoint driver.

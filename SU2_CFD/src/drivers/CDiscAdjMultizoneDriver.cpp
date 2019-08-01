@@ -42,7 +42,7 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                       SU2_Comm MPICommunicator) : CMultizoneDriver(confFile,
                                                                                   val_nZone,
                                                                                   MPICommunicator) {
-  retape = true;
+  retape = !config_container[ZONE_0]->GetFull_Tape();
 
   RecordingState = NONE;
 
@@ -498,7 +498,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsigned short tape_type, unsigned short record_zone) {
 
-  unsigned short jZone, iSol, iMesh, UpdateMesh;
+  unsigned short iZone, jZone, iSol, iMesh, UpdateMesh;
   unsigned long ExtIter = 0;
   bool DeformMesh       = false;
 
@@ -523,7 +523,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
       cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iterations to store computational graph." << endl;
+      cout << "Storing computational graph." << endl;
     }
 
     AD::StartRecording();
@@ -547,7 +547,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, unsign
 
   /*--- Extract the objective function and store it --- */
 
-  SetObjFunction(kind_recording);
+  if (tape_type != ZONE_SPECIFIC_TAPE) {
+
+      SetObjFunction(kind_recording);
+  }
 
   AD::Push_TapePosition();
 
@@ -641,7 +644,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
   ObjFunc = 0.0;
   su2double Weight_ObjFunc;
 
-  unsigned short iMarker_Analyze, nMarker_Analyze;
+  unsigned short iZone, iMarker_Analyze, nMarker_Analyze;
 
 
   /*--- Call objective function calculations. ---*/
@@ -722,7 +725,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     AD::RegisterOutput(ObjFunc);
     AD::Set_AdjIndex(ObjFunc_Index, ObjFunc);
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-      cout << " Objective function value:            : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
+      cout << " Objective function      :            : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
     }
   }
 }

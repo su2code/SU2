@@ -812,6 +812,8 @@ void CConfig::SetConfig_Options() {
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief MULTIPHYSICS_DISCRETE_ADJOINT  \n DESCRIPTION: Boolean whether multiphysics adjoint shall be used \n Options: NO, YES \ingroup Config */
   addBoolOption("MULTIPHYSICS_DISCRETE_ADJOINT", MultiphysicsDiscreteAdjoint, false);
+  /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
+  addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
