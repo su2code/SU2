@@ -93,6 +93,7 @@ CFEASolver::CFEASolver(void) : CSolver() {
   
   iElem_iDe   = NULL;
   
+  topol_filter_applied = false;
 }
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -111,6 +112,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   
   element_based = false;          // A priori we don't have an element-based input file (most of the applications will be like this)
+  topol_filter_applied = false;
   
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -989,9 +991,10 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * so we ask "geometry" to compute them.
    * This only needs to be done for the undeformed (initial) shape.
    */
-  if (topology_mode && ((first_iter && initial_calc_restart) || disc_adj_fem)) {
+  if (topology_mode && (!topol_filter_applied || disc_adj_fem)) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
+    topol_filter_applied = true;
   }
   
   /*
