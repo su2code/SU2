@@ -15,7 +15,7 @@ su2_dot = executable('SU2_DOT',
                      install: true,
 		     dependencies: [su2_deps, common_dep], 
 		     objects : su2_cfd_obj,
-		     cpp_args : su2_cpp_args)
+		     cpp_args :[default_warning_flags, su2_cpp_args])
 
 if get_option('enable-autodiff')
   su2_dot_src_ad = ['SU2_DOT.cpp']
@@ -34,6 +34,6 @@ if get_option('enable-autodiff')
                      install: true,
 		     dependencies: [su2_deps, codi_dep, commonAD_dep], 
 		     objects : su2_cfd_obj_ad,
-		     cpp_args : [su2_cpp_args, codi_rev_args])
+		     cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
 
 endif

@@ -30,7 +30,7 @@ virtualenv:
 env:
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled"
           TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
@@ -38,7 +38,7 @@ env:
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-mpi=false -Denable-autodiff=true -Denable-directdiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true"
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
