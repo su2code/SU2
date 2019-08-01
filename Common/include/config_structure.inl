@@ -1917,6 +1917,8 @@ inline void CConfig::SetMultiphysicsDiscrete_Adjoint(bool multi_disc_adj) { Mult
 
 inline bool CConfig::GetMultiphysicsDiscrete_Adjoint() { return MultiphysicsDiscreteAdjoint; }
 
+inline bool CConfig::GetFull_Tape() { return FullTape; }
+
 inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
 
 inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
