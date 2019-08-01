@@ -61,7 +61,7 @@ install:
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
     - ./meson.py build --reconfigure --optimization=2
-    - ./meson.py build --reconfigure --warnlevel=1
+    - ./meson.py build --reconfigure --warnlevel=2
     - ./ninja -C build install
 
     # Add environmental variables according to the configure step
