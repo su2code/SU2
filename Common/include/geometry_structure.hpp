@@ -1040,7 +1040,7 @@ public:
 	 * \brief Check if a boundary is straight(2D) / plane(3D). Used for BC_Slip_Wall.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeSurf_Straightness(CConfig *config);
+	void ComputeSurf_Straightness(CConfig *config, bool print_on_screen);
 
 	/*!
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
