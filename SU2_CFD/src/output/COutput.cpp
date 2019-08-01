@@ -1152,13 +1152,17 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
         jPoint++;
+       
+        /*--- Reset the cache index ---*/   
         
+        Offset_Cache_Index = 0;
+
       }
     }
     
   } else {
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       
       /*--- Build the offset cache if it is the first point --- */
       
@@ -1172,6 +1176,10 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
       /*--- Load the volume data into the Local_Data() array. --- */
       
       LoadVolumeData(config, geometry, solver, iPoint);
+      
+      /*--- Reset the cache index ---*/
+      
+      Offset_Cache_Index = 0;
 
     }
     
@@ -1190,8 +1198,13 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+        if (geometry->node[iPoint]->GetDomain()) {
+          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+        }
         
+        /*--- Reset the cache index ---*/ 
+        
+        Offset_Cache_Index = 0;
       }   
     } 
   }
@@ -1222,9 +1235,6 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     if (Offset != -1){
       Local_Data[iPoint][Offset] = value;
     }   
-    if (Offset_Cache_Index == Offset_Cache.size()){
-      Offset_Cache_Index = 0;
-    }
   }
   
 }
