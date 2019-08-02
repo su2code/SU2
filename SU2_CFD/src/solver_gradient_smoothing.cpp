@@ -190,15 +190,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iElem, iVar, jVar;
+  unsigned long iElem;
   unsigned short iNode, iDim, jDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord;
   int EL_KIND = 0;
 
-  su2double *Ta = NULL;
   su2double **DHiDHj = NULL;
-  su2double *DHiHj = NULL;
   su2double HiHj = 0.0;
 
   unsigned short NelNodes, jNode;
@@ -256,7 +254,6 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
     }
 
   }
-
 
 /*
 
@@ -342,16 +339,14 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numeri
 
   unsigned short iMarker;
 
-  /*--- Get the boundary markers and iterate over them ---*/
+  /*--- Get the boundary markers and iterate over them ---------------------------------*/
+  /* Notice that for no marker we automatically impose Zero Neumann boundary conditions */
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_SobolevBC(iMarker) == NO) {
-      BC_Dirichlet(geometry, NULL, numerics, config, iMarker);
-    }
-
     if (config->GetMarker_All_SobolevBC(iMarker) == YES) {
-      BC_Neumann(geometry, NULL, numerics, config, iMarker);
+      BC_Dirichlet(geometry, NULL, numerics, config, iMarker);
+      // BC_Neumann(geometry, NULL, numerics, config, iMarker);
     }
 
   }
@@ -419,6 +414,40 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 
 
 void CGradientSmoothingSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker) {
+
+
+  unsigned long iElem;
+  unsigned short iVertex, iPoint, jNode, nNodes = 0;
+  int EL_KIND = 0;
+  su2double* DHiHj=NULL;
+
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+        if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+        if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+        if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+        for (jNode = 0; jNode < nNodes; jNode++) {
+
+          DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iPoint, geometry->elem[iElem]->GetNode(jNode));
+
+          LinSysRes.AddBlock(iPoint, DHiHj);
+        }
+      }
+    }
+  }
 
 }
 

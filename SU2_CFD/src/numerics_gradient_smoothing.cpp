@@ -100,6 +100,8 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   su2double *val_DHiHj;
   val_DHiHj = new su2double[nDim];
 
+  su2double epsilon = config->GetSmoothingParam();
+
   /*--- Set element properties  if they need to be set ---*/
   SetElement_Properties(element, config);
 
@@ -120,7 +122,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
-        // std::cout << "GradNi: " << iNode << ", " << iDim << ", " << GradNi_Ref_Mat[iNode][iDim] << ", " << element->GetRef_Coord(iNode,iDim) << std::endl;
       }
     }
 
@@ -138,8 +139,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
             if (iDim == jDim) {
-              KAux_ab[iDim][jDim] = Weight * Jac_X * GradNiXGradNj;
-              // std::cout << "Grad Term: " << iGauss << ", " << iNode << ", " << jNode << ", " << Weight << ", " << Jac_X << ", " << GradNiXGradNj << std::endl;
+              KAux_ab[iDim][jDim] = Weight * Jac_X * epsilon * epsilon * GradNiXGradNj;
             } else {
               KAux_ab[iDim][jDim] = 0;
             }
@@ -165,8 +165,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
     Weight = element->GetWeight(iGauss);
-    // do we need the determinant of the Jacobian in this case?
-    // Jac_X = element->GetJ_X(iGauss);
 
     for (iNode = 0; iNode < nNode; iNode++) {
       Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
@@ -175,17 +173,16 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
         val_HiHj = Weight * Ni_Vec[iNode] * Ni_Vec[jNode];
-        // std::cout << "Function Term: " << iGauss << ", " << iNode << ", " << jNode << ", " << Weight << ", " << Jac_X << ", " << val_HiHj << std::endl;
         element->Add_HiHj(val_HiHj, iNode, jNode);
       }
     }
 
   }
 
-  /*--- contribution from Neumann boundary terms ---*/
-  /*
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
+  /*--- contribution from Neumann boundary terms ---
+  /* computed here and stored for later use          */
 
+  for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
     Weight = element->GetWeight(iGauss);
 
@@ -199,18 +196,13 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, CConfig *config) 
     for (iNode = 0; iNode < nNode; iNode++) {
       for (jNode = 0; jNode < nNode; jNode++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          val_DHiHj[iDim] =  Weight * GradNi_Ref_Mat[iNode][iDim] * Ni_Vec[jNode];
+          val_DHiHj[iDim] = epsilon * epsilon * Weight * GradNi_Ref_Mat[iNode][iDim] * Ni_Vec[jNode];
         }
-        element->Add_DHiHj(valDHiHj, iNode, jNode);
-        if (iNode != jNode) {
-          element->Add_DHiHj(val_DHiHj, jNode, iNode);
-        }
+        element->Add_DHiHj(val_DHiHj, iNode, jNode);
       }
-
     }
 
   }
-  */
 
   delete [] val_DHiHj;
 

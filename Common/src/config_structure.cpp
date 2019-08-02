@@ -1551,6 +1551,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Switch to activate gradient smoothing */
   addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+  /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_PARAM",SmoothingParam, 1.0);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/

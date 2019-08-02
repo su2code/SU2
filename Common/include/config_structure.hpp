@@ -427,6 +427,7 @@ private:
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
 
   bool SmoothGradient; /*!< \brief Flag for enabling gradient smoothing. */
+  su2double SmoothingParam;
 
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		/*!< \brief Number of design variables. */
@@ -2789,6 +2790,12 @@ public:
    */
   bool GetSmoothGradient(void);
   
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  su2double GetSmoothingParam(void);
+
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
    * \return CFL number for unsteady simulations.
