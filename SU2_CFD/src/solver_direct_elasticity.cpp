@@ -4647,10 +4647,10 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 {
   /*--- Apply a filter to the design densities of the elements to generate the
   physical densities which are the ones used to penalize their stiffness. ---*/
-  
-  unsigned short type;
+
+  unsigned short type, search_lim;
   su2double param, radius;
-  
+
   vector<pair<unsigned short,su2double> > kernels;
   vector<su2double> filter_radius;
   for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
@@ -4659,17 +4659,23 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     kernels.push_back(make_pair(type,param));
     filter_radius.push_back(radius);
   }
+  search_lim = config->GetTopology_Search_Limit();
 
   unsigned long iElem, nElem = geometry->GetnElem();
-  
+
   su2double *design_rho = new su2double [nElem],
             *physical_rho = new su2double [nElem];
-  
-  for (iElem=0; iElem<nElem; ++iElem)
-    design_rho[iElem] = element_properties[iElem]->GetDesignDensity();
-  
-  geometry->FilterValuesAtElementCG(filter_radius, kernels, design_rho, physical_rho);
-  
+
+  /*--- "Rectify" the input ---*/
+  for (iElem=0; iElem<nElem; ++iElem) {
+    su2double rho = element_properties[iElem]->GetDesignDensity();
+    if      (rho > 1.0) design_rho[iElem] = 1.0;
+    else if (rho < 0.0) design_rho[iElem] = 0.0;
+    else                design_rho[iElem] = rho;
+  }
+
+  geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, design_rho, physical_rho);
+
   /*--- Apply projection ---*/
   config->GetTopology_Optim_Projection(type,param);
   switch (type) {
@@ -4685,10 +4691,16 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
     default:
       SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
   }
-  
-  for (iElem=0; iElem<nElem; ++iElem)
-    element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
-  
+
+  /*--- If input was out of bounds use the bound instead of the filtered
+   value, useful to enforce solid or void regions (e.g. a skin). ---*/
+  for (iElem=0; iElem<nElem; ++iElem) {
+    su2double rho = element_properties[iElem]->GetDesignDensity();
+    if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
+    else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
+    else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+  }
+
   delete [] design_rho;
   delete [] physical_rho;
 }
