@@ -9871,7 +9871,7 @@ public:
   void SetFreeStream_Solution(CConfig *config);
   
   /*!
-   * \brief A virtual member.
+   * \brief Set the DDES Subgrid length Scale (SGS).
    * \param[in] solver - Solver container
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.

@@ -416,6 +416,11 @@ public:
   SU2_MPI::Request *req_PeriodicSend;       /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
   
+  vector<unsigned long> STG_LocalPoint;
+  vector<su2double> PhaseMode;              /*!< \brief Phase of mode n uniformly distributed in the interval )0,2pi)*/
+  vector<su2double> RandUnitVec;            /*!< \brief Random unit vector of direction uniformly distributed over a sphere*/
+  vector<su2double> RandUnitNormal;         /*!< \brief Unit vector normal to RandUnitVec*/
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -717,6 +722,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void ComputeWall_Distance(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void STGPreprocessing(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1326,6 +1337,8 @@ public:
 	 * \brief Get all points on a geometrical plane in the mesh
 	 */
 	virtual vector<vector<unsigned long> > GetPlanarPoints();
+  
+  virtual vector<unsigned long> GetSTG_LocalPoint();
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with 
@@ -1985,6 +1998,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeWall_Distance(CConfig *config);
+  
+ /*!
+  * \brief Function that computes the STG preprocessing part.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void STGPreprocessing(CConfig *config);
 
 	/*! 
 	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -2407,6 +2426,11 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \brief Get all points on a geometrical plane in the mesh
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
+  
+  /*!
+   * \brief Get all points on the STG box.
+   */
+  vector<unsigned long> GetSTG_LocalPoint();
   
   /*!
    * \brief Read the sensitivity from an input file.

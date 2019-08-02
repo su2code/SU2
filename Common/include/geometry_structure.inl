@@ -145,6 +145,8 @@ inline void CGeometry::SetBoundaries(CConfig *config) { }
 
 inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
+inline void CGeometry::STGPreprocessing(CConfig *config) { }
+
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
 inline void CGeometry::SetPoint_Connectivity(void) { }
@@ -471,6 +473,10 @@ inline vector<vector<unsigned long> > CGeometry::GetPlanarPoints() { return Plan
 inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { return Plane_points; }
 
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
+
+inline vector<unsigned long> CGeometry::GetSTG_LocalPoint() { return STG_LocalPoint; }
+
+inline vector<unsigned long> CPhysicalGeometry::GetSTG_LocalPoint() { return STG_LocalPoint; }
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 

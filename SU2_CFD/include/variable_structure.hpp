@@ -1745,6 +1745,8 @@ public:
    */
   virtual void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
   
+  virtual void SetKSinkTerm(su2double val_rhou0, su2double val_nut, su2double val_lenscale, su2double val_gradvel[3][3]);
+  
   /*!
    * \brief Get the first blending function of the SST model.
    */
@@ -1754,6 +1756,8 @@ public:
    * \brief Get the second blending function of the SST model.
    */
   virtual su2double GetF2blending(void);
+  
+  virtual su2double GetKSinkTerm(void);
   
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
@@ -4299,6 +4303,7 @@ protected:
   F2,            /*!< \brief Menter blending function for stress limiter. */
   CDkw;           /*!< \brief Cross-diffusion. */
   su2double DES_LengthScale;
+  su2double Fk;   /*!< \brief Turb. Kinetic Energy sink term for VSTG. */
   
 public:
   /*!
@@ -4332,6 +4337,7 @@ public:
    */
   void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
   
+  
   /*!
    * \brief Get the first blending function.
    */
@@ -4357,6 +4363,10 @@ public:
    * \brief Set the DES Length Scale.
    */
   void SetDES_LengthScale(su2double val_des_lengthscale);
+  
+  void SetKSinkTerm(su2double val_rhou0, su2double val_nut, su2double val_lenscale, su2double val_gradvel[3][3]);
+  
+  su2double GetKSinkTerm(void);
 
 };
 

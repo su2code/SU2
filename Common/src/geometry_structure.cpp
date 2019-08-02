@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
+#include <random>
 
 /*--- Epsilon definition ---*/
 
@@ -11379,6 +11380,94 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     }
   }
   
+}
+
+void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned long NModes = config->GetNumberModes();
+  
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+  
+  // Read the box values from config file.
+  su2double *STGBox = config->GetVolumeSTGBox_Values();
+  unsigned long nSTGPts = 0;
+  
+  //Go over the whole mesh and identify the points within the STG box
+  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+    
+    bool boundary_i = node[iPoint]->GetPhysicalBoundary();
+    // Check if the point is inside the domain and if it is not a boundary.
+    if( node[iPoint]->GetDomain() && !boundary_i ){
+      su2double *Coord = node[iPoint]->GetCoord();
+      
+      if (Coord[0] > STGBox[0] && Coord[0] < STGBox[3] &&
+          Coord[1] > STGBox[1] && Coord[1] < STGBox[4] &&
+          Coord[2] > STGBox[2] && Coord[2] < STGBox[5] ){
+        nSTGPts++;
+        STG_LocalPoint.push_back(iPoint);
+      }
+    }
+  }
+  
+#ifdef HAVE_MPI
+  cout <<"Process "<<rank<<" contains "<<nSTGPts <<" SNG Points."<<endl;
+#else
+  cout <<"Number of SNG points: " << nSTGPts << endl;
+#endif
+  
+  // Generate random numbers
+  if (rank == MASTER_NODE){
+    std::default_random_engine rand_gen;
+    uniform_real_distribution<su2double> u02pi(0.,2.0*PI_NUMBER);
+    uniform_real_distribution<su2double> u01(0.,1.0);
+    
+    su2double theta, phi, x, y, z;
+    su2double thetan, phin, xn, yn, zn;
+    for (unsigned long i = 0; i < NModes; ++i){
+      PhaseMode.push_back(u02pi(rand_gen));
+      
+      theta = 2. * PI_NUMBER * u01(rand_gen);
+      phi   = acos(1. - 2. * u01(rand_gen));
+      x = sin(phi) * cos(theta);
+      y = sin(phi) * sin(theta);
+      z = cos(phi);
+
+      thetan = 2. * PI_NUMBER * u01(rand_gen);
+      phin   = acos(1. - 2. * u01(rand_gen));
+      xn = sin(phin) * cos(thetan);
+      yn = sin(phin) * sin(thetan);
+      zn = cos(phin);
+
+      su2double norm = x * xn + y * yn + z * zn;
+      xn = x - xn*norm;
+      yn = y - yn*norm;
+      zn = z - zn*norm;
+      //cout << nDim << " " << x  << " " << y << " " << z << " " << xn  << " " << yn << " " << zn << endl;
+      RandUnitVec.push_back(x);
+      RandUnitVec.push_back(y);
+      RandUnitVec.push_back(z);
+      RandUnitNormal.push_back(xn);
+      RandUnitNormal.push_back(yn);
+      RandUnitNormal.push_back(zn);
+      
+    }
+  }
+  
+  // Resize memory for vectors in other ranks
+  if (rank != MASTER_NODE){
+    RandUnitVec.resize(NModes*nDim);
+    RandUnitNormal.resize(NModes*nDim);
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Bcast(RandUnitVec.data(), RandUnitVec.size() , MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(RandUnitNormal.data(), RandUnitVec.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+#endif
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {

@@ -1101,6 +1101,11 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
+  
+  su2double *default_stg_val;    /*!< \brief Default coordinates of the STG volume box for the COption class. */
+  su2double *VolumeSTGBox_Values;/*!< \brief STG coordinates of the volume box array. */
+  bool VolumeSTG;                /*!< \brief Using volumetric STG for zonal hybrid RANS/IDDES. */
+  unsigned long NumberModes;     /*!< \brief Number of Fourier Modes. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8956,6 +8961,13 @@ public:
    * \return Value of DES constant.
    */
    su2double GetConst_DES(void);
+  
+  /*!
+   * \brief Get the number of Fourier Modes.
+   * \return Value the number.
+   */
+  unsigned long GetNumberModes(void);
+  
 
   /*!
    * \brief Get QCR (SA-QCR2000).
@@ -9131,6 +9143,18 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+  
+  /*!
+   * \brief Get the the coordinates of the synthetic turbulence box.
+   * \return Coordinates of the STG box.
+   */
+  su2double *GetVolumeSTGBox_Values(void);
+  
+  /*!
+   * \brief Check if Volume Synthetic Turbulence is used.
+   * \return YES if the Volume STG is used.
+   */
+  bool GetVolumeSTG(void);
 
 };
 

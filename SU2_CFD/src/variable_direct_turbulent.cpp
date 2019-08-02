@@ -180,6 +180,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
   F1   = 1.0;
   F2   = 0.0;
   CDkw = 0.0;
+  Fk   = 0.0;
   
   /*--- Initialization of eddy viscosity ---*/
   
@@ -235,3 +236,24 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   AD::EndPreacc();
   
 }
+
+void CTurbSSTVariable::SetKSinkTerm(su2double val_rhou0, su2double val_nut, su2double val_lenscale, su2double val_gradvel[3][3]) {
+  
+  su2double const_smag  = 0.1;
+  su2double filter_mult = 2.0;
+  
+  su2double C_s_filter_width = const_smag*filter_mult*val_lenscale;
+  
+  su2double S12 = 0.5*(val_gradvel[0][1] + val_gradvel[1][0]);
+  su2double S13 = 0.5*(val_gradvel[0][2] + val_gradvel[2][0]);
+  su2double S23 = 0.5*(val_gradvel[1][2] + val_gradvel[2][1]);
+  su2double strain_rate2 = 2.0*(pow(val_gradvel[0][0],2.) + pow(val_gradvel[1][1],2.) + pow(val_gradvel[2][2],2.)
+                                      +      2.0*(S12*S12 + S13*S13 + S23*S23));
+  
+  /* Smagorinsky SGS kinetic viscosity. */
+  su2double nut_sgs = C_s_filter_width*C_s_filter_width*sqrt(strain_rate2);
+  
+  Fk = -val_rhou0 * max((val_nut - nut_sgs), 0.);
+  //cout << Fk ;
+}
+

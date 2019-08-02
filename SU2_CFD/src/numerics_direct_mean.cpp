@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
@@ -5748,6 +5748,55 @@ void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config)
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
   
+}
+
+CSourceVolumeSTG::CSourceVolumeSTG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  /*--- Frist check if it is normal body force + Volume STG. ---*/
+  
+  bool use_body_force = config->GetBody_Force();
+  Body_Force_Vector = new su2double[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    if (use_body_force)
+      Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
+    else Body_Force_Vector[iDim] = 0.0;
+  }
+  
+  Body_Force_VSTG_Vector = new su2double[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Body_Force_VSTG_Vector[iDim] = 0.0;
+  
+}
+
+CSourceVolumeSTG::~CSourceVolumeSTG(void) {
+  
+  if (Body_Force_VSTG_Vector != NULL) delete [] Body_Force_VSTG_Vector;
+  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
+  
+}
+
+void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config) {
+  
+  unsigned short iDim;
+  su2double Force_Ref = config->GetForce_Ref();
+  
+  /*--- Zero the continuity contribution ---*/
+  
+  val_residual[0] = 0.0;
+  
+  /*--- Momentum contribution ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++){
+    val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_VSTG_Vector[iDim] / Force_Ref;
+    val_residual[iDim+1] += -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+  }
+  /*--- Energy contribution ---*/
+  
+  val_residual[nDim+1] = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_VSTG_Vector[iDim] / Force_Ref;
+    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+  }
 }
 
 CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

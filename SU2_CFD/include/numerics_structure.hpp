@@ -5189,6 +5189,38 @@ public:
 };
 
 /*!
+ * \class CSourceVolumeSTG
+ * \brief Class for the source term integration of the volume synthetic turbulence.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ */
+class CSourceVolumeSTG : public CNumerics {
+  su2double *Body_Force_VSTG_Vector;
+  su2double *Body_Force_Vector;
+public:
+  
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceVolumeSTG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceVolumeSTG(void);
+  
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, CConfig *config);
+  
+};
+
+/*!
  * \class CSourceBoussinesq
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr

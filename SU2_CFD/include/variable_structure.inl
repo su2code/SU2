@@ -493,9 +493,13 @@ inline su2double *CVariable::GetLimiter_Secondary(void) { return NULL; }
 
 inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) { }
 
+inline void CVariable::SetKSinkTerm(su2double val_rhou0, su2double val_nut, su2double val_lenscale, su2double val_gradvel[3][3]) { }
+
 inline su2double CVariable::GetF1blending(void) { return 0; }
 
 inline su2double CVariable::GetF2blending(void) { return 0; }
+
+inline su2double CVariable::GetKSinkTerm(void) { return 0; }
 
 inline su2double CVariable::GetmuT() { return 0;}
 
@@ -1273,6 +1277,8 @@ inline void CTurbSAVariable::SetDES_LengthScale(su2double val_des_lengthscale) {
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 
 inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
+
+inline su2double CTurbSSTVariable::GetKSinkTerm() { return Fk; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 

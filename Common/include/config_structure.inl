@@ -1990,6 +1990,8 @@ inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss;
 
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
+inline unsigned long CConfig::GetNumberModes(void) {return NumberModes; }
+
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
@@ -2066,3 +2068,8 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
+
+inline su2double *CConfig::GetVolumeSTGBox_Values(void) { return VolumeSTGBox_Values; }
+
+inline bool CConfig::GetVolumeSTG(void) { return VolumeSTG; }
+

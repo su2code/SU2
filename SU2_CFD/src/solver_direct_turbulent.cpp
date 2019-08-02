@@ -3528,7 +3528,41 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     SetDES_LengthScale(solver_container, geometry, config);
     
   }
-
+  
+  if (config->GetVolumeSTG()){
+    
+    su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
+    su2double rho, omega, lenScale, kinematicViscosityTurb, U_infty, rhoUOmega;
+    
+    vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
+    
+    for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
+      
+      /* Get Density */
+      rho =  solver_container[FLOW_SOL]->node[LocalPoints[ii]]->GetSolution(0);
+      
+      /* Velocity Gradients */
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+          Grad_Vel[iDim][jDim] = solver_container[FLOW_SOL]->node[LocalPoints[ii]]->GetGradient_Primitive(iDim+1, jDim);
+      
+      /* Length Scale */
+      lenScale = pow(geometry->node[LocalPoints[ii]]->GetVolume(),1./3.);
+      
+      /* Kinematic Viscosity Turb from RANS or IDDES */
+      kinematicViscosityTurb  = node[LocalPoints[ii]]->GetmuT()/rho;
+      
+      /* Get Reference velocity */
+      U_infty = config->GetModVel_FreeStream() / config->GetVelocity_Ref();
+      
+      /* Get specific dissipation rate */
+      omega   = node[LocalPoints[ii]]->GetSolution(1);
+      
+      rhoUOmega = rho * U_infty * omega;
+      
+      node[LocalPoints[ii]]->SetKSinkTerm(rhoUOmega, kinematicViscosityTurb, lenScale, Grad_Vel);
+    }
+  }
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -3628,6 +3662,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+    
+    /*--- Subtract the VTG sink term if needed. ---*/
+    if (config->GetVolumeSTG()){
+      Residual[0] =- node[iPoint]->GetKSinkTerm() * geometry->node[iPoint]->GetVolume();
+    }
     
     /*--- Subtract residual and the Jacobian ---*/
     

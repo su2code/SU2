@@ -559,6 +559,7 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
+  default_stg_val            = NULL;
   
   default_cp_polycoeffs = NULL;
   default_mu_polycoeffs = NULL;
@@ -668,6 +669,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  default_stg_val            = new su2double[6];
   
   /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -2315,6 +2317,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
+  
+  /* DESCRIPTION: Flag for Volume Synthetic Turbulence */
+  addBoolOption("VOLUME_STG", VolumeSTG, false);
+  
+  /* DESCRIPTION: Num Constant */
+  addUnsignedLongOption("NUMBER_FOURIER_MODES", NumberModes, 100);
+  
+  /* DESCRIPTION: Values of the box to impose a synthetic turbulence (x1, y1, z1, x2, y2, z2) */
+  default_stg_val[0]=0.0; default_stg_val[1]=0.0; default_stg_val[2]=0.0;
+  default_stg_val[3]=0.0; default_stg_val[4]=0.0; default_stg_val[5]=0.0;
+  
+  addDoubleArrayOption("VOLUME_STG_BOX", 6, VolumeSTGBox_Values, default_stg_val);
     
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
@@ -7290,6 +7304,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
+  if (default_stg_val       != NULL) delete [] default_stg_val;
   
   if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
   if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;

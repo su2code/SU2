@@ -3965,6 +3965,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust         = config->GetWind_Gust();
   bool body_force       = config->GetBody_Force();
+  bool volume_stg       = config->GetVolumeSTG();
 
   /*--- Initialize the source residual to zero ---*/
 
@@ -3982,13 +3983,31 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the body force source residual ---*/
       numerics->ComputeResidual(Residual, config);
 
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
       
     }
+  }
+  
+  if (volume_stg){
+    
+    vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
+    
+    for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
+      
+      /*--- Load the conservative variables ---*/
+      numerics->SetConservative(node[LocalPoints[ii]]->GetSolution(),
+                                node[LocalPoints[ii]]->GetSolution());
+      
+      /*--- Load the volume of the dual mesh cell ---*/
+      numerics->SetVolume(geometry->node[LocalPoints[ii]]->GetVolume());
+
+      
+    }
+    
   }
 
   if (rotating_frame) {
