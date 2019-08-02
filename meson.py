@@ -169,8 +169,8 @@ if __name__ == '__main__':
 
   # Add paths for meson and ninja to environment
   os.environ["NINJA"] = sys.path[0] + "/ninja"
-  if os.path.exists('externals/meson/mesonbuild'):
-    sys.path.insert(0, str('externals/meson'))
+  if os.path.exists(sys.path[0] + 'externals/meson/mesonbuild'):
+    sys.path.insert(0, str(sys.path[0] + 'externals/meson'))
 
   from mesonbuild import mesonmain
 
