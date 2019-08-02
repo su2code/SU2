@@ -23,6 +23,8 @@ class SU2Function(torch.autograd.Function):
         assert num_zones == 1, 'Only supports 1 zone for now.'
         self.num_zones = num_zones
         self.dims = dims
+        self.num_procs = num_procs
+        self.comms = []
 
         self.config_file = config_file
         base_config = SU2.io.Config(config_file)
@@ -43,50 +45,53 @@ class SU2Function(torch.autograd.Function):
         shutil.copy(config_file, self.adjoint_config)
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
 
-        self.num_procs = num_procs
-        if num_procs > 1:
-            intercomm = MPI.COMM_SELF.Spawn(sys.executable,
-                                            args=str(Path(__file__).parent / 'su2_function_mpi.py'),
-                                            maxprocs=num_procs)
-            self.comm = intercomm
-            assert self.comm.Get_rank() == 0, 'Rank is expected to be 0.'
-            self.comm.bcast([self.num_zones, self.dims, self.num_diff_outputs], root=MPI.ROOT)
-        else:
-            self.comm = MPI.COMM_WORLD
 
     def forward(self, *inputs, **kwargs):
-        # TODO Take batching into account
-        if len(inputs) != self.num_diff_inputs:
-            raise TypeError('{} inputs were provided, but the config file ({}) defines {} diff inputs.'
-                            .format(len(inputs), self.config_file, self.num_diff_inputs))
+        batch_size = inputs[0].shape[0]
+        if self.num_procs % batch_size != 0:
+            raise TypeError('Batch size ({}) has to be a multiple of the numebr of processes ({}) to ensure even distribution'
+                            .format(batch_size, self.num_procs))
         self.save_for_backward(*inputs)
-        if self.num_procs > 1:
-            self.comm.bcast(RunCode.RUN_FORWARD, root=MPI.ROOT)
-            self.comm.bcast(self.forward_config, root=MPI.ROOT)
-            self.comm.bcast(inputs, root=MPI.ROOT)  # TODO Any way to optimize? Potentially big
-            outputs = self.comm.recv(source=0)
-        else:
-            driver = pysu2.CSinglezoneDriver(self.forward_config, self.num_zones, self.dims, self.comm)
-            outputs = run_forward(self.comm, driver, inputs, self.num_diff_outputs)
-            driver.Postprocessing()
+        procs_per_example = self.num_procs // batch_size
+        outputs = []
+        for i in range(batch_size):
+            x = [z[i] for z in inputs]
+            if len(x) != self.num_diff_inputs:
+                raise TypeError('{} inputs were provided, but the config file ({}) defines {} diff inputs.'
+                                .format(len(x), self.config_file, self.num_diff_inputs))
+            intercomm = MPI.COMM_SELF.Spawn(sys.executable,
+                                            args=str(Path(__file__).parent / 'su2_function_mpi.py'),
+                                            maxprocs=procs_per_example)
+            self.comms.append(intercomm)
+            assert intercomm.Get_rank() == 0, 'Rank is expected to be 0.'
+            intercomm.bcast([self.num_zones, self.dims, self.num_diff_outputs], root=MPI.ROOT)
+            intercomm.bcast(RunCode.RUN_FORWARD, root=MPI.ROOT)
+            intercomm.bcast(self.forward_config, root=MPI.ROOT)
+            intercomm.bcast(x, root=MPI.ROOT)  # TODO Any way to optimize? Potentially big
+        for comm in self.comms:
+            outputs.append(comm.recv(source=0))
+        outputs = tuple(torch.cat([o[i].unsqueeze(0) for o in outputs]) for i in range(len(outputs[0])))
         return outputs
 
     def backward(self, *grad_outputs, **kwargs):
-        if self.num_procs > 1:
-            self.comm.bcast(RunCode.RUN_ADJOINT, root=MPI.ROOT)
-            self.comm.bcast(self.adjoint_config, root=MPI.ROOT)
-            self.comm.bcast(grad_outputs, root=MPI.ROOT)  # TODO Any way to optimize? Potentially big
-            grads = self.comm.recv(source=0)
-        else:
-            driver = pysu2ad.CDiscAdjSinglezoneDriver(self.adjoint_config, self.num_zones, self.dims, self.comm)
-            grads = run_adjoint(self.comm, driver, self.saved_tensors, grad_outputs)
-            driver.Postprocessing()
+        batch_size = grad_outputs[0].shape[0]
+        procs_per_example = self.num_procs // batch_size
+        grads = []
+        for i in range(batch_size):
+            dl = [z[i] for z in grad_outputs]
+            x = [z[i] for z in self.saved_tensors]
+            self.comms[i].bcast(RunCode.RUN_ADJOINT, root=MPI.ROOT)
+            self.comms[i].bcast(self.adjoint_config, root=MPI.ROOT)
+            self.comms[i].bcast(dl, root=MPI.ROOT)  # TODO Any way to optimize? Potentially big
+        for comm in self.comms:
+            grads.append(comm.recv(source=0))
+        grads = tuple(torch.cat([g[i].unsqueeze(0) for g in grads]) for i in range(len(grads[0])))
         return grads
 
     def __del__(self):
-        if self.num_procs > 1:
-            self.comm.bcast(RunCode.STOP, root=MPI.ROOT)
-            self.comm.Disconnect()
+        for comm in self.comms:
+            comm.bcast(RunCode.STOP, root=MPI.ROOT)
+            comm.Disconnect()
         if self.forward_driver is not None:
             self.forward_driver.Postprocessing()
         # super().__del__()
