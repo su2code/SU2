@@ -2202,322 +2202,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
-  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, iMarker, jMarker;
-  long nDomain = 0, iDomain, jDomain;
-  
-#ifdef HAVE_MPI
-  
-  /*--- MPI status and request arrays for non-blocking communications ---*/
-  
-  SU2_MPI::Status status, status_;
-  
-
-#endif
-  
-  /*--- Define buffer vector interior domain ---*/
-  
-  su2double        *Buffer_Send_PrimVar          = NULL;
-  su2double        *iPrimVar          = new su2double [nPrimVar];
-  
-  unsigned long *nPointTotal_s = new unsigned long[size];
-  unsigned long *nPointTotal_r = new unsigned long[size];
-  
-  unsigned long Buffer_Size_PrimVar          = 0;
-  unsigned long PointTotal_Counter = 0;
-  
-  /*--- Allocate the memory that we only need if we have MPI support ---*/
-  
-  su2double        *Buffer_Receive_PrimVar          = NULL;
-  
-  /*--- Basic dimensionalization ---*/
-  
-  nDomain = size;
-  
-  /*--- This loop gets the array sizes of points for each
-   rank to send to each other rank. ---*/
-  
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    
-    /*--- Loop over the markers to perform the dimensionalizaton
-     of the domain variables ---*/
-    
-    Buffer_Send_nPointTotal = 0;
-    
-    /*--- Loop over all of the markers and count the number of each
-     type of point and element that needs to be sent. ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
-            Buffer_Send_nPointTotal++;
-          }
-        }
-      }
-    }
-    
-    /*--- Store the counts on a partition by partition basis. ---*/
-    
-    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
-    
-    /*--- Total counts for allocating send buffers below ---*/
-    
-    Buffer_Size_PrimVar          += nPointTotal_s[iDomain]*(nPrimVar+3);
-    
-  }
-  
-  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
-  
-  Buffer_Send_PrimVar          = new su2double[Buffer_Size_PrimVar];
-  
-  /*--- Now that we know the sizes of the point, we can
-   allocate and send the information in large chunks to all processors. ---*/
-  
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    
-    /*--- A rank does not communicate with itself through MPI ---*/
-    
-    if (rank != iDomain) {
-      
-#ifdef HAVE_MPI
-      
-      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
-      
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
-      
-#endif
-      
-    } else {
-      
-      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
-      
-      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
-      
-    }
-    
-    /*--- Receive the counts. All processors are sending their counters to
-     iDomain up above, so only iDomain needs to perform the recv here from
-     all other ranks. ---*/
-    
-    if (rank == iDomain) {
-      
-      for (jDomain = 0; jDomain < size; jDomain++) {
-        
-        /*--- A rank does not communicate with itself through MPI ---*/
-        
-        if (rank != jDomain) {
-          
-#ifdef HAVE_MPI
-          
-          /*--- Recv the data by probing for the current sender, jDomain,
-           first and then receiving the values from it. ---*/
-          
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
-          
-#endif
-          
-        }
-      }
-      
-    }
-  }
-  
-  /*--- Wait for the non-blocking sends to complete. ---*/
-  
-#ifdef HAVE_MPI
-  
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-  
-#endif
-  
-  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
-  
-  PointTotal_Counter  = 0;
-  
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    
-    /*--- Set the value of the interior geometry. Initialize counters. ---*/
-    
-    iPointTotal = 0;
-    
-    /*--- Load up the actual values into the buffers for sending. ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      
-      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
-            
-            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
-            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
-            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
-            
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetPrimitive(iVar);
-            }
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+0)]  = su2double(iGlobalIndex);
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = su2double(jVertex);
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+2)]  = su2double(jMarker);
-            
-            iPointTotal++;
-            
-          }
-          
-        }
-        
-      }
-      
-    }
-    
-    /*--- Send the buffers with the geometrical information ---*/
-    
-    if (iDomain != rank) {
-      
-#ifdef HAVE_MPI
-      
-      /*--- Communicate the coordinates, global index, colors, and element
-       date to iDomain with non-blocking sends. ---*/
-      
-      SU2_MPI::Bsend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar+3)],
-                     nPointTotal_s[iDomain]*(nPrimVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
-      
-#endif
-      
-    }
-    
-    else {
-      
-      /*--- Allocate local memory for the local recv of the elements ---*/
-      
-      Buffer_Receive_PrimVar            = new su2double[nPointTotal_s[iDomain]*(nPrimVar+3)];
-      
-      for (iter = 0; iter < nPointTotal_s[iDomain]*(nPrimVar+3); iter++)
-        Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar+3)+iter];
-      
-      /*--- Recv the point data from ourselves (same procedure as above) ---*/
-      
-      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
-        
-        iGlobal       =  SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+0)]);
-        iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+1)]);
-        iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+2)]);
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+iVar];
-        
-        if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
-        if (iMarker < 0.0) cout <<" Negative iMarker (receive)" << endl;
-        
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
-        
-        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
-        
-      }
-      
-      /*--- Delete memory for recv the point stuff ---*/
-      
-      delete [] Buffer_Receive_PrimVar;
-      
-    }
-    
-    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
-    
-    PointTotal_Counter += iPointTotal;
-    
-  }
-  
-  /*--- Wait for the non-blocking sends to complete. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
-  
-  /*--- The next section begins the recv of all data for the interior
-   points/elements in the mesh. First, create the domain structures for
-   the points on this rank. First, we recv all of the point data ---*/
-  
-  for (iDomain = 0; iDomain < size; iDomain++) {
-    
-    if (rank != iDomain) {
-      
-#ifdef HAVE_MPI
-      
-      /*--- Allocate the receive buffer vector. Send the colors so that we
-       know whether what we recv is an owned or halo node. ---*/
-      
-      Buffer_Receive_PrimVar            = new su2double [nPointTotal_r[iDomain]*(nPrimVar+3)];
-      
-      /*--- Receive the buffers with the coords, global index, and colors ---*/
-      
-      SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
-      
-      /*--- Loop over all of the points that we have recv'd and store the
-       coords, global index vertex and markers ---*/
-      
-      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
-        
-        iGlobal      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+0)]);
-        iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+1)]);
-        iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+2)]);
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+iVar];
-        
-        if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
-        if (iMarker < 0.0) cout <<" Negative iMarker (receive)" << endl;
-        
-        if (iMarker > nMarker) cout << "ERROR" <<  endl;
-        if (iVertex > geometry->nVertex[iMarker]) cout << "ERROR" <<  endl;
-        
-        for (iVar = 0; iVar < nPrimVar; iVar++)
-          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
-        
-        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
-        
-      }
-      
-      /*--- Delete memory for recv the point stuff ---*/
-      
-      delete [] Buffer_Receive_PrimVar;
-      
-#endif
-      
-    }
-    
-  }
-  
-  /*--- Wait for the non-blocking sends to complete. ---*/
-  
-#ifdef HAVE_MPI
-  
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-  
-#endif
-  
-  /*--- Free all of the memory used for communicating points and elements ---*/
-  
-  delete[] Buffer_Send_PrimVar;
-  
-  /*--- Release all of the temporary memory ---*/
-  
-  delete [] nPointTotal_s;
-  delete [] nPointTotal_r;
-  delete [] iPrimVar;
-  
-}
-
 void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
@@ -2531,7 +2215,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
 
   unsigned short iDim;
 
@@ -2766,6 +2450,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
   Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
+  Heat_Flux_Ref     = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;           config->SetHeat_Flux_Ref(Heat_Flux_Ref);
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
@@ -3057,8 +2742,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     ModelTable.PrintFooter();
     
     if (unsteady){
+      NonDimTableOut << "-- Unsteady conditions" << endl;      
       NonDimTable.PrintHeader();
-      NonDimTableOut << "-- Unsteady conditions" << endl;
       NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
       Unit.str("");
       NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
@@ -3300,7 +2985,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
-  bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
@@ -3328,10 +3012,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     GetPower_Properties(geometry, config, iMesh, Output);
     SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
-
-  /*--- Compute Interface MPI ---*/
-
-  if (interface) { Set_MPI_Interface(geometry, config); }
 
   /*--- Compute NearField MPI ---*/
 
@@ -15396,7 +15076,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
-  bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
@@ -15423,10 +15102,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     Set_MPI_ActDisk(solver_container, geometry, config);
     SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
-
-  /*--- Compute Interface MPI ---*/
-
-  if (interface) { Set_MPI_Interface(geometry, config); }
 
   /*--- Compute NearField MPI ---*/
 
@@ -16479,7 +16154,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   /*--- Get the specified wall heat flux from config as well as the
         wall function treatment.---*/
   
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != NO_WALL_FUNCTION) {

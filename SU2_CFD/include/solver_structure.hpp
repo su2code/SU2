@@ -721,13 +721,6 @@ public:
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] config - Definition of the particular problem.
     */
-  virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   virtual void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
   
   /*!
@@ -4985,13 +4978,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
@@ -10184,13 +10170,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
