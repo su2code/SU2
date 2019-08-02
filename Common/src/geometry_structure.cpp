@@ -3185,8 +3185,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
+void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
                                         const vector<pair<unsigned short,su2double> > &kernels,
+                                        const unsigned short search_limit,
                                         const su2double *input_values,
                                         su2double *output_values) const
 {
@@ -3196,7 +3197,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
   can be specified in which case they are applied sequentially (each one being applied to the
   output values of the previous filter. ---*/
   
-  unsigned long iElem, iElem_global;
+  unsigned long iElem, iElem_global, limited_searches = 0;
   
   /*--- Initialize output values and check if we need to do any more work than that ---*/
   for (iElem=0; iElem<nElem; ++iElem)
@@ -3245,14 +3246,11 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
   
   /*--- Account for the duplication introduced by the halo elements and the
   reduction using MPI_SUM, which is required to maintain differentiabillity. ---*/
-  unsigned short *halo_detect = new unsigned short [Global_nElemDomain];
-
-  for(iElem=0; iElem<Global_nElemDomain; ++iElem) halo_detect[iElem] = 0;
-  for(iElem=0; iElem<nElem; ++iElem) halo_detect[elem[iElem]->GetGlobalIndex()] = 1;
+  vector<char> halo_detect(Global_nElemDomain);
   {
-    unsigned short *buffer = new unsigned short [Global_nElemDomain], *tmp = NULL;
-    MPI_Allreduce(halo_detect,buffer,Global_nElemDomain,MPI_UNSIGNED_SHORT,MPI_SUM,MPI_COMM_WORLD);
-    tmp = halo_detect; halo_detect = buffer; delete [] tmp;
+    vector<char> buffer(Global_nElemDomain,0);
+    for(iElem=0; iElem<nElem; ++iElem) buffer[elem[iElem]->GetGlobalIndex()] = 1;
+    MPI_Allreduce(buffer.data(),halo_detect.data(),Global_nElemDomain,MPI_CHAR,MPI_SUM,MPI_COMM_WORLD);
   }
   for(iElem=0; iElem<Global_nElemDomain; ++iElem) {
     su2double numRepeat = halo_detect[iElem];
@@ -3304,9 +3302,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
     
       /*--- Find the neighbours of iElem ---*/
       vector<long> neighbours;
-      GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(kernel_radius),
-                             neighbour_start, neighbour_idx, cg_elem, neighbours);
-    
+      limited_searches += !GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(kernel_radius),
+                           search_limit, neighbour_start, neighbour_idx, cg_elem, neighbours);
+
       /*--- Apply the kernel ---*/
       su2double weight = 0.0, numerator = 0.0, denominator = 0.0;
     
@@ -3314,21 +3312,21 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
         /*--- distance-based kernels (weighted averages) ---*/
         case CONSTANT_WEIGHT_FILTER: case CONICAL_WEIGHT_FILTER: case GAUSSIAN_WEIGHT_FILTER:
             
-          for (vector<long>::iterator it=neighbours.begin(); it!=neighbours.end(); ++it)
+          for (auto idx : neighbours)
           {
             su2double distance = 0.0;
             for (unsigned short iDim=0; iDim<nDim; ++iDim)
-              distance += pow(cg_elem[nDim*iElem_global+iDim]-cg_elem[nDim*(*it)+iDim],2.0);
+              distance += pow(cg_elem[nDim*iElem_global+iDim]-cg_elem[nDim*idx+iDim],2);
             distance = sqrt(distance);
       
             switch ( kernel_type ) {
               case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
               case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
-              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2.0)); break;
+              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
               default: break;
             }
-            weight *= vol_elem[*it];
-            numerator   += weight*work_values[*it];
+            weight *= vol_elem[idx];
+            numerator   += weight*work_values[idx];
             denominator += weight;
           }
           output_values[iElem] = numerator/denominator;
@@ -3337,11 +3335,11 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
         /*--- morphology kernels (image processing) ---*/
         case DILATE_MORPH_FILTER: case ERODE_MORPH_FILTER:
             
-          for (vector<long>::iterator it=neighbours.begin(); it!=neighbours.end(); ++it)
+          for (auto idx : neighbours)
           {
             switch ( kernel_type ) {
-              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[*it]); break;
-              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[*it])); break;
+              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[idx]); break;
+              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[idx])); break;
               default: break;
             }
             denominator += 1.0;
@@ -3355,19 +3353,27 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
       }
     }
   }
-  
+  limited_searches /= kernels.size();
+#ifdef HAVE_MPI
+  unsigned long tmp = limited_searches;
+  MPI_Reduce(&tmp,&limited_searches,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+  if (rank==MASTER_NODE && limited_searches>0)
+    cout << "Warning: The filter radius was limited for " << limited_searches
+         << " elements (" << limited_searches/(0.01*Global_nElemDomain) << "%).\n";
+
   delete [] neighbour_idx;
   delete [] cg_elem;
   delete [] vol_elem;
   delete [] work_values;
-#ifdef HAVE_MPI
-  delete [] halo_detect;
-#endif
 }
 
 void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
                                                 long *&neighbour_idx) const
 {
+  if ( neighbour_idx != NULL )
+    SU2_MPI::Error("neighbour_idx is expected to be NULL, stopping to avoid a potential memory leak",CURRENT_FUNCTION);
+
   unsigned long iElem, iElem_global;
 
   /*--- Determine how much space we need for the adjacency matrix by counting the
@@ -3402,8 +3408,6 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
 
   /*--- Allocate ---*/
   unsigned long matrix_size = neighbour_start[Global_nElemDomain];
-  if ( neighbour_idx != NULL )
-    SU2_MPI::Error("neighbour_idx is expected to be NULL, stopping to avoid a potential memory leak",CURRENT_FUNCTION);
   neighbour_idx = new long [matrix_size];
   /*--- Initialize ---*/
   for(iElem=0; iElem<matrix_size; ++iElem) neighbour_idx[iElem] = -1;
@@ -3432,17 +3436,21 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
 #endif
 }
 
-void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
+bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
                                        const passivedouble radius,
+                                       unsigned short search_limit,
                                        const vector<unsigned long> &neighbour_start,
                                        const long *neighbour_idx,
                                        const su2double *cg_elem,
                                        vector<long> &neighbours) const
 {
+  /*--- 0 search_limit means "unlimited" ---*/
+  if (!search_limit) search_limit = numeric_limits<unsigned short>::max()-1;
+
   /*--- Center of the search ---*/
   neighbours.clear(); neighbours.push_back(iElem_global);
 
-  vector<passivedouble> X0(nDim);
+  passivedouble X0[3] = {0.0, 0.0, 0.0};
   for (unsigned short iDim=0; iDim<nDim; ++iDim)
     X0[iDim] = SU2_TYPE::GetValue(cg_elem[nDim*iElem_global+iDim]);
 
@@ -3450,16 +3458,16 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   "degree_start"[degree] is the position in "neighbours" where "degree" starts. ---*/
   vector<unsigned long> degree_start(1,0);
 
-  /*--- Loop stops when "neighbours" stops changing size. ---*/
-  vector<long>::iterator cursor_it = neighbours.begin(), aux_it;
-  while (cursor_it != neighbours.end())
+  /*--- Loop stops when "neighbours" stops changing size, or degree reaches limit. ---*/
+  auto cursor_it = neighbours.begin();
+  for (long current_degree = 1; current_degree <= long(search_limit); ++current_degree)
   {
     /*--- Add another degree. ---*/
-    long current_degree = degree_start.size();
     degree_start.push_back(neighbours.size());
 
     /*--- For each element of the last degree added, add its direct neighbours avoiding
-    duplicates, note the special value -1 at the start position of "candidates". ---*/
+     duplicates, note the special value -1 at the start position of "candidates" (the
+     value used in the adjacency to indicate a neighbor-less face. ---*/
     vector<long> candidates(1,-1);
 
     for (; cursor_it!=neighbours.end(); ++cursor_it)
@@ -3477,25 +3485,28 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
     Only the last two degrees need checking. ---*/
     vector<long> new_neighbours;
     long degree_to_check = max<long>(0,current_degree-2);
-    vector<long>::iterator search_begin = neighbours.begin()+degree_start[degree_to_check];
+    auto search_begin = neighbours.begin()+degree_start[degree_to_check];
 
-    for (aux_it=candidates.begin()+1; aux_it<candidates.end(); ++aux_it)
-      if (find(search_begin, neighbours.end(), *aux_it) == neighbours.end())
-        new_neighbours.push_back(*aux_it);
+    for (auto it=candidates.begin()+1; it<candidates.end(); ++it)
+      if (find(search_begin, neighbours.end(), *it) == neighbours.end())
+        new_neighbours.push_back(*it);
 
     /*--- Add the new neighbours that are inside the radius. ---*/
-    for (aux_it=new_neighbours.begin(); aux_it!=new_neighbours.end(); ++aux_it)
+    for (auto idx : new_neighbours)
     {
       /*--- passivedouble because we are still not going to calculate anything ---*/
       passivedouble distance = 0.0;
       for (unsigned short iDim=0; iDim<nDim; ++iDim)
-        distance += pow(X0[iDim]-SU2_TYPE::GetValue(cg_elem[nDim*(*aux_it)+iDim]),2.0);
+        distance += pow(X0[iDim]-SU2_TYPE::GetValue(cg_elem[nDim*idx+iDim]),2);
 
-      if(sqrt(distance) < radius) neighbours.push_back(*aux_it);
+      if(distance < pow(radius,2)) neighbours.push_back(idx);
     }
     /*--- need new iterator (to same position where it was) after change of capacity ---*/
     cursor_it = neighbours.begin()+degree_start[current_degree];
+
+    if (cursor_it==neighbours.end()) return true;
   }
+  return false; // degree reached limit
 }
 
 void CGeometry::SetElemVolume(CConfig *config)
