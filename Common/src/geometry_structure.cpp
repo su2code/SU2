@@ -3267,6 +3267,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
   /*--- Inputs of a filter stage, like with CG and volumes, each processor needs to see everything ---*/
   su2double *work_values = new su2double [Global_nElemDomain];
+  vector<bool> is_neighbor(Global_nElemDomain,false);
   
   for (unsigned long iKernel=0; iKernel<kernels.size(); ++iKernel)
   {
@@ -3303,7 +3304,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       /*--- Find the neighbours of iElem ---*/
       vector<long> neighbours;
       limited_searches += !GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(kernel_radius),
-                           search_limit, neighbour_start, neighbour_idx, cg_elem, neighbours);
+                           search_limit, neighbour_start, neighbour_idx, cg_elem, neighbours, is_neighbor);
 
       /*--- Apply the kernel ---*/
       su2double weight = 0.0, numerator = 0.0, denominator = 0.0;
@@ -3438,14 +3439,21 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
 
 bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
                                        const passivedouble radius,
-                                       unsigned short search_limit,
+                                       size_t search_limit,
                                        const vector<unsigned long> &neighbour_start,
                                        const long *neighbour_idx,
                                        const su2double *cg_elem,
-                                       vector<long> &neighbours) const
+                                       vector<long> &neighbours,
+                                       vector<bool> &is_neighbor) const
 {
-  /*--- 0 search_limit means "unlimited" ---*/
-  if (!search_limit) search_limit = numeric_limits<unsigned short>::max()-1;
+  /*--- Validate inputs if we are debugging. ---*/
+  assert(neighbour_start.size() == Global_nElemDomain+1 &&
+         neighbour_idx != nullptr && cg_elem != nullptr &&
+         is_neighbor.size() == Global_nElemDomain && "invalid inputs");
+
+  /*--- 0 search_limit means "unlimited" (it will probably
+   stop once it gathers the entire domain, probably). ---*/
+  if (!search_limit) search_limit = numeric_limits<size_t>::max();
 
   /*--- Center of the search ---*/
   neighbours.clear(); neighbours.push_back(iElem_global);
@@ -3454,59 +3462,49 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   for (unsigned short iDim=0; iDim<nDim; ++iDim)
     X0[iDim] = SU2_TYPE::GetValue(cg_elem[nDim*iElem_global+iDim]);
 
-  /*--- A way to locate neighbours of a given degree (1st degree are direct neighbours).
-  "degree_start"[degree] is the position in "neighbours" where "degree" starts. ---*/
-  vector<unsigned long> degree_start(1,0);
-
   /*--- Loop stops when "neighbours" stops changing size, or degree reaches limit. ---*/
-  auto cursor_it = neighbours.begin();
-  for (long current_degree = 1; current_degree <= long(search_limit); ++current_degree)
+  bool finished = false;
+  for (size_t degree=0, start=0; degree < search_limit && !finished; ++degree)
   {
-    /*--- Add another degree. ---*/
-    degree_start.push_back(neighbours.size());
+    /*--- For each element of the last degree added consider its immediate
+     neighbours, that are not already neighbours, as candidates. ---*/
+    vector<long> candidates;
 
-    /*--- For each element of the last degree added, add its direct neighbours avoiding
-     duplicates, note the special value -1 at the start position of "candidates" (the
-     value used in the adjacency to indicate a neighbor-less face. ---*/
-    vector<long> candidates(1,-1);
-
-    for (; cursor_it!=neighbours.end(); ++cursor_it)
-    {
-      /*--- Locators to access this "row" of the adjacency matrix. ---*/
-      unsigned long row_begin = neighbour_start[ *cursor_it],
-                    row_end   = neighbour_start[(*cursor_it)+1];
-
-      for (unsigned long i=row_begin; i<row_end; ++i)
-        if (find(candidates.begin(), candidates.end(), neighbour_idx[i]) == candidates.end())
-          candidates.push_back(neighbour_idx[i]);
+    for (auto it = neighbours.begin()+start; it!=neighbours.end(); ++it) {
+      /*--- scan row of the adjacency matrix of element *it ---*/
+      for (auto i = neighbour_start[*it]; i < neighbour_start[(*it)+1]; ++i) {
+        auto idx = neighbour_idx[i];
+        if (idx>=0) if (!is_neighbor[idx]) {
+          candidates.push_back(idx);
+          /*--- mark as neighbour for now to avoid duplicate candidates. ---*/
+          is_neighbor[idx] = true;
+        }
+      }
     }
+    /*--- update start position to fetch next degree candidates. ---*/
+    start = neighbours.size();
 
-    /*--- Avoid duplication of previouly added neighbours.
-    Only the last two degrees need checking. ---*/
-    vector<long> new_neighbours;
-    long degree_to_check = max<long>(0,current_degree-2);
-    auto search_begin = neighbours.begin()+degree_start[degree_to_check];
-
-    for (auto it=candidates.begin()+1; it<candidates.end(); ++it)
-      if (find(search_begin, neighbours.end(), *it) == neighbours.end())
-        new_neighbours.push_back(*it);
-
-    /*--- Add the new neighbours that are inside the radius. ---*/
-    for (auto idx : new_neighbours)
+    /*--- Add candidates within "radius" of X0, if none qualifies we are "finished". ---*/
+    finished = true;
+    for (auto idx : candidates)
     {
-      /*--- passivedouble because we are still not going to calculate anything ---*/
+      /*--- passivedouble as we only need to compare "distance". ---*/
       passivedouble distance = 0.0;
       for (unsigned short iDim=0; iDim<nDim; ++iDim)
         distance += pow(X0[iDim]-SU2_TYPE::GetValue(cg_elem[nDim*idx+iDim]),2);
 
-      if(distance < pow(radius,2)) neighbours.push_back(idx);
+      if(distance < pow(radius,2)) {
+        neighbours.push_back(idx);
+        finished = false;
+      }
+      /*--- not a neighbour in the end. ---*/
+      else is_neighbor[idx] = false;
     }
-    /*--- need new iterator (to same position where it was) after change of capacity ---*/
-    cursor_it = neighbours.begin()+degree_start[current_degree];
-
-    if (cursor_it==neighbours.end()) return true;
   }
-  return false; // degree reached limit
+  /*--- Restore the state of the working vector for next call. ---*/
+  for(auto idx : neighbours) is_neighbor[idx] = false;
+
+  return finished;
 }
 
 void CGeometry::SetElemVolume(CConfig *config)

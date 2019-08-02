@@ -1654,11 +1654,12 @@ public:
    * \param[in] neighbour_idx - See GetGlobalElementAdjacencyMatrix.
    * \param[in] cg_elem - Global element centroid coordinates in row major format {x0,y0,x1,y1,...}. Size nDim*nElemDomain.
    * \param[in,out] neighbours - The neighbours of iElem_global.
+   * \param[in,out] is_neighbor - Working vector of size nElemGlobal, MUST be all false on entry (if so, on exit it will be the same).
    * \return true if the search was successful, i.e. not limited.
    */
-  bool GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius, unsigned short search_limit,
+  bool GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius, size_t search_limit,
                               const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
-                              const su2double *cg_elem, vector<long> &neighbours) const;
+                              const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
    * \brief Compute and store the volume of the elements.
