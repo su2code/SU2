@@ -1236,7 +1236,7 @@ inline void CSolver::SetTotal_Sens_Diff_Inputs(unsigned short iDiff_Inputs) {
     Local_Sens[iVec] = SU2_TYPE::GetDerivative(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
   }
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(Local_Sens,  Total_Sens_Diff_Inputs[iDiff_Inputs].data(), nVec, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(Local_Sens, Total_Sens_Diff_Inputs[iDiff_Inputs].data(), nVec, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
   Total_Sens_Diff_Inputs[iDiff_Inputs].assign(Local_Sens, Local_Sens + nVec);
 #endif
