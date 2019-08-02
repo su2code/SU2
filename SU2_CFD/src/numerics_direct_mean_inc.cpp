@@ -915,7 +915,7 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
 
     /*--- If a RANS turbulence model is used an additional source term, based on the eddy viscosity
           gradient is added. ---*/
-    if(turbulent) {
+    if(turbulent && false) {
 
       /*--- Compute the scalar factor ---*/
       scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());

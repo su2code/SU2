@@ -10,8 +10,8 @@
 #
 # optional: which plots to show
 showLineplot       = True
-show2Dsurfaceplots = True
-show3Dplots        = True
+show2Dsurfaceplots = False
+show3Dplots        = False
 # --------------------------------------------------------------------------- #
 import numpy as np
 import pandas as pd
