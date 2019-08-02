@@ -357,48 +357,6 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
   }
 }
 
-void CIteration::Deform_Mesh(CGeometry ****geometry_container,
-                             CNumerics ******numerics_container,
-                             CSolver *****solver_container,
-                             CConfig **config_container,
-                             unsigned short val_iZone,
-                             unsigned short val_iInst,
-                             unsigned short kind_recording)   {
-
-  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
-  bool TapeActive = NO;
-
-
-  /*--- Perform the elasticity mesh movement ---*/
-  if (Kind_Grid_Movement == ELASTICITY) {
-
-    if(kind_recording != MESH_DEFORM){
-      /*--- In any other recordings, the tape is passive during the deformation ---*/
-      TapeActive = AD::isTapeActive();
-      AD::StopRecording();
-    }
-
-    /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
-
-    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetMesh_Stiffness(geometry_container[val_iZone][val_iInst],
-                                                                                numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
-                                                                                config_container[val_iZone]);
-    /*--- Deform the volume grid around the new boundary locations ---*/
-
-    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
-                                                                         numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
-                                                                         config_container[val_iZone]);
-
-    if(TapeActive) {
-      /*--- Start recording if it was stopped ---*/
-      AD::StartRecording();
-    }
-  }
-
-}
-
-
-
 void CIteration::Preprocess(COutput *output,
                             CIntegration ****integration,
                             CGeometry ****geometry,
@@ -727,12 +685,6 @@ void CFluidIteration::Update(COutput *output,
       integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
-    /*--- Update dual time solver for the dynamic mesh solver ---*/
-    if (config_container[val_iZone]->GetGrid_Movement() &&
-        (config_container[val_iZone]->GetKind_GridMovement() == ELASTICITY)) {
-        solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
-    }
-    
     /*--- Update dual time solver for the turbulence model ---*/
     
     if ((config[val_iZone]->GetKind_Solver() == RANS) ||
@@ -2478,11 +2430,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
         config[iZone]);
   }
-  if (interface_boundary){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
-        SetVertexTractionsAdjoint(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
-  }
-
 }
 
 
@@ -2534,17 +2481,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
     /*--- Register node coordinates as input ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
-
-  }
-
-  /*--- Register the variables of the mesh deformation ---*/
-  if (kind_recording == MESH_DEFORM){
-
-    /*--- Undeformed mesh coordinates ---*/
-    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
-
-    /*--- Boundary displacements ---*/
-    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
   }
 
@@ -2637,10 +2573,6 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   if (heat){
     solver[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
                                                                  config[iZone]);
-  }
-  if (interface_boundary){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
-        RegisterVertexTractions(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
   }
 }
 
@@ -3350,7 +3282,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
   }
 
   unsigned short iMarker;
-
+  
   /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
   for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
   switch (config[val_iZone]->GetMarker_All_KindBC(iMarker)) {

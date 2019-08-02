@@ -155,7 +155,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_MET, ZONE_0, nZone, nDim, false);
+  driver_config = new CConfig(config_file_name, SU2_CFD, nZone, false); 
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -167,12 +167,12 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (driver_config->GetKind_Solver() == MULTIZONE){
+    if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_MET, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_MET, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_MET, iZone, nZone, nDim, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_MET, iZone, nZone, true);
     }
 
     /*--- Set the MPI communicator ---*/
@@ -188,7 +188,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (driver_config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);
@@ -484,80 +484,7 @@ void CErrorEstimationDriver::Geometrical_Preprocessing(CConfig **config_containe
 
 }
 
-void CErrorEstimationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container) {
-
-  //*--- Loop over the number of zones of the fine grid. ---*/
-
-  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Loop over the time instances of this zone. ---*/
-    for(unsigned short iInst = 0; iInst < nInst[iZone]; iInst++) {
-
-      /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
-       define all virtual functions in the base class CGeometry. ---*/
-      CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone][iInst][MESH_0]);
-
-      /*--- Determine the standard elements for the volume elements. ---*/
-      if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
-      DGMesh->CreateStandardVolumeElements(config_container[iZone]);
-
-      /*--- Create the face information needed to compute the contour integral
-       for the elements in the Discontinuous Galerkin formulation. ---*/
-      if (rank == MASTER_NODE) cout << "Creating face information." << endl;
-      DGMesh->CreateFaces(config_container[iZone]);
-
-      /*--- Compute the metric terms of the volume elements. ---*/
-      if (rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
-      DGMesh->MetricTermsVolumeElements(config_container[iZone]);
-
-      /*--- Compute the metric terms of the surface elements. ---*/
-      if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
-      DGMesh->MetricTermsSurfaceElements(config_container[iZone]);
-
-      /*--- Compute a length scale of the volume elements. ---*/
-      if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
-      DGMesh->LengthScaleVolumeElements();
-
-      /*--- Compute the coordinates of the integration points. ---*/
-      if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
-      DGMesh->CoordinatesIntegrationPoints();
-
-      /*--- Compute the coordinates of the location of the solution DOFs. This is different
-            from the grid points when a different polynomial degree is used to represent the
-            geometry and solution. ---*/
-      if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
-      DGMesh->CoordinatesSolDOFs();
-
-      /*--- Initialize the static mesh movement, if necessary. ---*/
-      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
-      const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
-                                      (Kind_Grid_Movement == MOVING_WALL    ||
-                                       Kind_Grid_Movement == ROTATING_FRAME ||
-                                       Kind_Grid_Movement == STEADY_TRANSLATION));
-
-      if(initStaticMovement){
-        if (rank == MASTER_NODE) cout << "Initialize Static Mesh Movement" << endl;
-        DGMesh->InitStaticMeshMovement(config_container[iZone], Kind_Grid_Movement, iZone);
-      }
-
-      /*--- Perform the preprocessing tasks when wall functions are used. ---*/
-      if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
-      DGMesh->WallFunctionPreprocessing(config_container[iZone]);
-
-      /*--- Store the global to local mapping. ---*/
-      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
-    }
-
-    /*--- Loop to create the coarser grid levels. ---*/
-
-    for(unsigned short iMGlevel=1; iMGlevel<=config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-
-      SU2_MPI::Error("Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet.",
-                     CURRENT_FUNCTION);
-    }
-  }
-}
+void CErrorEstimationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container) { }
 
 void CErrorEstimationDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry,
                                                    CConfig *config, unsigned short val_iInst) {

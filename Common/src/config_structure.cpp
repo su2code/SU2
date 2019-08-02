@@ -445,7 +445,6 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
   Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
-  Marker_CfgFile_Interface     = NULL;  Marker_All_Interface     = NULL;
 
   Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
   Marker_CfgFile_TurbomachineryFlag   = NULL; Marker_All_TurbomachineryFlag   = NULL;
@@ -2130,9 +2129,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
-  /* DESCRIPTION: Initialize FSI structures, as loads will come from a python wrapper */
-  addBoolOption("PY_FSI", pyFSI, false);
-
   /* DESCRIPTION: Topology optimization options */
   addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
@@ -2453,36 +2449,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
   addBoolOption("UQ_PERMUTE", uq_permute, false);
-
-  /* DESCRIPTION: Interpolating solutions between two meshes */
-  addBoolOption("INTERPOLATE_SOLUTION", interpolate_solution, false);
-
-  /* DESCRIPTION: Interpolated output file restart flow */
-  addStringOption("INTERPOLATED_RESTART_FILENAME", Interpolated_Restart_FileName, string("interpolated_restart_flow.dat"));
-
-  /* DESCRIPTION: Interpolated input file restart flow */
-  addStringOption("INTERPOLATED_SOLUTION_FILENAME", Interpolated_Solution_FileName, string("interpolated_solution_flow.dat"));
-
-  /* DESCRIPTION: Higher order interpolated output file restart flow */
-  addStringOption("ECC_RESTART_FILENAME", ECC_Restart_FileName, string("ecc_restart_flow.dat"));
-
-  /* DESCRIPTION: Higher order interpolated input file restart flow */
-  addStringOption("ECC_SOLUTION_FILENAME", ECC_Solution_FileName, string("ecc_solution_flow.dat"));
-
-  /* DESCRIPTION: Interpolated output file restart adjoint */
-  addStringOption("INTERPOLATED_RESTART_ADJ_FILENAME", Interpolated_Restart_Adj_FileName, string("interpolated_restart_adj.dat"));
-
-  /* DESCRIPTION: Interpolated input file restart adjoint */
-  addStringOption("INTERPOLATED_SOLUTION_ADJ_FILENAME", Interpolated_Solution_Adj_FileName, string("interpolated_solution_adj.dat"));
-
-  /* DESCRIPTION: Higher order interpolated output file restart adjoint */
-  addStringOption("ECC_RESTART_ADJ_FILENAME", ECC_Restart_Adj_FileName, string("ecc_restart_adj.dat"));
-
-  /* DESCRIPTION: Higher order interpolated input file restart adjoint */
-  addStringOption("ECC_SOLUTION_ADJ_FILENAME", ECC_Solution_Adj_FileName, string("ecc_solution_adj.dat"));
-
-  /* DESCRIPTION: Target mesh for solution interpolation */
-  addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
 
   /* DESCRIPTION: Compute an error estimate */
   addBoolOption("ERROR_ESTIMATE", error_estimate, false);
@@ -4506,7 +4472,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_Interface      = new unsigned short[nMarker_All];	// Store whether the boundary belongs to an interface.
   Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
   Marker_All_PerBound       = new short[nMarker_All];		// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
@@ -4526,7 +4491,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_ZoneInterface[iMarker_All]        = 0;
     Marker_All_DV[iMarker_All]                   = 0;
     Marker_All_Moving[iMarker_All]               = 0;
-    Marker_All_Interface[iMarker_All]            = 0;
     Marker_All_PerBound[iMarker_All]             = 0;
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
@@ -4546,7 +4510,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_ZoneInterface        = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Interface            = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
@@ -4564,7 +4527,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_ZoneInterface[iMarker_CfgFile]        = 0;
     Marker_CfgFile_DV[iMarker_CfgFile]                   = 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]               = 0;
-    Marker_CfgFile_Interface[iMarker_CfgFile]            = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]             = 0;
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
@@ -5042,13 +5004,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Moving[iMarker_Moving])
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
-  }
-
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_Interface[iMarker_CfgFile] = NO;
-    for (iMarker_Interface = 0; iMarker_Interface < nMarker_Interface; iMarker_Interface++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Interface[iMarker_Interface])
-        Marker_CfgFile_Interface[iMarker_CfgFile] = YES;
   }
 
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -6874,13 +6829,6 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_Interface(string val_marker) {
-  unsigned short iMarker_CfgFile;
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
-    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_Interface[iMarker_CfgFile];
-}
-
 unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -7057,9 +7005,6 @@ CConfig::~CConfig(void) {
   
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
-
-  if (Marker_CfgFile_Interface != NULL) delete[] Marker_CfgFile_Interface;
-  if (Marker_All_Interface     != NULL) delete[] Marker_All_Interface;
 
   if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
   if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
@@ -7986,16 +7931,6 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
     if (Marker_Moving[iMarker_Moving] == val_marker) break;
 
   return iMarker_Moving;
-}
-
-unsigned short CConfig::GetMarker_Interface(string val_marker) {
-  unsigned short iMarker_Interface;
-
-  /*--- Find the marker for this interface boundary. ---*/
-  for (iMarker_Interface = 0; iMarker_Interface < nMarker_Interface; iMarker_Interface++)
-    if (Marker_Interface[iMarker_Interface] == val_marker) break;
-
-  return iMarker_Interface;
 }
 
 su2double CConfig::GetDirichlet_Value(string val_marker) {
@@ -9310,8 +9245,6 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   if (driver_config->GetTime_Domain()){
     Delta_UnstTime = driver_config->GetTime_Step();
     Delta_DynTime  = driver_config->GetTime_Step();
-
-    Time_Domain = true;
   }
 
   /*------------------------------------------------------------*/

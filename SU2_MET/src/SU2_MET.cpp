@@ -69,12 +69,11 @@ int main(int argc, char *argv[]) {
    for variables allocation). ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_MET);
-  if (config->GetKind_Solver() == MULTIZONE)
-    nZone  = config->GetnConfigFiles();
-  else
-    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  config = new CConfig(config_file_name, SU2_CFD);
+  nZone    = config->GetnZone();
+  fsi      = config->GetFSI_Simulation();
+  turbo    = config->GetBoolTurbomachinery();
+  zone_specific = config->GetBoolZoneSpecific();
 
   CErrorEstimationDriver *ErrorEstimationDriver = NULL;
 

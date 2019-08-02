@@ -89,8 +89,8 @@ COutput::COutput(CConfig *config) {
   /*--- Initialize pointers to NULL ---*/
   
   Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
-  Conn_Tria_Par      = NULL;  Conn_Quad_Par      = NULL;  Conn_Tetr_Par = NULL;
-  Conn_Hexa_Par      = NULL;  Conn_Pris_Par      = NULL;  Conn_Pyra_Par = NULL;
+  Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
+  Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
   Local_Data         = NULL;
   Local_Data_Copy    = NULL;
@@ -11525,27 +11525,27 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       /*--- Write the end of the history file ---*/
       SPRINTF (end, "\n");
 
-      SPRINTF (fsi_resid, ", %20.14e", log10 (residual_fsi[0]));
-      SPRINTF (fsi_coeffs, ", %20.14e,  %20.14e", coeffs_fsi[0], coeffs_fsi[1]);
+      SPRINTF (fsi_resid, ", %14.8e", log10 (residual_fsi[0]));
+      SPRINTF (fsi_coeffs, ", %14.8e,  %14.8e", coeffs_fsi[0], coeffs_fsi[1]);
 
       /*--- Flow residual ---*/
       if (nDim == 2) {
-        if (compressible) SPRINTF (flow_resid, ", %20.14e, %20.14e, %20.14e, %20.14e, %20.14e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-        if (incompressible) SPRINTF (flow_resid, ", %20.14e, %20.14e, %20.14e, %20.14e, %20.14e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
       }
       else {
-        if (compressible) SPRINTF (flow_resid, ", %20.14e, %20.14e, %20.14e, %20.14e, %20.14e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-        if (incompressible) SPRINTF (flow_resid, ", %20.14e, %20.14e, %20.14e, %20.14e, %20.14e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
       }
 
       /*--- FEM residual ---*/
-      if (nDim == 2) SPRINTF (fem_resid, ", %20.14e, %20.14e, %20.14e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
-      else SPRINTF (fem_resid, ", %20.14e, %20.14e, %20.14e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[1]));
+      if (nDim == 2) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
+      else SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[1]));
 
       /*--- Direct coefficients ---*/
       SPRINTF (direct_coeff, ", %20.14e, %20.14e, %20.14e, %20.14e, %20.14e, %20.14e",Total_CL, Total_CD, Total_CMx, Total_CMy, Total_CMz, Total_CEff);
 
-      if (print_of) SPRINTF (objective_function, ", %20.14e", Total_OF);
+      if (print_of) SPRINTF (objective_function, ", %14.8e", Total_OF);
 
       if (!first_iter){
           if (!print_of) FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << end;

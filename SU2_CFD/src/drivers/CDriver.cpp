@@ -46,12 +46,6 @@ CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false) {
 
-  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
-#ifdef HAVE_MPI
-  #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
-    SU2_MPI::Init_AMPI();
-  #endif
-#endif
 
   unsigned short jZone;
 
@@ -1381,7 +1375,6 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   bool restart      = config->GetRestart();
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
-  bool grid_movement = (config->GetKind_GridMovement() == ELASTICITY);
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1486,12 +1479,6 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (disc_adj_heat) {
       solver[MESH_0][ADJHEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
-  }
-
-  if ((restart || restart_flow) && grid_movement && update_geo){
-    /*--- Always restart with the last state ---*/
-    val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/
@@ -2601,13 +2588,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   }
 
   }
-
-
-  /*--- We initialize the numerics for the mesh solver ---*/
-  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
-
-  if (dynamic_mesh)
-    numerics_container[val_iInst][MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
 
 }
 
@@ -5181,7 +5161,8 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],config_container[ZONE_STRUCT], iMarker);
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[ZONE_STRUCT], iMarker);
     break;
   }
   }
@@ -6698,7 +6679,8 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[ZONE_STRUCT], iMarker);
     break;
   }
 
@@ -6902,7 +6884,8 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-        numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM], config_container[ZONE_STRUCT], iMarker);
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[ZONE_STRUCT], iMarker);
     break;
   }
 
@@ -6947,7 +6930,7 @@ void CMultiphysicsZonalDriver::Run() {
 
       if (iZone != jZone) {
         bool not_capable_fsi        = (   (transfer_types[iZone][jZone] == FLOW_TRACTION)
-                                      ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS_LEGACY)
+                                      ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS)
                                       ||  (transfer_types[iZone][jZone] == STRUCTURAL_DISPLACEMENTS_DISC_ADJ));
         bool not_capable_turbo      = transfer_types[iZone][jZone] == MIXING_PLANE;
         bool not_capable_ConsVar    = transfer_types[iZone][jZone] == CONSERVATIVE_VARIABLES;

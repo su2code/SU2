@@ -1345,8 +1345,6 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline string CConfig::GetMarker_Interface_TagBound(unsigned short val_marker) { return Marker_Interface[val_marker]; }
-
 inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
 
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
@@ -1385,8 +1383,6 @@ inline void CConfig::SetMarker_All_MixingPlaneInterface(unsigned short val_marke
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
-
-inline void CConfig::SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface) { Marker_All_Interface[val_marker] = val_interface; }
 
 inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
@@ -1893,8 +1889,6 @@ inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
 inline bool CConfig::GetPredictor(void) { return Predictor; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
-
-inline bool CConfig::GetpyFSI(void) { return pyFSI; }
 
 inline bool CConfig::GetRelaxation(void) { return Relaxation; }
 

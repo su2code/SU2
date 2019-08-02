@@ -683,7 +683,6 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
-  *Marker_All_Interface,       /*!< \brief Global index for interface surfaces using the grid information. */
   *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -696,7 +695,6 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
-  *Marker_CfgFile_Interface,       /*!< \brief Global index for interface surfaces using the config information. */
   *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -981,7 +979,6 @@ private:
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
-  bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -1068,7 +1065,7 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
-  unsigned long Outer_Iter,     /*!< \brief Determines the number of outer iterations in the multizone problem */
+  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
   Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
   Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
   Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
@@ -1088,6 +1085,7 @@ private:
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
   bool error_estimate;               /*!< \brief Determines if error estimation is taking place */
+  unsigned short Kind_Aniso_Sensor;  /*!< \brief Sensor used for anistropy */
   bool Wrt_Aniso_Sensor;             /*!< \brief Whether or not to write sensor files */
   su2double Mesh_Hmax,               /*!< \brief Maximum cell size */
             Mesh_Hmin;               /*!< \brief Minimum cell size */
@@ -3494,14 +3492,6 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
-   * \brief Set if a marker <i>val_marker</i> belongs to the interface <i>val_moving</i>
-   *        (read from the config file).
-   * \param[in] val_marker - Index of the marker in which we are interested.
-   * \param[in] val_interface - 0 or 1 depending if the the marker belongs to the interface.
-   */
-  void SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface);
-
-  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3623,13 +3613,6 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
-
-  /*!
-   * \brief Get the interface information for a marker <i>val_marker</i>.
-   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the interface.
-   * \return 0 or 1 depending if the marker belongs to the interface.
-   */
-  unsigned short GetMarker_All_Interface(unsigned short val_marker);
 
   /*!
    * \brief Get the Python customization for a marker <i>val_marker</i>.
@@ -6193,12 +6176,6 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
-   * \brief Get the interface information from the config definition for the marker <i>val_marker</i>.
-   * \return Interface information of the boundary in the config information for the marker <i>val_marker</i>.
-   */
-  unsigned short GetMarker_CfgFile_Interface(string val_marker);
-
-  /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
    * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6569,12 +6546,6 @@ public:
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Moving(string val_marker);
-
-  /*!
-   * \brief Get the internal index for an interface boundary <i>val_marker</i>.
-   * \return Internal index for a interface boundary <i>val_marker</i>.
-   */
-  unsigned short GetMarker_Interface(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6583,14 +6554,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
-
-  /*!
-   * \brief Get the name of the interface boundary defined in the geometry file.
-   * \param[in] val_marker - Value of the marker in which we are interested.
-   * \return Name that is in the geometry file for the surface that
-   *         has the marker <i>val_marker</i>.
-   */
-  string GetMarker_Interface_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -8807,12 +8770,6 @@ public:
   unsigned short GetPredictorOrder(void);
 
   /*!
-   * \brief Get whether loads will come from a python wrapper.
-   * \return  Bool: determines if loads will come from a python wrapper.
-   */
-  bool GetpyFSI(void);
-
-  /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
    * \return Boolean for using Persson's shock capturing method in Euler flow DG-FEM
    */
@@ -9231,78 +9188,6 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
-
-  /*!
-   * \brief Check if solution interpolation is being carried out
-   * \return <code>TRUE<\code> if solution interpolation is taking place
-  */
-  bool GetInterpolate_Solution(void);
-
-  /*!
-   * \brief Get name of the target grid.
-   * \return File name of the target grid.
-   */
-  string GetTarget_Mesh_FileName(void);
-
-  /*!
-   * \brief Get name of the interpolated solution file name
-   * \return File name of the interpolated solution output
-   */
-  string GetInterpolated_Restart_FileName(void);
-
-  /*!
-   * \brief Get name of the interpolated solution file name
-   * \return File name of the interpolated solution input
-   */
-  string GetInterpolated_Solution_FileName(void);
-
-  /*!
-   * \brief Get name of the interpolated solution file name
-   * \return File name of the interpolated adjoint solution output
-   */
-  string GetInterpolated_Restart_Adj_FileName(void);
-
-  /*!
-   * \brief Get name of the interpolated solution file name
-   * \return File name of the interpolated adjoint solution input
-   */
-  string GetInterpolated_Solution_Adj_FileName(void);
-
-  /*!
-   * \brief Get name of the higher order interpolated solution file name
-   * \return File name of the higher order interpolated solution output
-   */
-  string GetECC_Restart_FileName(void);
-
-  /*!
-   * \brief Get name of the higher order interpolated solution file name
-   * \return File name of the higher order interpolated solution input
-   */
-  string GetECC_Solution_FileName(void);
-
-  /*!
-   * \brief Get name of the higher order interpolated solution file name
-   * \return File name of the higher order interpolated adjoint solution output
-   */
-  string GetECC_Restart_Adj_FileName(void);
-
-  /*!
-   * \brief Get name of the higher order interpolated solution file name
-   * \return File name of the higher order interpolated adjoint solution input
-   */
-  string GetECC_Solution_Adj_FileName(void);
-
-  /*!
-   * \brief Get if the target mesh file name should be returned
-   * \return File name of the target grid.
-   */
-  bool GetUsing_Target_Mesh(void);
-
-  /*!
-   * \brief Get if the target mesh file name should be returned
-   * \return File name of the target grid.
-   */
-  void SetUsing_Target_Mesh(bool val_using_target_mesh);
 
   /*!
    * \brief Check if error estimation is being carried out

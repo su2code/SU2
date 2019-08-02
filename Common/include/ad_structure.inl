@@ -85,8 +85,6 @@ namespace AD{
 
   inline void StopRecording() {AD::globalTape.setPassive();}
 
-  inline bool isTapeActive() {return AD::globalTape.isActive();}
-
   inline void ClearAdjoints() {AD::globalTape.clearAdjoints(); }
 
   inline void ComputeAdjoint() {AD::globalTape.evaluate();
@@ -244,8 +242,6 @@ namespace AD{
   inline void StartRecording() {}
 
   inline void StopRecording() {}
-
-  inline bool isTapeActive() {return false;}
 
   inline void ClearAdjoints() {}
 
