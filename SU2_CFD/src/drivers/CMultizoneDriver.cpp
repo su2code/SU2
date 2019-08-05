@@ -35,8 +35,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/drivers/CMultizoneDriver.hpp"
-#include "../include/definition_structure.hpp"
+#include "../../include/drivers/CMultizoneDriver.hpp"
+#include "../../include/definition_structure.hpp"
 
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
