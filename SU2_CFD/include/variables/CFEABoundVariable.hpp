@@ -49,11 +49,11 @@
 class CFEABoundVariable : public CFEAVariable {
 protected:
 
-  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+  Mat_t FlowTraction;        /*!< \brief Traction from the fluid field. */
+  Mat_t FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
 
-  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
+  Mat_t Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
+  Mat_t Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
 
 public:
 

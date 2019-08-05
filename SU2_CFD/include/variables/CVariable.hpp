@@ -47,6 +47,7 @@
 
 #include "../../../Common/include/config_structure.hpp"
 #include "../fluid_model.hpp"
+#include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
 
 using namespace std;
@@ -58,40 +59,53 @@ using namespace std;
  */
 class CVariable {
 protected:
+  using Idx_t = unsigned long;
+  using Vec_t     = C2DContainer<Idx_t, su2double,  StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  using VecBool_t = C2DContainer<Idx_t, bool,       StorageType::ColumnMajor, 0,  DynamicSize, 1>;
+  using Mat_t     = C2DContainer<Idx_t, su2double,  StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+  using MatPtr_t  = C2DContainer<Idx_t, su2double*, StorageType::RowMajor,    0,  DynamicSize, DynamicSize>;
 
-  su2double *Solution,    /*!< \brief Solution of the problem. */
-  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
-  bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
-  su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
-  *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
-  su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
-  su2double **Rmatrix;    /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
-  su2double *Limiter;        /*!< \brief Limiter of the solution of the problem. */
-  su2double *Solution_Max;    /*!< \brief Max solution for limiter computation. */
-  su2double *Solution_Min;    /*!< \brief Min solution for limiter computation. */
-  su2double AuxVar;      /*!< \brief Auxiliar variable for gradient computation. */
-  su2double *Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
-  su2double Delta_Time;  /*!< \brief Time step. */
-  su2double Max_Lambda,  /*!< \brief Maximun eingenvalue. */
-  Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
-  Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
-  Lambda;        /*!< \brief Value of the eingenvalue. */
-  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
-  su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
-  su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
-  *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
-  *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
-  static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
-  unsigned short nVar;    /*!< \brief Number of variables of the problem,
-                           note that this variable cannnot be static, it is possible to
-                           have different number of nVar in the same problem. */
-  unsigned short nPrimVar, nPrimVarGrad;    /*!< \brief Number of variables of the problem,
-                                             note that this variable cannnot be static, it is possible to
-                                             have different number of nVar in the same problem. */
-  unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
-                                                       note that this variable cannnot be static, it is possible to
-                                                       have different number of nVar in the same problem. */
-  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  Mat_t Solution;       /*!< \brief Solution of the problem. */
+  Mat_t Solution_Old;   /*!< \brief Old solution of the problem R-K. */
+
+  VecBool_t Non_Physical;   /*!< \brief Non-physical points in the solution (force first order). */
+
+  Mat_t Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
+  Mat_t Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+  Vec_t Delta_Time;         /*!< \brief Time step. */
+
+  Vec_t Grad_Storage;
+  MatPtr_t Gradient;   /*!< \brief Gradient of the solution of the problem. */
+  Vec_t Rmat_Storage;
+  MatPtr_t Rmatrix;    /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+
+  Mat_t Limiter;        /*!< \brief Limiter of the solution of the problem. */
+  Mat_t Solution_Max;   /*!< \brief Max solution for limiter computation. */
+  Mat_t Solution_Min;   /*!< \brief Min solution for limiter computation. */
+
+  Vec_t AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
+  Mat_t Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
+
+  Vec_t Max_Lambda;       /*!< \brief Maximun eingenvalue. */
+  Vec_t Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
+  Vec_t Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
+  Vec_t Lambda;           /*!< \brief Value of the eingenvalue. */
+
+  Vec_t Sensor;               /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
+  Mat_t Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
+
+  Mat_t Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
+  Mat_t Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
+  Mat_t Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+
+  Mat_t Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+
+  unsigned short nDim;   /*!< \brief Number of dimension of the problem. */
+  unsigned short nVar;       /*!< \brief Number of variables of the problem. */
+  unsigned short nPrimVar;      /*!< \brief Number of primitive variables. */
+  unsigned short nPrimVarGrad;    /*!< \brief Number of primitives for which a gradient is computed. */
+  unsigned short nSecondaryVar;     /*!< \brief Number of secondary variables. */
+  unsigned short nSecondaryVarGrad;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
 public:
 

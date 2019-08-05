@@ -48,11 +48,11 @@
 
 class CTurbSSTVariable : public CTurbVariable {
 protected:
-  su2double sigma_om2,
-  beta_star;
-  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
-  F2,            /*!< \brief Menter blending function for stress limiter. */
-  CDkw;           /*!< \brief Cross-diffusion. */
+  Vec_t sigma_om2;
+  Vec_t beta_star;
+  Vec_t F1;
+  Vec_t F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
+  Vec_t CDkw;  /*!< \brief Cross-diffusion. */
 
 public:
   /*!

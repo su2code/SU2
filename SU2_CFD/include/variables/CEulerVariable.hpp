@@ -47,30 +47,25 @@
  */
 class CEulerVariable : public CVariable {
 protected:
-  su2double  Velocity2;      /*!< \brief Square of the velocity vector. */
-  su2double *HB_Source;     /*!< \brief harmonic balance source term. */
-  su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
-  su2double *WindGust;      /*! < \brief Wind gust value */
-  su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
+  Vec_t Velocity2;     /*!< \brief Square of the velocity vector. */
+  Mat_t HB_Source;     /*!< \brief harmonic balance source term. */
+  Vec_t Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  Mat_t WindGust;      /*! < \brief Wind gust value */
+  Mat_t WindGustDer;   /*! < \brief Wind gust derivatives value */
 
   /*--- Primitive variable definition ---*/
-
-  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  Mat_t Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  Mat_t Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
+  Mat_t Secondary;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  Vec_t Grad_Sec_Storage;
+  MatPtr_t Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  Mat_t Limiter_Secondary;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
-  su2double *Secondary;            /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-
-  /*--- New solution container for Classical RK4 ---*/
-
-  su2double *Solution_New;
-
-  /*--- Old solution container for BGS iterations ---*/
-  su2double* Solution_BGS_k;
+  Mat_t Solution_New;     /*!< \brief New solution container for Classical RK4. */
+  Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
 
 public:
 

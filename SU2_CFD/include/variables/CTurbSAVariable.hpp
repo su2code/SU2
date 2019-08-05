@@ -49,9 +49,9 @@
 class CTurbSAVariable : public CTurbVariable {
 
 private:
-  su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
-  su2double DES_LengthScale;
-  su2double Vortex_Tilting;
+  Vec_t gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
+  Vec_t DES_LengthScale;
+  Vec_t Vortex_Tilting;
 
 public:
   /*!
