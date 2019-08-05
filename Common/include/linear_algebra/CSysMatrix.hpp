@@ -89,18 +89,13 @@ struct CPastixData
   vector<unsigned long>          sort_rows;  /*!< \brief List of rows with halo points. */
   vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
 
-  CPastixData(void) : state(NULL), isinitialized(false), isfactorized(false), iter(0), verb(0)
-  {
-    /*--- Just to have valid pointers ---*/
-    colptr.resize(1);
-    rowidx.resize(1);
-    values.resize(1);
-    loc2glb.resize(1);
-    perm.resize(1);
-    rhs.resize(1);
-  }
+  CPastixData() : state(NULL), isinitialized(false), isfactorized(false), iter(0), verb(0) {}
 
-  ~CPastixData(void) { clean(); }
+  CPastixData(const CPastixData&) = delete;
+  CPastixData(CPastixData&&) = delete;
+  CPastixData& operator= (const CPastixData&) = delete;
+
+  ~CPastixData() { clean(); }
 
   void clean() {
     if(isfactorized) {
