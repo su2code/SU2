@@ -63,10 +63,10 @@ CMeshOutput::~CMeshOutput(void) {
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   
 }

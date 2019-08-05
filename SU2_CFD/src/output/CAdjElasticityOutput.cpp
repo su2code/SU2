@@ -166,13 +166,20 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  AddVolumeOutput("SENSITIVITY-X",    "Sensitivity_x", "SOLUTION");
-  AddVolumeOutput("SENSITIVITY-Y",    "Sensitivity_y", "SOLUTION");
-  if (nDim == 3) AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SOLUTION");
-
+  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
+  /// DESCRIPTION: Sensitivity x-component.
+  AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector"); 
+  /// DESCRIPTION: Sensitivity y-component.
+  AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector");
+  if (nDim == 3)
+    /// DESCRIPTION: Sensitivity z-component.
+    AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");   
+  /// DESCRIPTION: Sensitivity in normal direction.
+  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction"); 
+  /// END_GROUP
 }

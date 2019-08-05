@@ -82,7 +82,7 @@ teciompi = static_library('teciompi',
            'exportSubzonePlt.cpp',
            install : false,
 	   dependencies: [mpi_dep], 
-	   cpp_args: tec_cxx_flags,
+	   cpp_args: [default_warning_flags, tec_cxx_flags],
 	   include_directories: 
 	   teciompi_include)
 
