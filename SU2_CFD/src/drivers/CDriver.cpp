@@ -3910,18 +3910,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
-  
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-  
-  if (!fsi) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        if ((!config_container[iZone]->GetMultizone_Problem() && !config_container[iZone]->GetSinglezone_Driver())
-            || config_container[iZone]->GetBoolTurbomachinery() || config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-        output_container[iZone]->GetLegacyOutput()->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-            config_container, integration_container, false, UsedTime, iZone, iInst);
-    }
-  }
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
@@ -4233,14 +4221,16 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
 }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) {
-  /*--- Close the convergence history file. ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < 1; iInst++) {
-      ConvHist_file[iZone][iInst].close();
+  if (rank == MASTER_NODE){
+    /*--- Close the convergence history file. ---*/
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (iInst = 0; iInst < 1; iInst++) {
+        ConvHist_file[iZone][iInst].close();
+      }
+      delete [] ConvHist_file[iZone];
     }
-    delete [] ConvHist_file[iZone];
+    delete [] ConvHist_file;  
   }
-  delete [] ConvHist_file;  
 }
 
 void CTurbomachineryDriver::Run() {
@@ -4275,8 +4265,16 @@ void CTurbomachineryDriver::Run() {
   if (rank == MASTER_NODE){
     SetTurboPerformance(ZONE_0);
   }
+  
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+  
 
-
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+                                         config_container, integration_container, false, UsedTime, iZone, iInst);
+  }
+  
 }
 
 void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
@@ -4499,6 +4497,7 @@ CHBDriver::~CHBDriver(void) {
   for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != NULL) delete [] D[kInst];
   if (D[kInst] != NULL) delete [] D;
   
+  if (rank == MASTER_NODE){
   /*--- Close the convergence history file. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInstHB; iInst++) {
@@ -4507,7 +4506,9 @@ CHBDriver::~CHBDriver(void) {
     delete [] ConvHist_file[iZone];
   }
   delete [] ConvHist_file;
+  }
 }
+  
 
 void CHBDriver::Run() {
 
@@ -4523,6 +4524,15 @@ void CHBDriver::Run() {
     iteration_container[ZONE_0][iInst]->Iterate(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
+  
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+  
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+                                         config_container, integration_container, false, UsedTime, iZone, iInst);
+  }
 
 }
 

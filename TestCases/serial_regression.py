@@ -1546,6 +1546,8 @@ def main():
     pywrapper_fsi2d.test_vals = [2.000000, 0.000000, -4.017814, -6.059791] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
+    pywrapper_fsi2d.unsteady  = True
+    pywrapper_fsi2d.multizone   = True
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
