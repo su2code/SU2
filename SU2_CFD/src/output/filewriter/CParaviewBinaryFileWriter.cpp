@@ -59,7 +59,7 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   FILE* fhw;
   fhw = fopen(fname, "wb");
   
-  unsigned long iNode2, iNode;
+  unsigned long iNode2;
   unsigned long nGlobal_Elem_Storage;
   
   /*--- Error check for opening the file. ---*/
@@ -144,7 +144,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   
   
   for (iElem = 0; iElem < nTot_Line; iElem++) {
-    iNode  = iElem*N_POINTS_LINE;
     iNode2 = iElem*(N_POINTS_LINE+1);
     conn_buf[iNode2+0] = N_POINTS_LINE;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(LINE, iElem, 0)-1;
@@ -158,7 +157,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Line*(N_POINTS_LINE+1);
   
   for (iElem = 0; iElem < nTot_Tria; iElem++) {
-    iNode  = iElem*N_POINTS_TRIANGLE;
     iNode2 = iElem*(N_POINTS_TRIANGLE+1);
     conn_buf[iNode2+0] = N_POINTS_TRIANGLE;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1;
@@ -172,7 +170,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Tria*(N_POINTS_TRIANGLE+1);
   
   for (iElem = 0; iElem < nTot_Quad; iElem++) {
-    iNode  = iElem*N_POINTS_QUADRILATERAL;
     iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
     conn_buf[iNode2+0] = N_POINTS_QUADRILATERAL;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1;
@@ -187,7 +184,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Quad*(N_POINTS_QUADRILATERAL+1);
   
   for (iElem = 0; iElem < nTot_Tetr; iElem++) {
-    iNode  = iElem*N_POINTS_TETRAHEDRON;
     iNode2 = iElem*(N_POINTS_TETRAHEDRON+1);
     conn_buf[iNode2+0] = N_POINTS_TETRAHEDRON;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1;
@@ -202,7 +198,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Tetr*(N_POINTS_TETRAHEDRON+1);
    
   for (iElem = 0; iElem < nTot_Hexa; iElem++) {
-    iNode  = iElem*N_POINTS_HEXAHEDRON;
     iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
     conn_buf[iNode2+0] = N_POINTS_HEXAHEDRON;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1;
@@ -221,7 +216,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Hexa*(N_POINTS_HEXAHEDRON+1);
   
   for (iElem = 0; iElem < nTot_Pris; iElem++) {
-    iNode  = iElem*N_POINTS_PRISM;
     iNode2 = iElem*(N_POINTS_PRISM+1);
     conn_buf[iNode2+0] = N_POINTS_PRISM;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(PRISM, iElem, 0)-1;
@@ -238,7 +232,6 @@ void CParaviewBinaryFileWriter::Write_Data(string filename, CParallelDataSorter 
   file_size += sizeof(int)*nTot_Pris*(N_POINTS_PRISM+1);
   
   for (iElem = 0; iElem < nTot_Pyra; iElem++) {
-    iNode  = iElem*N_POINTS_PYRAMID;
     iNode2 = iElem*(N_POINTS_PYRAMID+1);
     conn_buf[iNode2+0] = N_POINTS_PYRAMID;
     conn_buf[iNode2+1] = data_sorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1;

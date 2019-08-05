@@ -1133,7 +1133,7 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
   
   unsigned short iMarker = 0;
   unsigned long iPoint = 0, jPoint = 0;
-  long iVertex = 0;
+  unsigned long iVertex = 0;
   
   /*--- Reset the offset cache and index --- */
   Offset_Cache_Index = 0;
@@ -1165,13 +1165,17 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
         jPoint++;
+       
+        /*--- Reset the cache index ---*/   
         
+        Offset_Cache_Index = 0;
+
       }
     }
     
   } else {
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       
       /*--- Build the offset cache if it is the first point --- */
       
@@ -1185,6 +1189,10 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
       /*--- Load the volume data into the Local_Data() array. --- */
       
       LoadVolumeData(config, geometry, solver, iPoint);
+      
+      /*--- Reset the cache index ---*/
+      
+      Offset_Cache_Index = 0;
 
     }
     
@@ -1203,8 +1211,13 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+        if (geometry->node[iPoint]->GetDomain()) {
+          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+        }
         
+        /*--- Reset the cache index ---*/ 
+        
+        Offset_Cache_Index = 0;
       }   
     } 
   }
@@ -1235,9 +1248,6 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     if (Offset != -1){
       Local_Data[iPoint][Offset] = value;
     }   
-    if (Offset_Cache_Index == Offset_Cache.size()){
-      Offset_Cache_Index = 0;
-    }
   }
   
 }
@@ -1537,7 +1547,7 @@ void COutput::PrintHistoryFields(){
       }
     }
     
-    cout << "Output fields for the current configuration: " << endl;
+    cout << "Available output fields for the current configuration in " << MultiZoneHeaderString << ":" << endl;
     
     HistoryFieldTable.AddColumn("Name", NameSize);
     HistoryFieldTable.AddColumn("Group Name", GroupSize);
@@ -1614,5 +1624,52 @@ void COutput::PrintHistoryFields(){
     }   
     ModifierTable.PrintFooter();
 
+  }
+}
+
+void COutput::PrintVolumeFields(){
+  
+  if (rank == MASTER_NODE){
+    
+    PrintingToolbox::CTablePrinter VolumeFieldTable(&std::cout);
+    
+    unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
+    
+    for (unsigned short iField = 0; iField < VolumeOutput_List.size(); iField++){
+      
+      VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField]];
+      
+      if (Field.Description != ""){
+        if (VolumeOutput_List[iField].size() > NameSize){
+          NameSize = VolumeOutput_List[iField].size();
+        }
+        if (Field.OutputGroup.size() > GroupSize){
+          GroupSize = Field.OutputGroup.size();
+        }
+        if (Field.Description.size() > DescrSize){
+          DescrSize = Field.Description.size();
+        }
+      }
+    }
+    
+    cout << "Available output fields for the current configuration in " << MultiZoneHeaderString << ":" << endl;
+    
+    VolumeFieldTable.AddColumn("Name", NameSize);
+    VolumeFieldTable.AddColumn("Group Name", GroupSize);
+    VolumeFieldTable.AddColumn("Description", DescrSize);
+    VolumeFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    
+    VolumeFieldTable.PrintHeader();
+    
+    for (unsigned short iField = 0; iField < VolumeOutput_List.size(); iField++){
+      
+      VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField]];
+
+      if (Field.Description != "")
+        VolumeFieldTable << VolumeOutput_List[iField] << Field.OutputGroup << Field.Description;
+      
+    }
+    
+    VolumeFieldTable.PrintFooter();
   }
 }

@@ -17,6 +17,8 @@ void CDummyDriver::StartSolver(){
     cout << "--------------------------------------------" << endl;
   }
   
-  output_container[ZONE_0]->PrintHistoryFields();
-  
+  for (iZone = 0; iZone < nZone; iZone++){
+    output_container[iZone]->PrintVolumeFields();
+    output_container[iZone]->PrintHistoryFields();
+  }
 }

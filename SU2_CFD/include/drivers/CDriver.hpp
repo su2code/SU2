@@ -122,7 +122,7 @@ protected:
   bool dummy_geometry;
   
 public:
-  
+
   /*! 
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -144,6 +144,8 @@ public:
    */  
   virtual void Run() { };
 
+protected:
+  
   /*!
    * \brief Init_Containers
    */
@@ -262,11 +264,6 @@ public:
   void Output_Preprocessing(CConfig **config, CConfig *driver_config, COutput **&output_container, COutput *&driver_output);
 
   /*!
-   * \brief Deallocation routine
-   */
-  void Postprocessing();
-
-  /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
   void StaticMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSurfaceMovement *surface_movement);
@@ -320,16 +317,33 @@ public:
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
   virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
+  
+  /*!
+   * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
+   */
+  virtual void Run_GaussSeidel(){};
 
+  /*!
+   * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
+   */
+  virtual void Run_Jacobi(){};
+  
   /*!
    * \brief A virtual member.
    */
   virtual void Update() {};
+  
+public:
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
   virtual void StartSolver();
+  
+  /*!
+   * \brief Deallocation routine
+   */
+  void Postprocessing();  
 
   /*!
    * \brief A virtual member.
@@ -709,15 +723,6 @@ public:
    */
   map<string, string> GetAllBoundaryMarkersType();
 
-  /*!
-   * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
-   */
-  virtual void Run_GaussSeidel(){};
-
-  /*!
-   * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
-   */
-  virtual void Run_Jacobi(){};
 
 };
 
