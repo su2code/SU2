@@ -325,10 +325,9 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     /// DESCRIPTION: Adjoint Velocity z-component.
     AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION", "z-component of the adjoint velocity vector"); 
- 
-  if (weakly_coupled_heat || heat){
-    AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION",  "Adjoint temperature");
-  }
+
+  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION",  "Adjoint temperature");
+
 
   if (!config->GetFrozen_Visc_Disc()){    
     switch(turb_model){
