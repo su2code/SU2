@@ -80,8 +80,7 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_SOL);
 
-  if (config->GetKind_Solver() == MULTIZONE) nZone  = config->GetnConfigFiles();
-  else nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone = config->GetnZone();
 
   /*--- Definition of the containers per zones ---*/
 
@@ -99,13 +98,13 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_SOL, ZONE_0, nZone, 0, false);
+  driver_config = new CConfig(config_file_name, SU2_SOL, nZone, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
 
   /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+  multizone = (config->GetMultizone_Problem());
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -117,12 +116,12 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    if (multizone){
+    if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_SOL, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_SOL, iZone, nZone, true);
     }
 
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
@@ -130,7 +129,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
+  if (config->GetMultizone_Problem()){
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Set the interface markers for multizone ---*/
       config_container[iZone]->SetMultizone(driver_config, config_container);

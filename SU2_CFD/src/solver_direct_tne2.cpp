@@ -36,6 +36,9 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../include/variables/CTNE2EulerVariable.hpp"
+#include "../include/variables/CTNE2NSVariable.hpp"
 #include <math.h>
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {

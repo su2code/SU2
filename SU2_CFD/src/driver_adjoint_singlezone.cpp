@@ -41,10 +41,8 @@
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   unsigned short val_nDim,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
                                                                                                  val_nZone,
-                                                                                                 val_nDim,
                                                                                                  MPICommunicator) {
 
 

@@ -146,15 +146,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am____bin_SU2_SOL_OBJECTS = ../src/___bin_SU2_SOL-SU2_SOL.$(OBJEXT)
 ___bin_SU2_SOL_OBJECTS = $(am____bin_SU2_SOL_OBJECTS)
-___bin_SU2_SOL_DEPENDENCIES =  \
-	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
+___bin_SU2_SOL_DEPENDENCIES = ../../SU2_CFD/obj/libSU2Core.a \
 	../../Common/lib/libSU2.a
 ___bin_SU2_SOL_LINK = $(CXXLD) $(___bin_SU2_SOL_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -352,7 +344,6 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -379,15 +370,7 @@ ___bin_SU2_SOL_SOURCES = \
 
 # if BUILD_MUTATIONPP
 ___bin_SU2_SOL_CXXFLAGS = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
-___bin_SU2_SOL_LDADD =  \
-	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
+___bin_SU2_SOL_LDADD = ../../SU2_CFD/obj/libSU2Core.a \
 	../../Common/lib/libSU2.a @su2_externals_LIBS@ \
 	@su2_externals_LIBPTHREAD@ @MUTATIONPP_LD@ $(am__empty)
 all: all-am
