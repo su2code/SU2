@@ -1393,8 +1393,8 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 
   iota(pastix_data.loc2glb.begin(), pastix_data.loc2glb.end(), offset+1);
 
-  /*--- 2 - Build a local to global map and communicate global indices of halo points.
-   This is to renumber the column indices from local to global when unpacking halos. ---*/
+  /*--- 2 - Communicate global indices of halo points to then renumber
+   column indices from local to global when unpacking halos. ---*/
 
   vector<pastix_int_t> map(nPoint-nPointDomain,0);
 
@@ -1413,28 +1413,20 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
       unsigned long nVertexR = geometry->nVertex[MarkerR];
 
       /*--- Allocate Send/Receive buffers ---*/
-
-      unsigned long *Buffer_Recv = new unsigned long [nVertexR];
-      unsigned long *Buffer_Send = new unsigned long [nVertexS];
+      vector<unsigned long> Buffer_Recv(nVertexR), Buffer_Send(nVertexS);
 
       /*--- Prepare data to send ---*/
-
       for (unsigned long iVertex = 0; iVertex < nVertexS; iVertex++)
         Buffer_Send[iVertex] = geometry->vertex[MarkerS][iVertex]->GetNode()+offset;
 
       /*--- Send and Receive data ---*/
-
-      MPI_Sendrecv(Buffer_Send, nVertexS, MPI_UNSIGNED_LONG, sender, 0,
-                   Buffer_Recv, nVertexR, MPI_UNSIGNED_LONG, recver, 0,
+      MPI_Sendrecv(Buffer_Send.data(), nVertexS, MPI_UNSIGNED_LONG, sender, 0,
+                   Buffer_Recv.data(), nVertexR, MPI_UNSIGNED_LONG, recver, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       /*--- Store received data---*/
-
       for (unsigned long iVertex = 0; iVertex < nVertexR; iVertex++)
         map[ geometry->vertex[MarkerR][iVertex]->GetNode()-nPointDomain ] = Buffer_Recv[iVertex];
-
-      delete [] Buffer_Send;
-      delete [] Buffer_Recv;
     }
   }
 #endif
