@@ -39,7 +39,7 @@ foreach swig_source: swig_sources
        objects: su2_cfd.extract_all_objects(),
        install: true,
        include_directories : mpi4py_include,
-       cpp_args : su2_cpp_args,
+       cpp_args : [default_warning_flags,su2_cpp_args],
        name_prefix : '',
        install_dir: 'bin'
     )

@@ -4,4 +4,5 @@ option('enable-cgns',  type : 'boolean', value : true, description: 'enable CGNS
 option('enable-autodiff',  type : 'boolean', value : false, description: 'enable AD (reverse) support')
 option('enable-directdiff',  type : 'boolean', value : false, description: 'enable AD (forward) support')
 option('enable-pywrapper',  type : 'boolean', value : false, description: 'enable Python wrapper support')
+option('enable-normal',  type : 'boolean', value : true, description: 'enable normal build')
 option('python_path',  type : 'string', value : '', description: 'Python path')

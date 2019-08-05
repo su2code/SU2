@@ -92,10 +92,10 @@ void CBaselineOutput::SetVolumeOutputFields(CConfig *config){
   }
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  AddVolumeOutput(RequestedVolumeFields[0], RequestedVolumeFields[0], "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput(RequestedVolumeFields[1], RequestedVolumeFields[1], "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+    AddVolumeOutput(RequestedVolumeFields[2], RequestedVolumeFields[2], "COORDINATES", "z-component of the coordinate vector");
 
   // Add all the remaining fields
   
