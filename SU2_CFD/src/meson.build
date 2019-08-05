@@ -94,18 +94,20 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 
-su2_cfd = executable('SU2_CFD',
-                     su2_cfd_src, 
-		     install : true, 
-		     dependencies : [su2_deps, common_dep], 
-		     cpp_args:  ['-fPIC'] + [su2_cpp_args])
+if get_option('enable-normal')
+  su2_cfd = executable('SU2_CFD',
+                       su2_cfd_src, 
+      		       install : true, 
+		       dependencies : [su2_deps, common_dep], 
+		       cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
+endif
 
 if get_option('enable-autodiff')
   su2_cfd_ad = executable('SU2_CFD_AD',
                           su2_cfd_src,
 			  install : true, 
 			  dependencies : [su2_deps, codi_dep, commonAD_dep], 
-			  cpp_args: ['-fPIC'] + [su2_cpp_args, codi_rev_args])
+			  cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 endif
 
 if get_option('enable-directdiff')
@@ -113,5 +115,5 @@ if get_option('enable-directdiff')
                           su2_cfd_src,
 			  install : true, 
 			  dependencies : [su2_deps, codi_dep, commonDD_dep], 
-			  cpp_args: ['-fPIC'] + [su2_cpp_args, codi_for_args])
+			  cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
 endif

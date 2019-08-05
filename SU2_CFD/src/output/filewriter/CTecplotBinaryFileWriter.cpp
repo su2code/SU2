@@ -96,7 +96,7 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
   num_nodes = static_cast<int64_t>(data_sorter->GetnPointsGlobal());
   num_cells = static_cast<int64_t>(data_sorter->GetnElem());
   if (nDim == 3){
-    if ((nTot_Quad >= 0 || nTot_Tria >= 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
+    if ((nTot_Quad > 0 || nTot_Tria > 0) && (nTot_Hexa + nTot_Pris + nTot_Pyra + nTot_Tetr == 0)){
       zone_type = ZONETYPE_FEQUADRILATERAL;
     }
     else {
@@ -104,7 +104,7 @@ void CTecplotBinaryFileWriter::Write_Data(string filename, CParallelDataSorter *
     }
   }
   else {
-    if (nTot_Line >= 0 && (nTot_Tria + nTot_Quad == 0)){
+    if (nTot_Line > 0 && (nTot_Tria + nTot_Quad == 0)){
       zone_type = ZONETYPE_FELINESEG;
       
     }

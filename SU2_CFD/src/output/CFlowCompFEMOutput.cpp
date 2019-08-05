@@ -153,45 +153,31 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
-  
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+
   // Solution variables
-  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION");
-  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION");
-  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION");
+  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
+  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
+  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
   if (nDim == 3)
-    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION");
-  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION");  
-  
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION");
-    break;
-  case NONE:
-    break;
-  }
-  
+    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
+  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");  
+
   // Primitive variables
-  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE");
-  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE");
-  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE");
-  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
-  
+  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
+  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+
   if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
-    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE"); 
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
   }
   
   if (config->GetKind_Solver() == FEM_LES && (config->GetKind_SGS_Model() != IMPLICIT_LES)) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 }
 

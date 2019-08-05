@@ -35,8 +35,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/drivers/CDriver.hpp"
-#include "../include/definition_structure.hpp"
+#include "../../include/drivers/CDriver.hpp"
+#include "../../include/definition_structure.hpp"
 
 #ifdef VTUNEPROF
 #include <ittnotify.h>
@@ -198,7 +198,6 @@ CDriver::CDriver(char* confFile,
   }
   
   
-  if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
   PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
 
   /*--- Open the FSI convergence history file ---*/
@@ -334,7 +333,6 @@ void CDriver::Postprocessing() {
     if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
       cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
   }
-  delete [] ConvHist_file;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
@@ -612,7 +610,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   if (!dummy){
     if (rank == MASTER_NODE)
-      cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
+      cout << endl <<"------------------- Geometry Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
     
     if( fem_solver ) {
       switch( config->GetKind_FEM_Flow() ) {
@@ -1019,10 +1017,9 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
   unsigned short iSol;
   
-  
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-  
+    cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
+
   solver = new CSolver**[config->GetnMGLevels()+1];
   
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
@@ -1655,7 +1652,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CIntegration **&integra
   unsigned short iSol;
   
   if (rank == MASTER_NODE)
-    cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
+    cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
   
   integration = new CIntegration* [MAX_SOLS];
   for (iSol = 0; iSol < MAX_SOLS; iSol++)
@@ -1804,6 +1801,9 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
 }
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics) {
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
 
   unsigned short iMGlevel, iSol,
       
@@ -3033,9 +3033,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
 
 void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
   
-  if (rank == MASTER_NODE) {
-    cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
-  }
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
   
   /*--- Loop over all zones and instantiate the physics iteration. ---*/
   
@@ -3045,62 +3044,62 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) {
       
       if(config->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
-          cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
+          cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
         iteration = new CTurboIteration(config);
         
       }
       else{
         if (rank == MASTER_NODE)
-          cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+          cout << "Euler/Navier-Stokes/RANS fluid iteration." << endl;
         iteration = new CFluidIteration(config);
       }
       break;
       
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
       if (rank == MASTER_NODE)
-        cout << ": finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
+        cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
       iteration = new CFEMFluidIteration(config);
       break;
       
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
-        cout << ": heat iteration (finite volume method)." << endl;
+        cout << "Heat iteration (finite volume method)." << endl;
       iteration = new CHeatIteration(config);
       break;
       
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
-        cout << ": FEM iteration." << endl;
+        cout << "FEM iteration." << endl;
       iteration = new CFEAIteration(config);
       break;
       
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        cout << "Discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
       
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint FEM structural iteration." << endl;
+        cout << "Discrete adjoint FEM structural iteration." << endl;
       iteration = new CDiscAdjFEAIteration(config);
       break;
       
     case DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
-        cout << ": discrete adjoint heat iteration." << endl;
+        cout << "Discrete adjoint heat iteration." << endl;
       iteration = new CDiscAdjHeatIteration(config);
       break;
   }
@@ -3123,7 +3122,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
     surface_movement->CopyBoundary(geometry[MESH_0], config);
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
-      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, 0);
+      iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, iInst);
     }
   }
   
@@ -3579,10 +3578,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
   
   for (iZone = 0; iZone < nZone; iZone++){
 
-    /*--- Initial print to console for this zone. ---*/
-
-    if (rank == MASTER_NODE) cout << "Zone " << iZone;
-
+    if (rank == MASTER_NODE)
+      cout << endl <<"-------------------- Output Preprocessing ( Zone " << iZone <<" ) --------------------" << endl;
+   
     /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
     switch (config[iZone]->GetKind_Solver()) {
@@ -4240,12 +4238,12 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
 CTurbomachineryDriver::~CTurbomachineryDriver(void) {
   /*--- Close the convergence history file. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+    for (iInst = 0; iInst < 1; iInst++) {
       ConvHist_file[iZone][iInst].close();
     }
     delete [] ConvHist_file[iZone];
   }
-  
+  delete [] ConvHist_file;  
 }
 
 void CTurbomachineryDriver::Run() {
@@ -4488,7 +4486,7 @@ CHBDriver::CHBDriver(char* confFile,
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
+        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][iInst]);
       }
     }
   }
@@ -4503,14 +4501,15 @@ CHBDriver::~CHBDriver(void) {
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
   for (kInst = 0; kInst < nInstHB; kInst++) if (D[kInst] != NULL) delete [] D[kInst];
   if (D[kInst] != NULL) delete [] D;
+  
   /*--- Close the convergence history file. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+    for (iInst = 0; iInst < nInstHB; iInst++) {
       ConvHist_file[iZone][iInst].close();
     }
     delete [] ConvHist_file[iZone];
   }
-
+  delete [] ConvHist_file;
 }
 
 void CHBDriver::Run() {
