@@ -687,37 +687,129 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         case EULER:                   case NAVIER_STOKES:                   case RANS:
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
 
-          switch(config_container[iZone]->GetKind_ObjFunc()) {
-
-            case LIFT_COEFFICIENT:
-              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
-              break;
-            case DRAG_COEFFICIENT:
-              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
-              break;
-            case SURFACE_TOTAL_PRESSURE:
-              ObjFunc += direct_output[iZone]->GetHistoryFieldValuePerSurface("AVG_TOTALPRESS", iMarker_Analyze)*Weight_ObjFunc;
-              break;
-            case TOTAL_AVG_TEMPERATURE:
-              ObjFunc += direct_output[iZone]->GetHistoryFieldValuePerSurface("AVG_TOTALTEMP", iMarker_Analyze)*Weight_ObjFunc;
-              break;
-            case TOTAL_HEATFLUX:
-              ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
-              break;
-            default:
-              break;
-          }
+          // per-surface output to be added soon
           break;
 
         case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
-          if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
-          }
-          else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
-            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
-          }
+
+          // per-surface output to be added soon
+          break;
+
+        default:
           break;
       }
+    }
+
+    /*--- Not-per-surface objective functions (shall not be included above) ---*/
+
+    Weight_ObjFunc = config_container[iZone]->GetWeight_ObjFunc(0);
+
+    switch (config_container[iZone]->GetKind_Solver()) {
+
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+
+        switch(config_container[iZone]->GetKind_ObjFunc()) {
+
+          // Aerodynamic coefficients
+
+          case DRAG_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("DRAG")*Weight_ObjFunc;
+            break;
+          case LIFT_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("LIFT")*Weight_ObjFunc;
+            break;
+          case SIDEFORCE_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SIDEFORCE")*Weight_ObjFunc;
+            break;
+          case EFFICIENCY:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("EFFICIENCY")*Weight_ObjFunc;
+            break;
+          case MOMENT_X_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-X")*Weight_ObjFunc;
+            break;
+          case MOMENT_Y_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-Y")*Weight_ObjFunc;
+            break;
+          case MOMENT_Z_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENT-Z")*Weight_ObjFunc;
+            break;
+          case FORCE_X_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-X")*Weight_ObjFunc;
+            break;
+          case FORCE_Y_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-Y")*Weight_ObjFunc;
+            break;
+          case FORCE_Z_COEFFICIENT:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("FORCE-Z")*Weight_ObjFunc;
+            break;
+
+          // Other surface-related output values
+
+          case SURFACE_MASSFLOW:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_MASSFLOW")*Weight_ObjFunc;
+            break;
+          case SURFACE_MACH:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_MACH")*Weight_ObjFunc;
+            break;
+          case SURFACE_UNIFORMITY:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("UNIFORMITY")*Weight_ObjFunc;
+            break;
+          case SURFACE_SECONDARY:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SECONDARY_STRENGTH")*Weight_ObjFunc;
+            break;
+          case SURFACE_MOM_DISTORTION:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("MOMENTUM_DISTORTION")*Weight_ObjFunc;
+            break;
+          case SURFACE_SECOND_OVER_UNIFORM:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("SECONDARY_OVER_UNIFORMITY")*Weight_ObjFunc;
+            break;
+          case TOTAL_AVG_TEMPERATURE:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_TOTALTEMP")*Weight_ObjFunc;
+            break;
+          case SURFACE_TOTAL_PRESSURE:
+            ObjFunc+=direct_output[iZone]->GetHistoryFieldValue("AVG_TOTALPRESS")*Weight_ObjFunc;
+            break;
+
+          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
+
+          case SURFACE_PRESSURE_DROP:
+            ObjFunc+=config_container[iZone]->GetSurface_PressureDrop(0)*Weight_ObjFunc;
+            break;
+          case SURFACE_STATIC_PRESSURE:
+            ObjFunc+=config_container[iZone]->GetSurface_Pressure(0)*Weight_ObjFunc;
+            break;
+          case TOTAL_HEATFLUX:
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
+            break;
+
+          default:
+            cout << "Objective function not covered for discrete adjoint multiphysics." << endl;
+            break;
+        }
+        break;
+
+      case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
+
+        switch(config_container[iZone]->GetKind_ObjFunc()) {
+
+          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
+
+          case TOTAL_HEATFLUX:
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
+            break;
+          case TOTAL_AVG_TEMPERATURE:
+            ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
+            break;
+
+          default:
+            cout << "Objective function not covered for discrete adjoint multiphysics." << endl;
+            break;
+        }
+        break;
+
+      default:
+        break;
     }
   }
 
@@ -725,7 +817,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     AD::RegisterOutput(ObjFunc);
     AD::Set_AdjIndex(ObjFunc_Index, ObjFunc);
     if (rank == MASTER_NODE && kind_recording == FLOW_CONS_VARS) {
-      cout << " Objective function      :            : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
+
+      cout << " Objective function                   : " << ObjFunc << " (" << ObjFunc_Index << ")" << endl;
     }
   }
 }
