@@ -36,6 +36,7 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.inl"
+#include<numeric>
 
 template<class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix(void) {
