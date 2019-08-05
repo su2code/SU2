@@ -62,6 +62,8 @@ protected:
   CSolver **solver;                             /*!< \brief Container vector with all the solutions. */
   COutput *direct_output;
 
+  COutputLegacy* output_legacy;
+  
 public:
 
   /*!
