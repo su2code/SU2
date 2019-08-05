@@ -13031,7 +13031,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && grid_movement)
+  if (dual_time && grid_movement && (config->GetKind_GridMovement() != RIGID_MOTION))
     Restart_OldGeometry(geometry[MESH_0], config);
 
   delete [] Coord;

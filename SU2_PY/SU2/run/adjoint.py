@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import copy
+import os, copy
 
 from .. import io  as su2io
 from .merge     import merge     as su2merge
@@ -84,7 +84,7 @@ def adjoint( config ):
         konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
 
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
-    
+    konfig['RAMP_LOADING'] = 'NO' #CVC: Temp to allow ramp only in direct sim from single config python scripts
     # Run Solution
     SU2_CFD(konfig)
     
@@ -95,7 +95,11 @@ def adjoint( config ):
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
-    history_filename = konfig['CONV_FILENAME'] + plot_extension
+    # CVC: Adjustment needed as FSI history filenames are different
+    if konfig['PHYSICAL_PROBLEM'] == 'FLUID_STRUCTURE_INTERACTION':
+        history_filename = 'history_adjoint_FSI' + plot_extension
+    else:
+        history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
     
     # get history
@@ -110,7 +114,10 @@ def adjoint( config ):
     if "," in objective:
             objective="COMBO"
     adj_title    = 'ADJOINT_' + objective
-    suffix       = su2io.get_adjointSuffix(objective)
+    if konfig['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':
+        suffix       = "refnode"
+    else:
+        suffix       = su2io.get_adjointSuffix(objective)
     restart_name = konfig['RESTART_FLOW_FILENAME']
     restart_name = su2io.add_suffix(restart_name,suffix)
     

@@ -46,7 +46,7 @@ from .. import util as su2util
 from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
 from SU2.eval import functions
-
+import numpy as np
 # ----------------------------------------------------------------------
 #  Main Gradient Interface
 # ----------------------------------------------------------------------
@@ -139,6 +139,11 @@ def gradient( func_name, method, config, state=None ):
 
     # prepare output
     grads_out = state['GRADIENTS'][func_output]
+    if konfig['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':
+        filename = os.getcwd() + '/DIRECT/of_refnode.dat'
+        func_out = np.loadtxt(filename)
+    else:
+        func_out = state['FUNCTIONS'][func_name]
 
     return copy.deepcopy(grads_out)
 
@@ -668,6 +673,8 @@ def findiff( config, state=None ):
 
     # initialize gradients
     func_keys = list(func_base.keys())
+    if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':#CVC: Debug: REFNODE
+        func_keys = ['REFNODE']
     func_keys = ['VARIABLE'] + func_keys + ['FINDIFF_STEP']
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
@@ -688,6 +695,7 @@ def findiff( config, state=None ):
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend(name)
 
@@ -739,7 +747,14 @@ def findiff( config, state=None ):
                     elif key == 'FINDIFF_STEP': 
                         grads[key].append(this_step)
                     else:
-                        this_grad = ( func_step[key] - func_base[key] ) / this_step
+                        if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':#CVC: Debug: REFNODE
+                            filename = os.path.dirname(os.getcwd()) + '/DIRECT/of_refnode.dat'
+                            of_direct = np.loadtxt(filename)
+                            filename = os.getcwd() + '/DIRECT/of_refnode.dat'
+                            of_findiff = np.loadtxt(filename)
+                            this_grad = ( of_findiff - of_direct ) / this_step
+                        else:
+                            this_grad = ( func_step[key] - func_base[key] ) / this_step
                         grads[key].append(this_grad)
                         
                    
@@ -962,6 +977,7 @@ def directdiff( config, state=None ):
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend(name)
 

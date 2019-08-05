@@ -5426,27 +5426,27 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     ofstream myfile_res;
     myfile_res.open ("history_adjoint_FSI.csv");
 
-    myfile_res << "BGS_Iter\t";
+    myfile_res << "BGS_Iter";
 
     for (iVar = 0; iVar < nVar_Flow; iVar++){
-      myfile_res << "ResFlow[" << iVar << "]\t";
+      myfile_res << ", " << "ResFlow[" << iVar << "]";
     }
 
     for (iVar = 0; iVar < nVar_Struct; iVar++){
-      myfile_res << "ResFEA[" << iVar << "]\t";
+      myfile_res << ", " << "ResFEA[" << iVar << "]";
     }
 
 
     bool de_effects = config_container[ZONE_0]->GetDE_Effects();
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnElasticityMod(); iVar++)
-        myfile_res << "Sens_E_" << iVar << "\t";
+        myfile_res << ", " << "Sens_E_" << iVar;
 
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnPoissonRatio(); iVar++)
-      myfile_res << "Sens_Nu_" << iVar << "\t";
+      myfile_res << ", " << "Sens_Nu_" << iVar;
 
     if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_0]->GetnElectric_Field(); iVar++)
-          myfile_res << "Sens_EField_" << iVar << "\t";
+          myfile_res << ", " << "Sens_EField_" << iVar;
     }
 
     myfile_res << endl;
@@ -5497,8 +5497,8 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   }
 
   /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-  config_container[ZONE_0]->SetnExtIter(1);
-  config_container[ZONE_1]->SetnExtIter(1);
+  if (config_container[ZONE_0]->GetUnsteady_Simulation() == NONE) config_container[ZONE_0]->SetnExtIter(1);
+  if (config_container[ZONE_1]->GetDynamic_Analysis() != DYNAMIC) config_container[ZONE_1]->SetnExtIter(1);
 
 }
 
@@ -5535,7 +5535,7 @@ void CDiscAdjFSIDriver::Run( ) {
   unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
   ofstream myfile_struc, myfile_flow, myfile_geo;
-
+  
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
 
@@ -5661,9 +5661,12 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     if ((ExtIter > 0) && dual_time){
 
-      /*--- Load solution timestep n - 2 ---*/
-
-      iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 2);
+      /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
+      if (dual_time_1st){
+        iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 1);
+      } else {
+        iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, INST_0, Direct_Iter_Flow - 2);
+      }
 
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
@@ -5690,9 +5693,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       /*--- Set Solution at timestep n-1 to the previously loaded solution ---*/
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_time_n1());
+            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_Old());
             if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n1());
+              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node[iPoint]->GetSolution_Old());
             }
           }
         }
@@ -5724,6 +5727,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
     /*--- Load the restart (we need to use the routine in order to get the GEOMETRY, otherwise it's restarted from the base mesh ---*/
 
     solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_FLOW][INST_0], solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, true);
+  }
 
   if (ExtIter == 0 || dual_time) {
 
@@ -5745,7 +5749,6 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetGeometry_Direct(geometry_container[ZONE_FLOW][INST_0][MESH_0]->node[iPoint]->GetCoord());
     }
 
-  }
 
   /*----------------------------------------------------------------------------*/
   /*-------------------------- STRUCTURAL SOLUTION -----------------------------*/
@@ -6128,9 +6131,9 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
   string kind_DirectIteration = " ";
   string kind_AdjointIteration = " ";
 
-  if (unsteady || dynamic){
+  /*if (unsteady || dynamic){
     SU2_MPI::Error("DYNAMIC ADJOINT SOLVER NOT IMPLEMENTED FOR FSI APPLICATIONS", CURRENT_FUNCTION);
-  }
+  }*/
 
 
   if (rank == MASTER_NODE){
@@ -6719,8 +6722,8 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
   flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
 
-  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
-  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
+  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Struct-1] < structure_criteria));
+  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Struct-1] > structure_criteria_rel));
 
   Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
                  (flow_converged_absolute && struct_converged_relative) ||
@@ -6757,25 +6760,25 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
       myfile_res.open ("history_adjoint_FSI.csv", ios::app);
 
-      myfile_res << IntIter << "\t";
+      myfile_res << IntIter;
 
       myfile_res.precision(15);
 
       for (iVar = 0; iVar < nVar_Flow; iVar++){
-        myfile_res << fixed << residual_flow[iVar] << "\t";
+        myfile_res << fixed << ", " << residual_flow[iVar];
       }
 
       for (iVar = 0; iVar < nVar_Struct; iVar++){
-        myfile_res << fixed << residual_struct[iVar] << "\t";
+        myfile_res << fixed << ", " << residual_struct[iVar];
       }
 
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElasticityMod(); iVar++)
-         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar) << "\t";
+      myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar);
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnPoissonRatio(); iVar++)
-         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar) << "\t";
+         myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar);
       if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElectric_Field(); iVar++)
-          myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
+          myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0);
       }
 
       myfile_res << endl;

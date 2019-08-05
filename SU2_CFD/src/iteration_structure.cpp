@@ -278,7 +278,10 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
       nIterMesh = grid_movement->Get_nIterMesh();
       stat_mesh = (nIterMesh == 0);
 
-      if (!adjoint && !stat_mesh) {
+      //CVC: Debug: 
+      //if (!adjoint && !stat_mesh) {
+      //CVC: Debug: Are the grid velocities from the direct solution stored and handled correctly?
+      if (!discrete_adjoint && !stat_mesh) {
         if (rank == MASTER_NODE && Screen_Output)
           cout << "Computing grid velocities by finite differencing." << endl;
         geometry[MESH_0]->SetGridVelocity(config, ExtIter);
@@ -1502,7 +1505,7 @@ void CFEAIteration::Iterate(COutput *output,
       /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
       for (IntIter = 1; IntIter < config[val_iZone]->GetDyn_nIntIter(); IntIter++) {
-
+if ((rank == MASTER_NODE) && disc_adj_fem) cout << "CVC: Debug: CFEAIteration::Iterate Restricted to 1 iteration for AD problems" << endl;
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
 
@@ -3101,6 +3104,10 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver, CGeometry ****ge
     break;
 
   }
+
+  // CVC: Debug: /*--- Add dependencies for grid coordinate derivatives, no need for full update as the structural solver only uses the node coordinates. ---*/
+
+  // geometry[iZone][iInst][MESH_0]->Set_MPI_Coord(config[iZone]);
 
 }
 

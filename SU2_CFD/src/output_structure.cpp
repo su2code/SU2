@@ -11345,7 +11345,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
       case EULER : case NAVIER_STOKES: case RANS :
         FSIHist_file[0] << flow_resid;
-        if (turbulent) FSIHist_file[0] << turb_resid;
+        //if (turbulent) FSIHist_file[0] << turb_resid;
       break;
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -11373,7 +11373,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
      case EULER : case NAVIER_STOKES: case RANS :
        FSIHist_file[0] << flow_coeff;
-       if (turbulent) FSIHist_file[0] << turb_resid;
+       //if (turbulent) FSIHist_file[0] << turb_resid;
        if (direct_diff != NO_DERIVATIVE) {
          FSIHist_file[0] << d_flow_coeff;
        }
@@ -11617,7 +11617,9 @@ void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsi
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CLAMPED_BOUNDARY ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY )) {
 
         
         nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
@@ -14334,6 +14336,16 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   if (geometry->GetnDim() == 3)
     Variable_Names.push_back("Displacement_z");
 
+  /*--- For the discrete adjoint, we have the full field of sensitivity
+   in each coordinate direction. ---*/
+  if (config->GetDiscrete_Adjoint()) {
+    nVar_Par += geometry->GetnDim();
+    Variable_Names.push_back("Sensitivity_x");
+    Variable_Names.push_back("Sensitivity_y");
+    if (geometry->GetnDim() == 3)
+      Variable_Names.push_back("Sensitivity_z");
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -14463,14 +14475,21 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
         iVar++;
       }
       
-      /*--- Load the conservative variable states for the mean flow variables.
-       If requested, load the limiters and residuals as well. ---*/
+      /*--- Load the displacements / adjoint displacements. ---*/
       
       for (jVar = 0; jVar < nVar_First; jVar++) {
         Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
         iVar++;
       }
       
+      /*--- Load data for the discrete sensitivities. ---*/
+
+      if (config->GetDiscrete_Adjoint())
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Local_Data[jPoint][iVar++] = solver[FirstIndex]->node[iPoint]->GetSensitivity(iDim);
+
+      /*--- Residuals. ---*/
+
       if (!config->GetLow_MemoryOutput()) {
         if (config->GetWrt_Residuals()) {
           for (jVar = 0; jVar < nVar_First; jVar++) {
@@ -17963,6 +17982,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if ((fem) && (config->GetWrt_Dynamic())) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if (config->GetDynamic_Analysis() == DYNAMIC) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 

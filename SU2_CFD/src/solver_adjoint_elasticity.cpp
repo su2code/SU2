@@ -54,6 +54,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
   Solution_Vel  = NULL;
   Solution_Accel= NULL;
 
+//  element_container = NULL;
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver(){
@@ -74,6 +75,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CS
 
   SolRest = NULL;
 
+//  element_container = NULL;
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
@@ -130,6 +132,29 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 //        break;
 //    }
 //  }
+
+  // // CVC: Debug
+  // unsigned short iTerm, iKind;
+  // int EL_KIND = 0, FEA_TERM = 0;
+  // /*--- Here is where we assign the kind of each element ---*/
+  
+  // /*--- First level: different possible terms of the equations ---*/
+  // element_container = new CElement** [MAX_TERMS];
+  // for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+  //   element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+  
+  // for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
+  //   for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+  //     element_container[iTerm][iKind] = NULL;
+  //   }
+  // }
+  
+  // if (nDim == 2) {
+    
+  //     /*--- Basic terms ---*/
+  //     element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+  //     element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+  // }
 
   /*--- Allocate the node variables ---*/
 
@@ -443,6 +468,18 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
+  // // CVC: Debug
+  // unsigned short iVar, jVar;
+  // if (element_container != NULL) {
+  //   for (iVar = 0; iVar < MAX_TERMS; iVar++) {
+  //     for (jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+  //       if (element_container[iVar][jVar] != NULL) delete element_container[iVar][jVar];
+  //     }
+  //     delete [] element_container[iVar];
+  //   }
+  //   delete [] element_container;
+  // }
+
   unsigned short iMarker;
 
   if (CSensitivity != NULL) {
@@ -622,6 +659,71 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
         if(fea_dv){
           for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
+        }
+        bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
+
+        if (!dynamic_analysis) {
+          cout << "CVC: Debug: Static analysis: RegisterCoordinates" << endl;
+          geometry->RegisterCoordinates(config);
+        }
+        else {
+          cout << "CVC: Debug: Dynamic analysis: RegisterCoordinates" << endl;
+          geometry->RegisterCoordinates(config);
+
+          // // Coords + Disp
+          // unsigned short iDim;
+          // unsigned long iPoint, nPoint = geometry->GetnPoint();
+          // cout << "CVC: Debug: nPoint = " << nPoint << endl;
+          // cout << "CVC: Debug: nDim = " << nDim << endl;
+          // su2double DispCoord;
+          // for (iPoint = 0; iPoint < nPoint; iPoint++) {
+          //   for (iDim = 0; iDim < nDim; iDim++) {
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Coord[" << iDim << "] = " << geometry->node[iPoint]->GetCoord()[iDim] << endl;
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Disp[" << iDim << "] = " << direct_solver->node[iPoint]->GetSolution(iDim) << endl;
+          //     DispCoord = geometry->node[iPoint]->GetCoord()[iDim] + direct_solver->node[iPoint]->GetSolution(iDim);
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug DispCoord = " << DispCoord << endl;
+          //     AD::RegisterInput(DispCoord);
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] Input Registered" << endl;
+          //   }
+          // }
+
+          // // Register displacements
+          // unsigned short iDim;
+          // unsigned long iPoint, nPoint = geometry->GetnPoint();
+          // cout << "CVC: Debug: nPoint = " << nPoint << endl;
+          // cout << "CVC: Debug: nDim = " << nDim << endl;
+          // //su2double *solDisp;
+          // for (iPoint = 0; iPoint < nPoint; iPoint++) {
+          //   //solDisp = direct_solver->node[iPoint]->GetSolution();
+          //   for (iDim = 0; iDim < nDim; iDim++) {
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: disp[" << iPoint << "] coord[" << iDim << "] = " << direct_solver->node[iPoint]->GetSolution()[iDim] << endl;
+          //     AD::RegisterInput(direct_solver->node[iPoint]->GetSolution()[iDim]);
+          //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] Input Registered" << endl;
+          //   }
+          // }
+          
+
+          // // Register current coordinates
+          // unsigned long iElem;
+          // unsigned short iNode, iDim, nNodes = 0;
+          // int EL_KIND = 0, FEA_TERM = 0;
+          
+          // for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+          //   if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+          //   if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+            
+          //   /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    
+          //   for (iNode = 0; iNode < nNodes; iNode++) {
+          //     for (iDim = 0; iDim < nDim; iDim++) {
+          //       AD::RegisterInput(element_container[FEA_TERM][EL_KIND]->GetCurr_Coord(iNode, iDim));
+          //     }
+          //   }
+          // }
+          
+          cout << "CVC: Debug: Dynamic analysis: RegisterCoordinates Completed" << endl;
+
         }
 
         if (config->GetTopology_Optimization())
@@ -863,9 +965,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  unsigned short iVar;
+  unsigned short iVar, iDim;
+  unsigned long iPoint;
 
-  /*--- Extract the adjoint values of the farfield values ---*/
+  /*--- Extract the adjoint values of the material properties ---*/
 
   if (KindDirect_Solver == RUNTIME_FEA_SYS){
 
@@ -911,6 +1014,91 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
   #endif
 
     }
+    
+    /*--- Extract the adjoint values of the grid coordinates ---*/
+    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+    su2double *adj_coord = new su2double[nDim];
+    
+    if (!dynamic) {
+      for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          adj_coord[iDim] = SU2_TYPE::GetDerivative(geometry->node[iPoint]->GetCoord()[iDim]);
+          node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+        }
+      }
+      delete [] adj_coord;
+    }
+    else {
+      cout << "CVC: Debug: Dynamic extract adjoint variables" << endl;
+      // Coords
+      unsigned long iPoint, nPoint = geometry->GetnPoint();
+      unsigned short iDim;
+      su2double *adj_coord = new su2double[nDim];
+      for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Coord[" << iDim << "] = " << geometry->node[iPoint]->GetCoord()[iDim] << endl;
+          adj_coord[iDim] = SU2_TYPE::GetDerivative(geometry->node[iPoint]->GetCoord()[iDim]);
+          //cout << "CVC: Debug Disp[" << iPoint << "][" << iDim << "] = " << direct_solver->node[iPoint]->GetSolution(iDim) << endl;
+          if (iPoint == 0 && iDim == 0) cout << "CVC: Debug adj_coord[" << iDim << "] = " << adj_coord[iDim] << endl;
+          node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+          if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] Sensitivity set" << endl;
+        }
+      }
+      delete [] adj_coord;
+
+      // // Coords + Disp
+      // unsigned long iPoint, nPoint = geometry->GetnPoint();
+      // unsigned short iDim;
+      // su2double *adj_coord = new su2double[nDim];
+      // su2double DispCoord;
+      // for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+      //   for (iDim = 0; iDim < nDim; iDim++){
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Coord[" << iDim << "] = " << geometry->node[iPoint]->GetCoord()[iDim] << endl;
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Disp[" << iDim << "] = " << direct_solver->node[iPoint]->GetSolution(iDim) << endl;
+      //     DispCoord = geometry->node[iPoint]->GetCoord()[iDim] + direct_solver->node[iPoint]->GetSolution(iDim);
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug DispCoord = " << DispCoord << endl;
+      //     adj_coord[iDim] = SU2_TYPE::GetDerivative(DispCoord);
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug adj_coord[" << iDim << "] = " << adj_coord[iDim] << endl;
+      //     node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] Sensitivity set" << endl;
+      //   }
+      // }
+      // delete [] adj_coord;
+      
+      // // Disp
+      // unsigned long iPoint, nPoint = geometry->GetnPoint();
+      // unsigned short iDim;
+      // su2double *adj_coord = new su2double[nDim];
+      // for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+      //   for (iDim = 0; iDim < nDim; iDim++){
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug Disp[" << iDim << "] = " << direct_solver->node[iPoint]->GetSolution(iDim) << endl;;
+      //     adj_coord[iDim] = SU2_TYPE::GetDerivative(direct_solver->node[iPoint]->GetSolution(iDim));
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug adj_coord[" << iDim << "] = " << adj_coord[iDim] << endl;
+      //     node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+      //     if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] Sensitivity set" << endl;
+      //   }
+      // }
+      // delete [] adj_coord;
+
+      // //su2double DispCoord;
+      // for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+      //   for (iDim = 0; iDim < nDim; iDim++){
+      //     // if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: ExtractAdjoint_Variables Nodes" << endl;
+	    //     // adj_coord[iDim] = SU2_TYPE::GetDerivative(geometry->node[iPoint]->GetCoord()[iDim]);
+        
+      //     // Displaced nodes
+      //     //DispCoord = geometry->node[iPoint]->GetCoord()[iDim]+direct_solver->node[iPoint]->GetSolution()[iDim];
+      //     adj_coord[iDim] = SU2_TYPE::GetDerivative(direct_solver->node[iPoint]->GetDispCoord()[iDim]);
+      //     AD::ResetInput(direct_solver->node[iPoint]->GetDispCoord()[iDim]);
+          
+      //     // if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: adj_coord[" << iDim << "] = " << adj_coord[iDim] << endl;
+      //     cout << "CVC: Debug: iPoint = " << iPoint << ", adj_coord[" << iDim << "] = " << adj_coord[iDim] << endl;
+      //     node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+      //  }
+      //}
+      // delete [] adj_coord;
+    }
+      cout << "CVC: Debug: Completed ExtractAdjoint_Variables" << endl;
 
     if (config->GetTopology_Optimization())
       direct_solver->ExtractAdjoint_Variables(geometry,config);

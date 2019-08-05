@@ -201,6 +201,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   if (fsi){
     Cross_Term_Derivative = new su2double[nDim];
     Geometry_CrossTerm_Derivative = new su2double[nDim];
+    Solution_BGS        = new su2double[nDim];
     Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_CrossTerm_Derivative [iDim] = 0.0;

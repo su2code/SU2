@@ -44,6 +44,7 @@ from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
 from ..io import redirect_folder, redirect_output
+from numpy import *
 
 
 # ----------------------------------------------------------------------
@@ -121,7 +122,11 @@ def function( func_name, config, state=None ):
         # If combine_objective is true, use the 'combo' output.
         func_out = state['FUNCTIONS']['COMBO']
     else:
-        func_out = state['FUNCTIONS'][func_name]
+        if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':
+            filename = os.getcwd() + '/DIRECT/of_refnode.dat'
+            func_out = loadtxt(filename)
+        else:
+            func_out = state['FUNCTIONS'][func_name]
 
     if func_name_string in config['OPT_OBJECTIVE']:
         marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
@@ -131,7 +136,10 @@ def function( func_name, config, state=None ):
                 func_out = state['FUNCTIONS'][name]
 
     
-    return copy.deepcopy(func_out)
+    #if config['OBJECTIVE_FUNCTION'] == 'REFERENCE_NODE':
+    return func_out
+    #else:
+    #    return copy.deepcopy(func_out)
 
 #: def function()
 

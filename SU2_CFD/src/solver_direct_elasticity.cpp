@@ -1150,10 +1150,11 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
     for (iNode = 0; iNode < nNodes; iNode++) {
       
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-      
+      // CVC: Debug: reference nodes and displaced nodes
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+        //cout << "CVC: Debug: iNode = " << iNode << ", iDim = " << iDim << ", val_Sol = " << val_Sol << endl;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
@@ -1248,8 +1249,9 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-
+        //if (iDim == 0) cout << "CVC: Debug: coord = " << val_Coord << ", disp = " << node[indexNode[iNode]]->GetSolution(iDim) << endl;
         /*--- Set current coordinate ---*/
+        //if (iDim == 0) cout << "CVC: Debug: iNode = " << iNode << ", iDim = " << iDim << ", val_Sol Curr_Coord = " << val_Sol << endl;
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
         if (de_effects) element_container[DE_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 
@@ -3042,14 +3044,14 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
     LoadCoeff = min(LoadCoeff,1.0);
 
   }
-  else if (Sine_Load){
+  else if (Sine_Load){ //Allow sine load with initial ramp loading as well
 
       /*--- Retrieve amplitude, frequency (Hz) and phase (rad) ---*/
       SineAmp   = config->GetLoad_Sine()[0];
       SineFreq  = config->GetLoad_Sine()[1];
       SinePhase = config->GetLoad_Sine()[2];
 
-      LoadCoeff = SineAmp * sin(2*PI_NUMBER*SineFreq*CurrentTime + SinePhase);
+      LoadCoeff = LoadCoeff * SineAmp * sin(2*PI_NUMBER*SineFreq*CurrentTime + SinePhase);
   }
 
   /*--- Add possibility to release the load after the ramp---*/

@@ -2678,10 +2678,12 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-  
+  cout << "CVC: Debug: nPoint = " << nPoint << endl;
+  cout << "CVC: Debug: nDim = " << nDim << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      if (iPoint == 0 && iDim == 0) cout << "CVC: Debug: node[" << iPoint << "] coord[" << iDim << "] = " << node[iPoint]->GetCoord()[iDim] << endl;
     }
   }
 }
@@ -16043,7 +16045,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) {
+  if ((config->GetUnsteady_Simulation()) || (config->GetDynamic_Analysis() == DYNAMIC)) {
     nExtIter = config->GetnExtIter();
   }else {
     nExtIter = 1;
@@ -16084,13 +16086,17 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   filename = config->GetObjFunc_Extension(filename);
 
-  if (config->GetUnsteady_Simulation()) {
+  if (config->GetnZone() > 1){
+		filename = config->GetMultizone_FileName(filename, config->GetiZone());
+	}
+  
+  if ((config->GetUnsteady_Simulation()) || (config->GetDynamic_Analysis() == DYNAMIC)) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
-	if (config->GetnZone() > 1){
+	/*if (config->GetnZone() > 1){
 		filename = config->GetMultizone_FileName(filename, config->GetiZone());
-	}
+	}*/
 
   if (config->GetRead_Binary_Restart()) {
 
@@ -16372,7 +16378,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
-
+        //Dyn nFields=10, Sta nFields=6
+        if (config->GetDynamic_Analysis() == DYNAMIC) skipVar = 4;
+        else skipVar = nFields*2/3;
+        //CVC: Temporary correction : New index to get sensitivity from both compressible flow and structural adjoint solution files
         index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
 
