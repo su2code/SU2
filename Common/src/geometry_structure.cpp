@@ -85,7 +85,6 @@ CGeometry::CGeometry(void) {
   edge                = NULL;
   vertex              = NULL;
   nVertex             = NULL;
-  bound_is_straight   = NULL;
   newBound            = NULL;
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
@@ -229,7 +228,6 @@ CGeometry::~CGeometry(void) {
   
   if (nElem_Bound         != NULL) delete [] nElem_Bound;
   if (nVertex             != NULL) delete [] nVertex;
-  if (bound_is_straight   != NULL) delete [] bound_is_straight;
   if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
   if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
@@ -2795,86 +2793,121 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
 }
 
 
-void CGeometry::ComputeSurf_Straightness(CConfig *config, bool print_on_screen) {
+void CGeometry::ComputeSurf_Straightness(CConfig *config, 
+                                         bool    print_on_screen) {
 
   bool RefUnitNormal_defined;
   unsigned short iMarker,
+                 iMarker_Global,
+                 nMarker_Global = config->GetnMarker_CfgFile(),
                  iDim;
-  unsigned long iVertex,
-                iPoint;
-  su2double epsilon = 1.0e-6,
-            Area;
+  unsigned long iVertex;
+  constexpr passivedouble epsilon = 1.0e-6;
+  su2double Area;
+  string Local_TagBound, 
+         Global_TagBound;
 
   su2double *Normal        = new su2double[nDim],
             *UnitNormal    = new su2double[nDim],
             *RefUnitNormal = new su2double[nDim];
+ 
+  /*--- Allocate memory. ---*/
+  bound_is_straight.reserve(nMarker_Global);
 
-  /*--- Allocate memory and assume the less restrictive, i.e. all boundaries are not straight ---*/
-  bound_is_straight = new bool [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) 
-    bound_is_straight[iMarker] = false;
-
-  /*--- Loop over all the markers ---*/
+  /*--- Loop over all local markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+      /*--- Loop over all global markers, and find the local-global pair via 
+            matching unique string tags. ---*/
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+        /*--- Assume now that this boundary marker is straight. As soon as one
+          AreaElement is found that is not aligend with a Reference then it is 
+          certain that the boundary marker is not straight and one can stop 
+          searching. Another possibility is that this process doesn't own
+          any nodes of that boundary, in that case we also have to assume the
+          boundary is straight.
+          Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets therefore
+          the value true which could be wrong. ---*/
+        bound_is_straight[iMarker_Global] = true;
+
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (Local_TagBound == Global_TagBound) {
       
-      /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligend with a Reference then it is 
-        certain that the boundary marker is not straight and one can stop 
-        searching ---*/
-      bound_is_straight[iMarker] = true;
-      RefUnitNormal_defined = false; 
-      iVertex = 0;
+          RefUnitNormal_defined = false;
+          iVertex = 0;
 
-      while(bound_is_straight[iMarker] == true && iVertex < nVertex[iMarker]) {
-        
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        
-        if (node[iPoint]->GetDomain()) {
-          
-          vertex[iMarker][iVertex]->GetNormal(Normal);
-          /*--- Compute unit normal. ---*/
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt (Area);
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            UnitNormal[iDim] = -Normal[iDim]/Area;
-          
-          /*--- Check if unit normal is within tolerance of the Reference unit normal. 
-                Reference unit normal = first unit normal found. ---*/
-          if(RefUnitNormal_defined) {
-            for (iDim = 0; iDim < nDim; iDim++) {
-              if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon )
-                bound_is_straight[iMarker] = false; break;
+          while(bound_is_straight[iMarker_Global] == true && iVertex < nVertex[iMarker]) {
+
+            vertex[iMarker][iVertex]->GetNormal(Normal);
+            /*--- Compute unit normal. ---*/
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt (Area);
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] = -Normal[iDim]/Area;
+
+            /*--- Check if unit normal is within tolerance of the Reference unit normal. 
+                  Reference unit normal = first unit normal found. ---*/
+            if(RefUnitNormal_defined) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon ) {
+                  bound_is_straight[iMarker_Global] = false;
+                  break;
+                }
+              }
+            } else {
+              for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];
+              RefUnitNormal_defined = true;
             }
-          } else {
-            for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];   
-            RefUnitNormal_defined = true;
-          }
 
-        }//if domain
-      iVertex++;
-      } //while iVertex
-
-    /*--- Print results on screen. ---*/
-    if(rank == MASTER_NODE && print_on_screen) {
-      cout << "Boundary marker " << config->GetMarker_All_TagBound(iMarker) << " is";
-      if(bound_is_straight[iMarker] == false) cout << " NOT";
-      if(nDim == 2) cout << " straight." << endl;
-      if(nDim == 3) cout << " plane." << endl;
-    }
-
+          iVertex++;
+          } //while iVertex
+        }//if Local == Global
+      }//for iMarker_Global
     }//if sym or euler
   }//for iMarker
+
+  /*--- Communicate results. ---*/
+  int *Buff_Send_isStraight, *Buff_Recv_isStraight;
+  Buff_Send_isStraight = new int [nMarker_Global];
+  Buff_Recv_isStraight = new int [nMarker_Global];
+
+  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+    Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight[iMarker_Global]);
+ 
+  SU2_MPI::Allreduce(Buff_Send_isStraight, Buff_Recv_isStraight, nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
+
+  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+    bound_is_straight[iMarker_Global] = static_cast<bool> (Buff_Recv_isStraight[iMarker_Global]);
+
+  /*--- Print results on screen. ---*/
+  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+    if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+        config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
+
+      if(rank == MASTER_NODE && print_on_screen) {
+        cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
+        if(bound_is_straight[iMarker_Global] == false) cout << " NOT";
+        if(nDim == 2) cout << " straight." << endl;
+        if(nDim == 3) cout << " plane." << endl;
+      }
+    }//if sym or euler
+  }//for iMarker_Global
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
   delete [] UnitNormal;
   delete [] RefUnitNormal;
+  delete [] Buff_Send_isStraight;
+  delete [] Buff_Recv_isStraight;
 }
 
 

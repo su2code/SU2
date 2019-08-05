@@ -5239,25 +5239,39 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
+
+  /*--- Get global marker value via the string Tag. ---*/
+  unsigned short iMarker_Global, 
+                 nMarker_Global = config->GetnMarker_CfgFile(),
+                 val_marker_Global;
+  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+    if (config->GetMarker_All_TagBound(val_marker) == config->GetMarker_CfgFile_TagBound(iMarker_Global)) {
+      val_marker_Global = iMarker_Global; break;
+    }
+  }
   
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-    /*---------------------------------------------------------------------------------------------*/
-    /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
-    /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
-    /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
-    /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
-    /*---                on the symmetry-plane.                                                 ---*/
-    /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
-    /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
-    /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
-    /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
-    /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
-    /*---------------------------------------------------------------------------------------------*/
+    //necessary to acces the correct global val_marker here, currently it is wrong
 
-    /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-    if (iVertex == 0 || !(geometry->bound_is_straight[val_marker]) ) {
+    if (iVertex == 0 || 
+        geometry->bound_is_straight[val_marker_Global] != true ||
+        config->GetKind_GridMovement() != RIGID_MOTION) {
+
+      /*---------------------------------------------------------------------------------------------*/
+      /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
+      /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
+      /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
+      /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
+      /*---                on the symmetry-plane.                                                 ---*/
+      /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
+      /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
+      /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
+      /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
+      /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
+      /*---------------------------------------------------------------------------------------------*/
+
+      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
       for (iDim = 0; iDim < nDim; iDim++)
         Normal[iDim] = -Normal[iDim];
@@ -5280,7 +5294,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
             break;
           }
           case 3: {
-            /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
+            /*--- Find the largest entry index of the UnitNormal, and create unit Tangential vector based on that. ---*/
             unsigned short Largest, Arbitrary, Zero;
             if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
                     abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}

@@ -5000,7 +5000,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-   void BC_Euler_Wall(CGeometry      *geometry, 
+  void BC_Euler_Wall(CGeometry      *geometry, 
                       CSolver        **solver_container, 
                       CNumerics      *conv_numerics, 
                       CNumerics      *visc_numerics, 
@@ -5028,7 +5028,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  void BC_Sym_Plane(CGeometry      *geometry, 
+                    CSolver        **solver_container, 
+                    CNumerics      *conv_numerics, 
+                    CNumerics      *visc_numerics, 
+                    CConfig        *config, 
+                    unsigned short val_marker);
   
  /*!
   * \brief Impose the interface state across sliding meshes.

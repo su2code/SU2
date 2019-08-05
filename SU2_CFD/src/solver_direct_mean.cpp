@@ -11264,57 +11264,72 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
   
+  /*--- Get global marker value via the string Tag. ---*/
+  unsigned short iMarker_Global, 
+                 nMarker_Global = config->GetnMarker_CfgFile(),
+                 val_marker_Global;
+  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+    if (config->GetMarker_All_TagBound(val_marker) == config->GetMarker_CfgFile_TagBound(iMarker_Global)) {
+      val_marker_Global = iMarker_Global; break;
+    }
+  }
+
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    /*---------------------------------------------------------------------------------------------*/
-    /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
-    /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
-    /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
-    /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
-    /*---                on the symmetry-plane.                                                 ---*/
-    /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
-    /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
-    /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
-    /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
-    /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
-    /*---------------------------------------------------------------------------------------------*/
+    if (iVertex == 0 || 
+        geometry->bound_is_straight[val_marker_Global] != true ||
+        config->GetKind_GridMovement() != RIGID_MOTION) {
 
-    /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-    geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
-    for (iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
+      /*---------------------------------------------------------------------------------------------*/
+      /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
+      /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
+      /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
+      /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
+      /*---                on the symmetry-plane.                                                 ---*/
+      /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
+      /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
+      /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
+      /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
+      /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
+      /*---------------------------------------------------------------------------------------------*/
 
-    /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt (Area);
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = -Normal[iDim]/Area;
+      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
+      for (iDim = 0; iDim < nDim; iDim++)
+        Normal[iDim] = -Normal[iDim];
 
-    /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
-    if (config->GetViscous()) {
-      switch( nDim ) {
-        case 2: {
-          Tangential[0] = -UnitNormal[1];
-          Tangential[1] =  UnitNormal[0];
-          break;
-        }
-        case 3: {
-          /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that. ---*/
-          unsigned short Largest, Arbitrary, Zero;
-          if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
-                  abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
-          else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
-                  abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
-          else                                              {Largest=2;Arbitrary=1;Zero=0;}
+      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
 
-          Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-          Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-          Tangential[Zero] =  0.0;
-          break;
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+
+      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+      if (config->GetViscous()) {
+        switch( nDim ) {
+          case 2: {
+            Tangential[0] = -UnitNormal[1];
+            Tangential[1] =  UnitNormal[0];
+            break;
+          }
+          case 3: {
+            /*--- Find the largest entry index of the UnitNormal, and create unit Tangential vector based on that. ---*/
+            unsigned short Largest, Arbitrary, Zero;
+            if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
+                    abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
+            else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
+                    abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
+            else                                              {Largest=2;Arbitrary=1;Zero=0;}
+
+            Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Zero] =  0.0;
+            break;
+          }
         }
       }
     }
