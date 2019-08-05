@@ -47,12 +47,12 @@
  */
 class CAdjEulerVariable : public CVariable {
 protected:
-  su2double *Psi;    /*!< \brief Vector of the adjoint variables. */
-  su2double *ForceProj_Vector;  /*!< \brief Vector d. */
-  su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
-  su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
-  bool incompressible;
+  Mat_t Psi;                /*!< \brief Vector of the adjoint variables. */
+  Mat_t ForceProj_Vector;   /*!< \brief Vector d. */
+  Mat_t ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
+  Mat_t IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
+  Mat_t HB_Source;          /*!< \brief Harmonic balance source term. */
+  VecBool_t incompressible;
 public:
 
   /*!

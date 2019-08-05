@@ -47,12 +47,13 @@
  */
 class CAdjTurbVariable : public CVariable {
 protected:
-  su2double *dmuT_dUTvar;       /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
-  su2double **dRTstar_dUTvar;   /*!< \brief Sensitivity of modified turbulence residual (no boundary flux)
-                                 to mean flow and turbulence vars. */
-  su2double **dFT_dUTvar;   /*!< \brief Sensitivity of boundary flux
-                             to mean flow and turbulence vars. */
-  su2double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
+  Mat_t dmuT_dUTvar;       /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
+  Vec_t dRTstar_dUTvar_Storage;
+  MatPtr_t dRTstar_dUTvar;      /*!< \brief Sensitivity of modified turbulence residual
+                                 (no boundary flux) to mean flow and turbulence vars. */
+  Vec_t dFT_dUTvar_Storage;
+  MatPtr_t dFT_dUTvar;   /*!< \brief Sensitivity of boundary flux to mean flow and turbulence vars. */
+  Mat_t EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
 
 public:
 

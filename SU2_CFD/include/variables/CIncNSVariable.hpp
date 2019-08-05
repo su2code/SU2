@@ -48,10 +48,11 @@
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
-  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
-  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  Mat_t Vorticity;    /*!< \brief Vorticity of the fluid. */
+  Vec_t StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
 
-  su2double DES_LengthScale;
+  Vec_t DES_LengthScale;
+
 public:
 
   /*!

@@ -48,33 +48,33 @@
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
-  su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  su2double* Solution_Direct;
+  Mat_t Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  Mat_t Solution_Direct;
 
-  su2double* Dynamic_Derivative;
-  su2double* Dynamic_Derivative_n;
-  su2double* Dynamic_Derivative_Vel;
-  su2double* Dynamic_Derivative_Vel_n;
-  su2double* Dynamic_Derivative_Accel;
-  su2double* Dynamic_Derivative_Accel_n;
+  Mat_t Dynamic_Derivative;
+  Mat_t Dynamic_Derivative_n;
+  Mat_t Dynamic_Derivative_Vel;
+  Mat_t Dynamic_Derivative_Vel_n;
+  Mat_t Dynamic_Derivative_Accel;
+  Mat_t Dynamic_Derivative_Accel_n;
 
-  su2double* Solution_Vel;
-  su2double* Solution_Accel;
+  Mat_t Solution_Vel;
+  Mat_t Solution_Accel;
 
-  su2double* Solution_Vel_time_n;
-  su2double* Solution_Accel_time_n;
+  Mat_t Solution_Vel_time_n;
+  Mat_t Solution_Accel_time_n;
 
-  su2double* Solution_Old_Vel;
-  su2double* Solution_Old_Accel;
+  Mat_t Solution_Old_Vel;
+  Mat_t Solution_Old_Accel;
 
-  su2double* Solution_Direct_Vel;
-  su2double* Solution_Direct_Accel;
+  Mat_t Solution_Direct_Vel;
+  Mat_t Solution_Direct_Accel;
 
-  su2double* Cross_Term_Derivative;
-  su2double* Geometry_CrossTerm_Derivative;
+  Mat_t Cross_Term_Derivative;
+  Mat_t Geometry_CrossTerm_Derivative;
 
-  su2double* Solution_BGS;
-  su2double* Solution_BGS_k;
+  Mat_t Solution_BGS;
+  Mat_t Solution_BGS_k;
 
 public:
   /*!

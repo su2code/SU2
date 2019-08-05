@@ -48,7 +48,7 @@
 
 class CTransLMVariable : public CTurbVariable {
 protected:
-  su2double gamma_sep;
+  Vec_t gamma_sep;
 
 public:
 

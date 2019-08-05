@@ -47,8 +47,8 @@
  */
 class CTurbVariable : public CVariable {
 protected:
-  su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+  Vec_t muT;         /*!< \brief Eddy viscosity. */
+  Mat_t HB_Source;   /*!< \brief Harmonic Balance source term. */
 
 public:
   /*!

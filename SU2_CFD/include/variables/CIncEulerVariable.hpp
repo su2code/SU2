@@ -47,21 +47,14 @@
  */
 class CIncEulerVariable : public CVariable {
 protected:
-  su2double Velocity2;      /*!< \brief Square of the velocity vector. */
-
-  /*--- Primitive variable definition ---*/
-
-  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-
-  /*--- Old solution container for BGS iterations ---*/
-
-  su2double* Solution_BGS_k;
-
-  /*--- Old density for variable density turbulent flows (SST). ---*/
-
-  su2double Density_Old;
+  Vec_t Velocity2;              /*!< \brief Square of the velocity vector. */
+  // ToDo: wrong_description
+  Mat_t Primitive;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  Vec_t Grad_Prim_Storage;
+  MatPtr_t Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  Mat_t Limiter_Primitive;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  Mat_t Solution_BGS_k;         /*!< \brief Old solution container for BGS iterations. */
+  Vec_t Density_Old;            /*!< \brief Old density for variable density turbulent flows (SST). */
 
 public:
 

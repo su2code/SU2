@@ -47,8 +47,8 @@
  */
 class CHeatFVMVariable : public CVariable {
 protected:
-  su2double* Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  su2double* Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
+  Mat_t Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
 
 public:
 

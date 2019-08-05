@@ -49,26 +49,26 @@
 class CFEAVariable : public CVariable {
 protected:
 
-  su2double *Stress;              /*!< \brief Stress tensor. */
+  Mat_t Stress;  /*!< \brief Stress tensor. */
 
-  su2double *Residual_Ext_Body;   /*!< \brief Term of the residual due to body forces */
+  Mat_t Residual_Ext_Body;  /*!< \brief Term of the residual due to body forces */
 
-  su2double VonMises_Stress;      /*!< \brief Von Mises stress. */
+  Vec_t VonMises_Stress;    /*!< \brief Von Mises stress. */
 
-  su2double *Solution_Vel,        /*!< \brief Velocity of the nodes. */
-  *Solution_Vel_time_n;           /*!< \brief Velocity of the nodes at time n. */
+  Mat_t Solution_Vel;         /*!< \brief Velocity of the nodes. */
+  Mat_t Solution_Vel_time_n;  /*!< \brief Velocity of the nodes at time n. */
 
-  su2double *Solution_Accel,      /*!< \brief Acceleration of the nodes. */
-  *Solution_Accel_time_n;         /*!< \brief Acceleration of the nodes at time n. */
+  Mat_t Solution_Accel;         /*!< \brief Acceleration of the nodes. */
+  Mat_t Solution_Accel_time_n;  /*!< \brief Acceleration of the nodes at time n. */
 
-  su2double *Solution_Pred,       /*!< \brief Predictor of the solution for FSI purposes */
-  *Solution_Pred_Old;             /*!< \brief Predictor of the solution at time n for FSI purposes */
+  Mat_t Solution_Pred;       /*!< \brief Predictor of the solution for FSI purposes */
+  Mat_t Solution_Pred_Old;   /*!< \brief Predictor of the solution at time n for FSI purposes */
 
-  su2double *Reference_Geometry;  /*!< \brief Reference solution for optimization problems */
+  Mat_t Reference_Geometry;  /*!< \brief Reference solution for optimization problems */
 
-  su2double *Prestretch;          /*!< \brief Prestretch geometry */
+  Mat_t Prestretch;          /*!< \brief Prestretch geometry */
 
-  su2double* Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
+  Mat_t Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
 
 
 public:

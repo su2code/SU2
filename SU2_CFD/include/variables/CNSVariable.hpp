@@ -47,18 +47,18 @@
  */
 class CNSVariable : public CEulerVariable {
 private:
-  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
-  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
-  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
-  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
-  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
-  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
-  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-  su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
-  su2double DES_LengthScale; /*!< \brief DES Length Scale. */
-  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
-  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
-  su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  Vec_t Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
+  Vec_t Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
+  Vec_t Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
+  Vec_t Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
+  Vec_t Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
+  Mat_t Vorticity;       /*!< \brief Vorticity of the fluid. */
+  Vec_t StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  Vec_t Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  Vec_t DES_LengthScale; /*!< \brief DES Length Scale. */
+  Vec_t inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
+  Vec_t Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  Vec_t Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 
 public:
 
