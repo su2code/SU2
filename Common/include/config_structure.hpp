@@ -2909,10 +2909,16 @@ public:
   su2double *GetWeightsIntegrationADER_DG(void);
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers including send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void);
+
+  /*!
+   * \brief Get the total number of boundary markers in the config file.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_CfgFile(void);
 
   /*!
    * \brief Get the number of Euler boundary markers.
