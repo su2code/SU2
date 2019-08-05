@@ -155,10 +155,10 @@ su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
-libSU2Core_cxx_flags = -fPIC -std=c++0x
+libSU2Core_cxx_flags = -fPIC -std=c++11
 libSU2Core_libadd = 
 
-su2_cfd_cxx_flags = -fPIC -std=c++0x 
+su2_cfd_cxx_flags = -fPIC -std=c++11
 su2_cfd_ldadd =
 
 # always link to built dependencies from ./externals

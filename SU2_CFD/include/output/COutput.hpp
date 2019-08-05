@@ -135,9 +135,10 @@ protected:
     string FieldName;          /*!< \brief The name of the field, i.e. the name that is printed in the file header.*/
     int    Offset;             /*!< \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
     string OutputGroup;        /*!< \brief The group this field belongs to. */
+    string Description;    
     VolumeOutputField () {}    /*!< \brief Default constructor. */
-    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
-      FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup){}
+    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup, string description):
+      FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup), Description(description){}
   };
 
   std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */
@@ -384,6 +385,8 @@ public:
   void SetConvergence(bool conv) {Convergence = conv;}
   
   void PrintHistoryFields();
+  
+  void PrintVolumeFields();
 
 protected:
   
@@ -489,9 +492,10 @@ protected:
    * \param[in] name - Name for referencing it (in the config file and in the code).
    * \param[in] field_name - Header that is printed in the output files.
    * \param[in] groupname - The name of the group this field belongs to.
+   * \param[in] description - Description of the volume field.
    */
-  inline void AddVolumeOutput(string name, string field_name, string groupname){
-    VolumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname);
+  inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
+    VolumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
     VolumeOutput_List.push_back(name);
   }
   

@@ -261,120 +261,129 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
-  
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+
   // Solution variables
-  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION");
-  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION");
-  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION");
+  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
+  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
+  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
   if (nDim == 3)
-    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION");
-  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION");  
+    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
+  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");  
   
   // Turbulent Residuals
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
+    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
+    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION");
+    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
     break;
   case NONE:
     break;
   }
   
+  // Grid velocity
+  if (config->GetGrid_Movement()){
+    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
+    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
+    if (nDim == 3 ) 
+      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
+  }
+  
   // Primitive variables
-  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE");
-  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE");
-  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE");
-  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
+  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
+  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
   
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE");
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
     
-    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE");
-    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE");
+    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
     if (nDim == 3)
-      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE");
+      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
     
-    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
-    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE");
+    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
     
   }
   
   if (config->GetKind_Solver() == RANS) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
   
   if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY");
+    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
   //Residuals
-  AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL");
-  AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL");
-  AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL");
+  AddVolumeOutput("RES_DENSITY", "Residual_Pressure", "RESIDUAL", "Residual of the density");
+  AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
+  AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
   if (nDim == 3)
-    AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL");
-  AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL");
+    AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL", "Residual of the z-momentum component");
+  AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL");
-    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL");
+    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
+    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
+    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
     break;
   case NONE:
     break;
   }
   
   // Limiter values
-  AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER");
-  AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER");
-  AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER");
+  AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
+  AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
+  AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER", "Limiter value of the y-momentum");
   if (nDim == 3)
-    AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER");
-  AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER");
+    AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
+  AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "RESIDUAL");
-    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "RESIDUAL");
+    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
+    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "RESIDUAL");
+    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
     break;
   case NONE:
     break;
   }
+
   
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES");
-    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES");
+    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
   }
   
   // Roe Low Dissipation
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
+    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION", "Value of the Roe dissipation");
   }
   
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     if (nDim == 3){
-      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION");
-      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION");
+      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
+      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
     }
-    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION");
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION");  
+    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
+    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");  
   }
 }
 
