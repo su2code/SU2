@@ -1252,6 +1252,21 @@ public:
    */
   inline virtual bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V, su2double *dPdU,
                                    su2double *dTdU, su2double *dTvedU) { return false; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
+                                   su2double *val_dPdU, su2double *val_dTdU,
+                                   su2double *val_dTvedU, su2double *val_eves,
+                                   su2double *val_Cvves) { return false; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual bool GradCons2GradPrimVar(CConfig *config, su2double *U,
+                                           su2double *V, su2double **GradU,
+                                           su2double **GradV) { return false; }
   /*!
    * \brief A virtual member.
    */

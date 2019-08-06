@@ -369,12 +369,6 @@ public:
   bool SetTemperature(CConfig *config);
 
   /*!
-   * \brief Get the norm 2 of the velocity.
-   * \return Norm 2 of the velocity vector.
-   */
-  su2double GetVelocity2(void);
-
-  /*!
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
