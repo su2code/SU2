@@ -8086,7 +8086,8 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
     if (Diff_Inputs_Vars[iDiff_Inputs].size() == 0) {
-      SU2_MPI::Error("Diff inputs has not been set at index" + to_string(iDiff_Inputs), CURRENT_FUNCTION);
+      SU2_MPI::Error("Some diff input has not been set, probably missing call to Set/Apply DiffInputs",
+        CURRENT_FUNCTION);
     }
 
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {

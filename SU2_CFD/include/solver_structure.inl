@@ -1208,7 +1208,7 @@ inline su2double CSolver::Evaluate_DiffOutputs_Obj(CConfig *config) {
     nVec = Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size();
     for (iVec = 0; iVec < nVec; iVec++) {
       if (Diff_Outputs_Backprop_Derivs[iDiff_Outputs].size() != Diff_Outputs_Vars[iDiff_Outputs].size()) {
-        SU2_MPI::Error("Size of derivatives passed in does not match size of diff outputs at index" + to_string(iDiff_Outputs),
+        SU2_MPI::Error("Size of derivatives passed in does not match size of one of the diff outputs.",
                        CURRENT_FUNCTION);
       }
       Local_ComboObj += Diff_Outputs_Backprop_Derivs[iDiff_Outputs][iVec] * Diff_Outputs_Vars[iDiff_Outputs][iVec];

@@ -8,9 +8,8 @@ from mpi4py import MPI
 
 import SU2
 import pysu2
-import pysu2ad
 
-from su2torch.su2_function_mpi import RunCode, run_forward, run_adjoint
+from su2torch.su2_function_mpi import RunCode
 
 
 TEMP_CFG_BASENAME = 'tmp_cfg.cfg'
@@ -19,11 +18,11 @@ TEMP_CFG_BASENAME = 'tmp_cfg.cfg'
 class SU2Function(torch.autograd.Function):
     """Function that uses the SU2 in-memory python wrapper."""
 
-    def __init__(self, config_file, dims=2, num_zones=1, num_procs=1):
+    def __init__(self, config_file, dims=2, num_zones=1, max_procs=-1):
         assert num_zones == 1, 'Only supports 1 zone for now.'
         self.num_zones = num_zones
         self.dims = dims
-        self.num_procs = num_procs
+        self.max_procs = max_procs
         self.comms = []
 
         self.config_file = config_file
@@ -45,14 +44,16 @@ class SU2Function(torch.autograd.Function):
         shutil.copy(config_file, self.adjoint_config)
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
 
-
     def forward(self, *inputs, **kwargs):
+        if inputs[0].dim() < 2:
+            raise TypeError('Input is expected to have first dimension for batch, '
+                            'e.g. x[0, :] is first item in batch.')
+
         batch_size = inputs[0].shape[0]
-        if self.num_procs % batch_size != 0:
-            raise TypeError('Batch size ({}) has to be a multiple of the numebr of processes ({}) to ensure even distribution'
-                            .format(batch_size, self.num_procs))
+        if 0 < self.max_procs < batch_size:
+            raise TypeError('Batch size is larger than max_procs, not enough processes to run batch.')
         self.save_for_backward(*inputs)
-        procs_per_example = self.num_procs // batch_size
+        procs_per_example = self.max_procs // batch_size if self.max_procs > 0 else 1
         outputs = []
         for i in range(batch_size):
             x = [z[i] for z in inputs]
@@ -75,7 +76,6 @@ class SU2Function(torch.autograd.Function):
 
     def backward(self, *grad_outputs, **kwargs):
         batch_size = grad_outputs[0].shape[0]
-        procs_per_example = self.num_procs // batch_size
         grads = []
         for i in range(batch_size):
             dl = [z[i] for z in grad_outputs]
