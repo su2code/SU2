@@ -326,7 +326,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  void SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) final;
+  void SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel);
 
   /*!
    * \brief Get the primitive variables.
