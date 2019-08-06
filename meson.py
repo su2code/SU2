@@ -27,19 +27,17 @@
 
 
 import sys, os, subprocess, shutil
-from pathlib import Path
-
-from init_submodules import setup_environment
+from init import init_submodules
 
 def build_ninja():
 
   ninjapath = sys.path[0] + '/externals/ninja'
     
   try:
-    p = subprocess.run([sys.path[0] + '/ninja', '--version'], stdout=subprocess.PIPE)
-  except:
+    subprocess.run([sys.path[0] + '/ninja', '--version'], stdout=subprocess.PIPE)
+  except OSError:   
     print("ninja executable not found. Building ...")
-    p = subprocess.run(['./configure.py', '--bootstrap'], cwd=ninjapath)
+    subprocess.run(['./configure.py', '--bootstrap'], cwd=ninjapath)
     shutil.copy(ninjapath+'/ninja', '.')
 
 if __name__ == '__main__':
@@ -47,7 +45,7 @@ if __name__ == '__main__':
     raise Exception("Script must be run using Python 3")
    
   # Set up the build environment, i.e. clone or download all submodules
-  setup_environment('auto')
+  init_submodules('auto')
 
   # Build ninja if it cannot be found
   build_ninja()

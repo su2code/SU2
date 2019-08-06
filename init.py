@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-## \file init_submodules.py
+## \file init.py
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
@@ -27,9 +27,8 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os, subprocess, shutil, urllib.request, zipfile
-from pathlib import Path
 
-def setup_environment(method = 'auto'):
+def init_submodules(method = 'auto'):
 
   cur_dir = sys.path[0]
 
@@ -175,7 +174,7 @@ if __name__ == '__main__':
     raise Exception("Script must be run using Python 3")
    
   # Set up the build environment, i.e. clone or download all submodules
-  setup_environment(sys.argv[1])
+  init_submodules(sys.argv[1])
 
   sys.exit(0)
 
