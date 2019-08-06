@@ -46,9 +46,10 @@
  * \author A. Bueno.
  */
 
-class CTurbSAVariable : public CTurbVariable {
+class CTurbSAVariable final : public CTurbVariable {
 
 private:
+  // ToDo : This variable is also defined for CTransLMVariable
   Vec_t gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
   Vec_t DES_LengthScale;
   Vec_t Vortex_Tilting;
@@ -57,69 +58,87 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSAVariable(void);
+  CTurbSAVariable() = default;
+
+//  /*!
+//   * \overload
+//   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+//   * \param[in] val_muT  - The eddy viscosity
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
   /*!
    * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
+  CTurbSAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSAVariable(void);
+  ~CTurbSAVariable() = default;
 
   /*!
    * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] source - Value of the harmonic balance source term. for the index <i>iVar</i>.
    */
-  inline void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) {HB_Source[val_var] = val_source; }
+  inline void SetHarmonicBalance_Source(Idx_t iPoint, Idx_t iVar, su2double source) { HB_Source(iPoint,iVar) = source; }
 
   /*!
    * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
-  inline su2double GetHarmonicBalance_Source(unsigned short val_var) {return HB_Source[val_var]; }
+  inline su2double GetHarmonicBalance_Source(Idx_t iPoint, Idx_t iVar) const { return HB_Source(iPoint,iVar); }
 
   /*!
    * \brief Get the intermittency of the BC transition model.
+   * \param[in] iPoint - Point index.
    * \return Value of the intermittency of the BC transition model.
    */
-  inline su2double GetGammaBC(void) {return gamma_BC; }
+  inline su2double GetGammaBC(Idx_t iPoint) const { return gamma_BC(iPoint); }
 
   /*!
    * \brief Set the intermittency of the BC transition model.
+   * \param[in] iPoint - Point index.
    * \param[in] val_gamma - New value of the intermittency.
    */
-  inline void SetGammaBC(su2double val_gamma) {gamma_BC = val_gamma; }
+  inline void SetGammaBC(Idx_t iPoint, su2double val_gamma) { gamma_BC(iPoint) = val_gamma; }
 
   /*!
    * \brief Get the DES length scale
+   * \param[in] iPoint - Point index.
    * \return Value of the DES length Scale.
    */
-  inline su2double GetDES_LengthScale(void) {return DES_LengthScale; }
+  inline su2double GetDES_LengthScale(Idx_t iPoint) const { return DES_LengthScale(iPoint); }
 
   /*!
    * \brief Set the DES Length Scale.
+   * \param[in] iPoint - Point index.
    */
-  inline void SetDES_LengthScale(su2double val_des_lengthscale) {DES_LengthScale = val_des_lengthscale; }
+  inline void SetDES_LengthScale(Idx_t iPoint, su2double val_des_lengthscale) { DES_LengthScale(iPoint) = val_des_lengthscale; }
 
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
    */
-  void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+  void SetVortex_Tilting(Idx_t iPoint, su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
 
   /*!
    * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
    * \return Value of the DES length Scale
    */
-  inline su2double GetVortex_Tilting() {return Vortex_Tilting; }
+  inline su2double GetVortex_Tilting(Idx_t iPoint) const { return Vortex_Tilting(iPoint); }
 
 };
