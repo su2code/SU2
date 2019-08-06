@@ -151,9 +151,9 @@ public:
 
   /*!
    * \overload
-   * \param[in] val_npoint - Number of points/nodes/vertices in the domain.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);

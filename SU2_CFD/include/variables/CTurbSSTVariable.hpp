@@ -46,10 +46,10 @@
  * \author A. Bueno.
  */
 
-class CTurbSSTVariable : public CTurbVariable {
+class CTurbSSTVariable final : public CTurbVariable {
 protected:
-  Vec_t sigma_om2;
-  Vec_t beta_star;
+  su2double sigma_om2;
+  su2double beta_star;
   Vec_t F1;
   Vec_t F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   Vec_t CDkw;  /*!< \brief Cross-diffusion. */
@@ -58,25 +58,35 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSSTVariable(void);
+  CTurbSSTVariable() = default;
+
+//  /*!
+//   * \overload
+//   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+//   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+//   * \param[in] val_muT - Turbulent variable value (initialization value).
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] constants -
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+//                   su2double *constants, CConfig *config);
 
   /*!
    * \overload
-   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
-   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
-   * \param[in] val_muT - Turbulent variable value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-                   su2double *constants, CConfig *config);
-
+  CTurbSSTVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config);
+                   
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTVariable(void);
+  ~CTurbSSTVariable() = default;
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -84,20 +94,20 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+  void SetBlendingFunc(Idx_t iPoint, su2double val_viscosity, su2double val_dist, su2double val_density);
 
   /*!
    * \brief Get the first blending function.
    */
-  inline su2double GetF1blending(void) { return F1; }
+  inline su2double GetF1blending(Idx_t iPoint) const { return F1(iPoint); }
 
   /*!
    * \brief Get the second blending function.
    */
-  inline su2double GetF2blending(void) { return F2; }
+  inline su2double GetF2blending(Idx_t iPoint) const { return F2(iPoint); }
 
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */
-  inline su2double GetCrossDiff(void) { return CDkw; }
+  inline su2double GetCrossDiff(Idx_t iPoint) const { return CDkw(iPoint); }
 };
