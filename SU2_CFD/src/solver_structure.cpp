@@ -59,9 +59,9 @@ CSolver::CSolver(void) {
   /*--- Set the multigrid level to the finest grid. This can be
         overwritten in the constructors of the derived classes. ---*/
   MGLevel = MESH_0;
-  
+
   /*--- Array initialization ---*/
-  
+
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
   Residual_Max       = NULL;
@@ -110,24 +110,24 @@ CSolver::CSolver(void) {
   Inlet_Data        = NULL;
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
-  
+
   IterLinSolver = 0;
 
   /*--- Initialize pointer for any verification solution. ---*/
   VerificationSolution  = NULL;
-  
+
   /*--- Flags for the periodic BC communications. ---*/
-  
+
   rotate_periodic   = false;
   implicit_periodic = false;
-  
+
 }
 
 CSolver::~CSolver(void) {
 
   unsigned short iVar, iDim;
   unsigned long iPoint;
-  
+
   /*--- Public variables, may be accessible outside ---*/
 
   if ( OutputHeadingNames != NULL) {
@@ -241,47 +241,47 @@ CSolver::~CSolver(void) {
   if (Inlet_Data        != NULL) {delete [] Inlet_Data;        Inlet_Data        = NULL;}
 
   if (VerificationSolution != NULL) {delete VerificationSolution; VerificationSolution = NULL;}
-  
+
 }
 
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
-  
+
   /*--- Local variables ---*/
-  
+
   bool boundary_i, boundary_j;
-  
+
   unsigned short iVar, jVar, iDim;
   unsigned short iNeighbor, nNeighbor = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   unsigned short ICOUNT          = nVar;
   unsigned short JCOUNT          = nVar;
-  
+
   int iMessage, iSend, nSend;
 
   unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
-  
+
   su2double *Diff      = new su2double[nVar];
   su2double *Und_Lapl  = new su2double[nVar];
   su2double *Sol_Min   = new su2double[nPrimVarGrad];
   su2double *Sol_Max   = new su2double[nPrimVarGrad];
   su2double *rotPrim_i = new su2double[nPrimVar];
   su2double *rotPrim_j = new su2double[nPrimVar];
-  
+
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   su2double *Coord_i, *Coord_j, r11, r12, r13, r22, r23_a, r23_b, r33, weight;
   su2double *center, *angles, translation[3]={0.0,0.0,0.0}, *trans, dx, dy, dz;
   su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
-  
+
   string Marker_Tag;
-  
+
   /*--- Set the size of the data packet and type depending on quantity. ---*/
-  
+
   switch (commType) {
     case PERIODIC_VOLUME:
       COUNT_PER_POINT  = 1;
@@ -352,144 +352,144 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
-  
+
   su2double **jacBlock = new su2double*[ICOUNT];
   su2double **rotBlock = new su2double*[ICOUNT];
   for (iVar = 0; iVar < ICOUNT; iVar++) {
     jacBlock[iVar] = new su2double[JCOUNT];
     rotBlock[iVar] = new su2double[JCOUNT];
   }
-  
+
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. It will be reallocated whenever
    we find a larger count per point than currently exists. After the
    first cycle of comms, this should be inactive. ---*/
-  
+
   if (COUNT_PER_POINT > geometry->countPerPeriodicPoint) {
     geometry->AllocatePeriodicComms(COUNT_PER_POINT);
   }
-  
+
   /*--- Set some local pointers to make access simpler. ---*/
-  
+
   su2double *bufDSend = geometry->bufD_PeriodicSend;
-  
+
   unsigned short *bufSSend = geometry->bufS_PeriodicSend;
-  
+
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
-  
+
   if (geometry->nPeriodicSend > 0) {
-    
+
     /*--- Post all non-blocking recvs first before sends. ---*/
-    
+
     geometry->PostPeriodicRecvs(geometry, config, MPI_TYPE);
-    
+
     for (iMessage = 0; iMessage < geometry->nPeriodicSend; iMessage++) {
-      
+
       /*--- Get the offset in the buffer for the start of this message. ---*/
-      
+
       msg_offset = geometry->nPoint_PeriodicSend[iMessage];
-      
+
       /*--- Get the number of periodic points we need to
        communicate on the current periodic marker. ---*/
-      
+
       nSend = (geometry->nPoint_PeriodicSend[iMessage+1] -
                geometry->nPoint_PeriodicSend[iMessage]);
-      
+
       for (iSend = 0; iSend < nSend; iSend++) {
-        
+
         /*--- Get the local index for this communicated data. We need
          both the node and periodic face index (for rotations). ---*/
-        
+
         iPoint    = geometry->Local_Point_PeriodicSend[msg_offset  + iSend];
         iPeriodic = geometry->Local_Marker_PeriodicSend[msg_offset + iSend];
-        
+
         /*--- Retrieve the supplied periodic information. ---*/
-        
+
         Marker_Tag = config->GetMarker_All_TagBound(iPeriodic);
         center     = config->GetPeriodicRotCenter(Marker_Tag);
         angles     = config->GetPeriodicRotAngles(Marker_Tag);
         trans      = config->GetPeriodicTranslation(Marker_Tag);
-        
+
         /*--- Store (center+trans) as it is constant and will be added. ---*/
-        
+
         translation[0] = center[0] + trans[0];
         translation[1] = center[1] + trans[1];
         translation[2] = center[2] + trans[2];
-        
+
         /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-        
+
         Theta    = angles[0];      Phi = angles[1];     Psi = angles[2];
         cosTheta = cos(Theta);  cosPhi = cos(Phi);   cosPsi = cos(Psi);
         sinTheta = sin(Theta);  sinPhi = sin(Phi);   sinPsi = sin(Psi);
-        
+
         /*--- Compute the rotation matrix. Note that the implicit
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-        
+
         rotMatrix[0][0] = cosPhi*cosPsi;
         rotMatrix[1][0] = cosPhi*sinPsi;
         rotMatrix[2][0] = -sinPhi;
-        
+
         rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
         rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
         rotMatrix[2][1] = sinTheta*cosPhi;
-        
+
         rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
         rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
         rotMatrix[2][2] = cosTheta*cosPhi;
-        
+
         /*--- Compute the offset in the recv buffer for this point. ---*/
-        
+
         buf_offset = (msg_offset + iSend)*geometry->countPerPeriodicPoint;
-        
+
         /*--- Load the send buffers depending on the particular value
          that has been requested for communication. ---*/
-        
+
         switch (commType) {
-            
+
           case PERIODIC_VOLUME:
-            
+
             /*--- Load the volume of the current periodic CV so that
              we can accumulate the total control volume size on all
              periodic faces. ---*/
-            
+
             bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume() +
             geometry->node[iPoint]->GetPeriodicVolume();
-            
+
             break;
-            
+
           case PERIODIC_NEIGHBORS:
-            
+
             nNeighbor = 0;
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               Neighbor_Point = geometry->node[iPoint]->GetPoint(iNeighbor);
-              
+
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
-              
+
               if (!geometry->node[Neighbor_Point]->GetPeriodicBoundary())
               nNeighbor++;
-              
+
             }
-            
+
             /*--- Store the number of neighbors in bufffer. ---*/
-            
+
             bufSSend[buf_offset] = nNeighbor;
-            
+
             break;
-            
+
           case PERIODIC_RESIDUAL:
-            
+
             /*--- Communicate the residual from our partial control
              volume to the other side of the periodic face. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = LinSysRes.GetBlock(iPoint, iVar);
             }
-            
+
             /*--- Rotate the momentum components of the residual array. ---*/
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
@@ -509,26 +509,26 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               }
             }
             buf_offset += nVar;
-            
+
             /*--- Load the time step for the current point. ---*/
-            
+
             bufDSend[buf_offset] = node[iPoint]->GetDelta_Time();
             buf_offset++;
-            
+
             /*--- For implicit calculations, we will communicate the
              contributions to the Jacobian block diagonal, i.e., the
              impact of the point upon itself, J_ii. ---*/
-            
+
             if (implicit_periodic) {
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
                   jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
                 }
               }
-              
+
               /*--- Rotate the momentum columns of the Jacobian. ---*/
-              
+
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
@@ -537,7 +537,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     jacBlock[2][iVar] = (rotMatrix[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
                                          rotMatrix[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
                   } else {
-                    
+
                     jacBlock[1][iVar] = (rotMatrix[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
                                          rotMatrix[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
                                          rotMatrix[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
@@ -550,9 +550,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   }
                 }
               }
-              
+
               /*--- Load the Jacobian terms into the buffer for sending. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
                   bufDSend[buf_offset] = jacBlock[iVar][jVar];
@@ -560,23 +560,23 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 }
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_IMPLICIT:
-            
+
             /*--- Communicate the solution from our master set of periodic
              nodes (from the linear solver perspective) to the passive
              periodic nodes on the matching face. This is done at the
              end of the iteration to synchronize the solution after the
              linear solve. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
             }
-            
+
             /*--- Rotate the momentum components of the solution array. ---*/
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetSolution(1) +
@@ -595,46 +595,46 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                           rotMatrix[2][2]*node[iPoint]->GetSolution(3));
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_LAPLACIAN:
-            
+
             /*--- For JST, the undivided Laplacian must be computed
              consistently by using the complete control volume info
              from both sides of the periodic face. ---*/
-            
+
             for (iVar = 0; iVar< nVar; iVar++)
             Und_Lapl[iVar] = 0.0;
-            
+
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-              
+
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
-              
+
               if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
-                
+
                 /*--- Solution differences ---*/
-                
+
                 for (iVar = 0; iVar < nVar; iVar++)
                 Diff[iVar] = (node[iPoint]->GetSolution(iVar) -
                               node[jPoint]->GetSolution(iVar));
-                
+
                 /*--- Correction for compressible flows (use enthalpy) ---*/
-                
+
                 if (!(config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i   = node[iPoint]->GetPressure();
                   Pressure_j   = node[jPoint]->GetPressure();
                   Diff[nVar-1] = ((node[iPoint]->GetSolution(nVar-1) + Pressure_i) -
                                   (node[jPoint]->GetSolution(nVar-1) + Pressure_j));
                 }
-                
+
                 boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                 boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-                
+
                 /*--- Both points inside the domain, or both in the boundary ---*/
-                
+
                 if ((!boundary_i && !boundary_j) ||
                     ( boundary_i &&  boundary_j)) {
                   if (geometry->node[iPoint]->GetDomain()) {
@@ -642,25 +642,25 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     Und_Lapl[iVar] -= Diff[iVar];
                   }
                 }
-                
+
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
-                
+
                 if (!boundary_i && boundary_j)
                 if (geometry->node[iPoint]->GetDomain()){
                   for (iVar = 0; iVar< nVar; iVar++)
                   Und_Lapl[iVar] -= Diff[iVar];
                 }
-                
+
               }
             }
-            
+
             /*--- Store the components to be communicated in the buffer. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++)
             bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
-            
+
             /*--- Rotate the momentum components of the Laplacian. ---*/
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
@@ -680,34 +680,34 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                           rotMatrix[2][2]*Und_Lapl[3]);
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_MAX_EIG:
-            
+
             /*--- Simple summation of eig calc on both periodic faces. ---*/
-            
+
             bufDSend[buf_offset] = node[iPoint]->GetLambda();
-            
+
             break;
-            
+
           case PERIODIC_SENSOR:
-            
+
             /*--- For the centered schemes, the sensor must be computed
              consistently using info from the entire control volume
              on both sides of the periodic face. ---*/
-            
+
             Sensor_i = 0.0; Sensor_j = 0.0;
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-              
+
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
-              
+
               if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
-                
+
                 /*--- Use density instead of pressure for incomp. flows. ---*/
-                
+
                 if ((config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i = node[iPoint]->GetDensity();
                   Pressure_j = node[jPoint]->GetDensity();
@@ -715,12 +715,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                   Pressure_i = node[iPoint]->GetPressure();
                   Pressure_j = node[jPoint]->GetPressure();
                 }
-                
+
                 boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                 boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
-                
+
                 /*--- Both points inside domain, or both on boundary ---*/
-                
+
                 if ((!boundary_i && !boundary_j) ||
                     (boundary_i && boundary_j)) {
                   if (geometry->node[iPoint]->GetDomain()) {
@@ -728,44 +728,44 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     Sensor_j += Pressure_i + Pressure_j;
                   }
                 }
-                
+
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
-                
+
                 if (!boundary_i && boundary_j) {
                   if (geometry->node[iPoint]->GetDomain()) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
-                    
+
                   }
                 }
-                
+
               }
             }
-            
+
             /*--- Store the sensor increments to buffer. After summing
              all contributions, these will be divided. ---*/
-            
+
             bufDSend[buf_offset] = Sensor_i;
             buf_offset++;
             bufDSend[buf_offset] = Sensor_j;
-            
+
             break;
-            
+
           case PERIODIC_SOL_GG:
-            
+
             /*--- Access and rotate the partial G-G gradient. These will be
              summed on both sides of the periodic faces before dividing
              by the volume to complete the Green-Gauss gradient calc. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 jacBlock[iVar][iDim] = node[iPoint]->GetGradient(iVar, iDim);
                 rotBlock[iVar][iDim] = node[iPoint]->GetGradient(iVar, iDim);
               }
             }
-            
+
             /*--- Rotate the gradients in x,y,z space for all variables. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               if (nDim == 2) {
                 rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
@@ -773,7 +773,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 rotBlock[iVar][1] = (rotMatrix[1][0]*jacBlock[iVar][0] +
                                      rotMatrix[1][1]*jacBlock[iVar][1]);
               } else {
-                
+
                 rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
                                      rotMatrix[0][1]*jacBlock[iVar][1] +
                                      rotMatrix[0][2]*jacBlock[iVar][2]);
@@ -785,32 +785,32 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                      rotMatrix[2][2]*jacBlock[iVar][2]);
               }
             }
-            
+
             /*--- Store the partial gradient in the buffer. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_PRIM_GG:
-            
+
             /*--- Access and rotate the partial G-G gradient. These will be
              summed on both sides of the periodic faces before dividing
              by the volume to complete the Green-Gauss gradient calc. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++){
                 jacBlock[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
                 rotBlock[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
               }
             }
-            
+
             /*--- Rotate the partial gradients in space for all variables. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               if (nDim == 2) {
                 rotBlock[iVar][0] = (rotMatrix[0][0]*jacBlock[iVar][0] +
@@ -829,55 +829,55 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                      rotMatrix[2][2]*jacBlock[iVar][2]);
               }
             }
-            
+
             /*--- Store the partial gradient in the buffer. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_SOL_LS:
-            
+
             /*--- For L-S gradient calculations with rotational periodicity,
              we will need to rotate the x,y,z components. To make the process
              easier, we choose to rotate the initial periodic point and their
              neighbor points into their location on the donor marker before
              computing the terms that we need to communicate. ---*/
-            
+
             /*--- Get coordinates for the current point. ---*/
-            
+
             Coord_i = geometry->node[iPoint]->GetCoord();
-            
+
             /*--- Get the position vector from rotation center to point. ---*/
-            
+
             dx = Coord_i[0] - center[0];
             dy = Coord_i[1] - center[1];
             if (nDim == 3) dz = Coord_i[2] - center[2];
             else           dz = 0.0;
-            
+
             /*--- Compute transformed point coordinates. ---*/
-            
+
             rotCoord_i[0] = (rotMatrix[0][0]*dx +
                              rotMatrix[0][1]*dy +
                              rotMatrix[0][2]*dz + translation[0]);
-            
+
             rotCoord_i[1] = (rotMatrix[1][0]*dx +
                              rotMatrix[1][1]*dy +
                              rotMatrix[1][2]*dz + translation[1]);
-            
+
             rotCoord_i[2] = (rotMatrix[2][0]*dx +
                              rotMatrix[2][1]*dy +
                              rotMatrix[2][2]*dz + translation[2]);
-            
+
             /*--- Get conservative solution and rotate if necessary. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++)
             rotPrim_i[iVar] = node[iPoint]->GetSolution(iVar);
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 rotPrim_i[1] = (rotMatrix[0][0]*node[iPoint]->GetSolution(1) +
@@ -897,54 +897,54 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                 rotMatrix[2][2]*node[iPoint]->GetSolution(3));
               }
             }
-            
+
             /*--- Inizialization of variables ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++)
             for (iDim = 0; iDim < nDim; iDim++)
             Cvector[iVar][iDim] = 0.0;
-            
+
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-            
+
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-              
+
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
-              
+
               if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
-                
+
                 /*--- Get coordinates for the neighbor point. ---*/
-                
+
                 Coord_j = geometry->node[jPoint]->GetCoord();
-                
+
                 /*--- Get the position vector from rotation center. ---*/
-                
+
                 dx = Coord_j[0] - center[0];
                 dy = Coord_j[1] - center[1];
                 if (nDim == 3) dz = Coord_j[2] - center[2];
                 else           dz = 0.0;
-                
+
                 /*--- Compute transformed point coordinates. ---*/
-                
+
                 rotCoord_j[0] = (rotMatrix[0][0]*dx +
                                  rotMatrix[0][1]*dy +
                                  rotMatrix[0][2]*dz + translation[0]);
-                
+
                 rotCoord_j[1] = (rotMatrix[1][0]*dx +
                                  rotMatrix[1][1]*dy +
                                  rotMatrix[1][2]*dz + translation[1]);
-                
+
                 rotCoord_j[2] = (rotMatrix[2][0]*dx +
                                  rotMatrix[2][1]*dy +
                                  rotMatrix[2][2]*dz + translation[2]);
-                
+
                 /*--- Get conservative solution and rotte if necessary. ---*/
-                
+
                 for (iVar = 0; iVar < nVar; iVar++)
                 rotPrim_j[iVar] = node[jPoint]->GetSolution(iVar);
-                
+
                 if (rotate_periodic) {
                   if (nDim == 2) {
                     rotPrim_j[1] = (rotMatrix[0][0]*node[jPoint]->GetSolution(1) +
@@ -964,24 +964,24 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     rotMatrix[2][2]*node[jPoint]->GetSolution(3));
                   }
                 }
-                
+
                 weight = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++) {
                   weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                              (rotCoord_j[iDim]-rotCoord_i[iDim]));
                 }
-                
+
                 /*--- Sumations for entries of upper triangular matrix R ---*/
-                
+
                 if (weight != 0.0) {
-                  
+
                   r11 += ((rotCoord_j[0]-rotCoord_i[0])*
                           (rotCoord_j[0]-rotCoord_i[0])/weight);
                   r12 += ((rotCoord_j[0]-rotCoord_i[0])*
                           (rotCoord_j[1]-rotCoord_i[1])/weight);
                   r22 += ((rotCoord_j[1]-rotCoord_i[1])*
                           (rotCoord_j[1]-rotCoord_i[1])/weight);
-                  
+
                   if (nDim == 3) {
                     r13   += ((rotCoord_j[0]-rotCoord_i[0])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
@@ -992,23 +992,23 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     r33   += ((rotCoord_j[2]-rotCoord_i[2])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                   }
-                  
+
                   /*--- Entries of c:= transpose(A)*b ---*/
-                  
+
                   for (iVar = 0; iVar < nVar; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
                   Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
-                  
+
                 }
               }
             }
-            
+
             /*--- We store and communicate the increments for the matching
              upper triangular matrix (weights) and the r.h.s. vector.
              These will be accumulated before completing the L-S gradient
              calculation for each periodic point. ---*/
-            
+
             if (nDim == 2) {
               bufDSend[buf_offset] = r11;   buf_offset++;
               bufDSend[buf_offset] = r12;   buf_offset++;
@@ -1019,63 +1019,63 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset] = r11;   buf_offset++;
               bufDSend[buf_offset] = r12;   buf_offset++;
               bufDSend[buf_offset] = r13;   buf_offset++;
-              
+
               bufDSend[buf_offset] = 0.0;   buf_offset++;
               bufDSend[buf_offset] = r22;   buf_offset++;
               bufDSend[buf_offset] = r23_a; buf_offset++;
-              
+
               bufDSend[buf_offset] = 0.0;   buf_offset++;
               bufDSend[buf_offset] = r23_b; buf_offset++;
               bufDSend[buf_offset] = r33;   buf_offset++;
             }
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset] = Cvector[iVar][iDim];
                 buf_offset++;
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_PRIM_LS:
-            
+
             /*--- For L-S gradient calculations with rotational periodicity,
              we will need to rotate the x,y,z components. To make the process
              easier, we choose to rotate the initial periodic point and their
              neighbor points into their location on the donor marker before
              computing the terms that we need to communicate. ---*/
-            
+
             /*--- Get coordinates ---*/
-            
+
             Coord_i = geometry->node[iPoint]->GetCoord();
-            
+
             /*--- Get the position vector from rot center to point. ---*/
-            
+
             dx = Coord_i[0] - center[0];
             dy = Coord_i[1] - center[1];
             if (nDim == 3) dz = Coord_i[2] - center[2];
             else           dz = 0.0;
-            
+
             /*--- Compute transformed point coordinates. ---*/
-            
+
             rotCoord_i[0] = (rotMatrix[0][0]*dx +
                              rotMatrix[0][1]*dy +
                              rotMatrix[0][2]*dz + translation[0]);
-            
+
             rotCoord_i[1] = (rotMatrix[1][0]*dx +
                              rotMatrix[1][1]*dy +
                              rotMatrix[1][2]*dz + translation[1]);
-            
+
             rotCoord_i[2] = (rotMatrix[2][0]*dx +
                              rotMatrix[2][1]*dy +
                              rotMatrix[2][2]*dz + translation[2]);
-            
+
             /*--- Get primitives and rotate if necessary. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVar; iVar++)
             rotPrim_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 rotPrim_i[1] = (rotMatrix[0][0]*node[iPoint]->GetPrimitive(1) +
@@ -1095,54 +1095,54 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                 rotMatrix[2][2]*node[iPoint]->GetPrimitive(3));
               }
             }
-            
+
             /*--- Inizialization of variables ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
             for (iDim = 0; iDim < nDim; iDim++)
             Cvector[iVar][iDim] = 0.0;
-            
+
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-            
+
             for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-              
+
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
-              
+
               if (!geometry->node[jPoint]->GetPeriodicBoundary()) {
-                
+
                 /*--- Get coordinates for the neighbor point. ---*/
-                
+
                 Coord_j = geometry->node[jPoint]->GetCoord();
-                
+
                 /*--- Get the position vector from rotation center. ---*/
-                
+
                 dx = Coord_j[0] - center[0];
                 dy = Coord_j[1] - center[1];
                 if (nDim == 3) dz = Coord_j[2] - center[2];
                 else           dz = 0.0;
-                
+
                 /*--- Compute transformed point coordinates. ---*/
-                
+
                 rotCoord_j[0] = (rotMatrix[0][0]*dx +
                                  rotMatrix[0][1]*dy +
                                  rotMatrix[0][2]*dz + translation[0]);
-                
+
                 rotCoord_j[1] = (rotMatrix[1][0]*dx +
                                  rotMatrix[1][1]*dy +
                                  rotMatrix[1][2]*dz + translation[1]);
-                
+
                 rotCoord_j[2] = (rotMatrix[2][0]*dx +
                                  rotMatrix[2][1]*dy +
                                  rotMatrix[2][2]*dz + translation[2]);
-                
+
                 /*--- Get primitives from CVariable ---*/
-                
+
                 for (iVar = 0; iVar < nPrimVar; iVar++)
                 rotPrim_j[iVar] = node[jPoint]->GetPrimitive(iVar);
-                
+
                 if (rotate_periodic) {
                   if (nDim == 2) {
                     rotPrim_j[1] = (rotMatrix[0][0]*node[jPoint]->GetPrimitive(1) +
@@ -1162,23 +1162,23 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     rotMatrix[2][2]*node[jPoint]->GetPrimitive(3));
                   }
                 }
-                
+
                 weight = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++)
                 weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                            (rotCoord_j[iDim]-rotCoord_i[iDim]));
-                
+
                 /*--- Sumations for entries of upper triangular matrix R ---*/
-                
+
                 if (weight != 0.0) {
-                  
+
                   r11 += ((rotCoord_j[0]-rotCoord_i[0])*
                           (rotCoord_j[0]-rotCoord_i[0])/weight);
                   r12 += ((rotCoord_j[0]-rotCoord_i[0])*
                           (rotCoord_j[1]-rotCoord_i[1])/weight);
                   r22 += ((rotCoord_j[1]-rotCoord_i[1])*
                           (rotCoord_j[1]-rotCoord_i[1])/weight);
-                  
+
                   if (nDim == 3) {
                     r13   += ((rotCoord_j[0]-rotCoord_i[0])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
@@ -1189,23 +1189,23 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     r33   += ((rotCoord_j[2]-rotCoord_i[2])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                   }
-                  
+
                   /*--- Entries of c:= transpose(A)*b ---*/
-                  
+
                   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
                   Cvector[iVar][iDim] += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
-                  
+
                 }
               }
             }
-            
+
             /*--- We store and communicate the increments for the matching
              upper triangular matrix (weights) and the r.h.s. vector.
              These will be accumulated before completing the L-S gradient
              calculation for each periodic point. ---*/
-            
+
             if (nDim == 2) {
               bufDSend[buf_offset] = r11;   buf_offset++;
               bufDSend[buf_offset] = r12;   buf_offset++;
@@ -1216,53 +1216,53 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset] = r11;   buf_offset++;
               bufDSend[buf_offset] = r12;   buf_offset++;
               bufDSend[buf_offset] = r13;   buf_offset++;
-              
+
               bufDSend[buf_offset] = 0.0;   buf_offset++;
               bufDSend[buf_offset] = r22;   buf_offset++;
               bufDSend[buf_offset] = r23_a; buf_offset++;
-              
+
               bufDSend[buf_offset] = 0.0;   buf_offset++;
               bufDSend[buf_offset] = r23_b; buf_offset++;
               bufDSend[buf_offset] = r33;   buf_offset++;
             }
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset] = Cvector[iVar][iDim];
                 buf_offset++;
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_LIM_PRIM_1:
-            
+
             /*--- The first phase of the periodic limiter calculation
              ensures that the proper min and max of the solution are found
              among all nodes adjacent to periodic faces. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               Sol_Min[iVar] = node[iPoint]->GetSolution_Min(iVar);
               Sol_Max[iVar] = node[iPoint]->GetSolution_Max(iVar);
-              
+
               bufDSend[buf_offset+iVar]              = node[iPoint]->GetSolution_Min(iVar);
               bufDSend[buf_offset+nPrimVarGrad+iVar] = node[iPoint]->GetSolution_Max(iVar);
             }
-            
+
             /*--- Rotate the momentum components of the min/max. ---*/
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
                                           rotMatrix[0][1]*Sol_Min[2]);
                 bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
                                           rotMatrix[1][1]*Sol_Min[2]);
-                
+
                 bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
                                                        rotMatrix[0][1]*Sol_Max[2]);
                 bufDSend[buf_offset+nPrimVarGrad+2] = (rotMatrix[1][0]*Sol_Max[1] +
                                                        rotMatrix[1][1]*Sol_Max[2]);
-                
+
               } else {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
                                           rotMatrix[0][1]*Sol_Min[2] +
@@ -1273,7 +1273,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
                                           rotMatrix[2][1]*Sol_Min[2] +
                                           rotMatrix[2][2]*Sol_Min[3]);
-                
+
                 bufDSend[buf_offset+nPrimVarGrad+1] = (rotMatrix[0][0]*Sol_Max[1] +
                                                        rotMatrix[0][1]*Sol_Max[2] +
                                                        rotMatrix[0][2]*Sol_Max[3]);
@@ -1285,26 +1285,26 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                                        rotMatrix[2][2]*Sol_Max[3]);
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_LIM_PRIM_2:
-            
+
             /*--- The second phase of the periodic limiter calculation
              ensures that the correct minimum value of the limiter is
              found for a node on a periodic face and stores it. ---*/
-            
+
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
             }
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter_Primitive(1) +
                                           rotMatrix[0][1]*node[iPoint]->GetLimiter_Primitive(2));
                 bufDSend[buf_offset+2] = (rotMatrix[1][0]*node[iPoint]->GetLimiter_Primitive(1) +
                                           rotMatrix[1][1]*node[iPoint]->GetLimiter_Primitive(2));
-                
+
               }
               else {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter_Primitive(1) +
@@ -1318,38 +1318,38 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                           rotMatrix[2][2]*node[iPoint]->GetLimiter_Primitive(3));
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_LIM_SOL_1:
-            
+
             /*--- The first phase of the periodic limiter calculation
              ensures that the proper min and max of the solution are found
              among all nodes adjacent to periodic faces. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               Sol_Min[iVar] = node[iPoint]->GetSolution_Min(iVar);
               Sol_Max[iVar] = node[iPoint]->GetSolution_Max(iVar);
-              
+
               bufDSend[buf_offset+iVar]      = node[iPoint]->GetSolution_Min(iVar);
               bufDSend[buf_offset+nVar+iVar] = node[iPoint]->GetSolution_Max(iVar);
             }
-            
+
             /*--- Rotate the momentum components of the min/max. ---*/
-            
+
             if (rotate_periodic) {
-              
+
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
                                           rotMatrix[0][1]*Sol_Min[2]);
                 bufDSend[buf_offset+2] = (rotMatrix[1][0]*Sol_Min[1] +
                                           rotMatrix[1][1]*Sol_Min[2]);
-                
+
                 bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
                                                rotMatrix[0][1]*Sol_Max[2]);
                 bufDSend[buf_offset+nVar+2] = (rotMatrix[1][0]*Sol_Max[1] +
                                                rotMatrix[1][1]*Sol_Max[2]);
-                
+
               }
               else {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*Sol_Min[1] +
@@ -1361,7 +1361,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 bufDSend[buf_offset+3] = (rotMatrix[2][0]*Sol_Min[1] +
                                           rotMatrix[2][1]*Sol_Min[2] +
                                           rotMatrix[2][2]*Sol_Min[3]);
-                
+
                 bufDSend[buf_offset+nVar+1] = (rotMatrix[0][0]*Sol_Max[1] +
                                                rotMatrix[0][1]*Sol_Max[2] +
                                                rotMatrix[0][2]*Sol_Max[3]);
@@ -1371,29 +1371,29 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 bufDSend[buf_offset+nVar+3] = (rotMatrix[2][0]*Sol_Max[1] +
                                                rotMatrix[2][1]*Sol_Max[2] +
                                                rotMatrix[2][2]*Sol_Max[3]);
-                
+
               }
             }
-            
+
             break;
-            
+
           case PERIODIC_LIM_SOL_2:
-            
+
             /*--- The second phase of the periodic limiter calculation
              ensures that the correct minimum value of the limiter is
              found for a node on a periodic face and stores it. ---*/
-            
+
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter(iVar);
             }
-            
+
             if (rotate_periodic) {
               if (nDim == 2) {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter(1) +
                                           rotMatrix[0][1]*node[iPoint]->GetLimiter(2));
                 bufDSend[buf_offset+2] = (rotMatrix[1][0]*node[iPoint]->GetLimiter(1) +
                                           rotMatrix[1][1]*node[iPoint]->GetLimiter(2));
-                
+
               }
               else {
                 bufDSend[buf_offset+1] = (rotMatrix[0][0]*node[iPoint]->GetLimiter(1) +
@@ -1407,75 +1407,75 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                           rotMatrix[2][2]*node[iPoint]->GetLimiter(3));
               }
             }
-            
+
             break;
-            
+
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);
             break;
         }
       }
-      
+
       /*--- Launch the point-to-point MPI send for this message. ---*/
-      
+
       geometry->PostPeriodicSends(geometry, config, MPI_TYPE, iMessage);
-      
+
     }
   }
-  
+
   delete [] Diff;
   delete [] Und_Lapl;
   delete [] Sol_Min;
   delete [] Sol_Max;
   delete [] rotPrim_i;
   delete [] rotPrim_j;
-  
+
   for (iVar = 0; iVar < ICOUNT; iVar++) {
     delete [] jacBlock[iVar];
     delete [] rotBlock[iVar];
   }
   delete [] jacBlock;
   delete [] rotBlock;
-  
+
 }
 
 void CSolver::CompletePeriodicComms(CGeometry *geometry,
                                     CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
-  
+
   /*--- Local variables ---*/
-  
+
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
-  
+
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
-  
+
   int source, iMessage, jRecv;
-  
+
   SU2_MPI::Status status;
-  
+
   su2double *Diff = new su2double[nVar];
-  
+
   su2double Time_Step, Volume, Solution_Min, Solution_Max, Limiter_Min;
-  
+
   /*--- Set some local pointers to make access simpler. ---*/
-  
+
   su2double *bufDRecv = geometry->bufD_PeriodicRecv;
-  
+
   unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
-  
+
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
-  
+
   if (geometry->nPeriodicRecv > 0) {
-    
+
     for (iMessage = 0; iMessage < geometry->nPeriodicRecv; iMessage++) {
-      
+
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
-      
+
 #ifdef HAVE_MPI
       /*--- Once we have recv'd a message, get the source rank. ---*/
       int ind;
@@ -1487,83 +1487,83 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       /*--- For serial calculations, we know the rank. ---*/
       source = rank;
 #endif
-      
+
       /*--- We know the offsets based on the source rank. ---*/
-      
+
       jRecv = geometry->PeriodicRecv2Neighbor[source];
-      
+
       /*--- Get the offset in the buffer for the start of this message. ---*/
-      
+
       msg_offset = geometry->nPoint_PeriodicRecv[jRecv];
-      
+
       /*--- Get the number of packets to be received in this message. ---*/
-      
+
       nRecv = (geometry->nPoint_PeriodicRecv[jRecv+1] -
                geometry->nPoint_PeriodicRecv[jRecv]);
-      
+
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
-        
+
         /*--- Get the local index for this communicated data. ---*/
-        
+
         iPoint    = geometry->Local_Point_PeriodicRecv[msg_offset  + iRecv];
         iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
-        
+
         /*--- While all periodic face data was accumulated, we only store
          the values for the current pair of periodic faces. This is slightly
          inefficient when we have multiple pairs of periodic faces, but
          it simplifies the communications. ---*/
-        
+
         if ((iPeriodic == val_periodic_index) ||
             (iPeriodic == val_periodic_index + nPeriodic/2)) {
-          
+
           /*--- Compute the offset in the recv buffer for this point. ---*/
-          
+
           buf_offset = (msg_offset + iRecv)*geometry->countPerPeriodicPoint;
-          
+
           /*--- Store the data correctly depending on the quantity. ---*/
-          
+
           switch (commType) {
-              
+
             case PERIODIC_VOLUME:
-              
+
               /*--- The periodic points need to keep track of their
                total volume spread across the periodic faces. ---*/
-              
+
               Volume = (bufDRecv[buf_offset] +
                         geometry->node[iPoint]->GetPeriodicVolume());
               geometry->node[iPoint]->SetPeriodicVolume(Volume);
-              
+
               break;
-              
+
             case PERIODIC_NEIGHBORS:
-              
+
               /*--- Store the extra neighbors on the periodic face. ---*/
-              
+
               nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
                            bufSRecv[buf_offset]);
               geometry->node[iPoint]->SetnNeighbor(nNeighbor);
-              
+
               break;
-              
+
             case PERIODIC_RESIDUAL:
-              
+
               /*--- Access the residual from the donor. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 Residual[iVar] = bufDRecv[buf_offset];
                 buf_offset++;
               }
-              
+
               /*--- Check the computed time step against the donor
                value and keep the minimum in order to be conservative. ---*/
-              
+
               Time_Step = node[iPoint]->GetDelta_Time();
               if (bufDRecv[buf_offset] < Time_Step)
                 node[iPoint]->SetDelta_Time(bufDRecv[buf_offset]);
               buf_offset++;
-              
+
               /*--- Access the Jacobian from the donor if implicit. ---*/
-              
+
               if (implicit_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   for (jVar = 0; jVar < nVar; jVar++) {
@@ -1572,11 +1572,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   }
                 }
               }
-              
+
               /*--- Add contributions to total residual. ---*/
-              
+
               LinSysRes.AddBlock(iPoint, Residual);
-              
+
               /*--- For implicit integration, we choose the first
                periodic face of each pair to be the master/owner of
                the solution for the linear system while fixing the
@@ -1584,11 +1584,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                we remove the Jacobian and residual contributions from
                the passive face such that it does not participate in
                the linear solve. ---*/
-              
+
               if (implicit_periodic) {
-                
+
                 Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-                
+
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
                     LinSysRes.SetBlock_Zero(iPoint, iVar);
@@ -1596,98 +1596,98 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                     Jacobian.DeleteValsRowi(total_index);
                   }
                 }
-                
+
               }
-              
+
               break;
-              
+
             case PERIODIC_IMPLICIT:
-              
+
               /*--- For implicit integration, we choose the first
                periodic face of each pair to be the master/owner of
                the solution for the linear system while fixing the
                solution at the matching face during the solve. Here,
                we are updating the solution at the passive nodes
                using the new solution from the master. ---*/
-              
+
               if ((implicit_periodic) &&
                   (iPeriodic == val_periodic_index + nPeriodic/2)) {
-                
+
                 /*--- Access the solution from the donor. ---*/
-                
+
                 for (iVar = 0; iVar < nVar; iVar++) {
                   Solution[iVar] = bufDRecv[buf_offset];
                   buf_offset++;
                 }
-                
+
                 /*--- Directly set the solution on the passive periodic
                  face that is provided from the master. ---*/
-                
+
                 for (iVar = 0; iVar < nVar; iVar++) {
                   node[iPoint]->SetSolution(iVar, Solution[iVar]);
                   node[iPoint]->SetSolution_Old(iVar, Solution[iVar]);
                 }
-                
+
               }
-              
+
               break;
-              
+
             case PERIODIC_LAPLACIAN:
-              
+
               /*--- Adjust the undivided Laplacian. The accumulation was
                with a subtraction before communicating, so now just add. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++)
                 Diff[iVar] = bufDRecv[buf_offset+iVar];
-              
+
               node[iPoint]->AddUnd_Lapl(Diff);
-              
+
               break;
-              
+
             case PERIODIC_MAX_EIG:
-              
+
               /*--- Simple accumulation of the max eig on periodic faces. ---*/
-              
+
               node[iPoint]->AddLambda(bufDRecv[buf_offset]);
-              
+
               break;
-              
+
             case PERIODIC_SENSOR:
-              
+
               /*--- Simple accumulation of the sensors on periodic faces. ---*/
-              
+
               iPoint_UndLapl[iPoint] += bufDRecv[buf_offset]; buf_offset++;
               jPoint_UndLapl[iPoint] += bufDRecv[buf_offset];
-              
+
               break;
-              
+
             case PERIODIC_SOL_GG:
-              
+
               /*--- For G-G, we accumulate partial gradients then compute
                the final value using the entire volume of the periodic cell. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
                   node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim] + node[iPoint]->GetGradient(iVar, iDim));
-              
+
               break;
-              
+
             case PERIODIC_PRIM_GG:
-              
+
               /*--- For G-G, we accumulate partial gradients then compute
                the final value using the entire volume of the periodic cell. ---*/
-              
+
               for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
                   node[iPoint]->SetGradient_Primitive(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim] + node[iPoint]->GetGradient_Primitive(iVar, iDim));
               break;
-              
+
             case PERIODIC_SOL_LS:
-              
+
               /*--- For L-S, we build the upper triangular matrix and the
                r.h.s. vector by accumulating from all periodic partial
                control volumes. ---*/
-              
+
               for (iDim = 0; iDim < nDim; iDim++) {
                 for (jDim = 0; jDim < nDim; jDim++) {
                   node[iPoint]->AddRmatrix(iDim,jDim,bufDRecv[buf_offset]);
@@ -1700,15 +1700,15 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   buf_offset++;
                 }
               }
-              
+
               break;
-              
+
             case PERIODIC_PRIM_LS:
-              
+
               /*--- For L-S, we build the upper triangular matrix and the
                r.h.s. vector by accumulating from all periodic partial
                control volumes. ---*/
-              
+
               for (iDim = 0; iDim < nDim; iDim++) {
                 for (jDim = 0; jDim < nDim; jDim++) {
                   node[iPoint]->AddRmatrix(iDim,jDim,bufDRecv[buf_offset]);
@@ -1721,113 +1721,113 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   buf_offset++;
                 }
               }
-              
+
               break;
-              
+
             case PERIODIC_LIM_PRIM_1:
-              
+
               /*--- Check the min and max values found on the matching
                perioic faces for the solution, and store the proper min
                and max for this point.  ---*/
-              
+
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), bufDRecv[buf_offset+iVar]));
                 node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), bufDRecv[buf_offset+nPrimVarGrad+iVar]));
               }
-              
+
               break;
-              
+
             case PERIODIC_LIM_PRIM_2:
-              
+
               /*--- Check the min values found on the matching periodic
                faces for the limiter, and store the proper min value. ---*/
-              
+
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 node[iPoint]->SetLimiter_Primitive(iVar, min(node[iPoint]->GetLimiter_Primitive(iVar), bufDRecv[buf_offset+iVar]));
               }
-              
+
               break;
-              
+
             case PERIODIC_LIM_SOL_1:
-              
+
               /*--- Check the min and max values found on the matching
                perioic faces for the solution, and store the proper min
                and max for this point.  ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
-                
+
                 /*--- Solution minimum. ---*/
-                
+
                 Solution_Min = min(node[iPoint]->GetSolution_Min(iVar),
                                    bufDRecv[buf_offset+iVar]);
                 node[iPoint]->SetSolution_Min(iVar, Solution_Min);
-                
+
                 /*--- Solution maximum. ---*/
-                
+
                 Solution_Max = max(node[iPoint]->GetSolution_Max(iVar),
                                    bufDRecv[buf_offset+nVar+iVar]);
                 node[iPoint]->SetSolution_Max(iVar, Solution_Max);
-                
+
               }
-              
+
               break;
-              
+
             case PERIODIC_LIM_SOL_2:
-              
+
               /*--- Check the min values found on the matching periodic
                faces for the limiter, and store the proper min value. ---*/
-              
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 Limiter_Min = min(node[iPoint]->GetLimiter_Primitive(iVar),
                                   bufDRecv[buf_offset+iVar]);
                 node[iPoint]->SetLimiter_Primitive(iVar, Limiter_Min);
               }
-              
+
               break;
-              
+
             default:
-              
+
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                              CURRENT_FUNCTION);
               break;
-              
+
           }
         }
       }
     }
-    
+
     /*--- Verify that all non-blocking point-to-point sends have finished.
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
-    
+
 #ifdef HAVE_MPI
     SU2_MPI::Waitall(geometry->nPeriodicSend,
                      geometry->req_PeriodicSend,
                      MPI_STATUS_IGNORE);
 #endif
-    
+
   }
-  
+
   delete [] Diff;
-  
+
 }
 
 void CSolver::InitiateComms(CGeometry *geometry,
                             CConfig *config,
                             unsigned short commType) {
-  
+
   /*--- Local variables ---*/
-  
+
   unsigned short iVar, iDim;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
-  
+
   unsigned long iPoint, msg_offset, buf_offset;
-  
+
   int iMessage, iSend, nSend;
-  
+
   /*--- Set the size of the data packet and type depending on quantity. ---*/
-  
+
   switch (commType) {
     case SOLUTION:
     case SOLUTION_OLD:
@@ -1890,50 +1890,50 @@ void CSolver::InitiateComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
-  
+
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. This is only for the su2double
    buffer. It will be reallocated whenever we find a larger count
    per point. After the first cycle of comms, this should be inactive. ---*/
-  
+
   if (COUNT_PER_POINT > geometry->countPerPoint) {
     geometry->AllocateP2PComms(COUNT_PER_POINT);
   }
-  
+
   /*--- Set some local pointers to make access simpler. ---*/
-  
+
   su2double *bufDSend = geometry->bufD_P2PSend;
-  
+
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
-  
+
   if (geometry->nP2PSend > 0) {
-    
+
     /*--- Post all non-blocking recvs first before sends. ---*/
-    
+
     geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
-    
+
     for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
-      
+
       /*--- Get the offset in the buffer for the start of this message. ---*/
-      
+
       msg_offset = geometry->nPoint_P2PSend[iMessage];
-      
+
       /*--- Total count can include multiple pieces of data per element. ---*/
-      
+
       nSend = (geometry->nPoint_P2PSend[iMessage+1] -
                geometry->nPoint_P2PSend[iMessage]);
-      
+
       for (iSend = 0; iSend < nSend; iSend++) {
-        
+
         /*--- Get the local index for this communicated data. ---*/
-        
+
         iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
-        
+
         /*--- Compute the offset in the recv buffer for this point. ---*/
-        
+
         buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
-        
+
         switch (commType) {
           case SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -2021,73 +2021,73 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
         }
       }
-      
+
       /*--- Launch the point-to-point MPI send for this message. ---*/
-      
+
       geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
-      
+
     }
   }
-  
+
 }
 void CSolver::CompleteComms(CGeometry *geometry,
                             CConfig *config,
                             unsigned short commType) {
-  
+
   /*--- Local variables ---*/
-  
+
   unsigned short iDim, iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
-  
+
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
-  
+
   /*--- Set some local pointers to make access simpler. ---*/
-  
+
   su2double *bufDRecv = geometry->bufD_P2PRecv;
-  
+
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
-  
+
   if (geometry->nP2PRecv > 0) {
-    
+
     for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
-      
+
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
-      
+
       SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
                        &ind, &status);
-      
+
       /*--- Once we have recv'd a message, get the source rank. ---*/
-      
+
       source = status.MPI_SOURCE;
-      
+
       /*--- We know the offsets based on the source rank. ---*/
-      
+
       jRecv = geometry->P2PRecv2Neighbor[source];
-      
+
       /*--- Get the offset in the buffer for the start of this message. ---*/
-      
+
       msg_offset = geometry->nPoint_P2PRecv[jRecv];
-      
+
       /*--- Get the number of packets to be received in this message. ---*/
-      
+
       nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
                geometry->nPoint_P2PRecv[jRecv]);
-      
+
       for (iRecv = 0; iRecv < nRecv; iRecv++) {
-        
+
         /*--- Get the local index for this communicated data. ---*/
-        
+
         iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
-        
+
         /*--- Compute the offset in the recv buffer for this point. ---*/
-        
+
         buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
-        
+
         /*--- Store the data correctly depending on the quantity. ---*/
-        
+
         switch (commType) {
           case SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -2121,6 +2121,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iDim = 0; iDim < nDim; iDim++)
                 node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
+          case PRIMITIVE:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              node[iPoint]->SetPrimitive(iVar, bufDRecv[buf_offset+iVar]);
+             break;
           case PRIMITIVE_GRADIENT:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
@@ -2172,26 +2176,26 @@ void CSolver::CompleteComms(CGeometry *geometry,
         }
       }
     }
-    
+
     /*--- Verify that all non-blocking point-to-point sends have finished.
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
-    
+
 #ifdef HAVE_MPI
     SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
 #endif
-    
+
   }
-  
+
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
-  
+
 #ifndef HAVE_MPI
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
-    
+
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
@@ -2200,65 +2204,65 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
-    
+
   }
-  
+
 #else
-  
+
   int nProcessor = size, iProcessor;
 
   su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
   unsigned long *sbuf_point, *rbuf_point, Global_nPointDomain;
   unsigned short iDim;
-  
+
   /*--- Set the L2 Norm residual in all the processors ---*/
-  
+
   sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
-  
+
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
-  
+
   if (config->GetComm_Level() == COMM_FULL) {
-    
+
     unsigned long Local_nPointDomain = geometry->GetnPointDomain();
     SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    
+
   } else {
-    
+
     /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
     Global_nPointDomain = geometry->GetnPointDomain();
-    
+
   }
-  
-  
+
+
   for (iVar = 0; iVar < nVar; iVar++) {
-    
+
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
       SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
-    
+
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
-    
+
   }
 
   delete [] sbuf_residual;
   delete [] rbuf_residual;
-  
+
   /*--- Set the Maximum residual in all the processors ---*/
-  
+
   if (config->GetComm_Level() == COMM_FULL) {
-    
+
     sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
     sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
     sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
-    
+
     rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
     rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
     rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       sbuf_residual[iVar] = GetRes_Max(iVar);
       sbuf_point[iVar] = GetPoint_Max(iVar);
@@ -2266,30 +2270,30 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++)
         sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
-    
+
     SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
     SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
     SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
       }
     }
-    
+
     delete [] sbuf_residual;
     delete [] rbuf_residual;
-    
+
     delete [] sbuf_point;
     delete [] rbuf_point;
-    
+
     delete [] sbuf_coord;
     delete [] rbuf_coord;
-    
+
   }
-  
+
 #endif
-  
+
 }
 
 void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
@@ -2384,7 +2388,7 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
   unsigned long iVertex, iEdge;
   su2double ProjGridVel, *Normal;
@@ -2457,33 +2461,33 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config) {
           Residual[iVar] = ProjGridVel*Solution[iVar];
 
         LinSysRes.SubtractBlock(Point, Residual);
-        
+
       }
     }
   }
-  
+
 }
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short nDim = geometry->GetnDim(), iDim, iMarker;
-  
+
   su2double AuxVar_Vertex, AuxVar_i, AuxVar_j, AuxVar_Average;
   su2double *Gradient, DualArea, Partial_Res, Grad_Val, *Normal;
-  
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetAuxVarGradientZero();    // Set Gradient to Zero
-  
+
   /*--- Loop interior edges ---*/
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    
+
     AuxVar_i = node[iPoint]->GetAuxVar();
     AuxVar_j = node[jPoint]->GetAuxVar();
-    
+
     Normal = geometry->edge[iEdge]->GetNormal();
     AuxVar_Average =  0.5 * ( AuxVar_i + AuxVar_j);
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -2492,9 +2496,9 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       node[jPoint]->SubtractAuxVarGradient(iDim, Partial_Res);
     }
   }
-  
+
   /*--- Loop boundary edges ---*/
-  
+
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
@@ -2508,7 +2512,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       }
     }
     }
-  
+
   for (iPoint=0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
       Gradient = node[iPoint]->GetAuxVarGradient();
@@ -2516,50 +2520,50 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       Grad_Val = Gradient[iDim]/(DualArea+EPS);
       node[iPoint]->SetAuxVarGradient(iDim, Grad_Val);
     }
-  
+
   /*--- Gradient MPI ---*/
-  
+
   InitiateComms(geometry, config, AUXVAR_GRADIENT);
   CompleteComms(geometry, config, AUXVAR_GRADIENT);
 
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned short iDim, jDim, iNeigh;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j, weight, r11, r12, r13, r22, r23, r23_a,
   r23_b, r33, z11, z12, z13, z22, z23, z33, detR2, product;
   bool singular = false;
-  
+
   su2double *Cvector = new su2double [nDim];
-  
+
   /*--- Loop over points of the grid ---*/
-  
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
     Coord_i = geometry->node[iPoint]->GetCoord();
     AuxVar_i = node[iPoint]->GetAuxVar();
-    
+
     /*--- Inizialization of variables ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       Cvector[iDim] = 0.0;
-    
+
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-    
+
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       AuxVar_j = node[jPoint]->GetAuxVar();
-      
+
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      
+
       /*--- Sumations for entries of upper triangular matrix R ---*/
-      
+
       if (fabs(weight) > EPS) {
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
@@ -2570,17 +2574,17 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
           r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
           r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
         }
-        
+
         /*--- Entries of c:= transpose(A)*b ---*/
-        
+
         for (iDim = 0; iDim < nDim; iDim++)
           Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
       }
-      
+
     }
-    
+
     /*--- Entries of upper triangular matrix R ---*/
-    
+
     if (fabs(r11) < EPS) r11 = EPS;
     r11 = sqrt(r11);
     r12 = r12/r11;
@@ -2591,18 +2595,18 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
       r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
       r33 = sqrt(r33-r23*r23-r13*r13);
     }
-    
+
     /*--- Compute determinant ---*/
-    
+
     if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
     else detR2 = (r11*r22*r33)*(r11*r22*r33);
-    
+
     /*--- Detect singular matrices ---*/
-    
+
     if (fabs(detR2) < EPS) singular = true;
-    
+
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    
+
     if (singular) {
       for (iDim = 0; iDim < nDim; iDim++)
         for (jDim = 0; jDim < nDim; jDim++)
@@ -2629,9 +2633,9 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
         Smatrix[2][2] = (z33*z33)/detR2;
       }
     }
-    
+
     /*--- Computation of the gradient: S*c ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       product = 0.0;
       for (jDim = 0; jDim < nDim; jDim++)
@@ -2640,14 +2644,14 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetAuxVarGradient(iDim, product);
     }
   }
-  
+
   delete [] Cvector;
-  
+
   /*--- Gradient MPI ---*/
-  
+
   InitiateComms(geometry, config, AUXVAR_GRADIENT);
   CompleteComms(geometry, config, AUXVAR_GRADIENT);
-  
+
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
@@ -2655,16 +2659,16 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iDim, iMarker;
   su2double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient,
       Partial_Res, Grad_Val, *Normal, Vol;
-  
+
   /*--- Set Gradient to Zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     node[iPoint]->SetGradientZero();
-  
+
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    
+
     Solution_i = node[iPoint]->GetSolution();
     Solution_j = node[jPoint]->GetSolution();
     Normal = geometry->edge[iEdge]->GetNormal();
@@ -2679,7 +2683,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
       }
     }
   }
-  
+
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
@@ -2697,22 +2701,22 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
     }
   }
   }
-  
+
   /*--- Correct the gradient values for any periodic boundaries. ---*/
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_GG);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_GG);
   }
-  
+
   /*--- Compute gradient ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    
+
     /*--- Get the volume, which may include periodic components. ---*/
-    
+
     Vol = (geometry->node[iPoint]->GetVolume() +
            geometry->node[iPoint]->GetPeriodicVolume());
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Gradient = node[iPoint]->GetGradient();
@@ -2720,145 +2724,145 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetGradient(iVar, iDim, Grad_Val);
       }
     }
-    
+
   }
-  
+
   /*--- Gradient MPI ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION_GRADIENT);
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
-  
+
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned short iDim, jDim, iVar, iNeigh;
   unsigned long iPoint, jPoint;
   su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j;
   su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
   su2double detR2, z11, z12, z13, z22, z23, z33;
   bool singular = false;
-  
+
   su2double **Cvector = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Cvector[iVar] = new su2double [nDim];
-  
+
   /*--- Loop over points of the grid ---*/
-  
+
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    
+
     /*--- Set the value of the singular ---*/
     singular = false;
-    
+
     /*--- Get coordinates ---*/
-    
+
     Coord_i = geometry->node[iPoint]->GetCoord();
-    
+
     /*--- Get consevative solution ---*/
-    
+
     Solution_i = node[iPoint]->GetSolution();
-    
+
     /*--- Inizialization of variables ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
-    
+
     /*--- Clear Rmatrix, which could eventually be computed once
      and stored for static meshes, as well as the prim gradient. ---*/
-    
+
     node[iPoint]->SetRmatrixZero();
     node[iPoint]->SetGradientZero();
 
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
-      
+
       Solution_j = node[jPoint]->GetSolution();
 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      
+
       /*--- Sumations for entries of upper triangular matrix R ---*/
-      
+
       if (weight != 0.0) {
-        
+
         node[iPoint]->AddRmatrix(0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
         node[iPoint]->AddRmatrix(0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
         node[iPoint]->AddRmatrix(1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
-        
+
         if (nDim == 3) {
           node[iPoint]->AddRmatrix(0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
           node[iPoint]->AddRmatrix(1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
           node[iPoint]->AddRmatrix(2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
           node[iPoint]->AddRmatrix(2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
         }
-        
+
         /*--- Entries of c:= transpose(A)*b ---*/
-        
+
         for (iVar = 0; iVar < nVar; iVar++) {
           for (iDim = 0; iDim < nDim; iDim++) {
             node[iPoint]->AddGradient(iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight);
           }
         }
-        
+
       }
     }
   }
-  
+
   /*--- Correct the gradient values for any periodic boundaries. ---*/
-  
+
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SOL_LS);
   }
-  
+
   /*--- Second loop over points of the grid to compute final gradient ---*/
-  
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
+
     /*--- Set the value of the singular ---*/
-    
+
     singular = false;
-    
+
     /*--- Entries of upper triangular matrix R ---*/
-    
+
     r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-    
+
     r11 = node[iPoint]->GetRmatrix(0,0);
     r12 = node[iPoint]->GetRmatrix(0,1);
     r22 = node[iPoint]->GetRmatrix(1,1);
-    
+
     /*--- Entries of upper triangular matrix R ---*/
-    
+
     if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
     if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
     if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-    
+
     if (nDim == 3) {
       r13   = node[iPoint]->GetRmatrix(0,2);
       r23_a = node[iPoint]->GetRmatrix(1,2);
       r23_b = node[iPoint]->GetRmatrix(2,1);
       r33   = node[iPoint]->GetRmatrix(2,2);
-      
+
       if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
       if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
       if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
     }
-    
+
     /*--- Compute determinant ---*/
-    
+
     if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
     else detR2 = (r11*r22*r33)*(r11*r22*r33);
-    
+
     /*--- Detect singular matrices ---*/
-    
+
     if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-    
+
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    
+
     if (singular) {
       for (iDim = 0; iDim < nDim; iDim++)
         for (jDim = 0; jDim < nDim; jDim++)
@@ -2885,9 +2889,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         Smatrix[2][2] = (z33*z33)/detR2;
       }
     }
-    
+
     /*--- Computation of the gradient: S*c ---*/
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         Cvector[iVar][iDim] = 0.0;
@@ -2896,26 +2900,26 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         }
       }
     }
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         node[iPoint]->SetGradient(iVar, iDim, Cvector[iVar][iDim]);
       }
     }
-    
+
   }
-  
+
   /*--- Deallocate memory ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Cvector[iVar];
   delete [] Cvector;
-  
+
   /*--- Gradient MPI ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION_GRADIENT);
   CompleteComms(geometry, config, SOLUTION_GRADIENT);
-  
+
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
@@ -2925,33 +2929,33 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
   z22, z23, z33, product;
   su2double **Cvector;
-  
+
   /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
   Cvector = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++)
     Cvector[iVar] = new su2double [nDim];
-  
+
   /*--- Loop over points of the grid ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    
+
     Coord_i = geometry->node[iPoint]->GetCoord();
     Solution_i = geometry->node[iPoint]->GetGridVel();
-    
+
     /*--- Inizialization of variables ---*/
     for (iVar = 0; iVar < nDim; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-    
+
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       Solution_j = geometry->node[jPoint]->GetGridVel();
-      
+
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      
+
       /*--- Sumations for entries of upper triangular matrix R ---*/
       r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
       r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
@@ -2962,13 +2966,13 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
         r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
         r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
       }
-      
+
       /*--- Entries of c:= transpose(A)*b ---*/
       for (iVar = 0; iVar < nDim; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
           Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
     }
-    
+
     /*--- Entries of upper triangular matrix R ---*/
     r11 = sqrt(r11);
     r12 = r12/(r11);
@@ -3014,28 +3018,28 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
       }
     }
   }
-  
+
   /*--- Deallocate memory ---*/
   for (iVar = 0; iVar < nDim; iVar++)
     delete [] Cvector[iVar];
   delete [] Cvector;
-  
+
 }
 
 void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned short iDim, jDim, iNeigh, iMarker, Boundary;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint, iVertex;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
   su2double **Smatrix, *Cvector;
-  
+
   Smatrix = new su2double* [nDim];
   Cvector = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
-  
-  
+
+
   /*--- Loop over boundary markers to select those for Euler or NS walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
@@ -3044,28 +3048,28 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
       case HEAT_FLUX:
       case ISOTHERMAL:
       case CHT_WALL_INTERFACE:
-        
+
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
             Coord_i = geometry->node[iPoint]->GetCoord();
             AuxVar_i = node[iPoint]->GetAuxVar();
-            
+
             /*--- Inizialization of variables ---*/
             for (iDim = 0; iDim < nDim; iDim++)
               Cvector[iDim] = 0.0;
             su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
-            
+
             for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
               jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
               Coord_j = geometry->node[jPoint]->GetCoord();
               AuxVar_j = node[jPoint]->GetAuxVar();
-              
+
               su2double weight = 0;
               for (iDim = 0; iDim < nDim; iDim++)
                 weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-              
+
               /*--- Sumations for entries of upper triangular matrix R ---*/
               r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
               r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
@@ -3076,12 +3080,12 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
                 r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
                 r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
               }
-              
+
               /*--- Entries of c:= transpose(A)*b ---*/
               for (iDim = 0; iDim < nDim; iDim++)
                 Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
             }
-            
+
             /*--- Entries of upper triangular matrix R ---*/
             r11 = sqrt(r11);
             r12 = r12/r11;
@@ -3133,7 +3137,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
         break;
     }
   }
-  
+
   /*--- Memory deallocation ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] Smatrix[iDim];
@@ -3142,7 +3146,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
-  
+
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
@@ -3150,7 +3154,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   *LocalMinSolution = NULL, *LocalMaxSolution = NULL,
   *GlobalMinSolution = NULL, *GlobalMaxSolution = NULL,
   dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
-  
+
 #ifdef CODI_REVERSE_TYPE
   bool TapeActive = false;
 
@@ -3160,24 +3164,24 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     AD::StopRecording();
   }
 #endif
-  
+
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
-  
+
   if (config->GetKind_SlopeLimit() == NO_LIMITER) {
-    
+
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
         node[iPoint]->SetLimiter(iVar, 1.0);
       }
     }
-    
+
   }
-  
+
   else {
-    
+
     /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
-    
+
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
         node[iPoint]->SetSolution_Max(iVar, -EPS);
@@ -3185,23 +3189,23 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetLimiter(iVar, 2.0);
       }
     }
-    
+
     /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-    
+
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
+
       /*--- Point identification, Normal vector and area ---*/
-      
+
       iPoint = geometry->edge[iEdge]->GetNode(0);
       jPoint = geometry->edge[iEdge]->GetNode(1);
-      
+
       /*--- Get the conserved variables ---*/
-      
+
       Solution_i = node[iPoint]->GetSolution();
       Solution_j = node[jPoint]->GetSolution();
-      
+
       /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-      
+
       for (iVar = 0; iVar < nVar; iVar++) {
         du = (Solution_j[iVar] - Solution_i[iVar]);
         node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
@@ -3209,83 +3213,83 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
         node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
       }
-      
+
     }
-    
+
     /*--- Correct the limiter values across any periodic boundaries. ---*/
-    
+
     for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_1);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_1);
     }
-    
+
   }
-  
+
   /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
-  
+
   if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
-    
+
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
+
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
+
       AD::StartPreacc();
       AD::SetPreaccIn(Gradient_i, nVar, nDim);
       AD::SetPreaccIn(Gradient_j, nVar, nDim);
       AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        
+
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
         AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-        
+
         if (dm == 0.0) { limiter = 2.0; }
         else {
           if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
           else dp = node[iPoint]->GetSolution_Min(iVar);
           limiter = dp/dm;
         }
-        
+
         if (limiter < node[iPoint]->GetLimiter(iVar)) {
           node[iPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
         }
-        
+
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-        
+
         if (dm == 0.0) { limiter = 2.0; }
         else {
           if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
           else dp = node[jPoint]->GetSolution_Min(iVar);
           limiter = dp/dm;
         }
-        
+
         if (limiter < node[jPoint]->GetLimiter(iVar)) {
           node[jPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
         }
 
       }
-      
+
       AD::EndPreacc();
-      
+
     }
 
 
@@ -3296,41 +3300,41 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetLimiter(iVar, limiter);
       }
     }
-    
+
   }
 
   /*--- Venkatakrishnan limiter ---*/
-  
+
   if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
-    
+
     if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
 
       /*--- Allocate memory for the max and min solution value --*/
-      
+
       LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
       LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
-      
+
       /*--- Compute the max value and min value of the solution ---*/
-      
+
       Solution = node[iPoint]->GetSolution();
       for (iVar = 0; iVar < nVar; iVar++) {
         LocalMinSolution[iVar] = Solution[iVar];
         LocalMaxSolution[iVar] = Solution[iVar];
       }
-      
+
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
+
         /*--- Get the solution variables ---*/
-        
+
         Solution = node[iPoint]->GetSolution();
-        
+
         for (iVar = 0; iVar < nVar; iVar++) {
           LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
           LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
         }
-        
+
       }
-      
+
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
       SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3341,16 +3345,16 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       }
 #endif
     }
-    
+
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
+
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
+
       AD::StartPreacc();
       AD::SetPreaccIn(Gradient_i, nVar, nDim);
       AD::SetPreaccIn(Gradient_j, nVar, nDim);
@@ -3367,7 +3371,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
         AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
-        
+
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
           AD::SetPreaccIn(GlobalMaxSolution[iVar]);
           AD::SetPreaccIn(GlobalMinSolution[iVar]);
@@ -3380,190 +3384,190 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         }
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-        
+
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-        
+
         if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
         else dp = node[iPoint]->GetSolution_Min(iVar);
-        
+
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[iPoint]->GetLimiter(iVar)) {
           node[iPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
         }
-        
+
         /*-- Repeat for point j on the edge ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-        
+
         if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
         else dp = node[jPoint]->GetSolution_Min(iVar);
-        
+
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[jPoint]->GetLimiter(iVar)) {
           node[jPoint]->SetLimiter(iVar, limiter);
           AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
         }
-        
+
         AD::EndPreacc();
       }
     }
-    
+
     if (LocalMinSolution  != NULL) delete [] LocalMinSolution;
     if (LocalMaxSolution  != NULL) delete [] LocalMaxSolution;
     if (GlobalMinSolution != NULL) delete [] GlobalMinSolution;
     if (GlobalMaxSolution != NULL) delete [] GlobalMaxSolution;
 
   }
-  
+
   /*--- Sharp edges limiter ---*/
-  
+
   if (config->GetKind_SlopeLimit() == SHARP_EDGES) {
-    
+
     /*-- Get limiter parameters from the configuration file ---*/
-    
+
     dave = config->GetRefElemLength();
     LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
-    
+
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
+
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
+
       for (iVar = 0; iVar < nVar; iVar++) {
-        
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-        
+
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-        
+
         if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
         else dp = node[iPoint]->GetSolution_Min(iVar);
-        
+
         /*--- Compute the distance to a sharp edge ---*/
-        
+
         SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
         if (SharpEdge_Distance > eps1) ds = 1.0;
-        
+
         limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[iPoint]->GetLimiter(iVar))
           node[iPoint]->SetLimiter(iVar, limiter);
-        
+
         /*-- Repeat for point j on the edge ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-        
+
         if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
         else dp = node[jPoint]->GetSolution_Min(iVar);
-        
+
         /*--- Compute the distance to a sharp edge ---*/
-        
+
         SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
         if (SharpEdge_Distance > eps1) ds = 1.0;
-        
+
         limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[jPoint]->GetLimiter(iVar))
           node[jPoint]->SetLimiter(iVar, limiter);
-        
+
       }
     }
   }
-  
+
   /*--- Sharp edges limiter ---*/
-  
+
   if (config->GetKind_SlopeLimit() == WALL_DISTANCE) {
-    
+
     /*-- Get limiter parameters from the configuration file ---*/
-    
+
     dave = config->GetRefElemLength();
     LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
-    
+
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
+
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
+
       for (iVar = 0; iVar < nVar; iVar++) {
-        
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-        
+
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-        
+
         if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
         else dp = node[iPoint]->GetSolution_Min(iVar);
-        
+
         /*--- Compute the distance to a sharp edge ---*/
-        
+
         SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
         if (SharpEdge_Distance > eps1) ds = 1.0;
-        
+
         limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[iPoint]->GetLimiter(iVar))
           node[iPoint]->SetLimiter(iVar, limiter);
-        
+
         /*-- Repeat for point j on the edge ---*/
-        
+
         dm = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-        
+
         if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
         else dp = node[jPoint]->GetSolution_Min(iVar);
-        
+
         /*--- Compute the distance to a sharp edge ---*/
-        
+
         SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
         if (SharpEdge_Distance > eps1) ds = 1.0;
-        
+
         limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-        
+
         if (limiter < node[jPoint]->GetLimiter(iVar))
           node[jPoint]->SetLimiter(iVar, limiter);
-        
+
       }
     }
   }
@@ -3574,9 +3578,9 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_2);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_2);
   }
-  
+
   /*--- Limiter MPI ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION_LIMITER);
   CompleteComms(geometry, config, SOLUTION_LIMITER);
 
@@ -3586,16 +3590,16 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
-  
+
   short iVar, jVar, kVar;
   su2double weight, aux;
-  
+
   if (nVar == 1)
     rhs[0] /= A[0][0];
   else {
-    
+
     /*--- Transform system in Upper Matrix ---*/
-    
+
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = A[iVar][jVar]/A[jVar][jVar];
@@ -3604,9 +3608,9 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
         rhs[iVar] -= weight*rhs[jVar];
       }
     }
-    
+
     /*--- Backwards substitution ---*/
-    
+
     rhs[nVar-1] = rhs[nVar-1]/A[nVar-1][nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0;
@@ -3616,53 +3620,53 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
       if (iVar == 0) break;
     }
   }
-  
+
 }
 
 void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
-  
+
   /*--- Variables used for Aeroelastic case ---*/
-  
+
   su2double Cl, Cd, Cn, Ct, Cm, Cn_rot;
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   vector<su2double> structural_solution(4,0.0); //contains solution(displacements and rates) of typical section wing model.
-  
+
   unsigned short iMarker, iMarker_Monitoring, Monitoring;
   string Marker_Tag, Monitoring_Tag;
-  
+
   /*--- Loop over markers and find the ones being monitored. ---*/
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
-      
+
       /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
-      
+
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) {
-          
+
           Cl = GetSurface_CL(iMarker_Monitoring);
           Cd = GetSurface_CD(iMarker_Monitoring);
-          
+
           /*--- For typical section wing model want the force normal to the airfoil (in the direction of the spring) ---*/
           Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
           Ct = -Cl*sin(Alpha) + Cd*cos(Alpha);
-          
+
           Cm = GetSurface_CMz(iMarker_Monitoring);
-          
+
           /*--- Calculate forces for the Typical Section Wing Model taking into account rotation ---*/
-          
+
           /*--- Note that the calculation of the forces and the subsequent displacements ...
            is only correct for the airfoil that starts at the 0 degree position ---*/
-          
+
           if (config->GetKind_GridMovement() == AEROELASTIC_RIGID_MOTION) {
             su2double Omega, dt, psi;
             dt = config->GetDelta_UnstTimeND();
             Omega  = (config->GetRotation_Rate(2)/config->GetOmega_Ref());
             psi = Omega*(dt*ExtIter);
-            
+
             /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
             if (Monitoring_Tag == "Airfoil1") {
               psi = psi + 0.0;
@@ -3675,55 +3679,55 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             }
             else
               cout << "WARNING: There is a marker that we are monitoring that doesn't match the values hardcoded above!" << endl;
-            
+
             cout << Monitoring_Tag << " position " << psi*180.0/PI_NUMBER << " degrees. " << endl;
-            
+
             Cn_rot = Cn*cos(psi) - Ct*sin(psi); //Note the signs are different for accounting for the AOA.
             Cn = Cn_rot;
           }
-          
+
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
-          
+
           SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution);
-          
+
           break;
         }
       }
-      
+
       /*--- Compute the new surface node locations ---*/
       surface_movement->AeroelasticDeform(geometry, config, ExtIter, iMarker, iMarker_Monitoring, structural_solution);
-      
+
     }
-    
+
   }
-  
+
 }
 
 void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vector<su2double>& omega, CConfig *config) {
-  
+
   /*--- Retrieve values from the config file ---*/
   su2double w_h = config->GetAeroelastic_Frequency_Plunge();
   su2double w_a = config->GetAeroelastic_Frequency_Pitch();
   su2double x_a = config->GetAeroelastic_CG_Location();
   su2double r_a = sqrt(config->GetAeroelastic_Radius_Gyration_Squared());
   su2double w = w_h/w_a;
-  
+
   // Mass Matrix
   vector<vector<su2double> > M(2,vector<su2double>(2,0.0));
   M[0][0] = 1;
   M[0][1] = x_a;
   M[1][0] = x_a;
   M[1][1] = r_a*r_a;
-  
+
   // Stiffness Matrix
   //  vector<vector<su2double> > K(2,vector<su2double>(2,0.0));
   //  K[0][0] = (w_h/w_a)*(w_h/w_a);
   //  K[0][1] = 0.0;
   //  K[1][0] = 0.0;
   //  K[1][1] = r_a*r_a;
-  
+
   /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
-  
+
   vector<vector<su2double> > Omega2(2,vector<su2double>(2,0.0));
   su2double aux; // auxiliary variable
   aux = sqrt(pow(r_a,2)*pow(w,4) - 2*pow(r_a,2)*pow(w,2) + pow(r_a,2) + 4*pow(x_a,2)*pow(w,2));
@@ -3731,17 +3735,17 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   Phi[0][1] = (r_a * (r_a - r_a*pow(w,2) - aux)) / (2*x_a*pow(w, 2));
   Phi[1][0] = 1.0;
   Phi[1][1] = 1.0;
-  
+
   Omega2[0][0] = (r_a * (r_a + r_a*pow(w,2) - aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
   Omega2[0][1] = 0;
   Omega2[1][0] = 0;
   Omega2[1][1] = (r_a * (r_a + r_a*pow(w,2) + aux)) / (2*(pow(r_a, 2) - pow(x_a, 2)));
-  
+
   /* Nondimesionalize the Eigenvectors such that Phi'*M*Phi = I and PHI'*K*PHI = Omega */
   // Phi'*M*Phi = D
   // D^(-1/2)*Phi'*M*Phi*D^(-1/2) = D^(-1/2)*D^(1/2)*D^(1/2)*D^(-1/2) = I,  D^(-1/2) = inv(sqrt(D))
   // Phi = Phi*D^(-1/2)
-  
+
   vector<vector<su2double> > Aux(2,vector<su2double>(2,0.0));
   vector<vector<su2double> > D(2,vector<su2double>(2,0.0));
   // Aux = M*Phi
@@ -3753,7 +3757,7 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
       }
     }
   }
-  
+
   // D = Phi'*Aux
   for (int i=0; i<2; i++) {
     for (int j=0; j<2; j++) {
@@ -3763,54 +3767,54 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
       }
     }
   }
-  
+
   //Modify the first column
   Phi[0][0] = Phi[0][0] * 1/sqrt(D[0][0]);
   Phi[1][0] = Phi[1][0] * 1/sqrt(D[0][0]);
   //Modify the second column
   Phi[0][1] = Phi[0][1] * 1/sqrt(D[1][1]);
   Phi[1][1] = Phi[1][1] * 1/sqrt(D[1][1]);
-  
+
   // Sqrt of the eigenvalues (frequency of vibration of the modes)
   omega[0] = sqrt(Omega2[0][0]);
   omega[1] = sqrt(Omega2[1][1]);
-  
+
 }
 
 void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements) {
-  
+
   /*--- The aeroelastic model solved in this routine is the typical section wing model
    The details of the implementation are similar to those found in J.J. Alonso
    "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994. ---*/
-  
+
   /*--- Retrieve values from the config file ---*/
   su2double w_alpha = config->GetAeroelastic_Frequency_Pitch();
   su2double vf      = config->GetAeroelastic_Flutter_Speed_Index();
   su2double b       = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
   su2double dt      = config->GetDelta_UnstTimeND();
   dt = dt*w_alpha; //Non-dimensionalize the structural time.
-  
+
   /*--- Structural Equation damping ---*/
   vector<su2double> xi(2,0.0);
-  
+
   /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
   vector<vector<su2double> > Phi(2,vector<su2double>(2,0.0));   // generalized eigenvectors.
   vector<su2double> w(2,0.0);        // sqrt of the generalized eigenvalues (frequency of vibration of the modes).
   SetUpTypicalSectionWingModel(Phi, w, config);
-  
+
   /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
-  
+
   /*--- Solution variables description. //x[j][i], j-entry, i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 ---*/
   vector<vector<su2double> > x_np1(2,vector<su2double>(2,0.0));
-  
+
   /*--- Values from previous movement of spring at true time step n+1
    We use this values because we are solving for delta changes not absolute changes ---*/
   vector<vector<su2double> > x_np1_old = config->GetAeroelastic_np1(iMarker);
-  
+
   /*--- Values at previous timesteps. ---*/
   vector<vector<su2double> > x_n = config->GetAeroelastic_n(iMarker);
   vector<vector<su2double> > x_n1 = config->GetAeroelastic_n1(iMarker);
-  
+
   /*--- Set up of variables used to solve the structural problem. ---*/
   vector<su2double> f_tilde(2,0.0);
   vector<vector<su2double> > A_inv(2,vector<su2double>(2,0.0));
@@ -3819,13 +3823,13 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   vector<su2double> rhs(2,0.0); //right hand side
   vector<su2double> eta(2,0.0);
   vector<su2double> eta_dot(2,0.0);
-  
+
   /*--- Forcing Term ---*/
   su2double cons = vf*vf/PI_NUMBER;
   vector<su2double> f(2,0.0);
   f[0] = cons*(-Cl);
   f[1] = cons*(2*-Cm);
-  
+
   //f_tilde = Phi'*f
   for (int i=0; i<2; i++) {
     f_tilde[i] = 0;
@@ -3833,7 +3837,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
       f_tilde[i] += Phi[k][i]*f[k]; //PHI transpose
     }
   }
-  
+
   /*--- solve each decoupled equation (The inverse of the 2x2 matrix is provided) ---*/
   for (int i=0; i<2; i++) {
     /* Matrix Inverse */
@@ -3842,23 +3846,23 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
     A_inv[0][1] = 1/detA * 1;
     A_inv[1][0] = 1/detA * -w[i]*w[i];
     A_inv[1][1] = 1/detA * 3/(2.0*dt);
-    
+
     /* Source Terms from previous iterations */
     s1 = (-4*x_n[0][i] + x_n1[0][i])/(2.0*dt);
     s2 = (-4*x_n[1][i] + x_n1[1][i])/(2.0*dt);
-    
+
     /* Problem Right Hand Side */
     rhs[0] = -s1;
     rhs[1] = f_tilde[i]-s2;
-    
+
     /* Solve the equations */
     x_np1[0][i] = A_inv[0][0]*rhs[0] + A_inv[0][1]*rhs[1];
     x_np1[1][i] = A_inv[1][0]*rhs[0] + A_inv[1][1]*rhs[1];
-    
+
     eta[i] = x_np1[0][i]-x_np1_old[0][i];  // For displacements, the change(deltas) is used.
     eta_dot[i] = x_np1[1][i]; // For velocities, absolute values are used.
   }
-  
+
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
   vector<su2double> q(2,0.0);
   vector<su2double> q_dot(2,0.0);
@@ -3870,33 +3874,33 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
       q_dot[i] += Phi[i][k]*eta_dot[k];
     }
   }
-  
+
   su2double dh = b*q[0];
   su2double dalpha = q[1];
-  
+
   su2double h_dot = w_alpha*b*q_dot[0];  //The w_a brings it back to actual time.
   su2double alpha_dot = w_alpha*q_dot[1];
-  
+
   /*--- Set the solution of the structural equations ---*/
   displacements[0] = dh;
   displacements[1] = dalpha;
   displacements[2] = h_dot;
   displacements[3] = alpha_dot;
-  
+
   /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
   su2double pitch, plunge;
   pitch = config->GetAeroelastic_pitch(iMarker);
   plunge = config->GetAeroelastic_plunge(iMarker);
-  
+
   config->SetAeroelastic_pitch(iMarker , pitch+dalpha);
   config->SetAeroelastic_plunge(iMarker , plunge+dh/b);
-  
+
   /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
    and after convering the sudo time step the solution at n+1 get moved to the solution at n
    in SetDualTime_Solver method ---*/
-  
+
   config->SetAeroelastic_np1(iMarker, x_np1);
-  
+
 }
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
@@ -3951,9 +3955,9 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   getline (restart_file_n, text_line);
 
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
+
     getline (restart_file_n, text_line);
-    
+
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
@@ -4023,9 +4027,9 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     getline (restart_file_n, text_line);
 
     for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
+
       getline (restart_file_n, text_line);
-      
+
       istringstream point_line(text_line);
 
       /*--- Retrieve local index. If this node from the restart file lives
@@ -4068,10 +4072,10 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- It's necessary to communicate this information ---*/
-  
+
   geometry->InitiateComms(geometry, config, COORDINATES_OLD);
   geometry->CompleteComms(geometry, config, COORDINATES_OLD);
-  
+
   delete [] Coord;
 
 }
@@ -4433,9 +4437,9 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   delete [] blocklen;
   delete [] displace;
-  
+
 #endif
-  
+
 }
 
 void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename) {
@@ -4681,9 +4685,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
-    
+
     MPI_File_close(&fhw);
-    
+
 #endif
 
     /*--- Carry on with ASCII metadata reading. ---*/
@@ -4753,28 +4757,28 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
        if (position != string::npos) {
          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
        }
-       
+
        /*--- dCMx_dCL coefficient ---*/
-       
+
        position = text_line.find ("DCMX_DCL_VALUE=",0);
        if (position != string::npos) {
          text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
        }
-       
+
        /*--- dCMy_dCL coefficient ---*/
-       
+
        position = text_line.find ("DCMY_DCL_VALUE=",0);
        if (position != string::npos) {
          text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
        }
-       
+
        /*--- dCMz_dCL coefficient ---*/
-       
+
        position = text_line.find ("DCMZ_DCL_VALUE=",0);
        if (position != string::npos) {
          text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
        }
-       
+
 					}
 
 				}
@@ -4849,34 +4853,34 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
       config->SetdCD_dCL(dCD_dCL_);
-      
+
       if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
       config->SetdCMx_dCL(dCMx_dCL_);
-      
+
       if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
       config->SetdCMy_dCL(dCMy_dCL_);
-      
+
       if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
       config->SetdCMz_dCL(dCMz_dCL_);
 
 				}
 				else {
-      
+
       if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
-      
+
       if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
-      
+
       if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
-      
+
       if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
         cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
-      
+
     }
 
 			}
@@ -4898,29 +4902,29 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 			if (config->GetRestart()) {
 
      /*--- dCD_dCL coefficient ---*/
-     
+
      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
        cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
      config->SetdCD_dCL(dCD_dCL_);
-     
+
      /*--- dCMx_dCL coefficient ---*/
-     
+
      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
        cout <<"WARNING: SU2 will use the dCMx/dCL provided in\nthe adjoint solution file: " << dCMx_dCL_ << " ." << endl;
      config->SetdCMx_dCL(dCMx_dCL_);
-     
+
      /*--- dCMy_dCL coefficient ---*/
-     
+
      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
        cout <<"WARNING: SU2 will use the dCMy/dCL provided in\nthe adjoint solution file: " << dCMy_dCL_ << " ." << endl;
      config->SetdCMy_dCL(dCMy_dCL_);
-     
+
      /*--- dCMz_dCL coefficient ---*/
-     
+
      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
        cout <<"WARNING: SU2 will use the dCMz/dCL provided in\nthe adjoint solution file: " << dCMz_dCL_ << " ." << endl;
      config->SetdCMz_dCL(dCMz_dCL_);
-     
+
 			}
 
 
@@ -4998,7 +5002,7 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
     /*--- Put nRow into cumulative storage format. ---*/
 
     nRowCum_InletFile[iMarker+1] = nRowCum_InletFile[iMarker] + nRow_InletFile[iMarker];
-    
+
   }
 
   Inlet_Data = new passivedouble[nRowCum_InletFile[nMarker_InletFile]*maxCol_InletFile];
@@ -5045,9 +5049,9 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
       }
     }
   }
-  
+
   inlet_file.close();
-  
+
 }
 
 void CSolver::LoadInletProfile(CGeometry **geometry,
@@ -5229,7 +5233,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          
+
           /*--- Loop through the nodes on this marker. ---*/
 
           for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
@@ -5309,7 +5313,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (Inlet_Values != NULL) delete [] Inlet_Values;
   if (Inlet_Fine   != NULL) delete [] Inlet_Fine;
   delete [] Normal;
-  
+
 }
 
 void CSolver::SetVerificationSolution(unsigned short nDim,
@@ -5355,7 +5359,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iVar;
-  
+
   nPoint = geometry->GetnPoint();
 
   /*--- Define geometry constants in the solver structure ---*/
@@ -5377,14 +5381,14 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   }
-  
+
 }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
 
   unsigned long iPoint;
   unsigned short iVar;
-  
+
   nPoint = geometry->GetnPoint();
 
   config->fields = field_names;
@@ -5473,7 +5477,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     if (!fhw) {
       SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
-    
+
     /*--- First, read the number of variables and points. ---*/
 
     ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
@@ -5490,7 +5494,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
-    
+
     /*--- Close the file. ---*/
 
     fclose(fhw);
@@ -5501,7 +5505,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    
+
     /*--- All ranks open the file using MPI. ---*/
 
     ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
@@ -5535,7 +5539,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- All ranks close the file after writing. ---*/
-    
+
     MPI_File_close(&fhw);
 
 #endif
@@ -5621,9 +5625,9 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
-    
+
     MPI_File_close(&fhw);
-    
+
 #endif
 
     /*--- Open the restart file ---*/
@@ -5635,7 +5639,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     if (restart_file.fail()) {
       SU2_MPI::Error(string("SU2 solution file ") + filename + string(" not found"), CURRENT_FUNCTION);
     }
-    
+
     /*--- Identify the number of fields (and names) in the restart file ---*/
 
     getline (restart_file, text_line);
@@ -5647,7 +5651,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Close the file (the solution date is read later). ---*/
-    
+
     restart_file.close();
 
     /*--- Set the number of variables, one per field in the
@@ -5744,7 +5748,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     iPoint_Local = geometry[iInst]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-      
+
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
@@ -5754,7 +5758,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (grid_movement && val_update_geo) {
 
         /*--- First, remove any variables for the turbulence model that
@@ -5765,11 +5769,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         } else if (turb_model == SST) {
           index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
 
@@ -5791,20 +5795,20 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
-    
+
   }
 
   /*--- MPI solution ---*/
-  
+
   InitiateComms(geometry[iInst], config, SOLUTION);
   CompleteComms(geometry[iInst], config, SOLUTION);
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
-  
+
   if (grid_movement && val_update_geo) {
-    
+
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
+
     geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
     geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
 
@@ -5812,7 +5816,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
 
   }
-  
+
   delete [] Coord;
 
   /*--- Delete the class memory that is used to load the restart. ---*/
@@ -5880,7 +5884,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
   /*--- Load data from the restart into correct containers. ---*/
-  
+
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
@@ -6153,7 +6157,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
 
     MPI_File_close(&fhw);
-    
+
 #endif
 
     /*--- Open the restart file ---*/
