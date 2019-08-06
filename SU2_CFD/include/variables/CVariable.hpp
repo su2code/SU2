@@ -1164,7 +1164,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the flow energy.
    */
-  inline virtual su2double GetEnergy(Idx_t iPoint) { return 0.0; }
+  inline virtual su2double GetEnergy(Idx_t iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
