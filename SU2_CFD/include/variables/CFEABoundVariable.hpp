@@ -46,113 +46,127 @@
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CFEAVariable {
+class CFEABoundVariable final : public CFEAVariable {
 protected:
 
   Mat_t FlowTraction;        /*!< \brief Traction from the fluid field. */
   Mat_t FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
 
-  Mat_t Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
-  Mat_t Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
+  Mat_t Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces. */
+  Mat_t Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n. */
+
+  TVec_t<bool> IsVertex;     /*!< \brief Whether a node is a vertex (i.e. on a boundary). */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CFEABoundVariable(void);
+  CFEABoundVariable() = default;
+
+//  /*!
+//   * \overload
+//   * \param[in] val_fea - Values of the fea solution (initialization value).
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CFEABoundVariable(su2double *val_fea, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
 
   /*!
    * \overload
-   * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEABoundVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable(void);
+  ~CFEABoundVariable() = default;
 
   /*!
    * \brief Add surface load to the residual term
    */
-  inline void Add_SurfaceLoad_Res(su2double *val_surfForce) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+  inline void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) += val_surfForce[iVar];
   }
 
   /*!
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  inline void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
+  inline void Set_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar, su2double val_surfForce) {
+    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;}
 
   /*!
    * \brief Get the residual term due to surface load
    */
-  inline su2double Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
+  inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const { return Residual_Ext_Surf(iPoint,iVar); }
 
   /*!
    * \brief Clear the surface load residual
    */
-  inline void Clear_SurfaceLoad_Res(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  inline void Clear_SurfaceLoad_Res(Idx_t iPoint) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Store the surface load as the load for the previous time step.
    */
-  inline void Set_SurfaceLoad_Res_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
+  inline void Set_SurfaceLoad_Res_n(Idx_t iPoint) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n(iPoint,iVar) = Residual_Ext_Surf(iPoint,iVar);
   }
 
   /*!
    * \brief Get the surface load from the previous time step.
    */
-  inline su2double Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar]; }
+  inline su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const {
+    return Residual_Ext_Surf_n(iPoint,iVar);
+  }
 
   /*!
    * \brief Set the flow traction at a node on the structural side
    */
-  inline void Set_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = val_flowTraction[iVar];
+  inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
 
   /*!
    * \brief Add a value to the flow traction at a node on the structural side
    */
-  inline void Add_FlowTraction(su2double *val_flowTraction) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] += val_flowTraction[iVar];
+  inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
 
   /*!
    * \brief Get the residual term due to the flow traction
    */
-  inline su2double Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar]; }
+  inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const { return FlowTraction(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
-  void Set_FlowTraction_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = FlowTraction[iVar];
+  void Set_FlowTraction_n(Idx_t iPoint) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction_n(iPoint,iVar) = FlowTraction(iPoint,iVar);
   }
 
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  inline su2double Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar]; }
+  inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const { return FlowTraction_n(iPoint,iVar); }
 
   /*!
    * \brief Clear the flow traction residual
    */
-  inline void Clear_FlowTraction(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
+  inline void Clear_FlowTraction(Idx_t iPoint) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Get whether this node is on the boundary
    */
-  inline bool Get_isVertex(void) {return true; }
+  inline bool Get_isVertex(Idx_t iPoint) const { return IsVertex(iPoint); }
 
 };
