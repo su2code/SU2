@@ -8,6 +8,13 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
   nLocalPoint_Sort  = geometry->GetnPointDomain();
   
+  /*--- Search all send/recv boundaries on this partition for halo cells. In
+   particular, consider only the recv conditions (these are the true halo
+   nodes). Check the ranks of the processors that are communicating and
+   choose to keep only the halo cells from the higher rank processor. ---*/
+
+  SetHaloPoints(geometry, config);
+  
   /*--- Create a linear partition --- */
   
   CreateLinearPartition(nGlobalPoint_Sort);  
@@ -19,7 +26,42 @@ CFVMDataSorter::~CFVMDataSorter(){
   delete [] end_node;
   delete [] nPoint_Cum;
   delete [] nPoint_Lin;
-    
+  delete [] Local_Halo;
+  
+}
+
+void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
+  
+  unsigned long iPoint, Global_Index, iVertex;
+  unsigned short iMarker;
+  int SendRecv, RecvFrom;
+  bool notHalo;
+
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+      SendRecv = config->GetMarker_All_SendRecv(iMarker);
+      RecvFrom = abs(SendRecv)-1;
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        
+        /*--- We need to keep one copy of overlapping halo cells. ---*/
+        
+        notHalo = ((SendRecv < 0) && (rank > RecvFrom));
+        
+        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
+        
+        if (notHalo) {
+          Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
 }
 
 void CFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
@@ -492,11 +534,20 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
     connSend[ii] = 0;
   
+  /*--- Allocate arrays for storing halo flags. ---*/
+  
+  unsigned short *haloSend = new unsigned short[nElem_Send[size]];
+  for (int ii = 0; ii < nElem_Send[size]; ii++)
+    haloSend[ii] = false;
+  
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  
+  unsigned long *haloIndex = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
@@ -537,6 +588,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
           
           nElem_Flag[iProcessor] = ii;
           unsigned long nn = index[iProcessor];
+          unsigned long mm = haloIndex[iProcessor];          
           
           /*--- Load the connectivity values. ---*/
           
@@ -544,11 +596,19 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
             iPoint = geometry->elem[ii]->GetNode(kk);
             connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
             
+            /*--- Check if this is a halo node. If so, flag this element
+             as a halo cell. We will use this later to sort and remove
+             any duplicates from the connectivity list. Note that just checking 
+             whether the point is a halo point is not enough, since we want to keep
+             elements on one side of the send receive boundary. ---*/
+            
+            if (Local_Halo[iPoint]) haloSend[mm] = true;
           }
           
           /*--- Increment the index by the message length ---*/
           
           index[iProcessor]    += NODES_PER_ELEMENT;
+          haloIndex[iProcessor]++;
           
         }
       }
@@ -558,6 +618,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Free memory after loading up the send buffer. ---*/
   
   delete [] index;
+  delete [] haloIndex;
   
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
@@ -569,10 +630,14 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
     connRecv[ii] = 0;
   
+  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    haloRecv[ii] = false;
+  
 #ifdef HAVE_MPI
 
-  send_req = new SU2_MPI::Request[nSends];
-  recv_req = new SU2_MPI::Request[nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -605,6 +670,38 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       iMessage++;
     }
   }
+  
+  /*--- Repeat the process to communicate the halo flags. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the halo flags. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
 #endif
   
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
@@ -618,15 +715,17 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   mm = nElem_Recv[rank];
   ll = nElem_Send[rank];
   kk = nElem_Send[rank+1];
+    
+  for (int nn=ll; nn<kk; nn++, mm++) haloRecv[mm] = haloSend[nn];
   
   /*--- Wait for the non-blocking sends and recvs to complete. ---*/
   
 #ifdef HAVE_MPI
-  int number = nSends;
+  int number = 2*nSends;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, send_req, &ind, &status);
   
-  number = nRecvs;
+  number = 2*nRecvs;
   for (int ii = 0; ii < number; ii++)
     SU2_MPI::Waitany(number, recv_req, &ind, &status);
   
@@ -642,11 +741,13 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    nElem_Total++;
-    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-      Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
-      count++;
-    }  
+    if (!haloRecv[ii]) {
+      nElem_Total++;
+      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+        Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
+        count++;
+      }  
+    }
   }
   
   /*--- Store the particular global element count in the class data,
@@ -686,6 +787,8 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   
   delete [] connSend;
   delete [] connRecv;
+  delete [] haloSend;
+  delete [] haloRecv;
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
