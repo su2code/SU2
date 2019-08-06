@@ -1307,6 +1307,10 @@ void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
   }
 }
 
+unsigned short CSinglezoneDriver::GetnDiff_Outputs() {
+  return config_container[0]->GetnDiff_Outputs();
+}
+
 vector<passivedouble> CSinglezoneDriver::GetDiff_Outputs_Vars(unsigned short index) {
   //TODO Does getting Diff_Outputs_Vars from any solver in solver container always work?
   //  (using all 0 indices for now)

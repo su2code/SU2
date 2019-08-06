@@ -1543,6 +1543,12 @@ public:
   void ApplyDiff_Inputs_Vars();
 
   /*!
+   * \brief Get the number of differentiable outputs that were set in the config file.
+   * \return Number of differentiable outputs.
+   */
+  unsigned short GetnDiff_Outputs();
+
+  /*!
    * \brief Get value of one of the differentiable outputs.
    * \param[in] index - The index of the differentiable output as listed in the config file.
    * \return Vector with the differentiable output values

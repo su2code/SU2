@@ -16,9 +16,33 @@ TEMP_CFG_BASENAME = 'tmp_cfg.cfg'
 
 
 class SU2Function(torch.autograd.Function):
-    """Function that uses the SU2 in-memory python wrapper."""
+    """PyTorch function that uses the SU2 in-memory python wrapper
+    to provide differentiable physics simulations.
+
+    Usage example:
+
+        # define differentiable inputs and outputs in the config
+        # with DIFF_INPUTS and DIFF_OUTPUTS fields
+        su2 = SU2Function('config.cfg')
+        inputs = torch.tensor([1.0], requires_grad=True)
+        outputs = su2(inputs)
+        loss = some_torch_operations(outputs)
+        loss.backward()
+        # now we have gradient of loss with respect to inputs here:
+        inputs.grad
+    """
 
     def __init__(self, config_file, dims=2, num_zones=1, max_procs=-1):
+        """ Initialize the SU2 configurations for the provided config file.
+
+        :param config_file: str - The SU2 configuration file name.
+        :param dims: int - Number of dimensions for the problem (2D or 3D).
+        :param num_zones: int - Number of zones in the simulation (only 1 supported currently).
+        :param max_procs: int - Maximum number of MPI processes to use for SU2. If set to -1 (default),
+            number of processes will equal batch size. Otherwise, will use floor(max_procs / batch_size)
+            processes per item in batch.
+            In this case max_procs must be larger than the size of the batch passed in.
+        """
         assert num_zones == 1, 'Only supports 1 zone for now.'
         self.num_zones = num_zones
         self.dims = dims
@@ -44,13 +68,26 @@ class SU2Function(torch.autograd.Function):
         shutil.copy(config_file, self.adjoint_config)
         modify_config(base_config, new_configs, outfile=self.adjoint_config)
 
-    def forward(self, *inputs, **kwargs):
+    def forward(self, *inputs):
+        """ Runs a batch of SU2 simulations.
+
+        :param inputs: The differentiable inputs for the batch of simulations.
+            Number of inputs depends on the number of DIFF_INPUTS set in the configuration file.
+            Each input is of shape BATCH_SIZE x SHAPE, where SHAPE is the shape of the given input.
+            For example, a batch of 10 scalars would have input shape 10 x 1,
+            a batch of 10 vectors of length N would have input shape 10 x N.
+        :return: A tuple of tensors with the batch of differentiable outputs.
+            Number of outputs depends on the number of DIFF_OUTPUTS set in the configuration file.
+            As for the inputs, each output is of shape BATCH_SIZE x SHAPE,
+            where SHAPE is the shape of the given output.
+            Outputs are always either scalars or vectors.
+        """
         if inputs[0].dim() < 2:
             raise TypeError('Input is expected to have first dimension for batch, '
                             'e.g. x[0, :] is first item in batch.')
 
         batch_size = inputs[0].shape[0]
-        if 0 < self.max_procs < batch_size:
+        if 0 <= self.max_procs < batch_size:
             raise TypeError('Batch size is larger than max_procs, not enough processes to run batch.')
         self.save_for_backward(*inputs)
         procs_per_example = self.max_procs // batch_size if self.max_procs > 0 else 1
@@ -74,7 +111,15 @@ class SU2Function(torch.autograd.Function):
         outputs = tuple(torch.cat([o[i].unsqueeze(0) for o in outputs]) for i in range(len(outputs[0])))
         return outputs
 
-    def backward(self, *grad_outputs, **kwargs):
+    def backward(self, *grad_outputs):
+        """Called implicitly by PyTorch on the backward pass.
+
+        Takes in the gradients of some scalar loss with respect to the outputs of the previous forward
+        call and returns the gradients of this loss with respect to the inputs of the forward call.
+
+        :param grad_outputs: Gradients of a scalar loss with respect to the forward outputs.
+        :return: The gradients of the loss with respect to the forward inputs.
+        """
         batch_size = grad_outputs[0].shape[0]
         grads = []
         for i in range(batch_size):
@@ -89,6 +134,7 @@ class SU2Function(torch.autograd.Function):
         return grads
 
     def __del__(self):
+        """Finish existing drivers and MPI communicators."""
         for comm in self.comms:
             comm.bcast(RunCode.STOP, root=MPI.ROOT)
             comm.Disconnect()
@@ -98,6 +144,7 @@ class SU2Function(torch.autograd.Function):
 
 
 def modify_config(config, new_params, outfile=None):
+    """Modify a config, saving the modifications to outfile if provided."""
     temp_config = config.copy()
     for k, v in new_params.items():
         temp_config[k] = v

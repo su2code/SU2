@@ -8,14 +8,21 @@ from mpi4py import MPI
 
 
 class RunCode(IntEnum):
-    # Run codes for worker processes
+    """Run codes for communication with worker processes."""
     STOP = -1
     RUN_FORWARD = 0
     RUN_ADJOINT = 1
 
 
-def run_forward(comm, forward_driver, inputs, num_diff_outputs):
-    # TODO Add checks to make sure these are run before Preprocess?
+def run_forward(comm, forward_driver, inputs):
+    """Runs a simulation with the provided driver, using the inputs to set the values
+    defined in DIFF_INPUTS in the config file.
+
+    :param comm: The communicator for the processes running the simulation.
+    :param forward_driver: The driver for the simulation, created using the same comm as passed into this function.
+    :param inputs: The inputs used to set the DIFF_INPUTS as defined in the configuration file.
+    :return: The outputs of the simulation, as defined in DIFF_OUTPUTS in the config file.
+    """
     for i, x in enumerate(inputs):
         forward_driver.SetDiff_Inputs_Vars(x.flatten().tolist(), i)
     forward_driver.ApplyDiff_Inputs_Vars()
@@ -28,6 +35,7 @@ def run_forward(comm, forward_driver, inputs, num_diff_outputs):
     if comm.Get_rank() == 0:
         shutil.move("./restart_flow.dat", "./solution_flow.dat")
 
+    num_diff_outputs = forward_driver.GetnDiff_Outputs()
     outputs = [inputs[0].new_tensor(forward_driver.GetDiff_Outputs_Vars(i))
                for i in range(num_diff_outputs)]
 
@@ -56,6 +64,15 @@ def run_forward(comm, forward_driver, inputs, num_diff_outputs):
 
 
 def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
+    """Runs a simulation with the provided driver, using the inputs to set the values
+    defined in DIFF_INPUTS in the config file.
+
+    :param comm: The communicator for the processes running the simulation.
+    :param adjoint_driver: The driver for the adjoint computation, created using the same comm as passed into this function.
+    :param inputs: The same inputs used to set the DIFF_INPUTS in the forward pass.
+    :param grad_outputs: Gradients of a scalar loss with respect to the forward outputs, see SU2Function's backward() method.
+    :return: The gradients of the loss with respect to the inputs.
+    """
     # TODO Add checks to make sure these are run before Preprocess
     for i, x in enumerate(inputs):
         adjoint_driver.SetDiff_Inputs_Vars(x.flatten().tolist(), i)
@@ -72,6 +89,10 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
 
 
 def main():
+    """Runs a loop for the worker processes.
+    Can be signaled to run either a forward simulation or an adjoint computation
+    using RunCodes.
+    """
     intercomm = MPI.Comm.Get_parent()
 
     num_zones, dims, num_diff_outputs = intercomm.bcast(None, root=0)
@@ -86,7 +107,7 @@ def main():
         if run_type == RunCode.RUN_FORWARD:
             inputs = intercomm.bcast(None, root=0)
             forward_driver = pysu2.CSinglezoneDriver(config, num_zones, dims, MPI.COMM_WORLD)
-            outputs = run_forward(MPI.COMM_WORLD, forward_driver, inputs, num_diff_outputs)
+            outputs = run_forward(MPI.COMM_WORLD, forward_driver, inputs)
             if MPI.COMM_WORLD.Get_rank() == 0:
                 intercomm.send(outputs, dest=0)
             forward_driver.Postprocessing()
