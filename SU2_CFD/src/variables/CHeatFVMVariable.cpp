@@ -37,66 +37,94 @@
 
 #include "../../include/variables/CHeatFVMVariable.hpp"
 
-CHeatFVMVariable::CHeatFVMVariable(void) : CVariable() {
 
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-  Solution_BGS_k  = NULL;
+//CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,
+//                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+//
+//  unsigned short iVar, iMesh, nMGSmooth = 0;
+//  bool low_fidelity = false;
+//  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+//  bool multizone = config->GetMultizone_Problem();
+//
+//  /*--- Array initialization ---*/
+//  Solution_Direct = NULL;
+//  Solution_BGS_k  = NULL;
+//
+//  /*--- Initialization of heat variable ---*/
+//  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
+//
+//  /*--- Allocate residual structures ---*/
+//
+//  Res_TruncError = new su2double [nVar];
+//
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    Res_TruncError[iVar] = 0.0;
+//  }
+//
+//  /*--- Only for residual smoothing (multigrid) ---*/
+//
+//  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+//    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+//
+//  if ((nMGSmooth > 0) || low_fidelity) {
+//    Residual_Sum = new su2double [nVar];
+//    Residual_Old = new su2double [nVar];
+//  }
+//
+//  /*--- Allocate and initialize solution for dual time strategy ---*/
+//  if (dual_time) {
+//    Solution_time_n[0]  = val_Heat;
+//    Solution_time_n1[0] = val_Heat;
+//  }
+//
+//  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
+//    Undivided_Laplacian = new su2double [nVar];
+//  }
+//
+//  if (multizone){
+//    Solution_BGS_k  = new su2double [1];
+//    Solution_BGS_k[0] = val_Heat;
+//  }
+//
+//}
 
-}
+CHeatFVMVariable::CHeatFVMVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+  : CVariable(npoint, ndim, nvar, config) {
 
-CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar,
-                                   CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-
-  unsigned short iVar, iMesh, nMGSmooth = 0;
   bool low_fidelity = false;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool multizone = config->GetMultizone_Problem();
 
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-  Solution_BGS_k  = NULL;
-
   /*--- Initialization of heat variable ---*/
-  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
+//  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError = new su2double [nVar];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Res_TruncError[iVar] = 0.0;
-  }
+  Res_TruncError.resize(nPoint,nVar) = 0.0;
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-
-  if ((nMGSmooth > 0) || low_fidelity) {
-    Residual_Sum = new su2double [nVar];
-    Residual_Old = new su2double [nVar];
+  for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    if ((config->GetMG_CorrecSmooth(iMesh) > 0) || low_fidelity) {
+      Residual_Sum.resize(nPoint,nVar);
+      Residual_Old.resize(nPoint,nVar);
+      break;
+    }
   }
 
   /*--- Allocate and initialize solution for dual time strategy ---*/
   if (dual_time) {
-    Solution_time_n[0]  = val_Heat;
-    Solution_time_n1[0] = val_Heat;
+//    Solution_time_n[0]  = val_Heat;
+//    Solution_time_n1[0] = val_Heat;
   }
 
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
-    Undivided_Laplacian = new su2double [nVar];
+  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
+    Undivided_Laplacian.resize(nPoint,nVar);
+
+  if (multizone) {
+    Solution_BGS_k.resize(nPoint,1);
+//    Solution_BGS_k[0] = val_Heat;
   }
-
-  if (multizone){
-    Solution_BGS_k  = new su2double [1];
-    Solution_BGS_k[0] = val_Heat;
-  }
-
-}
-
-CHeatFVMVariable::~CHeatFVMVariable(void) {
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
-  if (Solution_Direct != NULL) delete [] Solution_Direct;
 }
