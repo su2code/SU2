@@ -7,6 +7,7 @@ class CFVMDataSorter : public CParallelDataSorter{
   
 private:
   std::vector<std::vector<su2double> >* Local_Data;
+  int* Local_Halo;
   
 public:
   CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> >& Local_Data);
@@ -30,8 +31,11 @@ public:
   
   unsigned long GetGlobalIndex(unsigned long iPoint) { return beg_node[rank] + iPoint; }
   
+  bool GetHalo(unsigned long iPoint){return Local_Halo[iPoint];}
+  
 private:
   
+  void SetHaloPoints(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
