@@ -120,13 +120,13 @@ protected:
 
   Mat_t Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
 
-  Idx_t nPoint;  /*!< \brief Number of points in the domain. */ 
-  Idx_t nDim;      /*!< \brief Number of dimension of the problem. */
-  Idx_t nVar;        /*!< \brief Number of variables of the problem. */
-  Idx_t nPrimVar;      /*!< \brief Number of primitive variables. */
-  Idx_t nPrimVarGrad;    /*!< \brief Number of primitives for which a gradient is computed. */
-  Idx_t nSecondaryVar;     /*!< \brief Number of secondary variables. */
-  Idx_t nSecondaryVarGrad;   /*!< \brief Number of secondaries for which a gradient is computed. */
+  Idx_t nPoint = {0};  /*!< \brief Number of points in the domain. */ 
+  Idx_t nDim = {0};      /*!< \brief Number of dimension of the problem. */
+  Idx_t nVar = {0};        /*!< \brief Number of variables of the problem. */
+  Idx_t nPrimVar = {0};      /*!< \brief Number of primitive variables. */
+  Idx_t nPrimVarGrad = {0};    /*!< \brief Number of primitives for which a gradient is computed. */
+  Idx_t nSecondaryVar = {0};     /*!< \brief Number of secondary variables. */
+  Idx_t nSecondaryVarGrad = {0};   /*!< \brief Number of secondaries for which a gradient is computed. */
 
 public:
 
