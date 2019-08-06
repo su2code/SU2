@@ -67,9 +67,7 @@ bool CIncNSVariable::SetVorticity(Idx_t iPoint) {
     Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
     Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
   }
-
   return false;
-
 }
 
 bool CIncNSVariable::SetStrainMag(Idx_t iPoint) {
@@ -107,7 +105,6 @@ bool CIncNSVariable::SetStrainMag(Idx_t iPoint) {
   AD::EndPreacc();
 
   return false;
-
 }
 
 
