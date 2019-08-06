@@ -45,7 +45,7 @@
  * \author O. Burghardt
  * \version 6.2.0 "Falcon"
  */
-class CHeatFVMVariable : public CVariable {
+class CHeatFVMVariable final : public CVariable {
 protected:
   Mat_t Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
   Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
@@ -55,20 +55,29 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CHeatFVMVariable(void);
+  CHeatFVMVariable() = default;
 
+//  /*!
+//   * \overload
+//   * \param[in] val_Heat - Values of the Heat solution (initialization value).
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CHeatFVMVariable(su2double val_Heat, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
+  
   /*!
    * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CHeatFVMVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CHeatFVMVariable(void);
+  ~CHeatFVMVariable() = default;
 
 };
