@@ -1792,7 +1792,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double Get_BodyForces_Res(Idx_t iVar) const { return 0.0; }
+  inline virtual su2double Get_BodyForces_Res(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
