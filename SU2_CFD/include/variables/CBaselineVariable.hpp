@@ -52,14 +52,6 @@ public:
    */
   CBaselineVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the flow value (initialization value).
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CBaselineVariable(su2double *val_solution, unsigned short val_nvar, CConfig *config);
-
   /*!
    * \overload
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
