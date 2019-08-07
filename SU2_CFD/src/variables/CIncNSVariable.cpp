@@ -38,20 +38,9 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 
 
-//CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
-//                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-//                               CIncEulerVariable(val_pressure, val_velocity, val_temperature, val_nDim, val_nvar, config) {
-//  DES_LengthScale = 0.0;
-//}
-//
-//CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
-//                               CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
-//  DES_LengthScale = 0.0;
-//}
-
-CIncNSVariable::CIncNSVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
-  : CIncEulerVariable(npoint, ndim, nvar, config) {
-
+CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+                               Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) :
+                               CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
   DES_LengthScale.resize(nPoint) = 0.0;
