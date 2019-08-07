@@ -587,8 +587,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   unsigned long iPoint;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    solver->node[iPoint]->Set_Solution_time_n1();
-    solver->node[iPoint]->Set_Solution_time_n();
+    solver->node->Set_Solution_time_n1(iPoint);
+    solver->node->Set_Solution_time_n(iPoint);
     
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
@@ -677,9 +677,9 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver->node[iPoint]->SetSolution_time_n();
-    solver->node[iPoint]->SetSolution_Vel_time_n();
-    solver->node[iPoint]->SetSolution_Accel_time_n();
+    solver->node->SetSolution_time_n(iPoint);
+    solver->node->SetSolution_Vel_time_n(iPoint);
+    solver->node->SetSolution_Accel_time_n(iPoint);
     
   }
   
@@ -722,9 +722,9 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
+    solver_container[FEA_SOL]->node->SetSolution_time_n(iPoint);
+    solver_container[FEA_SOL]->node->SetSolution_Vel_time_n(iPoint);
+    solver_container[FEA_SOL]->node->SetSolution_Accel_time_n(iPoint);
     
   }
   
@@ -891,8 +891,8 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       deltaURad = 0.0;
       
-      dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
-      dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
+      dispPred = fea_solver->node->GetSolution_Pred(iPoint);
+      dispPred_Old = fea_solver->node->GetSolution_Pred_Old(iPoint);
       
       for (iDim = 0; iDim < nDim; iDim++) {
         
