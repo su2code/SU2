@@ -57,26 +57,17 @@ public:
    */
   CTransLMVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-//   * \param[in] val_intermittency
-//   * \param[in] val_REth
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] val_intermittency
+   * \param[in] val_REth
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTransLMVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CTransLMVariable(su2double intermittency, su2double REth, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
