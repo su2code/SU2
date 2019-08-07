@@ -38,15 +38,14 @@
 #include "../../include/variables/CAdjNSVariable.hpp"
 
 
-CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
+//CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
+//                               CConfig *config) : CAdjEulerVariable(val_solution, val_nDim, val_nvar, config) {
+//}
+//
+//CAdjNSVariable::CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
+//                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
+//                               CAdjEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
+//}
 
-CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
-                               CConfig *config) : CAdjEulerVariable(val_solution, val_nDim, val_nvar, config) {
-}
-
-CAdjNSVariable::CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
-                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-                               CAdjEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
-}
-
-CAdjNSVariable::~CAdjNSVariable(void) { }
+CAdjNSVariable::CAdjNSVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+  : CAdjEulerVariable(npoint, ndim, nvar, config) { }
