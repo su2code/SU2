@@ -2127,7 +2127,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   unsigned short iMesh;
   int Direct_Iter;
   bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-  bool grid_movement_bool = config_container[val_iZone]->GetGrid_Movement();
+  bool grid_movement_bool = config[val_iZone]->GetGrid_Movement();
 
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   if (config[val_iZone]->GetInvDesign_Cp() == YES)
