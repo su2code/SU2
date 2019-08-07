@@ -52,99 +52,119 @@ protected:
   Mat_t ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
   Mat_t IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   Mat_t HB_Source;          /*!< \brief Harmonic balance source term. */
-  VecBool_t incompressible;
+  // ToDo: check if this variable is needed
+  TVec_t<bool> incompressible;
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CAdjEulerVariable(void);
+  CAdjEulerVariable() = default;
+
+//  /*!
+//   * \overload
+//   * \param[in] val_psirho - Value of the adjoint density (initialization value).
+//   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
+//   * \param[in] val_psie - Value of the adjoint energy (initialization value).
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
+//
+//  /*!
+//   * \overload
+//   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nvar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CAdjEulerVariable(su2double *val_solution, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
 
   /*!
    * \overload
-   * \param[in] val_psirho - Value of the adjoint density (initialization value).
-   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-   * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CAdjEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjEulerVariable(void);
+  virtual ~CAdjEulerVariable() = default;
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
+  bool SetPrimVar(Idx_t iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) final;
 
   /*!
    * \brief Set the value of the adjoint velocity.
    * \param[in] val_phi - Value of the adjoint velocity.
    */
-  inline void SetPhi_Old(su2double *val_phi) {for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
+  inline void SetPhi_Old(Idx_t iPoint, const su2double *val_phi) final {
+    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint,iDim+1)=val_phi[iDim];
+  }
 
   /*!
    * \brief Set the value of the force projection vector.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
    */
-  inline void SetForceProj_Vector(su2double *val_ForceProj_Vector) {for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
+  inline void SetForceProj_Vector(Idx_t iPoint, const su2double *val_ForceProj_Vector) final {
+    for (Idx_t iDim = 0; iDim < nDim; iDim++) ForceProj_Vector(iPoint,iDim) = val_ForceProj_Vector[iDim];
+  }
 
   /*!
    * \brief Set the value of the objective function source.
    * \param[in] val_ObjFuncSource - Pointer to the objective function source.
    */
-  inline void SetObjFuncSource(su2double *val_ObjFuncSource) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) ObjFuncSource[iVar] = val_ObjFuncSource[iVar];
+  inline void SetObjFuncSource(Idx_t iPoint, const su2double *val_ObjFuncSource) final {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) ObjFuncSource(iPoint,iVar) = val_ObjFuncSource[iVar];
   }
 
   /*!
    * \brief Set the value of the interior boundary jump vector vector.
    * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
    */
-  inline void SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) {for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
+  inline void SetIntBoundary_Jump(Idx_t iPoint, const su2double *val_IntBoundary_Jump) final {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump(iPoint,iVar) = val_IntBoundary_Jump[iVar];
+  }
 
   /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */
-  inline su2double *GetForceProj_Vector(void) {return ForceProj_Vector; }
+  inline su2double *GetForceProj_Vector(Idx_t iPoint) final { return ForceProj_Vector[iPoint]; }
 
   /*!
    * \brief Get the value of the objective function source.
    * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
    */
-  inline su2double *GetObjFuncSource(void) {return ObjFuncSource; }
+  inline su2double *GetObjFuncSource(Idx_t iPoint) final { return ObjFuncSource[iPoint]; }
 
   /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */
-  inline su2double *GetIntBoundary_Jump(void) {return IntBoundary_Jump; }
+  inline su2double *GetIntBoundary_Jump(Idx_t iPoint) final { return IntBoundary_Jump[iPoint]; }
 
   /*!
    * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
    */
-  inline void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) {HB_Source[val_var] = val_source; }
+  inline void SetHarmonicBalance_Source(Idx_t iPoint, Idx_t iVar, su2double val_source) final {
+    HB_Source(iPoint,iVar) = val_source;
+  }
 
   /*!
    * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the harmonic balance source term for the index <i>iVar</i>.
    */
-  inline su2double GetHarmonicBalance_Source(unsigned short val_var) {return HB_Source[val_var]; }
+  inline su2double GetHarmonicBalance_Source(Idx_t iPoint, Idx_t iVar) const final {
+    return HB_Source(iPoint,iVar);
+  }
 };
