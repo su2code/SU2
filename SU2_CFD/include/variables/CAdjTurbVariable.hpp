@@ -60,23 +60,15 @@ public:
    */
   CAdjTurbVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CAdjTurbVariable(su2double val_psinu_inf, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
