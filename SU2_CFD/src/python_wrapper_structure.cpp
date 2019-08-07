@@ -381,14 +381,14 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
     Area = sqrt(AreaSquare);
 
     /*--- Get the values of pressure and viscosity ---*/
-    Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetPressure();
+    Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetPressure(iPoint);
     if (viscous_flow) {
       for(iDim=0; iDim<nDim; iDim++) {
         for(jDim=0; jDim<nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->node->GetGradient_Primitive(iPoint, iDim+1, jDim);
         }
       }
-      Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetLaminarViscosity(iPoint);
     }
 
     /*--- Calculate the inviscid (pressure) part of tn in the fluid nodes (force units) ---*/
@@ -517,7 +517,7 @@ su2double CDriver::GetVertexTemperature(unsigned short iMarker, unsigned short i
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
-    vertexWallTemp = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetTemperature();
+    vertexWallTemp = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetTemperature(iPoint);
   }
 
   return vertexWallTemp;
@@ -554,10 +554,10 @@ bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVe
   }
 
   if(!halo && compressible){
-    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetLaminarViscosity(iPoint);
     thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
     for(iDim=0; iDim < nDim; iDim++){
-      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(0, iDim);
+      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetGradient_Primitive(iPoint, 0, iDim);
       PyWrapNodalHeatFlux[iDim] = -thermal_conductivity*GradT[iDim];
     }
   }
@@ -611,11 +611,11 @@ su2double CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned shor
     for (iDim = 0; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
 
-    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetLaminarViscosity(iPoint);
     thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
     /*Compute wall heat flux (normal to the wall) based on computed temperature gradient*/
     for(iDim=0; iDim < nDim; iDim++){
-      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(0, iDim);
+      GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetGradient_Primitive(iPoint, 0, iDim);
       dTdn += GradT[iDim]*UnitNormal[iDim];
     }
 
@@ -641,7 +641,7 @@ su2double CDriver::GetThermalConductivity(unsigned short iMarker, unsigned short
   su2double laminar_viscosity, thermal_conductivity;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+  laminar_viscosity    = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node->GetLaminarViscosity(iPoint);
   thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam);
 
   return thermal_conductivity;
