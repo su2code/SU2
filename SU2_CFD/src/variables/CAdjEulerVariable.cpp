@@ -45,7 +45,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
   /*--- Allocate residual structures ---*/
-  Res_TruncError.resize(nPoint,nVar) = 0.0;
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
   for (Idx_t iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -62,9 +62,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
 
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  Limiter.resize(nPoint,nVar) = 0.0;
-  Solution_Max.resize(nPoint,nVar) = 0.0;
-  Solution_Min.resize(nPoint,nVar) = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Solution initialization ---*/
   su2double val_solution[5] = {psirho, phi[0], phi[1], psie, psie};
@@ -86,14 +86,14 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   Grad_AuxVar.resize(nPoint,nDim);
 
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
-  ForceProj_Vector.resize(nPoint,nDim) = 0.0;
+  ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
 
   /*--- Allocate and initializate interior boundary jump vector for near field boundary condition ---*/
-  IntBoundary_Jump.resize(nPoint,nVar) = 0.0;
+  IntBoundary_Jump.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    HB_Source.resize(nPoint,nVar) = 0.0;
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
 }
 

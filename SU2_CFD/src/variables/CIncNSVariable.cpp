@@ -43,7 +43,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
-  DES_LengthScale.resize(nPoint) = 0.0;
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
 }
 
 bool CIncNSVariable::SetVorticity(Idx_t iPoint) {

@@ -44,14 +44,14 @@ CTurbVariable::CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *conf
   /*--- Allocate space for the harmonic balance source terms ---*/
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source.resize(nPoint,nVar) = 0.0;
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
   }
 
   /*--- Always allocate the slope limiter, and the auxiliar
    variables (check the logic - JST with 2nd order Turb model) ---*/
 
-  Limiter.resize(nPoint,nVar) = 0.0;
-  Solution_Max.resize(nPoint,nVar) = 0.0;
-  Solution_Min.resize(nPoint,nVar) = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
 }

@@ -60,7 +60,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError.resize(nPoint,nVar) = 0.0;
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
@@ -80,12 +80,12 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = 0.0;
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
-  Limiter.resize(nPoint,nVar) = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
 
-  Solution_Max.resize(nPoint,nPrimVarGrad) = 0.0;
-  Solution_Min.resize(nPoint,nPrimVarGrad) = 0.0;
+  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Solution initialization ---*/
   
@@ -107,7 +107,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
 
-  Primitive.resize(nPoint,nPrimVar) = 0.0;
+  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
 
   /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
         We need P, and rho for running the adjoint problem ---*/
@@ -134,7 +134,7 @@ void CIncEulerVariable::SetGradient_PrimitiveZero(Idx_t iPoint, Idx_t val_primva
 
 su2double CIncEulerVariable::GetProjVel(Idx_t iPoint, const su2double *val_vector) const {
 
-  su2double ProjVel = 0.0;
+  su2double ProjVel = su2double(0.0);
 
   for (Idx_t iDim = 0; iDim < nDim; iDim++)
     ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
