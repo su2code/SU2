@@ -58,27 +58,13 @@ su2_dot_cxx_flags =
 
 if BUILD_NORMAL
 su2_dot_ldadd += \
-  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/obj/libSU2Core.a \
   ../../Common/lib/libSU2.a
 endif
 
 if BUILD_REVERSE
 su2_dot_ldadd += \
-  ../../SU2_CFD/src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/libSU2Core_AD_a-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/obj/libSU2Core_AD.a \
   ../../Common/lib/libSU2_AD.a
 endif
 
