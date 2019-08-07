@@ -83,7 +83,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++) 
-    struct_solution->node[iPoint]->Clear_FlowTraction();
+    struct_solution->node->Clear_FlowTraction(iPoint);
 
   Preprocess(flow_config);
 
@@ -159,7 +159,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // Retrieve the values of pressure
 
-  Pn = flow_solution->node[Point_Flow]->GetPressure();
+  Pn = flow_solution->node->GetPressure(Point_Flow);
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
   for (iVar = 0; iVar < nVar; iVar++) 
@@ -169,11 +169,11 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   if ((incompressible || compressible) && viscous_flow) {
 
-    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+    Viscosity = flow_solution->node->GetLaminarViscosity(Point_Flow);
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
-        Grad_Vel[iVar][jVar] = flow_solution->node[Point_Flow]->GetGradient_Primitive(iVar+1, jVar);
+        Grad_Vel[iVar][jVar] = flow_solution->node->GetGradient_Primitive(Point_Flow, iVar+1, jVar);
       }
     }
 
@@ -206,7 +206,7 @@ void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry
 
   /*--- Add to the Flow traction. If nonconservative interpolation is in use,
         this is a stress and is integrated by the structural solver later on. ---*/
-  fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
+  fea_solution->node->Add_FlowTraction(Point_Struct,Target_Variable);
 
 }
 
@@ -236,9 +236,9 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
   unsigned short iVar;
 
   /*--- The displacements come from the predicted solution ---*/
-  DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
+  DisplacementDonor = struct_solution->node->GetSolution_Pred(Point_Struct);
 
-  DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Pred_Old();
+  DisplacementDonor_Prev = struct_solution->node->GetSolution_Pred_Old(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++) 
   Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
@@ -279,7 +279,7 @@ void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struc
   Coord_Struct = struct_geometry->node[Point_Struct]->GetCoord();
 
   /*--- The displacements come from the predicted solution ---*/
-  Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution();
+  Displacement_Struct = struct_solution->node->GetSolution(Point_Struct);
 
   for (iVar = 0; iVar < nVar; iVar++) 
     Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
@@ -319,7 +319,7 @@ void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solutio
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
-    struct_solution->node[iPoint]->Clear_FlowTraction();
+    struct_solution->node->Clear_FlowTraction(iPoint);
 
   Preprocess(flow_config);
 
@@ -353,7 +353,7 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
   unsigned short iVar;
 
   /*--- Retrieve solution and set it as the donor variable ---*/
-  Solution = donor_solution->node[Point_Donor]->GetSolution();
+  Solution = donor_solution->node->GetSolution(Point_Donor);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = Solution[iVar];
@@ -364,7 +364,7 @@ void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CG
                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
   /*--- Set the target solution with the value of the Target Variable ---*/
-  target_solution->node[Point_Target]->SetSolution(Target_Variable);
+  target_solution->node->SetSolution(Point_Target,Target_Variable);
 
 }
 
@@ -567,14 +567,14 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   if (turbulent){
 
     /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
-    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+    Donor_Variable[0] = donor_solution->node->GetSolution(Point_Donor,0);
+    Donor_Variable[1] = donor_solution->node->GetSolution(Point_Donor,1);
 
   } else{
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
     for (iVar = 0; iVar < nDonorVar; iVar++)
-    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+    Donor_Variable[iVar] = donor_solution->node->GetPrimitive(Point_Donor,iVar);
 
   }
 }
@@ -677,21 +677,21 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   if (compressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetPrimitive(0)*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetPrimitive(0)*Temperature_Ref;
+    Twall   = donor_solution->node->GetPrimitive(Point_Donor,0)*Temperature_Ref;
+    Tnormal = donor_solution->node->GetPrimitive(PointNormal,0)*Temperature_Ref;
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (incompressible_flow) {
 
-    Twall   = donor_solution->node[Point_Donor]->GetTemperature()*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetTemperature()*Temperature_Ref;
+    Twall   = donor_solution->node->GetTemperature(Point_Donor)*Temperature_Ref;
+    Tnormal = donor_solution->node->GetTemperature(PointNormal)*Temperature_Ref;
 
     dTdn = (Twall - Tnormal)/dist;
   }
   else if (flow || heat_equation) {
-    Twall   = donor_solution->node[Point_Donor]->GetSolution(0)*Temperature_Ref;
-    Tnormal = donor_solution->node[PointNormal]->GetSolution(0)*Temperature_Ref;
+    Twall   = donor_solution->node->GetSolution(Point_Donor,0)*Temperature_Ref;
+    Tnormal = donor_solution->node->GetSolution(PointNormal,0)*Temperature_Ref;
 
 //    for (iDim = 0; iDim < nDim; iDim++) {
 //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
@@ -718,7 +718,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
-    thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
+    thermal_conductivityND  = donor_solution->node->GetThermalConductivity(iPoint);
     thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
 
     switch (donor_config->GetKind_ConductivityModel()) {
