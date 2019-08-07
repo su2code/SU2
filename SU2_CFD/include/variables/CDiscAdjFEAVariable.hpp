@@ -87,34 +87,18 @@ public:
    */
   ~CDiscAdjFEAVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_ndim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CDiscAdjFEAVariable(su2double *val_solution, Idx_t val_ndim, Idx_t val_nvar, CConfig *config);
-//
-//  /*!
-//   * \overload
-//   * \param[in] val_solution       - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_solution_accel - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_solution_vel   - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_ndim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CDiscAdjFEAVariable(su2double *val_solution, su2double *val_solution_accel, su2double *val_solution_vel, Idx_t val_ndim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] disp - Pointer to the adjoint value (initialization value).
+   * \param[in] vel - Pointer to the adjoint value (initialization value).
+   * \param[in] accel - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config);
+  CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel,
+                      Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config);
 
   /*!
    * \brief Set the sensitivity at the node

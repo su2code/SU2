@@ -38,8 +38,8 @@
 #include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 
-CDiscAdjFEAVariable::CDiscAdjFEAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
+CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel, Idx_t npoint,
+  Idx_t ndim, Idx_t nvar, bool unsteady, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -47,9 +47,9 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, b
 
   Sensitivity.resize(nPoint,nDim) = 0.0;
 
-//  for (iVar = 0; iVar < nVar; iVar++){
-//    Solution[iVar] = val_solution[iVar];
-//  }
+  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = disp[iVar];
 
   if (fsi) {
     Cross_Term_Derivative.resize(nPoint,nDim) = 0.0;
@@ -73,8 +73,8 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, b
   Solution_Direct_Vel.resize(nPoint,nVar) = 0.0;
   Solution_Direct_Accel.resize(nPoint,nVar) = 0.0;
 
-  Solution_Vel.resize(nPoint,nVar) = 0.0;
-  Solution_Accel.resize(nPoint,nVar) = 0.0;
+  Solution_Vel.resize(nPoint,nVar);
+  Solution_Accel.resize(nPoint,nVar);
 
   Solution_Old_Vel.resize(nPoint,nVar) = 0.0;
   Solution_Old_Accel.resize(nPoint,nVar) = 0.0;
@@ -82,12 +82,11 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, b
   Solution_Vel_time_n.resize(nPoint,nVar) = 0.0;
   Solution_Accel_time_n.resize(nPoint,nVar) = 0.0;
 
-//  for (iVar = 0; iVar < nVar; iVar++){
-//    Solution_Accel[iVar] = val_solution_accel[iVar];
-//  }
-//
-//  for (iVar = 0; iVar < nVar; iVar++){
-//    Solution_Vel[iVar] = val_solution_vel[iVar];
-//  }
+  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint) {
+    for (Idx_t iVar = 0; iVar < nVar; iVar++) {
+      Solution_Vel(iPoint,iVar) = vel[iVar];
+      Solution_Accel(iPoint,iVar) = accel[iVar];
+    }
+  }
 
 }
