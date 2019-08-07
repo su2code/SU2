@@ -618,7 +618,8 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
-  // XXX Debug
+  /*---
+  // Debug differentiation
 #ifdef HAVE_MPI
   if (SU2_MPI::GetRank() == 0)
 #endif
@@ -632,6 +633,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     }
     cout << endl;
   }
+  ---*/
 
   direct_solver->ExtractAdjoint_Variables(geometry, config);
   Total_Sens_Diff_Inputs = direct_solver->GetTotal_Sens_Diff_Inputs();
