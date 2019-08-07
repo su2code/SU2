@@ -16061,7 +16061,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (compressible)        { skipVar += skipMult*(nDim+2); }
     if (sst && !frozen_visc) { skipVar += skipMult*2;}
     if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-    if (grid_movement)       { skipVar += nDim;}
+    //CVC: Debug: if (grid_movement)       { skipVar += nDim;}
   }
   else if (Kind_Solver == DISC_ADJ_HEAT) {
     skipVar += 1;

@@ -85,8 +85,15 @@ CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
 
 void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double ProjGridVel = 0.0;
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
+  if (grid_movement) {
+    AD::SetPreaccIn(GridVel_i, nDim);
+    AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -119,6 +126,16 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     ProjVelocity       += MeanVelocity[iDim]*Normal[iDim];
   }
   
+  /*--- Projected velocity adjustment due to mesh motion ---*/
+  
+  if (grid_movement) { 
+    ProjGridVel = 0.0; 
+    for (iDim = 0; iDim < nDim; iDim++) { 
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim]; 
+    } 
+    ProjVelocity   -= ProjGridVel; 
+  }
+
   /*--- Mean variables at points iPoint and jPoint ---*/
   
   MeanDensity     = 0.5*(DensityInc_i  + DensityInc_j);
@@ -213,6 +230,35 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
     }
   }
 
+  /*--- Jacobian contributions due to grid motion ---*/
+  if (grid_movement) {
+
+    /*--- Recompute conservative variables ---*/
+
+    U_i[0] = DensityInc_i; U_j[0] = DensityInc_j;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
+    }
+    U_i[nDim+1] = DensityInc_i*Enthalpy_i; U_j[nDim+1] = DensityInc_j*Enthalpy_j;
+
+    ProjVelocity = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+
+      /*--- Implicit terms ---*/
+      if (implicit) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+      }
+    }
+  }
+
   if (!energy) {
     val_residual[nDim+1] = 0.0;
     if (implicit) {
@@ -275,6 +321,10 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 
 void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  //Preaccumulation?
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double ProjGridVel = 0.0;
+  
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -334,7 +384,36 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
+
+  /*--- Jacobian contributions due to grid motion ---*/
+  if (grid_movement) {
+
+    /*--- Recompute conservative variables ---*/
+
+    U_i[0] = DensityInc_i; U_j[0] = DensityInc_j;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
+    }
+    U_i[nDim+1] = DensityInc_i*Enthalpy_i; U_j[nDim+1] = DensityInc_j*Enthalpy_j;
+
+    su2double ProjVelocity = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+
+      /*--- Implicit terms ---*/
+      if (implicit) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+      }
+    }
+  }
+
   /*--- Computes differences between Laplacians and conservative variables ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -348,6 +427,17 @@ void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Compute the local spectral radius of the preconditioned system
    and the stretching factor. ---*/
+
+  /*--- Projected velocity adjustment due to mesh motion ---*/
+
+  if (grid_movement) {
+    ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    }
+    ProjVelocity_i -= ProjGridVel;
+    ProjVelocity_j -= ProjGridVel;
+  }
 
   SoundSpeed_i = sqrt(BetaInc2_i*Area*Area);
   SoundSpeed_j = sqrt(BetaInc2_j*Area*Area);
@@ -439,6 +529,9 @@ CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
 
 void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
+  
   /*--- Primitive variables at point i and j ---*/
   
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
@@ -500,7 +593,35 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
+
+  /*--- Jacobian contributions due to grid motion ---*/
+  if (grid_movement) {
+
+    /*--- Recompute conservative variables ---*/
+
+    U_i[0] = DensityInc_i; U_j[0] = DensityInc_j;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
+    }
+    U_i[nDim+1] = DensityInc_i*Enthalpy_i; U_j[nDim+1] = DensityInc_j*Enthalpy_j;
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+
+      /*--- Implicit terms ---*/
+      if (implicit) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          val_Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          val_Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        }
+        val_Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+        val_Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+      }
+    }
+  }
+
   /*--- Computes differences btw. conservative variables ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
@@ -515,6 +636,17 @@ void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   SoundSpeed_i = sqrt(BetaInc2_i*Area*Area);
   SoundSpeed_j = sqrt(BetaInc2_j*Area*Area);
+
+  /*--- Projected velocity adjustment due to mesh motion ---*/
+
+  if (grid_movement) {
+    ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    }
+    ProjVelocity_i -= ProjGridVel;
+    ProjVelocity_j -= ProjGridVel;
+  }
 
   Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
   Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
@@ -848,6 +980,79 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
   val_residual[nDim+1] = 0.0;
 
 }
+
+CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { 
+
+  Gamma = config->GetGamma(); 
+  Gamma_Minus_One = Gamma - 1.0; 
+
+} 
+
+CSourceIncRotatingFrame_Flow::~CSourceIncRotatingFrame_Flow(void) { } 
+
+void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { 
+
+
+  unsigned short iDim, iVar, jVar; 
+  su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0}, Velocity_i[3] = {0,0,0}; 
+
+  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
+
+  /*--- Retrieve the angular velocity vector from config. ---*/ 
+
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
+
+  /*--- Primitive variables at point i and j ---*/ 
+
+  DensityInc_i  = V_i[nDim+2]; 
+
+  for (iDim = 0; iDim < nDim; iDim++) { 
+    Velocity_i[iDim]    = V_i[iDim+1]; 
+  } 
+
+  /*--- Get the momentum vector at the current node. ---*/ 
+
+  for (iDim = 0; iDim < nDim; iDim++) { 
+    Momentum[iDim] = DensityInc_i*Velocity_i[iDim]; 
+  }
+
+  /*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/ 
+
+  if (nDim == 2) { 
+    val_residual[0] = 0.0; 
+    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume; 
+    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume; 
+    val_residual[3] = 0.0; 
+  } else { 
+    val_residual[0] = 0.0; 
+    val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume; 
+    val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume; 
+    val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume; 
+    val_residual[4] = 0.0; 
+  } 
+
+  /*--- Calculate the source term Jacobian ---*/ 
+
+  if (implicit) { 
+    for (iVar = 0; iVar < nVar; iVar++) 
+      for (jVar = 0; jVar < nVar; jVar++) 
+        val_Jacobian_i[iVar][jVar] = 0.0; 
+    if (nDim == 2) { 
+      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume; 
+      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume; 
+    } else { 
+      val_Jacobian_i[1][2] = -DensityInc_i*Omega[2]*Volume; 
+      val_Jacobian_i[1][3] =  DensityInc_i*Omega[1]*Volume; 
+      val_Jacobian_i[2][1] =  DensityInc_i*Omega[2]*Volume; 
+      val_Jacobian_i[2][3] = -DensityInc_i*Omega[0]*Volume; 
+      val_Jacobian_i[3][1] = -DensityInc_i*Omega[1]*Volume; 
+      val_Jacobian_i[3][2] =  DensityInc_i*Omega[0]*Volume; 
+    } 
+  } 
+
+} 
 
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 

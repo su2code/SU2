@@ -161,6 +161,9 @@ private:
   *Coord_n1,                          /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
   *Coord_p1;                          /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
   su2double *GridVel;                 /*!< \brief Velocity of the grid for dynamic mesh cases. */
+  su2double *GridVel_n;               /*!< \brief Velocity of the grid for dynamic mesh cases of previous time step. */
+  su2double *GridVel_n1;              /*!< \brief Velocity of the grid for dynamic mesh cases of second to current time step (2nd order timestepping only). */
+  su2double *GridVel_Old;             /*!< \brief Velocity of the grid for dynamic mesh cases, intermediate container. */
   su2double **GridVel_Grad;           /*!< \brief Gradient of the grid velocity for dynamic meshes. */
   unsigned long Parent_CV;            /*!< \brief Index of the parent control volume in the agglomeration process. */
   unsigned short nChildren_CV;        /*!< \brief Number of children in the agglomeration process. */
@@ -283,7 +286,7 @@ public:
 	 * \return pointer to the coordinate of the point.
 	 */
 	su2double *GetCoord(void);
-	
+
 	/*! 
 	 * \brief Set the coordinates for the control volume.
 	 * \param[in] val_dim - Position to store the coordinate.		 
@@ -567,12 +570,12 @@ public:
 	su2double* GetCoord_p1(void);
   
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n.
+	 * \brief Set the coordinates of the control volume at time n to the ones in <i>Coord</i>.
 	 */
 	void SetCoord_n(void);
 	
 	/*! 
-	 * \brief Set the coordinates of the control volume at time n-1.
+	 * \brief Set the coordinates of the control volume at time n-1 to the ones in <i>Coord_n</i>.
 	 */
 	void SetCoord_n1(void);
 
@@ -685,6 +688,24 @@ public:
 	 * \return Grid velocity at the point.
 	 */	
 	su2double *GetGridVel(void);
+
+	/*! 
+	 * \brief Get the value of the grid velocity at the point from previous timestep.
+	 * \return Grid velocity at the point.
+	 */	
+	su2double *GetGridVel_n(void);
+
+	/*! 
+	 * \brief Get the value of the grid velocity at the point from 2nd to current timestep (2nd order timestepping only).
+	 * \return Grid velocity at the point.
+	 */	
+	su2double *GetGridVel_n1(void);
+
+	/*! 
+	 * \brief Get the value of the grid velocity at the point from helper container.
+	 * \return Grid velocity at the point.
+	 */	
+	su2double *GetGridVel_Old(void);
   
   /*!
 	 * \brief Get the value of the grid velocity gradient at the point.
@@ -708,6 +729,11 @@ public:
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
 	void SetCoord_Old(su2double *val_coord_old);
+
+	/*!
+	 * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
+	 */	
+	void SetCoord_Old(void);
 	
 	/*! 
 	 * \brief Set the value of the grid velocity at the point.
@@ -718,11 +744,45 @@ public:
 	
 	/*! 
 	 * \overload
+	 * \brief Set the value of the grid velocity at the point.
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */	
 	void SetGridVel(su2double *val_gridvel);
   
-  /*!
+	/*!
+	 * \brief Set the value of the grid velocity at the point.
+	 * \param[in] val_gridvel - value array of the grid velocities.
+	 */
+	void SetGridVel_Old(su2double *val_gridvel);
+
+	/*!
+	 * \brief Set the values of the grid velocity to the current ones <i>GridVel</i>.
+	 */
+	void SetGridVel_Old(void);
+
+	/*!
+	 * \brief Set the values of the grid velocity to the current ones <i>GridVel</i>.
+	 */
+	void SetGridVel_n(void);
+
+	/*!
+	 * \brief Set the value of the grid velocity at the point.
+	 * \param[in] val_gridvel - value array of the grid velocities.
+	 */
+	void SetGridVel_n(su2double *val_gridvel);
+
+	/*!
+	 * \brief Set the values of the grid velocity to the ones in <i>GridVel_n</i>.
+	 */
+	void SetGridVel_n1(void);
+
+	/*!
+	 * \brief Set the value of the grid velocity at the point.
+	 * \param[in] val_gridvel - value array of the grid velocities.
+	 */
+	void SetGridVel_n1(su2double *val_gridvel);
+
+    /*!
 	 * \brief Set the gradient of the grid velocity.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_dim - Index of the dimension.

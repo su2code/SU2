@@ -564,6 +564,22 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
+  //TK:: Disturb the initial solution slightly to see whether ALE stuff is doing anything at all
+  //if(rank == MASTER_NODE) cout << "Disturbing initial solution slightly, CIncEulerSolver::CIncEulerSolver" << endl;
+  //su2double tmpPressure_Inf = Pressure_Inf + 0.2*Pressure_Inf;
+  //su2double *tmpVelocity_Inf = new su2double[nDim];
+  //for (iDim = 0; iDim < nDim; iDim++) {
+  //  if (Velocity_Inf[iDim] == 0.0) {
+  //    tmpVelocity_Inf[iDim] = 12.3;
+  //  } else {
+  //    tmpVelocity_Inf[iDim] = Velocity_Inf[iDim] + 0.2*Velocity_Inf[iDim];
+  //  }
+  //}
+  //su2double tmpTemperature_Inf = Temperature_Inf + 0.2*Temperature_Inf;
+  //TK:: end
+
+  //for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //  node[iPoint] = new CIncEulerVariable(tmpPressure_Inf, tmpVelocity_Inf, tmpTemperature_Inf, nDim, nVar, config);
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
 
@@ -2096,10 +2112,14 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
-      /*--- Load the conservative variables ---*/
+      /*--- Load the primitive variables ---*/
       
-      numerics->SetConservative(node[iPoint]->GetSolution(),
-                                node[iPoint]->GetSolution());
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
+
+      /*--- Set incompressible density ---*/
+
+      numerics->SetDensity(node[iPoint]->GetDensity(),
+                            node[iPoint]->GetDensity());
       
       /*--- Load the volume of the dual mesh cell ---*/
       
@@ -4599,6 +4619,132 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
 }
 
+//void CIncEulerSolver::BC_Euler_Wall(CGeometry     *geometry,
+//                                   CSolver        **solver_container,
+//                                   CNumerics      *conv_numerics,
+//                                   CConfig        *config,
+//                                   unsigned short val_marker) {
+//  
+//  unsigned short iDim, iVar;
+//  unsigned long iVertex, iPoint;
+//  
+//  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+//  bool grid_movement = config->GetGrid_Movement();
+//  
+//  /*--- Allocation of variables necessary for convective fluxes. ---*/
+//  su2double Area, ProjVelocity_i;
+//  su2double *V_reflected, *V_domain;
+//  su2double *Normal     = new su2double[nDim];
+//  su2double *UnitNormal = new su2double[nDim];
+//
+//  su2double *GridVel = NULL;
+//  su2double ProjGridVel = 0.0;
+//  su2double *Velocity_b;
+//  Velocity_b = new su2double[nDim];
+//  su2double Density_b, BetaInc2_b, Enthalpy_b;
+//
+//  /*--- Loop over all the vertices on this boundary marker. ---*/
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+//    if (geometry->node[iPoint]->GetDomain()) {
+//
+//      /*-------------------------------------------------------------------------------*/
+//      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
+//      /*---         Primitive variables by copying all interior values to the       ---*/
+//      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
+//      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
+//      /*-------------------------------------------------------------------------------*/
+//
+//      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+//      geometry->vertex[val_marker][0]->GetNormal(Normal); 
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Normal[iDim] = -Normal[iDim];
+//
+//      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+//      Area = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt (Area);
+//
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        UnitNormal[iDim] = -Normal[iDim]/Area;
+//      
+//      /*--- Allocate the reflected state at the symmetry boundary. ---*/
+//      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+//      
+//      /*--- Grid movement ---*/
+//      //if (grid_movement)
+//      //  conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+//      
+//      /*--- Normal vector for this vertex (negate for outward convention). ---*/
+//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Normal[iDim] = -Normal[iDim];
+//      //conv_numerics->SetNormal(Normal);
+//      
+//      /*--- Get current solution at this boundary node ---*/
+//      V_domain = node[iPoint]->GetPrimitive();
+//      
+//      /*--- Set the reflected state based on the boundary node. Scalars are copied and 
+//            the velocity is mirrored along the symmetry boundary, i.e. the velocity in 
+//            normal direction is substracted twice. ---*/
+//      for(iVar = 0; iVar < nPrimVar; iVar++)
+//        V_reflected[iVar] = node[iPoint]->GetPrimitive(iVar);
+//
+//      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
+//            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
+//      ProjVelocity_i = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        ProjVelocity_i += node[iPoint]->GetVelocity(iDim)*UnitNormal[iDim];
+//      
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        V_reflected[iDim+1] = node[iPoint]->GetVelocity(iDim) - ProjVelocity_i*UnitNormal[iDim];
+//        
+//
+//      if (grid_movement) {
+//        GridVel = geometry->node[iPoint]->GetGridVel();
+//        ProjGridVel = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+//        for (iDim = 0; iDim < nDim; iDim++) V_reflected[iDim+1] += GridVel[iDim] - ProjGridVel * UnitNormal[iDim];
+//      }
+//
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Velocity_b[iDim] = V_reflected[iDim+1];
+//      
+//      /*--- Set Primitive and Secondary for numerics class. ---*/
+//      //conv_numerics->SetPrimitive(V_domain, V_reflected);
+//      //conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+//
+//      /*--- Compute the residual using an upwind scheme. ---*/
+//      //conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//      
+//      //conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
+//
+//      Density_b = node[iPoint]->GetDensity();
+//      BetaInc2_b = node[iPoint]->GetBetaInc2();
+//      Enthalpy_b = node[iPoint]->GetEnthalpy();
+//      conv_numerics->GetInviscidIncProjFlux(&Density_b, Velocity_b, &V_reflected[0], &BetaInc2_b, &Enthalpy_b, Normal, Residual);
+//
+//      /*--- Update residual value ---*/     
+//      LinSysRes.AddBlock(iPoint, Residual);
+//      
+//      /*--- Jacobian contribution for implicit integration. ---*/
+//      if (implicit) {
+//        //Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//      }
+//      
+//    }
+//  }
+//  
+//  /*--- Free locally allocated memory ---*/
+//  delete [] Normal;
+//  delete [] UnitNormal;
+//  delete [] Velocity_b;
+//}
+
 void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
@@ -4728,7 +4874,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = GetVelocity_Inf(iDim);
 
-      /*--- Far-field pressure set to static pressure (0.0). ---*/
+      /*--- Far-field pressure set to static pressure (0.0). ---*/ //TK:: why 0.0?!
 
       V_infty[0] = GetPressure_Inf();
 
@@ -5772,10 +5918,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   /*--- Local variables ---*/
   
-  unsigned short iVar, jVar, iMarker, iDim;
+  unsigned short iVar, jVar, iMarker, iDim, jDim;
   unsigned long iPoint, jPoint, iEdge, iVertex;
   
   su2double Density, Cp;
+  su2double BetaInc2, dRhodT, Temperature, oneOverCp;
+  su2double  Velocity[3] = {0.0,0.0,0.0};
   su2double *V_time_nM1, *V_time_n, *V_time_nP1;
   su2double U_time_nM1[5], U_time_n[5], U_time_nP1[5];
   su2double Volume_nM1, Volume_nP1, TimeStep;
@@ -5817,11 +5965,27 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = node[iPoint]->GetSolution_time_n();
       V_time_nP1 = node[iPoint]->GetSolution();
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
-      
+      /*--- Access the primitive variables at this node. ---*/
+
       Density     = node[iPoint]->GetDensity();
+      BetaInc2    = node[iPoint]->GetBetaInc2();
       Cp          = node[iPoint]->GetSpecificHeatCp();
-      
+      oneOverCp   = 1.0/Cp;
+      Temperature = node[iPoint]->GetTemperature();
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+
+      /*--- We need the derivative of the equation of state to build the
+       preconditioning matrix. For now, the only option is the ideal gas
+       law, but in the future, dRhodT should be in the fluid model. ---*/
+
+      if (variable_density) {
+        dRhodT = -Density/Temperature;
+      } else {
+        dRhodT = 0.0;
+      }
+
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
       U_time_nM1[0] = Density;
@@ -5980,11 +6144,27 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       V_time_n = node[iPoint]->GetSolution_time_n();
       
-      /*--- Access the density and Cp at this node (constant for now). ---*/
-      
+      /*--- Access the primitive variables at this node. ---*/
+
       Density     = node[iPoint]->GetDensity();
+      BetaInc2    = node[iPoint]->GetBetaInc2();
       Cp          = node[iPoint]->GetSpecificHeatCp();
-      
+      oneOverCp   = 1.0/Cp;
+      Temperature = node[iPoint]->GetTemperature();
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+
+      /*--- We need the derivative of the equation of state to build the
+       preconditioning matrix. For now, the only option is the ideal gas
+       law, but in the future, dRhodT should be in the fluid model. ---*/
+
+      if (variable_density) {
+        dRhodT = -Density/Temperature;
+      } else {
+        dRhodT = 0.0;
+      }
+
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
       U_time_n[0] = Density;
@@ -5993,8 +6173,10 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
       U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      for (iVar = 1; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Compute the GCL component of the source term for node j ---*/
@@ -6007,8 +6189,10 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
       U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      for (iVar = 1; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.SubtractBlock(jPoint, Residual);
       
     }
@@ -6057,6 +6241,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+        
+        if (!energy) Residual[nDim+1] = 0.0;
         LinSysRes.AddBlock(iPoint, Residual);
         
       }
@@ -6128,19 +6314,54 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
-      
+      if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
-        for (iVar = 1; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
         
+        /*--- Calculating the inverse of the preconditioning matrix
+         that multiplies the time derivative during time integration. ---*/
+
+        /*--- For implicit calculations, we multiply the preconditioner
+        by the cell volume over the time step and add to the Jac diagonal. ---*/
+
+        Jacobian_i[0][0] = 1.0/BetaInc2;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][0] = Velocity[iDim]/BetaInc2;
+
+        if (energy) Jacobian_i[nDim+1][0] = Cp*Temperature/BetaInc2;
+        else        Jacobian_i[nDim+1][0] = 0.0;
+
+        for (jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[0][jDim+1] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            if (iDim == jDim) Jacobian_i[iDim+1][jDim+1] = Density;
+            else Jacobian_i[iDim+1][jDim+1] = 0.0;
+          }
+          Jacobian_i[nDim+1][jDim+1] = 0.0;
+        }
+
+        Jacobian_i[0][nDim+1] = dRhodT;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+        else        Jacobian_i[nDim+1][nDim+1] = 1.0;
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
+
+        if (!energy) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[iVar][nDim+1] = 0.0;
+            Jacobian_i[nDim+1][iVar] = 0.0;
+          }
+        }
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
@@ -6751,7 +6972,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && grid_movement)
+  if (dual_time && grid_movement && (config->GetKind_GridMovement() != RIGID_MOTION))
     Restart_OldGeometry(geometry[MESH_0], config);
 
   delete [] Coord;
