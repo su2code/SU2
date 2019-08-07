@@ -75,23 +75,15 @@ public:
    */
   ~CDiscAdjVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_ndim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CDiscAdjVariable(su2double *val_solution, Idx_t val_ndim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] sol - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Set the sensitivity at the node
