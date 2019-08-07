@@ -157,8 +157,13 @@ public:
   }
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Get whether a node is on the boundary
    */
   inline bool Get_isVertex(Idx_t iPoint) const { return IsVertex(iPoint); }
+  
+  /*!
+   * \brief Set whether a node is on the boundary
+   */
+  inline void Set_isVertex(Idx_t iPoint, bool isVertex) { IsVertex(iPoint) = isVertex; }
 
 };

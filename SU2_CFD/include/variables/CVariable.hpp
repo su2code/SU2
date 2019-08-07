@@ -1832,6 +1832,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  inline virtual void Set_isVertex(Idx_t iPoint, bool isVertex) {}
+  
+  /*!
+   * \brief A virtual member.
+   */
   inline virtual bool Get_isVertex(Idx_t iPoint) const {return false;}
 
   /*!
