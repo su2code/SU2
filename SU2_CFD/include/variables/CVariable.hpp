@@ -106,6 +106,7 @@ protected:
   Vec_t AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
   Mat_t Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
 
+  /*--- ToDo: Max_Lambda does not seem to be in use anywhere. ---*/
   Vec_t Max_Lambda;       /*!< \brief Maximun eingenvalue. */
   Vec_t Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   Vec_t Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */

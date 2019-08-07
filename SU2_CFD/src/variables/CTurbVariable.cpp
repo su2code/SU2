@@ -39,7 +39,7 @@
 
 
 CTurbVariable::CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
-  : CVariable(npoint, nvar, config) {
+  : CVariable(npoint, ndim, nvar, config) {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 

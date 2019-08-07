@@ -134,6 +134,10 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   
   Velocity2.resize(nPoint);
   Precond_Beta.resize(nPoint);
+  Max_Lambda_Inv.resize(nPoint);
+  Delta_Time.resize(nPoint);
+  Lambda.resize(nPoint);
+  Sensor.resize(nPoint);
 
 }
 

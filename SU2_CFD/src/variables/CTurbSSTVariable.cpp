@@ -43,9 +43,11 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
   {
-    Solution_Old(iPoint,0) = Solution(iPoint,0) = kine;
-    Solution_Old(iPoint,1) = Solution(iPoint,1) = omega;
+    Solution(iPoint,0) = kine;
+    Solution(iPoint,1) = omega;
   }
+  
+  Solution_Old = Solution;
 
   sigma_om2 = constants[3];
   beta_star = constants[6];
