@@ -56,24 +56,16 @@ public:
    * \brief Constructor of the class.
    */
   CHeatFVMVariable() = default;
-
-//  /*!
-//   * \overload
-//   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CHeatFVMVariable(su2double val_Heat, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
   
   /*!
    * \overload
+   * \param[in] heat - Values of the Heat solution (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatFVMVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
