@@ -38,256 +38,8 @@
 #include "../../include/variables/CIncEulerVariable.hpp"
 
 
-//CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature,
-//                                     unsigned short val_nDim, unsigned short val_nvar, CConfig *config) :
-//                                     CVariable(val_nDim, val_nvar, config) {
-//
-//  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-//
-//  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-//                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-//  bool viscous      = config->GetViscous();
-//  bool axisymmetric = config->GetAxisymmetric();
-//  bool fsi          = config->GetFSI_Simulation();
-//  bool multizone = config->GetMultizone_Problem();
-//
-//  /*--- Array initialization ---*/
-//
-//  Primitive          = NULL;
-//  Gradient_Primitive = NULL;
-//  Limiter_Primitive  = NULL;
-//
-//  Grad_AuxVar = NULL;
-//
-//  nPrimVar     = 0;
-//  nPrimVarGrad = 0;
-//
-//  nSecondaryVar     = 0;
-//  nSecondaryVarGrad = 0;
-//
-//  /*--- Allocate and initialize the primitive variables and gradients ---*/
-//
-//  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-//
-//  /*--- Allocate residual structures ---*/
-//
-//  Res_TruncError = new su2double [nVar];
-//
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    Res_TruncError[iVar] = 0.0;
-//  }
-//
-//  /*--- Only for residual smoothing (multigrid) ---*/
-//
-//  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-//    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-//
-//  if (nMGSmooth > 0) {
-//    Residual_Sum = new su2double [nVar];
-//    Residual_Old = new su2double [nVar];
-//  }
-//
-//  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-//
-//  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-//    Undivided_Laplacian = new su2double [nVar];
-//  }
-//
-//  /*--- Always allocate the slope limiter,
-//   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-//
-//  Limiter_Primitive = new su2double [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//    Limiter_Primitive[iVar] = 0.0;
-//
-//  Limiter = new su2double [nVar];
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Limiter[iVar] = 0.0;
-//
-//  Solution_Max = new su2double [nPrimVarGrad];
-//  Solution_Min = new su2double [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//    Solution_Max[iVar] = 0.0;
-//    Solution_Min[iVar] = 0.0;
-//  }
-//
-//  /*--- Solution and old solution initialization ---*/
-//
-//  Solution[0] = val_pressure;
-//  Solution_Old[0] = val_pressure;
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    Solution[iDim+1] = val_velocity[iDim];
-//    Solution_Old[iDim+1] = val_velocity[iDim];
-//  }
-//  Solution[nDim+1] = val_temperature;
-//  Solution_Old[nDim+1] = val_temperature;
-//
-//  /*--- Allocate and initialize solution for dual time strategy ---*/
-//
-//  if (dual_time) {
-//    Solution_time_n[0]  =  val_pressure;
-//    Solution_time_n1[0] =  val_pressure;
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      Solution_time_n[iDim+1] = val_velocity[iDim];
-//      Solution_time_n1[iDim+1] = val_velocity[iDim];
-//    }
-//    Solution[nDim+1] = val_temperature;
-//    Solution_Old[nDim+1] = val_temperature;
-//  }
-//
-//  /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
-//
-//  Primitive = new su2double [nPrimVar];
-//  for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
-//
-//  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta)
-//   * We need P, and rho for running the adjoint problem ---*/
-//
-//  Gradient_Primitive = new su2double* [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//    Gradient_Primitive[iVar] = new su2double [nDim];
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      Gradient_Primitive[iVar][iDim] = 0.0;
-//  }
-//
-//  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-//
-//  if (axisymmetric && viscous)
-//    Grad_AuxVar = new su2double[nDim];
-//
-//  Solution_BGS_k = NULL;
-//  if (fsi || multizone){
-//    Solution_BGS_k  = new su2double [nVar];
-//    Solution_BGS_k[0] = val_pressure;
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-//    }
-//    Solution_BGS_k[nDim+1] = val_temperature;
-//  }
-//
-//}
-//
-//CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
-//                                     CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-//
-//  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
-//
-//  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-//                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-//  bool viscous      = config->GetViscous();
-//  bool axisymmetric = config->GetAxisymmetric();
-//  bool fsi = config->GetFSI_Simulation();
-//  bool multizone = config->GetMultizone_Problem();
-//
-//  /*--- Array initialization ---*/
-//
-//  Primitive          = NULL;
-//  Gradient_Primitive = NULL;
-//  Limiter_Primitive  = NULL;
-//
-//  Grad_AuxVar = NULL;
-//
-//  nPrimVar     = 0;
-//  nPrimVarGrad = 0;
-//
-//  nSecondaryVar     = 0;
-//  nSecondaryVarGrad = 0;
-//
-//  /*--- Allocate and initialize the primitive variables and gradients ---*/
-//
-//  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-//
-//  /*--- Allocate residual structures ---*/
-//
-//  Res_TruncError = new su2double [nVar];
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    Res_TruncError[iVar] = 0.0;
-//  }
-//
-//  /*--- Only for residual smoothing (multigrid) ---*/
-//
-//  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-//    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-//
-//  if (nMGSmooth > 0) {
-//    Residual_Sum = new su2double [nVar];
-//    Residual_Old = new su2double [nVar];
-//  }
-//
-//  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-//
-//  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-//    Undivided_Laplacian = new su2double [nVar];
-//
-//  /*--- Always allocate the slope limiter,
-//   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-//
-//  Limiter_Primitive = new su2double [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//    Limiter_Primitive[iVar] = 0.0;
-//
-//  Limiter = new su2double [nVar];
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Limiter[iVar] = 0.0;
-//
-//  Solution_Max = new su2double [nPrimVarGrad];
-//  Solution_Min = new su2double [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//    Solution_Max[iVar] = 0.0;
-//    Solution_Min[iVar] = 0.0;
-//  }
-//
-//  /*--- Solution initialization ---*/
-//
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    Solution[iVar] = val_solution[iVar];
-//    Solution_Old[iVar] = val_solution[iVar];
-//  }
-//
-//  /*--- Allocate and initialize solution for dual time strategy ---*/
-//
-//  if (dual_time) {
-//    Solution_time_n = new su2double [nVar];
-//    Solution_time_n1 = new su2double [nVar];
-//
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      Solution_time_n[iVar] = val_solution[iVar];
-//      Solution_time_n1[iVar] = val_solution[iVar];
-//    }
-//  }
-//
-//  /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
-//
-//  Primitive = new su2double [nPrimVar];
-//  for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
-//
-//  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
-//        We need P, and rho for running the adjoint problem ---*/
-//
-//  Gradient_Primitive = new su2double* [nPrimVarGrad];
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//    Gradient_Primitive[iVar] = new su2double [nDim];
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      Gradient_Primitive[iVar][iDim] = 0.0;
-//  }
-//
-//  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-//
-//  if (axisymmetric && viscous)
-//    Grad_AuxVar = new su2double[nDim];
-//
-//  Solution_BGS_k = NULL;
-//  if (fsi || multizone){
-//      Solution_BGS_k  = new su2double [nVar];
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        Solution_BGS_k[iVar] = val_solution[iVar];
-//      }
-//  }
-//
-//}
-
-CIncEulerVariable::CIncEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, Idx_t npoint,
+                                     Idx_t ndim, Idx_t nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
   bool dual_time    = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -336,22 +88,21 @@ CIncEulerVariable::CIncEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConf
   Solution_Min.resize(nPoint,nPrimVarGrad) = 0.0;
 
   /*--- Solution initialization ---*/
+  
+  su2double val_solution[5] = {pressure, velocity[0], velocity[1], temperature, temperature};
+  if(nDim==3) val_solution[3] = velocity[2];
 
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    Solution[iVar] = val_solution[iVar];
-//    Solution_Old[iVar] = val_solution[iVar];
-//  }
+  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
+    for (Idx_t iVar = 0; iVar < nVar; iVar++)
+      Solution(iPoint,iVar) = val_solution[iVar];
+
+  Solution_Old = Solution;
 
   /*--- Allocate and initialize solution for dual time strategy ---*/
 
   if (dual_time) {
-    Solution_time_n.resize(nPoint,nVar);
-    Solution_time_n1.resize(nPoint,nVar);
-
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      Solution_time_n[iVar] = val_solution[iVar];
-//      Solution_time_n1[iVar] = val_solution[iVar];
-//    }
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
   }
 
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
@@ -365,16 +116,10 @@ CIncEulerVariable::CIncEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConf
 
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
 
-  if (axisymmetric && viscous)
-    Grad_AuxVar.resize(nPoint,nDim);
+  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
-  if (fsi || multizone) {
-      Solution_BGS_k.resize(nPoint,nVar);
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        Solution_BGS_k[iVar] = val_solution[iVar];
-//      }
-  }
-  
+  if (fsi || multizone) Solution_BGS_k = Solution;
+
   Density_Old.resize(nPoint);
   Velocity2.resize(nPoint);
 

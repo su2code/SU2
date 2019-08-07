@@ -60,34 +60,18 @@ public:
    */
   CIncNSVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_pressure - value of the pressure.
-//   * \param[in] val_velocity - Value of the flow velocity (initialization value).
-//   * \param[in] val_temperature - Value of the temperature (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-//
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the flow value (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] pressure - value of the pressure.
+   * \param[in] velocity - Value of the flow velocity (initialization value).
+   * \param[in] temperature - Value of the temperature (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncNSVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+                 Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
