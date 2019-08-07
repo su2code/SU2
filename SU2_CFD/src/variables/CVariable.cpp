@@ -86,4 +86,6 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
     Gradient.resize(nPoint,nDim,nDim,0.0);
   }
 
+  Non_Physical.resize(nPoint) = false;
+
 }

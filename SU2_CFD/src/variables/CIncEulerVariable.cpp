@@ -122,6 +122,10 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Density_Old.resize(nPoint);
   Velocity2.resize(nPoint);
+  Max_Lambda_Inv.resize(nPoint);
+  Delta_Time.resize(nPoint);
+  Lambda.resize(nPoint);
+  Sensor.resize(nPoint);
 
 }
 

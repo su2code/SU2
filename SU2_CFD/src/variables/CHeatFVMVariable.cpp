@@ -75,4 +75,9 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
     Undivided_Laplacian.resize(nPoint,nVar);
 
   if (multizone) Solution_BGS_k.resize(nPoint,1) = heat;
+
+  Max_Lambda_Inv.resize(nPoint);
+  Max_Lambda_Visc.resize(nPoint);
+  Delta_Time.resize(nPoint);
+
 }

@@ -95,6 +95,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
+  Sensor.resize(nPoint);
+
 }
 
 bool CAdjEulerVariable::SetPrimVar(Idx_t iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {
