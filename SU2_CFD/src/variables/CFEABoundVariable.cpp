@@ -38,43 +38,8 @@
 #include "../../include/variables/CFEABoundVariable.hpp"
 
 
-//CFEABoundVariable::CFEABoundVariable(su2double *val_fea, Idx_t ndim, Idx_t nvar,
-//                                     CConfig *config) : CFEAVariable(val_fea, ndim, nvar, config) {
-//
-//  Idx_t iVar;
-//  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-//  bool fsi_analysis = config->GetFSI_Simulation();
-//
-//  FlowTraction          = NULL;
-//  Residual_Ext_Surf     = NULL;
-//  FlowTraction_n        = NULL;
-//  Residual_Ext_Surf_n   = NULL;
-//
-//  /*--- Surface residual ---*/
-//  Residual_Ext_Surf = new su2double [nVar];
-//  for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
-//
-//  /*--- Flow traction ---*/
-//  if (fsi_analysis){
-//    FlowTraction = new su2double [nVar];
-//    for (iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
-//  }
-//
-//  /*--- Generalized alpha integration method requires storing the old residuals ---*/
-//  if (gen_alpha) {
-//    Residual_Ext_Surf_n = new su2double [nVar];
-//    for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n[iVar] = 0.0;
-//
-//    if (fsi_analysis) {
-//      FlowTraction_n = new su2double [nVar];
-//      for (iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = 0.0;
-//    }
-//  }
-//}
-
-
-CFEABoundVariable::CFEABoundVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
-  : CFEAVariable(npoint, ndim, nvar, config) {
+CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
+  : CFEAVariable(val_fea, npoint, ndim, nvar, config) {
 
   bool gen_alpha    = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
   bool fsi_analysis = config->GetFSI_Simulation();

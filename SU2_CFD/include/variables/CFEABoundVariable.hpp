@@ -64,23 +64,15 @@ public:
    */
   CFEABoundVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_fea - Values of the fea solution (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CFEABoundVariable(su2double *val_fea, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
