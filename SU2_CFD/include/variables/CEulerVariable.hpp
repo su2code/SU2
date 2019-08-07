@@ -73,35 +73,18 @@ public:
    */
   CEulerVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_density - Value of the flow density (initialization value).
-//   * \param[in] val_velocity - Value of the flow velocity (initialization value).
-//   * \param[in] val_energy - Value of the flow energy (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, Idx_t val_nDim,
-//                 Idx_t val_nvar, CConfig *config);
-//
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the flow value (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CEulerVariable(su2double *val_solution, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] density - Value of the flow density (initialization value).
+   * \param[in] velocity - Value of the flow velocity (initialization value).
+   * \param[in] energy - Value of the flow energy (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CEulerVariable(su2double density, const su2double *velocity, su2double energy,
+                 Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
