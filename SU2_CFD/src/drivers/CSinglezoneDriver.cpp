@@ -35,8 +35,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/drivers/CSinglezoneDriver.hpp"
-#include "../include/definition_structure.hpp"
+#include "../../include/drivers/CSinglezoneDriver.hpp"
+#include "../../include/definition_structure.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
