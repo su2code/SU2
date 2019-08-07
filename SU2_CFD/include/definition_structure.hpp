@@ -44,7 +44,7 @@
 
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
-#include "driver_structure.hpp"
+#include "drivers/CDriver.hpp"
 #include "iteration_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"

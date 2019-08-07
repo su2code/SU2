@@ -37,6 +37,19 @@
 
 #include "../include/interpolation_structure.hpp"
 
+#if defined(HAVE_MKL)
+#include "mkl.h"
+#ifndef HAVE_LAPACK
+#define HAVE_LAPACK
+#endif
+#elif defined(HAVE_LAPACK)
+/*--- Lapack / Blas routines used in RBF interpolation. ---*/
+extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
+                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
+#endif
+
 CInterpolator::CInterpolator(void) {
   
   size = SU2_MPI::GetSize();
@@ -957,7 +970,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
         nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
                 (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
-        su2double *X = new su2double[nNodes*nDim];
+        su2double *X = new su2double[nNodes*(nDim+1)];
         faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
         for (iDonor=0; iDonor<nNodes; iDonor++) {
           jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
@@ -1074,7 +1087,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   su2double *x_tmp = new su2double[nDim+1];
   su2double *Q     = new su2double[nDonor*nDonor];
   su2double *R     = new su2double[nDonor*nDonor];
-  su2double *A     = new su2double[nDim+1*nDonor];
+  su2double *A     = new su2double[(nDim+2)*nDonor];
   su2double *A2    = NULL;
   su2double *x2    = new su2double[nDim+1];
   
@@ -3687,7 +3700,7 @@ void CSymmetricMatrix::Invert(const bool is_spd)
   if(!is_spd) LUDecompose();
   else CholeskyDecompose(true);
   CalcInv(true);
-#endif // HAVE_LAPACK
+#endif
 }
 
 void CSymmetricMatrix::MatVecMult(passivedouble *v)
@@ -3722,9 +3735,7 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
   }
 
 #ifdef HAVE_LAPACK
-  
-  char side[1]={'R'}, uplo[1]={'L'}; // Right side because mat_vec in row major order
-  passivedouble *val_full, alpha=1, beta=0;
+  passivedouble *val_full, alpha=1.0, beta=0.0;
   
   /*--- Copy packed storage to full storage to use BLAS level 3 routine ---*/
   val_full = new passivedouble [sz*sz];
@@ -3737,7 +3748,12 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
     }
   }
 
+#ifndef HAVE_MKL
+  char side[1]={'R'}, uplo[1]={'L'}; // Right side because mat_vec in row major order
   dsymm_(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
+#else
+  cblas_dsymm(CblasRowMajor, CblasRight, CblasLower, N, sz, alpha, val_full, sz, mat_vec, N, beta, tmp_res, N);
+#endif
   
   delete [] val_full;
   

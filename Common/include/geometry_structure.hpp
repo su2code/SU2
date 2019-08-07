@@ -2085,12 +2085,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchActuator_Disk(CConfig *config);
-
-	/*! 
-	 * \brief Mach the interface boundary condition.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void MatchInterface(CConfig *config);
   
   /*!
    * \brief Mach the periodic boundary conditions.
@@ -2748,7 +2742,7 @@ public:
 	 * \param[in] iMesh - Level of the multigrid.
 	 * \param[in] iZone - Current zone in the mesh.
 	 */	
-	CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst);
+	CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class.
