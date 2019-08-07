@@ -46,7 +46,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, Idx_
   muT.resize(nPoint) = val_muT;
 
   gamma_BC.resize(nPoint);
-  DES_LengthScale.resize(nPoint) = 0.0;
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
 }
 

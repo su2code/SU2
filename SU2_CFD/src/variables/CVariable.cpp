@@ -49,7 +49,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t nvar, CConfig *config) {
   /*--- Allocate the solution array - here it is also possible
    to allocate some extra flow variables that do not participate
    in the simulation ---*/
-  Solution.resize(nPoint,nVar) = 0.0;
+  Solution.resize(nPoint,nVar) = su2double(0.0);
 
 }
 
@@ -64,7 +64,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
    which is common for all the problems, here it is also possible
    to allocate some extra flow variables that do not participate
    in the simulation ---*/
-  Solution.resize(nPoint,nVar) = 0.0;
+  Solution.resize(nPoint,nVar) = su2double(0.0);
 
   Solution_Old.resize(nPoint,nVar);
 
@@ -75,7 +75,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
     Solution_time_n1.resize(nPoint,nVar);
   }
   else if (config->GetDynamic_Analysis() == DYNAMIC) {
-    Solution_time_n.resize(nPoint,nVar) = 0.0;
+    Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {

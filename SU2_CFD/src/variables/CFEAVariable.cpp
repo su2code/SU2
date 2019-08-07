@@ -50,7 +50,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   bool dynamic_analysis   = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi_analysis       = config->GetFSI_Simulation();
 
-  VonMises_Stress.resize(nPoint) = 0.0;
+  VonMises_Stress.resize(nPoint) = su2double(0.0);
 
   if (nDim==2) Stress.resize(nPoint,3);
   else         Stress.resize(nPoint,6);
@@ -77,19 +77,19 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
-    Solution_BGS_k.resize(nPoint,nVar) = 0.0;
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
 
-  if (incremental_load && nonlinear_analysis) Solution_Old.resize(nPoint,nVar) = 0.0;
+  if (incremental_load && nonlinear_analysis) Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- If we are running a discrete adjoint iteration, we need this vector for cross-dependencies ---*/
 
   else if (discrete_adjoint && fsi_analysis) Solution_Old = Solution;
 
   /*--- Body residual ---*/
-  if (body_forces) Residual_Ext_Body.resize(nPoint,nVar) = 0.0;
+  if (body_forces) Residual_Ext_Body.resize(nPoint,nVar) = su2double(0.0);
 
   if (refgeom) Reference_Geometry.resize(nPoint,nVar);
 

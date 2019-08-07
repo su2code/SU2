@@ -47,30 +47,30 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndi
   bool fsi = config->GetFSI_Simulation();
 
   if (dual_time) {
-    DualTime_Derivative.resize(nPoint,nVar) = 0.0;
-    DualTime_Derivative_n.resize(nPoint,nVar) = 0.0;
+    DualTime_Derivative.resize(nPoint,nVar) = su2double(0.0);
+    DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 
-    Solution_time_n.resize(nPoint,nVar) = 0.0;
-    Solution_time_n1.resize(nPoint,nVar) = 0.0;
+    Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
+    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
   }
 
   Solution_Direct.resize(nPoint,nVar);
-  Sensitivity.resize(nPoint,nDim) = 0.0;
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
     for (Idx_t iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = sol[iVar];
 
   if (fsi) {
-    Geometry_Direct.resize(nPoint,nDim) = 0.0;
-    Solution_Geometry.resize(nPoint,nDim) = 1e-16;
-    Solution_Geometry_Old.resize(nPoint,nDim) = 0.0;
-    Cross_Term_Derivative.resize(nPoint,nVar) = 0.0;
-    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = 0.0;
-    Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = 0.0;
+    Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
+    Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
+    Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
+    Cross_Term_Derivative.resize(nPoint,nVar) = su2double(0.0);
+    Geometry_CrossTerm_Derivative.resize(nPoint,nDim) = su2double(0.0);
+    Geometry_CrossTerm_Derivative_Flow.resize(nPoint,nDim) = su2double(0.0);
     
-    Solution_BGS.resize(nPoint,nVar) = 0.0;
-    Solution_BGS_k.resize(nPoint,nVar) = 0.0;
-    Solution_Geometry_BGS_k.resize(nPoint,nDim) = 0.0;
+    Solution_BGS.resize(nPoint,nVar) = su2double(0.0);
+    Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+    Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 }

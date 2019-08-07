@@ -51,10 +51,10 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
-  Tau_Wall.resize(nPoint) = -1.0;
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint);
-  Roe_Dissipation.resize(nPoint) = 0.0;
-  Vortex_Tilting.resize(nPoint) = 0.0;
+  Roe_Dissipation.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint) = su2double(0.0);
 }
 
 bool CNSVariable::SetVorticity(Idx_t iPoint) {
@@ -167,7 +167,7 @@ void CNSVariable::SetRoe_Dissipation_FD(Idx_t iPoint, su2double val_wall_dist){
 
   /*--- Constants for Roe Dissipation ---*/
 
-  constexpr su2double k2 = pow(0.41,2.0);
+  constexpr passivedouble k2 = pow(0.41,2.0);
 
   AD::StartPreacc();
   AD::SetPreaccIn(Gradient_Primitive[iPoint], nVar, nDim);

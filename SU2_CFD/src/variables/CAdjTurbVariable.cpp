@@ -51,6 +51,6 @@ CAdjTurbVariable::CAdjTurbVariable(su2double psinu_inf, Idx_t npoint, Idx_t ndim
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter.resize(nPoint,nVar) = 0.0;
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
 
 }

@@ -45,16 +45,16 @@ CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx
   bool fsi_analysis = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
-  Residual_Ext_Surf.resize(nPoint,nVar) = 0.0;
+  Residual_Ext_Surf.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Flow traction ---*/
-  if (fsi_analysis) FlowTraction.resize(nPoint,nVar) = 0.0;
+  if (fsi_analysis) FlowTraction.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
   if (gen_alpha) {
-    Residual_Ext_Surf_n.resize(nPoint,nVar) = 0.0;
+    Residual_Ext_Surf_n.resize(nPoint,nVar) = su2double(0.0);
 
-    if (fsi_analysis) FlowTraction_n.resize(nPoint,nVar) = 0.0;
+    if (fsi_analysis) FlowTraction_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
   IsVertex.resize(nPoint,false);

@@ -58,7 +58,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError.resize(nPoint,nVar) = 0.0;
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
@@ -78,12 +78,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = 0.0;
-  Limiter_Secondary.resize(nPoint,nSecondaryVarGrad) = 0.0;
-  Limiter.resize(nPoint,nVar) = 0.0;
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Limiter_Secondary.resize(nPoint,nSecondaryVarGrad) = su2double(0.0);
+  Limiter.resize(nPoint,nVar) = su2double(0.0);
 
-  Solution_Max.resize(nPoint,nPrimVarGrad) = 0.0;
-  Solution_Min.resize(nPoint,nPrimVarGrad) = 0.0;
+  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Solution initialization ---*/
   
@@ -110,7 +110,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /*--- Allocate space for the harmonic balance source terms ---*/
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    HB_Source.resize(nPoint,nVar) = 0.0;
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
 
@@ -121,8 +121,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
 
-  Primitive.resize(nPoint,nPrimVar) = 0.0;
-  Secondary.resize(nPoint,nSecondaryVar) = 0.0;
+  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
+  Secondary.resize(nPoint,nSecondaryVar) = su2double(0.0);
 
   /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/

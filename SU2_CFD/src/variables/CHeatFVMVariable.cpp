@@ -53,7 +53,7 @@ CHeatFVMVariable::CHeatFVMVariable(su2double heat, Idx_t npoint, Idx_t ndim, Idx
 
   /*--- Allocate residual structures ---*/
 
-  Res_TruncError.resize(nPoint,nVar) = 0.0;
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
 
