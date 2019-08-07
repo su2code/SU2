@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -213,7 +213,7 @@ enum ENUM_SOLVER {
   FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIZONE = 99
+  MULTIPHYSICS = 99
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -241,7 +241,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
 ("ZONE_SPECIFIC", ZONE_SPECIFIC)
-("MULTIZONE", MULTIZONE);
+("MULTIPHYSICS", MULTIPHYSICS);
 
 /*!
  * \brief different solver types for the multizone environment component
@@ -617,38 +617,48 @@ static const map<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map 
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
-  DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
   RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-  FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure deformation. */
-  EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
-  EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
-  AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
-  MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
-  AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
   MOVING_HTP = 13,    /*!< \brief Simulation with moving HTP (rotation). */
-  FLUID_STRUCTURE_STATIC = 14 /*!< \brief Fluid structure deformation with no grid velocity. */
+
 };
 
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
-("DEFORMING", DEFORMING)
 ("RIGID_MOTION", RIGID_MOTION)
-("FLUID_STRUCTURE", FLUID_STRUCTURE)
-("EXTERNAL", EXTERNAL)
-("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
-("AEROELASTIC", AEROELASTIC)
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
-("MOVING_WALL", MOVING_WALL)
 ("MOVING_HTP", MOVING_HTP)
-("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
-("GUST", GUST)
-("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC);
+("GUST", GUST);
+
+
+
+enum ENUM_SURFACEMOVEMENT {
+  DEFORMING = 1,
+  MOVING_WALL = 2,
+  AEROELASTIC = 3,    /*!< \brief Simulation with aeroelastic motion. */
+  AEROELASTIC_RIGID_MOTION = 4, /*!< \brief Simulation with rotation and aeroelastic motion. */
+  FLUID_STRUCTURE = 5,		/*!< \brief Fluid structure deformation. */
+  EXTERNAL = 6,
+  EXTERNAL_ROTATION = 7,
+  FLUID_STRUCTURE_STATIC = 8 /*!< \brief Fluid structure deformation with no grid velocity. */
+  
+};
+
+static const map<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = CCreateMap<string, ENUM_SURFACEMOVEMENT>
+("DEFORMING", DEFORMING)
+("MOVING_WALL", MOVING_WALL)
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
+("AEROELASTIC", AEROELASTIC)
+("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
+("FLUID_STRUCTURE", FLUID_STRUCTURE)
+("EXTERNAL", EXTERNAL)
+("EXTERNAL_ROTATION", EXTERNAL_ROTATION);
+
 
 /*!
  * \brief type of wind gusts
@@ -1691,10 +1701,7 @@ enum ENUM_LINEAR_SOLVER {
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
   RESTARTED_FGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
-  SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
-  SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  SMOOTHER = 8,  /*!< \brief Iterative smoother. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1704,10 +1711,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
 ("RESTARTED_FGMRES", RESTARTED_FGMRES)
-("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
-("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
-("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU", SMOOTHER_ILU);
+("SMOOTHER", SMOOTHER);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -2051,11 +2055,13 @@ static const map<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map 
 
 class COptionBase {
 private:
+  vector<string> value;
 public:
   COptionBase() {};
   virtual  ~COptionBase() = 0;
-  //  virtual string SetValue(string) {SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
-  virtual string SetValue(vector<string>) = 0;
+
+  virtual string SetValue(vector<string> value){this->value = value; return "";}
+  vector<string> GetValue() {return value;}
   virtual void SetDefault() = 0;
 
   string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name) {
@@ -2098,6 +2104,7 @@ public:
 
   ~COptionEnum() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // Check if there is more than one string
     string out = optionCheckMultipleValues(option_value, "enum", this->name);
     if (out.compare("") != 0) {
@@ -2137,6 +2144,7 @@ public:
 
   ~COptionDouble() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
@@ -2168,6 +2176,7 @@ public:
 
   ~COptionString() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "su2double", this->name);
     if (out.compare("") != 0) {
@@ -2194,6 +2203,7 @@ public:
 
   ~COptionInt() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "int", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2224,6 +2234,7 @@ public:
 
   ~COptionULong() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2254,6 +2265,7 @@ public:
 
   ~COptionUShort() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2284,6 +2296,7 @@ public:
 
   ~COptionLong() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "long", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2315,6 +2328,7 @@ public:
 
   ~COptionBool() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // check if there is more than one value
     string out = optionCheckMultipleValues(option_value, "bool", this->name);
     if (out.compare("") != 0) {
@@ -2351,6 +2365,7 @@ public:
 
   ~COptionEnumList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
@@ -2402,6 +2417,7 @@ public:
      if(vals != NULL) delete [] vals; 
   };
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
       string newstring;
@@ -2452,6 +2468,7 @@ public:
 
   ~COptionDoubleList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2494,6 +2511,7 @@ public:
   
   ~COptionShortList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2535,6 +2553,7 @@ public:
 
   ~COptionUShortList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2576,6 +2595,7 @@ public:
 
   ~COptionStringList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // The size is the length of option_value
     unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
@@ -2611,6 +2631,7 @@ public:
 
   ~COptionConvect() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -2656,6 +2677,7 @@ public:
 
   ~COptionFEMConvect() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
@@ -2698,6 +2720,7 @@ public:
 
   ~COptionMathProblem() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
       return out;
@@ -2752,6 +2775,7 @@ public:
   ~COptionDVParam() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV = 0;
       return "";
@@ -2914,6 +2938,7 @@ public:
   ~COptionDVValue() {};
 
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV_Value = NULL;
       return "";
@@ -3019,6 +3044,7 @@ public:
   ~COptionFFDDef() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
@@ -3113,6 +3139,7 @@ public:
   ~COptionFFDDegree() {};
   
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
@@ -3202,6 +3229,7 @@ public:
 
   ~COptionStringDoubleList() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     // There must be an even number of entries (same number of strings and doubles
     unsigned short totalVals = option_value.size();
     if ((totalVals % 2) != 0) {
@@ -3253,7 +3281,7 @@ public:
 
   ~COptionInlet() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3344,7 +3372,7 @@ public:
   ~COptionRiemann() {};
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3452,7 +3480,7 @@ public:
   ~COptionGiles() {};
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3574,7 +3602,7 @@ public:
   ~COptionExhaust() {};
   
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
@@ -3641,7 +3669,7 @@ public:
 
   ~COptionPeriodic() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     const int mod_num = 11;
 
     unsigned short totalVals = option_value.size();
@@ -3806,7 +3834,7 @@ public:
 
   ~COptionTurboPerformance() {};
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     const int mod_num = 2;
 
     unsigned long totalVals = option_value.size();
@@ -3856,7 +3884,8 @@ public:
   }
   ~COptionPython() {};
   // No checking happens with python options
-  string SetValue(vector<string>) {
+  string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     return "";
   }
   // No defaults with python options
@@ -3888,6 +3917,7 @@ public:
   
   ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
     const int mod_num = 8;
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -3982,7 +4012,7 @@ public:
   ~COptionWallFunction(){}
 
   string SetValue(vector<string> option_value) {
-
+    COptionBase::SetValue(option_value);
     /*--- First check if NONE is specified. ---*/
     unsigned short totalSize = option_value.size();
     if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {

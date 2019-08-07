@@ -3259,9 +3259,8 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   if(config->GetGrid_Movement() && !harmonic_balance) {
 
     /*--- Determine the type of grid motion. ---*/
-    switch( config->GetKind_GridMovement(0) ) {
+    switch( config->GetKind_GridMovement() ) {
 
-      case MOVING_WALL:
       case ROTATING_FRAME:
       case STEADY_TRANSLATION: {
 

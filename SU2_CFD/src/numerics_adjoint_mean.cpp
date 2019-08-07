@@ -352,7 +352,6 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
   grid_movement = config->GetGrid_Movement();
   
   Diff_Psi = new su2double [nVar]; Diff_Lapl = new su2double [nVar];
-  Und_Lapl_i = new su2double [nVar]; Und_Lapl_j = new su2double [nVar];
   Velocity_i = new su2double [nDim]; Velocity_j = new su2double [nDim];
   MeanPhi = new su2double [nDim];
   
@@ -366,7 +365,6 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
 CCentJST_AdjFlow::~CCentJST_AdjFlow(void) {
   
   delete [] Diff_Psi; delete [] Diff_Lapl;
-  delete [] Und_Lapl_i; delete [] Und_Lapl_j;
   delete [] Velocity_i; delete [] Velocity_j;
   delete [] MeanPhi;
 }
@@ -1516,9 +1514,9 @@ void CSourceRotatingFrame_AdjFlow::ComputeResidual(su2double *val_residual, su2d
 
   /*--- Retrieve the angular velocity vector from config. ---*/
 
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
   
   /*--- Get the adjoint velocity vector at the current node. ---*/
   
