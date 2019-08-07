@@ -60,25 +60,17 @@ public:
    */
   CTurbSAVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-//   * \param[in] val_muT  - The eddy viscosity
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+   * \param[in] val_muT  - The eddy viscosity
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSAVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.

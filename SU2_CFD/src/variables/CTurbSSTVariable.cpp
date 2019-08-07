@@ -38,49 +38,23 @@
 #include "../../include/variables/CTurbSSTVariable.hpp"
 
 
-//CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2double val_muT,
-//                                   unsigned short val_nDim, unsigned short val_nvar, su2double *constants,
-//                                   CConfig *config) : CTurbVariable(val_nDim, val_nvar, config) {
-//
-//  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-//                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-//
-//  /*--- Initialization of variables ---*/
-//
-//  Solution[0] = val_kine;     Solution_Old[0] = val_kine;
-//  Solution[1] = val_omega;  Solution_Old[1] = val_omega;
-//
-//  sigma_om2 = constants[3];
-//  beta_star = constants[6];
-//
-//  F1   = 1.0;
-//  F2   = 0.0;
-//  CDkw = 0.0;
-//
-//  /*--- Initialization of eddy viscosity ---*/
-//
-//  muT = val_muT;
-//
-//  /*--- Allocate and initialize solution for the dual time strategy ---*/
-//
-//  if (dual_time) {
-//    Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
-//    Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
-//  }
-//
-//}
-
-CTurbSSTVariable::CTurbSSTVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config)
+CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, Idx_t npoint, Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
+
+  for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
+  {
+    Solution_Old(iPoint,0) = Solution(iPoint,0) = kine;
+    Solution_Old(iPoint,1) = Solution(iPoint,1) = omega;
+  }
 
   sigma_om2 = constants[3];
   beta_star = constants[6];
-  
+
   F1.resize(nPoint) = 1.0;
   F2.resize(nPoint) = 0.0;
   CDkw.resize(nPoint) = 0.0;
-  
-  muT.resize(nPoint);
+
+  muT.resize(nPoint) = mut;
 }
 
 void CTurbSSTVariable::SetBlendingFunc(Idx_t iPoint, su2double val_viscosity,
