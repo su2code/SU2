@@ -38,42 +38,9 @@
 #include "../../include/variables/CNSVariable.hpp"
 
 
-//CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
-//                         Idx_t val_nDim, Idx_t val_nvar, CConfig *config) :
-//                         CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
-//
-//  Temperature_Ref = config->GetTemperature_Ref();
-//  Viscosity_Ref   = config->GetViscosity_Ref();
-//  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-//  Prandtl_Lam     = config->GetPrandtl_Lam();
-//  Prandtl_Turb    = config->GetPrandtl_Turb();
-//
-//  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-//  Roe_Dissipation = 0.0;
-//  Vortex_Tilting  = 0.0;
-//  Tau_Wall        = -1.0;
-//
-//}
-//
-//CNSVariable::CNSVariable(su2double *val_solution, Idx_t val_nDim,
-//                         Idx_t val_nvar, CConfig *config) :
-//                         CEulerVariable(val_solution, val_nDim, val_nvar, config) {
-//
-//  Temperature_Ref = config->GetTemperature_Ref();
-//  Viscosity_Ref   = config->GetViscosity_Ref();
-//  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-//  Prandtl_Lam     = config->GetPrandtl_Lam();
-//  Prandtl_Turb    = config->GetPrandtl_Turb();
-//
-//  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-//  Roe_Dissipation = 0.0;
-//  Vortex_Tilting  = 0.0;
-//  Tau_Wall        = -1.0;
-//
-//}
-
-CNSVariable::CNSVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
-  : CEulerVariable(npoint,ndim,nvar,config) {
+CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
+                         Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) :
+                         CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
   Temperature_Ref = config->GetTemperature_Ref();
   Viscosity_Ref   = config->GetViscosity_Ref();
