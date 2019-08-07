@@ -352,7 +352,7 @@ def main():
     # Laminar cylinder in channel, streamwise periodic
     streamwise_periodic_cylinder           = TestCase('streamwise_periodic_cylinder')
     streamwise_periodic_cylinder.cfg_dir   = "incomp_navierstokes/streamwise_periodic/half_cylinder_2D"
-    streamwise_periodic_cylinder.cfg_file  = "streamwise_periodic.cfg"
+    streamwise_periodic_cylinder.cfg_file  = "half_cylinder_2D"
     streamwise_periodic_cylinder.test_iter = 10
     streamwise_periodic_cylinder.test_vals = [-6.984615, -6.126544, 0.016574, 0.016927] #last 4 lines
     streamwise_periodic_cylinder.su2_exec  = "parallel_computation.py -f"
