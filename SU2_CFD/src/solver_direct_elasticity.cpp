@@ -230,15 +230,24 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   long iVertex;
   bool notVertex = true;
 
+  /*--- First pass to determine if there are vertices. ---*/
+  // ToDo: Aren't we always going to find vertices? Or are they only there for FSI?
   for (iPoint = 0; iPoint < nPoint && notVertex; iPoint++) {
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       notVertex = (iVertex == -1);
     }
   }
-  
   if(notVertex) node = new CFEAVariable(SolRest, nPoint, nDim, nVar, config);
   else          node = new CFEABoundVariable(SolRest, nPoint, nDim, nVar, config);
+  
+  /*--- Second pass to set the isVertex boolean for each point. ---*/
+  for (iPoint = 0; iPoint < nPoint && notVertex; iPoint++) {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      node->Set_isVertex(iPoint, iVertex!=-1);
+    }
+  }
   
   bool reference_geometry = config->GetRefGeom();
   if (reference_geometry) Set_ReferenceGeometry(geometry, config);
