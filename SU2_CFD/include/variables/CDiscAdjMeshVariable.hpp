@@ -1,6 +1,7 @@
 /*!
- * \file variable_adjoint_mesh.cpp
- * \brief Main subroutines for the discrete adjoint mesh variable structure.
+ * \file CDiscAdjMeshVariable.hpp
+ * \brief Declaration and inlines of the class
+ *        to define the adjoint variables of the mesh movement.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -35,50 +36,32 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#include "../include/variable_structure.hpp"
+#include "CVariable.hpp"
 
-CDiscAdjMeshVariable::CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
+class CDiscAdjMeshVariable : public CVariable {
+protected:
 
-  unsigned short iDim;
+public:
 
-  /*--- Store the dimensionality of the problem ---*/
-  nDim = val_nDim;
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
 
-}
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMeshVariable(void);
 
-CDiscAdjMeshVariable::~CDiscAdjMeshVariable(void) {
+  /*!
+   * \brief Determine whether the node is a moving vertex.
+   * \return False. The node is not at the boundary.
+   */
+  inline virtual bool Get_isVertex(void) { return false; }
 
-}
-
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CDiscAdjMeshVariable(val_coor, val_nDim, config) {
-
-  unsigned short iDim;
-
-  bool fsi = false;
-
-  /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Bound_Disp_Sens   = new su2double [nDim];
-  Bound_Disp_Direct = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Bound_Disp_Sens[iDim]   = 0.0;
-    Bound_Disp_Direct[iDim] = 0.0;
-  }
-
-  /*--- Container for the BGS solution at the previous iteration ---*/
-  Solution_BGS_k        = NULL;
-  if (fsi){
-    Solution_BGS_k        = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_BGS_k[iDim]        = 0.0;
-    }
-  }
-
-}
-
-CDiscAdjMeshBoundVariable::~CDiscAdjMeshBoundVariable(void) {
-
-  if (Bound_Disp_Sens != NULL)   delete [] Bound_Disp_Sens;
-  if (Bound_Disp_Direct != NULL) delete [] Bound_Disp_Direct;
-
-}
+};
