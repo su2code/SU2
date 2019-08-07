@@ -1000,9 +1000,9 @@ void CSourceIncRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2d
 
   /*--- Retrieve the angular velocity vector from config. ---*/ 
 
-  Omega[0] = config->GetRotation_Rate_X(config->GetiZone())/config->GetOmega_Ref(); 
-  Omega[1] = config->GetRotation_Rate_Y(config->GetiZone())/config->GetOmega_Ref(); 
-  Omega[2] = config->GetRotation_Rate_Z(config->GetiZone())/config->GetOmega_Ref(); 
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+  }
 
   /*--- Primitive variables at point i and j ---*/ 
 
