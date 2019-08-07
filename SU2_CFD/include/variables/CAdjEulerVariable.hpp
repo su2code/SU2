@@ -61,34 +61,18 @@ public:
    */
   CAdjEulerVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_psirho - Value of the adjoint density (initialization value).
-//   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-//   * \param[in] val_psie - Value of the adjoint energy (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-//
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CAdjEulerVariable(su2double *val_solution, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] psirho - Value of the adjoint density (initialization value).
+   * \param[in] phi - Value of the adjoint velocity (initialization value).
+   * \param[in] psie - Value of the adjoint energy (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjEulerVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
+  CAdjEulerVariable(su2double psirho, const su2double *phi, su2double psie,
+                    Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
