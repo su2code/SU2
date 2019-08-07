@@ -60,28 +60,19 @@ public:
    */
   CTurbSSTVariable() = default;
 
-//  /*!
-//   * \overload
-//   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
-//   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
-//   * \param[in] val_muT - Turbulent variable value (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] constants -
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-//                   su2double *constants, CConfig *config);
-
   /*!
    * \overload
+   * \param[in] kine - Turbulence kinetic energy (k) (initialization value).
+   * \param[in] omega - Turbulent variable value (initialization value).
+   * \param[in] mut - Eddy viscosity (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSSTVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config);
+  CTurbSSTVariable(su2double kine, su2double omega, su2double mut, Idx_t npoint,
+                   Idx_t ndim, Idx_t nvar, const su2double* constants, CConfig *config);
                    
   /*!
    * \brief Destructor of the class.
