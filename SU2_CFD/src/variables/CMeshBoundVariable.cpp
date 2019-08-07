@@ -1,6 +1,6 @@
 /*!
- * \file variable_direct_mesh.cpp
- * \brief Definition of the variables for mesh motion using a pseudo-elastic approach.
+ * \file CMeshBoundVariable.cpp
+ * \brief Definition of the boundary variables for mesh motion using a pseudo-elastic approach.
  * \author R. Sanchez
  * \version 6.1.0 "Falcon"
  *
@@ -35,59 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
-
-CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CVariable(val_nDim, config) {
-
-  unsigned short iDim;
-
-  /*--- Initialize pointers to NULL ---*/
-  Mesh_Coord    = NULL;
-
-  Solution_Old = NULL;
-
-  Solution_time_n  = NULL;
-  Solution_time_n1 = NULL;
-
-  /*--- Booleans that determine the kind of problems ---*/
-  bool time_domain = config->GetTime_Domain();
-  bool multizone = config->GetMultizone_Problem();
-
-  /*--- Store the dimensionality of the problem ---*/
-  nDim = val_nDim;
-
-  /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
-  Mesh_Coord    = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Mesh_Coord[iDim]    = val_coor[iDim];
-  }
-
-  /*--- Initialize the variables necessary when the problem is multizone ---*/
-  if (multizone){
-    Solution_Old    = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++){
-      Solution_Old[iDim]    = 0.0;
-    }
-  }
-
-  /*--- Initialize the variables necessary when the problem is time domain ---*/
-  if (time_domain){
-    Solution_time_n    = new su2double [nDim];
-    Solution_time_n1   = new su2double [nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++){
-      Solution_time_n[iDim]    = 0.0;
-      Solution_time_n1[iDim]   = 0.0;
-    }
-  }
-
-}
-
-CMeshVariable::~CMeshVariable(void) {
-
-  if (Mesh_Coord    != NULL)    delete [] Mesh_Coord;
-
-}
+#include "../../include/variables/CMeshBoundVariable.hpp"
 
 CMeshBoundVariable::CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CMeshVariable(val_coor, val_nDim, config) {
 
