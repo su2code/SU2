@@ -127,7 +127,8 @@ CDriver::CDriver(char* confFile,
        data structure (centered, upwind, galerkin), as well as any source terms
        (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
       
-      Numerics_Preprocessing(config_container[iZone], solver_container[iZone][iInst], numerics_container[iZone][iInst]);
+      Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
+                             solver_container[iZone][iInst], numerics_container[iZone][iInst]);
       
       /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
        The integration class orchestrates the execution of the spatial integration
@@ -1212,7 +1213,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Preprocess the mesh solver for dynamic meshes. ---*/
   /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
-  MeshSolver_Preprocessing(solver, geometry, config, val_iInst);
+  MeshSolver_Preprocessing(solver, geometry, config);
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
   
@@ -1227,8 +1228,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   
 }
 
-void CDriver::MeshSolver_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                       CConfig *config, unsigned short val_iInst) {
+void CDriver::MeshSolver_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) {
 
   /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
   /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
@@ -1240,13 +1240,13 @@ void CDriver::MeshSolver_Preprocessing(CSolver ***solver, CGeometry **geometry,
     solver[MESH_0][MESH_SOL] = new CMeshSolver(geometry[MESH_0], config);
 
     if (discrete_adjoint)
-      solver[MESH_0][ADJMESH_SOL] = new CDiscAdjMeshSolver(geometry[MESH_0], config, solver_container[val_iInst][MESH_0][MESH_SOL]);
+      solver[MESH_0][ADJMESH_SOL] = new CDiscAdjMeshSolver(geometry[MESH_0], config, solver[MESH_0][MESH_SOL]);
 
   }
 
 }
 
-void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                   CConfig *config) {
 
   bool euler, ns, turbulent,
@@ -1507,7 +1507,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   if (restart && grid_movement && update_geo){
     /*--- Always restart with the last state ---*/
     val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/
@@ -1794,7 +1794,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
   delete [] integration[val_iInst];
 }
 
-void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics) {
+void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
@@ -2623,7 +2623,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
 
   if (dynamic_mesh)
-    numerics_container[val_iInst][MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[val_iInst][MESH_0]->GetnElem(), config);
+    numerics[MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
 }
 

@@ -180,7 +180,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iInst - Instance index.
    */
-  void MeshSolver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void MeshSolver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -222,11 +222,11 @@ protected:
   /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumerics ****&numerics);
+  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics);
 
   /*!
    * \brief Definition and allocation of all solver classes.

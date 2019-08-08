@@ -392,7 +392,9 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Mesh movement ---*/
 
-  direct_iteration->Deform_Mesh(geometry_container,numerics_container,solver_container,config_container,ZONE_0,INST_0,kind_recording);
+  bool adjoint = true;
+  direct_iteration->Deform_Mesh(geometry_container,numerics_container,solver_container,config_container,
+                                ZONE_0, INST_0, adjoint, kind_recording);
 
   /*--- Zone preprocessing ---*/
 

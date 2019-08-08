@@ -2499,7 +2499,7 @@ inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return D
 
 inline void CMeshSolver::SetSolution_Old(void){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetSolution_Old();
+    node[iPoint]->Set_OldSolution();
 }
 
 inline su2double CMeshSolver::Get_ValCoord(CGeometry *geometry, unsigned long indexNode, unsigned short iDim) {return node[indexNode]->GetMesh_Coord(iDim);}

@@ -54,17 +54,3 @@ CMeshBoundVariable::~CMeshBoundVariable(void) {
   if (Boundary_Displacement != NULL) delete [] Boundary_Displacement;
 
 }
-
-
-CMeshElement::CMeshElement(void){
-
-  Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
-  Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */
-
-  WallDistance = 0.0;         /*!< \brief Store the reference distance to the nearest wall of the element. */
-
-}
-
-CMeshElement::~CMeshElement(void){
-
-}

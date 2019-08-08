@@ -88,35 +88,3 @@ CMeshVariable::~CMeshVariable(void) {
   if (Mesh_Coord    != NULL)    delete [] Mesh_Coord;
 
 }
-
-CMeshBoundVariable::CMeshBoundVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config) : CMeshVariable(val_coor, val_nDim, config) {
-
-  unsigned short iDim;
-
-  /*--- Initialize Boundary Displacement container to 0.0 ---*/
-  Boundary_Displacement = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++){
-    Boundary_Displacement[iDim] = 0.0;
-  }
-
-}
-
-CMeshBoundVariable::~CMeshBoundVariable(void) {
-
-  if (Boundary_Displacement != NULL) delete [] Boundary_Displacement;
-
-}
-
-
-CMeshElement::CMeshElement(void){
-
-  Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
-  Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */
-
-  WallDistance = 0.0;         /*!< \brief Store the reference distance to the nearest wall of the element. */
-
-}
-
-CMeshElement::~CMeshElement(void){
-
-}

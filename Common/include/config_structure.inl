@@ -1432,7 +1432,7 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
-inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+inline unsigned short CConfig::GetnMarker_Interface(void) { return nMarker_Interface; }
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
