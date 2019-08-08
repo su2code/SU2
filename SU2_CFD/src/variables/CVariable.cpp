@@ -83,7 +83,7 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
 	}
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    Gradient.resize(nPoint,nDim,nDim,0.0);
+    Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
   Non_Physical.resize(nPoint) = false;
