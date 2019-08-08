@@ -518,7 +518,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
         switch (solver) {
           case EULER : case FEM_EULER:
-            Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
+            Mach = sqrt(FlowSolver->node->GetVelocity2(iPoint)) / FlowSolver->node->GetSoundSpeed(iPoint);
             SurfFlow_file << scientific << Mach << "\n";
             break;
           case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
@@ -860,7 +860,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
               SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                            << Solution[1] << ", " << Solution[2] <<", " << xCoord <<", "<< yCoord;
           if (config->GetDiscrete_Adjoint()) {
-            SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1);
+            SurfAdj_file << ", " << AdjSolver->node->GetSensitivity(iPoint,0) << ", " << AdjSolver->node->GetSensitivity(iPoint,1);
           }
           SurfAdj_file << "\n";
         }
@@ -902,7 +902,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << xCoord <<", "<< yCoord <<", "<< zCoord;
           if (config->GetDiscrete_Adjoint()) {
-            SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1)
+            SurfAdj_file << ", " << AdjSolver->node->GetSensitivity(iPoint,0) << ", " << AdjSolver->node->GetSensitivity(iPoint,1)
             << ", " << AdjSolver->node->GetSensitivity(iPoint, 2);
           }
           SurfAdj_file << "\n";
@@ -3864,7 +3864,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       
       unsigned short jVar = 0;
       for (iVar = 0; iVar < nVar_Total; iVar++) {
-        Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
+        Data[jVar][jPoint] = solver->node->GetSolution(iPoint,iVar);
         jVar++;
       }
     }
@@ -9641,7 +9641,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
           }
           
           if (AzimuthalAngle[nVertex_NearField] <= 60) {
-            Pressure[nVertex_NearField] = solver->node[iPoint]->GetPressure();
+            Pressure[nVertex_NearField] = solver->node->GetPressure(iPoint);
             FaceArea[nVertex_NearField] = fabs(Face_Normal[nDim-1]);
             nVertex_NearField ++;
           }
