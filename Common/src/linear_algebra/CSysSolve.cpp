@@ -390,7 +390,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
   
-  if ( (beta < tol*norm0) || (beta < eps) && !TapeActive) {
+  if ( ((beta < tol*norm0) || (beta < eps)) && !TapeActive) {
     
     /*---  System is already solved ---*/
 

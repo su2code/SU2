@@ -2700,13 +2700,11 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned short iDim;
   unsigned long iPoint;
 
-  bool input    = false;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     if(config->GetMultiphysicsDiscrete_Adjoint()) {
       for (iDim = 0; iDim < nDim; iDim++) {
 //        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
-//        node[iPoint]->Set_AdjIndices(input);
+//        node[iPoint]->Set_AdjIndices(false);
         AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
       }
     }

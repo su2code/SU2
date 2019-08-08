@@ -91,6 +91,7 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
+                      'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
                       'drivers/CDummyDriver.cpp'])
 

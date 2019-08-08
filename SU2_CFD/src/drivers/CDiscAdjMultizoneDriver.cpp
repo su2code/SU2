@@ -301,6 +301,7 @@ void CDiscAdjMultizoneDriver::Run() {
       iOuter_Iter = iIter;
       for (iZone = 0; iZone < nZone; iZone++) {
         config_container[iZone]->SetOuterIter(iOuter_Iter);
+        driver_config->SetOuterIter(iOuter_Iter);
       }
     }
 
