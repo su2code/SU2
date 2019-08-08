@@ -54,4 +54,5 @@ CTurbVariable::CTurbVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *conf
   Solution_Max.resize(nPoint,nVar) = su2double(0.0);
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 
+  Delta_Time.resize(nPoint);
 }
