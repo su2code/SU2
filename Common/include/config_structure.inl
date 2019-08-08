@@ -1061,6 +1061,8 @@ inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Line
 
 inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
 
+inline bool CConfig::GetDeform_Mesh(void) { return Deform_Mesh; }
+
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
