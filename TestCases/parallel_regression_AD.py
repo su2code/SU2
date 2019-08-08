@@ -259,6 +259,21 @@ def main():
 #    discadj_fsi.tol       = 0.00001
 #    test_list.append(discadj_fsi)
 
+    ###################################
+    ### Coupled CHT Adjoint         ###
+    ###################################
+
+    # Coupled discrete adjoint for heatflux in heated cylinder array
+    discadj_cht           = TestCase('discadj_cht')
+    discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
+    discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
+    discadj_cht.test_iter = 10
+    discadj_cht.test_vals = [-2.406699, -3.097572, -3.097543, -3.095282] #last 4 columns
+    discadj_cht.su2_exec  = "parallel_computation.py -f"
+    discadj_cht.timeout   = 1600
+    discadj_cht.tol       = 0.00001
+    test_list.append(discadj_cht)		
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
