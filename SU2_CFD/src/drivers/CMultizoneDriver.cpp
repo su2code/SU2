@@ -35,16 +35,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
-#include "../include/definition_structure.hpp"
+#include "../../include/drivers/CMultizoneDriver.hpp"
+#include "../../include/definition_structure.hpp"
 
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -112,15 +110,19 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION: case DEFORMING:
-      case EXTERNAL: case EXTERNAL_ROTATION:
-      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case RIGID_MOTION: 
       case ELASTICITY:
         prefixed_motion[iZone] = true; break;
-      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
-      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case STEADY_TRANSLATION: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
         prefixed_motion[iZone] = false; break;
+    }
+    if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) || 
+        config_container[iZone]->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) ||
+        config_container[iZone]->GetSurface_Movement(DEFORMING) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL) ||
+        config_container[iZone]->GetSurface_Movement(EXTERNAL_ROTATION)){
+      prefixed_motion[iZone] = true;
     }
   }
 
@@ -627,15 +629,18 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 
+                                                               grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
+                                                               config_container[iZone], 0, ExtIter);
     }
   }
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
 
-  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
-        config_container, val_iZone, INST_0, 0, ExtIter);
+  iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
+                                                           grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
+                                                           config_container[val_iZone], 0, ExtIter);
 
 }
 
