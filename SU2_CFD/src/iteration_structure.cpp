@@ -335,42 +335,36 @@ void CIteration::SetGrid_Movement(CGeometry **geometry,
   }
 }
 
-void CIteration::Deform_Mesh(CGeometry ****geometry_container,
-                             CNumerics ******numerics_container,
-                             CSolver *****solver_container,
-                             CConfig **config_container,
-                             unsigned short val_iZone,
-                             unsigned short val_iInst,
-                             bool adjoint,
-                             unsigned short kind_recording)   {
+void CIteration::SetMesh_Deformation(CGeometry **geometry,
+                                     CSolver **solver,
+                                     CNumerics ***numerics,
+                                     CConfig *config,
+                                     unsigned short kind_recording) {
 
-  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement();
-  bool TapeActive = NO;
+  bool ActiveTape = NO;
 
-  if ((rank == MASTER_NODE) && (!adjoint))
+  if ((rank == MASTER_NODE) && (!config->GetDiscrete_Adjoint()))
     cout << endl << "Deforming the grid for imposed boundary displacements." << endl;
 
   /*--- Perform the elasticity mesh movement ---*/
-  if (Kind_Grid_Movement == ELASTICITY) {
+  if (config->GetDeform_Mesh()) {
 
-    if(adjoint && (kind_recording != MESH_DEFORM)){
+    if(kind_recording != MESH_DEFORM){
+      /*--- In a primal run, AD::TapeActive returns a false ---*/
       /*--- In any other recordings, the tape is passive during the deformation ---*/
-      TapeActive = AD::isTapeActive();
+      ActiveTape = AD::TapeActive();
       AD::StopRecording();
     }
 
     /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
 
-    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetMesh_Stiffness(geometry_container[val_iZone][val_iInst],
-                                                                                numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
-                                                                                config_container[val_iZone]);
+    solver[MESH_SOL]->SetMesh_Stiffness(geometry, numerics[MESH_SOL], config);
+
     /*--- Deform the volume grid around the new boundary locations ---*/
 
-    solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
-                                                                         numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
-                                                                         config_container[val_iZone]);
+    solver[MESH_SOL]->DeformMesh(geometry, numerics[MESH_SOL], config);
 
-    if(adjoint && TapeActive) {
+    if(ActiveTape) {
       /*--- Start recording if it was stopped ---*/
       AD::StartRecording();
     }

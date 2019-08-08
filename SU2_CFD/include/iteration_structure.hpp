@@ -107,16 +107,12 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
-   * \param[in] adjoint - Determine whether we are running an adjoint problem or not.
    * \param[in] kind_recording - Current kind of recording.
    */
-  virtual void Deform_Mesh(CGeometry ****geometry_container,
-                           CNumerics ******numerics_container,
-                           CSolver *****solver_container,
-                           CConfig **config_container,
-                           unsigned short val_iZone,
-                           unsigned short val_iInst,
-                           bool adjoint,
+  void SetMesh_Deformation(CGeometry **geometry,
+                           CSolver **solver_container,
+                           CNumerics ***numerics_container,
+                           CConfig *config_container,
                            unsigned short kind_recording);
   
   /*!
