@@ -51,6 +51,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   config      = config_container[ZONE_0];
   iteration   = iteration_container[ZONE_0][INST_0];
   solver      = solver_container[ZONE_0][INST_0][MESH_0];
+  numerics    = numerics_container[ZONE_0][INST_0][MESH_0];
   geometry    = geometry_container[ZONE_0][INST_0][MESH_0];
   integration = integration_container[ZONE_0][INST_0];
 
@@ -392,9 +393,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Mesh movement ---*/
 
-  bool adjoint = true;
-  direct_iteration->Deform_Mesh(geometry_container,numerics_container,solver_container,config_container,
-                                ZONE_0, INST_0, adjoint, kind_recording);
+  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
 
   /*--- Zone preprocessing ---*/
 

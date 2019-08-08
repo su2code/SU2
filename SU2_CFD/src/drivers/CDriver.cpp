@@ -1232,11 +1232,10 @@ void CDriver::MeshSolver_Preprocessing(CSolver ***solver, CGeometry **geometry, 
 
   /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
   /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
-  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
 
   bool discrete_adjoint = (config->GetDiscrete_Adjoint());
 
-  if (dynamic_mesh){
+  if (config->GetDeform_Mesh()){
     solver[MESH_0][MESH_SOL] = new CMeshSolver(geometry[MESH_0], config);
 
     if (discrete_adjoint)
@@ -1396,8 +1395,6 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   bool restart      = config->GetRestart();
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
-  bool grid_movement = (config->GetGrid_Movement() &&
-                       (config->GetKind_GridMovement() == ELASTICITY));
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1504,7 +1501,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     }
   }
 
-  if (restart && grid_movement && update_geo){
+  if (restart && config->GetDeform_Mesh() && update_geo){
     /*--- Always restart with the last state ---*/
     val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
     solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -2620,9 +2617,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
 
   /*--- We initialize the numerics for the mesh solver ---*/
-  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
-
-  if (dynamic_mesh)
+  if (config->GetDeform_Mesh())
     numerics[MESH_0][MESH_SOL][FEA_TERM] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
 }
