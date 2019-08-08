@@ -62,7 +62,7 @@ namespace AD{
    * \brief Check if the tape is active
    * \param[out] Boolean which determines whether the tape is active.
    */
-  bool isTapeActive();
+  bool TapeActive();
 
   /*!
    * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
