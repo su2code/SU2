@@ -62,9 +62,9 @@
 #include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/matrix_structure.hpp"
-#include "../../Common/include/vector_structure.hpp"
-#include "../../Common/include/linear_solvers_structure.hpp"
+#include "../../Common/include/linear_algebra/CSysMatrix.hpp"
+#include "../../Common/include/linear_algebra/CSysVector.hpp"
+#include "../../Common/include/linear_algebra/CSysSolve.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_coloring_structure.hpp"
@@ -721,13 +721,6 @@ public:
     * \param[in] geometry - Geometrical definition of the problem.
     * \param[in] config - Definition of the particular problem.
     */
-  virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   virtual void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
   
   /*!
@@ -4980,13 +4973,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
@@ -10172,13 +10158,6 @@ public:
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.

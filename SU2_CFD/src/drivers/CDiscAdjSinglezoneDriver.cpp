@@ -35,16 +35,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
-#include "../include/definition_structure.hpp"
-
+#include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
-                                                   unsigned short val_nDim,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
                                                                                                  val_nZone,
-                                                                                                 val_nDim,
                                                                                                  MPICommunicator) {
 
 
