@@ -595,6 +595,7 @@ private:
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
   GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  bool Deform_Mesh;    /*!< \brief Determines whether the mesh will be deformed. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
@@ -4159,6 +4160,12 @@ public:
    * \return Number of nonlinear increments for mesh deformation.
    */
   unsigned long GetGridDef_Nonlinear_Iter(void);
+
+  /*!
+   * \brief Get information about whether the mesh will be deformed using pseudo linear elasticity.
+   * \return <code>TRUE</code> means that grid deformation is active.
+   */
+  bool GetDeform_Mesh(void);
   
   /*!
    * \brief Get information about writing grid deformation residuals to the console.
