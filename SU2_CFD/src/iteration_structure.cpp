@@ -344,7 +344,7 @@ void CIteration::Deform_Mesh(CGeometry ****geometry_container,
                              bool adjoint,
                              unsigned short kind_recording)   {
 
-  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
+  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement();
   bool TapeActive = NO;
 
   if ((rank == MASTER_NODE) && (!adjoint))
@@ -353,7 +353,7 @@ void CIteration::Deform_Mesh(CGeometry ****geometry_container,
   /*--- Perform the elasticity mesh movement ---*/
   if (Kind_Grid_Movement == ELASTICITY) {
 
-    if(kind_recording != MESH_DEFORM){
+    if(adjoint && (kind_recording != MESH_DEFORM)){
       /*--- In any other recordings, the tape is passive during the deformation ---*/
       TapeActive = AD::isTapeActive();
       AD::StopRecording();
@@ -370,7 +370,7 @@ void CIteration::Deform_Mesh(CGeometry ****geometry_container,
                                                                          numerics_container[val_iZone][val_iInst][MESH_0][MESH_SOL],
                                                                          config_container[val_iZone]);
 
-    if(TapeActive) {
+    if(adjoint && TapeActive) {
       /*--- Start recording if it was stopped ---*/
       AD::StartRecording();
     }
@@ -709,9 +709,9 @@ void CFluidIteration::Update(COutput *output,
     }
 
     /*--- Update dual time solver for the dynamic mesh solver ---*/
-    if (config_container[val_iZone]->GetGrid_Movement() &&
-        (config_container[val_iZone]->GetKind_GridMovement() == ELASTICITY)) {
-        solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
+    if (config[val_iZone]->GetGrid_Movement() &&
+        (config[val_iZone]->GetKind_GridMovement() == ELASTICITY)) {
+        solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
     }
     
     /*--- Update dual time solver for the turbulence model ---*/
@@ -2517,10 +2517,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
   if (kind_recording == MESH_DEFORM){
 
     /*--- Undeformed mesh coordinates ---*/
-    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
     /*--- Boundary displacements ---*/
-    solver_container[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
 
   }
 

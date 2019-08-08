@@ -57,6 +57,7 @@
 #include "numerics_structure.hpp"
 #include "sgs_model.hpp"
 #include "variables/CVariable.hpp"
+#include "variables/CMeshElement.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"

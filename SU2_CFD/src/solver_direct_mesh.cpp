@@ -37,6 +37,9 @@
 
 #include "../include/solver_structure.hpp"
 #include "../../Common/include/adt_structure.hpp"
+#include "../include/variables/CMeshVariable.hpp"
+#include "../include/variables/CMeshBoundVariable.hpp"
+#include "../include/variables/CMeshElement.hpp"
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
 
@@ -700,8 +703,8 @@ void CMeshSolver::SetDualTime_Mesh(void){
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetSolution_time_n1();
-    node[iPoint]->SetSolution_time_n();
+    node[iPoint]->Set_Solution_time_n1();
+    node[iPoint]->Set_Solution_time_n();
   }
 
 }
@@ -945,7 +948,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++){
         curr_coord = Restart_Data[index+iDim];
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-        node[iPoint_Local]->SetSolution_time_n(iDim, displ);
+        node[iPoint_Local]->Set_Solution_time_n(iDim, displ);
       }
       iPoint_Global_Local++;
 
@@ -1018,7 +1021,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++){
           curr_coord = Restart_Data[index+iDim];
           displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
-          node[iPoint_Local]->SetSolution_time_n1(iDim, displ);
+          node[iPoint_Local]->Set_Solution_time_n1(iDim, displ);
         }
         iPoint_Global_Local++;
 

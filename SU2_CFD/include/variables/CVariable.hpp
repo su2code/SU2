@@ -249,6 +249,20 @@ public:
   }
 
   /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  inline void Set_Solution_time_n(unsigned short iVar, su2double val_sol) {
+    Solution_time_n[iVar] = val_sol;
+  }
+
+  /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  inline void Set_Solution_time_n1(unsigned short iVar, su2double val_sol) {
+    Solution_time_n1[iVar] = val_sol;
+  }
+
+  /*!
    * \brief Set to zero the velocity components of the solution.
    */
   inline void SetVelSolutionZero(void) {
