@@ -44,7 +44,7 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
                                  unsigned short val_iMesh,
                                  CConfig*       config)
 : CVerificationSolution(val_nDim, val_nVar, val_iMesh, config) {
-  
+    
   /*--- Disable this solution for now, as it has not been tested. ---*/
   
   SU2_MPI::Error("CIncTGVSolution not yet fully implemented/tested.",
