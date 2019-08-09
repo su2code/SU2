@@ -2325,92 +2325,92 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the original coordinate iDim.
    */
-  inline su2double GetMesh_Coord(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetMesh_Coord(unsigned short iDim) { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the undeformed coordinates.
    * \return Pointer to the reference coordinates.
    */
-  inline su2double *GetMesh_Coord() { return NULL; }
+  inline virtual su2double *GetMesh_Coord() { return NULL; }
 
   /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
-  inline void SetMesh_Coord(unsigned short iDim, su2double val_coord) { }
+  inline virtual void SetMesh_Coord(unsigned short iDim, su2double val_coord) { }
 
     /*!
    * \brief A virtual member. Get the value of the wall distance in reference coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
-  inline su2double GetWallDistance(void) { return 0.0; }
+  inline virtual su2double GetWallDistance(void) { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the value of the wall distance in reference coordinates.
    * \param[in] val_dist - Value of wall distance.
    */
-  inline void SetWallDistance(su2double val_dist) { }
+  inline virtual void SetWallDistance(su2double val_dist) { }
 
   /*!
    * \brief A virtual member. Register the reference coordinates of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_MeshCoord(bool input) { }
+  inline virtual void Register_MeshCoord(bool input) { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
    */
-  inline void GetAdjoint_MeshCoord(su2double *adj_mesh) { }
+  inline virtual void GetAdjoint_MeshCoord(su2double *adj_mesh) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double GetBound_Disp(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetBound_Disp(unsigned short iDim) { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBound_Disp(su2double *val_BoundDisp) { }
+  inline virtual void SetBound_Disp(su2double *val_BoundDisp) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
    */
-  inline su2double* GetBoundDisp_Direct() { return NULL; }
+  inline virtual su2double* GetBoundDisp_Direct() { return NULL; }
 
   /*!
    * \brief A virtual member. Set the solution for the boundary displacements.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
-  inline void SetBoundDisp_Direct(su2double *val_BoundDisp) { }
+  inline virtual void SetBoundDisp_Direct(su2double *val_BoundDisp) { }
 
   /*!
    * \brief Set the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] val_sens - Pointer to the sensitivities of the boundary displacements.
    */
-  inline void SetBoundDisp_Sens(su2double *val_sens) { }
+  inline virtual void SetBoundDisp_Sens(su2double *val_sens) { }
 
   /*!
    * \brief A virtual member. Get the value of the sensitivity with respect to the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord_Sens[nDim]
    * \return Value of the original Mesh_Coord_Sens iDim.
    */
-  inline su2double GetBoundDisp_Sens(unsigned short iDim) { return 0.0; }
+  inline virtual su2double GetBoundDisp_Sens(unsigned short iDim) { return 0.0; }
 
   /*!
    * \brief A virtual member. Register the boundary displacements of the mesh.
    * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline void Register_BoundDisp(bool input) { }
+  inline virtual void Register_BoundDisp(bool input) { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.
    */
-  inline void GetAdjoint_BoundDisp(su2double *adj_disph) { }
+  inline virtual void GetAdjoint_BoundDisp(su2double *adj_disph) { }
 
    /*!
     * \brief A virtual member.
