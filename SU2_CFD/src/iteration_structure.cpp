@@ -2459,8 +2459,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
         config[iZone]);
   }
   if (interface_boundary){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
-        SetVertexTractionsAdjoint(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
 }
@@ -2602,7 +2601,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  bool interface = (config_container[iZone]->GetnMarker_Interface() > 0);
+  bool interface_boundary = (config[iZone]->GetnMarker_Interface() > 0);
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
   
@@ -2620,8 +2619,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
                                                                  config[iZone]);
   }
   if (interface_boundary){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
-        RegisterVertexTractions(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 
