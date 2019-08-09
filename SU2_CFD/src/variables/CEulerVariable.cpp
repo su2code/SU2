@@ -87,12 +87,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Solution initialization ---*/
   
-  su2double val_solution[5] = {density, velocity[0], velocity[1], energy, energy};
+  su2double val_solution[5] = {su2double(1.0), velocity[0], velocity[1], energy, energy};
   if(nDim==3) val_solution[3] = velocity[2];
 
   for(Idx_t iPoint=0; iPoint<nPoint; ++iPoint)
     for (Idx_t iVar = 0; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = val_solution[iVar];
+      Solution(iPoint,iVar) = density*val_solution[iVar];
 
   Solution_Old = Solution;
 
@@ -132,12 +132,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   if (fsi || multizone) Solution_BGS_k = Solution;
   
-  Velocity2.resize(nPoint);
-  Precond_Beta.resize(nPoint);
-  Max_Lambda_Inv.resize(nPoint);
-  Delta_Time.resize(nPoint);
-  Lambda.resize(nPoint);
-  Sensor.resize(nPoint);
+  Velocity2.resize(nPoint) = su2double(0.0);
+  Precond_Beta.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
+  Delta_Time.resize(nPoint) = su2double(0.0);
+  Lambda.resize(nPoint) = su2double(0.0);
+  Sensor.resize(nPoint) = su2double(0.0);
 
 }
 
