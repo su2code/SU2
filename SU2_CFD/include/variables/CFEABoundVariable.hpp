@@ -38,10 +38,13 @@
 #pragma once
 
 #include "CFEAVariable.hpp"
+#include <cassert>
 
 /*!
  * \class CFEABoundVariable
- * \brief Class for defining the variables on the FEA boundaries for FSI applications.
+ * \brief Class that adds storage of boundary variables (tractions) to CFEAVariable.
+ * \note Member variables are allocated only for points marked as "vertex" i.e. on a boundary.
+ * A map is constructed so that variables can be referenced by iPoint instead of iVertex.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
@@ -49,13 +52,19 @@
 class CFEABoundVariable final : public CFEAVariable {
 protected:
 
-  Mat_t FlowTraction;        /*!< \brief Traction from the fluid field. */
-  Mat_t FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
+  Mat_t FlowTraction;         /*!< \brief Traction from the fluid field. */
+  Mat_t FlowTraction_n;       /*!< \brief Traction from the fluid field at time n. */
 
-  Mat_t Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces. */
-  Mat_t Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n. */
+  Mat_t Residual_Ext_Surf;    /*!< \brief Term of the residual due to external forces. */
+  Mat_t Residual_Ext_Surf_n;  /*!< \brief Term of the residual due to external forces at time n. */
 
-  TVec_t<bool> IsVertex;     /*!< \brief Whether a node is a vertex (i.e. on a boundary). */
+  TVec_t<unsigned> VertexMap; /*!< \brief Map from range 0-nPoint to 0-nBoundPt. */
+
+  bool isAllocated;           /*!< \brief Set to true when it is safe to use the accessors. */
+
+#define APPLY_VERTEXMAP(DEFAULT_RETURN) \
+  assert(isAllocated && "Variable in invalid state, call AllocateBoundaryVariables before accessing data.");\
+  iPoint = VertexMap(iPoint); if(iPoint==0) return DEFAULT_RETURN; else iPoint--; // decrement for 0 based
 
 public:
   /*!
@@ -74,10 +83,16 @@ public:
   ~CFEABoundVariable() = default;
 
   /*!
+   * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AllocateBoundaryVariables(CConfig *config);
+
+  /*!
    * \brief Add surface load to the residual term
    */
   inline void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) += val_surfForce[iVar];
   }
 
@@ -85,20 +100,23 @@ public:
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
   inline void Set_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar, su2double val_surfForce) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
   }
 
   /*!
    * \brief Get the residual term due to surface load
    */
-  inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const override { return Residual_Ext_Surf(iPoint,iVar); }
+  inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const override {
+    APPLY_VERTEXMAP(0.0)
+    return Residual_Ext_Surf(iPoint,iVar);
+  }
 
   /*!
    * \brief Clear the surface load residual
    */
   inline void Clear_SurfaceLoad_Res(Idx_t iPoint) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
   }
 
@@ -106,7 +124,7 @@ public:
    * \brief Store the surface load as the load for the previous time step.
    */
   inline void Set_SurfaceLoad_Res_n(Idx_t iPoint) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n(iPoint,iVar) = Residual_Ext_Surf(iPoint,iVar);
   }
 
@@ -114,6 +132,7 @@ public:
    * \brief Get the surface load from the previous time step.
    */
   inline su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const override {
+    APPLY_VERTEXMAP(0.0)
     return Residual_Ext_Surf_n(iPoint,iVar);
   }
 
@@ -121,7 +140,7 @@ public:
    * \brief Set the flow traction at a node on the structural side
    */
   inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
 
@@ -129,44 +148,57 @@ public:
    * \brief Add a value to the flow traction at a node on the structural side
    */
   inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
 
   /*!
    * \brief Get the residual term due to the flow traction
    */
-  inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const override { return FlowTraction(iPoint,iVar); }
+  inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const override {
+    APPLY_VERTEXMAP(0.0)
+    return FlowTraction(iPoint,iVar);
+  }
 
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
   void Set_FlowTraction_n(Idx_t iPoint) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction_n(iPoint,iVar) = FlowTraction(iPoint,iVar);
   }
 
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const override { return FlowTraction_n(iPoint,iVar); }
+  inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const override {
+    APPLY_VERTEXMAP(0.0)
+    return FlowTraction_n(iPoint,iVar);
+  }
 
   /*!
    * \brief Clear the flow traction residual
    */
   inline void Clear_FlowTraction(Idx_t iPoint) override {
-    if(!IsVertex(iPoint)) return;
+    APPLY_VERTEXMAP()
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const override { return IsVertex(iPoint); }
-  
+  inline bool Get_isVertex(Idx_t iPoint) const override { return VertexMap(iPoint)!=0; }
+
   /*!
    * \brief Set whether a node is on the boundary
    */
-  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override { IsVertex(iPoint) = isVertex; }
+  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override {
+    /*--- Invalidate allocation if change is requested as that destroys map. ---*/
+    if (isVertex != bool(VertexMap(iPoint))) {
+      isAllocated = false;
+      VertexMap(iPoint) = unsigned(isVertex);
+    }
+  }
 
+#undef APPLY_VERTEXMAP
 };

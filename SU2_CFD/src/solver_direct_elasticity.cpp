@@ -228,12 +228,11 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Initialize from zero everywhere ---*/
 
-  // ToDo: Allow only enough boundary data to be allocated by CFEABoundVariable
-  //node = new CFEAVariable(SolRest, nPoint, nDim, nVar, config);
   node = new CFEABoundVariable(SolRest, nPoint, nDim, nVar, config);
 
-  /*--- Set which points are vertices. ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  /*--- Set which points are vertices and allocate boundary data. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex >= 0) {
@@ -241,8 +240,9 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
         break;
       }
     }
-  }
-  
+  static_cast<CFEABoundVariable*>(node)->AllocateBoundaryVariables(config);
+
+
   bool reference_geometry = config->GetRefGeom();
   if (reference_geometry) Set_ReferenceGeometry(geometry, config);
   

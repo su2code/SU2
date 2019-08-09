@@ -41,21 +41,45 @@
 CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config)
   : CFEAVariable(val_fea, npoint, ndim, nvar, config) {
 
+  /*--- The point to vertex map is 1 based (0 indicating not-a-vertex) to use the full
+   range of the data type, which is uint32 to minimize memory (4 billion is plenty). ---*/
+
+  VertexMap.resize(nPoint) = 0;
+
+  /*--- As we initialize with not-a-vertex the class starts in a valid state. ---*/
+
+  isAllocated = true;
+}
+
+void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
+
+  if (isAllocated) return; // nothing to do
+
+  /*--- Count number of vertices and build map ---*/
+
+  Idx_t nBoundPt = 0; // map is 1 based, the accessors correct accordingly.
+
+  for (Idx_t iPoint = 0; iPoint < nPoint; ++iPoint)
+    if (VertexMap(iPoint)!=0)
+      VertexMap(iPoint) = ++nBoundPt;
+
+  /*--- Allocate ---*/
+
   bool gen_alpha    = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
   bool fsi_analysis = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
-  Residual_Ext_Surf.resize(nPoint,nVar) = su2double(0.0);
+  Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Flow traction ---*/
-  if (fsi_analysis) FlowTraction.resize(nPoint,nVar) = su2double(0.0);
+  if (fsi_analysis) FlowTraction.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
   if (gen_alpha) {
-    Residual_Ext_Surf_n.resize(nPoint,nVar) = su2double(0.0);
+    Residual_Ext_Surf_n.resize(nBoundPt,nVar) = su2double(0.0);
 
-    if (fsi_analysis) FlowTraction_n.resize(nPoint,nVar) = su2double(0.0);
+    if (fsi_analysis) FlowTraction_n.resize(nBoundPt,nVar) = su2double(0.0);
   }
 
-  IsVertex.resize(nPoint) = false;
+  isAllocated = true;
 }
