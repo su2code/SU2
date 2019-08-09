@@ -1,7 +1,7 @@
 /*!
- * \file CFEABoundVariable.hpp
+ * \file CFEAFSIBoundVariable.hpp
  * \brief Class for defining the variables on the FEA boundaries for FSI applications.
- * \author F. Palacios, T. Economon
+ * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -37,27 +37,28 @@
 
 #pragma once
 
-#include "CFEAVariable.hpp"
+#include "CFEABoundVariable.hpp"
+
 
 /*!
- * \class CFEABoundVariable
- * \brief Class for defining the variables on the FEA boundaries for FSI applications.
+ * \class CFEAFSIBoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CFEAVariable {
+class CFEAFSIBoundVariable : public CFEABoundVariable {
 protected:
 
-  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
+  su2double *FlowTraction;        /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;      /*!< \brief Traction from the fluid field at time n. */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CFEABoundVariable(void);
+  CFEAFSIBoundVariable(void);
 
   /*!
    * \overload
@@ -66,52 +67,66 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEAFSIBoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                        CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable(void);
+  ~CFEAFSIBoundVariable(void);
 
   /*!
-   * \brief Add surface load to the residual term
+   * \brief Set the flow traction at a node on the structural side
    */
-  inline void Add_SurfaceLoad_Res(su2double *val_surfForce) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+  inline void Set_FlowTraction(su2double *val_flowTraction) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = val_flowTraction[iVar];
   }
 
   /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
+   * \brief Add a value to the flow traction at a node on the structural side
    */
-  inline void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
-
-  /*!
-   * \brief Get the residual term due to surface load
-   */
-  inline su2double Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
-
-  /*!
-   * \brief Clear the surface load residual
-   */
-  inline void Clear_SurfaceLoad_Res(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  inline void Add_FlowTraction(su2double *val_flowTraction) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] += val_flowTraction[iVar];
   }
 
   /*!
-   * \brief Store the surface load as the load for the previous time step.
+   * \brief Get the residual term due to the flow traction
    */
-  inline void Set_SurfaceLoad_Res_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
+  inline su2double Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar]; }
+
+  /*!
+   * \brief Set the value of the flow traction at the previous time step.
+   */
+  void Set_FlowTraction_n(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction_n[iVar] = FlowTraction[iVar];
   }
 
   /*!
-   * \brief Get the surface load from the previous time step.
+   * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  inline su2double Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar]; }
+  inline su2double Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar]; }
 
   /*!
-   * \brief Get whether this node is on the boundary
+   * \brief Clear the flow traction residual
    */
-  inline bool Get_isVertex(void) {return true; }
+  inline void Clear_FlowTraction(void) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) FlowTraction[iVar] = 0.0;
+  }
+
+  /*!
+   * \brief Register the flow tractions as input variable.
+   */
+  inline void RegisterFlowTraction() {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(FlowTraction[iVar]);
+  }
+
+  /*!
+   * \brief Extract the flow traction derivatives.
+   */
+  inline su2double ExtractFlowTraction_Sensitivity(unsigned short iDim){
+    su2double val_sens; val_sens = SU2_TYPE::GetDerivative(FlowTraction[iDim]); return val_sens;
+  }
+
 
 };

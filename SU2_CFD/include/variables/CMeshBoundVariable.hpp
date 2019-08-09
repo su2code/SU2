@@ -75,6 +75,15 @@ public:
   }
 
   /*!
+   * \brief Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  inline void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) {
+    Boundary_Displacement[iDim] = val_BoundDisp;
+  }
+
+  /*!
    * \brief Determine whether the node is a moving vertex.
    * \return True. The node is at the boundary.
    */

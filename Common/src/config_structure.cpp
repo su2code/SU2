@@ -2134,6 +2134,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
+  /* DESCRIPTION: Initialize FSI structures, as loads will come from a python wrapper */
+  addBoolOption("PY_FSI", pyFSI, false);
+
   /* DESCRIPTION: Topology optimization options */
   addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));

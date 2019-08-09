@@ -2376,6 +2376,14 @@ public:
    */
   inline virtual void SetBound_Disp(su2double *val_BoundDisp) { }
 
+
+  /*!
+   * \brief A virtual member. Set the boundary displacement.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundDisp - Value of the boundary displacements.
+   */
+  inline virtual void SetBound_Disp(unsigned short iDim, su2double val_BoundDisp) { }
+
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
    * \return Value of the boundary displacement.
@@ -2436,6 +2444,16 @@ public:
    * \brief A virtual member.
    */
   inline virtual void RegisterSolution_Accel_time_n() {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void RegisterFlowTraction() { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned short iDim) {return 0.0;}
 
   /*!
    * \brief A virtual member.
@@ -2617,5 +2635,33 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned short iVar) {return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned short iVar) {return 0.0; }
+
+  /*!
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetFlowTractionSensitivity(unsigned short iDim, su2double val) { }
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetFlowTractionSensitivity(unsigned short iDim) { return 0.0; }
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  virtual void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val) { }
+
+  /*!
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
+   */
+  virtual su2double GetSourceTerm_DispAdjoint(unsigned short iDim) { return 0.0; }
 
 };

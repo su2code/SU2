@@ -1,7 +1,7 @@
 /*!
- * \file CFEABoundVariable.hpp
- * \brief Class for defining the variables on the FEA boundaries for FSI applications.
- * \author F. Palacios, T. Economon
+ * \file CDiscAdjFEABoundVariable.hpp
+ * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
+ * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -37,27 +37,28 @@
 
 #pragma once
 
-#include "CFEAVariable.hpp"
+#include "CDiscAdjFEAVariable.hpp"
 
 /*!
- * \class CFEABoundVariable
- * \brief Class for defining the variables on the FEA boundaries for FSI applications.
- * \ingroup Structural Finite Element Analysis Variables
+ * \class CDiscAdjFEABoundVariable
+ * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
+ * \ingroup Discrete_Adjoint
  * \author R. Sanchez.
  * \version 6.2.0 "Falcon"
  */
-class CFEABoundVariable : public CFEAVariable {
+class CDiscAdjFEABoundVariable : public CDiscAdjFEAVariable {
 protected:
 
-  su2double *Residual_Ext_Surf;   /*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n; /*!< \brief Term of the residual due to external forces at time n */
+  su2double *FlowTraction_Sens;         /*!< \brief Adjoint of the flow tractions. */
+  su2double *SourceTerm_DispAdjoint;    /*!< \brief Source term applied into the displacement adjoint
+                                                    coming from external solvers. */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CFEABoundVariable(void);
+  CDiscAdjFEABoundVariable(void);
 
   /*!
    * \overload
@@ -66,52 +67,48 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CDiscAdjFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable(void);
+  ~CDiscAdjFEABoundVariable(void);
 
   /*!
-   * \brief Add surface load to the residual term
+   * \brief Set the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the Sensitivity
    */
-  inline void Add_SurfaceLoad_Res(su2double *val_surfForce) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] += val_surfForce[iVar];
+  inline void SetFlowTractionSensitivity(unsigned short iDim, su2double val) { FlowTraction_Sens[iDim] = val; }
+
+  /*!
+   * \brief Get the FSI force sensitivity at the node
+   * \param[in] iDim - spacial component
+   * \return value of the Sensitivity
+   */
+  inline su2double GetFlowTractionSensitivity(unsigned short iDim) { return FlowTraction_Sens[iDim]; }
+
+  /*!
+   * \brief Set the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \param[in] val - value of the source term
+   */
+  inline void SetSourceTerm_DispAdjoint(unsigned short iDim, su2double val){
+    SourceTerm_DispAdjoint[iDim] = val;
   }
 
   /*!
-   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
+   * \brief Get the source term applied into the displacement adjoint coming from external solvers
+   * \param[in] iDim - spacial component
+   * \return value of the source term
    */
-  inline void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce) {Residual_Ext_Surf[iVar] = val_surfForce;}
-
-  /*!
-   * \brief Get the residual term due to surface load
-   */
-  inline su2double Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
-
-  /*!
-   * \brief Clear the surface load residual
-   */
-  inline void Clear_SurfaceLoad_Res(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  inline su2double GetSourceTerm_DispAdjoint(unsigned short iDim){
+    return SourceTerm_DispAdjoint[iDim];
   }
-
-  /*!
-   * \brief Store the surface load as the load for the previous time step.
-   */
-  inline void Set_SurfaceLoad_Res_n(void) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)  Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
-  }
-
-  /*!
-   * \brief Get the surface load from the previous time step.
-   */
-  inline su2double Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar]; }
 
   /*!
    * \brief Get whether this node is on the boundary
    */
-  inline bool Get_isVertex(void) {return true; }
+  inline bool Get_isVertex(void) { return true; }
 
 };

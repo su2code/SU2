@@ -35,40 +35,41 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/variables/CFEABoundVariable.hpp"
+#include "../../include/variables/CFEAFSIBoundVariable.hpp"
 
+CFEAFSIBoundVariable::CFEAFSIBoundVariable(void) : CFEABoundVariable() {
 
-CFEABoundVariable::CFEABoundVariable(void) : CFEAVariable() {
-
-  Residual_Ext_Surf     = NULL;    // Residual component due to external surface forces
-  Residual_Ext_Surf_n   = NULL;    // Residual component due to external surface forces at time n (for gen-alpha methods)
+  FlowTraction          = NULL;    // Nodal traction due to the fluid (fsi)
+  FlowTraction_n        = NULL;    // Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
 
 }
 
-CFEABoundVariable::CFEABoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
-                                     CConfig *config) : CFEAVariable(val_fea, val_nDim, val_nvar, config) {
+CFEAFSIBoundVariable::CFEAFSIBoundVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar,
+                                          CConfig *config) : CFEABoundVariable(val_fea, val_nDim, val_nvar, config) {
 
   unsigned short iVar;
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
 
-  Residual_Ext_Surf     = NULL;
-  Residual_Ext_Surf_n   = NULL;
-
-  /*--- Surface residual ---*/
-  Residual_Ext_Surf = new su2double [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf[iVar] = 0.0;
+  /*--- Flow traction ---*/
+  FlowTraction = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    FlowTraction[iVar]   = 0.0;
+  }
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
+  FlowTraction_n = NULL;
   if (gen_alpha) {
-    Residual_Ext_Surf_n = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n[iVar] = 0.0;
+    FlowTraction_n = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      FlowTraction_n[iVar] = 0.0;
+    }
   }
 
 }
 
-CFEABoundVariable::~CFEABoundVariable(void) {
+CFEAFSIBoundVariable::~CFEAFSIBoundVariable(void) {
 
-  if (Residual_Ext_Surf     != NULL) delete [] Residual_Ext_Surf;
-  if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
+  if (FlowTraction          != NULL) delete [] FlowTraction;
+  if (FlowTraction_n         != NULL) delete [] FlowTraction_n;
 
 }

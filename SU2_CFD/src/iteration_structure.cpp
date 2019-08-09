@@ -788,6 +788,10 @@ void CFluidIteration::Postprocess(COutput *output,
 
   if(config[val_iZone]->GetSinglezone_Driver()){
 
+    /*--- Compute the tractions at the vertices ---*/
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(
+          geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+
     if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
         config[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
         config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS){
@@ -2431,6 +2435,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
   unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+  bool interface_boundary = (config[iZone]->GetnMarker_Interface() > 0);
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
@@ -2453,6 +2458,11 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
         config[iZone]);
   }
+  if (interface_boundary){
+    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
+        SetVertexTractionsAdjoint(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  }
+
 }
 
 
@@ -2592,6 +2602,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+  bool interface = (config_container[iZone]->GetnMarker_Interface() > 0);
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
   
@@ -2607,6 +2618,10 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   if (heat){
     solver[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0],
                                                                  config[iZone]);
+  }
+  if (interface_boundary){
+    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->
+        RegisterVertexTractions(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
   }
 }
 
