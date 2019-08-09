@@ -75,7 +75,7 @@ all:
 # List the dependencies
 real: ${SWIG_SO_REAL}
 
-EXTRA_CC_FLAGS = -fPIC -O3
+EXTRA_CC_FLAGS = -fPIC -O3 -std=c++11
 
 #SU2Core lib
 SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
