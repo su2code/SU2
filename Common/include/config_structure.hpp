@@ -72,6 +72,7 @@ class CConfig {
 private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;
+  bool base_config;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Ref_Inc_NonDim; /*!< \brief Kind of non dimensionalization.*/
@@ -125,7 +126,6 @@ private:
   Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Weakly_Coupled_Heat, /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
@@ -203,7 +203,6 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -246,7 +245,6 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -430,7 +428,6 @@ private:
   nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
-  unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
@@ -466,7 +463,9 @@ private:
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
   Kind_DensityModel,				/*!< \brief Kind of the density model for incompressible flows. */
-  *Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
+  Kind_GridMovement,    /*!< \brief Kind of the static mesh movement. */
+  *Kind_SurfaceMovement,    /*!< \brief Kind of the static mesh movement. */
+  nKind_SurfaceMovement,    /*!< \brief Kind of the dynamic mesh movement. */  
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
@@ -529,7 +528,8 @@ private:
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_AdjTurb, 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  Use_Accurate_Jacobians;   /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;        /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   ZoneSpecific_Problem,   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
@@ -554,6 +554,7 @@ private:
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
   su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
+  su2double Linear_Solver_Smoother_Relaxation;  /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -583,7 +584,8 @@ private:
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
-  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
+  Kappa_4th_Heat,     /*!< \brief 4th order dissipation coefficient for heat equation. */
+  Cent_Jac_Fix_Factor;/*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes by this factor to make the global matrix more diagonal dominant. */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -883,55 +885,34 @@ private:
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-  su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
-  *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
-  *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-  *Translation_Rate_X,        /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *Translation_Rate_Y,        /*!< \brief Translational velocity of the mesh in the y-direction. */
-  *Translation_Rate_Z,        /*!< \brief Translational velocity of the mesh in the z-direction. */
-  *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
-  *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-  *Pitching_Omega_X,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Omega_Y,          /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-  *Pitching_Omega_Z,          /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
-  *Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
-  *Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
-  *Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-  *Pitching_Phase_X,          /*!< \brief Pitching phase offset about the x-axis. */
-  *Pitching_Phase_Y,          /*!< \brief Pitching phase offset about the y-axis. */
-  *Pitching_Phase_Z,          /*!< \brief Pitching phase offset about the z-axis. */
-  *Plunging_Omega_X,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-  *Plunging_Omega_Y,          /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-  *Plunging_Omega_Z,          /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
-  *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
-  *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
-  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
-  unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
-  nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
-  nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
-  nTranslation_Rate_X,        /*!< \brief Number of Translational x-velocities for mesh motion. */
-  nTranslation_Rate_Y,        /*!< \brief Number of Translational y-velocities for mesh motion. */
-  nTranslation_Rate_Z,        /*!< \brief Number of Translational z-velocities for mesh motion. */
-  nRotation_Rate_X,           /*!< \brief Number of Angular velocities about the x-axis for mesh motion. */
-  nRotation_Rate_Y,           /*!< \brief Number of Angular velocities about the y-axis for mesh motion. */
-  nRotation_Rate_Z,           /*!< \brief Number of Angular velocities about the z-axis for mesh motion. */
-  nPitching_Omega_X,          /*!< \brief Number of Angular frequencies about the x-axis for pitching. */
-  nPitching_Omega_Y,          /*!< \brief Number of Angular frequencies about the y-axis for pitching. */
-  nPitching_Omega_Z,          /*!< \brief Number of Angular frequencies about the z-axis for pitching. */
-  nPitching_Ampl_X,           /*!< \brief Number of Pitching amplitudes about the x-axis. */
-  nPitching_Ampl_Y,           /*!< \brief Number of Pitching amplitudes about the y-axis. */
-  nPitching_Ampl_Z,           /*!< \brief Number of Pitching amplitudes about the z-axis. */
-  nPitching_Phase_X,          /*!< \brief Number of Pitching phase offsets about the x-axis. */
-  nPitching_Phase_Y,          /*!< \brief Number of Pitching phase offsets about the y-axis. */
-  nPitching_Phase_Z,          /*!< \brief Number of Pitching phase offsets about the z-axis. */
-  nPlunging_Omega_X,          /*!< \brief Number of Angular frequencies in the x-direction for plunging. */
-  nPlunging_Omega_Y,          /*!< \brief Number of Angular frequencies in the y-direction for plunging. */
-  nPlunging_Omega_Z,          /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
-  nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
-  nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
-  nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+  
+  su2double *Motion_Origin, /*!< \brief Mesh motion origin. */
+  *Translation_Rate,        /*!< \brief Translational velocity of the mesh. */
+  *Rotation_Rate,           /*!< \brief Angular velocity of the mesh . */
+  *Pitching_Omega,          /*!< \brief Angular frequency of the mesh pitching. */
+  *Pitching_Ampl,           /*!< \brief Pitching amplitude. */ 
+  *Pitching_Phase,          /*!< \brief Pitching phase offset. */ 
+  *Plunging_Omega,          /*!< \brief Angular frequency of the mesh plunging. */ 
+  *Plunging_Ampl;           /*!< \brief Plunging amplitude. */
+  su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
+  *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
+  *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
+  *MarkerPitching_Omega,          /*!< \brief Angular frequency of marker. */
+  *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */ 
+  *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */ 
+  *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */ 
+  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
+  
+  unsigned short nMarkerMotion_Origin, /*!< \brief Number of values provided for mesh motion origin of marker. */
+  nMarkerTranslation,        /*!< \brief Number of values provided for translational velocity of marker. */
+  nMarkerRotation_Rate,           /*!< \brief Number of values provided for angular velocity of marker. */
+  nMarkerPitching_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
+  nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */ 
+  nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */ 
+  nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */ 
+  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  su2double  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
+  unsigned short
   nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
@@ -1040,7 +1021,7 @@ private:
   su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
   su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
   su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
-  su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+  su2double FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
@@ -1102,6 +1083,18 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  
+  /*!
+   * \brief Set the default values of config options not set in the config file using another config object.
+   * \param config - Config object to use the default values from.
+   */
+  void SetDefaultFromConfig(CConfig *config);
+  
+  /*!
+   * \brief Set default values for all options not yet set.
+   */
+  void SetDefault();
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1401,7 +1394,12 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_nZone, bool verb_high);
+  
+  /*!
+   * \brief Constructor of the class which reads the input file and uses default options from another config.
+   */
+  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1418,6 +1416,11 @@ public:
    */
   ~CConfig(void);
   
+ void SetnZone();
+ 
+ void SetnDim();
+ 
+ void SetHeader(unsigned short val_software);
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
@@ -1434,10 +1437,9 @@ public:
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
    * \param[in] val_format - Format of the file with the grid information.
-   * \param[in] config - Definition of the particular problem.
    * \return Total number of zones in the grid file.
    */
-  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format);
   
   /*!
    * \brief Gets the number of dimensions in the mesh file
@@ -2940,12 +2942,6 @@ public:
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
    */
-  unsigned short GetnMarker_InterfaceBound(void);
-  
-  /*!
-   * \brief Get the total number of boundary markers.
-   * \return Total number of boundary markers.
-   */
   unsigned short GetnMarker_Fluid_InterfaceBound(void);
   
   /*!
@@ -4026,6 +4022,12 @@ public:
   unsigned long GetLinear_Solver_Restart_Frequency(void);
   
   /*!
+   * \brief Get the relaxation factor for iterative linear smoothers.
+   * \return Relaxation factor.
+   */
+  su2double GetLinear_Solver_Smoother_Relaxation(void) const;
+  
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4329,6 +4331,12 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjTurb(void);
+  
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
+   * \return yes/no.
+   */
+  inline bool GetUse_Accurate_Jacobians(void) { return Use_Accurate_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4526,6 +4534,12 @@ public:
    * \return Calibrated constant for the JST-like method for the heat equation.
    */
   su2double GetKappa_4th_Heat(void);
+  
+  /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of central schemes.
+   * \return The factor.
+   */
+  inline su2double GetCent_Jac_Fix_Factor(void) { return Cent_Jac_Fix_Factor; }
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5672,24 +5686,45 @@ public:
   bool GetGrid_Movement(void);
   
   /*!
-   * \brief Get the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Type of dynamic mesh motion.
+   * \brief Get information about the volumetric movement.
+   * \return <code>TRUE</code> if there is a volumetric movement is required; otherwise <code>FALSE</code>.
    */
-  unsigned short GetKind_GridMovement(unsigned short val_iZone);
+  bool GetVolumetric_Movement(void);
+  
+  /*!
+   * \brief Get information about deforming markers.
+   * \param[in] kind_movement - Kind of surface movement.
+   * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
+   */
+  bool GetSurface_Movement(unsigned short kind_movement);
+
+  /*!
+   * \brief Set a surface movement marker.
+   * \param[in] iMarker - Moving marker.
+   * \param[in] kind_movement - Kind of surface movement.
+   * \return <code>TRUE</code> at least one surface of kind_movement moving; otherwise <code>FALSE</code>.
+   */
+  void SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement);
   
   /*!
    * \brief Get the type of dynamic mesh motion. Each zone gets a config file.
    * \return Type of dynamic mesh motion.
    */
   unsigned short GetKind_GridMovement();
-
+  
   /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
    */
-  void SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type);
+  void SetKind_GridMovement(unsigned short motion_Type);
+  
+  /*!
+   * \brief Get the type of surface motion.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving).
+   * \return Type of surface motion.
+   */
+  unsigned short GetKind_SurfaceMovement(unsigned short iMarkerMoving);
   
   /*!
    * \brief Get the mach number based on the mesh velocity and freestream quantities.
@@ -5698,207 +5733,159 @@ public:
   su2double GetMach_Motion(void);
   
   /*!
-   * \brief Get x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return X-coordinate of the mesh motion origin.
+   * \brief Get the mesh motion origin.
+   * \param[in] iDim - spatial component
+   * \return The mesh motion origin.
    */
-  su2double GetMotion_Origin_X(unsigned short val_iZone);
+  su2double GetMotion_Origin(unsigned short iDim);
   
   /*!
-   * \brief Get y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Y-coordinate of the mesh motion origin.
+   * \brief Set the mesh motion origin.
+   * \param[in] val - new value of the origin 
+   * \return The mesh motion origin.
    */
-  su2double GetMotion_Origin_Y(unsigned short val_iZone);
+  void SetMotion_Origin(su2double* val);
   
   /*!
-   * \brief Get z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Z-coordinate of the mesh motion origin.
+   * \brief Get the mesh motion origin.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return The motion origin of the marker.
    */
-  su2double GetMotion_Origin_Z(unsigned short val_iZone);
+  su2double GetMarkerMotion_Origin(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Set x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New x-coordinate of the mesh motion origin.
+   * \brief Set the mesh motion origin.
+   * \param[in] val - new value of the origin
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
    */
-  void SetMotion_Origin_X(unsigned short val_iZone, su2double val_origin);
+  void SetMarkerMotion_Origin (su2double* val, unsigned short iMarkerMoving);
   
   /*!
-   * \brief Set y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+   * \brief Get the translational velocity of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Translational velocity of the mesh.
    */
-  void SetMotion_Origin_Y(unsigned short val_iZone, su2double val_origin);
+  su2double GetTranslation_Rate(unsigned short iDim);
   
   /*!
-   * \brief Set z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+   * \brief Get the translational velocity of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component    
+   * \return Translational velocity of the marker.
    */
-  void SetMotion_Origin_Z(unsigned short val_iZone, su2double val_origin);
+  su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the x-direction.
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Translational velocity of the mesh.
    */
-  su2double GetTranslation_Rate_X(unsigned short val_iZone);
+  su2double GetRotation_Rate(unsigned short iDim);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the y-direction.
+   * \brief Get the rotation rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \param[in] val - new value of the rotation rate.
+   * \return Translational velocity of the mesh.
    */
-  su2double GetTranslation_Rate_Y(unsigned short val_iZone);
+  void SetRotation_Rate(unsigned short iDim, su2double val);
   
   /*!
-   * \brief Get the translational velocity of the mesh in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Translational velocity of the mesh in the z-direction.
+   * \brief Get the rotation rate of the marker.
+   *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component   
+   * \return Rotation velocity of the marker.
    */
-  su2double GetTranslation_Rate_Z(unsigned short val_iZone);
+  su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the x-axis.
+   * \brief Get the pitching rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the mesh pitching.
    */
-  su2double GetRotation_Rate_X(unsigned short val_iZone);
+  su2double GetPitching_Omega(unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the y-axis.
+   * \brief Get pitching rate of the marker.
+   * \param[in] iMarkerMoving - Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component  
+   * \return  Angular frequency of the marker pitching.
    */
-  su2double GetRotation_Rate_Y(unsigned short val_iZone);
+  su2double GetMarkerPitching_Omega(unsigned short iMarkerMoving, unsigned short iDim);
   
   /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the z-axis.
+   * \brief Get the pitching amplitude of the mesh.
+   * \param[in] iDim - spatial component   
+   * \return pitching amplitude of the mesh.
    */
-  su2double GetRotation_Rate_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular velocity of the mesh about the z-axis.
-   */
-  su2double GetFinalRotation_Rate_Z(unsigned short val_iZone);
+  su2double GetPitching_Ampl(unsigned short iDim);
 
+  /*!
+   * \brief Get pitching amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return  pitching amplitude of the marker.
+   */
+  su2double GetMarkerPitching_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
+
+  /*!
+   * \brief Get the pitching phase of the mesh.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \return pitching phase of the mesh.
+   */
+  su2double GetPitching_Phase(unsigned short iDim);
+  
+  /*!
+   * \brief Get pitching phase of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) \
+   * \param[in] iDim - spatial component
+   * \return pitching phase of the marker.
+   */
+  su2double GetMarkerPitching_Phase(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the plunging rate of the mesh.
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the mesh plunging.
+   */
+  su2double GetPlunging_Omega(unsigned short iDim);
+  
+  /*!
+   * \brief Get plunging rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return Angular frequency of the marker plunging.
+   */
+  su2double GetMarkerPlunging_Omega(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the plunging amplitude of the mesh.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component
+   * \return Plunging amplitude of the mesh.
+   */
+  su2double GetPlunging_Ampl(unsigned short iDim);
+  
+  /*!
+   * \brief Get plunging amplitude of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving) 
+   * \param[in] iDim - spatial component
+   * \return Plunging amplitude of the marker.
+   */
+  su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim);
+  
+  /*!
+   * \brief Get the angular velocity of the mesh about the z-axis.
+   * \return Angular velocity of the mesh about the z-axis.
+   */
+  su2double GetFinalRotation_Rate_Z();
+  
   /*!
    * \brief Set the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
    */
-  void SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
-
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the x-axis.
-   */
-  su2double GetPitching_Omega_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the y-axis.
-   */
-  su2double GetPitching_Omega_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh pitching about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh pitching about the z-axis.
-   */
-  su2double GetPitching_Omega_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the x-axis.
-   */
-  su2double GetPitching_Ampl_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the y-axis.
-   */
-  su2double GetPitching_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching amplitude about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching amplitude about the z-axis.
-   */
-  su2double GetPitching_Ampl_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the x-axis.
-   */
-  su2double GetPitching_Phase_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the y-axis.
-   */
-  su2double GetPitching_Phase_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the pitching phase offset about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Pitching phase offset about the z-axis.
-   */
-  su2double GetPitching_Phase_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the x-direction.
-   */
-  su2double GetPlunging_Omega_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the y-direction.
-   */
-  su2double GetPlunging_Omega_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the angular frequency of a mesh plunging in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Angular frequency of a mesh plunging in the z-direction.
-   */
-  su2double GetPlunging_Omega_Z(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the x-direction.
-   */
-  su2double GetPlunging_Ampl_X(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the y-direction.
-   */
-  su2double GetPlunging_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
-   * \brief Get the plunging amplitude in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \return Plunging amplitude in the z-direction.
-   */
-  su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
+  void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
   
   /*!
    * \brief Get the Harmonic Balance frequency pointer.
@@ -6167,6 +6154,21 @@ public:
    * \return The number markers in the multizone interface
    */
   unsigned short GetnMarker_ZoneInterface(void);
+
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a solid boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool GetSolid_Wall(unsigned short iMarker);
+  
+  /*!
+   * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.
+   */
+  bool GetViscous_Wall(unsigned short iMarker);
 
   /*!
    * \brief Determines if problem is adjoint
@@ -8032,7 +8034,7 @@ public:
   /*!
    * \brief Set the config options.
    */
-  void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
+  void SetConfig_Options();
   
   /*!
    * \brief Set the config options.
