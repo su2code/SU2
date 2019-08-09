@@ -1,7 +1,7 @@
 /*!
  * \file CDiscAdjFEAVariable.hpp
- * \brief Main class for defining the variables of the adjoint solver.
- * \author F. Palacios, T. Economon
+ * \brief Main class for defining the variables of the adjoint FEA solver.
+ * \author T. Albring, R. Sanchez.
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -39,13 +39,6 @@
 
 #include "CVariable.hpp"
 
-/*!
- * \class CDiscAdjFEAVariable
- * \brief Main class for defining the variables of the adjoint solver.
- * \ingroup Discrete_Adjoint
- * \author T. Albring, R. Sanchez.
- * \version 6.2.0 "Falcon"
- */
 class CDiscAdjFEAVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
@@ -300,4 +293,8 @@ public:
    */
   inline su2double Get_BGSSolution_k(unsigned short iDim) {return Solution_BGS_k[iDim];}
 
+  /*!
+   * \brief Get whether this node is on the boundary
+   */
+  inline virtual bool Get_isVertex(void) { return false; }
 };

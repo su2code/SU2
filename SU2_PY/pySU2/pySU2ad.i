@@ -1,9 +1,9 @@
 /*
 ################################################################################
 #
-# \file pySU2.i
+# \file pySU2ad.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
-# \author D. Thomas
+# \author D. Thomas, R. Sanchez
 #  \version 6.2.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
@@ -42,21 +42,18 @@
 %feature("autodoc","1");
 
 %module(docstring=
-"'pysu2' module",
+"'pysu2ad' module",
 directors="1",
 threads="1"
-) pysu2
+) pysu2ad
 %{
 
-#include "../../SU2_CFD/include/drivers/CDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
-  
+#include "../../SU2_CFD/include/driver_structure.hpp"
+
 %}
 
 // ----------- USED MODULES ------------
-%import "../../Common/include/datatypes/primitive_structure.hpp"
+%import "../../Common/include/datatypes/codi_reverse_structure.hpp"
 %import "../../Common/include/datatype_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
@@ -98,7 +95,4 @@ const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. 
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
 // CDriver class
-%include "../../SU2_CFD/include/drivers/CDriver.hpp"
-%include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
-%include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
-%include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+%include "../../SU2_CFD/include/driver_structure.hpp"

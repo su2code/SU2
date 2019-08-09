@@ -74,7 +74,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
 
   bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fsi_analysis = config->GetFSI_Simulation();
+  bool fsi_analysis = (config->GetFSI_Simulation() || config->GetpyFSI());
 
   VonMises_Stress       = 0.0;
 
@@ -170,7 +170,7 @@ CFEAVariable::~CFEAVariable(void) {
 
   if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
   if (Prestretch            != NULL) delete [] Prestretch;
-
+  
   if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
 
 }

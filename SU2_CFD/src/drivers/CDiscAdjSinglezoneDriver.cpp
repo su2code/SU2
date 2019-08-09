@@ -62,7 +62,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   bool turbo = config->GetBoolTurbomachinery();
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
-  bool mesh_def = ((config->GetGrid_Movement()) && (config->GetKind_GridMovement() == ELASTICITY));
+  bool mesh_def = (config->GetKind_GridMovement() == ELASTICITY);
 
   /*--- Initialize the direct iteration ---*/
 
@@ -216,6 +216,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     /*--- Apply the boundary condition to clamped nodes ---*/
     iteration->Postprocess(output,integration_container,geometry_container,solver_container,numerics_container,
                            config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+
+    RecordingState = NONE;
 
   }
 

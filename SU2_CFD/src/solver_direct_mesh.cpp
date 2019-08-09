@@ -520,6 +520,20 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
 
+  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   is not maintained. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+  /*--- In the same way, communicate the displacements in the solver to make sure the halo
+   nodes receive the correct value of the displacement. ---*/
+  InitiateComms(geometry[MESH_0], config, SOLUTION);
+  CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
 
@@ -693,8 +707,15 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
-  /*--- Symmetry plane and periodic boundaries are pending. ---*/
+  /*--- Symmetry plane is, for now, clamped. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Moving(iMarker) == NO) &&
+        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
+         BC_Clamped(geometry, numerics, config, iMarker);
+
+    }
+  }
 
 }
 
