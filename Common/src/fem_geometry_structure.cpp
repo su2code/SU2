@@ -340,7 +340,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- and must be generalized later. As this number is also needed   ---*/
   /*--- in the solver, it is worthwhile to create a separate function  ---*/
   /*--- for this purpose.                                              ---*/
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  const bool compressible = (Kind_Solver == FEM_EULER) ||
+                            (Kind_Solver == FEM_NAVIER_STOKES) ||
+                            (Kind_Solver == FEM_RANS) ||
+                            (Kind_Solver == FEM_LES);
 
   unsigned short nVar;
   if( compressible ) nVar = nDim + 2;

@@ -125,8 +125,25 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   su2double const *Normal_Flow;
 
   // Check the kind of fluid problem
-  bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (flow_config->GetKind_Solver() == EULER) || 
+                      (flow_config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (flow_config->GetKind_Solver() == RANS) ||
+                      (flow_config->GetKind_Solver() == DISC_ADJ_EULER) || 
+                      (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                      (flow_config->GetKind_Solver() == DISC_ADJ_RANS) ||
+                      (flow_config->GetKind_Solver() == ADJ_EULER) || 
+                      (flow_config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
+                      (flow_config->GetKind_Solver() == ADJ_RANS) ||
+                      (flow_config->GetKind_Solver() == FEM_EULER) || 
+                      (flow_config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                      (flow_config->GetKind_Solver() == FEM_RANS) ||
+                      (flow_config->GetKind_Solver() == FEM_LES);
+  bool incompressible = (flow_config->GetKind_Solver() == INC_EULER) || 
+                        (flow_config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (flow_config->GetKind_Solver() == INC_RANS) ||
+                        (flow_config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (flow_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (flow_config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
                               (flow_config->GetKind_Solver() == RANS) ||
                               (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
@@ -645,9 +662,25 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   bool flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == RANS)
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
-  bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
+               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS) 
+               ||(donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
+               || (donor_config->GetKind_Solver() == INC_RANS)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
+               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  
+  bool compressible_flow = (donor_config->GetKind_Solver() == EULER) || 
+                      (donor_config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (donor_config->GetKind_Solver() == RANS) ||
+                      (donor_config->GetKind_Solver() == DISC_ADJ_EULER) || 
+                      (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                      (donor_config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool incompressible_flow = (donor_config->GetKind_Solver() == INC_EULER) || 
+                        (donor_config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (donor_config->GetKind_Solver() == INC_RANS) ||
+                        (donor_config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
