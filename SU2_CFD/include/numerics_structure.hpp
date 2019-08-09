@@ -1882,7 +1882,6 @@ public:
 
 };
 
-
 /*!
  * \class CUpwGeneralRoe_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
@@ -2608,7 +2607,6 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
-
 /*!
  * \class CUpwAUSMPLUSUP2_Flow
  * \brief Class for solving an approximate Riemann AUSM+ -up.
@@ -3109,6 +3107,231 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+};
+
+/*!
+ * \class CTNE2UpwLin_TransLM
+ * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
+ * \ingroup ConvDiscr
+ * \author A. Aranake, W. Maier
+ */
+class CTNE2UpwLin_TransLM : public CNumerics {
+private:
+  su2double *Velocity_i;
+  su2double *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double Density_i, Density_j, q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2UpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2UpwLin_TransLM(void);
+
+  /*!
+   * \brief Compute the upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CTNE2UpwScalar
+ * \brief Template class for scalar upwind fluxes between nodes i and j.
+ * \details This class serves as a template for the scalar upwinding residual
+ *   classes.  The general structure of a scalar upwinding calculation is the
+ *   same for many different  models, which leads to a lot of repeated code.
+ *   By using the template design pattern, these sections of repeated code are
+ *   moved to this shared base class, and the specifics of each model
+ *   are implemented by derived classes.  In order to add a new residual
+ *   calculation for a convection residual, extend this class and implement
+ *   the pure virtual functions with model-specific behavior.
+ * \ingroup ConvDiscr
+ * \author C. Pederson, A. Bueno., and A. Campos.
+ */
+class CTNE2UpwScalar : public CNumerics {
+private:
+
+  /*!
+   * \brief A pure virtual function; Adds any extra variables to AD
+   */
+  virtual void ExtraADPreaccIn() = 0;
+
+  /*!
+   * \brief Model-specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinishResidualCalc(su2double *val_residual,
+                                  su2double **Jacobian_i,
+                                  su2double **Jacobian_j,
+                                  CConfig *config) = 0;
+
+protected:
+  su2double *Velocity_i, *Velocity_j; /*!< \brief Velocity, minus any grid movement. */
+  su2double Density_i, Density_j;
+  bool implicit, grid_movement, incompressible;
+  su2double q_ij, /*!< \brief Projected velocity at the face. */
+            a0,   /*!< \brief The maximum of the face-normal velocity and 0 */
+            a1;   /*!< \brief The minimum of the face-normal velocity and 0 */
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2UpwScalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2UpwScalar(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CTNE2UpwSca_TurbSA
+ * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2UpwSca_TurbSA : public CTNE2UpwScalar {
+private:
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn();
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2UpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2UpwSca_TurbSA(void);
+};
+
+/*!
+ * \class CTNE2UpwSca_TurbSST
+ * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author W. Maier, A. Campos.
+ */
+class CTNE2UpwSca_TurbSST : public CTNE2UpwScalar {
+private:
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn();
+
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2UpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2UpwSca_TurbSST(void);
+};
+
+/*!
+ * \class CTNE2UpwSca_TransLM
+ * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
+ * \ingroup ConvDiscr
+ * \author W. Maier, A. Aranake.
+ */
+class CTNE2UpwSca_TransLM : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2UpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2UpwSca_TransLM(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -4017,7 +4240,6 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
-
 /*!
  * \class CAvgGradInc_Flow
  * \brief Class for computing viscous term using an average of gradients.
@@ -4144,6 +4366,78 @@ class CAvgGrad_Scalar : public CNumerics {
    * \brief Destructor of the class.
    */
   ~CAvgGrad_Scalar(void);
+
+  /*!
+   * \brief Compute the viscous residual using an average of gradients without correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                       su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CTNE2AvgGrad_Scalar
+ * \brief Template class for computing viscous residual of scalar values
+ * \details This class serves as a template for the scalar viscous residual
+ *   classes.  The general structure of a viscous residual calculation is the
+ *   same for many different  models, which leads to a lot of repeated code.
+ *   By using the template design pattern, these sections of repeated code are
+ *   moved to a shared base class, and the specifics of each model
+ *   are implemented by derived classes.  In order to add a new residual
+ *   calculation for a viscous residual, extend this class and implement
+ *   the pure virtual functions with model-specific behavior.
+ * \ingroup ViscDiscr
+ * \author C. Pederson, A. Bueno, and F. Palacios
+ */
+class CTNE2AvgGrad_Scalar : public CNumerics {
+ private:
+
+  /*!
+   * \brief A pure virtual function; Adds any extra variables to AD
+   */
+  virtual void ExtraADPreaccIn() = 0;
+
+  /*!
+   * \brief Model-specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinishResidualCalc(su2double *val_residual,
+                                  su2double **Jacobian_i,
+                                  su2double **Jacobian_j,
+                                  CConfig *config) = 0;
+
+ protected:
+  bool implicit, incompressible;
+  bool correct_gradient;
+  unsigned short iVar, iDim;
+  su2double **Mean_GradTurbVar;               /*!< \brief Average of gradients at cell face */
+  su2double *Edge_Vector,                     /*!< \brief Vector from node i to node j. */
+            *Proj_Mean_GradTurbVar_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
+            *Proj_Mean_GradTurbVar_Edge,      /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
+            *Proj_Mean_GradTurbVar;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
+  su2double  dist_ij_2,                       /*!< \brief |Edge_Vector|^2 */
+             proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2AvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+                    bool correct_gradient, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2AvgGrad_Scalar(void);
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
@@ -4393,6 +4687,50 @@ public:
 };
 
 /*!
+ * \class CTNE2AvgGrad_TurbSA
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2AvgGrad_TurbSA : public CTNE2AvgGrad_Scalar {
+private:
+
+  const su2double sigma;
+  su2double nu_i, nu_j, nu_e;
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn(void);
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2AvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                  bool correct_grad, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2AvgGrad_TurbSA(void);
+};
+
+/*!
  * \class CAvgGrad_TurbSA_Neg
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
@@ -4469,6 +4807,48 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TransLM(void);
+
+  /*!
+   * \brief Compute the viscous turbulence terms residual using an average of gradients.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CTNE2AvgGrad_TransLM
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2AvgGrad_TransLM : public CNumerics {
+private:
+  su2double **Mean_GradTransVar;
+  su2double *Proj_Mean_GradTransVar_Kappa, *Proj_Mean_GradTransVar_Edge;
+  su2double *Edge_Vector;
+  bool implicit, incompressible;
+  su2double sigma;
+  //su2double dist_ij_2;
+  //su2double proj_vector_ij;
+  //unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2AvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2AvgGrad_TransLM(void);
 
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -4749,6 +5129,45 @@ public:
 };
 
 /*!
+ * \class CTNE2AvgGradCorrected_TransLM
+ * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
+ * \ingroup ViscDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2AvgGradCorrected_TransLM : public CNumerics {
+private:
+  su2double **Mean_GradTurbVar;
+  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit, incompressible;
+  su2double sigma;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2AvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2AvgGradCorrected_TransLM(void);
+
+  /*!
+   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CAvgGrad_TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
@@ -4796,6 +5215,64 @@ public:
    * \brief Destructor of the class.
    */
   ~CAvgGrad_TurbSST(void);
+
+  /*!
+   * \brief Sets value of first blending function.
+   */
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
+    F1_i = val_F1_i; F1_j = val_F1_j;
+  }
+
+};
+
+/*!
+ * \class CTNE2AvgGrad_TurbSST
+ * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
+ * \ingroup ViscDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2AvgGrad_TurbSST : public CTNE2AvgGrad_Scalar {
+private:
+  su2double sigma_k1, /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
+  sigma_k2,
+  sigma_om1,
+  sigma_om2;
+
+  su2double diff_kine,  /*!< \brief Diffusivity for viscous terms of tke eq */
+            diff_omega; /*!< \brief Diffusivity for viscous terms of omega eq */
+
+  su2double F1_i, F1_j; /*!< \brief Menter's first blending function */
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn(void);
+
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
+                                su2double **Jacobian_j, CConfig *config);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2AvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                   su2double* constants, bool correct_grad, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2AvgGrad_TurbSST(void);
 
   /*!
    * \brief Sets value of first blending function.
@@ -6046,6 +6523,269 @@ public:
    * \brief Destructor of the class.
    */
   ~CSourcePieceWise_TurbSST(void);
+
+  /*!
+   * \brief Set the value of the first blending function.
+   * \param[in] val_F1_i - Value of the first blending function at point i.
+   * \param[in] val_F1_j - Value of the first blending function at point j.
+   */
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j);
+
+  /*!
+   * \brief Set the value of the second blending function.
+   * \param[in] val_F2_i - Value of the second blending function at point i.
+   * \param[in] val_F2_j - Value of the second blending function at point j.
+   */
+  void SetF2blending(su2double val_F2_i, su2double val_F2_j);
+
+  /*!
+   * \brief Set the value of the cross diffusion for the SST model.
+   * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
+   * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
+   */
+  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] config: config file
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+  /*!
+     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+     * \param[in] turb_ke: turbulent kinetic energy of the node
+     */
+  void SetPerturbedStrainMag(su2double turb_ke);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
+};
+
+/*!
+ * \class CTNE2SourcePieceWise_TurbSA
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2SourcePieceWise_TurbSA : public CNumerics {
+private:
+  su2double cv1_3;
+  su2double k2;
+  su2double cb1;
+  su2double cw2;
+  su2double ct3;
+  su2double ct4;
+  su2double cw3_6;
+  su2double cb2_sigma;
+  su2double sigma;
+  su2double cb2;
+  su2double cw1;
+  unsigned short iDim;
+  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double r, g, g_6, glim, fw;
+  su2double norm2_Grad;
+  su2double dfv1, dfv2, dShat;
+  su2double dr, dg, dfw;
+  bool incompressible;
+  bool rotating_frame;
+  bool transition;
+  su2double gamma_BC;
+  su2double intermittency;
+  su2double Production, Destruction, CrossProduction;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2SourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2SourcePieceWise_TurbSA(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] intermittency_in - Value of the intermittency.
+   */
+  void SetIntermittency(su2double intermittency_in);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_production - Value of the Production.
+   */
+  void SetProduction(su2double val_production);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_destruction - Value of the Destruction.
+   */
+  void SetDestruction(su2double val_destruction);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] val_crossproduction - Value of the CrossProduction.
+   */
+  void SetCrossProduction(su2double val_crossproduction);
+
+  /*!
+   * \brief ______________.
+   */
+  su2double GetProduction(void);
+
+  /*!
+   * \brief  Get the intermittency for the BC trans. model.
+   * \return Value of the intermittency.
+   */
+  su2double GetGammaBC(void);
+
+  /*!
+   * \brief  ______________.
+   */
+  su2double GetDestruction(void);
+
+  /*!
+   * \brief  ______________.
+   */
+  su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CTNE2SourcePieceWise_TransLM
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author W. Maier, A. Bueno.
+ */
+class CTNE2SourcePieceWise_TransLM : public CNumerics {
+private:
+
+  /*-- SA model constants --*/
+  su2double cv1_3;
+  su2double k2;
+  su2double cb1;
+  su2double cw2;
+  su2double cw3_6;
+  su2double sigma;
+  su2double cb2;
+  su2double cw1;
+
+  /*-- gamma-theta model constants --*/
+  su2double c_e1;
+  su2double c_a1;
+  su2double c_e2;
+  su2double c_a2;
+  su2double sigmaf;
+  su2double s1;
+  su2double c_theta;
+  su2double sigmat;
+
+  /*-- Correlation constants --*/
+  su2double flen_global;
+  su2double alpha_global;
+  su2double Vorticity;
+
+  bool implicit;
+
+public:
+  bool debugme; // For debugging only, remove this. -AA
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2SourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2SourcePieceWise_TransLM(void);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep);
+
+  void CTNE2SourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
+};
+
+/*!
+ * \class CTNE2SourcePieceWise_TurbSST
+ * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
+ * \ingroup SourceDiscr
+ * \author W. Maier, A. Campos.
+ */
+class CTNE2SourcePieceWise_TurbSST : public CNumerics {
+private:
+  su2double F1_i,
+  F1_j,
+  F2_i,
+  F2_j;
+
+  su2double alfa_1,
+  alfa_2,
+  beta_1,
+  beta_2,
+  sigma_omega_1,
+  sigma_omega_2,
+  beta_star,
+  a1;
+
+  su2double CDkw_i, CDkw_j;
+
+  bool incompressible;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTNE2SourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTNE2SourcePieceWise_TurbSST(void);
 
   /*!
    * \brief Set the value of the first blending function.

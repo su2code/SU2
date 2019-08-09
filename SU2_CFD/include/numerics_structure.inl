@@ -542,6 +542,37 @@ inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruct
 
 inline su2double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
+inline void CTNE2SourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) {
+  F1_i = val_F1_i;
+  F1_j = val_F1_j;
+}
+
+inline void CTNE2SourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2double val_F2_j) {
+  F2_i = val_F2_i;
+  F2_j = val_F2_j;
+}
+
+inline void CTNE2SourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
+  CDkw_i = val_CDkw_i;
+  CDkw_j = val_CDkw_j;
+}
+
+inline void CTNE2SourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CTNE2SourcePieceWise_TurbSA::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CTNE2SourcePieceWise_TurbSA::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CTNE2SourcePieceWise_TurbSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CTNE2SourcePieceWise_TurbSA::GetProduction(void) { return Production; }
+
+inline su2double CTNE2SourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
+
+inline su2double CTNE2SourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
+
+inline su2double CTNE2SourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
+
 inline void CSourcePieceWise_TurbSA_E::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 
 inline void CSourcePieceWise_TurbSA_E::SetProduction(su2double val_production) { Production = val_production; }
