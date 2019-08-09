@@ -110,6 +110,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
   ../src/transport_model.cpp \
+  ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
   ../src/variables/CDiscAdjMeshBoundVariable.cpp \
   ../src/variables/CDiscAdjMeshVariable.cpp \
@@ -122,6 +123,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
+  ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \

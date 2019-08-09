@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CFEAFSIBoundVariable.hpp"
 #include "../include/variables/CFEABoundVariable.hpp"
 #include "../include/variables/CFEAVariable.hpp"
 #include <algorithm>
