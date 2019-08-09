@@ -280,7 +280,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu), //TK:: for periodic turb EddyMu
+  /*--- Incompressible flow, gradients primitive variables nDim+4+2, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu), //TK:: for periodic turb EddyMu
         We need P, and rho for running the adjoint problem ---*/
 
   Gradient_Primitive = new su2double* [nPrimVarGrad];

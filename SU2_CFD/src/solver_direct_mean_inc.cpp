@@ -2090,6 +2090,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
+      /*--- If viscous, we need gradients for extra terms. ---*/
+
+      if (viscous) { //TK:: copied from below
+
+        /*--- Gradient of the primitive variables ---*/
+
+        numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), NULL);
+        
+      }
       /*--- Compute the body force source residual ---*/
 
       numerics->ComputeResidual(Residual, config);

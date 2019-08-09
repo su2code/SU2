@@ -856,27 +856,20 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
   turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
   energy    = config->GetEnergy_Equation();
 
-  Streamwise_Coord_Vector = new su2double[nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  Streamwise_Coord_Vector.resize(nDim);
+  for (iDim = 0; iDim < nDim; iDim++)
     Streamwise_Coord_Vector[iDim] = config->GetPeriodicTranslation(0)[iDim];
 
   /*--- Compute square of the distance between the 2 periodic surfaces ---*/
   norm2_translation = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     norm2_translation += pow(Streamwise_Coord_Vector[iDim],2);
     
 }
 
-CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) {
-
-  if (Streamwise_Coord_Vector != NULL) delete [] Streamwise_Coord_Vector;
-
-}
+CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) { }
 
 void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
-
-  unsigned short iDim, iVar, jVar;
-  su2double dot_product, scalar_factor;
 
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
@@ -925,14 +918,14 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
       for (iDim = 0; iDim < nDim; iDim++)
         dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
       val_residual[nDim+1] -= Volume * scalar_factor * dot_product;
-    } // turbulent
+    }//if turbulent
     
     /*--- Jacobian contribution of energy equation periodic source term ---*/
     if (implicit) {
       for (iDim = 0; iDim < nDim; iDim++)
         Jacobian_i[nDim+1][iDim+1] = 0.0;//Volume * scalar_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
-    }
-  } // Energy
+    }//if implicit
+  }//if energy
 
 }
 
