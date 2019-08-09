@@ -1758,7 +1758,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Add_SurfaceLoad_Res(Idx_t iPoint, su2double *val_surfForce) {}
+  inline virtual void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) {}
 
   /*!
    * \brief  A virtual member.
@@ -1768,7 +1768,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) { return 0.0; }
+  inline virtual su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1783,7 +1783,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) { return 0.0; }
+  inline virtual su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1838,7 +1838,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool Get_isVertex(Idx_t iPoint) const {return false;}
+  inline virtual bool Get_isVertex(Idx_t iPoint) const { return false; }
 
   /*!
    * \brief A virtual member.

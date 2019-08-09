@@ -91,7 +91,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEAVariable() = default;
+  virtual ~CFEAVariable() = default;
 
   /*!
    * \brief Get the value of the stress.

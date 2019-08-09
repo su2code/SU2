@@ -226,26 +226,20 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
 
-  /*--- Initialize from zero everywhere. ---*/
-  long iVertex;
-  bool notVertex = true;
+  /*--- Initialize from zero everywhere (note we are almost guaranteed to
+   have boundaries on which some form of traction is applied.). ---*/
 
-  /*--- First pass to determine if there are vertices. ---*/
-  // ToDo: Aren't we always going to find vertices? Or are they only there for FSI?
-  for (iPoint = 0; iPoint < nPoint && notVertex; iPoint++) {
+  //node = new CFEAVariable(SolRest, nPoint, nDim, nVar, config);
+  node = new CFEABoundVariable(SolRest, nPoint, nDim, nVar, config);
+
+  /*--- Set which points are vertices. ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      notVertex = (iVertex == -1);
-    }
-  }
-  if(notVertex) node = new CFEAVariable(SolRest, nPoint, nDim, nVar, config);
-  else          node = new CFEABoundVariable(SolRest, nPoint, nDim, nVar, config);
-  
-  /*--- Second pass to set the isVertex boolean for each point. ---*/
-  for (iPoint = 0; iPoint < nPoint && notVertex; iPoint++) {
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      node->Set_isVertex(iPoint, iVertex!=-1);
+      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex >= 0) {
+        node->Set_isVertex(iPoint,true);
+        break;
+      }
     }
   }
   

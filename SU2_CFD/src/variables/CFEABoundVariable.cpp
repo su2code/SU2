@@ -57,5 +57,5 @@ CFEABoundVariable::CFEABoundVariable(const su2double *val_fea, Idx_t npoint, Idx
     if (fsi_analysis) FlowTraction_n.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  IsVertex.resize(nPoint,false);
+  IsVertex.resize(nPoint) = false;
 }

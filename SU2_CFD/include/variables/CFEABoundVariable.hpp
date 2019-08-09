@@ -82,88 +82,97 @@ public:
   /*!
    * \brief Add surface load to the residual term
    */
-  inline void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) {
+  inline void Add_SurfaceLoad_Res(Idx_t iPoint, const su2double *val_surfForce) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) += val_surfForce[iVar];
   }
 
   /*!
    * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
    */
-  inline void Set_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar, su2double val_surfForce) {
-    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;}
+  inline void Set_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar, su2double val_surfForce) override {
+    if(!IsVertex(iPoint)) return;
+    Residual_Ext_Surf(iPoint,iVar) = val_surfForce;
+  }
 
   /*!
    * \brief Get the residual term due to surface load
    */
-  inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const { return Residual_Ext_Surf(iPoint,iVar); }
+  inline su2double Get_SurfaceLoad_Res(Idx_t iPoint, Idx_t iVar) const override { return Residual_Ext_Surf(iPoint,iVar); }
 
   /*!
    * \brief Clear the surface load residual
    */
-  inline void Clear_SurfaceLoad_Res(Idx_t iPoint) {
+  inline void Clear_SurfaceLoad_Res(Idx_t iPoint) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Store the surface load as the load for the previous time step.
    */
-  inline void Set_SurfaceLoad_Res_n(Idx_t iPoint) {
+  inline void Set_SurfaceLoad_Res_n(Idx_t iPoint) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n(iPoint,iVar) = Residual_Ext_Surf(iPoint,iVar);
   }
 
   /*!
    * \brief Get the surface load from the previous time step.
    */
-  inline su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const {
+  inline su2double Get_SurfaceLoad_Res_n(Idx_t iPoint, Idx_t iVar) const override {
     return Residual_Ext_Surf_n(iPoint,iVar);
   }
 
   /*!
    * \brief Set the flow traction at a node on the structural side
    */
-  inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) {
+  inline void Set_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = val_flowTraction[iVar];
   }
 
   /*!
    * \brief Add a value to the flow traction at a node on the structural side
    */
-  inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) {
+  inline void Add_FlowTraction(Idx_t iPoint, const su2double *val_flowTraction) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) += val_flowTraction[iVar];
   }
 
   /*!
    * \brief Get the residual term due to the flow traction
    */
-  inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const { return FlowTraction(iPoint,iVar); }
+  inline su2double Get_FlowTraction(Idx_t iPoint, Idx_t iVar) const override { return FlowTraction(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
-  void Set_FlowTraction_n(Idx_t iPoint) {
+  void Set_FlowTraction_n(Idx_t iPoint) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction_n(iPoint,iVar) = FlowTraction(iPoint,iVar);
   }
 
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.
    */
-  inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const { return FlowTraction_n(iPoint,iVar); }
+  inline su2double Get_FlowTraction_n(Idx_t iPoint, Idx_t iVar) const override { return FlowTraction_n(iPoint,iVar); }
 
   /*!
    * \brief Clear the flow traction residual
    */
-  inline void Clear_FlowTraction(Idx_t iPoint) {
+  inline void Clear_FlowTraction(Idx_t iPoint) override {
+    if(!IsVertex(iPoint)) return;
     for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction(iPoint,iVar) = 0.0;
   }
 
   /*!
    * \brief Get whether a node is on the boundary
    */
-  inline bool Get_isVertex(Idx_t iPoint) const { return IsVertex(iPoint); }
+  inline bool Get_isVertex(Idx_t iPoint) const override { return IsVertex(iPoint); }
   
   /*!
    * \brief Set whether a node is on the boundary
    */
-  inline void Set_isVertex(Idx_t iPoint, bool isVertex) { IsVertex(iPoint) = isVertex; }
+  inline void Set_isVertex(Idx_t iPoint, bool isVertex) override { IsVertex(iPoint) = isVertex; }
 
 };
