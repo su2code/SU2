@@ -46,14 +46,8 @@
  */
 class CBaselineVariable final : public CVariable {
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CBaselineVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.

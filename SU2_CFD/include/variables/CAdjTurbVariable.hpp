@@ -54,14 +54,8 @@ protected:
   Mat_t EddyViscSens;         /*!< \brief Eddy Viscosity Sensitivity. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CAdjTurbVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
@@ -79,7 +73,7 @@ public:
    * \brief Set the Eddy Viscosity Sensitivity of the problem.
    * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
    */
-  inline void SetEddyViscSens(Idx_t iPoint, const su2double *val_EddyViscSens, Idx_t numTotalVar) {
+  inline void SetEddyViscSens(Idx_t iPoint, const su2double *val_EddyViscSens, Idx_t numTotalVar) override {
     for (Idx_t iVar = 0; iVar < numTotalVar; iVar++)
       EddyViscSens(iPoint,iVar) = val_EddyViscSens[iVar];
   }
@@ -88,5 +82,5 @@ public:
    * \brief Get the Eddy Viscosity Sensitivity of the problem.
    * \return Pointer to the Eddy Viscosity Sensitivity.
    */
-  inline su2double *GetEddyViscSens(Idx_t iPoint) { return EddyViscSens[iPoint]; }
+  inline su2double *GetEddyViscSens(Idx_t iPoint) override { return EddyViscSens[iPoint]; }
 };

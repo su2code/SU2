@@ -65,6 +65,8 @@ protected:
   using Vec_t = TVec_t<su2double>;
   using Mat_t = TMat_t<su2double>;
   
+  /*--- This contrived container is used to store matrices in a contiguous manner but still present the
+   "su2double**" interface to the outside world, it will be replaced by something more efficient. ---*/
   struct VectorOfMatrix {
     Vec_t storage;
     TMat_t<su2double*> interface;
@@ -131,12 +133,8 @@ protected:
 
 public:
 
-  /*!
-   * \brief Constructor of the class.
-   */
-  CVariable() = default;
-
-  /*--- Disable copy and assignment. ---*/
+  /*--- Disable default construction copy and assignment. ---*/
+  CVariable() = delete;
   CVariable(const CVariable&) = delete;
   CVariable(CVariable&&) = delete;
   CVariable& operator= (const CVariable&) = delete;
@@ -2142,7 +2140,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Value of the solution for the index <i>iVar</i>.
    */
-  inline virtual su2double GetSolution_Geometry(Idx_t iPoint, Idx_t iVar) { return 0.0;}
+  inline virtual su2double GetSolution_Geometry(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the value of the mesh solution (adjoint).
@@ -2191,7 +2189,7 @@ public:
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
    * \param[out] solution - old adjoint solution for coordinate iDim
    */
-  inline virtual su2double Get_OldSolution_Geometry(Idx_t iPoint, Idx_t iDim) { return 0.0; }
+  inline virtual su2double Get_OldSolution_Geometry(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).

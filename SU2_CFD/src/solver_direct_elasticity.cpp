@@ -226,9 +226,9 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SolRest = new su2double[nSolVar];
   for (iVar = 0; iVar < nSolVar; iVar++) SolRest[iVar] = 0.0;
 
-  /*--- Initialize from zero everywhere (note we are almost guaranteed to
-   have boundaries on which some form of traction is applied.). ---*/
+  /*--- Initialize from zero everywhere ---*/
 
+  // ToDo: Allow only enough boundary data to be allocated by CFEABoundVariable
   //node = new CFEAVariable(SolRest, nPoint, nDim, nVar, config);
   node = new CFEABoundVariable(SolRest, nPoint, nDim, nVar, config);
 

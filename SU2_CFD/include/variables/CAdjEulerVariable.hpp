@@ -55,14 +55,8 @@ protected:
   // ToDo: check if this variable is needed
   TVec_t<bool> incompressible;
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CAdjEulerVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] psirho - Value of the adjoint density (initialization value).
    * \param[in] phi - Value of the adjoint velocity (initialization value).
    * \param[in] psie - Value of the adjoint energy (initialization value).

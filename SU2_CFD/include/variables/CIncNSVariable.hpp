@@ -54,14 +54,8 @@ private:
   Vec_t DES_LengthScale;
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CIncNSVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] pressure - value of the pressure.
    * \param[in] velocity - Value of the flow velocity (initialization value).
    * \param[in] temperature - Value of the temperature (initialization value).
@@ -81,25 +75,25 @@ public:
   /*!
    * \brief Set the laminar viscosity.
    */
-  inline void SetLaminarViscosity(Idx_t iPoint, su2double laminarViscosity) {
+  inline void SetLaminarViscosity(Idx_t iPoint, su2double laminarViscosity) override {
     Primitive(iPoint,nDim+4) = laminarViscosity;
   }
 
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(Idx_t iPoint);
+  bool SetVorticity(Idx_t iPoint) override;
 
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(Idx_t iPoint);
+  bool SetStrainMag(Idx_t iPoint) override;
 
   /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
-  inline void SetEddyViscosity(Idx_t iPoint, su2double eddy_visc) {
+  inline void SetEddyViscosity(Idx_t iPoint, su2double eddy_visc) override {
     Primitive(iPoint,nDim+5) = eddy_visc;
   }
 
@@ -107,18 +101,18 @@ public:
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(Idx_t iPoint) const { return Primitive(iPoint,nDim+4); }
+  inline su2double GetLaminarViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+4); }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(Idx_t iPoint) const { return Primitive(iPoint,nDim+5); }
+  inline su2double GetEddyViscosity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+5); }
 
   /*!
    * \brief Set the thermal conductivity.
    */
-  inline void SetThermalConductivity(Idx_t iPoint, su2double thermalConductivity) {
+  inline void SetThermalConductivity(Idx_t iPoint, su2double thermalConductivity) override {
     Primitive(iPoint,nDim+6) = thermalConductivity;
   }
 
@@ -126,31 +120,31 @@ public:
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(Idx_t iPoint) const { return Primitive(iPoint,nDim+6); }
+  inline su2double GetThermalConductivity(Idx_t iPoint) const override { return Primitive(iPoint,nDim+6); }
 
   /*!
    * \brief Get the value of the vorticity.
    * \param[in] val_dim - Index of the dimension.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(Idx_t iPoint) { return Vorticity[iPoint]; }
+  inline su2double *GetVorticity(Idx_t iPoint) override { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
-  inline su2double GetStrainMag(Idx_t iPoint) const { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(Idx_t iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  bool SetPrimVar(Idx_t iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
 
   /*!
    * \brief Set the DES Length Scale.
    */
-  inline void SetDES_LengthScale(Idx_t iPoint, su2double val_des_lengthscale) {
+  inline void SetDES_LengthScale(Idx_t iPoint, su2double val_des_lengthscale) override {
     DES_LengthScale(iPoint) = val_des_lengthscale;
   }
 
@@ -158,6 +152,6 @@ public:
    * \brief Get the DES length scale
    * \return Value of the DES length Scale.
    */
-  inline su2double GetDES_LengthScale(Idx_t iPoint) const { return DES_LengthScale(iPoint); }
+  inline su2double GetDES_LengthScale(Idx_t iPoint) const override { return DES_LengthScale(iPoint); }
 
 };

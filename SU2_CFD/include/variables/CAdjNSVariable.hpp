@@ -49,14 +49,8 @@ class CAdjNSVariable final : public CAdjEulerVariable {
 private:
   // ToDo: This entire class can be removed
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CAdjNSVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] psirho - Value of the adjoint density (initialization value).
    * \param[in] phi - Value of the adjoint velocity (initialization value).
    * \param[in] psie - Value of the adjoint energy (initialization value).
@@ -76,14 +70,14 @@ public:
   /*!
    * \brief Set the value of the force projection vector on the solution vector.
    */
-  inline void SetVelSolutionOldDVector(Idx_t iPoint) {
+  inline void SetVelSolutionOldDVector(Idx_t iPoint) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
   }
 
   /*!
    * \brief Set the value of the force projection vector on the old solution vector.
    */
-  inline void SetVelSolutionDVector(Idx_t iPoint) {
+  inline void SetVelSolutionDVector(Idx_t iPoint) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution(iPoint,iDim+1) = ForceProj_Vector(iPoint,iDim);
   }
 

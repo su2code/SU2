@@ -53,11 +53,6 @@ protected:
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CTurbVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.

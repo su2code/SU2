@@ -56,35 +56,8 @@ protected:
   Vec_t Density_Old;            /*!< \brief Old density for variable density turbulent flows (SST). */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CIncEulerVariable() = default;
-
-//  /*!
-//   * \overload
-//   * \param[in] val_pressure - value of the pressure.
-//   * \param[in] val_velocity - Value of the flow velocity (initialization value).
-//   * \param[in] val_temperature - Value of the temperature (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, Idx_t val_nDim,
-//                    Idx_t val_nvar, CConfig *config);
-//
-//  /*!
-//   * \overload
-//   * \param[in] val_solution - Pointer to the flow value (initialization value).
-//   * \param[in] val_nDim - Number of dimensions of the problem.
-//   * \param[in] val_nvar - Number of variables of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  CIncEulerVariable(su2double *val_solution, Idx_t val_nDim, Idx_t val_nvar, CConfig *config);
-
-  /*!
-   * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] velocity - Value of the flow velocity (initialization value).
    * \param[in] temperature - Value of the temperature (initialization value).
