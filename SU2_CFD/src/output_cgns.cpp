@@ -332,7 +332,13 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   stringstream name, results_file;
   bool unsteady = config->GetUnsteady_Simulation();
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config->GetKind_Solver() == EULER) || 
+                      (config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == RANS) ||
+                      (config->GetKind_Solver() == FEM_EULER) || 
+                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == FEM_RANS) ||
+                      (config->GetKind_Solver() == FEM_LES);
   
   /*--- Create CGNS base file name ---*/
   base_file = config->GetFlow_FileName();

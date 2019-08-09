@@ -91,9 +91,25 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   su2double dull_val;
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config->GetKind_Solver() == EULER) || 
+                      (config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == RANS) ||
+                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
+                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+                      (config->GetKind_Solver() == ADJ_EULER) || 
+                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == ADJ_RANS) ||
+                      (config->GetKind_Solver() == FEM_EULER) || 
+                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == FEM_RANS) ||
+                      (config->GetKind_Solver() == FEM_LES);
+  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
+                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
@@ -1241,8 +1257,25 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   ifstream restart_file;
   string restart_filename, filename, text_line;
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config->GetKind_Solver() == EULER) || 
+                      (config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == RANS) ||
+                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
+                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+                      (config->GetKind_Solver() == ADJ_EULER) || 
+                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == ADJ_RANS) ||
+                      (config->GetKind_Solver() == FEM_EULER) || 
+                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == FEM_RANS) ||
+                      (config->GetKind_Solver() == FEM_LES);
+  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
+                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
   /*--- Restart the solution from file information ---*/
 

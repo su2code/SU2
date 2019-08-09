@@ -347,8 +347,26 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   su2double Delta, Vol, density_old = 0.0, density = 0.0;
   
   bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config->GetKind_Solver() == EULER) || 
+                      (config->GetKind_Solver() == NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == RANS) ||
+                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
+                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+                      (config->GetKind_Solver() == ADJ_EULER) || 
+                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == ADJ_RANS) ||
+                      (config->GetKind_Solver() == FEM_EULER) || 
+                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                      (config->GetKind_Solver() == FEM_RANS) ||
+                      (config->GetKind_Solver() == FEM_LES);
+  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
+                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+
   
   /*--- Set maximum residual to zero ---*/
   
@@ -476,8 +494,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
+  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
+                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -804,7 +827,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    Therefore, we must reduce skipVars here if energy is inactive so that
    the turbulent variables are read correctly. ---*/
   
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
+                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == INC_RANS) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
+                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
   
