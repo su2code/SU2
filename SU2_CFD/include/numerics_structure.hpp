@@ -219,8 +219,8 @@ public:
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
-  su2double uq_urlx;                 /*!< \brief Under-relaxation factor for numerical stability */
-  bool uq_permute;                   /*!< \brief Flag for eigenvector permutation */
+  su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
+  bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
@@ -4455,7 +4455,7 @@ class CTNE2AvgGrad_Scalar : public CNumerics {
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S. Copeland, W. Maier
- * \version 6.1.0 "falcon"
+ * \version 6.2.0 "falcon"
  */
 class CAvgGrad_TNE2 : public CNumerics {
 private:
@@ -4500,6 +4500,55 @@ public:
    */
   ~CAvgGrad_TNE2(void);
 
+  /*!
+   * \brief Compute the projection of the viscous fluxes into a direction.
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of Primitive Variables.
+   * \param[in] val_eve - Virbational-Electronical Energy.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_diffusioncoeff - Disffusion Coefficient.
+   * \param[in] val_viscosity - Viscosity
+   * \param[in] val_thermal_conductivity - Thermal conductivity.
+   * \param[in] val_thermal_conductivity_ve - Thermal conductivity of Vibe-Elec modes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void GetViscousProjFlux(su2double *val_primvar,
+                          su2double **val_gradprimvar,
+                          su2double *val_eve,
+                          su2double *val_normal,
+                          su2double *val_diffusioncoeff,
+                          su2double val_viscosity,
+                          su2double val_therm_conductivity,
+                          su2double val_therm_conductivity_ve,
+                          CConfig *config);
+  /*!
+   * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+   * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
+   * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_dS - Area of the face between two nodes.
+   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+   */
+  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                          su2double **val_Mean_GradPrimVar,
+                          su2double *val_Mean_Eve,
+                          su2double *val_Mean_Cvve,
+                          su2double *val_diffusion_coeff,
+                          su2double val_laminar_viscosity,
+                          su2double val_thermal_conductivity,
+                          su2double val_thermal_conductivity_ve,
+                          su2double val_dist_ij, su2double *val_normal,
+                          su2double val_dS, su2double *val_Fv,
+                          su2double **val_Jac_i, su2double **val_Jac_j,
+                          CConfig *config);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.
@@ -4561,6 +4610,56 @@ public:
    */
   ~CAvgGradCorrected_TNE2(void);
 
+  /*!
+   * \brief Compute the projection of the viscous fluxes into a direction.
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of Primitive Variables.
+   * \param[in] val_eve - Virbational-Electronical Energy.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_diffusioncoeff - Disffusion Coefficient.
+   * \param[in] val_viscosity - Viscosity
+   * \param[in] val_thermal_conductivity - Thermal conductivity.
+   * \param[in] val_thermal_conductivity_ve - Thermal conductivity of Vibe-Elec modes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void GetViscousProjFlux(su2double *val_primvar,
+                          su2double **val_gradprimvar,
+                          su2double *val_eve,
+                          su2double *val_normal,
+                          su2double *val_diffusioncoeff,
+                          su2double val_viscosity,
+                          su2double val_therm_conductivity,
+                          su2double val_therm_conductivity_ve,
+                          CConfig *config);
+
+  /*!
+   * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+   * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
+   * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_dS - Area of the face between two nodes.
+   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+   */
+  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                          su2double **val_Mean_GradPrimVar,
+                          su2double *val_Mean_Eve,
+                          su2double *val_Mean_Cvve,
+                          su2double *val_diffusion_coeff,
+                          su2double val_laminar_viscosity,
+                          su2double val_thermal_conductivity,
+                          su2double val_thermal_conductivity_ve,
+                          su2double val_dist_ij, su2double *val_normal,
+                          su2double val_dS, su2double *val_Fv,
+                          su2double **val_Jac_i, su2double **val_Jac_j,
+                          CConfig *config);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.

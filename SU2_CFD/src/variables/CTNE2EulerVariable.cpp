@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CTNE2EulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon, S.R. Copeland, W. Maier
@@ -1539,9 +1539,6 @@ void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *
   return;
 }
 
-/*!
- * \brief Set Gradient of the primitive variables from conserved
- */
 bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
                                               su2double *V, su2double **GradU,
                                               su2double **GradV) {
@@ -1697,7 +1694,6 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
   delete [] rhou;
   return false;
 }
-
 
 void CTNE2EulerVariable::SetPrimVar_Gradient(CConfig *config) {
 
