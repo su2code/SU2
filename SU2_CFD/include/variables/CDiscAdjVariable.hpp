@@ -67,16 +67,6 @@ private:
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CDiscAdjVariable() = default;
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] sol - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
@@ -86,39 +76,44 @@ public:
   CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
   /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjVariable() = default;
+
+  /*!
    * \brief Set the sensitivity at the node
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity(Idx_t iPoint, Idx_t iDim, su2double val) { Sensitivity(iPoint,iDim) = val;}
+  inline void SetSensitivity(Idx_t iPoint, Idx_t iDim, su2double val) override { Sensitivity(iPoint,iDim) = val;}
 
   /*!
    * \brief Get the Sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity(Idx_t iPoint, Idx_t iDim) const { return Sensitivity(iPoint,iDim); }
+  inline su2double GetSensitivity(Idx_t iPoint, Idx_t iDim) const override { return Sensitivity(iPoint,iDim); }
 
-  inline void SetDual_Time_Derivative(Idx_t iPoint, Idx_t iVar, su2double der) { DualTime_Derivative(iPoint,iVar) = der; }
+  inline void SetDual_Time_Derivative(Idx_t iPoint, Idx_t iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
 
-  inline void SetDual_Time_Derivative_n(Idx_t iPoint, Idx_t iVar, su2double der) { DualTime_Derivative_n(iPoint,iVar) = der; }
+  inline void SetDual_Time_Derivative_n(Idx_t iPoint, Idx_t iVar, su2double der) override { DualTime_Derivative_n(iPoint,iVar) = der; }
 
-  inline su2double GetDual_Time_Derivative(Idx_t iPoint, Idx_t iVar) const { return DualTime_Derivative(iPoint,iVar); }
+  inline su2double GetDual_Time_Derivative(Idx_t iPoint, Idx_t iVar) const override { return DualTime_Derivative(iPoint,iVar); }
 
-  inline su2double GetDual_Time_Derivative_n(Idx_t iPoint, Idx_t iVar) const { return DualTime_Derivative_n(iPoint,iVar); }
+  inline su2double GetDual_Time_Derivative_n(Idx_t iPoint, Idx_t iVar) const override { return DualTime_Derivative_n(iPoint,iVar); }
 
-  inline void SetSolution_Direct(Idx_t iPoint, const su2double *val_solution_direct) {
+  inline void SetSolution_Direct(Idx_t iPoint, const su2double *val_solution_direct) override {
     for (Idx_t iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  inline su2double* GetSolution_Direct(Idx_t iPoint) { return Solution_Direct[iPoint]; }
+  inline su2double* GetSolution_Direct(Idx_t iPoint) override { return Solution_Direct[iPoint]; }
 
   /*!
    * \brief Set the restart geometry (coordinate of the converged solution)
    * \param[in] val_geometry_direct - Value of the restart coordinate.
    */
-  inline void SetGeometry_Direct(Idx_t iPoint, const su2double *val_geometry_direct) {
+  inline void SetGeometry_Direct(Idx_t iPoint, const su2double *val_geometry_direct) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Geometry_Direct(iPoint,iDim) = val_geometry_direct[iDim];
   }
@@ -127,26 +122,26 @@ public:
    * \brief Get the restart geometry (coordinate of the converged solution).
    * \return Pointer to the restart coordinate vector.
    */
-  inline su2double *GetGeometry_Direct(Idx_t iPoint) { return Geometry_Direct[iPoint]; }
+  inline su2double *GetGeometry_Direct(Idx_t iPoint) override { return Geometry_Direct[iPoint]; }
 
   /*!
    * \brief Get the restart geometry (coordinate of the converged solution).
    * \return Coordinate iDim of the geometry_direct vector.
    */
-  inline su2double GetGeometry_Direct(Idx_t iPoint, Idx_t iDim) const { return Geometry_Direct(iPoint,iDim); }
+  inline su2double GetGeometry_Direct(Idx_t iPoint, Idx_t iDim) const override { return Geometry_Direct(iPoint,iDim); }
 
   /*!
    * \brief Get the geometry solution.
    * \param[in] iDim - Index of the coordinate.
    * \return Value of the solution for the index <i>iDim</i>.
    */
-  inline su2double GetSolution_Geometry(Idx_t iPoint, Idx_t iDim) const { return Solution_Geometry(iPoint,iDim); }
+  inline su2double GetSolution_Geometry(Idx_t iPoint, Idx_t iDim) const override { return Solution_Geometry(iPoint,iDim); }
 
   /*!
    * \brief Set the value of the mesh solution (adjoint).
    * \param[in] val_solution_geometry - Solution of the problem (acceleration).
    */
-  inline void SetSolution_Geometry(Idx_t iPoint, const su2double *val_solution_geometry) {
+  inline void SetSolution_Geometry(Idx_t iPoint, const su2double *val_solution_geometry) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Solution_Geometry(iPoint,iDim) = val_solution_geometry[iDim];
   }
@@ -155,7 +150,7 @@ public:
    * \brief A virtual member. Set the value of the mesh solution (adjoint).
    * \param[in] val_solution_geometry - Solution of the problem (acceleration).
    */
-  inline void SetSolution_Geometry(Idx_t iPoint, Idx_t iVar, su2double val_solution_geometry) {
+  inline void SetSolution_Geometry(Idx_t iPoint, Idx_t iVar, su2double val_solution_geometry) override {
     Solution_Geometry(iPoint,iVar) = val_solution_geometry;
   }
 
@@ -164,7 +159,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Value of the solution for the index <i>iVar</i>.
    */
-  inline su2double GetGeometry_CrossTerm_Derivative(Idx_t iPoint, Idx_t iVar) const {
+  inline su2double GetGeometry_CrossTerm_Derivative(Idx_t iPoint, Idx_t iVar) const override {
     return Geometry_CrossTerm_Derivative(iPoint,iVar);
   }
 
@@ -172,7 +167,7 @@ public:
    * \brief A virtual member. Set the value of the mesh solution (adjoint).
    * \param[in] der - cross term derivative.
    */
-  inline void SetGeometry_CrossTerm_Derivative(Idx_t iPoint, Idx_t iDim, su2double der) {
+  inline void SetGeometry_CrossTerm_Derivative(Idx_t iPoint, Idx_t iDim, su2double der) override {
     Geometry_CrossTerm_Derivative(iPoint,iDim) = der;
   }
 
@@ -181,7 +176,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Value of the solution for the index <i>iVar</i>.
    */
-  inline su2double GetGeometry_CrossTerm_Derivative_Flow(Idx_t iPoint, Idx_t iVar) const {
+  inline su2double GetGeometry_CrossTerm_Derivative_Flow(Idx_t iPoint, Idx_t iVar) const override {
     return Geometry_CrossTerm_Derivative_Flow(iPoint,iVar);
   }
 
@@ -189,7 +184,7 @@ public:
    * \brief Set the value of the mesh cross term derivative from the flow solution (adjoint).
    * \param[in] der - cross term derivative.
    */
-  inline void SetGeometry_CrossTerm_Derivative_Flow(Idx_t iPoint, Idx_t iDim, su2double der) {
+  inline void SetGeometry_CrossTerm_Derivative_Flow(Idx_t iPoint, Idx_t iDim, su2double der) override {
     Geometry_CrossTerm_Derivative_Flow(iPoint,iDim) = der;
   }
 
@@ -197,7 +192,7 @@ public:
    * \brief Set the value of the mesh solution (adjoint).
    * \param[in] val_solution - Solution of the problem (acceleration).
    */
-  inline void Set_OldSolution_Geometry(Idx_t iPoint) {
+  inline void Set_OldSolution_Geometry(Idx_t iPoint) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Solution_Geometry_Old(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
   }
@@ -206,21 +201,21 @@ public:
    * \brief Get the value of the old geometry solution (adjoint).
    * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
-  inline su2double Get_OldSolution_Geometry(Idx_t iPoint, Idx_t iDim) const {
+  inline su2double Get_OldSolution_Geometry(Idx_t iPoint, Idx_t iDim) const override {
     return Solution_Geometry_Old(iPoint,iDim);
   }
 
   /*!
    * \brief Set the value of the adjoint solution in the current BGS subiteration.
    */
-  inline void Set_BGSSolution(Idx_t iPoint, Idx_t iDim, su2double val_solution) {
+  inline void Set_BGSSolution(Idx_t iPoint, Idx_t iDim, su2double val_solution) override {
     Solution_BGS(iPoint,iDim) = val_solution;
   }
 
   /*!
    * \brief Set the value of the adjoint solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(Idx_t iPoint) {
+  inline void Set_BGSSolution_k(Idx_t iPoint) override {
     for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution_BGS_k(iPoint,iVar) = Solution_BGS(iPoint,iVar);
   }
 
@@ -228,18 +223,18 @@ public:
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
-  inline su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const { return Solution_BGS(iPoint,iDim);}
+  inline su2double Get_BGSSolution(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS(iPoint,iDim);}
 
   /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
-  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const { return Solution_BGS_k(iPoint,iDim);}
+  inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS_k(iPoint,iDim);}
 
   /*!
    * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_Geometry(Idx_t iPoint) {
+  inline void Set_BGSSolution_Geometry(Idx_t iPoint) override {
     for (Idx_t iDim = 0; iDim < nDim; iDim++)
       Solution_Geometry_BGS_k(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
   }
@@ -248,21 +243,21 @@ public:
    * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.
    * \param[out] val_solution - geometrical adjoint solution in the previous BGS subiteration.
    */
-  inline su2double Get_BGSSolution_Geometry(Idx_t iPoint, Idx_t iDim) const {
+  inline su2double Get_BGSSolution_Geometry(Idx_t iPoint, Idx_t iDim) const override {
     return Solution_Geometry_BGS_k(iPoint,iDim);
   }
 
   /*!
    * \brief Set the contribution of crossed terms into the derivative.
    */
-  inline void SetCross_Term_Derivative(Idx_t iPoint, Idx_t iVar, su2double der) {
+  inline void SetCross_Term_Derivative(Idx_t iPoint, Idx_t iVar, su2double der) override {
     Cross_Term_Derivative(iPoint,iVar) = der;
   }
 
   /*!
    * \brief Get the contribution of crossed terms into the derivative.
    */
-  inline su2double GetCross_Term_Derivative(Idx_t iPoint, Idx_t iVar) const {
+  inline su2double GetCross_Term_Derivative(Idx_t iPoint, Idx_t iVar) const override {
     return Cross_Term_Derivative(iPoint,iVar);
   }
 

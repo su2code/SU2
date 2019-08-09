@@ -70,16 +70,9 @@ protected:
 
   Mat_t Solution_BGS_k;      /*!< \brief Old solution container for BGS iterations ---*/
 
-
-public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CFEAVariable() = default;
-
-  /*!
-   * \overload
+   * \note This class is not supposed to be instantiated, it is only a building block for CFEABoundVariable
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
@@ -88,6 +81,7 @@ public:
    */
   CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config);
 
+public:
   /*!
    * \brief Destructor of the class.
    */

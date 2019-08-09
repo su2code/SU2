@@ -67,14 +67,8 @@ protected:
   Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CEulerVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] density - Value of the flow density (initialization value).
    * \param[in] velocity - Value of the flow velocity (initialization value).
    * \param[in] energy - Value of the flow energy (initialization value).

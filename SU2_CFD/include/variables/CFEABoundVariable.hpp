@@ -58,14 +58,8 @@ protected:
   TVec_t<bool> IsVertex;     /*!< \brief Whether a node is a vertex (i.e. on a boundary). */
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CFEABoundVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] val_fea - Values of the fea solution (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.

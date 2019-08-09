@@ -51,14 +51,8 @@ protected:
   Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations ---*/
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CHeatFVMVariable() = default;
-  
-  /*!
-   * \overload
    * \param[in] heat - Values of the Heat solution (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.

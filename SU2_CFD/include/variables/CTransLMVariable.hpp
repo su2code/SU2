@@ -51,14 +51,8 @@ protected:
   Vec_t gamma_sep;
 
 public:
-
   /*!
    * \brief Constructor of the class.
-   */
-  CTransLMVariable() = default;
-
-  /*!
-   * \overload
    * \param[in] val_intermittency
    * \param[in] val_REth
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -77,16 +71,16 @@ public:
   /*!
    * \brief ________________.
    */
-  inline su2double GetIntermittency(Idx_t iPoint) const { return Solution(iPoint,0); }
+  inline su2double GetIntermittency(Idx_t iPoint) const override { return Solution(iPoint,0); }
 
   /*!
    * \brief ________________.
    * \param[in] gamma_sep_in
    */
-  inline void SetGammaSep(Idx_t iPoint, su2double gamma_sep_in) { gamma_sep(iPoint) = gamma_sep_in; }
+  inline void SetGammaSep(Idx_t iPoint, su2double gamma_sep_in) override { gamma_sep(iPoint) = gamma_sep_in; }
 
   /*!
    * \brief Correction for separation-induced transition.
    */
-  inline void SetGammaEff(Idx_t iPoint) { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
+  inline void SetGammaEff(Idx_t iPoint) override { Solution(iPoint,0) = max(Solution(iPoint,0), gamma_sep(iPoint)); }
 };
