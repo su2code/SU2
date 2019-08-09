@@ -35,16 +35,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/driver_structure.hpp"
-#include "../include/definition_structure.hpp"
-
+#include "../../include/drivers/CSinglezoneDriver.hpp"
+#include "../../include/definition_structure.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim,
                                                           MPICommunicator) {
 
   /*--- Initialize the counter for TimeIter ---*/
@@ -121,7 +118,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    general once the drivers are more stable. ---*/
   
   if (config_container[ZONE_0]->GetUnsteady_Simulation())
-    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
   
@@ -289,8 +286,9 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
-  }
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
+                                                          grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
+                                                          config_container[ZONE_0], 0, ExtIter);  }
 
 }
 

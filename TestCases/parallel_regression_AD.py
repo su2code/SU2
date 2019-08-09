@@ -208,7 +208,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [-1.923943, -2.119689, -0.510185, -20.818664] #last 4 columns
+    discadj_trans_stator.test_vals = [-1.923936, -2.119783, -0.510181, -20.818266] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
@@ -223,7 +223,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-4.751576, -4.692029, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-5.394766, -5.572142, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
