@@ -108,8 +108,6 @@ protected:
   Vec_t AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
   Mat_t Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
 
-  /*--- ToDo: Max_Lambda does not seem to be in use anywhere. ---*/
-  Vec_t Max_Lambda;       /*!< \brief Maximun eingenvalue. */
   Vec_t Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   Vec_t Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
   Vec_t Lambda;           /*!< \brief Value of the eingenvalue. */
@@ -903,13 +901,6 @@ public:
   inline virtual su2double GetDelta_Time(Idx_t iPoint, Idx_t iSpecies) { return 0.0; }
 
   /*!
-   * \brief Set the value of the maximum eigenvalue.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue.
-   */
-  inline void SetMax_Lambda(Idx_t iPoint, su2double val_max_lambda) { Max_Lambda(iPoint) = val_max_lambda; }
-
-  /*!
    * \brief Set the value of the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] iPoint - Point index.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
@@ -940,13 +931,6 @@ public:
   inline virtual void SetMax_Lambda_Visc(Idx_t iPoint, su2double val_max_lambda, Idx_t val_species) {}
 
   /*!
-   * \brief Add a value to the maximum eigenvalue.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue.
-   */
-  inline void AddMax_Lambda(Idx_t iPoint, su2double val_max_lambda) { Max_Lambda(iPoint) += val_max_lambda; }
-
-  /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
    * \param[in] iPoint - Point index.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
@@ -959,13 +943,6 @@ public:
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
    */
   inline void AddMax_Lambda_Visc(Idx_t iPoint, su2double val_max_lambda) { Max_Lambda_Visc(iPoint) += val_max_lambda; }
-
-  /*!
-   * \brief Get the value of the maximum eigenvalue.
-   * \param[in] iPoint - Point index.
-   * \return the value of the maximum eigenvalue.
-   */
-  inline su2double GetMax_Lambda(Idx_t iPoint) const { return Max_Lambda(iPoint); }
 
   /*!
    * \brief Get the value of the maximum eigenvalue for the inviscid terms of the PDE.

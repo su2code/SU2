@@ -52,8 +52,7 @@ protected:
   Mat_t ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
   Mat_t IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   Mat_t HB_Source;          /*!< \brief Harmonic balance source term. */
-  // ToDo: check if this variable is needed
-  TVec_t<bool> incompressible;
+
 public:
   /*!
    * \brief Constructor of the class.
