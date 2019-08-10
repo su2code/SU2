@@ -358,8 +358,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
     /*--- Jacobi iterations ---*/
     
     for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-        solver->node->SetResidualSumZero(iPoint);
+      solver->node->SetResidualSumZero();
       
       /*--- Loop over Interior edges ---*/
       
@@ -427,8 +426,7 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
     /*--- Jacobi iterations ---*/
     
     for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-        solver->node->SetResidualSumZero(iPoint);
+      solver->node->SetResidualSumZero();
       
       /*--- Loop over Interior edges ---*/
       

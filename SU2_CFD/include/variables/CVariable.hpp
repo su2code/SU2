@@ -243,43 +243,31 @@ public:
 
   /*!
    * \brief Set old variables to the value of the current variables.
-   * \param[in] iPoint - Point index.
    */
-  inline void Set_OldSolution(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Old(iPoint,iVar) = Solution(iPoint,iVar);
-  }
+  void Set_OldSolution();
 
   /*!
    * \brief Set variables to the value of the old variables.
-   * \param[in] iPoint - Point index.
    */
-  inline void Set_Solution(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-  }
+  void Set_Solution();
 
-  /*!
-   * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
-   * \param[in] iPoint - Point index.
-   */
-  inline void Set_OldSolution_Adj(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Adj_Old(iPoint,iVar) = Solution(iPoint,iVar);
-  }
+//  /*!
+//   * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
+//   * \param[in] iPoint - Point index.
+//   */
+//  inline void Set_OldSolution_Adj(Idx_t iPoint) {
+//    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Adj_Old(iPoint,iVar) = Solution(iPoint,iVar);
+//  }
 
   /*!
    * \brief Set the variable solution at time n.
-   * \param[in] iPoint - Point index.
    */
-  inline void Set_Solution_time_n(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_time_n(iPoint,iVar) = Solution(iPoint,iVar);
-  }
+  void Set_Solution_time_n();
 
   /*!
    * \brief Set the variable solution at time n-1.
-   * \param[in] iPoint - Point index.
    */
-  inline void Set_Solution_time_n1(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Solution_time_n1(iPoint,iVar) = Solution_time_n(iPoint,iVar);
-  }
+  void Set_Solution_time_n1();
 
   /*!
    * \brief Set the variable solution at time n.
@@ -331,19 +319,19 @@ public:
     for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = val_vector[iDim];
   }
 
-  /*!
-   * \brief Set to zero the solution.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetSolutionZero(Idx_t iPoint) {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution(iPoint,iVar) = 0.0;
-  }
+//  /*!
+//   * \brief Set to zero the solution.
+//   * \param[in] iPoint - Point index.
+//   */
+//  inline void SetSolutionZero(Idx_t iPoint) {
+//    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution(iPoint,iVar) = 0.0;
+//  }
 
-  /*!
-   * \brief Set to zero a particular solution.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetSolutionZero(Idx_t iPoint, Idx_t iVar) { Solution(iPoint, iVar) = 0.0;}
+//  /*!
+//   * \brief Set to zero a particular solution.
+//   * \param[in] iPoint - Point index.
+//   */
+//  inline void SetSolutionZero(Idx_t iPoint, Idx_t iVar) { Solution(iPoint, iVar) = 0.0;}
 
   /*!
    * \brief Add a value to the solution.
@@ -405,7 +393,7 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
-  inline virtual void SetSolution_New(Idx_t iPoint) {}
+  virtual void SetSolution_New() {}
 
   /*!
    * \brief A virtual member.
@@ -494,11 +482,8 @@ public:
 
   /*!
    * \brief Set summed residual vector to zero value.
-   * \param[in] iPoint - Point index.
    */
-  inline void SetResidualSumZero(Idx_t iPoint) {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
-  }
+  void SetResidualSumZero();
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -546,11 +531,8 @@ public:
 
   /*!
    * \brief Set the auxiliary variable gradient to zero value.
-   * \param[in] iPoint - Point index.
    */
-  inline void SetAuxVarGradientZero(Idx_t iPoint) {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) Grad_AuxVar(iPoint,iDim) = 0.0;
-  }
+  void SetAuxVarGradientZero();
 
   /*!
    * \brief Set the value of the auxiliary variable gradient.
@@ -678,13 +660,8 @@ public:
 
   /*!
    * \brief Set to zero the gradient of the solution.
-   * \param[in] iPoint - Point index.
    */
-  inline void SetGradientZero(Idx_t iPoint) {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
-      for (Idx_t iDim = 0; iDim < nDim; iDim++)
-        Gradient(iPoint,iVar,iDim) = 0.0;
-  }
+  void SetGradientZero();
 
   /*!
    * \brief Add <i>value</i> to the solution gradient.
@@ -731,13 +708,8 @@ public:
 
   /*!
    * \brief Set to zero the Rmatrix for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
    */
-  inline void SetRmatrixZero(Idx_t iPoint) {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      for (Idx_t jDim = 0; jDim < nDim; jDim++)
-        Rmatrix(iPoint,iDim,jDim) = 0.0;
-  }
+  void SetRmatrixZero();
 
   /*!
    * \brief Add <i>value</i> to the Rmatrix for least squares gradient calculations.
@@ -1075,11 +1047,8 @@ public:
 
   /*!
    * \brief Set the undivided laplacian of the solution to zero.
-   * \param[in] iPoint - Point index.
    */
-  inline void SetUnd_LaplZero(Idx_t iPoint) {
-    for(Idx_t iVar = 0; iVar < nVar; iVar++) Undivided_Laplacian(iPoint,iVar) = 0.0;
-  }
+  void SetUnd_LaplZero();
 
   /*!
    * \brief Set a value to the undivided laplacian.
@@ -1753,7 +1722,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_SurfaceLoad_Res_n(Idx_t iPoint) {}
+  virtual void Set_SurfaceLoad_Res_n() {}
 
   /*!
    * \brief A virtual member.
@@ -1793,7 +1762,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_FlowTraction_n(Idx_t iPoint) {}
+  virtual void Set_FlowTraction_n() {}
 
   /*!
    * \brief A virtual member.
@@ -1865,17 +1834,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetVorticity(Idx_t iPoint) { return false; }
+  inline virtual bool SetVorticity_StrainMag() { return false; }
 
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual bool SetStrainMag(Idx_t iPoint) { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetVelSolutionOldDVector(Idx_t iPoint) {}
+//  /*!
+//   * \brief A virtual member.
+//   */
+//  inline virtual void SetVelSolutionOldDVector(Idx_t iPoint) {}
 
   /*!
    * \brief A virtual member.
@@ -1885,7 +1849,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void SetGradient_PrimitiveZero(Idx_t iPoint, Idx_t val_primvar) {}
+  virtual void SetGradient_PrimitiveZero() {}
 
   /*!
    * \brief A virtual member.
@@ -2160,7 +2124,7 @@ public:
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
-  inline virtual void Set_OldSolution_Geometry(Idx_t iPoint) {}
+  inline virtual void Set_OldSolution_Geometry() {}
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
@@ -2176,7 +2140,7 @@ public:
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
-  inline virtual void Set_BGSSolution_k(Idx_t iPoint) {}
+  inline virtual void Set_BGSSolution_k() {}
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
@@ -2190,10 +2154,10 @@ public:
    */
   inline virtual su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const { return 0.0; }
 
-  /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
-   */
-  inline virtual void Set_BGSSolution_Geometry(Idx_t iPoint) {}
+//  /*!
+//   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+//   */
+//  inline virtual void Set_BGSSolution_Geometry(Idx_t iPoint) {}
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
@@ -2239,7 +2203,7 @@ public:
   /*!
    * \brief Set the value of the old solution.
    */
-  inline virtual void SetSolution_time_n(Idx_t iPoint) {}
+  inline virtual void SetSolution_time_n() {}
 
   /*!
    * \brief Set the value of the old solution.
@@ -2278,7 +2242,7 @@ public:
   /*!
    * \brief Set the value of the velocity (Structural Analysis) at time n.
    */
-  inline virtual void SetSolution_Vel_time_n(Idx_t iPoint) {}
+  inline virtual void SetSolution_Vel_time_n() {}
 
   /*!
    * \overload
@@ -2343,7 +2307,7 @@ public:
   /*!
    * \brief Set the value of the acceleration (Structural Analysis) at time n.
    */
-  inline virtual void SetSolution_Accel_time_n(Idx_t iPoint) {}
+  inline virtual void SetSolution_Accel_time_n() {}
 
   /*!
    * \overload
@@ -2381,12 +2345,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_OldSolution_Vel(Idx_t iPoint) {}
+  inline virtual void Set_OldSolution_Vel() {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Set_OldSolution_Accel(Idx_t iPoint) {}
+  inline virtual void Set_OldSolution_Accel() {}
 
   /*!
    * \brief  A virtual member. Set the value of the solution predictor.

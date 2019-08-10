@@ -74,3 +74,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, Idx_t npoint, Idx_t ndi
     Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
   }
 }
+
+void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
+
+void CDiscAdjVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution_BGS; }

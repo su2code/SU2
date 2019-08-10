@@ -76,7 +76,7 @@ public:
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
-  void SetGradient_PrimitiveZero(Idx_t iPoint, Idx_t val_primvar) final;
+  void SetGradient_PrimitiveZero() final;
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -323,10 +323,7 @@ public:
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(Idx_t iPoint) final {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++)
-      Solution_BGS_k(iPoint,iVar) = Solution(iPoint,iVar);
-  }
+  void Set_BGSSolution_k() final;
 
   /*!
    * \brief Get the value of the solution in the previous BGS subiteration.

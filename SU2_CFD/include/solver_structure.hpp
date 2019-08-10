@@ -249,9 +249,8 @@ public:
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the solver nondimensionalization.
@@ -6391,12 +6390,6 @@ public:
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -8022,12 +8015,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Load a solution from a restart file.
@@ -12060,12 +12047,6 @@ public:
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -12592,11 +12573,6 @@ public:
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -12889,12 +12865,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Prepare the solver for a new recording.

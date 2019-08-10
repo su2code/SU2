@@ -5624,13 +5624,11 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n1(iPoint);
-            if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n1(iPoint);
-            }
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n1();
+          if (turbulent) {
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n();
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n1();
           }
         }
       }
@@ -5643,11 +5641,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-            solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-            if (turbulent) {
-              solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-            }
+          solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+          if (turbulent) {
+            solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_Solution_time_n();
           }
         }
       }
@@ -5668,11 +5664,9 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config_container[ZONE_FLOW]->GetnMGLevels();iMesh++) {
-        for(iPoint=0; iPoint<geometry_container[ZONE_FLOW][INST_0][iMesh]->GetnPoint();iPoint++) {
-           solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_OldSolution(iPoint);
-           if (turbulent){
-             solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_OldSolution(iPoint);
-           }
+        solver_container[ZONE_FLOW][INST_0][iMesh][FLOW_SOL]->node->Set_OldSolution();
+        if (turbulent){
+         solver_container[ZONE_FLOW][INST_0][iMesh][TURB_SOL]->node->Set_OldSolution();
         }
       }
 
@@ -5772,21 +5766,15 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_time_n(iPoint);
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_Accel_time_n(iPoint);
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_Accel_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_Vel_time_n(iPoint);
-    }
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node->SetSolution_Vel_time_n();
 
     /*--- Load solution timestep n ---*/
 

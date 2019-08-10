@@ -1091,34 +1091,19 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
 void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
-  unsigned long iPoint, nPoint;
-  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
-  
-  nPoint = geometry[MESH_0]->GetnPoint();
-  
+
   /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
-  
-  if (incremental_load) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) node->Set_OldSolution(iPoint);
-  }
-  
-  
+
+  if (config->GetIncrementalLoad()) node->Set_OldSolution();
+
 }
 
 void CFEASolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
-  unsigned long iPoint, nPoint;
-  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
-  
-  nPoint = geometry[MESH_0]->GetnPoint();
-  
+
   /*--- We store the current solution as "Solution Old", for the case that we need to retrieve it ---*/
-  
-  if (incremental_load) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) node->Set_Solution(iPoint);
-  }
-  
+
+  if (config->GetIncrementalLoad()) node->Set_Solution();
+
 }
 
 void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
@@ -3642,14 +3627,11 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 
 void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-  unsigned long iPoint;
   bool fsi = config->GetFSI_Simulation();
   
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    node->Set_SurfaceLoad_Res_n(iPoint);
-    if (fsi) node->Set_FlowTraction_n(iPoint);
-  }
+  node->Set_SurfaceLoad_Res_n();
+  if (fsi) node->Set_FlowTraction_n();
   
 }
 
@@ -4360,20 +4342,6 @@ void CFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config)
   }
 
   SetResidual_BGS(geometry, config);
-
-}
-
-
-void CFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node->Set_BGSSolution_k(iPoint);
-
-  }
 
 }
 

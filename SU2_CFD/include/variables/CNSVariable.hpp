@@ -97,12 +97,7 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(Idx_t iPoint) override;
-
-  /*!
-   * \brief Set the rate of strain magnitude.
-   */
-  bool SetStrainMag(Idx_t iPoint) override;
+  bool SetVorticity_StrainMag() override;
 
   /*!
    * \overload

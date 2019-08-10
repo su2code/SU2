@@ -190,12 +190,8 @@ public:
 
   /*!
    * \brief Set the value of the mesh solution (adjoint).
-   * \param[in] val_solution - Solution of the problem (acceleration).
    */
-  inline void Set_OldSolution_Geometry(Idx_t iPoint) override {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      Solution_Geometry_Old(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
-  }
+  void Set_OldSolution_Geometry() override;
 
   /*!
    * \brief Get the value of the old geometry solution (adjoint).
@@ -215,9 +211,7 @@ public:
   /*!
    * \brief Set the value of the adjoint solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(Idx_t iPoint) override {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution_BGS_k(iPoint,iVar) = Solution_BGS(iPoint,iVar);
-  }
+  void Set_BGSSolution_k() override;
 
   /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
@@ -231,13 +225,13 @@ public:
    */
   inline su2double Get_BGSSolution_k(Idx_t iPoint, Idx_t iDim) const override { return Solution_BGS_k(iPoint,iDim);}
 
-  /*!
-   * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
-   */
-  inline void Set_BGSSolution_Geometry(Idx_t iPoint) override {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      Solution_Geometry_BGS_k(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
-  }
+//  /*!
+//   * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
+//   */
+//  inline void Set_BGSSolution_Geometry(Idx_t iPoint) override {
+//    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+//      Solution_Geometry_BGS_k(iPoint,iDim) = Solution_Geometry(iPoint,iDim);
+//  }
 
   /*!
    * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.

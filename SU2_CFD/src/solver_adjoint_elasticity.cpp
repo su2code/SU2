@@ -710,11 +710,11 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       SetRes_Max(iVar,0.0,0);
   }
 
+  /*--- Set the old solution ---*/
+
+  node->Set_OldSolution();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Set the old solution ---*/
-
-    node->Set_OldSolution(iPoint);
 
     /*--- Extract the adjoint solution ---*/
 
@@ -731,11 +731,11 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   if (dynamic){
 
     /*--- FIRST: The acceleration solution ---*/
+
+    /*--- Set the old acceleration solution ---*/
+    node->Set_OldSolution_Accel();    
+
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Set the old acceleration solution ---*/
-
-      node->Set_OldSolution_Accel(iPoint);
 
       /*--- Extract the adjoint acceleration solution u'' ---*/
 
@@ -748,11 +748,11 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     }
 
     /*--- NEXT: The velocity solution ---*/
+
+    /*--- Set the old velocity solution ---*/
+    node->Set_OldSolution_Vel();
+    
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Set the old velocity solution ---*/
-
-      node->Set_OldSolution_Vel(iPoint);
 
       /*--- Extract the adjoint velocity solution u'' ---*/
 
@@ -1063,20 +1063,6 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
   }
 
   SetResidual_BGS(geometry, config);
-
-}
-
-
-void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node->Set_BGSSolution_k(iPoint);
-
-  }
 
 }
 
