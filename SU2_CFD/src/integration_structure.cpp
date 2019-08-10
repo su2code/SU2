@@ -695,8 +695,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  
-  unsigned long iPoint;
+
   bool fsi = config->GetFSI_Simulation();
   
   /*--- Update the solution according to the integration scheme used ---*/
