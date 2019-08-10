@@ -165,8 +165,7 @@ public:
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
   
   CVariable* node;  /*!< \brief Vector which the define the variables for each problem. */
-  CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
-  
+
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   /*!
@@ -4683,6 +4682,8 @@ protected:
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
+  CEulerVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /*--- Turbomachinery Solver Variables ---*/
   su2double *** AverageFlux,
             ***SpanTotalFlux,
@@ -6995,6 +6996,8 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
+  CIncEulerVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
@@ -9148,7 +9151,9 @@ protected:
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
-  
+
+  CTurbVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
   /* Sliding meshes variables */
 
   su2double ****SlidingState;
@@ -11463,6 +11468,8 @@ private:
   su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
   su2double FSI_Residual;           /*!< \brief FSI residual. */
 
+  CFEABoundVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
 public:
   
   CSysVector<su2double> TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
@@ -12325,7 +12332,9 @@ private:
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
-  
+
+  CDiscAdjVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
 public:
   
   /*!
@@ -12627,6 +12636,8 @@ private:
   su2double *DV_Val;            /*!< \brief Value of the design variables. */
   su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
   su2double *Total_Sens_DV;
+
+  CDiscAdjFEAVariable* snode;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
 public:
   
