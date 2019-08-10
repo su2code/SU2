@@ -97,7 +97,8 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
 
   SlidingState     = NULL;
   SlidingStateNodes = NULL;
-
+  
+  snode = nullptr;
 }
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -561,6 +562,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   node = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+  snode = static_cast<CIncEulerVariable*>(node);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (fsi || multizone){
@@ -1602,15 +1604,15 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     
     /*--- Initialize the non-physical points vector ---*/
     
-    node->SetNon_Physical(iPoint,false);
+    snode->SetNon_Physical(iPoint,false);
     
     /*--- Incompressible flow, primitive variables ---*/
     
-    physical = node->SetPrimVar(iPoint,FluidModel);
+    physical = snode->SetPrimVar(iPoint,FluidModel);
 
     /*--- Record any non-physical points. ---*/
 
-    if (!physical) { node->SetNon_Physical(iPoint,true); ErrorCounter++; }
+    if (!physical) { snode->SetNon_Physical(iPoint,true); ErrorCounter++; }
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
@@ -1642,7 +1644,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetMax_Lambda_Inv(iPoint,0.0);
+    snode->SetMax_Lambda_Inv(iPoint,0.0);
   
   /*--- Loop interior edges ---*/
   
@@ -1661,8 +1663,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Mean Values ---*/
 
-    Mean_ProjVel    = 0.5 * (node->GetProjVel(iPoint,Normal) + node->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (node->GetBetaInc2(iPoint)      + node->GetBetaInc2(jPoint));
+    Mean_ProjVel    = 0.5 * (snode->GetProjVel(iPoint,Normal) + snode->GetProjVel(jPoint,Normal));
+    Mean_BetaInc2   = 0.5 * (snode->GetBetaInc2(iPoint)      + snode->GetBetaInc2(jPoint));
     Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
     /*--- Adjustment for grid movement ---*/
@@ -1681,8 +1683,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     /*--- Inviscid contribution ---*/
     
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) node->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node->AddMax_Lambda_Inv(jPoint,Lambda);
+    if (geometry->node[iPoint]->GetDomain()) snode->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->node[jPoint]->GetDomain()) snode->AddMax_Lambda_Inv(jPoint,Lambda);
     
   }
   
@@ -1704,8 +1706,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Mean Values ---*/
 
-      Mean_ProjVel    = node->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = node->GetBetaInc2(iPoint);
+      Mean_ProjVel    = snode->GetProjVel(iPoint,Normal);
+      Mean_BetaInc2   = snode->GetBetaInc2(iPoint);
       Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
       /*--- Adjustment for grid movement ---*/
@@ -1722,7 +1724,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
-        node->AddMax_Lambda_Inv(iPoint,Lambda);
+        snode->AddMax_Lambda_Inv(iPoint,Lambda);
       }
       
     }
@@ -1737,16 +1739,16 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time  = config->GetCFL(iMesh)*Vol / node->GetMax_Lambda_Inv(iPoint);
+      Local_Delta_Time  = config->GetCFL(iMesh)*Vol / snode->GetMax_Lambda_Inv(iPoint);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time    = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-      node->SetDelta_Time(iPoint,Local_Delta_Time);
+      snode->SetDelta_Time(iPoint,Local_Delta_Time);
     }
     else {
-      node->SetDelta_Time(iPoint,0.0);
+      snode->SetDelta_Time(iPoint,0.0);
     }
     
   }
@@ -1788,9 +1790,9 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
        it computes the time step based on the unsteady CFL ---*/
       
       if (config->GetCFL(iMesh) == 0.0){
-        node->SetDelta_Time(iPoint,config->GetDelta_UnstTime());
+        snode->SetDelta_Time(iPoint,config->GetDelta_UnstTime());
       } else {
-        node->SetDelta_Time(iPoint,Global_Delta_Time);
+        snode->SetDelta_Time(iPoint,Global_Delta_Time);
       }
     }
   }
@@ -1816,8 +1818,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   if (dual_time)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node->GetDelta_Time(iPoint));
-        node->SetDelta_Time(iPoint,Local_Delta_Time);
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), snode->GetDelta_Time(iPoint));
+        snode->SetDelta_Time(iPoint,Local_Delta_Time);
       }
     }
   
@@ -1842,17 +1844,17 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Set primitive variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(node->GetPrimitive(iPoint), node->GetPrimitive(jPoint));
+    numerics->SetPrimitive(snode->GetPrimitive(iPoint), snode->GetPrimitive(jPoint));
     
     /*--- Set the largest convective eigenvalue ---*/
     
-    numerics->SetLambda(node->GetLambda(iPoint), node->GetLambda(jPoint));
+    numerics->SetLambda(snode->GetLambda(iPoint), snode->GetLambda(jPoint));
     
     /*--- Set undivided laplacian and pressure-based sensor ---*/
     
     if (jst_scheme) {
-      numerics->SetUndivided_Laplacian(node->GetUndivided_Laplacian(iPoint), node->GetUndivided_Laplacian(jPoint));
-      numerics->SetSensor(node->GetSensor(iPoint), node->GetSensor(jPoint));
+      numerics->SetUndivided_Laplacian(snode->GetUndivided_Laplacian(iPoint), snode->GetUndivided_Laplacian(jPoint));
+      numerics->SetSensor(snode->GetSensor(iPoint), snode->GetSensor(jPoint));
     }
     
     /*--- Grid movement ---*/
@@ -1914,8 +1916,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Get primitive variables ---*/
     
-    V_i = node->GetPrimitive(iPoint); V_j = node->GetPrimitive(jPoint);
-    S_i = node->GetSecondary(iPoint); S_j = node->GetSecondary(jPoint);
+    V_i = snode->GetPrimitive(iPoint); V_j = snode->GetPrimitive(jPoint);
+    S_i = snode->GetSecondary(iPoint); S_j = snode->GetSecondary(jPoint);
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     
@@ -1926,16 +1928,16 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
       
-      Gradient_i = node->GetGradient_Primitive(iPoint);
-      Gradient_j = node->GetGradient_Primitive(jPoint);
+      Gradient_i = snode->GetGradient_Primitive(iPoint);
+      Gradient_j = snode->GetGradient_Primitive(jPoint);
       if (limiter) {
-        Limiter_i = node->GetLimiter_Primitive(iPoint);
-        Limiter_j = node->GetLimiter_Primitive(jPoint);
+        Limiter_i = snode->GetLimiter_Primitive(iPoint);
+        Limiter_j = snode->GetLimiter_Primitive(jPoint);
       }
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        Non_Physical = node->GetNon_Physical(iPoint)*node->GetNon_Physical(jPoint);
+        Non_Physical = snode->GetNon_Physical(iPoint)*snode->GetNon_Physical(jPoint);
         for (iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
@@ -2027,13 +2029,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the conservative variables ---*/
 
-      numerics->SetConservative(node->GetSolution(iPoint),
-                                node->GetSolution(iPoint));
+      numerics->SetConservative(snode->GetSolution(iPoint),
+                                snode->GetSolution(iPoint));
 
       /*--- Set incompressible density  ---*/
       
-      numerics->SetDensity(node->GetDensity(iPoint),
-                           node->GetDensity(iPoint));
+      numerics->SetDensity(snode->GetDensity(iPoint),
+                           snode->GetDensity(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
 
@@ -2058,13 +2060,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Load the conservative variables ---*/
 
-      numerics->SetConservative(node->GetSolution(iPoint),
-                                node->GetSolution(iPoint));
+      numerics->SetConservative(snode->GetSolution(iPoint),
+                                snode->GetSolution(iPoint));
 
       /*--- Set incompressible density  ---*/
       
-      numerics->SetDensity(node->GetDensity(iPoint),
-                           node->GetDensity(iPoint));
+      numerics->SetDensity(snode->GetDensity(iPoint),
+                           snode->GetDensity(iPoint));
 
       /*--- Load the volume of the dual mesh cell ---*/
 
@@ -2089,8 +2091,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Load the conservative variables ---*/
       
-      numerics->SetConservative(node->GetSolution(iPoint),
-                                node->GetSolution(iPoint));
+      numerics->SetConservative(snode->GetSolution(iPoint),
+                                snode->GetSolution(iPoint));
       
       /*--- Load the volume of the dual mesh cell ---*/
       
@@ -2130,9 +2132,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
         yCoord          = geometry->node[iPoint]->GetCoord(1);
-        yVelocity       = node->GetVelocity(iPoint,1);
-        Total_Viscosity = (node->GetLaminarViscosity(iPoint) +
-                           node->GetEddyViscosity(iPoint));
+        yVelocity       = snode->GetVelocity(iPoint,1);
+        Total_Viscosity = (snode->GetLaminarViscosity(iPoint) +
+                           snode->GetEddyViscosity(iPoint));
 
         if (yCoord > EPS) {
           AuxVar = Total_Viscosity*yVelocity/yCoord;
@@ -2142,7 +2144,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Set the auxilairy variable for this node. ---*/
 
-        node->SetAuxVar(iPoint,AuxVar);
+        snode->SetAuxVar(iPoint,AuxVar);
 
       }
 
@@ -2163,12 +2165,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Conservative variables w/o reconstruction ---*/
 
-      numerics->SetPrimitive(node->GetPrimitive(iPoint), NULL);
+      numerics->SetPrimitive(snode->GetPrimitive(iPoint), NULL);
 
       /*--- Set incompressible density  ---*/
       
-      numerics->SetDensity(node->GetDensity(iPoint),
-                           node->GetDensity(iPoint));
+      numerics->SetDensity(snode->GetDensity(iPoint),
+                           snode->GetDensity(iPoint));
 
       /*--- Set control volume ---*/
       
@@ -2185,11 +2187,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Gradient of the primitive variables ---*/
 
-        numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint), NULL);
+        numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint), NULL);
 
         /*--- Load the aux variable gradient that we already computed. ---*/
 
-        numerics->SetAuxVarGrad(node->GetAuxVarGradient(iPoint), NULL);
+        numerics->SetAuxVarGrad(snode->GetAuxVarGradient(iPoint), NULL);
         
       }
 
@@ -2252,9 +2254,9 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
   
   /* Next we describe how to get access to some important quanties for this method */
   /* Access to all points in the current geometric mesh by saying: nPointDomain */
-  /* Get the vector of conservative variables at some point iPoint = node->GetSolution(iPoint) */
-  /* Get the volume (or area in 2D) associated with iPoint = node->GetVolume(iPoint) */
-  /* Get the vector of geometric coordinates of point iPoint = node->GetCoord(iPoint) */
+  /* Get the vector of conservative variables at some point iPoint = snode->GetSolution(iPoint) */
+  /* Get the volume (or area in 2D) associated with iPoint = snode->GetVolume(iPoint) */
+  /* Get the vector of geometric coordinates of point iPoint = snode->GetCoord(iPoint) */
   
 }
 
@@ -2271,7 +2273,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    node->SetLambda(iPoint,0.0);
+    snode->SetLambda(iPoint,0.0);
   }
   
   /*--- Loop interior edges ---*/
@@ -2290,8 +2292,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     
     /*--- Mean Values ---*/
 
-    Mean_ProjVel    = 0.5 * (node->GetProjVel(iPoint,Normal) + node->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (node->GetBetaInc2(iPoint)      + node->GetBetaInc2(jPoint));
+    Mean_ProjVel    = 0.5 * (snode->GetProjVel(iPoint,Normal) + snode->GetProjVel(jPoint,Normal));
+    Mean_BetaInc2   = 0.5 * (snode->GetBetaInc2(iPoint)      + snode->GetBetaInc2(jPoint));
     Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
     /*--- Adjustment for grid movement ---*/
@@ -2310,8 +2312,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     /*--- Inviscid contribution ---*/
     
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) node->AddLambda(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node->AddLambda(jPoint,Lambda);
+    if (geometry->node[iPoint]->GetDomain()) snode->AddLambda(iPoint,Lambda);
+    if (geometry->node[jPoint]->GetDomain()) snode->AddLambda(jPoint,Lambda);
     
   }
   
@@ -2332,8 +2334,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       
       /*--- Mean Values ---*/
       
-      Mean_ProjVel    = node->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = node->GetBetaInc2(iPoint);
+      Mean_ProjVel    = snode->GetProjVel(iPoint,Normal);
+      Mean_BetaInc2   = snode->GetBetaInc2(iPoint);
       Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
       
       /*--- Adjustment for grid movement ---*/
@@ -2350,7 +2352,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
-        node->AddLambda(iPoint,Lambda);
+        snode->AddLambda(iPoint,Lambda);
       }
       
     }
@@ -2380,7 +2382,7 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
   Diff = new su2double[nVar];
   
-  node->SetUnd_LaplZero();
+  snode->SetUnd_LaplZero();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -2390,7 +2392,7 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
     /*--- Solution differences ---*/
     
     for (iVar = 0; iVar < nVar; iVar++)
-      Diff[iVar] = node->GetSolution(iPoint,iVar) - node->GetSolution(jPoint,iVar);
+      Diff[iVar] = snode->GetSolution(iPoint,iVar) - snode->GetSolution(jPoint,iVar);
     
     boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
     boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -2398,19 +2400,19 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
     /*--- Both points inside the domain, or both in the boundary ---*/
     
     if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->node[iPoint]->GetDomain()) node->SubtractUnd_Lapl(iPoint,Diff);
-      if (geometry->node[jPoint]->GetDomain()) node->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->node[iPoint]->GetDomain()) snode->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->node[jPoint]->GetDomain()) snode->AddUnd_Lapl(jPoint,Diff);
     }
     
     /*--- iPoint inside the domain, jPoint on the boundary ---*/
     
     if (!boundary_i && boundary_j)
-      if (geometry->node[iPoint]->GetDomain()) node->SubtractUnd_Lapl(iPoint,Diff);
+      if (geometry->node[iPoint]->GetDomain()) snode->SubtractUnd_Lapl(iPoint,Diff);
     
     /*--- jPoint inside the domain, iPoint on the boundary ---*/
     
     if (boundary_i && !boundary_j)
-      if (geometry->node[jPoint]->GetDomain()) node->AddUnd_Lapl(jPoint,Diff);
+      if (geometry->node[jPoint]->GetDomain()) snode->AddUnd_Lapl(jPoint,Diff);
     
   }
   
@@ -2452,8 +2454,8 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
     
     /*--- Get the pressure, or density for incompressible solvers ---*/
 
-    Pressure_i = node->GetDensity(iPoint);
-    Pressure_j = node->GetDensity(jPoint);
+    Pressure_i = snode->GetDensity(iPoint);
+    Pressure_j = snode->GetDensity(jPoint);
 
     boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
     boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -2502,7 +2504,7 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
   /*--- Set pressure switch for each point ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetSensor(iPoint,fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+    snode->SetSensor(iPoint,fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   
   /*--- MPI parallelization ---*/
   
@@ -2641,7 +2643,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        Pressure = node->GetPressure(iPoint);
+        Pressure = snode->GetPressure(iPoint);
 
         CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefArea;
 
@@ -3023,7 +3025,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
-          Density   = node->GetDensity(iPoint);
+          Density   = snode->GetDensity(iPoint);
 
           Area = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
@@ -3032,7 +3034,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim]   = node->GetVelocity(iPoint,iDim);
+            Velocity[iDim]   = snode->GetVelocity(iPoint,iDim);
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
             MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
           }
@@ -3300,9 +3302,9 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = (geometry->node[iPoint]->GetVolume() +
            geometry->node[iPoint]->GetPeriodicVolume());
-    Delta = node->GetDelta_Time(iPoint) / Vol;
+    Delta = snode->GetDelta_Time(iPoint) / Vol;
 
-    Res_TruncError = node->GetResTruncError(iPoint);
+    Res_TruncError = snode->GetResTruncError(iPoint);
     Residual = LinSysRes.GetBlock(iPoint);
 
     if (!adjoint) {
@@ -3311,7 +3313,7 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
         Res = 0.0;
         for (jVar = 0; jVar < nVar; jVar ++ )
           Res += Preconditioner[iVar][jVar]*(Residual[jVar] + Res_TruncError[jVar]);
-        node->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
+        snode->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
@@ -3351,9 +3353,9 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = (geometry->node[iPoint]->GetVolume() +
            geometry->node[iPoint]->GetPeriodicVolume());
-    Delta = node->GetDelta_Time(iPoint) / Vol;
+    Delta = snode->GetDelta_Time(iPoint) / Vol;
     
-    local_Res_TruncError = node->GetResTruncError(iPoint);
+    local_Res_TruncError = snode->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
 
 
@@ -3363,7 +3365,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
         Res = 0.0;
         for (jVar = 0; jVar < nVar; jVar ++ )
           Res += Preconditioner[iVar][jVar]*(local_Residual[jVar] + local_Res_TruncError[jVar]);
-        node->AddSolution(iPoint,iVar, -Res*Delta);
+        snode->AddSolution(iPoint,iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
@@ -3406,7 +3408,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     /*--- Read the residual ---*/
     
-    local_Res_TruncError = node->GetResTruncError(iPoint);
+    local_Res_TruncError = snode->GetResTruncError(iPoint);
     
     /*--- Read the volume ---*/
     
@@ -3415,8 +3417,8 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     /*--- Apply the preconditioner and add to the diagonal. ---*/
     
-    if (node->GetDelta_Time(iPoint) != 0.0) {
-      Delta = Vol / node->GetDelta_Time(iPoint);
+    if (snode->GetDelta_Time(iPoint) != 0.0) {
+      Delta = Vol / snode->GetDelta_Time(iPoint);
       SetPreconditioner(config, iPoint);
       for (iVar = 0; iVar < nVar; iVar ++ ) {
         for (jVar = 0; jVar < nVar; jVar ++ ) {
@@ -3468,7 +3470,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        node->AddSolution(iPoint,iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+        snode->AddSolution(iPoint,iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
@@ -3506,7 +3508,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   PrimVar_j = new su2double [nPrimVarGrad];
   
   /*--- Set Gradient_Primitive to zero ---*/
-  node->SetGradient_PrimitiveZero();
+  snode->SetGradient_PrimitiveZero();
   
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3514,8 +3516,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_i[iVar] = node->GetPrimitive(iPoint,iVar);
-      PrimVar_j[iVar] = node->GetPrimitive(jPoint,iVar);
+      PrimVar_i[iVar] = snode->GetPrimitive(iPoint,iVar);
+      PrimVar_j[iVar] = snode->GetPrimitive(jPoint,iVar);
     }
     
     Normal = geometry->edge[iEdge]->GetNormal();
@@ -3524,9 +3526,9 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
       for (iDim = 0; iDim < nDim; iDim++) {
         Partial_Res = PrimVar_Average*Normal[iDim];
         if (geometry->node[iPoint]->GetDomain())
-          node->AddGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
+          snode->AddGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
         if (geometry->node[jPoint]->GetDomain())
-          node->SubtractGradient_Primitive(jPoint,iVar, iDim, Partial_Res);
+          snode->SubtractGradient_Primitive(jPoint,iVar, iDim, Partial_Res);
       }
     }
   }
@@ -3540,13 +3542,13 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
       if (geometry->node[iPoint]->GetDomain()) {
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          PrimVar_Vertex[iVar] = node->GetPrimitive(iPoint,iVar);
+          PrimVar_Vertex[iVar] = snode->GetPrimitive(iPoint,iVar);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++) {
             Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
-            node->SubtractGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
+            snode->SubtractGradient_Primitive(iPoint,iVar, iDim, Partial_Res);
           }
       }
     }
@@ -3570,8 +3572,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = node->GetGradient_Primitive(iPoint,iVar, iDim)/Vol;
-        node->SetGradient_Primitive(iPoint,iVar, iDim, Partial_Gradient);
+        Partial_Gradient = snode->GetGradient_Primitive(iPoint,iVar, iDim)/Vol;
+        snode->SetGradient_Primitive(iPoint,iVar, iDim, Partial_Gradient);
       }
     }
   }
@@ -3599,8 +3601,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   /*--- Clear Rmatrix, which could eventually be computed once
    and stored for static meshes, as well as the prim gradient. ---*/
 
-  node->SetRmatrixZero();
-  node->SetGradient_PrimitiveZero();
+  snode->SetRmatrixZero();
+  snode->SetGradient_PrimitiveZero();
 
   /*--- Loop over points of the grid ---*/
   
@@ -3615,7 +3617,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
     
     /*--- Get primitives from CVariable ---*/
     
-    PrimVar_i = node->GetPrimitive(iPoint);
+    PrimVar_i = snode->GetPrimitive(iPoint);
     
     /*--- Inizialization of variables ---*/
     
@@ -3627,7 +3629,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
-      PrimVar_j = node->GetPrimitive(jPoint);
+      PrimVar_j = snode->GetPrimitive(jPoint);
       
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -3637,22 +3639,22 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       
       if (weight != 0.0) {
         
-        node->AddRmatrix(iPoint,0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
-        node->AddRmatrix(iPoint,0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
-        node->AddRmatrix(iPoint,1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
+        snode->AddRmatrix(iPoint,0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
+        snode->AddRmatrix(iPoint,0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
+        snode->AddRmatrix(iPoint,1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
         
         if (nDim == 3) {
-          node->AddRmatrix(iPoint,0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          node->AddRmatrix(iPoint,1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
-          node->AddRmatrix(iPoint,2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
-          node->AddRmatrix(iPoint,2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
+          snode->AddRmatrix(iPoint,0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          snode->AddRmatrix(iPoint,1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
+          snode->AddRmatrix(iPoint,2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          snode->AddRmatrix(iPoint,2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
         }
         
         /*--- Entries of c:= transpose(A)*b ---*/
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
           for (iDim = 0; iDim < nDim; iDim++) {
-            node->AddGradient_Primitive(iPoint,iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
+            snode->AddGradient_Primitive(iPoint,iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
           }
         }
         
@@ -3680,19 +3682,19 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
     r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
     
-    r11 = node->GetRmatrix(iPoint,0,0);
-    r12 = node->GetRmatrix(iPoint,0,1);
-    r22 = node->GetRmatrix(iPoint,1,1);
+    r11 = snode->GetRmatrix(iPoint,0,0);
+    r12 = snode->GetRmatrix(iPoint,0,1);
+    r22 = snode->GetRmatrix(iPoint,1,1);
     
     if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
     if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
     if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
     
     if (nDim == 3) {
-      r13   = node->GetRmatrix(iPoint,0,2);
-      r23_a = node->GetRmatrix(iPoint,1,2);
-      r23_b = node->GetRmatrix(iPoint,2,1);
-      r33   = node->GetRmatrix(iPoint,2,2);
+      r13   = snode->GetRmatrix(iPoint,0,2);
+      r23_a = snode->GetRmatrix(iPoint,1,2);
+      r23_b = snode->GetRmatrix(iPoint,2,1);
+      r33   = snode->GetRmatrix(iPoint,2,2);
       
       if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
       if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
@@ -3742,14 +3744,14 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       for (iDim = 0; iDim < nDim; iDim++) {
         Cvector[iVar][iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++) {
-          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*node->GetGradient_Primitive(iPoint,iVar, jDim);
+          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*snode->GetGradient_Primitive(iPoint,iVar, jDim);
         }
       }
     }
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        node->SetGradient_Primitive(iPoint,iVar, iDim, Cvector[iVar][iDim]);
+        snode->SetGradient_Primitive(iPoint,iVar, iDim, Cvector[iVar][iDim]);
       }
     }
     
@@ -3789,7 +3791,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
    
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        node->SetLimiter_Primitive(iPoint,iVar, 1.0);
+        snode->SetLimiter_Primitive(iPoint,iVar, 1.0);
       }
     }
     
@@ -3801,9 +3803,9 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        node->SetSolution_Max(iPoint,iVar, -EPS);
-        node->SetSolution_Min(iPoint,iVar, EPS);
-        node->SetLimiter_Primitive(iPoint,iVar, 2.0);
+        snode->SetSolution_Max(iPoint,iVar, -EPS);
+        snode->SetSolution_Min(iPoint,iVar, EPS);
+        snode->SetLimiter_Primitive(iPoint,iVar, 2.0);
       }
     }
     
@@ -3818,17 +3820,17 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
       /*--- Get the primitive variables ---*/
       
-      Primitive_i = node->GetPrimitive(iPoint);
-      Primitive_j = node->GetPrimitive(jPoint);
+      Primitive_i = snode->GetPrimitive(iPoint);
+      Primitive_j = snode->GetPrimitive(jPoint);
       
       /*--- Compute the maximum, and minimum values for nodes i & j ---*/
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         du = (Primitive_j[iVar] - Primitive_i[iVar]);
-        node->SetSolution_Min(iPoint, iVar, min(node->GetSolution_Min(iPoint, iVar), du));
-        node->SetSolution_Max(iPoint, iVar, max(node->GetSolution_Max(iPoint, iVar), du));
-        node->SetSolution_Min(jPoint, iVar, min(node->GetSolution_Min(jPoint, iVar), -du));
-        node->SetSolution_Max(jPoint, iVar, max(node->GetSolution_Max(jPoint, iVar), -du));
+        snode->SetSolution_Min(iPoint, iVar, min(snode->GetSolution_Min(iPoint, iVar), du));
+        snode->SetSolution_Max(iPoint, iVar, max(snode->GetSolution_Max(iPoint, iVar), du));
+        snode->SetSolution_Min(jPoint, iVar, min(snode->GetSolution_Min(jPoint, iVar), -du));
+        snode->SetSolution_Max(jPoint, iVar, max(snode->GetSolution_Max(jPoint, iVar), -du));
       }
       
     }
@@ -3851,8 +3853,8 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node->GetGradient_Primitive(iPoint);
-      Gradient_j = node->GetGradient_Primitive(jPoint);
+      Gradient_i = snode->GetGradient_Primitive(iPoint);
+      Gradient_j = snode->GetGradient_Primitive(jPoint);
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -3863,10 +3865,10 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
-        AD::SetPreaccIn(node->GetSolution_Max(iPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Min(iPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Max(jPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Min(jPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Max(iPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Min(iPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Max(jPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Min(jPoint,iVar));
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
@@ -3876,14 +3878,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         if (dm == 0.0) { limiter = 2.0; }
         else {
-          if ( dm > 0.0 ) dp = node->GetSolution_Max(iPoint,iVar);
-          else dp = node->GetSolution_Min(iPoint,iVar);
+          if ( dm > 0.0 ) dp = snode->GetSolution_Max(iPoint,iVar);
+          else dp = snode->GetSolution_Min(iPoint,iVar);
           limiter = dp/dm;
         }
         
-        if (limiter < node->GetLimiter_Primitive(iPoint,iVar)) {
-          node->SetLimiter_Primitive(iPoint,iVar, limiter);
-          AD::SetPreaccOut(node->GetLimiter_Primitive(iPoint)[iVar]);
+        if (limiter < snode->GetLimiter_Primitive(iPoint,iVar)) {
+          snode->SetLimiter_Primitive(iPoint,iVar, limiter);
+          AD::SetPreaccOut(snode->GetLimiter_Primitive(iPoint)[iVar]);
         }
         
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
@@ -3894,14 +3896,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         if (dm == 0.0) { limiter = 2.0; }
         else {
-          if ( dm > 0.0 ) dp = node->GetSolution_Max(jPoint,iVar);
-          else dp = node->GetSolution_Min(jPoint,iVar);
+          if ( dm > 0.0 ) dp = snode->GetSolution_Max(jPoint,iVar);
+          else dp = snode->GetSolution_Min(jPoint,iVar);
           limiter = dp/dm;
         }
         
-        if (limiter < node->GetLimiter_Primitive(jPoint,iVar)) {
-          node->SetLimiter_Primitive(jPoint,iVar, limiter);
-          AD::SetPreaccOut(node->GetLimiter_Primitive(jPoint)[iVar]);
+        if (limiter < snode->GetLimiter_Primitive(jPoint,iVar)) {
+          snode->SetLimiter_Primitive(jPoint,iVar, limiter);
+          AD::SetPreaccOut(snode->GetLimiter_Primitive(jPoint)[iVar]);
         }
         
       }
@@ -3912,9 +3914,9 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        y =  node->GetLimiter_Primitive(iPoint,iVar);
+        y =  snode->GetLimiter_Primitive(iPoint,iVar);
         limiter = (y*y + 2.0*y) / (y*y + y + 2.0);
-        node->SetLimiter_Primitive(iPoint,iVar, limiter);
+        snode->SetLimiter_Primitive(iPoint,iVar, limiter);
       }
     }
     
@@ -3934,7 +3936,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
       /*--- Compute the max value and min value of the solution ---*/
       
-      Primitive = node->GetPrimitive(0);
+      Primitive = snode->GetPrimitive(0);
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         LocalMinPrimitive[iVar] = Primitive[iVar];
         LocalMaxPrimitive[iVar] = Primitive[iVar];
@@ -3944,7 +3946,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         /*--- Get the primitive variables ---*/
         
-        Primitive = node->GetPrimitive(iPoint);
+        Primitive = snode->GetPrimitive(iPoint);
 
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
           LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
@@ -3968,8 +3970,8 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
       iPoint     = geometry->edge[iEdge]->GetNode(0);
       jPoint     = geometry->edge[iEdge]->GetNode(1);
-      Gradient_i = node->GetGradient_Primitive(iPoint);
-      Gradient_j = node->GetGradient_Primitive(jPoint);
+      Gradient_i = snode->GetGradient_Primitive(iPoint);
+      Gradient_j = snode->GetGradient_Primitive(jPoint);
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
@@ -3980,10 +3982,10 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         AD::SetPreaccIn(Gradient_j[iVar], nDim);
         AD::SetPreaccIn(Coord_i, nDim);
         AD::SetPreaccIn(Coord_j, nDim);
-        AD::SetPreaccIn(node->GetSolution_Max(iPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Min(iPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Max(jPoint,iVar));
-        AD::SetPreaccIn(node->GetSolution_Min(jPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Max(iPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Min(iPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Max(jPoint,iVar));
+        AD::SetPreaccIn(snode->GetSolution_Min(jPoint,iVar));
         
         if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
           AD::SetPreaccIn(GlobalMaxPrimitive[iVar]);
@@ -4004,14 +4006,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
         
-        if ( dm > 0.0 ) dp = node->GetSolution_Max(iPoint,iVar);
-        else dp = node->GetSolution_Min(iPoint,iVar);
+        if ( dm > 0.0 ) dp = snode->GetSolution_Max(iPoint,iVar);
+        else dp = snode->GetSolution_Min(iPoint,iVar);
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node->GetLimiter_Primitive(iPoint,iVar)){
-          node->SetLimiter_Primitive(iPoint,iVar, limiter);
-          AD::SetPreaccOut(node->GetLimiter_Primitive(iPoint)[iVar]);
+        if (limiter < snode->GetLimiter_Primitive(iPoint,iVar)){
+          snode->SetLimiter_Primitive(iPoint,iVar, limiter);
+          AD::SetPreaccOut(snode->GetLimiter_Primitive(iPoint)[iVar]);
         }
         
         /*-- Repeat for point j on the edge ---*/
@@ -4020,14 +4022,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         for (iDim = 0; iDim < nDim; iDim++)
           dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
         
-        if ( dm > 0.0 ) dp = node->GetSolution_Max(jPoint,iVar);
-        else dp = node->GetSolution_Min(jPoint,iVar);
+        if ( dm > 0.0 ) dp = snode->GetSolution_Max(jPoint,iVar);
+        else dp = snode->GetSolution_Min(jPoint,iVar);
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node->GetLimiter_Primitive(jPoint,iVar)){
-          node->SetLimiter_Primitive(jPoint,iVar, limiter);
-          AD::SetPreaccOut(node->GetLimiter_Primitive(jPoint)[iVar]);
+        if (limiter < snode->GetLimiter_Primitive(jPoint,iVar)){
+          snode->SetLimiter_Primitive(jPoint,iVar, limiter);
+          AD::SetPreaccOut(snode->GetLimiter_Primitive(jPoint)[iVar]);
         }
         
         AD::EndPreacc();
@@ -4464,8 +4466,8 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
       
       /*--- Store the local maximum of the squared velocity in the field. ---*/
       
-      if (node->GetVelocity2(iPoint) > maxVel2)
-        maxVel2 = node->GetVelocity2(iPoint);
+      if (snode->GetVelocity2(iPoint) > maxVel2)
+        maxVel2 = snode->GetVelocity2(iPoint);
       
     }
     
@@ -4486,7 +4488,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   epsilon2 = max(epsilon2_default,epsilon2);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node->SetBetaInc2(iPoint,epsilon2*config->GetMax_Vel2());
+    snode->SetBetaInc2(iPoint,epsilon2*config->GetMax_Vel2());
 
 }
 
@@ -4503,14 +4505,14 @@ void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
 
   /*--- Access the primitive variables at this node. ---*/
 
-  Density     = node->GetDensity(iPoint);
-  BetaInc2    = node->GetBetaInc2(iPoint);
-  Cp          = node->GetSpecificHeatCp(iPoint);
+  Density     = snode->GetDensity(iPoint);
+  BetaInc2    = snode->GetBetaInc2(iPoint);
+  Cp          = snode->GetSpecificHeatCp(iPoint);
   oneOverCp   = 1.0/Cp;
-  Temperature = node->GetTemperature(iPoint);
+  Temperature = snode->GetTemperature(iPoint);
 
   for (iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = node->GetVelocity(iPoint,iDim);
+    Velocity[iDim] = snode->GetVelocity(iPoint,iDim);
 
   /*--- We need the derivative of the equation of state to build the
    preconditioning matrix. For now, the only option is the ideal gas
@@ -4627,8 +4629,8 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Compute the residual ---*/
 
-      Pressure = node->GetPressure(iPoint);
-      Density  = node->GetDensity(iPoint);
+      Pressure = snode->GetPressure(iPoint);
+      Density  = snode->GetDensity(iPoint);
 
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4710,7 +4712,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = node->GetPrimitive(iPoint);
+      V_domain = snode->GetPrimitive(iPoint);
 
       /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
@@ -4731,11 +4733,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Beta coefficient stored at the node ---*/
 
-      V_infty[nDim+3] = node->GetBetaInc2(iPoint);
+      V_infty[nDim+3] = snode->GetBetaInc2(iPoint);
 
       /*--- Cp is needed for Temperature equation. ---*/
 
-      V_infty[nDim+7] = node->GetSpecificHeatCp(iPoint);
+      V_infty[nDim+7] = snode->GetSpecificHeatCp(iPoint);
 
       /*--- Set various quantities in the numerics class ---*/
       
@@ -4764,9 +4766,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Set transport properties at infinity. ---*/
 
-        V_infty[nDim+4] = node->GetLaminarViscosity(iPoint);
-        V_infty[nDim+5] = node->GetEddyViscosity(iPoint);
-        V_infty[nDim+6] = node->GetThermalConductivity(iPoint);
+        V_infty[nDim+4] = snode->GetLaminarViscosity(iPoint);
+        V_infty[nDim+5] = snode->GetEddyViscosity(iPoint);
+        V_infty[nDim+6] = snode->GetThermalConductivity(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -4777,8 +4779,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_infty);
-        visc_numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint),
-                                          node->GetGradient_Primitive(iPoint));
+        visc_numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint),
+                                          snode->GetGradient_Primitive(iPoint));
         
         /*--- Turbulent kinetic energy ---*/
         
@@ -4872,11 +4874,11 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Retrieve solution at this boundary node. ---*/
       
-      V_domain = node->GetPrimitive(iPoint);
+      V_domain = snode->GetPrimitive(iPoint);
 
       /*--- Neumann condition for dynamic pressure ---*/
       
-      V_inlet[0] = node->GetPressure(iPoint);
+      V_inlet[0] = snode->GetPressure(iPoint);
       
       /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
@@ -4911,7 +4913,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           
           /*--- Store the current static pressure for clarity. ---*/
           
-          P_domain = node->GetPressure(iPoint);
+          P_domain = snode->GetPressure(iPoint);
           
           /*--- Check for back flow through the inlet. ---*/
           
@@ -4939,13 +4941,13 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             
             /*--- Neumann condition for the temperature. ---*/
             
-            V_inlet[nDim+1] = node->GetTemperature(iPoint);
+            V_inlet[nDim+1] = snode->GetTemperature(iPoint);
             
           } else {
             
             /*--- Update the velocity magnitude using the total pressure. ---*/
             
-            Vel_Mag = sqrt((P_total - P_domain)/(0.5*node->GetDensity(iPoint)));
+            Vel_Mag = sqrt((P_total - P_domain)/(0.5*snode->GetDensity(iPoint)));
             
             /*--- If requested, use the local boundary normal (negative),
              instead of the prescribed flow direction in the config. ---*/
@@ -4980,15 +4982,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         construction, or will be set fixed implicitly by the temperature
         and equation of state. ---*/
 
-      V_inlet[nDim+2] = node->GetDensity(iPoint);
+      V_inlet[nDim+2] = snode->GetDensity(iPoint);
 
       /*--- Beta coefficient from the config file ---*/
 
-      V_inlet[nDim+3] = node->GetBetaInc2(iPoint);
+      V_inlet[nDim+3] = snode->GetBetaInc2(iPoint);
 
       /*--- Cp is needed for Temperature equation. ---*/
 
-      V_inlet[nDim+7] = node->GetSpecificHeatCp(iPoint);
+      V_inlet[nDim+7] = snode->GetSpecificHeatCp(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
       
@@ -5017,9 +5019,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Set transport properties at the inlet ---*/
         
-        V_inlet[nDim+4] = node->GetLaminarViscosity(iPoint);
-        V_inlet[nDim+5] = node->GetEddyViscosity(iPoint);
-        V_inlet[nDim+6] = node->GetThermalConductivity(iPoint);
+        V_inlet[nDim+4] = snode->GetLaminarViscosity(iPoint);
+        V_inlet[nDim+5] = snode->GetEddyViscosity(iPoint);
+        V_inlet[nDim+6] = snode->GetThermalConductivity(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -5030,8 +5032,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint),
-                                          node->GetGradient_Primitive(iPoint));
+        visc_numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint),
+                                          snode->GetGradient_Primitive(iPoint));
         
         /*--- Turbulent kinetic energy ---*/
         
@@ -5109,11 +5111,11 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
        
       /*--- Current solution at this boundary node ---*/
       
-      V_domain = node->GetPrimitive(iPoint);
+      V_domain = snode->GetPrimitive(iPoint);
       
       /*--- Store the current static pressure for clarity. ---*/
       
-      P_domain = node->GetPressure(iPoint);
+      P_domain = snode->GetPressure(iPoint);
       
       /*--- Compute a boundary value for the pressure depending on whether
        we are prescribing a back pressure or a mass flow target. ---*/
@@ -5135,7 +5137,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Neumann condition for the velocity. ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = node->GetPrimitive(iPoint,iDim+1);
+            V_outlet[iDim+1] = snode->GetPrimitive(iPoint,iDim+1);
           }
           
           break;
@@ -5174,7 +5176,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Neumann condition for the velocity ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = node->GetPrimitive(iPoint,iDim+1);
+            V_outlet[iDim+1] = snode->GetPrimitive(iPoint,iDim+1);
           }
           
           break;
@@ -5183,21 +5185,21 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Neumann condition for the temperature. ---*/
 
-      V_outlet[nDim+1] = node->GetTemperature(iPoint);
+      V_outlet[nDim+1] = snode->GetTemperature(iPoint);
 
       /*--- Access density at the interior node. This is either constant by
         construction, or will be set fixed implicitly by the temperature
         and equation of state. ---*/
       
-      V_outlet[nDim+2] = node->GetDensity(iPoint);
+      V_outlet[nDim+2] = snode->GetDensity(iPoint);
 
       /*--- Beta coefficient from the config file ---*/
       
-      V_outlet[nDim+3] = node->GetBetaInc2(iPoint);
+      V_outlet[nDim+3] = snode->GetBetaInc2(iPoint);
 
       /*--- Cp is needed for Temperature equation. ---*/
 
-      V_outlet[nDim+7] = node->GetSpecificHeatCp(iPoint);
+      V_outlet[nDim+7] = snode->GetSpecificHeatCp(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -5227,9 +5229,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set transport properties at the outlet. ---*/
 
-        V_outlet[nDim+4] = node->GetLaminarViscosity(iPoint);
-        V_outlet[nDim+5] = node->GetEddyViscosity(iPoint);
-        V_outlet[nDim+6] = node->GetThermalConductivity(iPoint);
+        V_outlet[nDim+4] = snode->GetLaminarViscosity(iPoint);
+        V_outlet[nDim+5] = snode->GetEddyViscosity(iPoint);
+        V_outlet[nDim+6] = snode->GetThermalConductivity(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -5240,8 +5242,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Primitive variables, and gradient ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint),
-                                          node->GetGradient_Primitive(iPoint));
+        visc_numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint),
+                                          snode->GetGradient_Primitive(iPoint));
         
         /*--- Turbulent kinetic energy ---*/
         
@@ -5374,26 +5376,26 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       conv_numerics->SetNormal(Normal);
       
       /*--- Get current solution at this boundary node ---*/
-      V_domain = node->GetPrimitive(iPoint);
+      V_domain = snode->GetPrimitive(iPoint);
       
       /*--- Set the reflected state based on the boundary node. Scalars are copied and 
             the velocity is mirrored along the symmetry boundary, i.e. the velocity in 
             normal direction is substracted twice. ---*/
       for(iVar = 0; iVar < nPrimVar; iVar++)
-        V_reflected[iVar] = node->GetPrimitive(iPoint,iVar);
+        V_reflected[iVar] = snode->GetPrimitive(iPoint,iVar);
 
       /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
       ProjVelocity_i = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        ProjVelocity_i += node->GetVelocity(iPoint,iDim)*UnitNormal[iDim];
+        ProjVelocity_i += snode->GetVelocity(iPoint,iDim)*UnitNormal[iDim];
       
       for (iDim = 0; iDim < nDim; iDim++)
-        V_reflected[iDim+1] = node->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
+        V_reflected[iDim+1] = snode->GetVelocity(iPoint,iDim) - 2.0 * ProjVelocity_i*UnitNormal[iDim];
       
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(node->GetSecondary(iPoint), node->GetSecondary(iPoint));
+      conv_numerics->SetSecondary(snode->GetSecondary(iPoint), snode->GetSecondary(iPoint));
 
       /*--- Compute the residual using an upwind scheme. ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -5423,7 +5425,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         
         /*--- Set the primitive and Secondary variables. ---*/  
         visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(node->GetSecondary(iPoint), node->GetSecondary(iPoint));
+        visc_numerics->SetSecondary(snode->GetSecondary(iPoint), snode->GetSecondary(iPoint));
         
         /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
               1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
@@ -5434,7 +5436,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*--- Get gradients of primitives of boundary cell ---*/ 
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = node->GetGradient_Primitive(iPoint,iVar, iDim);
+            Grad_Reflected[iVar][iDim] = snode->GetGradient_Primitive(iPoint,iVar, iDim);
         
         /*--- Reflect the gradients for all scalars including the velocity components.
               The gradients of the velocity components are set later with the 
@@ -5489,7 +5491,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
             Grad_Reflected[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
         
         /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint), Grad_Reflected);
+        visc_numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint), Grad_Reflected);
         
         /*--- Turbulent kinetic energy. ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -5561,7 +5563,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
             Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = node->GetPrimitive(iPoint,iVar);
+              PrimVar_i[iVar] = snode->GetPrimitive(iPoint,iVar);
               PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
             }
             
@@ -5626,7 +5628,7 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
               /*--- Primitive variables, and gradient ---*/
 
               visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-              visc_numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint), node->GetGradient_Primitive(iPoint));
+              visc_numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint), snode->GetGradient_Primitive(iPoint));
 
               /*--- Turbulent kinetic energy ---*/
 
@@ -5730,9 +5732,9 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
          condition by setting the solution values at the boundary nodes
          directly and setting the residual to zero at those nodes. ---*/
         
-        node->SetSolution_Old(iPoint,Solution);
-        node->SetSolution(iPoint,Solution);
-        node->SetRes_TruncErrorZero(iPoint);
+        snode->SetSolution_Old(iPoint,Solution);
+        snode->SetSolution(iPoint,Solution);
+        snode->SetRes_TruncErrorZero(iPoint);
         LinSysRes.SetBlock_Zero(iPoint);
         
         /*--- Adjust rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -5802,14 +5804,14 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        previous solutions that are stored in memory. These are actually
        the primitive values, but we will convert to conservatives. ---*/
       
-      V_time_nM1 = node->GetSolution_time_n1(iPoint);
-      V_time_n   = node->GetSolution_time_n(iPoint);
-      V_time_nP1 = node->GetSolution(iPoint);
+      V_time_nM1 = snode->GetSolution_time_n1(iPoint);
+      V_time_n   = snode->GetSolution_time_n(iPoint);
+      V_time_nP1 = snode->GetSolution(iPoint);
       
       /*--- Access the density and Cp at this node (constant for now). ---*/
       
-      Density     = node->GetDensity(iPoint);
-      Cp          = node->GetSpecificHeatCp(iPoint);
+      Density     = snode->GetDensity(iPoint);
+      Cp          = snode->GetSpecificHeatCp(iPoint);
       
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
@@ -5861,13 +5863,13 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         
         /*--- Access the primitive variables at this node. ---*/
         
-        Density     = node->GetDensity(iPoint);
-        BetaInc2    = node->GetBetaInc2(iPoint);
-        Cp          = node->GetSpecificHeatCp(iPoint);
-        Temperature = node->GetTemperature(iPoint);
+        Density     = snode->GetDensity(iPoint);
+        BetaInc2    = snode->GetBetaInc2(iPoint);
+        Cp          = snode->GetSpecificHeatCp(iPoint);
+        Temperature = snode->GetTemperature(iPoint);
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = node->GetVelocity(iPoint,iDim);
+          Velocity[iDim] = snode->GetVelocity(iPoint,iDim);
         
         /*--- We need the derivative of the equation of state to build the
          preconditioning matrix. For now, the only option is the ideal gas
@@ -5967,12 +5969,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       /*--- Compute the GCL component of the source term for node i ---*/
       
-      V_time_n = node->GetSolution_time_n(iPoint);
+      V_time_n = snode->GetSolution_time_n(iPoint);
       
       /*--- Access the density and Cp at this node (constant for now). ---*/
       
-      Density     = node->GetDensity(iPoint);
-      Cp          = node->GetSpecificHeatCp(iPoint);
+      Density     = snode->GetDensity(iPoint);
+      Cp          = snode->GetSpecificHeatCp(iPoint);
       
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
@@ -5988,7 +5990,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       /*--- Compute the GCL component of the source term for node j ---*/
       
-      V_time_n = node->GetSolution_time_n(jPoint);
+      V_time_n = snode->GetSolution_time_n(jPoint);
       
       U_time_n[0] = Density;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -6031,12 +6033,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         
         /*--- Compute the GCL component of the source term for node i ---*/
         
-        V_time_n = node->GetSolution_time_n(iPoint);
+        V_time_n = snode->GetSolution_time_n(iPoint);
         
         /*--- Access the density and Cp at this node (constant for now). ---*/
         
-        Density     = node->GetDensity(iPoint);
-        Cp          = node->GetSpecificHeatCp(iPoint);
+        Density     = snode->GetDensity(iPoint);
+        Cp          = snode->GetSpecificHeatCp(iPoint);
         
         U_time_n[0] = Density;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -6071,14 +6073,14 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
       
-      V_time_nM1 = node->GetSolution_time_n1(iPoint);
-      V_time_n   = node->GetSolution_time_n(iPoint);
-      V_time_nP1 = node->GetSolution(iPoint);
+      V_time_nM1 = snode->GetSolution_time_n1(iPoint);
+      V_time_n   = snode->GetSolution_time_n(iPoint);
+      V_time_nP1 = snode->GetSolution(iPoint);
       
       /*--- Access the density and Cp at this node (constant for now). ---*/
       
-      Density     = node->GetDensity(iPoint);
-      Cp          = node->GetSpecificHeatCp(iPoint);
+      Density     = snode->GetDensity(iPoint);
+      Cp          = snode->GetSpecificHeatCp(iPoint);
       
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
@@ -6192,7 +6194,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
           
           if (geometry->node[iPoint]->GetDomain()) {
             
-            V_outlet = node->GetPrimitive(iPoint);
+            V_outlet = snode->GetPrimitive(iPoint);
             
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
             
@@ -6367,7 +6369,7 @@ void CIncEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *co
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node->GetSolution(iPoint,iVar) - node->Get_BGSSolution_k(iPoint,iVar);
+          residual = snode->GetSolution(iPoint,iVar) - snode->Get_BGSSolution_k(iPoint,iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -6414,7 +6416,7 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
       
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = geometry->node[iPoint]->GetCoord();
-        su2double *solDOF     = node->GetSolution(iPoint);
+        su2double *solDOF     = snode->GetSolution(iPoint);
       
         /* Get local error from the verification solution class. */
         vector<su2double> error(nVar,0.0);
@@ -6570,7 +6572,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar_Restart; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node->SetSolution(iPoint_Local,Solution);
+      snode->SetSolution(iPoint_Local,Solution);
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
@@ -6745,11 +6747,11 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   unsigned short iDim;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    node->SetSolution(iPoint,0, Pressure_Inf);
+    snode->SetSolution(iPoint,0, Pressure_Inf);
     for (iDim = 0; iDim < nDim; iDim++){
-      node->SetSolution(iPoint,iDim+1, Velocity_Inf[iDim]);
+      snode->SetSolution(iPoint,iDim+1, Velocity_Inf[iDim]);
     }
-    node->SetSolution(iPoint,nDim+1, Temperature_Inf);
+    snode->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
 }
 
@@ -7303,6 +7305,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   node = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+  snode = static_cast<CIncEulerVariable*>(node);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config->GetMultizone_Residual()){
@@ -7540,19 +7543,19 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     
     /*--- Initialize the non-physical points vector ---*/
     
-    node->SetNon_Physical(iPoint,false);
+    snode->SetNon_Physical(iPoint,false);
     
     /*--- Incompressible flow, primitive variables --- */
 
-    physical = node->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
+    physical = static_cast<CIncNSVariable*>(node)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
     
     /*--- Record any non-physical points. ---*/
 
-    if (!physical) { node->SetNon_Physical(iPoint,true); ErrorCounter++; }
+    if (!physical) { snode->SetNon_Physical(iPoint,true); ErrorCounter++; }
 
     /*--- Set the DES length scale ---*/
     
-    node->SetDES_LengthScale(iPoint,DES_LengthScale);    
+    snode->SetDES_LengthScale(iPoint,DES_LengthScale);    
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
@@ -7583,8 +7586,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    node->SetMax_Lambda_Inv(iPoint,0.0);
-    node->SetMax_Lambda_Visc(iPoint,0.0);
+    snode->SetMax_Lambda_Inv(iPoint,0.0);
+    snode->SetMax_Lambda_Visc(iPoint,0.0);
   }
   
   /*--- Loop interior edges ---*/
@@ -7601,9 +7604,9 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     
     /*--- Mean Values ---*/
     
-    Mean_ProjVel    = 0.5 * (node->GetProjVel(iPoint,Normal) + node->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (node->GetBetaInc2(iPoint)       + node->GetBetaInc2(jPoint));
-    Mean_Density    = 0.5 * (node->GetDensity(iPoint)        + node->GetDensity(jPoint));
+    Mean_ProjVel    = 0.5 * (snode->GetProjVel(iPoint,Normal) + snode->GetProjVel(jPoint,Normal));
+    Mean_BetaInc2   = 0.5 * (snode->GetBetaInc2(iPoint)       + snode->GetBetaInc2(jPoint));
+    Mean_Density    = 0.5 * (snode->GetDensity(iPoint)        + snode->GetDensity(jPoint));
     Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
     
     /*--- Adjustment for grid movement ---*/
@@ -7622,24 +7625,24 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     /*--- Inviscid contribution ---*/
     
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->node[iPoint]->GetDomain()) node->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node->AddMax_Lambda_Inv(jPoint,Lambda);
+    if (geometry->node[iPoint]->GetDomain()) snode->AddMax_Lambda_Inv(iPoint,Lambda);
+    if (geometry->node[jPoint]->GetDomain()) snode->AddMax_Lambda_Inv(jPoint,Lambda);
     
     /*--- Viscous contribution ---*/
     
-    Mean_LaminarVisc          = 0.5*(node->GetLaminarViscosity(iPoint)    + node->GetLaminarViscosity(jPoint));
-    Mean_EddyVisc             = 0.5*(node->GetEddyViscosity(iPoint)       + node->GetEddyViscosity(jPoint));
-    Mean_Density              = 0.5*(node->GetDensity(iPoint)             + node->GetDensity(jPoint));
-    Mean_Thermal_Conductivity = 0.5*(node->GetThermalConductivity(iPoint) + node->GetThermalConductivity(jPoint));
-    Mean_Cv                   = 0.5*(node->GetSpecificHeatCv(iPoint)      + node->GetSpecificHeatCv(jPoint));
+    Mean_LaminarVisc          = 0.5*(snode->GetLaminarViscosity(iPoint)    + snode->GetLaminarViscosity(jPoint));
+    Mean_EddyVisc             = 0.5*(snode->GetEddyViscosity(iPoint)       + snode->GetEddyViscosity(jPoint));
+    Mean_Density              = 0.5*(snode->GetDensity(iPoint)             + snode->GetDensity(jPoint));
+    Mean_Thermal_Conductivity = 0.5*(snode->GetThermalConductivity(iPoint) + snode->GetThermalConductivity(jPoint));
+    Mean_Cv                   = 0.5*(snode->GetSpecificHeatCv(iPoint)      + snode->GetSpecificHeatCv(jPoint));
 
     Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
     Lambda_2 = 0.0;
     if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
     Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
     
-    if (geometry->node[iPoint]->GetDomain()) node->AddMax_Lambda_Visc(iPoint,Lambda);
-    if (geometry->node[jPoint]->GetDomain()) node->AddMax_Lambda_Visc(jPoint,Lambda);
+    if (geometry->node[iPoint]->GetDomain()) snode->AddMax_Lambda_Visc(iPoint,Lambda);
+    if (geometry->node[jPoint]->GetDomain()) snode->AddMax_Lambda_Visc(jPoint,Lambda);
     
   }
   
@@ -7658,9 +7661,9 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Mean Values ---*/
       
-      Mean_ProjVel    = node->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = node->GetBetaInc2(iPoint);
-      Mean_Density    = node->GetDensity(iPoint);
+      Mean_ProjVel    = snode->GetProjVel(iPoint,Normal);
+      Mean_BetaInc2   = snode->GetBetaInc2(iPoint);
+      Mean_Density    = snode->GetDensity(iPoint);
       Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
       /*--- Adjustment for grid movement ---*/
@@ -7677,23 +7680,23 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
-        node->AddMax_Lambda_Inv(iPoint,Lambda);
+        snode->AddMax_Lambda_Inv(iPoint,Lambda);
       }
       
       /*--- Viscous contribution ---*/
 
-      Mean_LaminarVisc          = node->GetLaminarViscosity(iPoint);
-      Mean_EddyVisc             = node->GetEddyViscosity(iPoint);
-      Mean_Density              = node->GetDensity(iPoint);
-      Mean_Thermal_Conductivity = node->GetThermalConductivity(iPoint);
-      Mean_Cv                   = node->GetSpecificHeatCv(iPoint);
+      Mean_LaminarVisc          = snode->GetLaminarViscosity(iPoint);
+      Mean_EddyVisc             = snode->GetEddyViscosity(iPoint);
+      Mean_Density              = snode->GetDensity(iPoint);
+      Mean_Thermal_Conductivity = snode->GetThermalConductivity(iPoint);
+      Mean_Cv                   = snode->GetSpecificHeatCv(iPoint);
 
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
       Lambda_2 = 0.0;
       if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
       Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       
-      if (geometry->node[iPoint]->GetDomain()) node->AddMax_Lambda_Visc(iPoint,Lambda);
+      if (geometry->node[iPoint]->GetDomain()) snode->AddMax_Lambda_Visc(iPoint,Lambda);
       
     }
     }
@@ -7706,18 +7709,18 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node->GetMax_Lambda_Inv(iPoint);
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node->GetMax_Lambda_Visc(iPoint);
+      Local_Delta_Time = config->GetCFL(iMesh)*Vol / snode->GetMax_Lambda_Inv(iPoint);
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ snode->GetMax_Lambda_Visc(iPoint);
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-      node->SetDelta_Time(iPoint,Local_Delta_Time);
+      snode->SetDelta_Time(iPoint,Local_Delta_Time);
     }
     else {
-      node->SetDelta_Time(iPoint,0.0);
+      snode->SetDelta_Time(iPoint,0.0);
     }
     
   }
@@ -7748,7 +7751,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Global_Delta_Time = rbuf_time;
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node->SetDelta_Time(iPoint,Global_Delta_Time);
+      snode->SetDelta_Time(iPoint,Global_Delta_Time);
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -7770,8 +7773,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   if (dual_time)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node->GetDelta_Time(iPoint));
-        node->SetDelta_Time(iPoint,Local_Delta_Time);
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), snode->GetDelta_Time(iPoint));
+        snode->SetDelta_Time(iPoint,Local_Delta_Time);
       }
     }
   
@@ -7796,13 +7799,13 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Primitive and secondary variables ---*/
     
-    numerics->SetPrimitive(node->GetPrimitive(iPoint),
-                           node->GetPrimitive(jPoint));
+    numerics->SetPrimitive(snode->GetPrimitive(iPoint),
+                           snode->GetPrimitive(jPoint));
     
     /*--- Gradient and limiters ---*/
     
-    numerics->SetPrimVarGradient(node->GetGradient_Primitive(iPoint),
-                                 node->GetGradient_Primitive(jPoint));
+    numerics->SetPrimVarGradient(snode->GetGradient_Primitive(iPoint),
+                                 snode->GetGradient_Primitive(jPoint));
     
     /*--- Turbulent kinetic energy ---*/
     
@@ -7951,13 +7954,13 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
-            Grad_Vel[iDim][jDim] = node->GetGradient_Primitive(iPoint,iDim+1, jDim);
+            Grad_Vel[iDim][jDim] = snode->GetGradient_Primitive(iPoint,iDim+1, jDim);
           }
-          Grad_Temp[iDim] = node->GetGradient_Primitive(iPoint,nDim+1, iDim);
+          Grad_Temp[iDim] = snode->GetGradient_Primitive(iPoint,nDim+1, iDim);
         }
 
-        Viscosity = node->GetLaminarViscosity(iPoint);
-        Density = node->GetDensity(iPoint);
+        Viscosity = snode->GetLaminarViscosity(iPoint);
+        Density = snode->GetDensity(iPoint);
 
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -8013,7 +8016,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           GradTemperature -= Grad_Temp[iDim]*UnitNormal[iDim];
         }
         
-        thermal_conductivity       = node->GetThermalConductivity(iPoint);
+        thermal_conductivity       = snode->GetThermalConductivity(iPoint);
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
         HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
         MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
@@ -8360,11 +8363,11 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
       
-      node->SetVelocity_Old(iPoint,Vector);
+      snode->SetVelocity_Old(iPoint,Vector);
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-      node->SetVel_ResTruncError_Zero(iPoint);
+      snode->SetVel_ResTruncError_Zero(iPoint);
       
       if (energy) {
 
@@ -8457,11 +8460,11 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
       
-      node->SetVelocity_Old(iPoint,Vector);
+      snode->SetVelocity_Old(iPoint,Vector);
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-      node->SetVel_ResTruncError_Zero(iPoint);
+      snode->SetVel_ResTruncError_Zero(iPoint);
       
       if (energy) {
 
@@ -8489,11 +8492,11 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Compute the normal gradient in temperature using Twall ---*/
         
-        dTdn = -(node->GetTemperature(Point_Normal) - Twall)/dist_ij;
+        dTdn = -(snode->GetTemperature(Point_Normal) - Twall)/dist_ij;
         
         /*--- Get thermal conductivity ---*/
 
-        thermal_conductivity = node->GetThermalConductivity(iPoint);
+        thermal_conductivity = snode->GetThermalConductivity(iPoint);
 
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
@@ -8598,18 +8601,18 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
 
-      node->SetVelocity_Old(iPoint,Vector);
+      snode->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-      node->SetVel_ResTruncError_Zero(iPoint);
+      snode->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
 
         Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
-//        node->SetSolution_Old(iPoint,nDim+1, Tconjugate);
-//        node->SetEnergy_ResTruncError_Zero(iPoint);
+//        snode->SetSolution_Old(iPoint,nDim+1, Tconjugate);
+//        snode->SetEnergy_ResTruncError_Zero(iPoint);
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
@@ -8633,11 +8636,11 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
         /*--- Compute the normal gradient in temperature using Twall ---*/
 
-        dTdn = -(node->GetTemperature(Point_Normal) - Tconjugate)/dist_ij;
+        dTdn = -(snode->GetTemperature(Point_Normal) - Tconjugate)/dist_ij;
 
         /*--- Get thermal conductivity ---*/
 
-        thermal_conductivity = node->GetThermalConductivity(iPoint);
+        thermal_conductivity = snode->GetThermalConductivity(iPoint);
 
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/

@@ -54,6 +54,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
   Solution_Vel  = NULL;
   Solution_Accel= NULL;
 
+  snode = nullptr;
+
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver(){
@@ -73,6 +75,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CS
   Solution_Accel= NULL;
 
   SolRest = NULL;
+
+  snode = nullptr;
 
 }
 
@@ -215,6 +219,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
    the solution from the finest mesh to the coarser levels. ---*/
 
   node = new CDiscAdjFEAVariable(Solution, Solution_Accel, Solution_Vel, nPoint, nDim, nVar, dynamic, config);
+  snode = static_cast<CDiscAdjFEAVariable*>(node);
 
   if (restart && (iMesh == MESH_0)) {
 
@@ -275,14 +280,14 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
         for (iVar = 0; iVar < skipVars; iVar++) point_line >> dull_val;
         for (iVar = 0; iVar < nVar;     iVar++) point_line >> Solution[iVar];
 
-        node->SetSolution(iPoint,Solution);
+        snode->SetSolution(iPoint,Solution);
 
         if (dynamic) {
           for (iVar = 0; iVar < nVar; iVar++) point_line >> Solution_Vel[iVar];
           for (iVar = 0; iVar < nVar; iVar++) point_line >> Solution_Accel[iVar];
 
-          node->SetSolution_Vel(iPoint,Solution_Vel);
-          node->SetSolution_Accel(iPoint,Solution_Accel);
+          snode->SetSolution_Vel(iPoint,Solution_Vel);
+          snode->SetSolution_Accel(iPoint,Solution_Accel);
         }
       }
       iPoint_Global++;
@@ -298,16 +303,16 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*--- Store the direct solution ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    node->SetSolution_Direct(iPoint, direct_solver->node->GetSolution(iPoint));
+    snode->SetSolution_Direct(iPoint, direct_solver->node->GetSolution(iPoint));
   }
 
   if (dynamic){
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-      node->SetSolution_Accel_Direct(iPoint, direct_solver->node->GetSolution_Accel(iPoint));
+      snode->SetSolution_Accel_Direct(iPoint, direct_solver->node->GetSolution_Accel(iPoint));
     }
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-      node->SetSolution_Vel_Direct(iPoint, direct_solver->node->GetSolution_Vel(iPoint));
+      snode->SetSolution_Vel_Direct(iPoint, direct_solver->node->GetSolution_Vel(iPoint));
     }
   }
 
@@ -477,18 +482,18 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Reset the solution to the initial (converged) solution ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node->SetSolution(iPoint, node->GetSolution_Direct(iPoint));
+    direct_solver->node->SetSolution(iPoint, snode->GetSolution_Direct(iPoint));
   }
 
   if (dynamic){
     /*--- Reset the solution to the initial (converged) solution ---*/
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->SetSolution_Accel(iPoint, node->GetSolution_Accel_Direct(iPoint));
+      direct_solver->node->SetSolution_Accel(iPoint, snode->GetSolution_Accel_Direct(iPoint));
     }
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node->SetSolution_Vel(iPoint, node->GetSolution_Vel_Direct(iPoint));
+      direct_solver->node->SetSolution_Vel(iPoint, snode->GetSolution_Vel_Direct(iPoint));
     }
 
     /*--- Reset the input for time n ---*/
@@ -712,7 +717,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Set the old solution ---*/
 
-  node->Set_OldSolution();
+  snode->Set_OldSolution();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -722,7 +727,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     /*--- Store the adjoint solution ---*/
 
-    node->SetSolution(iPoint,Solution);
+    snode->SetSolution(iPoint,Solution);
 
   }
 
@@ -733,7 +738,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- FIRST: The acceleration solution ---*/
 
     /*--- Set the old acceleration solution ---*/
-    node->Set_OldSolution_Accel();    
+    snode->Set_OldSolution_Accel();    
 
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -743,14 +748,14 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint acceleration solution u'' ---*/
 
-      node->SetSolution_Accel(iPoint,Solution_Accel);
+      snode->SetSolution_Accel(iPoint,Solution_Accel);
 
     }
 
     /*--- NEXT: The velocity solution ---*/
 
     /*--- Set the old velocity solution ---*/
-    node->Set_OldSolution_Vel();
+    snode->Set_OldSolution_Vel();
     
     for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -760,7 +765,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint velocity solution u'' ---*/
 
-      node->SetSolution_Vel(iPoint,Solution_Vel);
+      snode->SetSolution_Vel(iPoint,Solution_Vel);
 
     }
 
@@ -785,7 +790,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
 
-      node->SetSolution_Accel_time_n(iPoint,Solution_Accel);
+      snode->SetSolution_Accel_time_n(iPoint,Solution_Accel);
 
     }
 
@@ -798,7 +803,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
 
-      node->SetSolution_Vel_time_n(iPoint,Solution_Vel);
+      snode->SetSolution_Vel_time_n(iPoint,Solution_Vel);
 
     }
 
@@ -810,20 +815,20 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node->GetSolution(iPoint, iVar) - node->GetSolution_Old(iPoint, iVar);
+          residual = snode->GetSolution(iPoint, iVar) - snode->GetSolution_Old(iPoint, iVar);
 
           AddRes_RMS(iVar,residual*residual);
           AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
       if (dynamic){
         for (iVar = 0; iVar < nVar; iVar++){
-            residual = node->GetSolution_Accel(iPoint, iVar) - node->GetSolution_Old_Accel(iPoint, iVar);
+            residual = snode->GetSolution_Accel(iPoint, iVar) - snode->GetSolution_Old_Accel(iPoint, iVar);
 
             AddRes_RMS(iVar,residual*residual);
             AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
         }
         for (iVar = 0; iVar < nVar; iVar++){
-            residual = node->GetSolution_Vel(iPoint, iVar) - node->GetSolution_Old_Vel(iPoint, iVar);
+            residual = snode->GetSolution_Vel(iPoint, iVar) - snode->GetSolution_Old_Vel(iPoint, iVar);
 
             AddRes_RMS(iVar,residual*residual);
             AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
@@ -903,32 +908,32 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      Solution[iVar] = node->GetSolution(iPoint,iVar);
+      Solution[iVar] = snode->GetSolution(iPoint,iVar);
     }
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += node->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
+        Solution[iVar] += snode->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += node->GetCross_Term_Derivative(iPoint,iVar);
+        Solution[iVar] += snode->GetCross_Term_Derivative(iPoint,iVar);
       }
     }
 
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution_Accel[iVar] = node->GetSolution_Accel(iPoint,iVar);
+        Solution_Accel[iVar] = snode->GetSolution_Accel(iPoint,iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution_Vel[iVar] = node->GetSolution_Vel(iPoint,iVar);
+        Solution_Vel[iVar] = snode->GetSolution_Vel(iPoint,iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += node->GetDynamic_Derivative_n(iPoint,iVar);
+        Solution[iVar] += snode->GetDynamic_Derivative_n(iPoint,iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution_Accel[iVar] += node->GetDynamic_Derivative_Accel_n(iPoint,iVar);
+        Solution_Accel[iVar] += snode->GetDynamic_Derivative_Accel_n(iPoint,iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution_Vel[iVar] += node->GetDynamic_Derivative_Vel_n(iPoint,iVar);
+        Solution_Vel[iVar] += snode->GetDynamic_Derivative_Vel_n(iPoint,iVar);
       }
     }
     direct_solver->node->SetAdjointSolution(iPoint,Solution);
@@ -950,13 +955,13 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   if (dynamic){
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
           for (iVar=0; iVar < nVar; iVar++){
-              node->SetDynamic_Derivative_n(iPoint, iVar, node->GetSolution_time_n(iPoint, iVar));
+              snode->SetDynamic_Derivative_n(iPoint, iVar, snode->GetSolution_time_n(iPoint, iVar));
           }
           for (iVar=0; iVar < nVar; iVar++){
-              node->SetDynamic_Derivative_Accel_n(iPoint, iVar, node->GetSolution_Accel_time_n(iPoint, iVar));
+              snode->SetDynamic_Derivative_Accel_n(iPoint, iVar, snode->GetSolution_Accel_time_n(iPoint, iVar));
           }
           for (iVar=0; iVar < nVar; iVar++){
-              node->SetDynamic_Derivative_Vel_n(iPoint, iVar, node->GetSolution_Vel_time_n(iPoint, iVar));
+              snode->SetDynamic_Derivative_Vel_n(iPoint, iVar, snode->GetSolution_Vel_time_n(iPoint, iVar));
           }
         }
     }
@@ -974,7 +979,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
 
     direct_solver->node->GetAdjointSolution(iPoint,Solution);
 
-    for (iVar = 0; iVar < nVar; iVar++) node->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
+    for (iVar = 0; iVar < nVar; iVar++) snode->SetCross_Term_Derivative(iPoint,iVar, Solution[iVar]);
 
   }
 
@@ -996,9 +1001,9 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
     /*--- Relax and set the solution ---*/
     
     for(iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*node->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
+      Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*snode->GetGeometry_CrossTerm_Derivative(iPoint,iVar);
 
-    for (iVar = 0; iVar < nVar; iVar++) node->SetGeometry_CrossTerm_Derivative(iPoint,iVar, Solution[iVar]);
+    for (iVar = 0; iVar < nVar; iVar++) snode->SetGeometry_CrossTerm_Derivative(iPoint,iVar, Solution[iVar]);
 
   }
 
@@ -1048,15 +1053,15 @@ void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *
   /*--- Compute the BGS solution (adding the cross term) ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
-      bgs_sol = node->GetSolution(iPoint, iVar) + node->GetGeometry_CrossTerm_Derivative(iPoint, iVar);
-      node->Set_BGSSolution(iPoint,iVar, bgs_sol);
+      bgs_sol = snode->GetSolution(iPoint, iVar) + snode->GetGeometry_CrossTerm_Derivative(iPoint, iVar);
+      snode->Set_BGSSolution(iPoint,iVar, bgs_sol);
     }
   }
 
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node->Get_BGSSolution(iPoint, iVar) - node->Get_BGSSolution_k(iPoint, iVar);
+          residual = snode->Get_BGSSolution(iPoint, iVar) - snode->Get_BGSSolution_k(iPoint, iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -1085,11 +1090,11 @@ void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_co
       Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
     }
 
-    node->SetSolution(iPoint,Solution);
+    snode->SetSolution(iPoint,Solution);
 
     if (dynamic){
-      node->SetSolution_Vel(iPoint,Solution);
-      node->SetSolution_Accel(iPoint,Solution);
+      snode->SetSolution_Vel(iPoint,Solution);
+      snode->SetSolution_Accel(iPoint,Solution);
     }
 
   }
@@ -1256,7 +1261,7 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node->SetSolution(iPoint_Local,Solution);
+      snode->SetSolution(iPoint_Local,Solution);
       iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/

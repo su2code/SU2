@@ -52,6 +52,20 @@
 
 using namespace std;
 
+/*--- Forward declarations of some derived CVariable classes ---*/
+/*---
+ Derived CSolvers keep a private pointer of the safest type they can downcast to.
+ This bypasses most of the virtual indirection (within that solver).
+ These declarations avoid having to include all CVariable hpps in
+ solver_structure.hpp, they will not be need when that file is split.
+---*/
+class CEulerVariable;
+class CIncEulerVariable;
+class CTurbVariable;
+class CFEABoundVariable;
+class CDiscAdjVariable;
+class CDiscAdjFEAVariable;
+
 /*!
  * \class CVariable
  * \brief Main class for defining the variables.
@@ -310,14 +324,14 @@ public:
     for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = 0.0;
   }
 
-  /*!
-   * \brief Specify a vector to set the velocity components of the old solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_vector - Pointer to the vector.
-   */
-  inline void SetVelSolutionOldVector(Idx_t iPoint, const su2double *val_vector) {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = val_vector[iDim];
-  }
+//  /*!
+//   * \brief Specify a vector to set the velocity components of the old solution.
+//   * \param[in] iPoint - Point index.
+//   * \param[in] val_vector - Pointer to the vector.
+//   */
+//  inline void SetVelSolutionOldVector(Idx_t iPoint, const su2double *val_vector) {
+//    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = val_vector[iDim];
+//  }
 
 //  /*!
 //   * \brief Set to zero the solution.
