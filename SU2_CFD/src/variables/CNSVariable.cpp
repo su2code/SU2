@@ -42,12 +42,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
                          Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) :
                          CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-  Prandtl_Turb    = config->GetPrandtl_Turb();
-  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
 
   Vorticity.resize(nPoint,3) = su2double(0.0);
   StrainMag.resize(nPoint) = su2double(0.0);

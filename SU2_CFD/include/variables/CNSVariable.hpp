@@ -47,11 +47,6 @@
  */
 class CNSVariable final : public CEulerVariable {
 private:
-  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
-  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
-  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
-  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
-  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
 
   Mat_t Vorticity;       /*!< \brief Vorticity of the fluid. */

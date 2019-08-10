@@ -48,7 +48,6 @@
 class CIncEulerVariable : public CVariable {
 protected:
   Vec_t Velocity2;              /*!< \brief Square of the velocity vector. */
-  // ToDo: wrong_description
   Mat_t Primitive;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   VectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   Mat_t Limiter_Primitive;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */

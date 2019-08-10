@@ -46,8 +46,6 @@
  * \author F. Palacios
  */
 class CAdjNSVariable final : public CAdjEulerVariable {
-private:
-  // ToDo: This entire class can be removed
 public:
   /*!
    * \brief Constructor of the class.
