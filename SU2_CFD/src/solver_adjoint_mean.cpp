@@ -1612,11 +1612,9 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   
   /*--- The value of the solution for the first iteration of the dual time ---*/
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      if ((ExtIter == 0) && (dual_time)) {
-        solver_container[iMesh][ADJFLOW_SOL]->node->Set_Solution_time_n(iPoint);
-        solver_container[iMesh][ADJFLOW_SOL]->node->Set_Solution_time_n1(iPoint);
-      }
+    if ((ExtIter == 0) && (dual_time)) {
+    solver_container[iMesh][ADJFLOW_SOL]->node->Set_Solution_time_n();
+    solver_container[iMesh][ADJFLOW_SOL]->node->Set_Solution_time_n1();
     }
   }
   
@@ -1989,8 +1987,7 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
   Diff = new su2double[nVar];
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetUnd_LaplZero(iPoint);
+  node->SetUnd_LaplZero();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);

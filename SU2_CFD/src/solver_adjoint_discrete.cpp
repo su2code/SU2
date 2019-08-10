@@ -471,11 +471,11 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       SetRes_Max(iVar,0.0,0);
   }
 
+  /*--- Set the old solution ---*/
+
+  node->Set_OldSolution();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    /*--- Set the old solution ---*/
-
-    node->Set_OldSolution(iPoint);
 
     /*--- Extract the adjoint solution ---*/
 
@@ -611,11 +611,11 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //      SetRes_Max(iVar,0.0,0);
 //  }
 
+  /*--- Set the old solution ---*/
+
+  node->Set_OldSolution_Geometry();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Set the old solution ---*/
-
-    node->Set_OldSolution_Geometry(iPoint);
 
     /*--- Extract the adjoint solution ---*/
 
@@ -1067,18 +1067,5 @@ void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *con
   }
 
   SetResidual_BGS(geometry, config);
-
-}
-
-void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node->Set_BGSSolution_k(iPoint);
-
-  }
 
 }

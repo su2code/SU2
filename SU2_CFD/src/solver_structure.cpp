@@ -2461,8 +2461,9 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   su2double AuxVar_Vertex, AuxVar_i, AuxVar_j, AuxVar_Average;
   su2double *Gradient, DualArea, Partial_Res, Grad_Val, *Normal;
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node->SetAuxVarGradientZero(iPoint);    // Set Gradient to Zero
+  /*--- Set Gradient to Zero ---*/
+
+  node->SetAuxVarGradientZero();
   
   /*--- Loop interior edges ---*/
   
@@ -2646,8 +2647,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   Partial_Res, Grad_Val, *Normal, Vol;
   
   /*--- Set Gradient to Zero ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-    node->SetGradientZero(iPoint);
+  node->SetGradientZero();
   
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2732,6 +2732,12 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++)
     Cvector[iVar] = new su2double [nDim];
   
+  /*--- Clear Rmatrix, which could eventually be computed once
+     and stored for static meshes, as well as the gradient. ---*/
+
+  node->SetRmatrixZero();
+  node->SetGradientZero();
+
   /*--- Loop over points of the grid ---*/
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -2752,12 +2758,6 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     for (iVar = 0; iVar < nVar; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
-    
-    /*--- Clear Rmatrix, which could eventually be computed once
-     and stored for static meshes, as well as the prim gradient. ---*/
-    
-    node->SetRmatrixZero(iPoint);
-    node->SetGradientZero(iPoint);
 
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);

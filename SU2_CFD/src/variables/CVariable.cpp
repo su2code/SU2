@@ -89,3 +89,21 @@ CVariable::CVariable(Idx_t npoint, Idx_t ndim, Idx_t nvar, CConfig *config) {
   Non_Physical.resize(nPoint) = false;
 
 }
+
+void CVariable::Set_OldSolution() { Solution_Old = Solution; }
+
+void CVariable::Set_Solution() { Solution = Solution_Old; }
+
+void CVariable::Set_Solution_time_n() { Solution_time_n = Solution; }
+
+void CVariable::Set_Solution_time_n1() { Solution_time_n1 = Solution_time_n; }
+
+void CVariable::SetResidualSumZero() { Residual_Sum.setConstant(0.0); }
+
+void CVariable::SetAuxVarGradientZero() { Grad_AuxVar.setConstant(0.0); }
+
+void CVariable::SetGradientZero() { Gradient.storage.setConstant(0.0); }
+
+void CVariable::SetRmatrixZero() { Rmatrix.storage.setConstant(0.0); }
+
+void CVariable::SetUnd_LaplZero() { Undivided_Laplacian.setConstant(0.0); }

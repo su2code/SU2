@@ -209,11 +209,8 @@ public:
 
   /*!
    * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
    */
-  inline void SetSolution_time_n(Idx_t iPoint) override {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution_time_n(iPoint,iVar) = Solution(iPoint,iVar);
-  }
+  void SetSolution_time_n() override;
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis - adjoint).
@@ -250,19 +247,13 @@ public:
 
   /*!
    * \brief Set the value of the old acceleration (Structural Analysis - adjoint).
-   * \param[in] val_solution - Old solution of the problem (acceleration).
    */
-  inline void Set_OldSolution_Accel(Idx_t iPoint) override {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Old_Accel(iPoint,iVar) = Solution_Accel(iPoint,iVar);
-  }
+  void Set_OldSolution_Accel() override;
 
   /*!
    * \brief Set the value of the old velocity (Structural Analysis - adjoint).
-   * \param[in] val_solution - Old solution of the problem (velocity).
    */
-  inline void Set_OldSolution_Vel(Idx_t iPoint) override {
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Solution_Old_Vel(iPoint,iVar) = Solution_Vel(iPoint,iVar);
-  }
+  void Set_OldSolution_Vel() override;
 
   /*!
    * \brief Set the contribution of crossed terms into the derivative.
@@ -301,9 +292,7 @@ public:
   /*!
    * \brief Set the value of the adjoint solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(Idx_t iPoint) override {
-    for (Idx_t iDim = 0; iDim < nDim; iDim++) Solution_BGS_k(iPoint,iDim) = Solution_BGS(iPoint,iDim);
-  }
+  void Set_BGSSolution_k() override;
 
   /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.

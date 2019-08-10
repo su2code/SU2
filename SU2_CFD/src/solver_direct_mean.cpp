@@ -2929,13 +2929,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
      for a 1st-order restart or when simply intitializing to freestream. ---*/
     
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-        solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n1(iPoint);
-        if (rans) {
-          solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-          solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n1(iPoint);
-        }
+      solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+      solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n1();
+      if (rans) {
+        solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n();
+        solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n1();
       }
     }
     
@@ -2953,11 +2951,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       /*--- Push back this new solution to time level N. ---*/
       
       for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-          if (rans) {
-            solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-          }
+        solver_container[iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+        if (rans) {
+          solver_container[iMesh][TURB_SOL]->node->Set_Solution_time_n();
         }
       }
     }
@@ -3965,8 +3961,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
     
   Diff = new su2double[nVar];
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetUnd_LaplZero(iPoint);
+  node->SetUnd_LaplZero();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -5227,9 +5222,8 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   PrimVar_j = new su2double [nPrimVarGrad];
   
   /*--- Set Gradient_Primitive to zero ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetGradient_PrimitiveZero(iPoint,nPrimVarGrad);
+
+  node->SetGradient_PrimitiveZero();
 
   /*--- Loop interior edges ---*/
   
@@ -5323,6 +5317,10 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   su2double z11, z12, z13, z22, z23, z33, detR2;
   bool singular;
   
+  /*--- Clear Rmatrix and Primitive gradient ---*/
+  node->SetRmatrixZero();
+  node->SetGradient_PrimitiveZero();
+  
   /*--- Loop over points of the grid ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5343,12 +5341,6 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
-    
-    /*--- Clear Rmatrix, which could eventually be computed once
-     and stored for static meshes, as well as the prim gradient. ---*/
-    
-    node->SetRmatrixZero(iPoint);
-    node->SetGradient_PrimitiveZero(iPoint,nPrimVarGrad);
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -12676,20 +12668,6 @@ void CEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *confi
 
 }
 
-
-void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node->Set_BGSSolution_k(iPoint);
-
-  }
-
-}
-
 void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
                                             CConfig   *config) {
 
@@ -15134,11 +15112,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
+  solver_container[FLOW_SOL]->node->SetVorticity_StrainMag();
+  
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    solver_container[FLOW_SOL]->node->SetVorticity(iPoint);
-    solver_container[FLOW_SOL]->node->SetStrainMag(iPoint);
     
     StrainMag = solver_container[FLOW_SOL]->node->GetStrainMag(iPoint);
     Vorticity = solver_container[FLOW_SOL]->node->GetVorticity(iPoint);

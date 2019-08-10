@@ -129,10 +129,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
 }
 
-void CIncEulerVariable::SetGradient_PrimitiveZero(Idx_t iPoint, Idx_t val_primvar) {
-  for (Idx_t iVar = 0; iVar < val_primvar; iVar++)
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      Gradient_Primitive(iPoint,iVar,iDim) = 0.0;
+void CIncEulerVariable::SetGradient_PrimitiveZero() {
+  Gradient_Primitive.storage.setConstant(0.0);
 }
 
 
@@ -210,3 +208,5 @@ bool CIncEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
   return physical;
 
 }
+
+void CIncEulerVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }

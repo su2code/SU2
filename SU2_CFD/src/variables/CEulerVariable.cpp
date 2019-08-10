@@ -141,11 +141,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
 }
 
-void CEulerVariable::SetGradient_PrimitiveZero(Idx_t iPoint, Idx_t val_primvar) {
-
-  for (Idx_t iVar = 0; iVar < val_primvar; iVar++)
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      Gradient_Primitive(iPoint,iVar,iDim) = 0.0;
+void CEulerVariable::SetGradient_PrimitiveZero() {
+  Gradient_Primitive.storage.setConstant(0.0);
 }
 
 void CEulerVariable::SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {
@@ -221,3 +218,7 @@ void CEulerVariable::SetSecondaryVar(Idx_t iPoint, CFluidModel *FluidModel) {
    SetdPde_rho(iPoint, FluidModel->GetdPde_rho());
 
 }
+
+void CEulerVariable::SetSolution_New() { Solution_New = Solution; }
+
+void CEulerVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }

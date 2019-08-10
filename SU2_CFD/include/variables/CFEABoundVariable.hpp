@@ -123,10 +123,7 @@ public:
   /*!
    * \brief Store the surface load as the load for the previous time step.
    */
-  inline void Set_SurfaceLoad_Res_n(Idx_t iPoint) override {
-    APPLY_VERTEXMAP()
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) Residual_Ext_Surf_n(iPoint,iVar) = Residual_Ext_Surf(iPoint,iVar);
-  }
+  void Set_SurfaceLoad_Res_n() override;
 
   /*!
    * \brief Get the surface load from the previous time step.
@@ -163,10 +160,7 @@ public:
   /*!
    * \brief Set the value of the flow traction at the previous time step.
    */
-  void Set_FlowTraction_n(Idx_t iPoint) override {
-    APPLY_VERTEXMAP()
-    for (Idx_t iVar = 0; iVar < nVar; iVar++) FlowTraction_n(iPoint,iVar) = FlowTraction(iPoint,iVar);
-  }
+  void Set_FlowTraction_n() override;
 
   /*!
    * \brief Retrieve the value of the flow traction from the previous time step.

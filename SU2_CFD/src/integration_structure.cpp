@@ -584,12 +584,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 }
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+
   unsigned long iPoint;
-  
+
+  solver->node->Set_Solution_time_n1();
+  solver->node->Set_Solution_time_n();
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    solver->node->Set_Solution_time_n1(iPoint);
-    solver->node->Set_Solution_time_n(iPoint);
-    
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
     
@@ -673,15 +674,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
   
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver->node->SetSolution_time_n(iPoint);
-    solver->node->SetSolution_Vel_time_n(iPoint);
-    solver->node->SetSolution_Accel_time_n(iPoint);
-    
-  }
+  solver->node->SetSolution_time_n();
+  solver->node->SetSolution_Vel_time_n();
+  solver->node->SetSolution_Accel_time_n();
   
   bool fsi = config->GetFSI_Simulation();
   
@@ -720,13 +715,10 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    solver_container[FEA_SOL]->node->SetSolution_time_n(iPoint);
-    solver_container[FEA_SOL]->node->SetSolution_Vel_time_n(iPoint);
-    solver_container[FEA_SOL]->node->SetSolution_Accel_time_n(iPoint);
-    
-  }
+
+  solver_container[FEA_SOL]->node->SetSolution_time_n();
+  solver_container[FEA_SOL]->node->SetSolution_Vel_time_n();
+  solver_container[FEA_SOL]->node->SetSolution_Accel_time_n();
   
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
   

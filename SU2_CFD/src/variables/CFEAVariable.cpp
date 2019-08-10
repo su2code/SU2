@@ -96,3 +96,11 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, Idx_t npoint, Idx_t ndim, I
   if (prestretch_fem)  Prestretch.resize(nPoint,nVar);
 
 }
+
+void CFEAVariable::Set_BGSSolution_k() { Solution_BGS_k = Solution; }
+
+void CFEAVariable::SetSolution_time_n() { Solution_time_n = Solution; }
+
+void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
+
+void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }

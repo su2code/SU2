@@ -83,3 +83,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   isAllocated = true;
 }
+
+void CFEABoundVariable::Set_FlowTraction_n() { FlowTraction_n = FlowTraction; }
+
+void CFEABoundVariable::Set_SurfaceLoad_Res_n() { Residual_Ext_Surf_n = Residual_Ext_Surf; }

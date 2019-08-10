@@ -2159,17 +2159,15 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-            solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-            solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n1(iPoint);
-            if (turbulent) {
-              solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-              solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n1(iPoint);
-            }
-            if (heat) {
-              solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-              solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n1(iPoint);
-            }
+          solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+          solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n1();
+          if (turbulent) {
+            solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n();
+            solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n1();
+          }
+          if (heat) {
+            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n();
+            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n1();
           }
         }
       }
@@ -2182,14 +2180,12 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-            solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n(iPoint);
-            if (turbulent) {
-              solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n(iPoint);
-            }
-            if (heat) {
-              solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-            }
+          solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_Solution_time_n();
+          if (turbulent) {
+            solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_Solution_time_n();
+          }
+          if (heat) {
+            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n();
           }
         }
       }
@@ -2214,14 +2210,12 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
       for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-        for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_OldSolution(iPoint);
-           if (turbulent){
-             solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_OldSolution(iPoint);
-           }
-           if (heat){
-             solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_OldSolution(iPoint);
-           }
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->node->Set_OldSolution();
+        if (turbulent){
+         solver[val_iZone][val_iInst][iMesh][TURB_SOL]->node->Set_OldSolution();
+        }
+        if (heat){
+         solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_OldSolution();
         }
       }
 
@@ -2746,21 +2740,15 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][MESH_0]->GetnPoint();iPoint++){
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_time_n(iPoint);
-    }
+    solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][MESH_0]->GetnPoint();iPoint++){
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_Accel_time_n(iPoint);
-    }
+    solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_Accel_time_n();
 
     /*--- Push solution back to correct array ---*/
 
-    for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][MESH_0]->GetnPoint();iPoint++){
-      solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_Vel_time_n(iPoint);
-    }
+    solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->node->SetSolution_Vel_time_n();
 
     /*--- Load solution timestep n ---*/
 
@@ -3342,11 +3330,8 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-
-            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n1(iPoint);
-          }
+          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n();
+          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n1();
         }
       }
       if (dual_time) {
@@ -3358,10 +3343,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
         /*--- Push solution back to correct array ---*/
 
         for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-          for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-
-            solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-          }
+          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_Solution_time_n();
         }
       }
 
@@ -3380,12 +3362,8 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
 
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
-      for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
-        for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
-
-          solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_OldSolution(iPoint);
-        }
-      }
+      for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++)
+        solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->node->Set_OldSolution();
 
       /*--- Set Solution at timestep n to solution at n-1 ---*/
 

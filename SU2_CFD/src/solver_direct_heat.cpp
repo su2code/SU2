@@ -447,8 +447,7 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
   Diff = new su2double[nVar];
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    node->SetUnd_LaplZero(iPoint);
+  node->SetUnd_LaplZero();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -1728,10 +1727,8 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
      for a 1st-order restart or when simply intitializing to freestream. ---*/
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-        solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n1(iPoint);
-      }
+      solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n();
+      solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n1();
     }
 
     if ((restart && (long)ExtIter == config->GetUnst_RestartIter()) &&
@@ -1744,9 +1741,7 @@ void CHeatSolverFVM::SetInitialCondition(CGeometry **geometry, CSolver ***solver
       /*--- Push back this new solution to time level N. ---*/
 
       for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n(iPoint);
-        }
+        solver_container[iMesh][HEAT_SOL]->node->Set_Solution_time_n();
       }
     }
   }
