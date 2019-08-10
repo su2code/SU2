@@ -226,14 +226,14 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 //  if (time_n_needed){
 //    for (iPoint = 0; iPoint < nPoint; iPoint++){
 //      for (iVar = 0; iVar < nVar; iVar++){
-//        AD::ResetInput(direct_solver->node->GetSolution_time_n(iPoint)[iVar]);
+//        AD::ResetInput(direct_solver->node->GetSolution_time_n(iPoint,iVar));
 //      }
 //    }
 //  }
 //  if (time_n1_needed){
 //    for (iPoint = 0; iPoint < nPoint; iPoint++){
 //      for (iVar = 0; iVar < nVar; iVar++){
-//        AD::ResetInput(direct_solver->node->GetSolution_time_n1(iPoint)[iVar]);
+//        AD::ResetInput(direct_solver->node->GetSolution_time_n1(iPoint,iVar));
 //      }
 //    }
 //  }

@@ -521,8 +521,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
         else{
           Density_nM1 = solver_container[FLOW_SOL]->node->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->node->GetSolution(iPoint)[0];
+          Density_n   = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint,0);
+          Density_nP1 = solver_container[FLOW_SOL]->node->GetSolution(iPoint,0);
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -598,7 +598,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       if (config->GetKind_Turb_Model() == SST) {
         if (incompressible) Density_n = solver_container[FLOW_SOL]->node->GetDensity(iPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint)[0];
+        else Density_n = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint,0);
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -657,7 +657,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         if (config->GetKind_Turb_Model() == SST) {
           if (incompressible) Density_n = solver_container[FLOW_SOL]->node->GetDensity(iPoint); // Temporary fix
-          else Density_n = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint)[0];
+          else Density_n = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint,0);
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         } else {
@@ -709,8 +709,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
         else{
           Density_nM1 = solver_container[FLOW_SOL]->node->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->node->GetSolution(iPoint)[0];
+          Density_n   = solver_container[FLOW_SOL]->node->GetSolution_time_n(iPoint,0);
+          Density_nP1 = solver_container[FLOW_SOL]->node->GetSolution(iPoint,0);
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -3004,7 +3004,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     
     /*--- Low Reynolds number correction term ---*/
     
-    nu_hat = node->GetSolution(iPoint)[0];
+    nu_hat = node->GetSolution(iPoint,0);
     Ji   = nu_hat/kinematicViscosity;
     Ji_2 = Ji * Ji;
     Ji_3 = Ji*Ji*Ji;
