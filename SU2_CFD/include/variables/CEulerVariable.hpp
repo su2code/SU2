@@ -60,8 +60,8 @@ protected:
 
   /*--- Secondary variable definition ---*/
   Mat_t Secondary;              /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  Mat_t Limiter_Secondary;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+//  VectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+//  Mat_t Limiter_Secondary;      /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   Mat_t Solution_New;     /*!< \brief New solution container for Classical RK4. */
   Mat_t Solution_BGS_k;   /*!< \brief Old solution container for BGS iterations. */
@@ -179,80 +179,80 @@ public:
    */
   inline su2double *GetLimiter_Primitive(Idx_t iPoint) final { return Limiter_Primitive[iPoint]; }
 
-  /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) final;
-
-  /*!
-   * \brief Add <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the gradient of the primitive variables.
-   */
-  inline void AddGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
-    Gradient_Secondary(iPoint,iVar,iDim) += value;
-  }
-
-  /*!
-   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline void SubtractGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
-    Gradient_Secondary(iPoint,iVar,iDim) -= value;
-  }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double GetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim) const final {
-    return Gradient_Secondary(iPoint,iVar,iDim);
-  }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double GetLimiter_Secondary(Idx_t iPoint, Idx_t iVar) const final { return Limiter_Secondary(iPoint,iVar); }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
-    Gradient_Secondary(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetLimiter_Secondary(Idx_t iPoint, Idx_t iVar, su2double value) final {
-    Limiter_Secondary(iPoint,iVar) = value;
-  }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double **GetGradient_Secondary(Idx_t iPoint) final {return Gradient_Secondary[iPoint]; }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double *GetLimiter_Secondary(Idx_t iPoint) final {return Limiter_Secondary[iPoint]; }
+//  /*!
+//   * \brief Set to zero the gradient of the primitive variables.
+//   */
+//  void SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) final;
+//
+//  /*!
+//   * \brief Add <i>value</i> to the gradient of the primitive variables.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \param[in] value - Value to add to the gradient of the primitive variables.
+//   */
+//  inline void AddGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
+//    Gradient_Secondary(iPoint,iVar,iDim) += value;
+//  }
+//
+//  /*!
+//   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \param[in] value - Value to subtract to the gradient of the primitive variables.
+//   */
+//  inline void SubtractGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
+//    Gradient_Secondary(iPoint,iVar,iDim) -= value;
+//  }
+//
+//  /*!
+//   * \brief Get the value of the primitive variables gradient.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \return Value of the primitive variables gradient.
+//   */
+//  inline su2double GetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim) const final {
+//    return Gradient_Secondary(iPoint,iVar,iDim);
+//  }
+//
+//  /*!
+//   * \brief Get the value of the primitive variables gradient.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \return Value of the primitive variables gradient.
+//   */
+//  inline su2double GetLimiter_Secondary(Idx_t iPoint, Idx_t iVar) const final { return Limiter_Secondary(iPoint,iVar); }
+//
+//  /*!
+//   * \brief Set the gradient of the primitive variables.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \param[in] value - Value of the gradient.
+//   */
+//  inline void SetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t iDim, su2double value) final {
+//    Gradient_Secondary(iPoint,iVar,iDim) = value;
+//  }
+//
+//  /*!
+//   * \brief Set the gradient of the primitive variables.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] iDim - Index of the dimension.
+//   * \param[in] value - Value of the gradient.
+//   */
+//  inline void SetLimiter_Secondary(Idx_t iPoint, Idx_t iVar, su2double value) final {
+//    Limiter_Secondary(iPoint,iVar) = value;
+//  }
+//
+//  /*!
+//   * \brief Get the value of the primitive variables gradient.
+//   * \return Value of the primitive variables gradient.
+//   */
+//  inline su2double **GetGradient_Secondary(Idx_t iPoint) final {return Gradient_Secondary[iPoint]; }
+//
+//  /*!
+//   * \brief Get the value of the primitive variables gradient.
+//   * \return Value of the primitive variables gradient.
+//   */
+//  inline su2double *GetLimiter_Secondary(Idx_t iPoint) final {return Limiter_Secondary[iPoint]; }
 
   /*!
    * \brief A virtual member.
@@ -474,11 +474,11 @@ public:
    */
   inline su2double GetHarmonicBalance_Source(Idx_t iPoint, Idx_t iVar) const final { return HB_Source(iPoint,iVar); }
 
-  /*!
-   * \brief Get the value of the preconditioner Beta.
-   * \return Value of the low Mach preconditioner variable Beta
-   */
-  inline su2double GetPreconditioner_Beta(Idx_t iPoint) const final { return Precond_Beta(iPoint); }
+//  /*!
+//   * \brief Get the value of the preconditioner Beta.
+//   * \return Value of the low Mach preconditioner variable Beta
+//   */
+//  inline su2double GetPreconditioner_Beta(Idx_t iPoint) const final { return Precond_Beta(iPoint); }
 
   /*!
    * \brief Set the value of the preconditioner Beta.
