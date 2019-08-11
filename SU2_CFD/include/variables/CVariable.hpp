@@ -78,7 +78,7 @@ protected:
   template<class T> using TMat_t = C2DContainer<Idx_t, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
   using Vec_t = TVec_t<su2double>;
   using Mat_t = TMat_t<su2double>;
-  
+
   /*--- This contrived container is used to store matrices in a contiguous manner but still present the
    "su2double**" interface to the outside world, it will be replaced by something more efficient. ---*/
   struct VectorOfMatrix {
@@ -91,7 +91,7 @@ protected:
       N = cols;
       storage.resize(length*rows*cols) = value;
       interface.resize(length,rows);
-      
+
       for(Idx_t i=0; i<length; ++i)
         for(Idx_t j=0; j<rows; ++j)
           interface(i,j) = &(*this)(i,j,0);
@@ -135,7 +135,7 @@ protected:
 
   Mat_t Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
 
-  Idx_t nPoint = {0};  /*!< \brief Number of points in the domain. */ 
+  Idx_t nPoint = {0};  /*!< \brief Number of points in the domain. */
   Idx_t nDim = {0};      /*!< \brief Number of dimension of the problem. */
   Idx_t nVar = {0};        /*!< \brief Number of variables of the problem. */
   Idx_t nPrimVar = {0};      /*!< \brief Number of primitive variables. */
@@ -815,12 +815,12 @@ public:
    */
   inline su2double GetSolution_Min(Idx_t iPoint, Idx_t iVar) const { return Solution_Min(iPoint,iVar); }
 
-  /*!
-   * \brief Get the value of the preconditioner Beta.
-   * \param[in] iPoint - Point index.
-   * \return Value of the low Mach preconditioner variable Beta
-   */
-  inline virtual su2double GetPreconditioner_Beta(Idx_t iPoint) const { return 0.0; }
+//  /*!
+//   * \brief Get the value of the preconditioner Beta.
+//   * \param[in] iPoint - Point index.
+//   * \return Value of the low Mach preconditioner variable Beta
+//   */
+//  inline virtual su2double GetPreconditioner_Beta(Idx_t iPoint) const { return 0.0; }
 
   /*!
    * \brief Set the value of the preconditioner Beta.
@@ -1792,7 +1792,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void Set_isVertex(Idx_t iPoint, bool isVertex) {}
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -1923,68 +1923,68 @@ public:
    */
   inline virtual su2double *GetLimiter_Primitive(Idx_t iPoint) { return nullptr; }
 
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to add to the gradient of the Secondary variables.
-   */
-  inline virtual void AddGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to subtract to the gradient of the Secondary variables.
-   */
-  inline virtual void SubtractGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the Secondary variables gradient.
-   */
-  inline virtual su2double GetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the Secondary variables gradient.
-   */
-  inline virtual su2double GetLimiter_Secondary(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetLimiter_Secondary(Idx_t iPoint, Idx_t iVar, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Secondary variables gradient.
-   */
-  inline virtual su2double **GetGradient_Secondary(Idx_t iPoint) {return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Secondary variables gradient.
-   */
-  inline virtual su2double *GetLimiter_Secondary(Idx_t iPoint) {return nullptr; }
+//  /*!
+//   * \brief A virtual member.
+//   */
+//  inline virtual void SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {}
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] val_dim - Index of the dimension.
+//   * \param[in] val_value - Value to add to the gradient of the Secondary variables.
+//   */
+//  inline virtual void AddGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] val_dim - Index of the dimension.
+//   * \param[in] val_value - Value to subtract to the gradient of the Secondary variables.
+//   */
+//  inline virtual void SubtractGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] val_dim - Index of the dimension.
+//   * \return Value of the Secondary variables gradient.
+//   */
+//  inline virtual su2double GetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim) const { return 0.0; }
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \return Value of the Secondary variables gradient.
+//   */
+//  inline virtual su2double GetLimiter_Secondary(Idx_t iPoint, Idx_t iVar) const { return 0.0; }
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] val_dim - Index of the dimension.
+//   * \param[in] val_value - Value of the gradient.
+//   */
+//  inline virtual void SetGradient_Secondary(Idx_t iPoint, Idx_t iVar, Idx_t val_dim, su2double val_value) {}
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \param[in] iVar - Index of the variable.
+//   * \param[in] val_value - Value of the gradient.
+//   */
+//  inline virtual void SetLimiter_Secondary(Idx_t iPoint, Idx_t iVar, su2double val_value) {}
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \return Value of the Secondary variables gradient.
+//   */
+//  inline virtual su2double **GetGradient_Secondary(Idx_t iPoint) {return nullptr; }
+//
+//  /*!
+//   * \brief A virtual member.
+//   * \return Value of the Secondary variables gradient.
+//   */
+//  inline virtual su2double *GetLimiter_Secondary(Idx_t iPoint) {return nullptr; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

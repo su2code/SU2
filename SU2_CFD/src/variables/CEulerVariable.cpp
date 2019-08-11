@@ -79,14 +79,14 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
   Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Limiter_Secondary.resize(nPoint,nSecondaryVarGrad) = su2double(0.0);
+//  Limiter_Secondary.resize(nPoint,nSecondaryVarGrad) = su2double(0.0);
   Limiter.resize(nPoint,nVar) = su2double(0.0);
 
   Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
   Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Solution initialization ---*/
-  
+
   su2double val_solution[5] = {su2double(1.0), velocity[0], velocity[1], energy, energy};
   if(nDim==3) val_solution[3] = velocity[2];
 
@@ -128,10 +128,10 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
         We need P, and rho for running the adjoint problem ---*/
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  Gradient_Secondary.resize(nPoint,nSecondaryVarGrad,nDim,0.0);
+//  Gradient_Secondary.resize(nPoint,nSecondaryVarGrad,nDim,0.0);
 
   if (fsi || multizone) Solution_BGS_k = Solution;
-  
+
   Velocity2.resize(nPoint) = su2double(0.0);
   Precond_Beta.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
