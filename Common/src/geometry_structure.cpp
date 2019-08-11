@@ -16066,6 +16066,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   else if (Kind_Solver == DISC_ADJ_HEAT) {
     skipVar += 1;
   }
+  else if (Kind_Solver == DISC_ADJ_FEM) {
+    skipVar = 4; //To do: make generic: //Dyn nFields=10, Sta nFields=6
+  }
   else {
     cout << "WARNING: Reading in sensitivities not defined for specified solver!" << endl;
   }
@@ -16378,10 +16381,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
-        //Dyn nFields=10, Sta nFields=6
-        if (config->GetDynamic_Analysis() == DYNAMIC) skipVar = 4;
-        else skipVar = nFields*2/3;
-        //CVC: Temporary correction : New index to get sensitivity from both compressible flow and structural adjoint solution files
         index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
 
