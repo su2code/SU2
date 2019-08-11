@@ -133,17 +133,6 @@ void CIncEulerVariable::SetGradient_PrimitiveZero() {
   Gradient_Primitive.storage.setConstant(0.0);
 }
 
-
-su2double CIncEulerVariable::GetProjVel(Idx_t iPoint, const su2double *val_vector) const {
-
-  su2double ProjVel = su2double(0.0);
-
-  for (Idx_t iDim = 0; iDim < nDim; iDim++)
-    ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
-
-  return ProjVel;
-}
-
 bool CIncEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
 
   Idx_t iVar;
