@@ -145,12 +145,12 @@ void CEulerVariable::SetGradient_PrimitiveZero() {
   Gradient_Primitive.storage.setConstant(0.0);
 }
 
-void CEulerVariable::SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {
-
-  for (Idx_t iVar = 0; iVar < val_secondaryvar; iVar++)
-    for (Idx_t iDim = 0; iDim < nDim; iDim++)
-      Gradient_Secondary(iPoint,iVar,iDim) = 0.0;
-}
+//void CEulerVariable::SetGradient_SecondaryZero(Idx_t iPoint, Idx_t val_secondaryvar) {
+//
+//  for (Idx_t iVar = 0; iVar < val_secondaryvar; iVar++)
+//    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+//      Gradient_Secondary(iPoint,iVar,iDim) = 0.0;
+//}
 
 su2double CEulerVariable::GetProjVel(Idx_t iPoint, const su2double *val_vector) const {
 
