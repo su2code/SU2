@@ -435,7 +435,12 @@ public:
    * \param[in] val_vector - Direction of projection.
    * \return Value of the projected velocity.
    */
-  su2double GetProjVel(Idx_t iPoint, const su2double *val_vector) const final;
+  inline su2double GetProjVel(Idx_t iPoint, const su2double *val_vector) const final {
+    su2double ProjVel = 0.0;
+    for (Idx_t iDim = 0; iDim < nDim; iDim++)
+      ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
+    return ProjVel;
+  }
 
   /*!
    * \brief Set the velocity vector from the solution.

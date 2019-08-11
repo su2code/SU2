@@ -152,16 +152,6 @@ void CEulerVariable::SetGradient_PrimitiveZero() {
 //      Gradient_Secondary(iPoint,iVar,iDim) = 0.0;
 //}
 
-su2double CEulerVariable::GetProjVel(Idx_t iPoint, const su2double *val_vector) const {
-
-  su2double ProjVel = 0.0;
-
-  for (Idx_t iDim = 0; iDim < nDim; iDim++)
-    ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
-
-  return ProjVel;
-}
-
 bool CEulerVariable::SetPrimVar(Idx_t iPoint, CFluidModel *FluidModel) {
 
   bool RightVol = true;
