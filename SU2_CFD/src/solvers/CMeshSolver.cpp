@@ -1,8 +1,8 @@
 /*!
  * \file solver_direct_mesh.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
- * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \author Ruben Sanchez
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -35,11 +35,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/solver_structure.hpp"
-#include "../../Common/include/adt_structure.hpp"
-#include "../include/variables/CMeshVariable.hpp"
-#include "../include/variables/CMeshBoundVariable.hpp"
-#include "../include/variables/CMeshElement.hpp"
+#include "../../../Common/include/adt_structure.hpp"
+#include "../../include/solvers/CMeshSolver.hpp"
+#include "../../include/variables/CMeshVariable.hpp"
+#include "../../include/variables/CMeshBoundVariable.hpp"
+#include "../../include/variables/CMeshElement.hpp"
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
 

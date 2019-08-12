@@ -156,14 +156,6 @@ inline void CFEAElasticity::Compute_Lame_Parameters(void) {
   Kappa  = Lambda + (2/3)*Mu;
 }
 
-inline void CFEAMeshElasticity::SetMeshElasticProperties(unsigned long iElem, su2double val_E)  {
-  if (element_based){ E_i[iElem]  = val_E;}
-}
-
-inline void CFEAMeshElasticity::SetElement_Properties(CElement *element, CConfig *config)  {
-  if(element_based){E = E_i[element->Get_iProp()];  Compute_Lame_Parameters();}
-}
-
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j) { }

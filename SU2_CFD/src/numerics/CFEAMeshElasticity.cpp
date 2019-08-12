@@ -1,7 +1,7 @@
 /*!
- * \file numerics_direct_mesh.cpp
+ * \file CFEAMeshElasticity.cpp
  * \brief This file contains the routines for setting the mesh pseudo-elastic problem.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/numerics_structure.hpp"
+#include "../../include/numerics/CFEAMeshElasticity.hpp"
 #include <limits>
 
 CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config) : CFEALinearElasticity() {
