@@ -305,8 +305,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case EULER:                    case NAVIER_STOKES:                   case RANS:
-  case INC_EULER:                case INC_NAVIER_STOKES:               case INC_RANS:
   case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:

@@ -3092,7 +3092,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for unsupported features. ---*/
 
-  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && !Kind_Solver != RANS) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Unsteady_Simulation == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
