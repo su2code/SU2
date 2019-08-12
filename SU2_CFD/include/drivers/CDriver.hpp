@@ -279,28 +279,28 @@ protected:
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {}
 
   /*!
    * \brief A virtual member.
@@ -308,7 +308,7 @@ protected:
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
+  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
 
   /*!
    * \brief A virtual member.
@@ -316,29 +316,29 @@ protected:
    * \param[in] targetZone - destination of the information.
    * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
+  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {}
   
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
    */
-  virtual void Run_GaussSeidel(){};
+  virtual void Run_GaussSeidel(){}
 
   /*!
    * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
    */
-  virtual void Run_Jacobi(){};
+  virtual void Run_Jacobi(){}
   
   /*!
    * \brief A virtual member.
    */
-  virtual void Update() {};
+  virtual void Update() {}
   
 public:
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  virtual void StartSolver();
+  virtual void StartSolver() {}
   
   /*!
    * \brief Deallocation routine
@@ -749,6 +749,11 @@ public:
    * \brief Destructor of the class.
    */
   ~CFluidDriver(void);
+  
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  void StartSolver();
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
@@ -759,6 +764,21 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
+  
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output(unsigned long InnerIter);
+  
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+  
+  /*!
+   * \brief Perform some pre-processing before an iteration of the physics.
+   */
+  void Preprocess(unsigned long Iter);  
 
   /*!
    * \brief Reset the convergence flag (set to false) of the multizone solver.
@@ -885,7 +905,7 @@ public:
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  */
-class CHBDriver : public CDriver {
+class CHBDriver : public CFluidDriver {
 
 private:
   COutputLegacy* output_legacy;
