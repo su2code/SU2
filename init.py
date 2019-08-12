@@ -79,7 +79,7 @@ def init_submodules(method = 'auto'):
 
 def is_git_directory(path = '.'):
   try:
-     p = subprocess.call(["cgit", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path)
+     p = subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path)
   except FileNotFoundError:
      print("git command not found. Using fall-back method to init submodules")
      return False
