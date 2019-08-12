@@ -734,7 +734,7 @@ def get_dvMap():
                44  : "DV_RHO_DL"             ,
                50  : "TRANSLATE_GRID"        ,
                51  : "ROTATE_GRID"           ,
-               42  : "SCALE_GRID"            ,
+               52  : "SCALE_GRID"            ,
                101 : "ANGLE_OF_ATTACK"       }
     
     return dv_map
