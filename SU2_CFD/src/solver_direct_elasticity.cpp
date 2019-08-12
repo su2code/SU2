@@ -2793,7 +2793,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
 }
 
-void CFEASolver::BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
+void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
 
   unsigned short iDim;
   unsigned long iNode, iVertex;

@@ -858,7 +858,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
 
-  virtual void BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -11865,14 +11865,14 @@ public:
   void BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
-   * \brief Moving boundary condition.
+   * \brief Deformable boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
 
-  void BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  void BC_Deforming(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.

@@ -692,7 +692,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if (config->GetMarker_All_Deform_Mesh(iMarker) == YES) {
 
       /*--- Impose the boundary condition ---*/
-      BC_Moving(geometry, numerics, config, iMarker);
+      BC_Deforming(geometry, numerics, config, iMarker);
 
     }
   }
