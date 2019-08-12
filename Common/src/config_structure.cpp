@@ -3213,21 +3213,32 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nTimeIter = 1;
     Time_Step = 0;
     
-    ScreenWrtFreq[0] = 1.0;
-    HistoryWrtFreq[0] = 1.0;
-    
-    nExtIter = nIter;
+    ScreenWrtFreq[0]  = 1;
+    HistoryWrtFreq[0] = 1;
   } 
   
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
-    nExtIter = nTimeIter;
   }
   
   if (!Multizone_Problem){
-    ScreenWrtFreq[1] = 0.0;
-    HistoryWrtFreq[1] = 0.0;
+    ScreenWrtFreq[1]  = 0;
+    HistoryWrtFreq[1] = 0;
+    if (!Time_Domain){
+      /*--- If not running multizone or unsteady, INNER_ITER and ITER are interchangeable,
+       * but precedence will be given to INNER_ITER if both options are present. ---*/
+      if (all_options.find("INNER_ITER") != all_options.end()){
+        nInnerIter = nIter;
+      }
+    }
+  }
+  
+  
+  if ((Multizone_Problem || Time_Domain) && all_options.find("ITER") == all_options.end()){
+    SU2_MPI::Error("ITER must not be used when running multizone and/or unsteady problems.\n"
+                   "Use TIME_ITER, OUTER_ITER or INNER_ITER to specify number of time iterations,\n"
+                   "outer iterations or inner iterations, respectively.", CURRENT_FUNCTION);
   }
 
   /*--- If we're solving a purely steady problem with no prescribed grid
