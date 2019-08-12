@@ -37,6 +37,7 @@
 
 #include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
+#include <cassert>
 
 #ifdef VTUNEPROF
 #include <ittnotify.h>
@@ -1216,7 +1217,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
       if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJHEAT_SOL]->GetnVar();
     }
   }
-
+  
   /*--- Preprocess the mesh solver for dynamic meshes. ---*/
   /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
   MeshSolver_Preprocessing(solver, geometry, config);
@@ -3536,21 +3537,20 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
         for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
           geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config, iZone, true);
         
-        
-        
         break;
         
       default:
         break;
     }
     
-    if (config->GetnMarker_Moving() > 0){
+    if ((config->GetnMarker_Moving() > 0) && !config->GetSurface_Movement(FLUID_STRUCTURE_STATIC)) {
       
       /*--- Fixed wall velocities: set the grid velocities only one time
        before the first iteration flow solver. ---*/
       if (rank == MASTER_NODE)
         cout << endl << " Setting the moving wall velocities." << endl;
       
+      assert(surface_movement != NULL && "A surface_movement was not instantiated.");
       surface_movement->Moving_Walls(geometry[MESH_0], config, iZone, 0);
       
       /*--- Update the grid velocities on the coarser multigrid levels after

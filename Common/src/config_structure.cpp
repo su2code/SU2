@@ -3194,11 +3194,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-  
+
   if (GetGrid_Movement()){
   if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
         (Unsteady_Simulation == STEADY && !Time_Domain)){
-  
+
       if((Kind_GridMovement != ROTATING_FRAME) &&
          (Kind_GridMovement != STEADY_TRANSLATION) &&
          (Kind_GridMovement != NONE)){
@@ -3208,8 +3208,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         if (Kind_SurfaceMovement[iMarker] != MOVING_WALL){
           SU2_MPI::Error("Unsupported kind of surface movement for steady state problems.", CURRENT_FUNCTION);                
         }
-      }  
-    } 
+      }
+    }
   }
 
   /*--- The Line Search should be applied only in the deformation stage. ---*/

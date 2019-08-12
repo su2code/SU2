@@ -170,7 +170,7 @@ CSysVector<ScalarType>::CSysVector(const unsigned long & numBlk, const unsigned 
 template<class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
   delete [] vec_val;
-  
+
   nElm = 0; nElmDomain = 0;
   nBlk = 0; nBlkDomain = 0;
   nVar = 0;
