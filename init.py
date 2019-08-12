@@ -78,7 +78,15 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
 def is_git_directory(path = '.'):
-  return subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path) == 0 
+  try:
+     p = subprocess.call(["cgit", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path)
+  except FileNotFoundError:
+     print("git command not found. Using fall-back method to init submodules")
+     return False
+  except subprocess.CalledProcessError:
+     print("Directory was not cloned using git. Using fall-back method to init submodules")
+     return False
+  return p
 
 def submodule_status(path, sha_commit):
 
