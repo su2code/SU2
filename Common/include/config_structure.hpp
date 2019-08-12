@@ -1083,8 +1083,6 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
   
-  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
-
   
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9135,12 +9133,6 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
-
-  /*!
-   * \brief Boolean to check whether dry run mode is enabled
-   * \return YES if dry run mode is enabled.
-   */
-  bool GetDryRun();
 
 };
 
