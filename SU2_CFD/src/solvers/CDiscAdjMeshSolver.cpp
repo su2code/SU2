@@ -36,9 +36,9 @@
  */
 
 
-#include "../include/solver_structure.hpp"
-#include "../include/variables/CDiscAdjMeshVariable.hpp"
-#include "../include/variables/CDiscAdjMeshBoundVariable.hpp"
+#include "../../include/solvers/CDiscAdjMeshSolver.hpp"
+#include "../../include/variables/CDiscAdjMeshVariable.hpp"
+#include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 CDiscAdjMeshSolver::CDiscAdjMeshSolver(void) : CSolver (){
 

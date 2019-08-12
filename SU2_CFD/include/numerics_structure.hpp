@@ -4356,45 +4356,6 @@ public:
 };
 
 /*!
- * \class CFEAMeshElasticity
- * \brief Class for computing the stiffness matrix of a linear, pseudo-elastic mesh problem.
- * \ingroup FEM_Discr
- * \author R.Sanchez
- * \version 6.2.0 "Falcon"
- */
-class CFEAMeshElasticity : public CFEALinearElasticity {
-
-  bool element_based;
-  bool stiffness_set;
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAMeshElasticity(void);
-
-  void SetElement_Properties(CElement *element_container, CConfig *config);
-
-  /*!
-   * \brief Set the element-based local properties in mesh problems
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
-
-
-};
-
-
-/*!
  * \class CFEM_NeoHookean_Comp
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
  * \ingroup FEM_Discr
