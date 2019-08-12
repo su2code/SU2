@@ -62,7 +62,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   bool turbo = config->GetBoolTurbomachinery();
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
-  bool mesh_def = (config->GetKind_GridMovement() == ELASTICITY);
+  bool mesh_def = config->GetDeform_Mesh();
 
   /*--- Initialize the direct iteration ---*/
 
