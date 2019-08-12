@@ -689,7 +689,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   nDim = geometry_aux->GetnDim();
   
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-  
+
   geometry_aux->SetColorGrid_Parallel(config);
   
   /*--- Allocate the memory of the current domain, and divide the grid
@@ -699,7 +699,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry = new CGeometry *[config->GetnMGLevels()+1];
   
   /*--- Build the grid data structures using the ParMETIS coloring. ---*/
-  
+
   geometry[MESH_0] = new CPhysicalGeometry(geometry_aux, config);
   
   /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
@@ -711,8 +711,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   
   /*--- Add the Send/Receive boundaries ---*/
   geometry[MESH_0]->SetBoundaries(config);
-  
-  
   
   fea = ((config->GetKind_Solver() == FEM_ELASTICITY) ||
          (config->GetKind_Solver() == DISC_ADJ_FEM));
@@ -835,8 +833,6 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     }
     
   }
-  
-  
   
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
