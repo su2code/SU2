@@ -535,7 +535,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
       //Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      //Jacobian.AddVal2Diag(iPoint, Delta);
      }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -641,23 +641,23 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
    unsigned short iDim, iMarker;
    unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
    su2double *Normal, Area, Poisson_Coeff, Lambda;
-   su2double Global_Delta_Time, Local_Delta_Time,Vol, CFL_Reduction, delT;
+   su2double Global_Delta_Time, Local_Delta_Time,Vol, CFL_Reduction, delT, K_v=2.0;
    su2double Edge_Vector[3],dist_ij_2,Volume;
    su2double *Coord_i,*Coord_j,Mom_Coeff,Mom_Coeff_i[3],Mom_Coeff_j[3];
    Normal = new su2double [nDim];
      int ranknp = SU2_MPI::GetRank();
 
    Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;Global_Delta_Time = 1.E6;
-   /*bool write = (Iteration % 1000000 == 0);
-  ofstream TimeStepFile;
-  stringstream iter;
-  stringstream fname;
-  if (write) {
+   bool write = false;//(Iteration % 1000000 == 0);
+   ofstream TimeStepFile;
+   stringstream iter;
+   stringstream fname;
+   if (write) {
 	  iter<<Iteration;
 	  string iters = iter.str();
 	  fname<<"TimeStep/TimeStepP"<<iters<<".txt";
 	  TimeStepFile.open(fname.str(),ios::out);
-  }*/
+   }
    
    /*---------Compute eigen value-------------*/
    
@@ -693,13 +693,15 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 	        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim) ;
 	        
 		    Poisson_Coeff += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
+		    Lambda = abs(Poisson_Coeff);
 	    }
     }
     else {
 		Poisson_Coeff = 1.0;
+		Lambda = abs(Poisson_Coeff*Area);
 	}
     
-    Lambda = abs(Poisson_Coeff*Area);
+    
     
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);    
@@ -726,7 +728,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 	    }
        }
     
-      Lambda = abs(Poisson_Coeff*Area);     
+      Lambda = abs(Poisson_Coeff);     
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);    
       
     }
@@ -740,8 +742,8 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
     Vol = geometry->node[iPoint]->GetVolume();
 
 	if (Vol != 0.0) {
-		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
-		//if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Vol<<endl;
+		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol*K_v/node[iPoint]->GetMax_Lambda_Visc();
+		if (write) TimeStepFile<<iPoint<<"\t"<<Local_Delta_Time<<"\t"<<Vol<<endl;
 		/*--- Min-Max-Logic ---*/
 		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
 		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
@@ -757,7 +759,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
    }
    
    delete [] Normal;
-   //if (write) TimeStepFile.close();
+   if (write) TimeStepFile.close();
 
 }
 

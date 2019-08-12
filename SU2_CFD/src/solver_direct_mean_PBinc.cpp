@@ -3172,7 +3172,7 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 	
 	unsigned short iVar, jVar, iDim, jDim;
 	unsigned long iPoint, jPoint, iNeigh;
-	su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+	su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT, K_c = 1.0;
 	int ranknp = SU2_MPI::GetRank();
 	
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3192,8 +3192,10 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 		  }
 	  }
 	  for (iVar = 0; iVar < nVar; iVar++) {
-		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar) - Vol/delT;
+		  //Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar) - Vol/delT;
+		  Mom_Coeff[iVar] = Mom_Coeff[iVar] - node[iPoint]->Get_Mom_Coeff_nb(iVar);
 		  Mom_Coeff[iVar] = node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff[iVar];
+		  Mom_Coeff[iVar] = K_c*Mom_Coeff[iVar];
 	  }
 	  
 	  node[iPoint]->Set_Mom_Coeff(Mom_Coeff);
@@ -3433,7 +3435,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   Vel_i = new su2double[nDim];
   Vel_j = new su2double[nDim];
   int ranknp = SU2_MPI::GetRank();
-  
+
   /*--- Initialize mass flux to zero ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
 	  node[iPoint]->SetMassFluxZero();
@@ -3447,7 +3449,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     Density_i = node[iPoint]->GetDensity();
     Density_j = node[jPoint]->GetDensity();
     MeanDensity = 0.5*(Density_i + Density_j);
-  
+     
     geometry->edge[iEdge]->GetNormal(Normal);
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
     Area = sqrt(Area);
@@ -3503,7 +3505,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		//Grad_Avg = (Vol_i*node[iPoint]->GetGradient_Primitive(0,iDim) + Vol_j*node[jPoint]->GetGradient_Primitive(0,iDim))/(Vol_i + Vol_j) ;   // --> Weighting.
 		GradP_in[iDim] = Grad_Avg;
 	}
-		
+	
    /*--- Compute pressure gradient at the face ---*/
     GradP_proj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3958,8 +3960,8 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		node[iPoint]->SetVelocity();
 		/*--- Pressure corrections ---*/
 		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-		//Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
-		Current_Pressure += config->GetRelaxation_Factor_Flow()*(Pressure_Correc[iPoint] - PCorr_Ref);
+		Current_Pressure += config->GetRelaxation_Factor_Flow()*alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
+		//Current_Pressure += config->GetRelaxation_Factor_Flow()*(Pressure_Correc[iPoint] - PCorr_Ref);
 		node[iPoint]->SetPressure_val(Current_Pressure);
    }
    
@@ -5907,7 +5909,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  bool write = (Iteration % 500 == 0);
+  bool write = false;//(Iteration % 1 == 0);
   ofstream TimeStepFile;
   stringstream iter;
   stringstream fname;
@@ -5917,7 +5919,6 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 	  fname<<"TimeStep/TimeStep"<<iters<<".txt";
 	  TimeStepFile.open(fname.str(),ios::out);
   }
-  K_v = 0.25;
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0; MinRefProjFlux = 0.0;
   
@@ -5957,7 +5958,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
     //Lambda = fabs(Mean_ProjVel);
-    Lambda = fabs(Mean_ProjVel) + fabs(RefProjFlux);
+    Lambda = fabs(Mean_ProjVel) + 4.0*fabs(RefProjFlux);
     
     /*--- Inviscid contribution ---*/
 
@@ -5999,7 +6000,8 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 		  Mean_Vel = node[iPoint]->GetVelocity(iVar);
 		  Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
       }
-      RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
+      RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);    
+
       MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
     
       Lambda = fabs(Mean_ProjVel) + fabs(RefProjFlux);
@@ -6042,7 +6044,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
       node[iPoint]->SetDelta_Time(Local_Delta_Time);
-      if (write) TimeStepFile<<config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time()<<"\t"<<config->GetInc_Velocity_Ref()<<endl;
+      if (write) TimeStepFile<<config->GetCFLRedCoeff_Turb()<<"\t"<<config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time()<<"\t"<<config->GetCFLRedCoeff_Turb()*Local_Delta_Time<<endl;
     }
     else {
       node[iPoint]->SetDelta_Time(0.0);
