@@ -1338,7 +1338,9 @@ bool COutput::WriteScreen_Header(CConfig *config) {
     RestartIter = config->GetRestart_Iter();
   }
   
-  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
+  unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
+  unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
+  unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
   
   /*--- Header is always disabled for multizone problems unless explicitely requested --- */
   
@@ -1354,26 +1356,30 @@ bool COutput::WriteScreen_Header(CConfig *config) {
     return true;
   }
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     return false;
   }
    
-  if (SU2_TYPE::Int(ScreenWrt_Freq[2]) == 0 && SU2_TYPE::Int(ScreenWrt_Freq[1]) == 0){
+  /*--- If there is no inner or outer iteration, don't print header ---*/
+  if (ScreenWrt_Freq_Outer == 0 && ScreenWrt_Freq_Inner == 0){
     return false;
   }
   
+  /*--- Print header if we are at the first inner iteration ---*/
+  
   if (curr_InnerIter == 0){
-    write_header = true;
+    return true;
   }
   
-  return write_header;
+  return false;
 }
 
 bool COutput::WriteScreen_Output(CConfig *config) {
   
-  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
-    
+  unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
+  unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
+  unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);    
   
   if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
     
@@ -1383,7 +1389,7 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1392,14 +1398,14 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(ScreenWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(ScreenWrt_Freq[2])) &&
+  if (!PrintOutput(curr_InnerIter, ScreenWrt_Freq_Inner) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;
@@ -1412,11 +1418,13 @@ bool COutput::WriteScreen_Output(CConfig *config) {
 
 bool COutput::WriteHistoryFile_Output(CConfig *config) { 
 
-  su2double* HistoryWrt_Freq = config->GetHistory_Wrt_Freq();
+  unsigned long HistoryWrt_Freq_Inner = config->GetHistory_Wrt_Freq(2);
+  unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
+  unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);    
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(HistoryWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1425,14 +1433,14 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(HistoryWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter,HistoryWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(HistoryWrt_Freq[2])) &&
+  if (!PrintOutput(curr_InnerIter, HistoryWrt_Freq_Inner) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;

@@ -2046,6 +2046,8 @@ inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
 inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
-inline su2double* CConfig::GetScreen_Wrt_Freq() {return ScreenWrtFreq;}
+inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
-inline su2double* CConfig::GetHistory_Wrt_Freq() {return HistoryWrtFreq;}
+inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
+
+

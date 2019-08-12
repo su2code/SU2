@@ -1062,8 +1062,8 @@ private:
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
   su2double *default_wrt_freq;
-  su2double *HistoryWrtFreq,    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
-            *ScreenWrtFreq;     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
+                ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -9112,16 +9112,17 @@ public:
   su2double Get_StartTime();
 
   /*!
-   * \brief GetHistory_Wrt_Freq
+   * \brief GetHistory_Wrt_Freq_Inner
    * \return 
    */
-  su2double* GetHistory_Wrt_Freq();
+  unsigned long GetHistory_Wrt_Freq(unsigned short iter);
   
   /*!
-   * \brief GetScreen_Wrt_Freq
+   * \brief GetScreen_Wrt_Freq_Inner
    * \return 
    */
-  su2double* GetScreen_Wrt_Freq();
+  unsigned long GetScreen_Wrt_Freq(unsigned short iter);
+  
 };
 
 #include "config_structure.inl"

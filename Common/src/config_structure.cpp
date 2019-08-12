@@ -2428,13 +2428,21 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Type of output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
-  default_wrt_freq[0] = 1.0; default_wrt_freq[1] = 1.0; default_wrt_freq[2] = 1.0;
-  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, default_wrt_freq);
+  /* DESCRIPTION: History writing frequency (INNER_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_INNER", HistoryWrtFreq[2], 1);
+  /* DESCRIPTION: History writing frequency (OUTER_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_OUTER", HistoryWrtFreq[1], 1); 
+  /* DESCRIPTION: History writing frequency (TIME_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_TIME", HistoryWrtFreq[0], 1);
   
-  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, default_wrt_freq);
- 
+  /* DESCRIPTION: Screen writing frequency (INNER_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_INNER", ScreenWrtFreq[2], 1);
+  /* DESCRIPTION: Screen writing frequency (OUTER_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1); 
+  /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
+  
+  
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -2995,6 +3003,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         default:
           break;
       }
+    }
+  }
+  
+  /*--- Check for unsteady problem ---*/
+  
+  if ((Unsteady_Simulation == TIME_STEPPING ||
+       Unsteady_Simulation == DT_STEPPING_1ST ||
+       Unsteady_Simulation == DT_STEPPING_2ND) && !Time_Domain){
+    SU2_MPI::Error("TIME_DOMAIN must be set to YES if UNSTEADY_SIMULATION is "
+                   "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
+  }
+  
+  if (Time_Domain){
+    if (Unsteady_Simulation == TIME_STEPPING){
+      InnerIter = 1;
     }
   }
   
