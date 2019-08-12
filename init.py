@@ -93,7 +93,7 @@ def submodule_status(path, sha_commit):
   if not os.path.exists(path + '/' + sha_commit):
 
     # Check the status of the submodule
-    status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True).stdout.decode('utf-8')
+    status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
 
     # The first character of the output indicates the status of the submodule
     # '+' : The submodule does not match the SHA-1 currently in the index of the repository
@@ -110,7 +110,7 @@ def submodule_status(path, sha_commit):
     elif status_indicator == '-':
       # Initialize the submodule if necessary 
       print('Initialize submodule ' + path + ' using git ... ')
-      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True)
+      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
 
       # Check that the SHA tag stored in this file matches the one stored in the git index
       cur_sha_commit = status[1:].split(' ')[0]
