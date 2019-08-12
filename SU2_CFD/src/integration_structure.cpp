@@ -200,10 +200,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case CHT_WALL_INTERFACE: 
-        bool compressible = (config->GetKind_Solver() == EULER) || 
-                            (config->GetKind_Solver() == NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == RANS);
-        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && (compressible || config->GetEnergy_Equation()))) {
+        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         }
         else {

@@ -296,9 +296,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
-  bool compressible = (config->GetKind_Solver() == EULER || 
-                       config->GetKind_Solver() == NAVIER_STOKES || 
-                       config->GetKind_Solver() == RANS);
+  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
   bool heat         = (config->GetWeakly_Coupled_Heat());
   bool turbo        = (config->GetBoolTurbomachinery());
 

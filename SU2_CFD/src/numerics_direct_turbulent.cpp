@@ -44,9 +44,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
     : CNumerics(val_nDim, val_nVar, config) {
 
   implicit        = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
   grid_movement   = config->GetGrid_Movement();
 
   Velocity_i = new su2double [nDim];
@@ -135,9 +133,8 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
     : CNumerics(val_nDim, val_nVar, config), correct_gradient(correct_grad) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
   Edge_Vector = new su2double [nDim];
   Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
   Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
@@ -309,9 +306,7 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(su2double *val_residual,
 CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
   transition = (config->GetKind_Trans_Model() == BC);
   
@@ -485,9 +480,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 CSourcePieceWise_TurbSA_E::CSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
                                                      CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
     
     /*--- Spalart-Allmaras closure constants ---*/
@@ -630,9 +623,7 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
 CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,
                                                            CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+    incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
     
     /*--- Spalart-Allmaras closure constants ---*/
@@ -770,10 +761,7 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
 CSourcePieceWise_TurbSA_E_COMP::CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar,
                                                      CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
-  
+    incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
   
   /*--- Spalart-Allmaras closure constants ---*/
@@ -928,9 +916,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
 CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
                                                          CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
   
   /*--- Negative Spalart-Allmaras closure constants ---*/
@@ -1182,9 +1168,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
                                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                   (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == INC_RANS);
+  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
   /*--- Closure constants ---*/
   beta_star     = constants[6];

@@ -799,15 +799,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
 
 void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst) {
  
-  bool compressible = (config->GetKind_Solver() == ADJ_EULER) || 
-                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == ADJ_RANS) ||
-                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS);
-  bool incompressible = (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 #ifndef HAVE_MPI
   
   unsigned long iPoint, iVertex, Global_Index;
@@ -840,9 +831,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
 
   if (geometry->GetnDim() == 2) {
-    if (compressible)
+    if (config ->GetKind_Regime() == COMPRESSIBLE)
       SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
-    else if (incompressible)
+    else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
       SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"x_coord\",\"y_coord\"";
 
     if (config->GetDiscrete_Adjoint()) {
@@ -865,10 +856,10 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             xCoord *= 12.0;
             yCoord *= 12.0;
           }
-          if (compressible)
+          if (config ->GetKind_Regime() == COMPRESSIBLE)
             SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord;
-          else if (incompressible)
+          else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
               SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                            << Solution[1] << ", " << Solution[2] <<", " << xCoord <<", "<< yCoord;
           if (config->GetDiscrete_Adjoint()) {
@@ -880,9 +871,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   }
   
   if (geometry->GetnDim() == 3) {
-    if (compressible)
+    if (config ->GetKind_Regime() == COMPRESSIBLE)
       SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
-    else if (incompressible)
+    else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
       SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"x_coord\",\"y_coord\",\"z_coord\"";
 
     if (config->GetDiscrete_Adjoint()) {
@@ -907,10 +898,10 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             yCoord *= 12.0;
             zCoord *= 12.0;
           }
-          if (compressible)
+          if (config ->GetKind_Regime() == COMPRESSIBLE)
             SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord;
-          else if (incompressible)
+          else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
             SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
                          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << xCoord <<", "<< yCoord <<", "<< zCoord;
           if (config->GetDiscrete_Adjoint()) {
@@ -962,7 +953,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   su2double *Buffer_Send_Phi_z= new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_PsiE = NULL;
 
-  if (compressible)
+  if (config ->GetKind_Regime() == COMPRESSIBLE)
     Buffer_Send_PsiE =  new su2double[MaxLocalVertex_Surface];
 
   su2double *Buffer_Send_Sens_x = NULL, *Buffer_Send_Sens_y = NULL, *Buffer_Send_Sens_z = NULL;
@@ -992,11 +983,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           Buffer_Send_PsiRho[nVertex_Surface] = Solution[0];
           Buffer_Send_Phi_x[nVertex_Surface] = Solution[1];
           Buffer_Send_Phi_y[nVertex_Surface] = Solution[2];
-          if ((nDim == 2) && (compressible)) Buffer_Send_PsiE[nVertex_Surface] = Solution[3];
+          if ((nDim == 2) && (config->GetKind_Regime() == COMPRESSIBLE)) Buffer_Send_PsiE[nVertex_Surface] = Solution[3];
           if (nDim == 3) {
             Buffer_Send_Coord_z[nVertex_Surface] = Coord[2];
             Buffer_Send_Phi_z[nVertex_Surface] = Solution[3];
-            if(compressible) Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
+            if(config->GetKind_Regime() == COMPRESSIBLE) Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
           if (config->GetDiscrete_Adjoint()) {
             Buffer_Send_Sens_x[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(0);
@@ -1033,7 +1024,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     Buffer_Receive_Phi_x = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_Phi_y = new su2double [nProcessor*MaxLocalVertex_Surface];
     if (nDim == 3) Buffer_Receive_Phi_z = new su2double [nProcessor*MaxLocalVertex_Surface];
-    if  (compressible)
+    if  (config->GetKind_Regime() == COMPRESSIBLE)
       Buffer_Receive_PsiE = new su2double [nProcessor*MaxLocalVertex_Surface];
     if (config->GetDiscrete_Adjoint()) {
       Buffer_Receive_Sens_x = new su2double[nProcessor*MaxLocalVertex_Surface];
@@ -1056,7 +1047,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SU2_MPI::Gather(Buffer_Send_Phi_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_Phi_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Phi_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (compressible)
+  if (config->GetKind_Regime() == COMPRESSIBLE)
       SU2_MPI::Gather(Buffer_Send_PsiE, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiE, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (config->GetDiscrete_Adjoint()) {
     SU2_MPI::Gather(Buffer_Send_Sens_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -1097,9 +1088,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Write the 2D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 2) {
-      if (compressible)
+      if (config->GetKind_Regime() == COMPRESSIBLE)
         SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
-      else if (incompressible)
+      else if (config->GetKind_Regime() == INCOMPRESSIBLE)
         SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"x_coord\",\"y_coord\"";
 
       if (config->GetDiscrete_Adjoint()) {
@@ -1113,13 +1104,13 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           position = iProcessor*MaxLocalVertex_Surface+iVertex;
           GlobalPoint = Buffer_Receive_GlobalPoint[position];
 
-          if (compressible)
+          if (config->GetKind_Regime() == COMPRESSIBLE)
             SurfAdj_file << scientific << GlobalPoint <<
                             ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
                             ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] <<
                             ", " << Buffer_Receive_PsiE[position] << ", " << Buffer_Receive_Coord_x[position] <<
                             ", "<< Buffer_Receive_Coord_y[position];
-          else if (incompressible)
+          else if (config->GetKind_Regime() == INCOMPRESSIBLE)
             SurfAdj_file << scientific << GlobalPoint <<
                             ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
                             ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] <<
@@ -1134,9 +1125,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- Write the 3D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 3) {
-      if (compressible)
+      if (config->GetKind_Regime() == COMPRESSIBLE)
         SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
-      else if (incompressible)
+      else if (config->GetKind_Regime() == INCOMPRESSIBLE)
         SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"x_coord\",\"y_coord\",\"z_coord\"";
 
       if (config->GetDiscrete_Adjoint()) {
@@ -1149,13 +1140,13 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           position = iProcessor*MaxLocalVertex_Surface+iVertex;
           GlobalPoint = Buffer_Receive_GlobalPoint[position];
           
-          if (compressible)
+          if (config->GetKind_Regime() == COMPRESSIBLE)
             SurfAdj_file << scientific << GlobalPoint <<
                             ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
                             ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] << ", " << Buffer_Receive_Phi_z[position] <<
                             ", " << Buffer_Receive_PsiE[position] <<", "<< Buffer_Receive_Coord_x[position] <<
                             ", "<< Buffer_Receive_Coord_y[position] <<", "<< Buffer_Receive_Coord_z[position];
-          else if (incompressible)
+          else if (config->GetKind_Regime() == INCOMPRESSIBLE)
             SurfAdj_file << scientific << GlobalPoint <<
                             ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
                             ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] << ", " << Buffer_Receive_Phi_z[position] <<
@@ -1181,7 +1172,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     delete [] Buffer_Receive_Phi_x;
     delete [] Buffer_Receive_Phi_y;
     if (nDim == 3) delete [] Buffer_Receive_Phi_z;
-    if (compressible)
+    if (config->GetKind_Regime() == COMPRESSIBLE)
       delete [] Buffer_Receive_PsiE;
     delete [] Buffer_Receive_GlobalPoint;
     if (config->GetDiscrete_Adjoint()) {
@@ -2318,20 +2309,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   int iProcessor;
   
   bool grid_movement  = (config->GetGrid_Movement());
-  bool compressible = (config->GetKind_Solver() == EULER) || 
-                      (config->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == RANS) |
-                      (config->GetKind_Solver() == FEM_EULER) || 
-                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == FEM_RANS) ||
-                      (config->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == INC_RANS);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool transition     = (config->GetKind_Trans_Model() == LM);
   bool flow           = (( config->GetKind_Solver() == EULER             ) ||
                          ( config->GetKind_Solver() == NAVIER_STOKES     ) ||
                          ( config->GetKind_Solver() == RANS              ) ||
+                         ( config->GetKind_Solver() == INC_EULER         ) ||
+                         ( config->GetKind_Solver() == INC_NAVIER_STOKES ) ||
+                         ( config->GetKind_Solver() == INC_RANS          ) ||
                          ( config->GetKind_Solver() == FEM_EULER         ) ||
                          ( config->GetKind_Solver() == FEM_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == FEM_RANS          ) ||
@@ -4389,26 +4375,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
-  bool compressible = (config->GetKind_Solver() == EULER) || 
-                      (config->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == RANS) ||
-                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
-                      (config->GetKind_Solver() == ADJ_EULER) || 
-                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == ADJ_RANS) ||
-                      (config->GetKind_Solver() == FEM_EULER) || 
-                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == FEM_RANS) ||
-                      (config->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == INC_RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
-  
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool incload = config->GetIncrementalLoad();
 
   bool thermal = false; /* Flag for whether to print heat flux values */
@@ -4661,25 +4629,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool incload              = config[val_iZone]->GetIncrementalLoad();
   bool output_files         = true;
 
-  bool compressible = (config[val_iZone]->GetKind_Solver() == EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == ADJ_EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config[val_iZone]->GetKind_Solver() == INC_EULER) || 
-                        (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config[val_iZone]->GetKind_Solver() == INC_RANS) ||
-                        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
 
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
@@ -6543,16 +6494,8 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
   unsigned short iDim, iMarker_Monitoring;
   ofstream Breakdown_file;
   
-  bool compressible = (config[val_iZone]->GetKind_Solver() == EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_EULER) || 
-                      (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config[val_iZone]->GetKind_Solver() == INC_EULER) || 
-                        (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config[val_iZone]->GetKind_Solver() == INC_RANS);
+  bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
   bool grid_movement      = config[val_iZone]->GetGrid_Movement();
@@ -11547,16 +11490,8 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       bool first_iter = ((iExtIter==0) && (iOuterIter == 0));
 
 
-      bool compressible = (config[ZONE_FLOW]->GetKind_Solver() == EULER) || 
-                          (config[ZONE_FLOW]->GetKind_Solver() == NAVIER_STOKES) ||
-                          (config[ZONE_FLOW]->GetKind_Solver() == RANS) ||
-                          (config[ZONE_FLOW]->GetKind_Solver() == FEM_EULER) || 
-                          (config[ZONE_FLOW]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                          (config[ZONE_FLOW]->GetKind_Solver() == FEM_RANS) ||
-                          (config[ZONE_FLOW]->GetKind_Solver() == FEM_LES);
-      bool incompressible = (config[ZONE_FLOW]->GetKind_Solver() == INC_EULER) || 
-                            (config[ZONE_FLOW]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                            (config[ZONE_FLOW]->GetKind_Solver() == INC_RANS);
+      bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
+      bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
 
 
       bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
@@ -12461,13 +12396,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
     /*--- Check for compressible/incompressible flow problems. ---*/
 
-      bool compressible = (config[iZone]->GetKind_Solver() == EULER) || 
-                          (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                          (config[iZone]->GetKind_Solver() == RANS) ||
-                          (config[iZone]->GetKind_Solver() == FEM_EULER) || 
-                          (config[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                          (config[iZone]->GetKind_Solver() == FEM_RANS) ||
-                          (config[iZone]->GetKind_Solver() == FEM_LES);
+    compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
 
     /*--- First, prepare the offsets needed throughout below. ---*/
 
@@ -19080,16 +19009,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short nDim         = geometry->GetnDim();
   unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible = (config->GetKind_Solver() == EULER) || 
-                      (config->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == RANS) ||
-                      (config->GetKind_Solver() == FEM_EULER) || 
-                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == FEM_RANS) ||
-                      (config->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == INC_RANS);
+  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   bool energy         = config->GetEnergy_Equation();
 
 

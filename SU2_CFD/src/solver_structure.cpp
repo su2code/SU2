@@ -280,26 +280,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   
   string Marker_Tag;
   
-  bool compressible = (config->GetKind_Solver() == EULER) || 
-                      (config->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == RANS) ||
-                      (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
-                      (config->GetKind_Solver() == ADJ_EULER) || 
-                      (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == ADJ_RANS) ||
-                      (config->GetKind_Solver() == FEM_EULER) || 
-                      (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == FEM_RANS) ||
-                      (config->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config->GetKind_Solver() == INC_EULER) || 
-                        (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == INC_RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
-  
   /*--- Set the size of the data packet and type depending on quantity. ---*/
   
   switch (commType) {
@@ -643,7 +623,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 /*--- Correction for compressible flows (use enthalpy) ---*/
                 
-                if (compressible) {
+                if (!(config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i   = node[iPoint]->GetPressure();
                   Pressure_j   = node[jPoint]->GetPressure();
                   Diff[nVar-1] = ((node[iPoint]->GetSolution(nVar-1) + Pressure_i) -
@@ -728,7 +708,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 /*--- Use density instead of pressure for incomp. flows. ---*/
                 
-                if (incompressible) {
+                if ((config->GetKind_Regime() == INCOMPRESSIBLE)) {
                   Pressure_i = node[iPoint]->GetDensity();
                   Pressure_j = node[jPoint]->GetDensity();
                 } else {

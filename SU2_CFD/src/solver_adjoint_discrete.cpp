@@ -272,16 +272,9 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
-  bool compressible = (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS);
-  bool incompressible = (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
-  
   /*--- Register farfield values as input ---*/
 
-  if(compressible && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -321,7 +314,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
-  if (compressible && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
     BPressure = config->GetPressureOut_BC();
     Temperature = config->GetTotalTemperatureIn_BC();
@@ -337,7 +330,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register incompressible initialization values as input ---*/
 
-  if ((incompressible) &&
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
       ((KindDirect_Solver == RUNTIME_FLOW_SYS &&
         (!config->GetBoolTurbomachinery())))) {
 
@@ -539,15 +532,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
   
-  bool compressible = (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS);
-  bool incompressible = (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if (compressible && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
@@ -568,7 +555,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 #endif
   }
 
-  if (compressible && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
@@ -585,7 +572,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   }
 
-  if (incompressible &&
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
       (KindDirect_Solver == RUNTIME_FLOW_SYS &&
        (!config->GetBoolTurbomachinery()))) {
         
@@ -948,12 +935,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   ifstream restart_file;
   string restart_filename, filename, text_line;
   
-  bool compressible = (config->GetKind_Solver() == DISC_ADJ_EULER) || 
-                      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == DISC_ADJ_RANS);
-  bool incompressible = (config->GetKind_Solver() == DISC_ADJ_INC_EULER) || 
-                        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
   /*--- Restart the solution from file information ---*/
 
