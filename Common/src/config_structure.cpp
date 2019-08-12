@@ -5034,25 +5034,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER: 
-        cout << "Compressible Euler equations." << endl;
+      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_FEM_EULER:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
-        cout << "Compressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case INC_EULER: case DISC_ADJ_INC_EULER:
-         cout << "Incompressible Euler equations." << endl;
-        break;
-      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
-         cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
-        break;   
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS: 
-      case INC_RANS: case DISC_ADJ_INC_RANS:
-        if (Kind_Solver == INC_RANS || Kind_Solver == DISC_ADJ_INC_RANS){
-          cout << "Incompressible RANS equations." << endl;
-        }else {
-          cout << "Compressible RANS equations." << endl;
-        }
+      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_FEM_RANS:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
@@ -5077,7 +5069,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         } 
         break;
       case FEM_LES:
-        cout << "Compressible LES equations." << endl;
+        if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
         cout << "Subgrid Scale model: ";
         switch (Kind_SGS_Model) {
           case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
@@ -5114,10 +5107,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if (Kind_Solver == EULER || Kind_Solver == FEM_EULER ||
-        Kind_Solver == NAVIER_STOKES || Kind_Solver == FEM_NAVIER_STOKES ||
-        Kind_Solver == RANS || Kind_Solver == FEM_RANS ||
-        Kind_Solver == FEM_LES) {
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -5169,17 +5159,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
     
     if (!fea){
-      if (Kind_Solver == EULER         || Kind_Solver == FEM_EULER         || Kind_Solver == DISC_ADJ_EULER ||
-          Kind_Solver == NAVIER_STOKES || Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
-          Kind_Solver == RANS          || Kind_Solver == FEM_RANS          || Kind_Solver == DISC_ADJ_RANS ||
-          Kind_Solver == FEM_LES) {
+      if (Kind_Regime == COMPRESSIBLE) {
         if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
         else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
         else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
         else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-      } else if (Kind_Solver == INC_EULER         || Kind_Solver == DISC_ADJ_INC_EULER ||
-                 Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES ||
-                 Kind_Solver == INC_RANS          || Kind_Solver == DISC_ADJ_INC_RANS ) { 
+    } else if (Kind_Regime == INCOMPRESSIBLE) {
         if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
         else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
         else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }
