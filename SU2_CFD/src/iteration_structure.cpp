@@ -703,8 +703,7 @@ void CFluidIteration::Update(COutput *output,
     }
 
     /*--- Update dual time solver for the dynamic mesh solver ---*/
-    if (config[val_iZone]->GetGrid_Movement() &&
-        (config[val_iZone]->GetKind_GridMovement() == ELASTICITY)) {
+    if (config[val_iZone]->GetDeform_Mesh()) {
         solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
     }
     
@@ -2435,7 +2434,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
   unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  bool interface_boundary = (config[iZone]->GetnMarker_Interface() > 0);
+  bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
@@ -2601,7 +2600,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
   unsigned short Kind_Solver = config[iZone]->GetKind_Solver();
   bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
-  bool interface_boundary = (config[iZone]->GetnMarker_Interface() > 0);
+  bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
   

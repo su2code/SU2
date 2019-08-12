@@ -3401,6 +3401,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
       }
       else if (structural_donor && fluid_target && (!discrete_adjoint)) {
+        /*--- If we are using the new mesh solver, we transfer the total boundary displacements (not incremental) --*/
         if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL){
           transfer_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
           nVarTransfer = 0;

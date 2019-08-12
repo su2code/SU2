@@ -695,10 +695,16 @@ public:
   vector<string> GetAllMovingMarkersTag();
 
   /*!
-   * \brief Get all the interface boundary marker tags.
-   * \return List of moving boundary markers tags.
+   * \brief Get all the deformable boundary marker tags.
+   * \return List of deformable boundary markers tags.
    */
-  vector<string> GetAllInterfaceMarkersTag();
+  vector<string> GetAllDeformMeshMarkersTag();
+
+  /*!
+   * \brief Get all the fluid load boundary marker tags.
+   * \return List of fluid load boundary markers tags.
+   */
+  vector<string> GetAllFluidLoadMarkersTag();
 
   /*!
    * \brief Get all the heat transfer boundary markers tags.

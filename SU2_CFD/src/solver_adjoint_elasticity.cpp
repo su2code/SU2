@@ -206,7 +206,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       isVertex = false;
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Interface(iMarker) == YES) {
+        if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
           indexVertex = geometry->node[iPoint]->GetVertex(iMarker);
           if (indexVertex != -1){isVertex = true; break;}
         }
@@ -525,7 +525,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           direct_solver->RegisterVariables(geometry,config);
 
         /*--- Register the flow traction sensitivities ---*/
-        if (config->GetnMarker_Interface() > 0){
+        if (config->GetnMarker_Fluid_Load() > 0){
           for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
             direct_solver->node[iPoint]->RegisterFlowTraction();
           }
@@ -820,7 +820,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       direct_solver->ExtractAdjoint_Variables(geometry,config);
 
     /*--- Extract the flow traction sensitivities ---*/
-    if (config->GetnMarker_Interface() > 0){
+    if (config->GetnMarker_Fluid_Load() > 0){
       su2double val_sens;
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
         for (unsigned short iDim = 0; iDim < nDim; iDim++){
@@ -839,7 +839,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi = config->GetFSI_Simulation();
-  bool interface = (config->GetnMarker_Interface() > 0);
+  bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -857,7 +857,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
     }
 
-    if(interface){
+    if(deform_mesh){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetSourceTerm_DispAdjoint(iVar);
       }

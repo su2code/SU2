@@ -800,9 +800,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   VertexTraction = NULL;
   VertexTractionAdjoint = NULL;
 
-  /*--- Only initialize when there is a Marker Interface (this avoids overhead in all other cases while
-   *--- a more permanent structure is being developed ---*/
-  if(config->GetnMarker_Interface() > 0){
+  /*--- Only initialize when there is a Marker_Fluid_Load defined
+   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
+  if(config->GetnMarker_Fluid_Load() > 0){
 
   /* Store the forces at the boundary
    * (this will be moved to a new postprocessing structure once in place)
@@ -14268,7 +14268,7 @@ void CEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Interface(iMarker) == YES) {
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
 
       // Loop over the vertices
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -14340,7 +14340,7 @@ void CEulerSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config)
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Interface(iMarker) == YES) {
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
 
       /*--- Loop over the vertices ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -14372,7 +14372,7 @@ void CEulerSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *confi
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Interface(iMarker) == YES) {
+    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
 
       /*--- Loop over the vertices ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -15124,9 +15124,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   VertexTraction = NULL;
   VertexTractionAdjoint = NULL;
 
-  /*--- Only initialize when there is a Marker Interface (this avoids overhead in all other cases while
-   *--- a more permanent structure is being developed) ---*/
-  if(config->GetnMarker_Interface() > 0){
+  /*--- Only initialize when there is a Marker_Fluid_Load
+   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
+  if(config->GetnMarker_Fluid_Load() > 0){
 
   /* Store the forces at the boundary
    * (this will be moved to a new postprocessing structure once in place)

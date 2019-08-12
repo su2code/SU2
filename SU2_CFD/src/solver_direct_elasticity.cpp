@@ -239,7 +239,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
       iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1){
         isVertex = true;
-        if (config->GetMarker_All_Interface(iMarker) == YES) {isInterface = true;}
+        if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {isInterface = true;}
         break;
       }
     }
