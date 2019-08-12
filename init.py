@@ -86,7 +86,7 @@ def is_git_directory(path = '.'):
   except subprocess.CalledProcessError:
      print("Directory was not cloned using git. Using fall-back method to init submodules")
      return False
-  return p
+  return p == 0
 
 def submodule_status(path, sha_commit):
 
