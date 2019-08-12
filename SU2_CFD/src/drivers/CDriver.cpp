@@ -1824,12 +1824,12 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: compressible = true; euler = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:compressible = true; ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : case DISC_ADJ_EULER: compressible = true; euler = true; break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:compressible = true; ns = true;  break;
     case RANS : case DISC_ADJ_RANS:  ns = true; compressible = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-    case INC_EULER : case DISC_ADJ_INC_EULER: incompressible =true; euler = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case INC_EULER : case DISC_ADJ_INC_EULER: incompressible =true; euler = true; break;
     case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:incompressible =true; ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case INC_RANS : case DISC_ADJ_INC_RANS: incompressible =true; ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case INC_RANS : case DISC_ADJ_INC_RANS: incompressible =true; ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case FEM_EULER : case DISC_ADJ_FEM_EULER : compressible =true; fem_euler = true; break;
     case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS : compressible =true; fem_ns = true; break;
     case FEM_RANS : case DISC_ADJ_FEM_RANS : compressible =true; fem_ns = true; fem_turbulent = true; break;
