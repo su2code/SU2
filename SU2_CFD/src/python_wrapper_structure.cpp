@@ -719,23 +719,39 @@ vector<string> CDriver::GetAllMovingMarkersTag(){
   return movingBoundariesTagList;
 }
 
-vector<string> CDriver::GetAllInterfaceMarkersTag(){
+vector<string> CDriver::GetAllDeformMeshMarkersTag(){
 
   vector<string> interfaceBoundariesTagList;
   unsigned short iMarker, nBoundariesMarker;
   string Marker_Tag;
 
-  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Interface();
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Deform_Mesh();
   interfaceBoundariesTagList.resize(nBoundariesMarker);
 
   for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
-    Marker_Tag = config_container[ZONE_0]->GetMarker_Interface_TagBound(iMarker);
+    Marker_Tag = config_container[ZONE_0]->GetMarker_Deform_Mesh_TagBound(iMarker);
     interfaceBoundariesTagList[iMarker] = Marker_Tag;
   }
 
   return interfaceBoundariesTagList;
 }
 
+vector<string> CDriver::GetAllFluidLoadMarkersTag(){
+
+  vector<string> interfaceBoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Fluid_Load();
+  interfaceBoundariesTagList.resize(nBoundariesMarker);
+
+  for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_Fluid_Load_TagBound(iMarker);
+    interfaceBoundariesTagList[iMarker] = Marker_Tag;
+  }
+
+  return interfaceBoundariesTagList;
+}
 
 vector<string> CDriver::GetAllCHTMarkersTag(){
 
@@ -1132,7 +1148,7 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned shor
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
   GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
-  if (config_container[ZONE_0]->GetMarker_All_Interface(iMarker) == YES) {
+  if (config_container[ZONE_0]->GetMarker_All_Fluid_Load(iMarker) == YES) {
     FlowLoad[0] = solver->GetVertexTractions(iMarker, iVertex, 0);
     FlowLoad[1] = solver->GetVertexTractions(iMarker, iVertex, 1);
     if (solver->GetnVar() == 3)

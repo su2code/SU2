@@ -203,7 +203,8 @@ private:
   nMarker_Shroud,/*!< \brief Number of shroud markers to set grid velocity to 0.*/
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
-  nMarker_Interface,				/*!< \brief Number of interface boundary markers. */
+  nMarker_Deform_Mesh,			/*!< \brief Number of deformable markers at the boundary. */
+  nMarker_Fluid_Load,				/*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -246,7 +247,8 @@ private:
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-  *Marker_Interface,				/*!< \brief Interface boundaries markers. */
+  *Marker_Deform_Mesh,				/*!< \brief Deformable markers at the boundary. */
+  *Marker_Fluid_Load,				  /*!< \brief Markers in which the flow load is computed/employed. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
@@ -686,7 +688,8 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
-  *Marker_All_Interface,       /*!< \brief Global index for interface surfaces using the grid information. */
+  *Marker_All_Deform_Mesh,     /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_All_Fluid_Load,       /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -699,7 +702,8 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
-  *Marker_CfgFile_Interface,       /*!< \brief Global index for interface surfaces using the config information. */
+  *Marker_CfgFile_Deform_Mesh,     /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_CfgFile_Fluid_Load,       /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
@@ -2945,10 +2949,16 @@ public:
   unsigned short GetnMarker_NearFieldBound(void);
   
   /*!
-   * \brief Get the total number of interface markers.
-   * \return Total number of interface markers.
+   * \brief Get the total number of deformable markers at the boundary.
+   * \return Total number of deformable markers at the boundary.
    */
-  unsigned short GetnMarker_Interface(void);
+  unsigned short GetnMarker_Deform_Mesh(void);
+
+  /*!
+   * \brief Get the total number of markers in which the flow load is computed/employed.
+   * \return Total number of markers in which the flow load is computed/employed.
+   */
+  unsigned short GetnMarker_Fluid_Load(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -3485,12 +3495,18 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
-   * \brief Set if a marker <i>val_marker</i> belongs to the interface <i>val_moving</i>
-   *        (read from the config file).
+   * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
    * \param[in] val_marker - Index of the marker in which we are interested.
-   * \param[in] val_interface - 0 or 1 depending if the the marker belongs to the interface.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
    */
-  void SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface);
+  void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface);
+
+  /*!
+   * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a Fluid_Load marker.
+   */
+  void SetMarker_All_Fluid_Load(unsigned short val_marker, unsigned short val_interface);
 
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
@@ -3616,11 +3632,18 @@ public:
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
 
   /*!
-   * \brief Get the interface information for a marker <i>val_marker</i>.
-   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the interface.
-   * \return 0 or 1 depending if the marker belongs to the interface.
+   * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the DEFORM_MESH subset.
+   * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH subset.
    */
-  unsigned short GetMarker_All_Interface(unsigned short val_marker);
+  unsigned short GetMarker_All_Deform_Mesh(unsigned short val_marker);
+
+  /*!
+   * \brief Get whether marker <i>val_marker</i> is a Fluid_Load marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the Fluid_Load subset.
+   * \return 0 or 1 depending if the marker belongs to the Fluid_Load subset.
+   */
+  unsigned short GetMarker_All_Fluid_Load(unsigned short val_marker);
 
   /*!
    * \brief Get the Python customization for a marker <i>val_marker</i>.
@@ -6159,10 +6182,16 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
-   * \brief Get the interface information from the config definition for the marker <i>val_marker</i>.
-   * \return Interface information of the boundary in the config information for the marker <i>val_marker</i>.
+   * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
+   * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_Interface(string val_marker);
+  unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker);
+
+  /*!
+   * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
+   * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Fluid_Load(string val_marker);
 
   /*!
    * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
@@ -6537,10 +6566,16 @@ public:
   unsigned short GetMarker_Moving(string val_marker);
 
   /*!
-   * \brief Get the internal index for an interface boundary <i>val_marker</i>.
-   * \return Internal index for a interface boundary <i>val_marker</i>.
+   * \brief Get the internal index for a DEFORM_MESH boundary <i>val_marker</i>.
+   * \return Internal index for a DEFORM_MESH boundary <i>val_marker</i>.
    */
-  unsigned short GetMarker_Interface(string val_marker);
+  unsigned short GetMarker_Deform_Mesh(string val_marker);
+
+  /*!
+   * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
+   * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Fluid_Load(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -6551,12 +6586,20 @@ public:
   string GetMarker_Moving_TagBound(unsigned short val_marker);
 
   /*!
-   * \brief Get the name of the interface boundary defined in the geometry file.
+   * \brief Get the name of the DEFORM_MESH boundary defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
    * \return Name that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_Interface_TagBound(unsigned short val_marker);
+  string GetMarker_Deform_Mesh_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the Fluid_Load boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Fluid_Load_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.

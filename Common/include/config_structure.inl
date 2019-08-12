@@ -1345,7 +1345,9 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline string CConfig::GetMarker_Interface_TagBound(unsigned short val_marker) { return Marker_Interface[val_marker]; }
+inline string CConfig::GetMarker_Deform_Mesh_TagBound(unsigned short val_marker) { return Marker_Deform_Mesh[val_marker]; }
+
+inline string CConfig::GetMarker_Fluid_Load_TagBound(unsigned short val_marker) { return Marker_Fluid_Load[val_marker]; }
 
 inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
 
@@ -1386,7 +1388,9 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
-inline void CConfig::SetMarker_All_Interface(unsigned short val_marker, unsigned short val_interface) { Marker_All_Interface[val_marker] = val_interface; }
+inline void CConfig::SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_interface) { Marker_All_Deform_Mesh[val_marker] = val_interface; }
+
+inline void CConfig::SetMarker_All_Fluid_Load(unsigned short val_marker, unsigned short val_interface) { Marker_All_Fluid_Load[val_marker] = val_interface; }
 
 inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
 
@@ -1422,7 +1426,9 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_Interface(unsigned short val_marker) { return Marker_All_Interface[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_Deform_Mesh(unsigned short val_marker) { return Marker_All_Deform_Mesh[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_Fluid_Load(unsigned short val_marker) { return Marker_All_Fluid_Load[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker) { return Marker_All_PyCustom[val_marker];}
 
@@ -1434,7 +1440,9 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
-inline unsigned short CConfig::GetnMarker_Interface(void) { return nMarker_Interface; }
+inline unsigned short CConfig::GetnMarker_Deform_Mesh(void) { return nMarker_Deform_Mesh; }
+
+inline unsigned short CConfig::GetnMarker_Fluid_Load(void) { return nMarker_Fluid_Load; }
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
