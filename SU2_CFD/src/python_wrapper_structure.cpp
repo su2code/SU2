@@ -285,14 +285,14 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
 
 }
 
-unsigned long CDriver::GetnExtIter() {
+unsigned long CDriver::GetnTimeIter() {
 
-    return config_container[ZONE_0]->GetnExtIter();
+    return config_container[ZONE_0]->GetnTime_Iter();
 }
 
-unsigned long CDriver::GetExtIter(){
+unsigned long CDriver::GetTime_Iter(){
 
-  return ExtIter;
+  return TimeIter;
 }
 
 su2double CDriver::GetUnsteady_TimeStep(){

@@ -248,7 +248,6 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
   unsigned short iMesh;
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
   unsigned short nVar = 1;
 
   bool energy = config[val_iZone]->GetEnergy_Equation();
@@ -293,7 +292,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   /*--- Detect a stall in the residual ---*/
 
-  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+  if ((fabs(Diff) <= RhoRes_New*1E-8) && (curr_InnerIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
 
   CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
   CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
@@ -530,7 +529,7 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
     /*--- Write data to file --- */
   
-    file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+    file_writer->Write_Data(config->GetFilename(SurfaceFilename, "", curr_TimeIter), surface_sort);
   
   }
   
@@ -555,7 +554,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Write data to file --- */
   
-  file_writer->Write_Data(config->GetFilename(FileName, ""), data_sorter);
+  file_writer->Write_Data(config->GetFilename(FileName, "", curr_TimeIter), data_sorter);
   
   if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
     cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";
@@ -886,12 +885,12 @@ void COutput::PrepareHistoryFile(CConfig *config){
    /*--- Append the restart iteration: if dynamic problem and restart ---*/
   
   if (config->GetTime_Domain() && config->GetRestart()) {
-    long iExtIter = config->GetRestart_Iter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+    long iIter = config->GetRestart_Iter();
+    if (SU2_TYPE::Int(iIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 10) && (SU2_TYPE::Int(iIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 100) && (SU2_TYPE::Int(iIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 1000) && (SU2_TYPE::Int(iIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iIter));
+    if (SU2_TYPE::Int(iIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iIter));
     strcat(char_histfile, buffer);
   }
   

@@ -224,20 +224,18 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CSolver **solver_container,
                                      CNumerics **numerics,
                                      CConfig *config,
-                                     unsigned short RunTime_EqSystem,
-                                     unsigned long Iteration) {
+                                     unsigned short RunTime_EqSystem) {
 
     unsigned short iMarker;
 
-    bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+    bool initial_calc = (config->GetTimeIter() == 0);                  // Checks if it is the first calculation.
     bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
-    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+    bool first_iter = (config->GetInnerIter() == 0);                  // Checks if it is the first iteration
     unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
     bool restart = config->GetRestart();                                  // Restart solution
-    bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) ==  SU2_TYPE::Int(config->GetRestart_Iter()));  // Restart iteration
+    bool initial_calc_restart = (SU2_TYPE::Int(config->GetTimeIter()) ==  SU2_TYPE::Int(config->GetRestart_Iter()));  // Restart iteration
 
     /*--- Compute Mass Matrix ---*/
     /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
@@ -245,7 +243,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
     /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && (initial_calc || dynamic)) ||
+    if ((linear_analysis && (initial_calc && first_iter)) ||
       (linear_analysis && restart && initial_calc_restart)) {
       solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
@@ -338,7 +336,7 @@ void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_con
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
-                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+                                    unsigned short RunTime_EqSystem) {
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short KindSolver = config->GetKind_Solver();
   
@@ -384,7 +382,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+                                    unsigned short RunTime_EqSystem) {
 
   unsigned short iMarker;
 
@@ -741,7 +739,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
+void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver) {
   
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
@@ -801,7 +799,7 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver) {
 
   su2double val_I, Max_Val_I;
 

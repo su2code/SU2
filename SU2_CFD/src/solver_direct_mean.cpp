@@ -2760,7 +2760,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   
 }
 
-void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   unsigned long iPoint;
   unsigned short iMesh, iDim;
@@ -2778,7 +2778,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool SubsonicEngine = config->GetSubsonicEngine();
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution)  && (ExtIter == 0) && !restart) {
+  if ((VerificationSolution)  && (TimeIter == 0) && !restart) {
 
     /*--- Loop over the multigrid levels. ---*/
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -2805,7 +2805,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     /*--- Set initial boundary condition at iteration 0 ---*/
     
-    if ((ExtIter == 0) && (!restart)) {
+    if ((TimeIter == 0) && (!restart)) {
       
       su2double Velocity_Cyl[3] = {0.0, 0.0, 0.0}, Velocity_CylND[3] = {0.0, 0.0, 0.0}, Viscosity_Cyl,
       Density_Cyl, Density_CylND, Pressure_CylND, ModVel_Cyl, ModVel_CylND, Energy_CylND,
@@ -2930,7 +2930,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
   
-  if (dual_time && (ExtIter == 0 || (restart && (long)ExtIter == (long)config->GetRestart_Iter()))) {
+  if (dual_time && (TimeIter == 0 || (restart && (long)TimeIter == (long)config->GetRestart_Iter()))) {
     
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
@@ -2946,7 +2946,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
     
-    if ((restart && (long)ExtIter == (long)config->GetRestart_Iter()) &&
+    if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
@@ -2976,12 +2976,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   unsigned long ErrorCounter = 0;
   
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long InnerIter = config->GetInnerIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
@@ -3362,10 +3362,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
   
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long InnerIter = config->GetInnerIter();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
@@ -5862,10 +5862,10 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Cp                                               = Gas_Constant*Gamma / (Gamma-1.0);
   su2double Alpha                                         = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta                                           = config->GetAoS()*PI_NUMBER/180.0;
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetExtIter()!= 0))
-                      || (config->GetExtIter() == 1));
-  bool Evaluate_BC = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0))
-                      || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetInnerIter()!= 0))
+                      || (config->GetInnerIter() == 1));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0))
+                      || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
   
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
@@ -6871,7 +6871,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   bool ratio                            = (config->GetActDisk_Jump() == RATIO);
   unsigned long Update_BCThrust         = config->GetUpdate_BCThrust();
   unsigned long Iter_Fixed_NetThrust    = config->GetIter_Fixed_NetThrust();
-  unsigned long ExtIter                 = config->GetExtIter();
+  unsigned long InnerIter                 = config->GetInnerIter();
   bool Update_BCThrust_Bool             = false;
   bool restart                          = (config->GetRestart() || config->GetRestart_Flow());
   su2double Fan_Poly_Eff                = config->GetFan_Poly_Eff();
@@ -6931,7 +6931,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   
   else {
     
-    if (ExtIter == 0) BCThrust_Counter = 0;
+    if (InnerIter == 0) BCThrust_Counter = 0;
     
     /*--- Only the fine mesh level should check the convergence criteria ---*/
     
@@ -6943,7 +6943,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
       
       /*--- Reevaluate BCThrust at a fix number of iterations ---*/
       
-      if ((ExtIter % Iter_Fixed_NetThrust == 0) && (ExtIter != 0)) {
+      if ((InnerIter % Iter_Fixed_NetThrust == 0) && (InnerIter != 0)) {
         BCThrust_Counter++;
         if ((BCThrust_Counter != 0) &&
             (BCThrust_Counter != 1) &&
@@ -6967,7 +6967,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
     /*--- If it is the first iteration, set the BCThrust to a meaning full target value,
      * this can be done at an initialization level, for the time being it is OK here ---*/
     
-    if (ExtIter == 0) {
+    if (InnerIter == 0) {
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
             (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
@@ -7152,7 +7152,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
     
     /*--- Evaluate the pressure jump at each node using the total thrust ---*/
     
-    if ((Update_BCThrust_Bool && Output) || (ExtIter == 0)) {
+    if ((Update_BCThrust_Bool && Output) || (InnerIter == 0)) {
       
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         
@@ -7305,13 +7305,13 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
   unsigned long Update_Alpha = config->GetUpdate_Alpha();
   
-  unsigned long ExtIter       = config->GetExtIter();
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  unsigned long InnerIter       = config->GetInnerIter();
+  bool write_heads = ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0));
   su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
   su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   
-  if (ExtIter == 0) AoA_Counter = 0;
+  if (InnerIter == 0) AoA_Counter = 0;
   
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
@@ -7323,7 +7323,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Reevaluate Angle of Attack at a fixed number of iterations ---*/
     
-    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+    if ((InnerIter % Iter_Fixed_CL == 0) && (InnerIter != 0)) {
       AoA_Counter++;
       if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
       else Update_AoA = false;
@@ -7421,11 +7421,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
 
-  if ((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) && Output) {
+  if ((config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) && Output) {
 
     AoA_old = config->GetAoA();
 
-    if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
+    if (config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) {
       Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
       config->SetWrt_Con_Freq(Wrt_Con_Freq);
       Total_CD_Prev = Total_CD;
@@ -7439,7 +7439,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       
-    	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
+    	if (config->GetnInner_Iter()-Iter_dCL_dAlpha == InnerIter) {
        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
        cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
        cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -7495,7 +7495,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if (AoA_FD_Change && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (AoA_FD_Change && (config->GetnInner_Iter()-1 == InnerIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Update angle of attack ---*/
 
@@ -12670,9 +12670,9 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
   
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
-                       && (config->GetExtIter()!= 0))
-                      || (config->GetExtIter() == 1));
+  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetInnerIter()!= 0))
+                      || (config->GetInnerIter() == 1));
   if( !write_heads ) return;  
 
   /*--- Check if there actually is an exact solution for this
@@ -12770,16 +12770,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool static_fsi = ((config->GetUnsteady_Simulation() == STEADY) &&
                      (config->GetFSI_Simulation()));
   bool steady_restart = config->GetSteadyRestart();
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
 
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string restart_filename = config->GetSolution_FileName();
+  string  restart_filename = config->GetFilename(config->GetSolution_FileName(), ".dat", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -12801,16 +12794,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     if (turb_model == SST) turbVars = 2;  
     else turbVars = 1;
   }
-
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time || time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter, ".dat");
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -15028,15 +15011,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
     
-  unsigned long ExtIter     = config->GetExtIter();
+  unsigned long InnerIter     = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
-  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter());
-  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));

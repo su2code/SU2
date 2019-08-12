@@ -472,7 +472,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
 
-  }else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  }else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -690,7 +690,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -814,7 +814,7 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
     
-  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -1070,7 +1070,7 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(iExtIter));
@@ -4034,7 +4034,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -4066,7 +4066,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -4243,10 +4243,10 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
 
   /*--- Write the general header and flow conditions ----*/
 
-  if (dual_time)
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-  else
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+//  if (dual_time)
+    restart_file <<"EXT_ITER= " << config->GetInnerIter() + 1 << endl;
+//  else
+//    restart_file <<"EXT_ITER= " << config->GetInnerIter() + config->GetInnerIter_OffSet() + 1 << endl;
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
@@ -4362,7 +4362,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   }
   strcpy (cstr, filename.data());
   
-  if (config->GetWrt_Unsteady() && config->GetRestart()) {
+  if (config->GetTime_Domain() && config->GetRestart()) {
     long iExtIter = config->GetRestart_Iter();
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
@@ -4581,8 +4581,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
   bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
   bool fea                  = ((config[val_iZone]->GetKind_Solver()== FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== DISC_ADJ_FEM));
-  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
-  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
+  unsigned long iIntIter    = config[val_iZone]->GetInnerIter();
+  unsigned long iExtIter    = config[val_iZone]->GetInnerIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone      = config[val_iZone]->GetnZone();
   unsigned short nInst      = config[val_iZone]->GetnTimeInstances();
@@ -4598,7 +4598,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
-        (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
+        (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
       output_files = false;
     }
     
@@ -4608,10 +4608,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
     if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
-        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2))) ||
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
 
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
@@ -5218,7 +5218,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (Unsteady) write_heads = (iIntIter == 0);
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
-    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
+    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnInner_Iter() -1)));
     
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
@@ -6342,7 +6342,7 @@ void COutputLegacy::SetCFL_Number(CSolver *****solver_container, CConfig **confi
   unsigned short iMesh;
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
+  unsigned long ExtIter = config[val_iZone]->GetInnerIter();
   unsigned short nVar = 1;
 
   bool energy = config[val_iZone]->GetEnergy_Equation();
@@ -9278,7 +9278,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
       (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
@@ -9429,7 +9429,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
       (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
@@ -11277,7 +11277,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
 //    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
 //    strcpy (cstr, filename.data());
 
-    if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
+    if (config[ZONE_FLOW]->GetTime_Domain() && config[ZONE_FLOW]->GetRestart()) {
       long iExtIter = config[ZONE_FLOW]->GetRestart_Iter();
       if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
@@ -11414,7 +11414,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
 
       unsigned short nDim = geometry[ZONE_STRUCT][INST_0][MESH_0]->GetnDim();
 
-      unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
+      unsigned long iExtIter = config[ZONE_STRUCT]->GetInnerIter();
       unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
       unsigned long iOuterIter = config[ZONE_STRUCT]->GetOuterIter();
       su2double dummy = 0.0;
@@ -11917,7 +11917,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
 
   unsigned short iDim, iSpan;
 
-  unsigned long iExtIter = config[val_iZone]->GetExtIter();
+  unsigned long iExtIter = config[val_iZone]->GetInnerIter();
   su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
   ofstream myfile;
   string spanwise_performance_filename;
@@ -12174,7 +12174,7 @@ void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry
   /*--- Other variables ---*/
   unsigned short iVar, kInst;
   unsigned short nVar_output = 5;
-  unsigned long current_iter = config[ZONE_0]->GetExtIter();
+  unsigned long current_iter = config[ZONE_0]->GetInnerIter();
 
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
@@ -12396,7 +12396,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
+        (config[iZone]->GetnInner_Iter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
 
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
@@ -12417,7 +12417,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+        (config[iZone]->GetnInner_Iter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
 
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
@@ -17772,7 +17772,7 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   
   unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
@@ -17808,7 +17808,7 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -17877,10 +17877,10 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   /*--- Write the metadata (master rank alone) ----*/
 
   if (rank == MASTER_NODE) {
-    if (dual_time)
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+//    if (dual_time)
+      restart_file <<"EXT_ITER= " << config->GetInnerIter() + 1 << endl;
+//    else
+//      restart_file <<"EXT_ITER= " << config->GetInnerIter() + config->GetInnerIter_OffSet() + 1 << endl;
     restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
     restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
@@ -17902,7 +17902,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
   /*--- Local variables ---*/
 
   unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
@@ -17936,7 +17936,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -17968,9 +17968,9 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   int Restart_ExtIter;
   if (dual_time)
-    Restart_ExtIter= (int)config->GetExtIter() + 1;
+    Restart_ExtIter= (int)config->GetInnerIter() + 1;
   else
-    Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
+    Restart_ExtIter = (int)config->GetInnerIter() + (int)config->GetExtIter_OffSet() + 1;
 
   passivedouble Restart_Metadata[8] = {
     SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),

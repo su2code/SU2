@@ -213,7 +213,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-    config_container[iZone]->SetExtIter(TimeIter);
     config_container[iZone]->SetTimeIter(TimeIter);
     
 
@@ -280,7 +279,6 @@ void CMultizoneDriver::Run_GaussSeidel() {
   unsigned long iOuter_Iter;
   unsigned short jZone, UpdateMesh;
   bool DeformMesh = false;
-  unsigned long ExtIter = 0;
   bool Convergence = false;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
@@ -307,7 +305,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
         }
       }
       /*--- If a mesh update is required due to the transfer of data ---*/
-      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
+      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
       iteration_container[iZone][INST_0]->Solve(output_container[iZone], integration_container, geometry_container, solver_container,
@@ -334,7 +332,6 @@ void CMultizoneDriver::Run_Jacobi() {
   unsigned long iOuter_Iter;
   unsigned short jZone, UpdateMesh;
   bool DeformMesh = false;
-  unsigned long ExtIter = 0;
   bool Convergence = false;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
@@ -361,7 +358,7 @@ void CMultizoneDriver::Run_Jacobi() {
         }
       }
       /*--- If a mesh update is required due to the transfer of data ---*/
-      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
+      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
     }
 
@@ -462,7 +459,7 @@ void CMultizoneDriver::Update() {
         }
       }
     /*--- If a mesh update is required due to the transfer of data ---*/
-    if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
+    if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
     iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
@@ -509,7 +506,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
           (config_container[iZone]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-         ((TimeIter == 0) || (ExtIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
         
         ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
          ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
@@ -531,13 +528,13 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
       
     }
     
-    /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
+//    /*--- Determine whether a solution doesn't need to be written
+//   after the current iteration ---*/
     
-    if (config_container[iZone]->GetFixed_CL_Mode()) {
-      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
-    }
+//    if (config_container[iZone]->GetFixed_CL_Mode()) {
+//      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+//      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
+//    }
     
     /*--- write the solution ---*/
     
@@ -606,7 +603,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
   bool harmonic_balance;
 
@@ -616,16 +613,16 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone], 
                                                                grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
-                                                               config_container[iZone], 0, ExtIter);
+                                                               config_container[iZone], 0, TimeIter);
     }
   }
 }
 
-void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) {
+void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
 
   iteration_container[val_iZone][INST_0]->SetGrid_Movement(geometry_container[val_iZone][INST_0],surface_movement[val_iZone], 
                                                            grid_movement[val_iZone][INST_0], solver_container[val_iZone][INST_0],
-                                                           config_container[val_iZone], 0, ExtIter);
+                                                           config_container[val_iZone], 0, TimeIter);
 
 }
 

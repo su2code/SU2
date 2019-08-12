@@ -45,11 +45,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
-  if (!config_container[ZONE_0]->GetTime_Domain())
-    nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
-  else {
-    nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  }
+  nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
+  
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -122,11 +119,6 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-
-  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-
-  config_container[ZONE_0]->SetExtIter(TimeIter);
   
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
@@ -161,8 +153,6 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
     config->SetInnerIter(Adjoint_Iter);
-    if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
-      config->SetExtIter(Adjoint_Iter);
 
     /*--- Secondary sensitivities must be computed with a certain frequency. ---*/
     /*--- It is also done at the beginning so all memory gets allocated.     ---*/
@@ -291,11 +281,10 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
   bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
   if (time_stepping){
-    if (ExtIter < IterAvg_Obj){
+    if (TimeIter < IterAvg_Obj){
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else{
@@ -415,7 +404,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Run one single iteration ---*/
 
-  config->SetIntIter(1);
+  config->SetInnerIter(1);
 
   /*--- Iterate the direct solver ---*/
 

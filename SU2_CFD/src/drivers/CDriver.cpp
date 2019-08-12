@@ -45,8 +45,7 @@
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), 
-  ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dummy_geometry(dummy_geo) {
+                 SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dummy_geometry(dummy_geo) {
 
   unsigned short jZone;
 
@@ -3652,13 +3651,13 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
   
 
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
-  if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-    ExtIter = config_container[ZONE_0]->GetRestart_Iter();
+  if (config_container[ZONE_0]->GetTime_Domain() && config_container[ZONE_0]->GetRestart())
+    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-    ExtIter = config_container[ZONE_0]->GetRestart_Iter();
+    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
   
   
 }
@@ -3804,16 +3803,17 @@ void CDriver::StartSolver(){
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
 
-  while ( ExtIter < config_container[ZONE_0]->GetnExtIter() ) {
+  unsigned long Iter = 0;
+  while ( Iter < config_container[ZONE_0]->GetnInner_Iter() ) {
 
     /*--- Perform some external iteration preprocessing. ---*/
 
-    PreprocessExtIter(ExtIter);
+    Preprocess(Iter);
 
      /*--- Perform a dynamic mesh update if required. ---*/
 
       if (!fem_solver) {
-        DynamicMeshUpdate(ExtIter);
+        DynamicMeshUpdate(Iter);
       }
 
     /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
@@ -3829,17 +3829,17 @@ void CDriver::StartSolver(){
 
     /*--- Monitor the computations after each iteration. ---*/
 
-    Monitor(ExtIter);
+    Monitor(Iter);
 
     /*--- Output the solution in files. ---*/
 
-    Output(ExtIter);
+    Output(Iter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
 
-    ExtIter++;
+    Iter++;
 
   }
 #ifdef VTUNEPROF
@@ -3847,15 +3847,15 @@ void CDriver::StartSolver(){
 #endif
 }
 
-void CDriver::PreprocessExtIter(unsigned long ExtIter) {
+
+void CFluidDriver::Preprocess(unsigned long Iter) {
 
   /*--- Set the value of the external iteration and physical time. ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    config_container[iZone]->SetExtIter(ExtIter);
-  
+  for (iZone = 0; iZone < nZone; iZone++) {  
+    config_container[iZone]->SetInnerIter(Iter);
     if (config_container[iZone]->GetUnsteady_Simulation())
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(ExtIter)*config_container[iZone]->GetDelta_UnstTimeND());
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
   
@@ -4146,7 +4146,7 @@ void CFluidDriver::Run() {
     /*--- For each zone runs one single iteration ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetIntIter(IntIter);
+      config_container[iZone]->SetInnerIter(IntIter);
       iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 
@@ -4183,7 +4183,7 @@ void CFluidDriver::Update() {
          surface_movement, grid_movement, FFDBox, iZone, INST_0);
 }
 
-void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
   bool harmonic_balance;
 
@@ -4337,7 +4337,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   CConfig *runtime = NULL;
   strcpy(runtime_file_name, "runtime.dat");
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-  runtime->SetExtIter(ExtIter);
+  runtime->SetInnerIter(ExtIter);
   delete runtime;
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
@@ -4597,7 +4597,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
     implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   }
 
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long InnerIter = config_container[ZONE_0]->GetInnerIter();
 
   /*--- Retrieve values from the config file ---*/
   su2double *U = new su2double[nVar];
@@ -4613,7 +4613,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   /*--- Non-dimensionalize the input period, if necessary.  */
   period /= config_container[ZONE_0]->GetTime_Ref();
 
-  if (ExtIter == 0)
+  if (InnerIter == 0)
     ComputeHB_Operator();
 
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
@@ -5114,7 +5114,7 @@ void CFSIDriver::Run() {
   bool dyn_fsi = (((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND))
                    && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC));
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
+  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
   unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
   unsigned long nIntIter;
@@ -5147,7 +5147,7 @@ void CFSIDriver::Run() {
 
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                            surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
-                                                           solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
+                                                           solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, TimeIter );
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Fluid subiteration -------------------------*/
@@ -5165,9 +5165,6 @@ void CFSIDriver::Run() {
     nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
 
     for (IntIter = 0; IntIter < nIntIter; IntIter++){
-
-      /*--- Set ExtIter to iExtIter_FLOW; this is a trick to loop on the steady-state flow solver ---*/
-      config_container[ZONE_FLOW]->SetExtIter(IntIter);
 
       iteration_container[ZONE_FLOW][INST_0]->Iterate(output_container[ZONE_FLOW], integration_container, geometry_container,
           solver_container, numerics_container, config_container,
@@ -5191,8 +5188,6 @@ void CFSIDriver::Run() {
     nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
 
     for (IntIter = 0; IntIter < nIntIter; IntIter++){
-
-      config_container[ZONE_FLOW]->SetIntIter(IntIter);
 
       iteration_container[ZONE_FLOW][INST_0]->Iterate(output_container[ZONE_FLOW], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
@@ -5423,7 +5418,7 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
 
   }
 
-  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][INST_0][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL], IntIter);
+  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][INST_0][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]);
 
   Convergence = integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->GetConvergence_FSI();
 
@@ -5450,7 +5445,7 @@ void CFSIDriver::Update() {
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
 
-  ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+  TimeIter = config_container[ZONE_FLOW]->GetTimeIter();
 
   /*-----------------------------------------------------------------*/
   /*--------------------- Enforce continuity ------------------------*/
@@ -5467,7 +5462,7 @@ void CFSIDriver::Update() {
   
   iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container[ZONE_FLOW][INST_0], 
                                                            surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW][INST_0],
-                                                           solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, ExtIter );
+                                                           solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, TimeIter );
 
   /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
 
@@ -5691,9 +5686,9 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     myfile_res.close();
   }
 
-  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-  config_container[ZONE_0]->SetnExtIter(1);
-  config_container[ZONE_1]->SetnExtIter(1);
+//  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+//  config_container[ZONE_0]->SetnExtIter(1);
+//  config_container[ZONE_1]->SetnExtIter(1);
 
 }
 
@@ -5725,7 +5720,7 @@ void CDiscAdjFSIDriver::Run( ) {
   unsigned short iZone;
   bool BGS_Converged = false;
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
+  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetInnerIter(IntIter);
   unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
   unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
@@ -5781,8 +5776,8 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
                   unsigned short kind_recording){
 
   unsigned long IntIter = 0, iPoint;
-  config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned short ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+  config_container[ZONE_0]->SetInnerIter(IntIter);
+  unsigned short ExtIter = config_container[ZONE_FLOW]->GetTimeIter();
 
   bool dual_time_1st = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -5947,8 +5942,8 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
   /*----------------------------------------------------------------------------*/
 
   IntIter = 0;
-  config_container[ZONE_STRUCT]->SetIntIter(IntIter);
-  ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
+  config_container[ZONE_STRUCT]->SetInnerIter(IntIter);
+  ExtIter = config_container[ZONE_STRUCT]->GetTimeIter();
   bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
 
   int Direct_Iter_FEA;
@@ -6034,7 +6029,7 @@ void CDiscAdjFSIDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
                                                           unsigned short ZONE_STRUCT,
                                                           unsigned short kind_recording){
 
-  unsigned short ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+  unsigned short ExtIter = config_container[ZONE_FLOW]->GetTimeIter();
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
   bool nonlinear_analysis = (config_container[ZONE_STRUCT]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
   bool unsteady = config_container[ZONE_FLOW]->GetUnsteady_Simulation() != NONE;
@@ -6206,7 +6201,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
   /*---- Sets all the cross dependencies for the flow variables -----*/
   /*-----------------------------------------------------------------*/
 
-  config_container[ZONE_FLOW]->SetIntIter(0);
+  config_container[ZONE_FLOW]->SetInnerIter(0);
 
   direct_iteration[ZONE_FLOW]->Iterate(output_container[ZONE_FLOW], integration_container, geometry_container,
       solver_container, numerics_container, config_container,
@@ -6273,7 +6268,7 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
 void CDiscAdjFSIDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-  unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
+  unsigned long ExtIter = config_container[ZONE_STRUCT]->GetTimeIter();
 
   /*-----------------------------------------------------------------*/
   /*--------------------- Set MPI Solution --------------------------*/
@@ -6316,7 +6311,7 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
                                               unsigned short ZONE_STRUCT,
                                               unsigned short kind_recording){
 
-  unsigned long IntIter = config_container[ZONE_0]->GetIntIter();
+  unsigned long IntIter = config_container[ZONE_0]->GetInnerIter();
   bool unsteady = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() != NONE);
   bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
 
@@ -6417,7 +6412,7 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
 
   /* --- Reset the number of the internal iterations---*/
 
-  config_container[ZONE_0]->SetIntIter(IntIter);
+  config_container[ZONE_0]->SetInnerIter(IntIter);
 
 
 }
@@ -6566,14 +6561,14 @@ void CDiscAdjFSIDriver::Iterate_Block(unsigned short ZONE_FLOW,
   }
 
   for (unsigned short iZone = 0; iZone < config_container[ZONE_FLOW]->GetnZone(); iZone++)
-    config_container[iZone]->SetIntIter(IntIter);
+    config_container[iZone]->SetInnerIter(IntIter);
 
   for(IntIter = 0; IntIter < nIntIter; IntIter++){
 
     /*--- Set the internal iteration ---*/
 
     for (unsigned short iZone = 0; iZone < config_container[ZONE_FLOW]->GetnZone(); iZone++)
-      config_container[iZone]->SetIntIter(IntIter);
+      config_container[iZone]->SetInnerIter(IntIter);
 
     /*--- Set the adjoint values of the flow and objective function ---*/
 
@@ -7186,7 +7181,7 @@ void CMultiphysicsZonalDriver::Run() {
           output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
       }
 
-      config_container[iZone]->SetIntIter(IntIter);
+      config_container[iZone]->SetInnerIter(IntIter);
 
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && transfer_container[jZone][iZone] != NULL)

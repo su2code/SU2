@@ -63,7 +63,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
   /*--- Compute BC imposed value for convergence monitoring ---*/
   for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
     for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++){
-      if(config->GetRampOutletPressure() && config->GetExtIter() > 0){
+      if(config->GetRampOutletPressure() && config->GetInnerIter() > 0){
         PressureOut_BC[iMarkerTP][iSpan] = config->GetMonitorOutletPressure()/config->GetPressure_Ref();
       }
       FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
