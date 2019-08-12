@@ -150,11 +150,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
 
-  const bool compressible = (config->GetKind_Solver() == FEM_EULER) || 
-                            (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == FEM_RANS) ||
-                            (config->GetKind_Solver() == FEM_LES);
-
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
@@ -3182,16 +3178,12 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
-  const bool compressible = (config->GetKind_Solver() == FEM_EULER) || 
-                            (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == FEM_RANS) ||
-                            (config->GetKind_Solver() == FEM_LES);
   
   /*-----------------------------------------------------------------------------*/
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
 
-  if(compressible) {
+  if(config->GetKind_Regime() == COMPRESSIBLE) {
 
     /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
     switch( nDim ) {
@@ -3638,11 +3630,6 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
   
-  const bool compressible = (config->GetKind_Solver() == FEM_EULER) || 
-                            (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == FEM_RANS) ||
-                            (config->GetKind_Solver() == FEM_LES);
-  
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
@@ -3668,7 +3655,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(compressible) {
+    if(config->GetKind_Regime() == COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -9455,10 +9442,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   string UnstExt, text_line;
   ifstream restart_file;
   
-  const bool compressible = (config->GetKind_Solver() == FEM_EULER) || 
-                            (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == FEM_RANS) ||
-                            (config->GetKind_Solver() == FEM_LES);
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FlowFileName();
 
@@ -10458,11 +10442,6 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
   
-  const bool compressible = (config->GetKind_Solver() == FEM_EULER) || 
-                            (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                            (config->GetKind_Solver() == FEM_RANS) ||
-                            (config->GetKind_Solver() == FEM_LES);
-  
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
@@ -10525,7 +10504,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(compressible) {
+    if(config->GetKind_Regime() == COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. Multiple elements are treated
             simultaneously to improve the performance of the matrix

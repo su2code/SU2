@@ -347,16 +347,8 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
   unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
 
   /*--- Check the kind of fluid problem ---*/
-  bool compressible = (config_container[ZONE_0]->GetKind_Solver() == EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_LES);
-  bool incompressible = (config_container[ZONE_0]->GetKind_Solver() == INC_EULER) || 
-                        (config_container[ZONE_0]->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                        (config_container[ZONE_0]->GetKind_Solver() == INC_RANS);
+  bool compressible       = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (config_container[ZONE_0]->GetKind_Regime() == INCOMPRESSIBLE);
   bool viscous_flow       = ((config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
                  (config_container[ZONE_0]->GetKind_Solver() == RANS) );
 
@@ -520,13 +512,7 @@ su2double CDriver::GetVertexTemperature(unsigned short iMarker, unsigned short i
   unsigned long iPoint;
   su2double vertexWallTemp(0.0);
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Solver() == EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_LES);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
   
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -555,13 +541,7 @@ bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVe
   su2double laminar_viscosity, thermal_conductivity;
   su2double GradT[3] = {0.0,0.0,0.0};
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Solver() == EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_LES);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
   bool halo;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
@@ -614,13 +594,7 @@ su2double CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned shor
   su2double laminar_viscosity, thermal_conductivity, dTdn;
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Solver() == EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_EULER) || 
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS) ||
-                      (config_container[ZONE_0]->GetKind_Solver() == FEM_LES);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
   
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
