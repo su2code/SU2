@@ -1319,8 +1319,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
-  /* DESCRIPTION: Number of total iterations */
-  addUnsignedLongOption("EXT_ITER", nExtIter, 0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -2511,6 +2509,8 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
           if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
           if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
+          if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
+                                                                 "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
 
           errorString.append(newString);
           err_count++;
@@ -3058,13 +3058,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Initialize the ofstream ConvHistFile. ---*/
 //  ofstream ConvHistFile;
 
-  /*--- Decide whether we should be writing unsteady solution files. ---*/
-  
-  if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == HARMONIC_BALANCE)
- { Wrt_Unsteady = false; }
-  else { Wrt_Unsteady = true; }
-
   if (Kind_Solver == FEM_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
@@ -3184,13 +3177,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
-  if (Time_Domain && Time_Step <= 0.0){
+  if (Time_Domain && Time_Step <= 0.0 && Unst_CFL == 0.0){
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
-  }
-  
-  if (nExtIter != 0){
-    SU2_MPI::Error("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
-                   "to specify the number of time iterations, outer multizone iterations or iterations, respectively.", CURRENT_FUNCTION);
   }
   
   if (Unsteady_Simulation == TIME_STEPPING){
@@ -3763,9 +3751,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
-  Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
-  Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
+  Iter_Fixed_CL        = SU2_TYPE::Int(nInnerIter / (su2double(Update_Alpha)+1));
+  Iter_Fixed_CM        = SU2_TYPE::Int(nInnerIter / (su2double(Update_iH)+1));
+  Iter_Fixed_NetThrust = SU2_TYPE::Int(nInnerIter / (su2double(Update_BCThrust)+1));
 
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
@@ -3787,9 +3775,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_Flow[1] = Kappa_AdjFlow[1];
   }
   
-  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
-  if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
-  if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
+  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nInnerIter+1; Update_Alpha = 0; }
+  if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nInnerIter+1; Update_iH = 0; }
+  if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nInnerIter+1; Update_BCThrust = 0; }
 
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
@@ -4068,7 +4056,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
       }
 
-      if (Unst_AdjointIter- long(nExtIter) < 0){
+      if (Unst_AdjointIter- long(nTimeIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
                        string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
@@ -4077,7 +4065,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       /*--- If the averaging interval is not set, we average over all time-steps ---*/
 
       if (Iter_Avg_Objective == 0.0) {
-        Iter_Avg_Objective = nExtIter;
+        Iter_Avg_Objective = nTimeIter;
       }
 
     }
@@ -4136,7 +4124,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
   	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
     ConvCriteria = RESIDUAL;
-  		nExtIter += Iter_dCL_dAlpha;
+  		nInnerIter += Iter_dCL_dAlpha;
   		OrderMagResidual = 24;
   		MinLogResidual = -24;
   	}
@@ -4365,8 +4353,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Comm_Level == COMM_NONE)
       SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
 
-    Wrt_Sol_Freq          = nExtIter+1;
-    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    Wrt_Sol_Freq          = nTimeIter+1;
+    Wrt_Sol_Freq_DualTime = nTimeIter+1;
     
     /*--- Write only the restart. ---*/
     
@@ -6039,13 +6027,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
-    if (SinglezoneDriver){
-      cout << "Maximum number of solver subiterations: " << nIter <<"."<< endl;
-      cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
-    }
-    else{
-      cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
-    }
+    
+    cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
+    cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
+
 
     if (!fea){
 
@@ -7310,7 +7295,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   
   /*--- Remove any extension --- */
   
@@ -7329,8 +7314,8 @@ string CConfig::GetFilename(string filename, string ext){
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
-  if (GetWrt_Unsteady() || GetWrt_Dynamic()){
-    filename = GetUnsteady_FileName(filename, (int)GetExtIter(), ext);
+  if (GetTime_Domain()){
+    filename = GetUnsteady_FileName(filename, (int)Iter, ext);
   }
   
   return filename;
@@ -7349,7 +7334,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string e
 
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
+  if ((Time_Domain) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
@@ -7523,13 +7508,12 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
 }
 
 void CConfig::SetGlobalParam(unsigned short val_solver,
-                             unsigned short val_system,
-                             unsigned long val_extiter) {
+                             unsigned short val_system) {
 
   /*--- Set the simulation global time ---*/
   
-  Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
-  Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
+  Current_UnstTime = static_cast<su2double>(TimeIter)*Delta_UnstTime;
+  Current_UnstTimeND = static_cast<su2double>(TimeIter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
   
@@ -7665,7 +7649,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
 
     case FEM_ELASTICITY:
 
-      Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
+      Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);

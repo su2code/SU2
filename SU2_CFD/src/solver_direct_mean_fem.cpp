@@ -3118,10 +3118,10 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
   return true;
 }
 
-void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution)  && (ExtIter == 0)) {
+  if ((VerificationSolution)  && (TimeIter == 0)) {
 
     /* Loop over the owned elements. */
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
@@ -3245,10 +3245,10 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
                          CURRENT_FUNCTION);
 
         /* Determine whether or not it is needed to compute the motion data. */
-        const unsigned long ExtIter = config->GetExtIter();
+        const unsigned long TimeIter = config->GetTimeIter();
 
         bool computeMotion = false, firstTime = false;
-        if(ExtIter == 0 && iStep == 0) computeMotion = firstTime = true;
+        if(TimeIter == 0 && iStep == 0) computeMotion = firstTime = true;
         if(iStep == 1 || iStep == 3)   computeMotion = true;
 
         if( computeMotion ) {
@@ -3260,7 +3260,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
           /* Determine the time for which the motion data must be determined. */
           const su2double deltaT = config->GetDelta_UnstTimeND();
 
-          su2double tNew = ExtIter*deltaT;
+          su2double tNew = TimeIter*deltaT;
           if( iStep ) tNew += 0.25*(iStep+1)*deltaT;
 
           /* Determine the time for which the currently stored position was
@@ -7330,9 +7330,9 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
-                       && (config->GetExtIter()!= 0))
-                      || (config->GetExtIter() == 1));
+  bool write_heads = ((((config->GetTimeIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetTimeIter()!= 0))
+                      || (config->GetTimeIter() == 1));
   if( !write_heads ) return;
   
   /*--- Check if there actually is an exact solution for this
@@ -9405,9 +9405,6 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   /*--- Restart the solution from file information ---*/
   unsigned short iVar;
   unsigned long index;
-
-  string UnstExt, text_line;
-  ifstream restart_file;
 
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 

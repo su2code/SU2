@@ -439,11 +439,11 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
   bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
+  unsigned long TimeIter = config->GetTimeIter();
   su2double seeding = 1.0;
 
   if (time_stepping) {
-    if (ExtIter < IterAvg_Obj) {
+    if (TimeIter < IterAvg_Obj) {
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else {
@@ -932,8 +932,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine, counter;
   su2double Area_Children, Area_Parent, *Solution_Fine;
-  ifstream restart_file;
-  string restart_filename, filename, text_line;
+  string restart_filename, filename;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -942,6 +941,9 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
+  
+  restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+  
 
   /*--- Read and store the restart metadata. ---*/
 

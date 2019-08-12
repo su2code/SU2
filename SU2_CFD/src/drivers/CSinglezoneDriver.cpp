@@ -114,10 +114,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
-  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-  config_container[ZONE_0]->SetExtIter(TimeIter);
-
   /*--- Store the current physical time in the config container, as
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
@@ -127,18 +123,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
   
-  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
-  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-//    output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
-
-//  /*--- Read the target heat flux ----------------------------------------------------------------*/
-//  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-//    output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
-
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
@@ -212,13 +196,13 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
       /*--- General if statements to print output statements ---*/
 
-      (TimeIter+1 >= config_container[ZONE_0]->GetnTime_Iter()) || (StopCalc) ||
+      (StopCalc) ||
 
       /*--- Unsteady problems ---*/
 
       (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((TimeIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
@@ -243,10 +227,10 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
 
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-  }
+//  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+//    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+//    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+//  }
 
   /*--- write the solution ---*/
 
