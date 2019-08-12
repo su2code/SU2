@@ -2795,16 +2795,8 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, CConfig *co
 
 void CFEASolver::BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned short val_marker){
 
-  unsigned short iDim, jDim;
-
+  unsigned short iDim;
   unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  su2double Displacement[3] = {0.0, 0.0, 0.0};
-
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
@@ -2812,79 +2804,12 @@ void CFEASolver::BC_Moving(CGeometry *geometry, CNumerics *numerics, CConfig *co
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Retrieve the boundary displacement ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      Displacement[iDim] = node[iNode]->GetBound_Disp(iDim);
+    for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = node[iNode]->GetBound_Disp(iDim);
 
-    if (geometry->node[iNode]->GetDomain()) {
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Solution);
+    Jacobian.EnforceSolutionAtNode(iNode, Solution, LinSysRes);
 
-      if (nDim == 2) {
-        Solution[0] = Displacement[0];  Solution[1] = Displacement[1];
-        Residual[0] = Displacement[0];  Residual[1] = Displacement[1];
-      }
-      else {
-        Solution[0] = Displacement[0];  Solution[1] = Displacement[1];  Solution[2] = Displacement[2];
-        Residual[0] = Displacement[0];  Residual[1] = Displacement[1];  Residual[2] = Displacement[2];
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
-        }
-      }
-    }
-
-    /*--- Always delete the iNode column, even for halos ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-      valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
-
-      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-      if (valJacobian_ij_00 != 0.0 ){
-
-        /*--- Retrieve the Jacobian term ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
-          }
-        }
-
-        /*--- Multiply by the imposed displacement ---*/
-        for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++){
-            Residual[iDim] += auxJacobian_ij[iDim][jDim] * Displacement[jDim];
-          }
-        }
-
-        /*--- For the whole column, except the diagonal term ---*/
-        if (iNode != iPoint) {
-          /*--- The term is substracted from the residual (right hand side) ---*/
-          LinSysRes.SubtractBlock(iPoint, Residual);
-          /*--- The Jacobian term is now set to 0 ---*/
-          Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
-        }
-      }
-    }
   }
 
 }
