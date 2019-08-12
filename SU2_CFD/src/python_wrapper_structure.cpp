@@ -836,7 +836,7 @@ map<string, string> CDriver::GetAllBoundaryMarkersType(){
   return allBoundariesTypeMap;
 }
 
-void CFluidDriver::ResetConvergence() {
+void CDriver::ResetConvergence() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
     switch (config_container[iZone]->GetKind_Solver()) {

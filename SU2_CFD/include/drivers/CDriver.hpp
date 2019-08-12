@@ -340,7 +340,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void ResetConvergence() { };
+  virtual void ResetConvergence();
 
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
@@ -862,11 +862,6 @@ public:
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
-
-  /*!
-   * \brief Reset the convergence flag (set to false) of the multizone solver.
-   */
-  void ResetConvergence();
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
