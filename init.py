@@ -78,7 +78,7 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
 def is_git_directory(path = '.'):
-  return subprocess.call(['git', '-C', path, 'status'], stderr=subprocess.STDOUT, stdout = open(os.devnull, 'w')) == 0 
+  return subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path) == 0 
 
 def submodule_status(path, sha_commit):
 
