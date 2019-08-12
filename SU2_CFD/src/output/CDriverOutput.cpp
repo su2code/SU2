@@ -158,7 +158,7 @@ void CDriverOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **
   }
 }
 
-inline bool CDriverOutput::WriteScreen_Header(CConfig *config) {
+bool CDriverOutput::WriteScreen_Header(CConfig *config) {
 
   bool write_header = true;
 
@@ -168,13 +168,15 @@ inline bool CDriverOutput::WriteScreen_Header(CConfig *config) {
   return write_header;
 
 }
-inline bool CDriverOutput::WriteScreen_Output(CConfig *config) {
+
+bool CDriverOutput::WriteScreen_Output(CConfig *config) {
   
-  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
+  unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
+  unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);    
 
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -183,24 +185,24 @@ inline bool CDriverOutput::WriteScreen_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(ScreenWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
-  
  
   return true;
 }
 
-inline bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
+bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
   
-  su2double* HistoryWrt_Freq = config->GetHistory_Wrt_Freq();
+  unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
+  unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);    
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(HistoryWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -209,7 +211,7 @@ inline bool CDriverOutput::WriteHistoryFile_Output(CConfig *config){
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(HistoryWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter, HistoryWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;

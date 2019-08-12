@@ -246,28 +246,5 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   
 }
 
-inline bool CElasticityOutput::WriteHistoryFile_Output(CConfig *config) { return true;}
-
-inline bool CElasticityOutput::WriteScreen_Header(CConfig *config) {  
-  
-  bool write_header;
-  if (nonlinear_analysis) write_header = (config->GetIntIter() == 0);
-  else write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-
-  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
-
-  return write_header;
-  
-}
-inline bool CElasticityOutput::WriteScreen_Output(CConfig *config) {
-
-  bool write_output = true;
-
-  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
-  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
-
-  return write_output;
-}
 
 
