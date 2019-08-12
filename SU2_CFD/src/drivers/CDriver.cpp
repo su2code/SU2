@@ -3792,7 +3792,16 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
 
 }
 
-void CDriver::StartSolver(){
+
+
+
+CDriver::~CDriver(void) {}
+
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) { }
+
+CFluidDriver::~CFluidDriver(void) { }
+
+void CFluidDriver::StartSolver(){
 
 #ifdef VTUNEPROF
   __itt_resume();
@@ -3882,222 +3891,12 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
           (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
           (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++)
-          solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], ExtIter);
+          solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
       }
     }
   }
 
 }
-
-bool CDriver::Monitor(unsigned long ExtIter) {
-
-  /*--- Synchronization point after a single solver iteration. Compute the
-   wall clock time required. ---*/
-
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
-  IterCount++;
-  UsedTime = (StopTime - StartTime) + UsedTimeCompute;
-  
-  
-  /*--- Check if there is any change in the runtime parameters ---*/
-  
-  CConfig *runtime = NULL;
-  strcpy(runtime_file_name, "runtime.dat");
-  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-  runtime->SetExtIter(ExtIter);
-  delete runtime;
-
-  /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
-    }
-  }
-
-  /*--- Check whether the current simulation has reached the specified
-   convergence criteria, and set StopCalc to true, if so. ---*/
-  
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case EULER: case NAVIER_STOKES: case RANS:
-      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case HEAT_EQUATION_FVM:
-      StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
-    case FEM_ELASTICITY:
-      StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
-      StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
-  }
-  
-  return StopCalc;
-  
-}
-
-void CDriver::Output(unsigned long ExtIter) {
-  
-  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
-  bool output_files = false;
-  
-  unsigned short RestartFormat = SU2_RESTART_ASCII;
-  unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  
-  bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
-  bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
-  bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
-  
-  if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
-    RestartFormat = SU2_RESTART_BINARY;
-  }
-  /*--- Determine whether a solution needs to be written
-   after the current iteration ---*/
-  
-  if (
-      
-      /*--- General if statements to print output statements ---*/
-      
-      (ExtIter+1 >= nExtIter) || (StopCalc) ||
-      
-      /*--- Fixed CL problem ---*/
-      
-      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == ExtIter)) ||
-      
-      /*--- Steady problems ---*/
-      
-      ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
-      
-      /*--- Unsteady problems ---*/
-      
-      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-      
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                           ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-      
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-      
-      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-      
-      /*--- No inlet profile file found. Print template. ---*/
-      
-      (config_container[ZONE_0]->GetWrt_InletFile())
-      
-      ) {
-    
-    output_files = true;
-    
-  }
-  
-  /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
-  
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-  }
-  
-  /*--- write the solution ---*/
-  
-  if (output_files) {
-    
-    /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
-    UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
-    
-    /*--- Add a statement about the type of solver exit. ---*/
-    
-    if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
-      cout << "-------------------------------------------------------------------------" << endl;
-    }
-
-    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-    
-    
-    /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
-    
-    for (iZone = 0; iZone < nZone; iZone++){
-      for (unsigned short iInst = 0; iInst < nInst[iZone]; iInst++){
-        
-        config_container[iZone]->SetiInst(iInst);
-        
-        output_container[iZone]->Load_Data(geometry_container[iZone][iInst][MESH_0], config_container[iZone], solver_container[iZone][iInst][MESH_0]);
-        
-        /*--- Write restart files ---*/
-        
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
-        
-        /*--- Write visualization files ---*/
-        
-        if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
-        
-        if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
-        if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
-        
-        output_container[iZone]->DeallocateData_Parallel();
-        
-      }
-    }
-    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-    
-    /*--- Store output time and restart the timer for the compute phase. ---*/
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
-    UsedTimeOutput += StopTime-StartTime;
-    OutputCount++;
-    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
-    
-  }
-
-  ///*--- Export Surface Solution File for Unsteady Simulations ---*/
-  ///*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
-  //if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0) && config_container[ZONE_0]->GetWrt_Csv_Sol()) {
-  //    output->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0, INST_0);}
-
-}
-
-CDriver::~CDriver(void) {}
-
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) { }
-
-CFluidDriver::~CFluidDriver(void) { }
-
 void CFluidDriver::Run() {
 
   unsigned short iZone, jZone, checkConvergence;
@@ -4191,11 +3990,66 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );
     }
   }
 
 }
+bool CFluidDriver::Monitor(unsigned long ExtIter) {
+
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  IterCount++;
+  UsedTime = (StopTime - StartTime) + UsedTimeCompute;
+  
+  
+  /*--- Check if there is any change in the runtime parameters ---*/
+  
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetTimeIter(ExtIter);
+  delete runtime;
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+    for (iZone = 0; iZone < nZone; iZone++){
+      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
+        output_container[iZone]->SetCFL_Number(solver_container, config_container, iZone);
+    }
+  }
+
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+  
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    case HEAT_EQUATION_FVM:
+      StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
+    case FEM_ELASTICITY:
+      StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+      StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+  
+  return StopCalc;
+  
+}
+
+
+void CFluidDriver::Output(unsigned long InnerIter) {
+ 
+}
+
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_nZone,
                                              SU2_Comm MPICommunicator):
@@ -4265,15 +4119,7 @@ void CTurbomachineryDriver::Run() {
   if (rank == MASTER_NODE){
     SetTurboPerformance(ZONE_0);
   }
-  
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-  
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-                                         config_container, integration_container, false, UsedTime, iZone, iInst);
-  }
   
 }
 
@@ -4458,10 +4304,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
-    SU2_Comm MPICommunicator) : CDriver(confFile,
+    SU2_Comm MPICommunicator) : CFluidDriver(confFile,
         val_nZone,
-        MPICommunicator,
-        false) {
+        MPICommunicator) {
   unsigned short kInst;
 
   nInstHB = nInst[ZONE_0];
@@ -4526,14 +4371,13 @@ void CHBDriver::Run() {
         surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
   
   /*--- Update the convergence history file (serial and parallel computations). ---*/
-  
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)    
       output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-                                         config_container, integration_container, false, UsedTime, iZone, iInst);
+          config_container, integration_container, false, UsedTime, iZone, iInst);
   }
-
+  
 }
 
 void CHBDriver::Update() {
