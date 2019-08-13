@@ -78,14 +78,22 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
 
 def is_git_directory(path = '.'):
-  return subprocess.call(['git', '-C', path, 'status'], stderr=subprocess.STDOUT, stdout = open(os.devnull, 'w')) == 0 
+  try:
+     p = subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path)
+  except FileNotFoundError:
+     print("git command not found. Using fall-back method to init submodules")
+     return False
+  except subprocess.CalledProcessError:
+     print("Directory was not cloned using git. Using fall-back method to init submodules")
+     return False
+  return p == 0
 
 def submodule_status(path, sha_commit):
 
   if not os.path.exists(path + '/' + sha_commit):
 
     # Check the status of the submodule
-    status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True).stdout.decode('utf-8')
+    status = subprocess.run(['git', 'submodule','status', path], stdout=subprocess.PIPE, check = True, cwd = sys.path[0]).stdout.decode('utf-8')
 
     # The first character of the output indicates the status of the submodule
     # '+' : The submodule does not match the SHA-1 currently in the index of the repository
@@ -102,7 +110,7 @@ def submodule_status(path, sha_commit):
     elif status_indicator == '-':
       # Initialize the submodule if necessary 
       print('Initialize submodule ' + path + ' using git ... ')
-      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True)
+      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
 
       # Check that the SHA tag stored in this file matches the one stored in the git index
       cur_sha_commit = status[1:].split(' ')[0]
