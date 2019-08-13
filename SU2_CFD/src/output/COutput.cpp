@@ -255,6 +255,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
+    case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:
       if (energy) {
         nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
         RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
@@ -320,6 +321,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
+  case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:      
     nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
     if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
     else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);

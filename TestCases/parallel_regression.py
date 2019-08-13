@@ -1018,8 +1018,8 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [10.000000, -2.601006, -3.342894] #last 4 columns
-    cht_incompressible.su2_exec  = "SU2_CFD"
+    cht_incompressible.test_vals = [10.000000, -2.607260, -2.708775] #last 4 columns
+    cht_incompressible.su2_exec  = "mpirun -n 2 SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
     cht_incompressible.tol       = 0.00001

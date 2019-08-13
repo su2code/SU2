@@ -732,6 +732,10 @@ public:
  * \author T. Economon, G. Gori
  */
 class CFluidDriver : public CDriver {
+
+protected:
+   unsigned long Max_Iter;
+
 public:
   
   /*!
