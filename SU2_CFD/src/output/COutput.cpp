@@ -1464,9 +1464,9 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
   /// Description: The current time
-  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_FIXED, "TIME_DOMAIN", "Current physical time (s)");
+  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current physical time (s)");
   /// Description: The current time step
-  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_FIXED, "TIME_DOMAIN", "Current time step (s)");
+  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
@@ -1479,8 +1479,12 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
   SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
   
-  SetHistoryOutputValue("CUR_TIME",  curr_TimeIter*config->GetTime_Step());
-  SetHistoryOutputValue("TIME_STEP", config->GetTime_Step());
+  if (config->GetTime_Domain()){
+    SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());           
+    if (curr_InnerIter == 0){
+      SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));      
+    }
+  }
   
   su2double StopTime, UsedTime;
 #ifndef HAVE_MPI

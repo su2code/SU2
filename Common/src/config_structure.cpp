@@ -234,7 +234,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    config->SetnExtIter(nExtIter);
+    config->SetTimeIter(nTimeIter);
   }
 
 }
@@ -730,7 +730,7 @@ void CConfig::SetRunTime_Options(void) {
   
   /* DESCRIPTION: Number of external iterations */
   
-  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("TIME_ITER", nTimeIter, 999999);
 
 }
 
