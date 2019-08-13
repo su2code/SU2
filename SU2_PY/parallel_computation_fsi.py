@@ -95,9 +95,9 @@ def parallel_computation( filename           ,
     state.update(info)
 
     # Solution merging
-    if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
+    if config.SOLVER == 'FEM_ELASTICITY':
         config.SOLUTION_FILENAME = config.RESTART_FILENAME 
-    elif config.PHYSICAL_PROBLEM == 'FLUID_STRUCTURE_INTERACTION':
+    elif config.SOLVER == 'FLUID_STRUCTURE_INTERACTION':
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
         config.SOLUTION_FILENAME = config.RESTART_FILENAME  
 
