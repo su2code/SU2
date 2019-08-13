@@ -144,16 +144,6 @@ public:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*! 
-   * \brief Do the convergence analysis to determine if the code must stop the execution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-                unsigned long Iteration, su2double monitor, unsigned short iMesh);
-  
-  /*! 
    * \brief Average the scalar output in case there is a unsteady solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -163,37 +153,6 @@ public:
    */
   void Average_Monitoring(CGeometry *geometry, CConfig *config,
                 unsigned long Iteration, su2double monitor, unsigned short iMesh);
-
-  /*!
-   * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - Solution of the problem
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver);
-
-  /*!
-   * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - Solution of the problem
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver);
-
-
-  /*!
-   * \brief Do the convergence analysis to determine if the FSI problem has converged on the structural side.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver);
-
 
   /*!
    * \brief Get the value of the convergence.
