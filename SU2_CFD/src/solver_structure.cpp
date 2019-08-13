@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CBaselineVariable.hpp"
 #include "../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -119,6 +120,9 @@ CSolver::CSolver(void) {
   
   rotate_periodic   = false;
   implicit_periodic = false;
+  
+  nPrimVarGrad = 0;
+  nPrimVar     = 0;
   
 }
 
@@ -261,7 +265,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   
   int iMessage, iSend, nSend;
 
-  unsigned long iPoint, jPoint, offset, buf_offset, iPeriodic, Neighbor_Point;
+  unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
   
   su2double *Diff      = new su2double[nVar];
   su2double *Und_Lapl  = new su2double[nVar];
@@ -385,9 +389,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     
     for (iMessage = 0; iMessage < geometry->nPeriodicSend; iMessage++) {
       
-      /*--- Get our location in the send buffer. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = geometry->nPoint_PeriodicSend[iMessage];
+      msg_offset = geometry->nPoint_PeriodicSend[iMessage];
       
       /*--- Get the number of periodic points we need to
        communicate on the current periodic marker. ---*/
@@ -400,8 +404,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
         /*--- Get the local index for this communicated data. We need
          both the node and periodic face index (for rotations). ---*/
         
-        iPoint    = geometry->Local_Point_PeriodicSend[offset + iSend];
-        iPeriodic = geometry->Local_Marker_PeriodicSend[offset + iSend];
+        iPoint    = geometry->Local_Point_PeriodicSend[msg_offset  + iSend];
+        iPeriodic = geometry->Local_Marker_PeriodicSend[msg_offset + iSend];
         
         /*--- Retrieve the supplied periodic information. ---*/
         
@@ -439,7 +443,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iSend)*geometry->countPerPeriodicPoint;
+        buf_offset = (msg_offset + iSend)*geometry->countPerPeriodicPoint;
         
         /*--- Load the send buffers depending on the particular value
          that has been requested for communication. ---*/
@@ -1449,7 +1453,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
   
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset, total_index;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
   
   int source, iMessage, jRecv;
   
@@ -1491,9 +1495,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       
       jRecv = geometry->PeriodicRecv2Neighbor[source];
       
-      /*--- Get the point offset for the start of this message. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = geometry->nPoint_PeriodicRecv[jRecv];
+      msg_offset = geometry->nPoint_PeriodicRecv[jRecv];
       
       /*--- Get the number of packets to be received in this message. ---*/
       
@@ -1504,8 +1508,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint    = geometry->Local_Point_PeriodicRecv[offset + iRecv];
-        iPeriodic = geometry->Local_Marker_PeriodicRecv[offset + iRecv];
+        iPoint    = geometry->Local_Point_PeriodicRecv[msg_offset  + iRecv];
+        iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
         
         /*--- While all periodic face data was accumulated, we only store
          the values for the current pair of periodic faces. This is slightly
@@ -1517,7 +1521,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
           
           /*--- Compute the offset in the recv buffer for this point. ---*/
           
-          buf_offset = (offset + iRecv)*geometry->countPerPeriodicPoint;
+          buf_offset = (msg_offset + iRecv)*geometry->countPerPeriodicPoint;
           
           /*--- Store the data correctly depending on the quantity. ---*/
           
@@ -1821,7 +1825,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, offset, buf_offset;
+  unsigned long iPoint, msg_offset, buf_offset;
   
   int iMessage, iSend, nSend;
   
@@ -1913,9 +1917,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
     
     for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
       
-      /*--- Compute our location in the send buffer. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = geometry->nPoint_P2PSend[iMessage];
+      msg_offset = geometry->nPoint_P2PSend[iMessage];
       
       /*--- Total count can include multiple pieces of data per element. ---*/
       
@@ -1926,11 +1930,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iSend)*geometry->countPerPoint;
+        buf_offset = (msg_offset + iSend)*geometry->countPerPoint;
         
         switch (commType) {
           case SOLUTION:
@@ -2031,7 +2035,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short iDim, iVar;
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -2061,9 +2065,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
       
       jRecv = geometry->P2PRecv2Neighbor[source];
       
-      /*--- Get the point offset for the start of this message. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = geometry->nPoint_P2PRecv[jRecv];
+      msg_offset = geometry->nPoint_P2PRecv[jRecv];
       
       /*--- Get the number of packets to be received in this message. ---*/
       
@@ -2074,11 +2078,11 @@ void CSolver::CompleteComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iRecv)*geometry->countPerPoint;
+        buf_offset = (msg_offset + iRecv)*geometry->countPerPoint;
         
         /*--- Store the data correctly depending on the quantity. ---*/
         
@@ -2094,7 +2098,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
-            node[iPoint]->SetmuT(bufDRecv[offset+nVar]);
+            node[iPoint]->SetmuT(bufDRecv[buf_offset+nVar]);
             break;
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)

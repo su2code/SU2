@@ -37,9 +37,10 @@
 
 #include "../../include/output/CFlowIncOutput.hpp"
 
-CFlowIncOutput::CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
 
-  nDim = geometry->GetnDim();
+CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim) {
   
   turb_model = config->GetKind_Turb_Model();
 
@@ -48,30 +49,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, CGeometry *geometry, CSolver **s
   heat = config->GetEnergy_Equation();
   
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-  
-  su2double Gas_Constant, Mach2Vel, Mach_Motion;
-  unsigned short iDim;
-  su2double Gamma = config->GetGamma();
       
-  /*--- Set the non-dimensionalization for coefficients. ---*/
-  
-  RefArea = config->GetRefArea();
-  
-  if (grid_movement) {
-    Gas_Constant = config->GetGas_ConstantND();
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-  }
-  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
-  
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
@@ -133,28 +111,28 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the pressure.
-  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the pressure.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity x-component.  
-  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the velocity x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity y-component.  
-  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the velocity y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.  
-  if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the temperature.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
-  AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-
+  if (rad_model != NONE) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", TYPE_RESIDUAL);
+  
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-  /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
-  AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
+    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_TKE", "rms[k]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", TYPE_RESIDUAL);
     break;
   default: break;
   }
@@ -162,26 +140,28 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the pressure.
-  AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the pressure.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.   
-  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the velocity x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity y-component.   
-  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the velocity y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity z-component.   
-  if (nDim == 3) AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  if (nDim == 3) 
+    AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  if (heat || weakly_coupled_heat) 
+    AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", "Root-mean square residual of the temperature.", TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_TKE", "max[k]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", TYPE_RESIDUAL); 
     break;
   default: break;
   }
@@ -189,26 +169,28 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the pressure.
-  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the pressure.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.   
-  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the velocity x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity y-component.   
-  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the velocity y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity z-component.   
-  if (nDim == 3) AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) 
+    AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  if (heat || weakly_coupled_heat) 
+    AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", "BGS residual of the temperature.", TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", TYPE_RESIDUAL);
     break;  
   case SST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  FORMAT_FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", TYPE_RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL); 
+    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", TYPE_RESIDUAL); 
     break;
   default: break;
   }
@@ -216,17 +198,17 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux  
-  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    FORMAT_SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
   /// DESCRIPTION: Temperature
-  AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
   /// END_GROUP
   
   /// DESCRIPTION: Angle of attack  
-  AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC, "AOA");
+  AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC,"AOA", "Angle of attack");
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver");
   
   /*--- Add analyze surface history fields --- */
   
@@ -338,28 +320,28 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
   
   // SOLUTION variables
-  AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION");
-  AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION");
-  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION");
+  AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
+  AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
+  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3) 
-    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION");
+    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat) 
-    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION");  
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
+    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
+    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION");
+    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart–Allmaras variable");
     break;
   case NONE:
     break;
@@ -376,74 +358,74 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid velocity
   if (config->GetGrid_Movement()){
-    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY");
-    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY");
+    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
+    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 ) 
-      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY");
+      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
   }
   
   // Primitive variables
-  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
-  AddVolumeOutput("DENSITY",        "Density",              "PRIMITIVE");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+  AddVolumeOutput("DENSITY",        "Density",              "PRIMITIVE", "Density");
   
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE");
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
     
-    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE");
-    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE");
+    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
     if (nDim == 3)
-      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE");
+      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
     
-    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
-    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE");
+    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
     
   }
   
   if (config->GetKind_Solver() == RANS) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
   
   if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY");
+    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
   //Residuals
-  AddVolumeOutput("RES_PRESSURE", "Residual_Density", "RESIDUAL");
-  AddVolumeOutput("RES_VELOCITY-X", "Residual_Momentum_x", "RESIDUAL");
-  AddVolumeOutput("RES_VELOCITY-Y", "Residual_Momentum_y", "RESIDUAL");
+  AddVolumeOutput("RES_PRESSURE", "Residual_Pressure", "RESIDUAL", "Residual of the pressure");
+  AddVolumeOutput("RES_VELOCITY-X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
+  AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
-    AddVolumeOutput("RES_VELOCITY-Z", "Residual_Momentum_z", "RESIDUAL");
-  AddVolumeOutput("RES_TEMPERATURE", "Residual_Energy", "RESIDUAL");
+    AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL");
-    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL");
+    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
+    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation.");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
+    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart–Allmaras variable");
     break;
   case NONE:
     break;
   }
   
   // Limiter values
-  AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER");
-  AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER");
-  AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER");
+  AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
+  AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
+  AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
   if (nDim == 3)
-    AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER");
-  AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER");
+    AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
+  AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "RESIDUAL");
-    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "RESIDUAL");
+    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy.");
+    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate.");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "RESIDUAL");
+    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of Spalart–Allmaras variable.");
     break;
   case NONE:
     break;
@@ -451,22 +433,22 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES");
-    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES");
+    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
   }
   
   // Roe Low Dissipation
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
+    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION", "Value of the Roe dissipation");
   }
   
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     if (nDim == 3){
-      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION");
-      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION");
+      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
+      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
     }
-    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION");
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION");  
+    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
+    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");  
   }
 }
 
@@ -534,7 +516,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
   }
   
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - RefPressure)*factor*RefArea);
+  su2double factor = 1.0/(0.5*config->GetDensity_Ref()*config->GetVelocity_Ref()*config->GetVelocity_Ref()); 
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - config->GetPressure_Ref())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity());
   
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){

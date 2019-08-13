@@ -160,19 +160,19 @@ private:
 
 
 
-inline void PrintScreenFixed(std::stringstream &stream, su2double val, unsigned short field_width) {
+inline void PrintScreenFixed(std::ostream &stream, su2double val, unsigned short field_width) {
   stream.precision(6); stream.setf(std::ios::fixed, std::ios::floatfield); stream.width(field_width);
   stream << std::right << val;
   stream.unsetf(std::ios::fixed);
 }
 
-inline void PrintScreenScientific(std::stringstream &stream, su2double val, unsigned short field_width) {
+inline void PrintScreenScientific(std::ostream &stream, su2double val, unsigned short field_width) {
   stream.precision(4); stream.setf(std::ios::scientific, std::ios::floatfield); stream.width(field_width);
   stream << std::right << val;
   stream.unsetf(std::ios::scientific);  
 }
 
-inline void PrintScreenInteger(std::stringstream &stream, unsigned long val, unsigned short field_width){
+inline void PrintScreenInteger(std::ostream &stream, unsigned long val, unsigned short field_width){
   stream.width(field_width);
   stream << std::right << val;
 }

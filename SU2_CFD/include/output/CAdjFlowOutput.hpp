@@ -49,7 +49,7 @@ class CAdjFlowCompOutput : public COutput {
 private:
 
   bool cont_adj;
-  unsigned short nDim, turb_model;
+  unsigned short turb_model;
   
 public:
 
@@ -58,7 +58,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjFlowCompOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjFlowCompOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

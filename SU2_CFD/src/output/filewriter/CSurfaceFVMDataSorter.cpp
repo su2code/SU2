@@ -1,19 +1,30 @@
 #include "../../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
 
-CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, unsigned short nFields, CFVMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
+CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFVMDataSorter* volume_sorter) : CParallelDataSorter(config, nFields){
  
   this->volume_sorter = volume_sorter;
   
   connectivity_sorted = false;
+  
+  nGlobalPoint_Sort = geometry->GetGlobal_nPointDomain();
+  nLocalPoint_Sort  = geometry->GetnPointDomain();
+  
+  /*--- Create a linear partition --- */
+  
+  CreateLinearPartition(nGlobalPoint_Sort);
 
-  beg_node = new unsigned long[size];
-  end_node = new unsigned long[size];
-
-  nPoint_Lin = new unsigned long[size];
-  nPoint_Cum = new unsigned long[size+1];
 }
 
-CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){}
+CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
+  
+  delete [] beg_node;
+  delete [] end_node;
+  
+  delete [] nPoint_Cum;
+  delete [] nPoint_Lin;
+  
+}
 
 void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   
@@ -63,13 +74,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);      
       
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -97,13 +102,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -131,14 +130,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
-      
+      iProcessor = FindProcessor(Global_Index);
+
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
@@ -200,14 +193,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       Global_Index = Conn_Line_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
-      
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+   
+      iProcessor = FindProcessor(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -241,13 +228,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -281,13 +262,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
       
@@ -516,14 +491,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-      while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-    else
-      while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
-    
+    iProcessor = FindProcessor(Global_Index);
+
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
     
@@ -592,14 +561,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-      while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-    else
-      while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
-    
+    iProcessor = FindProcessor(Global_Index);
+
     if (nElem_Flag[iProcessor] != ii) {
       
       nElem_Flag[iProcessor] = ii;
@@ -764,13 +727,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);
+
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
       if ((iProcessor != (unsigned long)rank)) {
@@ -790,13 +748,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+      iProcessor = FindProcessor(Global_Index);
+
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
       if ((iProcessor != (unsigned long)rank)) {
@@ -816,14 +769,8 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
       
       /*--- Search for the processor that owns this point ---*/
       
-      iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-        while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-      else
-        while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
-      
+      iProcessor = FindProcessor(Global_Index);
+
       /*--- Store the global ID if it is outside our own linear partition. ---*/
       
       if ((iProcessor != (unsigned long)rank)) {
@@ -856,14 +803,9 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     Global_Index = outliers[ii];
     
     /*--- Search for the processor that owns this point ---*/
-    iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-      while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-    else
-      while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
     
+    iProcessor = FindProcessor(Global_Index);
+
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
     
@@ -918,13 +860,7 @@ void CSurfaceFVMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry)
     
     /*--- Search for the processor that owns this point ---*/
     
-    iProcessor = Global_Index/volume_sorter->GetnPointLinear(0);
-    if (iProcessor >= (unsigned long)size)
-      iProcessor = (unsigned long)size-1;
-    if (Global_Index >= volume_sorter->GetnPointCumulative(iProcessor))
-      while(Global_Index >= volume_sorter->GetnPointCumulative(iProcessor+1)) iProcessor++;
-    else
-      while(Global_Index < volume_sorter->GetnPointCumulative(iProcessor)) iProcessor--;
+    iProcessor = FindProcessor(Global_Index);
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -1169,7 +1105,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   
   unsigned long nTotal_Surf_Elem = nParallel_Line + nParallel_Tria + nParallel_Quad;
 #ifndef HAVE_MPI
-  nSurf_Elem_Par   = nTotal_Surf_Elem;
+  nGlobal_Elem_Par   = nTotal_Surf_Elem;
 #else
   SU2_MPI::Allreduce(&nTotal_Surf_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -1182,15 +1118,11 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  unsigned long iPoint, jPoint, kPoint, nLocalPoint, nTotalPoint;
+  unsigned long iPoint, jPoint;
   unsigned long nElem_Total = 0, Global_Index;
   
-  unsigned long iVertex, iMarker;
-  int SendRecv, RecvFrom;
+  unsigned long iMarker;  
   
-  bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
-  
-  int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
   
 #ifdef HAVE_MPI
@@ -1219,187 +1151,6 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
       NODES_PER_ELEMENT = 0;
       break;
   }
-  
-  /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that were part of the original domain (we want these to be in the
-   output files). ---*/
-  
-  vector<unsigned long> Added_Periodic;
-  Added_Periodic.clear();
-  
-  if (config->GetKind_SU2() != SU2_DEF) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-              (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
-          }
-        }
-      }
-    }
-  }
-  
-  /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
-  
-  /*--- First communicate the number of points that each rank has found. ---*/
-  
-  unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
-  
-  nAddedPeriodic = Added_Periodic.size();
-  Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  maxAddedPeriodic = nAddedPeriodic;
-  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
-#endif
-  
-  /*--- Communicate the global index values of all added periodic nodes. ---*/
-  unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
-  
-  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
-    Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
-  }
-  
-  /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
-    Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
-#endif
-  
-  /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
-  
-  Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- We need to keep one copy of overlapping halo cells. ---*/
-        
-        notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
-                   (SendRecv < 0) && (rank > RecvFrom));
-        
-        /*--- We want to keep the periodic nodes that were part of the original domain.
-         For SU2_DEF we want to keep all periodic nodes. ---*/
-        
-        if (config->GetKind_SU2() == SU2_DEF) {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
-        }else {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        }
-        
-        notPeriodic = (isPeriodic && (SendRecv < 0));
-        
-        /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
-        
-        addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < (unsigned long)size; iProcessor++) {
-          for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
-            if (Global_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
-              addedPeriodic = true;
-          }
-          
-          /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-          
-          kPoint = (iProcessor+1)*maxAddedPeriodic;
-          
-        }
-        
-        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
-        
-        if ((notHalo || notPeriodic) && !addedPeriodic) {
-          Local_Halo[iPoint] = false;
-        }
-        
-      }
-    }
-  }
-  
-  /*--- Now that we've done the gymnastics to find any periodic points,
-   compute the total number of local and global points for the output. ---*/
-  
-  nLocalPoint = 0;
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (Local_Halo[iPoint] == false)
-      nLocalPoint++;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTotalPoint = nLocalPoint;
-#endif
-  
-  /*--- Compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-  
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *starting_node = new unsigned long[size];
-  unsigned long *ending_node   = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-  
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = nTotalPoint/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long rem_points = nTotalPoint-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-  
-  /*--- Store the local number of nodes and the beginning/end index ---*/
-  
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    starting_node[ii] = ending_node[ii-1];
-    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = nTotalPoint;
   
   /*--- We start with the connectivity distributed across all procs with
    no particular ordering assumed. We need to loop through our local partition
@@ -1444,14 +1195,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             
             /*--- Search for the processor that owns this point ---*/
             
-            iProcessor = Global_Index/npoint_procs[0];
-            if (iProcessor >= (unsigned long)size)
-              iProcessor = (unsigned long)size-1;
-            if (Global_Index >= nPoint_Linear[iProcessor])
-              while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-            else
-              while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-            
+            iProcessor = FindProcessor(Global_Index);
+
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
             
@@ -1512,7 +1257,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   
   unsigned long *index = new unsigned long[size];
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
-  
+
   unsigned long *haloIndex = new unsigned long[size];
   for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
   
@@ -1544,14 +1289,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
             
             /*--- Search for the processor that owns this point ---*/
             
-            iProcessor = Global_Index/npoint_procs[0];
-            if (iProcessor >= (unsigned long)size)
-              iProcessor = (unsigned long)size-1;
-            if (Global_Index >= nPoint_Linear[iProcessor])
-              while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-            else
-              while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-            
+            iProcessor = FindProcessor(Global_Index);
+
             /*--- Load connectivity into the buffer for sending ---*/
             
             if (nElem_Flag[iProcessor] != ii) {
@@ -1570,13 +1309,13 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
                  as a halo cell. We will use this later to sort and remove
                  any duplicates from the connectivity list. ---*/
                 
-                if (Local_Halo[iPoint]) haloSend[mm] = true;
+                if (volume_sorter->GetHalo(iPoint)) haloSend[mm] = true;
                 
               }
               
               /*--- Increment the index by the message length ---*/
               
-              index[iProcessor]    += NODES_PER_ELEMENT;
+              index[iProcessor]    += NODES_PER_ELEMENT;   
               haloIndex[iProcessor]++;
               
             }
@@ -1714,7 +1453,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    if (!haloRecv[ii]) {
+    if (!haloRecv[ii]) {    
       nElem_Total++;
       for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
         Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
@@ -1750,16 +1489,8 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   delete [] connRecv;
   delete [] haloSend;
   delete [] haloRecv;
-  delete [] Local_Halo;
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
-  delete [] Buffer_Recv_nAddedPeriodic;
-  delete [] Buffer_Send_AddedPeriodic;
-  delete [] Buffer_Recv_AddedPeriodic;
-  delete [] npoint_procs;
-  delete [] starting_node;
-  delete [] ending_node;
-  delete [] nPoint_Linear;
   
 }

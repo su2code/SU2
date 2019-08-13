@@ -1,5 +1,4 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
 
 CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields){
   
@@ -26,7 +25,8 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   
   Parallel_Data = NULL;
   
-  nLocalPoint_Sort = 0;
+  nLocalPoint_Sort  = 0;
+  nGlobalPoint_Sort = 0;
 }
 
 CParallelDataSorter::~CParallelDataSorter(){
@@ -37,6 +37,60 @@ CParallelDataSorter::~CParallelDataSorter(){
   
 }
 
+void CParallelDataSorter::CreateLinearPartition(unsigned long nGlobalPoint){
+    
+  /*--- Now that we know the actual number of points we need to output,
+   compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+
+  beg_node = new unsigned long[size];
+  end_node = new unsigned long[size];
+
+  nPoint_Lin = new unsigned long[size];
+  nPoint_Cum = new unsigned long[size+1];
+
+  unsigned long total_points = 0;
+  for (int ii = 0; ii < size; ii++) {
+    nPoint_Lin[ii] = nGlobalPoint/size;
+    total_points  += nPoint_Lin[ii];
+  }
+
+  /*--- Get the number of remainder points after the even division. ---*/
+
+  unsigned long remainder = nGlobalPoint - total_points;
+  for (unsigned long ii = 0; ii < remainder; ii++) {
+    nPoint_Lin[ii]++;
+  }
+
+  /*--- Store the local number of nodes on each proc in the linear
+   partitioning, the beginning/end index, and the linear partitioning
+   within an array in cumulative storage format. ---*/
+
+  beg_node[0] = 0;
+  end_node[0] = beg_node[0] + nPoint_Lin[0];
+  nPoint_Cum[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    beg_node[ii]   = end_node[ii-1];
+    end_node[ii]   = beg_node[ii] + nPoint_Lin[ii];
+    nPoint_Cum[ii] = nPoint_Cum[ii-1] + nPoint_Lin[ii-1];
+  }
+  nPoint_Cum[size] = nGlobalPoint;
+  
+}
+
+unsigned short CParallelDataSorter::FindProcessor(unsigned long global_index){
+  
+  unsigned short iProcessor = global_index/nPoint_Lin[0];
+  if (iProcessor >= (unsigned long)size)
+    iProcessor = (unsigned long)size-1;
+  if (global_index >= nPoint_Cum[iProcessor])
+    while(global_index >= nPoint_Cum[iProcessor+1]) iProcessor++;
+  else
+    while(global_index <  nPoint_Cum[iProcessor])   iProcessor--;
+  
+  return iProcessor;
+}
 
 unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
   

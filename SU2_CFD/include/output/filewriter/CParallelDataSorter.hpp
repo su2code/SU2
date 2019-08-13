@@ -1,5 +1,10 @@
 #pragma once
-#include "../../../Common/include/geometry_structure.hpp"
+
+#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
+
+class CGeometry;
+class CConfig;
 
 class CParallelDataSorter{
 protected:
@@ -28,7 +33,6 @@ protected:
   unsigned long nGlobalPoint_Sort;
   unsigned long nLocalPoint_Sort;
   unsigned long nPoint_Restart;
-  int *Local_Halo_Sort;
 
   unsigned long *beg_node;
   unsigned long *end_node;
@@ -68,6 +72,12 @@ public:
    * \return local number of points.
    */
   unsigned long GetnPoints(){return nParallel_Poin;}
+  
+  /*!
+   * \brief Get the number of points to sort.
+   * \return local number of points.
+   */
+  unsigned long GetnLocalPointSort(){return nLocalPoint_Sort;}
   
   /*!
    * \brief Get the global number of points (accumulated from all ranks)
@@ -156,5 +166,17 @@ public:
    * \param[in] surf_sol - if <TRUE>, surface connectivity is deallocated, otherwise the volume connectivity.
    */
   void DeallocateConnectivity();
+  
+  /*!
+   * \brief CreateLinearPartition
+   */
+  void CreateLinearPartition(unsigned long nGlobalPoint);
+  
+  /*!
+   * \brief FindProcessor
+   * \param global_index
+   * \return 
+   */
+  unsigned short FindProcessor(unsigned long global_index);
   
 };

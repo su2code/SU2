@@ -218,11 +218,11 @@ int main(int argc, char *argv[]) {
     
     /*--- Allocate the mesh output ---*/
     
-    output[iZone] = new CMeshOutput(config_container[iZone], geometry_container[iZone], iZone);
+    output[iZone] = new CMeshOutput(config_container[iZone], geometry_container[iZone]->GetnDim());
     
     /*--- Preprocess the volume output ---*/
     
-    output[iZone]->PreprocessVolumeOutput(config_container[iZone], geometry_container[iZone]);    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone]);    
     
 
   }

@@ -764,7 +764,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, offset, buf_offset;
+  unsigned long iPoint, msg_offset, buf_offset;
   
   int iMessage, iSend, nSend;
   
@@ -827,9 +827,9 @@ void CGeometry::InitiateComms(CGeometry *geometry,
     
     for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
       
-      /*--- Compute our location in the send buffer. ---*/
+      /*--- Get the offset in the buffer for the start of this message. ---*/
       
-      offset = nPoint_P2PSend[iMessage];
+      msg_offset = nPoint_P2PSend[iMessage];
       
       /*--- Total count can include multiple pieces of data per element. ---*/
       
@@ -839,11 +839,11 @@ void CGeometry::InitiateComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
         
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iSend)*countPerPoint;
+        buf_offset = (msg_offset + iSend)*countPerPoint;
         
         switch (commType) {
           case COORDINATES:
@@ -872,7 +872,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
             break;
           case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnPoint();
+            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -897,7 +897,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short iDim;
-  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   
   int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
@@ -929,9 +929,9 @@ void CGeometry::CompleteComms(CGeometry *geometry,
       
       jRecv = P2PRecv2Neighbor[source];
       
-      /*--- Get the point offset for the start of this message. ---*/
-      
-      offset = nPoint_P2PRecv[jRecv];
+      /*--- Get the offset in the buffer for the start of this message. ---*/
+
+      msg_offset = nPoint_P2PRecv[jRecv];
       
       /*--- Get the number of packets to be received in this message. ---*/
       
@@ -941,11 +941,11 @@ void CGeometry::CompleteComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
         
         /*--- Compute the total offset in the recv buffer for this point. ---*/
         
-        buf_offset = (offset + iRecv)*countPerPoint;
+        buf_offset = (msg_offset + iRecv)*countPerPoint;
         
         /*--- Store the data correctly depending on the quantity. ---*/
         
@@ -3690,9 +3690,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Initialize counters for local/global points & elements ---*/
   
-  if (rank == MASTER_NODE)
-    cout << endl <<"---------------- Read Grid File Information ( ZONE "  << config->GetiZone() << " ) ------------------" << endl;
-
   if( fem_solver ) {
     switch (val_format) {
       case SU2:
@@ -16017,14 +16014,27 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     /*--- Read extra inofmration ---*/
     
-    getline(Surface_file, text_line);
-    text_line.erase (0,9);
-    su2double AoASens = atof(text_line.c_str());
-    config->SetAoA_Sens(AoASens);
+//    getline(Surface_file, text_line);
+//    text_line.erase (0,9);
+//    su2double AoASens = atof(text_line.c_str());
+//    config->SetAoA_Sens(AoASens);
     
     /*--- File header ---*/
     
     getline(Surface_file, text_line);
+    
+    vector<string> split_line;
+    
+    char delimiter = ',';
+    split_line = PrintingToolbox::split(text_line, delimiter);
+    
+    std::vector<string>::iterator it = std::find(split_line.begin(), split_line.end(), "\"Surface_Sensitivity\"");
+    
+    if (it == split_line.end()){
+      SU2_MPI::Error("Surface sensitivity not found in file.", CURRENT_FUNCTION);
+    }
+    
+    int sens_index = std::distance(split_line.begin(), it);
     
     while (getline(Surface_file, text_line)) {
       for (icommas = 0; icommas < 50; icommas++) {
@@ -16032,7 +16042,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
         if (position!=string::npos) text_line.erase (position,1);
       }
       stringstream  point_line(text_line);
-      point_line >> iPoint >> Sensitivity;
+      point_line >> iPoint;
+      
+      for (int i = 1; i <= sens_index; i++)
+        point_line >> Sensitivity;
       
       if (PointInDomain[iPoint]) {
         
@@ -18173,13 +18186,13 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   
 }
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst) : CGeometry() {
+CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
    need access to the other zones in the mesh for zone boundaries. ---*/
   
-  CGeometry *fine_grid = geometry[iZone][iInst][iMesh-1];
-  CConfig *config = config_container[iZone];
+  CGeometry *fine_grid = geometry[iMesh-1];
+  CConfig *config = config_container;
   
   /*--- Local variables ---*/
   
@@ -20014,3 +20027,124 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   }
   
 }
+
+CDummyGeometry::CDummyGeometry(CConfig *config){
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
+  nEdge      = 0;
+  nPoint     = 0;
+  nPointDomain = 0;
+  nPointNode = 0;
+  nElem      = 0;
+  nMarker    = 0;
+  nZone = config->GetnZone();
+  
+  nElem_Bound         = NULL;
+  Tag_to_Marker       = NULL;
+  elem                = NULL;
+  face                = NULL;
+  bound               = NULL;
+  node                = NULL;
+  edge                = NULL;
+  vertex              = NULL;
+  nVertex             = NULL;
+  newBound            = NULL;
+  nNewElem_Bound      = NULL;
+  Marker_All_SendRecv = NULL;
+  
+  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+
+  XCoordList.clear();
+  Xcoord_plane.clear();
+  Ycoord_plane.clear();
+  Zcoord_plane.clear();
+  FaceArea_plane.clear();
+  Plane_points.clear();
+  
+  /*--- Arrays for defining the linear partitioning ---*/
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
+
+  /*--- Containers for customized boundary conditions ---*/
+
+  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
+  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+
+  /*--- MPI point-to-point data structures ---*/
+  
+  nP2PSend = 0;
+  nP2PRecv = 0;
+  
+  countPerPoint = 0;
+  
+  bufD_P2PSend = NULL;
+  bufD_P2PRecv = NULL;
+  
+  bufS_P2PSend = NULL;
+  bufS_P2PRecv = NULL;
+  
+  req_P2PSend = NULL;
+  req_P2PRecv = NULL;
+  
+  nPoint_P2PSend = new int[size];
+  nPoint_P2PRecv = new int[size];
+  
+  Neighbors_P2PSend = NULL;
+  Neighbors_P2PRecv = NULL;
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PRecv = NULL;
+
+  /*--- MPI periodic data structures ---*/
+  
+  nPeriodicSend = 0;
+  nPeriodicRecv = 0;
+  
+  countPerPeriodicPoint = 0;
+  
+  bufD_PeriodicSend = NULL;
+  bufD_PeriodicRecv = NULL;
+  
+  bufS_PeriodicSend = NULL;
+  bufS_PeriodicRecv = NULL;
+  
+  req_PeriodicSend = NULL;
+  req_PeriodicRecv = NULL;
+  
+  nPoint_PeriodicSend = NULL;
+  nPoint_PeriodicRecv = NULL;
+  
+  Neighbors_PeriodicSend = NULL;
+  Neighbors_PeriodicRecv = NULL;
+  
+  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicRecv = NULL;
+  
+  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicRecv = NULL;
+  
+  nVertex = new unsigned long[config->GetnMarker_All()];
+  
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    nVertex[iMarker] = 0;
+  }
+  
+  Tag_to_Marker = new string[config->GetnMarker_All()];
+  
+  for (unsigned short iRank = 0; iRank < size; iRank++){
+    nPoint_P2PRecv[iRank] = 0;
+    nPoint_P2PSend[iRank] = 0;
+  }
+  
+  nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
+  config->SetnSpanWiseSections(0);
+}
+
+CDummyGeometry::~CDummyGeometry(){}

@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CTurbSAVariable.hpp"
+#include "../include/variables/CTurbSSTVariable.hpp"
 
 CTurbSolver::CTurbSolver(void) : CSolver() {
   
@@ -749,22 +751,6 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
 }
 
-void CTurbSolver::InitSlidingState(CConfig *config, CGeometry *geometry, unsigned short iMarker){
-  
-  unsigned long iPoint;
-  unsigned short iVar;
-
-  SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-  SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-  
-  for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-    SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-    
-    SlidingStateNodes[iMarker][iPoint] = 0;
-    for (iVar = 0; iVar < nPrimVar+1; iVar++)
-      SlidingState[iMarker][iPoint][iVar] = NULL;
-  }
-}
 
 void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
@@ -985,8 +971,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -1096,6 +1081,20 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
     
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
@@ -3313,8 +3312,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -3416,7 +3414,21 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
+    
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
