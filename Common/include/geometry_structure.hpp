@@ -1036,14 +1036,14 @@ public:
 	 */
 	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
-	/*!
-	 * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE only!
+  /*!
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE only!
    *        For all other boundary types this will return true and could therfore be wrong.
    *        Used ultimately for BC_Slip_Wall.
-	 * \param[in] config - Definition of the particular problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
-	 */
-	void ComputeSurf_Straightness(CConfig *config, 
+   */
+  void ComputeSurf_Straightness(CConfig *config, 
                                 bool    print_on_screen);
 
 	/*!

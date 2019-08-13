@@ -5239,24 +5239,12 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Grad_Reflected[iVar] = new su2double[nDim];
-
-  /*--- Get global marker value via the string Tag. ---*/
-  unsigned short iMarker_Global, 
-                 nMarker_Global = config->GetnMarker_CfgFile(),
-                 val_marker_Global;
-  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-    if (config->GetMarker_All_TagBound(val_marker) == config->GetMarker_CfgFile_TagBound(iMarker_Global)) {
-      val_marker_Global = iMarker_Global; break;
-    }
-  }
   
   /*--- Loop over all the vertices on this boundary marker. ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    //necessary to acces the correct global val_marker here, currently it is wrong
 
     if (iVertex == 0 || 
-        geometry->bound_is_straight[val_marker_Global] != true ||
-        config->GetKind_GridMovement() != RIGID_MOTION) {
+        geometry->bound_is_straight[val_marker] != true) {
 
       /*---------------------------------------------------------------------------------------------*/
       /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
