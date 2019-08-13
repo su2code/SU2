@@ -15362,6 +15362,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
       node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    
+    config->SetDelta_UnstTimeND(Global_Delta_Time);
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy

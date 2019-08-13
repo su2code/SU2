@@ -3744,6 +3744,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
+      
+      config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
 }
@@ -10811,6 +10813,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if (time_stepping) {
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
+      
+      config->SetDelta_UnstTimeND(Min_Delta_Time);
     }
   }
 }
