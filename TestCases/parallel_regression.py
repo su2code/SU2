@@ -996,8 +996,8 @@ def main():
     stat_fsi           = TestCase('stat_fsi')
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 9000
-    stat_fsi.test_vals = [-3.629082, -4.815995, -7.866799, -8.758350] #last 4 columns
+    stat_fsi.test_iter = 7000
+    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
     stat_fsi.su2_exec  = "SU2_CFD"
     stat_fsi.timeout   = 1600
     stat_fsi.tol       = 0.00001
@@ -1008,7 +1008,7 @@ def main():
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1000
-    stat_fsi_restart.test_vals = [-9.197016, -8.504825, -10.611631, -11.715269] #last 4 columns
+    stat_fsi_restart.test_vals = [-9.692985, -9.452006, -12.132021, -13.042439] #last 4 columns
     stat_fsi_restart.su2_exec  = "SU2_CFD"
     stat_fsi_restart.timeout   = 1600
     stat_fsi_restart.tol       = 0.00001
