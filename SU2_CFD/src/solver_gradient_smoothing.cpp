@@ -185,6 +185,11 @@ void CGradientSmoothingSolver::ApplyGradientSmoothing(CGeometry *geometry, CSolv
 
   Set_Sensitivities(geometry, solver, config);
 
+  for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++) {
+
+    std::cout << "SU2 node "<< iPoint << " is mesh node " << geometry->node[iPoint]->GetGlobalIndex() << std::endl;
+
+  }
 }
 
 
@@ -239,14 +244,18 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
         //DHiHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
+        std::cout << "Element: " << iElem
+                  << " Jacobian Block: " << iNode << ", " << jNode << ", "
+                  << indexNode[iNode] << ", " << indexNode[jNode] << ", "
+                  << geometry->node[indexNode[iNode]]->GetGlobalIndex()<< ", " << geometry->node[indexNode[jNode]]->GetGlobalIndex() << std::endl;
+
         for (iDim = 0; iDim < nDim; iDim++) {
-          // std::cout << "Jacobian Block: " << iNode << ", " << jNode << "| ";
           for (jDim = 0; jDim < nDim; jDim++) {
             Jacobian_ij[iDim][jDim] = DHiDHj[iDim][jDim];
-            // std::cout << Jacobian_ij[iDim][jDim] << " ";
+            std::cout << Jacobian_ij[iDim][jDim] << " ";
           }
           Jacobian_ij[iDim][iDim] -= HiHj;
-          // std::cout << " | " << HiHj << std::endl;
+          std::cout << " | " << HiHj << std::endl;
         }
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
       }
@@ -365,6 +374,7 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
     /*--- Get node index ---*/
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    // std::cout << "Dirichlet boundary in node: " << iPoint << " with marker: " << val_marker << " bound " << iVertex << std::endl;
 
     if (geometry->node[iPoint]->GetDomain()) {
 

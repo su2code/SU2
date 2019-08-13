@@ -1704,7 +1704,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Marker(s) of gradient problem boundaries. */
-  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_Moving);
+  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
