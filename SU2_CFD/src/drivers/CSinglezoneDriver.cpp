@@ -299,55 +299,62 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   
 }
 
-void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
                                                           grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
-                                                          config_container[ZONE_0], 0, ExtIter);  }
+                                                          config_container[ZONE_0], 0, TimeIter);  }
 
 }
 
-bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
+bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
-  unsigned long nInnerIter, InnerIter, TimeIter, nTimeIter;
+  unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
   
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
-  TimeIter   = config_container[ZONE_0]->GetTimeIter();
   nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
   MaxTime    = config_container[ZONE_0]->GetMax_Time();
-  CurTime    = TimeIter*config_container[ZONE_0]->GetTime_Step();
+  CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
   
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
   
-  InnerConvergence = output_container[ZONE_0]->GetConvergence();
   
   /*--- Check whether the inner solver has converged --- */
 
   if (TimeDomain == NO){
-    if (((InnerIter+1 >= nInnerIter) || InnerConvergence) && (rank == MASTER_NODE)) {
+    
+    InnerConvergence     = output_container[ZONE_0]->GetConvergence();    
+    MaxIterationsReached = InnerIter+1 >= nInnerIter;
+    
+    if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------";
       if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER)." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
   }
 
-  /*--- Check whether the outer time integration has reached the final time ---*/
-
-  StopCalc = CurTime >= MaxTime;
 
   if (TimeDomain == YES) {
-    if ((StopCalc || TimeIter+1 >= nTimeIter) && (rank == MASTER_NODE)){
+    
+    /*--- Check whether the outer time integration has reached the final time ---*/
+  
+    FinalTimeReached     = CurTime >= MaxTime;
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;    
+    
+    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (StopCalc) cout << endl << "Maximum time reached." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER)." << endl;
+      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;      
     }
+    
+    StopCalc = FinalTimeReached || MaxIterationsReached;
   }
 
   /*--- Reset the inner convergence --- */
