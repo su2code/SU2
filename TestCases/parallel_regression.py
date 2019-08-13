@@ -993,25 +993,25 @@ def main():
     test_list.append(fsi2d)
     
     # FSI, Static, 2D, new mesh solver
-    fsi2d           = TestCase('stat_fsi')
-    fsi2d.cfg_dir   = "fea_fsi/stat_fsi"
-    fsi2d.cfg_file  = "config.cfg"
-    fsi2d.test_iter = 9000
-    fsi2d.test_vals = [-3.629082, -4.815995, -7.866799, -8.758350] #last 4 columns
-    fsi2d.su2_exec  = "SU2_CFD"
-    fsi2d.timeout   = 1600
-    fsi2d.tol       = 0.00001
+    stat_fsi           = TestCase('stat_fsi')
+    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi.cfg_file  = "config.cfg"
+    stat_fsi.test_iter = 9000
+    stat_fsi.test_vals = [-3.629082, -4.815995, -7.866799, -8.758350] #last 4 columns
+    stat_fsi.su2_exec  = "SU2_CFD"
+    stat_fsi.timeout   = 1600
+    stat_fsi.tol       = 0.00001
     test_list.append(stat_fsi)
 
     # FSI, Static, 2D, new mesh solver, restart
-    fsi2d           = TestCase('stat_fsi_restart')
-    fsi2d.cfg_dir   = "fea_fsi/stat_fsi"
-    fsi2d.cfg_file  = "config_restart.cfg"
-    fsi2d.test_iter = 1000
-    fsi2d.test_vals = [-9.197016, -8.504825, -10.611631, -11.715269] #last 4 columns
-    fsi2d.su2_exec  = "SU2_CFD"
-    fsi2d.timeout   = 1600
-    fsi2d.tol       = 0.00001
+    stat_fsi_restart           = TestCase('stat_fsi_restart')
+    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi_restart.cfg_file  = "config_restart.cfg"
+    stat_fsi_restart.test_iter = 1000
+    stat_fsi_restart.test_vals = [-9.197016, -8.504825, -10.611631, -11.715269] #last 4 columns
+    stat_fsi_restart.su2_exec  = "SU2_CFD"
+    stat_fsi_restart.timeout   = 1600
+    stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
 
     ##########################
