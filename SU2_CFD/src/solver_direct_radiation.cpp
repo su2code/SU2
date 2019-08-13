@@ -36,6 +36,8 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CRadVariable.hpp"
+#include "../include/variables/CRadP1Variable.hpp"
 
 CRadSolver::CRadSolver(void) : CSolver() {
 

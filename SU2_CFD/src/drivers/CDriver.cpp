@@ -1243,8 +1243,8 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
         if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJHEAT_SOL]->GetnVar();
       }
       if (p1_rad){
-        solver_container[val_iInst][iMGlevel][ADJRAD_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][RAD_SOL], RUNTIME_RADIATION_SYS, iMGlevel);
-        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJRAD_SOL]->GetnVar();
+        solver[iMGlevel][ADJRAD_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver[iMGlevel][RAD_SOL], RUNTIME_RADIATION_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver[iMGlevel][ADJRAD_SOL]->GetnVar();
       }
     }
     
@@ -1499,7 +1499,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (radiation) {
-      solver_container[val_iInst][MESH_0][RAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
@@ -1677,10 +1677,10 @@ void CDriver::Solver_Postprocessing(CSolver ****solver, CGeometry **geometry,
       delete solver[val_iInst][iMGlevel][ADJFEA_SOL];
     }
     if (radiation) {
-      delete solver_container[val_iInst][iMGlevel][RAD_SOL];
+      delete solver[val_iInst][iMGlevel][RAD_SOL];
     }
     if (disc_adj && radiation) {
-      delete solver_container[val_iInst][iMGlevel][ADJRAD_SOL];
+      delete solver[val_iInst][iMGlevel][ADJRAD_SOL];
     }
     
     delete [] solver[val_iInst][iMGlevel];
@@ -2440,13 +2440,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CSolver ***solver, CNumeri
   if (radiation) {
     if (p1_rad){
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
+      numerics[MESH_0][RAD_SOL][VISC_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
 
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-      numerics_container[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
+      numerics[MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
 
       /*--- Definition of the boundary condition method ---*/
-      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
+      numerics[MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
     }
   }
 
@@ -2997,9 +2997,9 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
   if (radiation){
 
     if (p1_rad){
-      delete numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM];
-      delete numerics_container[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM];
-      delete numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM];
+      delete numerics[val_iInst][MESH_0][RAD_SOL][VISC_TERM];
+      delete numerics[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM];
+      delete numerics[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM];
     }
 
   }

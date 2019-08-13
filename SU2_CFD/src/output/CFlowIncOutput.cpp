@@ -350,7 +350,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   // Radiation variables
   switch(rad_model){
   case P1_MODEL:
-    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION");
+    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
     break;
   case NONE:
     break;
