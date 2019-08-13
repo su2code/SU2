@@ -16056,6 +16056,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   unsigned short skipVar = nDim, skipMult = 1;
 
   if (flow) {
+    skipVar += skipMult*(nDim+2);
     if (sst && !frozen_visc) { skipVar += skipMult*2;}
     if (sa && !frozen_visc)  { skipVar += skipMult*1;}
     if (grid_movement)       { skipVar += nDim;}
