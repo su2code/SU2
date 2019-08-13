@@ -6514,6 +6514,13 @@ public:
    * \return Internal index for a moving boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Moving(string val_marker);
+
+  /*!
+   * \brief Get bool if marker is moving. <i>val_marker</i>.
+   * \param[in] val_marker - String of the marker to test.
+   * \return Bool if the marker is a moving boundary <i>val_marker</i>.
+   */
+  bool GetMarker_Moving_Bool(string val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.

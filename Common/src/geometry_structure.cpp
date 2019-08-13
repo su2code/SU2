@@ -2807,20 +2807,25 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
   string Local_TagBound, 
          Global_TagBound;
 
-  su2double *Normal        = new su2double[nDim],
-            *UnitNormal    = new su2double[nDim],
-            *RefUnitNormal = new su2double[nDim];
+  vector<su2double> Normal(nDim),
+                    UnitNormal(nDim),
+                    RefUnitNormal(nDim);
  
-  /*--- Allocate memory. ---*/
+  /*--- Allocate memory and set default value to false. ---*/
   bound_is_straight.reserve(nMarker_Global);
+  fill(bound_is_straight.begin(), bound_is_straight.end(), false);
 
   /*--- Loop over all local markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
-        config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+    Local_TagBound = config->GetMarker_All_TagBound(iMarker);
 
-      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+    /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a 
+          moving surface and Grid Movement Elasticity is forbidden as well. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE || 
+        config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
+        config->GetMarker_Moving_Bool(Local_TagBound) == false &&
+        config->GetKind_GridMovement() != ELASTICITY) {
 
       /*--- Loop over all global markers, and find the local-global pair via 
             matching unique string tags. ---*/
@@ -2838,21 +2843,18 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
         Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
         if (Local_TagBound == Global_TagBound) {
-      
+
           RefUnitNormal_defined = false;
           iVertex = 0;
 
           while(bound_is_straight[iMarker_Global] == true && iVertex < nVertex[iMarker]) {
 
-            vertex[iMarker][iVertex]->GetNormal(Normal);
-            /*--- Compute unit normal. ---*/
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              UnitNormal[iDim] = -Normal[iDim]/Area;
+            vertex[iMarker][iVertex]->GetNormal(Normal.data());
+            /*--- Compute unit normal using inner_product from the STl. ---*/
+            Area = sqrt(inner_product(Normal.begin(), Normal.end(), Normal.begin(), 0.0));
+            
+            /*--- Negate for outward convention. ---*/
+            for_each(Normal.begin(), Normal.end(), [Area](su2double &iNormal) { iNormal /= -Area; });
 
             /*--- Check if unit normal is within tolerance of the Reference unit normal. 
                   Reference unit normal = first unit normal found. ---*/
@@ -2864,7 +2866,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
                 }
               }
             } else {
-              for (iDim = 0; iDim < nDim; iDim++) RefUnitNormal[iDim] = UnitNormal[iDim];
+              RefUnitNormal = UnitNormal; //deep copy of values 
               RefUnitNormal_defined = true;
             }
 
@@ -2872,21 +2874,19 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           } //while iVertex
         }//if Local == Global
       }//for iMarker_Global
-    }//if sym or euler
+    }//if sym or euler ...
   }//for iMarker
 
   /*--- Communicate results. ---*/
-  int *Buff_Send_isStraight, *Buff_Recv_isStraight;
-  Buff_Send_isStraight = new int [nMarker_Global];
-  Buff_Recv_isStraight = new int [nMarker_Global];
+  vector<int> Buff_Send_isStraight(nMarker_Global),
+              Buff_Recv_isStraight(nMarker_Global);
 
   for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
     Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight[iMarker_Global]);
  
-  SU2_MPI::Allreduce(Buff_Send_isStraight, Buff_Recv_isStraight, nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
-
-  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
-    bound_is_straight[iMarker_Global] = static_cast<bool> (Buff_Recv_isStraight[iMarker_Global]);
+  /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
+  SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), 
+                     nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
 
   /*--- Print results on screen. ---*/
   for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
@@ -2895,19 +2895,13 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
       if(rank == MASTER_NODE && print_on_screen) {
         cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
-        if(bound_is_straight[iMarker_Global] == false) cout << " NOT";
+        if(Buff_Send_isStraight[iMarker_Global] == false) cout << " NOT";
         if(nDim == 2) cout << " straight." << endl;
         if(nDim == 3) cout << " plane." << endl;
       }
     }//if sym or euler
   }//for iMarker_Global
 
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-  delete [] UnitNormal;
-  delete [] RefUnitNormal;
-  delete [] Buff_Send_isStraight;
-  delete [] Buff_Recv_isStraight;
 }
 
 
