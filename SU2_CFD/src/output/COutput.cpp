@@ -1235,14 +1235,6 @@ void COutput::CheckOffsetCache(){
     if (it != Offset_Cache_Copy.end() ){
       SU2_MPI::Error("Offset cache contains duplicate entries.", CURRENT_FUNCTION);
     }
-    
-    /*--- Check if the size of the offset cache matches the size of the volume output list. 
-       * If that is not the case, then probably SetVolumeOutputValue() was not called for all fields declared with
-       * AddVolumeOutput(). ---*/
-    
-    if (VolumeOutput_List.size() != Offset_Cache.size()){
-      SU2_MPI::Error("Offset cache size and volume output size do not match.", CURRENT_FUNCTION);
-    }
   }
   Offset_Cache_Checked = true;
   
@@ -1329,8 +1321,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
-
-  bool write_header = false;
   
   unsigned long RestartIter = 0;
   
