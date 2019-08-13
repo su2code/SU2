@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - feature_python_AD
+        - feature_elastic_mesh_solver
 
 python:
     - 3.6
@@ -81,7 +81,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_python_AD https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_elastic_mesh_solver https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases

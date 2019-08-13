@@ -1012,7 +1012,29 @@ def main():
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
-    test_list.append(fsi2d)    
+    test_list.append(fsi2d)
+
+    # FSI, Static, 2D, new mesh solver
+    fsi2d           = TestCase('stat_fsi')
+    fsi2d.cfg_dir   = "fea_fsi/stat_fsi"
+    fsi2d.cfg_file  = "config.cfg"
+    fsi2d.test_iter = 7000
+    fsi2d.test_vals = [-6.762802, -6.523293, -9.205731, -10.113596] #last 4 columns
+    fsi2d.su2_exec  = "SU2_CFD"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(stat_fsi)
+
+    # FSI, Static, 2D, new mesh solver, restart
+    fsi2d           = TestCase('stat_fsi_restart')
+    fsi2d.cfg_dir   = "fea_fsi/stat_fsi"
+    fsi2d.cfg_file  = "config_restart.cfg"
+    fsi2d.test_iter = 1000
+    fsi2d.test_vals = [-9.686014, -9.445005, -12.125797, -13.035853] #last 4 columns
+    fsi2d.su2_exec  = "SU2_CFD"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(stat_fsi_restart)
 
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
