@@ -1034,11 +1034,11 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
 
   unsigned short Kind_Streamwise_Periodic; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
-  su2double Streamwise_Periodic_PressureDrop;  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
-  su2double Streamwise_Periodic_TargetMassFlow;  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_MassFlow; /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  su2double *Streamwise_Periodic_RefNode; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+  su2double Streamwise_Periodic_PressureDrop,  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+            Streamwise_Periodic_TargetMassFlow,  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
+            Streamwise_Periodic_MassFlow, /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
+            Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  vector<su2double> Streamwise_Periodic_RefNode; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
 
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
@@ -3013,7 +3013,7 @@ public:
   unsigned short GetnMarker_Periodic(void);
 
   /*!
-   * \brief Get the total number of heat flux markers. (per partition or globally)
+   * \brief Get the total (local) number of heat flux markers.
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void);
@@ -6016,13 +6016,13 @@ public:
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  su2double* GetStreamwise_Periodic_RefNode(void);
+  vector<su2double> GetStreamwise_Periodic_RefNode(void);
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  void SetStreamwise_Periodic_RefNode(su2double* RefNode, unsigned short nDim);
+  void SetStreamwise_Periodic_RefNode(vector<su2double> RefNode);
 
   /*!
    * \brief Get the massflow of the streamwise periodic donor/outlet boundary.

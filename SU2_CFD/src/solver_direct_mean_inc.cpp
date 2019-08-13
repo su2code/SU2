@@ -2020,13 +2020,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool axisymmetric   = config->GetAxisymmetric();
-  bool body_force     = config->GetBody_Force();
+  bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame      = config->GetRotating_Frame();
+  bool axisymmetric        = config->GetAxisymmetric();
+  bool body_force          = config->GetBody_Force();
+  bool boussinesq          = (config->GetKind_DensityModel() == BOUSSINESQ);
+  bool viscous             = config->GetViscous();
   bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
-  bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
-  bool viscous        = config->GetViscous();
 
 
   /*--- Initialize the source residual to zero ---*/
@@ -2036,35 +2036,37 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   if (streamwise_periodic) {
 
     /*--- Loop over all points ---*/
-
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
-
-      numerics->SetConservative(node[iPoint]->GetSolution(),
-                                node[iPoint]->GetSolution());
-
-      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
+      numerics->SetConservative(node[iPoint]->GetSolution(), 
+                                NULL);
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), 
+                             NULL);
 
       /*--- Set incompressible density  ---*/
-
-      numerics->SetDensity(node[iPoint]->GetDensity(),
+      numerics->SetDensity(node[iPoint]->GetDensity(), 
                            node[iPoint]->GetDensity());
 
       /*--- Load the volume of the dual mesh cell ---*/
-
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      /*--- Compute the streamwise periodic source residual ---*/
+      /*--- If viscous, we need gradients for extra terms. ---*/
+      if (viscous) {
 
+        /*--- Gradient of the primitive variables ---*/
+        numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), 
+                                     NULL);
+        
+      }
+
+      /*--- Compute the streamwise periodic source residual ---*/
       numerics->ComputeResidual(Residual, Jacobian_i, config);
 
       /*--- Add the source residual to the total ---*/
-
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
     }
@@ -2090,15 +2092,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      /*--- If viscous, we need gradients for extra terms. ---*/
-
-      if (viscous) { //TK:: copied from below
-
-        /*--- Gradient of the primitive variables ---*/
-
-        numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), NULL);
-        
-      }
       /*--- Compute the body force source residual ---*/
 
       numerics->ComputeResidual(Residual, config);
@@ -6442,8 +6435,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
   su2double Area_Local = 0.0, Area_Global = 0.0, FaceArea,
             MassFlow_Local = 0.0, MassFlow_Global = 0.0,
             Average_Density_Local = 0.0, Average_Density_Global = 0.0;
-
-  su2double *AreaNormal = new su2double[nDim];
+  
+  vector<su2double> AreaNormal(nDim);
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -6455,7 +6448,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
         
         if (geometry->node[iPoint]->GetDomain()) {
           
-          geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal);
+          geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
           
           if (axisymmetric) {
             if (geometry->node[iPoint]->GetCoord(1) != 0.0)
@@ -6465,15 +6458,19 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
           } else {
             AxiFactor = 1.0;
           }
-          
-          FaceArea = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
-            MassFlow_Local += AreaNormal[iDim] * AxiFactor * node[iPoint]->GetDensity() * node[iPoint]->GetVelocity(iDim);
-          }
-          FaceArea = sqrt(FaceArea);
+
+          /*--- m_dot = dot_prod(n*v) * A * rho * Axifactor, with n beeing unit normal. ---*/
+          MassFlow_Local = inner_product(AreaNormal.begin(), AreaNormal.end(), 
+                                         node[iPoint]->GetSolution()+1, MassFlow_Local);
+          MassFlow_Local *= node[iPoint]->GetDensity() * AxiFactor; 
+
+          /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+          FaceArea += sqrt(AxiFactor * inner_product(AreaNormal.begin(), AreaNormal.end(), 
+                                                     AreaNormal.begin(), 0.0) );
           Area_Local += FaceArea;
+          
           Average_Density_Local += FaceArea * node[iPoint]->GetDensity();
+
 
         } // if domain
       } // loop vertices
@@ -6498,32 +6495,33 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
     /*---    The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
     /*------------------------------------------------------------------------------------------------*/
 
-      /*--- Load/define all necessary variables ---*/
-      su2double Pressure_Drop  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
-      su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
-      su2double damping_factor = config->GetInc_Outlet_Damping();
-      su2double Pressure_Drop_new, ddP;
-
-      /*--- Compute update to Delta p based on massflow-difference ---*/
-      ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
+    /*--- Load/define all necessary variables ---*/
+    su2double Pressure_Drop  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref(),
+              TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref()),
+              damping_factor = config->GetInc_Outlet_Damping(),
+              Pressure_Drop_new, 
+              ddP;
+    
+    /*--- Compute update to Delta p based on massflow-difference ---*/
+    ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
+    
+    /*--- Store updated pressure difference ---*/
+    Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
+    config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
+    
+    /*--- Output the new value of Delta P and ddp ---*/
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK:: Move whole computation up in front of output
+    
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
       
-      /*--- Store updated pressure difference ---*/
-      Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
-      config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
+      cout << "Delta Delta P: " << ddP * config->GetPressure_Ref() << endl;
+      cout << "New Delta P: " << Pressure_Drop_new * config->GetPressure_Ref() << endl;
       
-      /*--- Output the new value of Delta P and ddp ---*/
-      if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK Move whole computation up in front of output
+      cout.unsetf(ios_base::floatfield);
       
-        cout.precision(5);
-        cout.setf(ios::fixed, ios::floatfield);
-
-        cout << "Delta Delta P: " << ddP * config->GetPressure_Ref() << endl;
-        cout << "New Delta P: " << Pressure_Drop_new * config->GetPressure_Ref() << endl;
-
-        cout.unsetf(ios_base::floatfield);
-
-      } // output
-    } // if massflow
+    } // output
+  } // if massflow
   
   if (config->GetEnergy_Equation()) {
     /*---------------------------------------------------------------------------------------------*/
@@ -6532,7 +6530,9 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
     /*---    Here the Heatflux from all Bounary markers in the config-file is used.             ---*/
     /*---------------------------------------------------------------------------------------------*/
 
-    su2double HeatFlux, HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
+    su2double HeatFlux, 
+              HeatFlow_Local = 0.0, 
+              HeatFlow_Global = 0.0;
     string Marker_StringTag;
 
     /*--- Loop over all Marker ---*/
@@ -6549,7 +6549,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
 
           if (geometry->node[iPoint]->GetDomain()) {
 
-            geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal);
+            geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
 
             if (axisymmetric) {
               if (geometry->node[iPoint]->GetCoord(1) != 0.0)
@@ -6585,8 +6585,6 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
     if (rank == MASTER_NODE) { cout << "HeatFlow_Global: " << HeatFlow_Global * config->GetHeat_Flux_Ref() << endl; }
   } // if energy
 
-  /*--- Free allocated memory. ---*/
-  delete [] AreaNormal;
   if (rank == MASTER_NODE) { cout << "------------------------------- New Routine End --------------------------" << endl; }
 }
 
@@ -8611,6 +8609,19 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool energy        = config->GetEnergy_Equation();
+  bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
+
+  su2double Cp, 
+            thermal_conductivity, 
+            dot_product, 
+            norm2_translation = 0.0, 
+            scalar_factor,
+            massflow = config->GetStreamwise_Periodic_MassFlow(),
+            integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+  }
 
   /*--- Identify the boundary by string name ---*/
   
@@ -8648,7 +8659,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Initialize the convective & viscous residuals to zero ---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0; // TK Not used after that in this function ??
+        Res_Conv[iVar] = 0.0;
         Res_Visc[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar++)
@@ -8685,25 +8696,22 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         
         /*--- With streamwise periodic BC and heatflux walls an additional
               term is introduced in the boundary formulation ---*/    
-        if (config->GetKind_Streamwise_Periodic()) {
+        if (streamwise_periodic) {
           
-          su2double Cp = node[iPoint]->GetSpecificHeatCp();
-          su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
-          su2double norm2_translation = 0.0, dot_product = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
-          }
+          Cp = node[iPoint]->GetSpecificHeatCp();
+          thermal_conductivity = node[iPoint]->GetThermalConductivity();
 
           /*--- Scalar part of the contribution ---*/
-          su2double scalar_factor = config->GetStreamwise_Periodic_IntegratedHeatFlow()*thermal_conductivity / (config->GetStreamwise_Periodic_MassFlow() * Cp * norm2_translation);
+          su2double scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
           
           /*--- Scalar product ---*/
+          dot_product = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
           }
           
           Res_Visc[nDim+1] -= scalar_factor*dot_product;
-        }
+        }//if streamwise_periodic
 
         /*--- Viscous contribution to the residual at the wall ---*/
 

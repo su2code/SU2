@@ -596,8 +596,6 @@ void CConfig::SetPointersNull(void) {
 
   Weight_ObjFunc = NULL;
 
-  Streamwise_Periodic_RefNode = NULL;
-
   /*--- Moving mesh pointers ---*/
   
   nKind_SurfaceMovement = 0;
@@ -826,7 +824,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
-  addBoolOption("AXISYMMETRIC", Axisymmetric, false); 
+  addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
@@ -4294,7 +4292,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Energy_Equation && nMarker_Isothermal != 0) SU2_MPI::Error("No isothermal marker allowed with streamwise periodicity, only heatflux..", CURRENT_FUNCTION);
   
     /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
-    Streamwise_Periodic_RefNode = new su2double[val_nDim];
+    Streamwise_Periodic_RefNode.resize(val_nDim);
   }
 
   /*--- Handle default options for topology optimization ---*/
@@ -7220,8 +7218,6 @@ CConfig::~CConfig(void) {
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
-
-  if (Streamwise_Periodic_RefNode != NULL) delete[] Streamwise_Periodic_RefNode;
 
   if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)        delete[] PlaneTag;

@@ -14590,11 +14590,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
     unsigned long iPoint;
     su2double norm, min_norm = 0.0;
 
-    su2double *Buffer_Send_RefNode = new su2double[nDim];
-    su2double *Buffer_Recv_RefNode = new su2double[size*nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_RefNode[iDim] = 1e300;
+    vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
+                      Buffer_Recv_RefNode(size*nDim);
 
     /*-------------------------------------------------------------------------------------------*/
     /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
@@ -14633,7 +14630,8 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
     } // marker loop
 
     /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
-    SU2_MPI::Allgather(Buffer_Send_RefNode, nDim, MPI_DOUBLE, Buffer_Recv_RefNode, nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE, 
+                       Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
 
     /*-------------------------------------------------------------------------------------------*/
     /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
@@ -14660,7 +14658,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
     }
 
     /*--- Store the final reference node. ---*/
-    config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode, nDim);
+    config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode);
 
     /*--- Print the reference node. ---*/
     if (rank == MASTER_NODE) {
@@ -14670,9 +14668,6 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
       cout << " ]" << endl;
     }
 
-    /*--- Free allocated memory. ---*/
-    delete [] Buffer_Send_RefNode;
-    delete [] Buffer_Recv_RefNode;
   }
 }
 

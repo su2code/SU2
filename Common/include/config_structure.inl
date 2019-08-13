@@ -1636,11 +1636,9 @@ inline void CConfig::SetStreamwise_Periodic_PressureDrop(su2double delta_p) { St
 
 inline su2double CConfig::GetStreamwise_Periodic_TargetMassFlow(void) { return Streamwise_Periodic_TargetMassFlow; }
 
-inline su2double* CConfig::GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
+inline vector<su2double> CConfig::GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
 
-inline void CConfig::SetStreamwise_Periodic_RefNode(su2double* RefNode, unsigned short nDim) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) Streamwise_Periodic_RefNode[iDim] = RefNode[iDim];
-}
+inline void CConfig::SetStreamwise_Periodic_RefNode(vector<su2double> RefNode) { Streamwise_Periodic_RefNode = RefNode; }
 
 inline void CConfig::SetStreamwise_Periodic_MassFlow(su2double val_massflow) { Streamwise_Periodic_MassFlow = val_massflow; }
 
