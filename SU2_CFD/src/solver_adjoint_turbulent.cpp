@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CAdjTurbVariable.hpp"
 
 CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
@@ -95,8 +96,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialization of the structure of the whole Jacobian ---*/
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }

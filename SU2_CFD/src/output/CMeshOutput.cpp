@@ -36,10 +36,9 @@
  */
 
 #include "../../include/output/CMeshOutput.hpp"
+#include "../../../Common/include/geometry_structure.hpp"
 
-CMeshOutput::CMeshOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-
-  nDim = geometry->GetnDim();
+CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
@@ -64,10 +63,10 @@ CMeshOutput::~CMeshOutput(void) {
 void CMeshOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   
 }

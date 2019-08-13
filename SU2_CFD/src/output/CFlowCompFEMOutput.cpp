@@ -35,41 +35,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 
-CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : CFlowOutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
 
-  nDim = geometry->GetnDim();  
-  
-  nVar = solver[FLOW_SOL]->GetnVar();
-  
+CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim) {
+    
   turb_model = config->GetKind_Turb_Model();
   
   grid_movement = config->GetGrid_Movement(); 
-  
-  su2double Gas_Constant, Mach2Vel, Mach_Motion;
-  unsigned short iDim;
-  su2double Gamma = config->GetGamma();
-      
-  /*--- Set the non-dimensionalization for coefficients. ---*/
-  
-  RefArea = config->GetRefArea();
-  
-  if (grid_movement) {
-    Gas_Constant = config->GetGas_ConstantND();
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-  }
-  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
@@ -138,32 +113,32 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the density.
-  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the density.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
-  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the momentum x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
-  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the momentum y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES",  "Root-mean square residual of the momentum z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
-  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", "Root-mean square residual of the energy.", TYPE_RESIDUAL);
   /// END_GROUP
    
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the density.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum x-component. 
-  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum x-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum y-component. 
-  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", "Maximum square residual of the momentum y-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the momentum z-component. 
-  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED, "MAX_RES", "Maximum residual of the z-component.", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
-  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", "Maximum residual of the energy.", TYPE_RESIDUAL);
   /// END_GROUP
    
   /// DESCRIPTION: Linear solver iterations   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
  
   /*--- Add analyze surface history fields --- */
   
@@ -178,52 +153,40 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
-  
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+
   // Solution variables
-  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION");
-  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION");
-  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION");
+  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
+  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
+  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
   if (nDim == 3)
-    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION");
-  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION");  
-  
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION");
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION");
-    break;
-  case NONE:
-    break;
-  }
-  
+    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
+  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");  
+
   // Primitive variables
-  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE");
-  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE");
-  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE");
-  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
-  
+  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
+  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+
   if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
-    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE"); 
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
   }
   
-  if (config->GetKind_Solver() == FEM_LES || config->GetKind_SGS_Model() != IMPLICIT_LES) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
+  if (config->GetKind_Solver() == FEM_LES && (config->GetKind_SGS_Model() != IMPLICIT_LES)) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 }
 
 void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
   
   unsigned short iDim;
-  
+
+  unsigned short nVar = solver[FLOW_SOL]->GetnVar();
+    
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
 

@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/variables/CDiscAdjVariable.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 

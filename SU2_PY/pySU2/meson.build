@@ -2,13 +2,14 @@
 swig = find_program('swig')
 
 # add mpi4py include
-if get_option('enable-mpi')
-  python_dir = python.get_path('platlib')
-  message ('Looking for mpi4py in ' + python_dir)
+if mpi_dep[0].found() and mpi_dep[1].found()
   if get_option('python_path') != ''
     python_dir = get_option('python_path')
+  else
+    python_dir = run_command(python, '-c', 'from distutils.sysconfig import get_python_lib; print(get_python_lib())').stdout().strip()
+    message ('Looking for mpi4py in ' + python_dir)
   endif
-  mpi4py_include = python_dir + '/mpi4py/include/'
+  mpi4py_include = python_dir + '/mpi4py/include' 
 else
   mpi4py_include = ''
 endif
@@ -16,7 +17,7 @@ endif
 swig_gen = generator(
     swig,
     output: ['@BASENAME@.cxx'],
-    arguments: su2_cpp_args + 
+    arguments: su2_cpp_args +
     [ '-c++', '-python', '-I'+mpi4py_include, '-outdir', meson.current_build_dir(), '-o', './@OUTPUT@', '@INPUT@'],
     depfile: '@BASENAME@.d',
 )
@@ -38,7 +39,7 @@ foreach swig_source: swig_sources
        objects: su2_cfd.extract_all_objects(),
        install: true,
        include_directories : mpi4py_include,
-       cpp_args : su2_cpp_args,
+       cpp_args : [default_warning_flags,su2_cpp_args],
        name_prefix : '',
        install_dir: 'bin'
     )

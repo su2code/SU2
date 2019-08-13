@@ -37,14 +37,15 @@
 
 #include "../../include/output/CElasticityOutput.hpp"
 
-CElasticityOutput::CElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+#include "../../../Common/include/geometry_structure.hpp"
+#include "../../include/solver_structure.hpp"
+
+CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
   
-  nDim = geometry->GetnDim();
-
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
@@ -151,25 +152,25 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER",  "Number of iterations of the linear solver.");
   
   // Residuals
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", "", TYPE_RESIDUAL);
 
-  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
+  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "", "VMS");
+  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "", "LOAD_RAMP");
   
 }
 
@@ -212,34 +213,36 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION");
-  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION");
-  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION");
+  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
+  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
   
-  AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
-  AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
-  if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
+  if(dynamic){
+    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
+    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
+    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY", "z-component of the velocity vector");
+    
+    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION", "x-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION", "y-component of the acceleration vector");
+    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION", "z-component of the acceleration vector");
+  }
   
-  AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
-  AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
-  if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
-  
-  AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS");
-  AddVolumeOutput("STRESS-YY",    "Syy", "STRESS");
-  AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS");
+  AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS", "x-component of the normal stress vector");
+  AddVolumeOutput("STRESS-YY",    "Syy", "STRESS", "y-component of the normal stress vector");
+  AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS", "xy shear stress component");
   
   if (nDim == 3) {
-    AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS");
-    AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS");
-    AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS");
+    AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS", "z-component of the normal stress vector");
+    AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS", "xz shear stress component");
+    AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS", "yz shear stress component");
   }
     
-  AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS");
+  AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
   
 }
 

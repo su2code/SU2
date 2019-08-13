@@ -47,7 +47,7 @@
  */
 class CAdjElasticityOutput : public COutput {
 private:
-  unsigned short nVar_FEM, nDim;
+  unsigned short nVar_FEM;
 
 public:
 
@@ -57,7 +57,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjElasticityOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CAdjElasticityOutput(CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Destructor of the class.

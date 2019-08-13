@@ -53,7 +53,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CBaselineOutput(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short iZone);
+  CBaselineOutput(CConfig *config, unsigned short nDim, CSolver *solver);
 
   /*!
    * \brief Destructor of the class.

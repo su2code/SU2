@@ -2,6 +2,8 @@
 
 #include "CFileWriter.hpp"
 
+#include <assert.h>
+
 class CTecplotBinaryFileWriter : public CFileWriter{
   
   unsigned long time_iter;

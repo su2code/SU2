@@ -1,11 +1,11 @@
 tecio_cpp_flags = ['-fpermissive', '-DUSEENUM', '-DTHREED', '-DMAKEARCHIVE', '-DNO_ASSERTS', '-DNO_THIRD_PARTY_LIBS']
 
 if (build_machine.system() == 'darwin')
-  tec_cxx_flags += ['-DDARWIN', '-DMAC64']
+  tecio_cpp_flags += ['-DDARWIN', '-DMAC64']
 endif
 
 if (build_machine.system() == 'linux')
-  tec_cxx_flags += ['-DLINUX', '-DLINUX64']
+  tecio_cpp_flags += ['-DLINUX', '-DLINUX64']
 endif
 
 
@@ -85,7 +85,7 @@ tecio = static_library('tecio',
            'TecioSZL.cpp',
            'exportSubzonePlt.cpp',
            install : false, 
-	   cpp_args: tecio_cpp_flags,
+	   cpp_args: [default_warning_flags, tecio_cpp_flags],
 	   include_directories: tecio_include)
 
 tecio_dep = declare_dependency(link_with: tecio,

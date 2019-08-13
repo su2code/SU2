@@ -9,7 +9,8 @@ class CSurfaceFEMDataSorter : public CParallelDataSorter{
   std::vector<unsigned long> globalSurfaceDOFIDs;
     
 public:
-  CSurfaceFEMDataSorter(CConfig *config, unsigned short nFields, CFEMDataSorter* volume_sorter);
+  
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, CFEMDataSorter* volume_sorter);
   
   ~CSurfaceFEMDataSorter();
   
