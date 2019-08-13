@@ -655,10 +655,10 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
-  if (config_container[val_iZone]->AddRadiation()){
-    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS, ExtIter);
-    integration_container[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                     config_container, RUNTIME_RADIATION_SYS, IntIter, val_iZone, val_iInst);
+  if (config[val_iZone]->AddRadiation()){
+    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS, ExtIter);
+    integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, 
+                                                                     RUNTIME_RADIATION_SYS, IntIter, val_iZone, val_iInst);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -2348,8 +2348,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       }
     }
     if (radiation) {
-      for (iPoint = 0; iPoint < geometry_container[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
-        solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][val_iInst][MESH_0][RAD_SOL]->node[iPoint]->GetSolution());
+      for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+        solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->node[iPoint]->SetSolution_Direct(solver[val_iZone][val_iInst][MESH_0][RAD_SOL]->node[iPoint]->GetSolution());
       }
     }
   }
@@ -2362,7 +2362,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],  config[val_iZone] , MESH_0, 0, RUNTIME_ADJHEAT_SYS, false);
   }
   if (radiation){
-    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJRAD_SYS, false);
+    solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],  config[val_iZone] , MESH_0, 0, RUNTIME_ADJRAD_SYS, false);
   }
 
 }
@@ -2459,10 +2459,10 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   }
   if (radiation) {
 
-    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
-                                                                              config_container[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
+                                                                              config[val_iZone]);
 
-    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+    solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
   }
 }
@@ -2496,8 +2496,8 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver, CGeometry **
         config[iZone]);
   }
   if (radiation) {
-    solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
-        config_container[iZone]);
+    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0],
+        config[iZone]);
   }
 }
 
@@ -2526,9 +2526,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver, CGeometry ****ge
       solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
     if (radiation) {
-      solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-      solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+      solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
   }
   if (kind_recording == MESH_COORDS){
@@ -2582,8 +2582,8 @@ void CDiscAdjFluidIteration::SetRecording(CSolver *****solver,
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
     solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
   }
-  if (config_container[val_iZone]->GetKind_RadiationModel() != NONE) {
-    solver_container[val_iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
+  if (config[val_iZone]->GetKind_RadiationModel() != NONE) {
+    solver[val_iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry[val_iZone][INST_0][MESH_0], config[val_iZone]);
   }
 
 }
@@ -2628,10 +2628,10 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
     solver[iZone][iInst][MESH_0][HEAT_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   }
   if (radiation){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    solver_container[iZone][iInst][MESH_0][RAD_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][RAD_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
-    solver_container[iZone][iInst][MESH_0][RAD_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0],solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    solver[iZone][iInst][MESH_0][RAD_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0],solver[iZone][iInst][MESH_0], config[iZone], MESH_0);
+    solver[iZone][iInst][MESH_0][RAD_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
+    solver[iZone][iInst][MESH_0][RAD_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   }
 }
 
@@ -2657,7 +2657,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver, CGeometry ****g
                                                                  config[iZone]);
   }
   if (radiation){
-    solver_container[iZone][iInst][MESH_0][RAD_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    solver[iZone][iInst][MESH_0][RAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 
@@ -2684,8 +2684,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver *****solver, CG
   }
 
   if (radiation) {
-    solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
-                                                                          config_container[iZone]);
+    solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 
