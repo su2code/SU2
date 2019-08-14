@@ -81,24 +81,6 @@ public:
   void SetHistoryOutputFields(CConfig *config);
 
   /*!
-   * \brief Determines if the history file output.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteHistoryFile_Output(CConfig *config);
-  
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Header(CConfig *config);
-  
-  /*!
-   * \brief Determines if the screen header should be written.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool WriteScreen_Output(CConfig *config);
-  
-  /*!
    * \brief SetVolumeOutputFields
    * \param config
    */

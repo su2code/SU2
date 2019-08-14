@@ -2722,7 +2722,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     
   }
   
-  if (config->GetKind_Solver() == DISC_ADJ_RANS)
+  if (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS)
   geometry_container[MESH_0]->ComputeWall_Distance(config);
   
 }
@@ -15957,28 +15957,28 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   
   /*--- Time-average any unsteady surface sensitivities ---*/
   
-  unsigned long iExtIter, nExtIter;
+  unsigned long iTimeIter, nTimeIter;
   su2double delta_T, total_T;
-  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    nExtIter = config->GetUnst_AdjointIter();
-    delta_T  = config->GetDelta_UnstTime();
-    total_T  = (su2double)nExtIter*delta_T;
+  if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+    nTimeIter = config->GetUnst_AdjointIter();
+    delta_T  = config->GetTime_Step();
+    total_T  = (su2double)nTimeIter*delta_T;
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
     su2double period = config->GetHarmonicBalance_Period();
-    nExtIter  = config->GetnTimeInstances();
-    delta_T   = period/(su2double)nExtIter;
+    nTimeIter  = config->GetnTimeInstances();
+    delta_T   = period/(su2double)nTimeIter;
     total_T   = period;
     
   } else {
-    nExtIter = 1;
+    nTimeIter = 1;
     delta_T  = 1.0;
     total_T  = 1.0;
   }
   
-  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
+  for (iTimeIter = 0; iTimeIter < nTimeIter; iTimeIter++) {
     
     /*--- Prepare to read surface sensitivity files (CSV) ---*/
     
@@ -15991,15 +15991,15 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     /*--- Write file name with extension if unsteady or steady ---*/
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
 
-    if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+    if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
         (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
-      if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 0)    && (SU2_TYPE::Int(iTimeIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 10)   && (SU2_TYPE::Int(iTimeIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 100)  && (SU2_TYPE::Int(iTimeIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iTimeIter));
+      if ((SU2_TYPE::Int(iTimeIter) >= 1000) && (SU2_TYPE::Int(iTimeIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iTimeIter));
+      if (SU2_TYPE::Int(iTimeIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
     }
     else
       SPRINTF (buffer, ".csv");
@@ -16074,8 +16074,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool p1_radiation = (config->GetKind_RadiationModel() == P1_MODEL);
@@ -16085,11 +16083,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
                (Kind_Solver == DISC_ADJ_RANS)           ||
                (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
+               (Kind_Solver == DISC_ADJ_INC_EULER)          ||
+               (Kind_Solver == DISC_ADJ_INC_RANS)           ||
+               (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES)  ||
                (Kind_Solver == ADJ_EULER)               ||
                (Kind_Solver == ADJ_NAVIER_STOKES)       ||
                (Kind_Solver == ADJ_RANS));
   su2double Sens, dull_val, AoASens;
-  unsigned short nExtIter, iDim;
+  unsigned short nTimeIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
   int counter = 0;
@@ -16097,23 +16098,22 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   Sensitivity = new su2double[nPoint*nDim];
 
   if (config->GetUnsteady_Simulation()) {
-    nExtIter = config->GetnExtIter();
+    nTimeIter = config->GetTimeIter();
   }else {
-    nExtIter = 1;
+    nTimeIter = 1;
   }
  
   if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
+    cout << "Reading in sensitivity at iteration " << nTimeIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
   if (flow) {
-  if (incompressible)      { skipVar += skipMult*(nDim+2); }
-  if (compressible)        { skipVar += skipMult*(nDim+2); }
-  if (sst && !frozen_visc) { skipVar += skipMult*2;}
-  if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
-  if (p1_radiation)        { skipVar += 1;}
+    skipVar += skipMult*(nDim+2);
+    if (sst && !frozen_visc) { skipVar += skipMult*2;}
+    if (sa && !frozen_visc)  { skipVar += skipMult*1;}
+    if (grid_movement)       { skipVar += nDim;}
+    if (p1_radiation)        { skipVar += 1;}
   }
   else if (Kind_Solver == DISC_ADJ_HEAT) {
     skipVar += 1;
@@ -16137,14 +16137,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   filename = config->GetSolution_AdjFileName();
 
   filename = config->GetObjFunc_Extension(filename);
-
-  if (config->GetUnsteady_Simulation()) {
-    filename = config->GetUnsteady_FileName(filename, nExtIter-1, ".dat");
-  }
   
-  if (config->GetnZone() > 1){
-    filename = config->GetMultizone_FileName(filename, config->GetiZone(), ".dat");
-  }
+  filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
   if (config->GetRead_Binary_Restart()) {
 

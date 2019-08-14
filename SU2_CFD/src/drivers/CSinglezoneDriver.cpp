@@ -114,10 +114,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
-  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-  config_container[ZONE_0]->SetExtIter(TimeIter);
-
   /*--- Store the current physical time in the config container, as
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
@@ -127,22 +123,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
   
-  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
-  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-//    output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
-
-//  /*--- Read the target heat flux ----------------------------------------------------------------*/
-//  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-//    output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
-
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
       (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) {
+      (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  INC_EULER) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
+      (config_container[ZONE_0]->GetKind_Solver() ==  INC_RANS) ) {
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
   }
 
@@ -212,13 +199,13 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
       /*--- General if statements to print output statements ---*/
 
-      (TimeIter+1 >= config_container[ZONE_0]->GetnTime_Iter()) || (StopCalc) ||
+      (StopCalc) ||
 
       /*--- Unsteady problems ---*/
 
       (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((TimeIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
@@ -243,10 +230,10 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
 
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-  }
+//  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+//    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+//    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+//  }
 
   /*--- write the solution ---*/
 
@@ -315,55 +302,62 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   
 }
 
-void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
   /*--- Dynamic mesh update ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
                                                           grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
-                                                          config_container[ZONE_0], 0, ExtIter);  }
+                                                          config_container[ZONE_0], 0, TimeIter);  }
 
 }
 
-bool CSinglezoneDriver::Monitor(unsigned long ExtIter){
+bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
-  unsigned long nInnerIter, InnerIter, TimeIter, nTimeIter;
+  unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence;
+  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached;
   
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
-  TimeIter   = config_container[ZONE_0]->GetTimeIter();
   nTimeIter  = config_container[ZONE_0]->GetnTime_Iter();
   MaxTime    = config_container[ZONE_0]->GetMax_Time();
-  CurTime    = TimeIter*config_container[ZONE_0]->GetTime_Step();
+  CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
   
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
   
-  InnerConvergence = output_container[ZONE_0]->GetConvergence();
   
   /*--- Check whether the inner solver has converged --- */
 
   if (TimeDomain == NO){
-    if (((InnerIter+1 >= nInnerIter) || InnerConvergence) && (rank == MASTER_NODE)) {
+    
+    InnerConvergence     = output_container[ZONE_0]->GetConvergence();    
+    MaxIterationsReached = InnerIter+1 >= nInnerIter;
+    
+    if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------";
       if (InnerConvergence) cout << endl << "Convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER)." << endl;
+      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << " )." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
   }
 
-  /*--- Check whether the outer time integration has reached the final time ---*/
-
-  StopCalc = CurTime >= MaxTime;
 
   if (TimeDomain == YES) {
-    if ((StopCalc || TimeIter+1 >= nTimeIter) && (rank == MASTER_NODE)){
+    
+    /*--- Check whether the outer time integration has reached the final time ---*/
+  
+    FinalTimeReached     = CurTime >= MaxTime;
+    MaxIterationsReached = TimeIter+1 >= nTimeIter;    
+    
+    if ((FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (StopCalc) cout << endl << "Maximum time reached." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER)." << endl;
+      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;      
     }
+    
+    StopCalc = FinalTimeReached || MaxIterationsReached;
   }
 
   /*--- Reset the inner convergence --- */

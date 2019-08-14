@@ -234,7 +234,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    config->SetnExtIter(nExtIter);
+    config->SetTimeIter(nTimeIter);
   }
 
 }
@@ -730,7 +730,7 @@ void CConfig::SetRunTime_Options(void) {
   
   /* DESCRIPTION: Number of external iterations */
   
-  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("TIME_ITER", nTimeIter, 999999);
 
 }
 
@@ -796,10 +796,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Problem Definition \ingroup Config */
   /*--- Options related to problem definition and partitioning ---*/
 
-  /*!\brief REGIME_TYPE \n  DESCRIPTION: Regime type \n OPTIONS: see \link Regime_Map \endlink \ingroup Config*/
-  addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-  /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
-  addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
+  /*!\brief SOLVER \n DESCRIPTION: Type of solver \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
+  addEnumOption("SOLVER", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MULTIZONE \n DESCRIPTION: Enable multizone mode \ingroup Config*/  
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief DRY_RUN \n Description: Use dry-run mode to run construction of driver without reading geometry */
@@ -1319,8 +1317,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
-  /* DESCRIPTION: Number of total iterations */
-  addUnsignedLongOption("EXT_ITER", nExtIter, 0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -2460,13 +2456,21 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Type of output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
-  default_wrt_freq[0] = 1.0; default_wrt_freq[1] = 1.0; default_wrt_freq[2] = 1.0;
-  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("HISTORY_WRT_FREQ", 3, HistoryWrtFreq, default_wrt_freq);
+  /* DESCRIPTION: History writing frequency (INNER_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_INNER", HistoryWrtFreq[2], 1);
+  /* DESCRIPTION: History writing frequency (OUTER_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_OUTER", HistoryWrtFreq[1], 1); 
+  /* DESCRIPTION: History writing frequency (TIME_ITER) */
+  addUnsignedLongOption("HISTORY_WRT_FREQ_TIME", HistoryWrtFreq[0], 1);
   
-  /* DESCRIPTION: History writing frequency (TIME_ITER, OUTER_ITER, INNER_ITER) */
-  addDoubleArrayOption("SCREEN_WRT_FREQ", 3, ScreenWrtFreq, default_wrt_freq);
- 
+  /* DESCRIPTION: Screen writing frequency (INNER_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_INNER", ScreenWrtFreq[2], 1);
+  /* DESCRIPTION: Screen writing frequency (OUTER_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1); 
+  /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
+  addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
+  
+  
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -2541,6 +2545,8 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
           if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
           if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
+          if (!option_name.compare("EXT_ITER")) newString.append("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
+                                                                 "to specify the number of time iterations, outer multizone iterations or iterations, respectively.");
 
           errorString.append(newString);
           err_count++;
@@ -2843,7 +2849,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nZone > 1){
     Multizone_Problem = YES;
   }
-  
+
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
     cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
@@ -2879,7 +2885,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    is necessary to avoid any issues with the AoA adjustments for the
    compressible code for fixed lift mode (including the adjoint). ---*/
 
-  if (Kind_Regime == INCOMPRESSIBLE) {
+  if (Kind_Solver == INC_EULER ||
+      Kind_Solver == INC_NAVIER_STOKES ||
+      Kind_Solver == INC_RANS) {
 
     /*--- Compute x-velocity with a safegaurd for 0.0. ---*/
 
@@ -3028,6 +3036,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- Check for unsteady problem ---*/
+  
+  if ((Unsteady_Simulation == TIME_STEPPING ||
+       Unsteady_Simulation == DT_STEPPING_1ST ||
+       Unsteady_Simulation == DT_STEPPING_2ND) && !Time_Domain){
+    SU2_MPI::Error("TIME_DOMAIN must be set to YES if UNSTEADY_SIMULATION is "
+                   "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
+  }
+  
+  if (Time_Domain){
+    if (Unsteady_Simulation == TIME_STEPPING){
+      InnerIter = 1;
+    }
+  }
+  
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -3062,6 +3085,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Multizone_Residual = true;
   }
   else { FSI_Problem = false; }
+  
+  if (Kind_Solver == EULER ||
+      Kind_Solver == NAVIER_STOKES ||
+      Kind_Solver == RANS ||
+      Kind_Solver == FEM_EULER ||
+      Kind_Solver == FEM_NAVIER_STOKES ||
+      Kind_Solver == FEM_RANS ||
+      Kind_Solver == FEM_LES){
+    Kind_Regime = COMPRESSIBLE;
+  } else if (Kind_Solver == INC_EULER ||
+             Kind_Solver == INC_NAVIER_STOKES ||
+             Kind_Solver == INC_RANS){
+    Kind_Regime = INCOMPRESSIBLE;
+  }  else {
+    Kind_Regime = NO_FLOW;
+  }  
 
 
   if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
@@ -3088,13 +3127,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Initialize the ofstream ConvHistFile. ---*/
 //  ofstream ConvHistFile;
 
-  /*--- Decide whether we should be writing unsteady solution files. ---*/
-  
-  if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == HARMONIC_BALANCE)
- { Wrt_Unsteady = false; }
-  else { Wrt_Unsteady = true; }
-
   if (Kind_Solver == FEM_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
@@ -3118,12 +3150,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for unsupported features. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Unsteady_Simulation == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
-  if ((Kind_Regime == EULER) && (Buffet_Monitoring == true)){
-    SU2_MPI::Error("Buffet monitoring incompatible with Euler Solver", CURRENT_FUNCTION);
+  if ((Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Buffet_Monitoring == true)){
+    SU2_MPI::Error("Buffet monitoring incompatible with solvers other than NAVIER_STOKES and RANS", CURRENT_FUNCTION);
   }
   
   /*--- Check for Fluid model consistency ---*/
@@ -3195,7 +3227,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Boundary condition available for NICF ---*/
   
-  if (ideal_gas && (Kind_Regime != INCOMPRESSIBLE)) {
+  if (ideal_gas && (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS)) {
     if (SystemMeasurements == US && standard_air) {
       if (Kind_ViscosityModel != SUTHERLAND) {
         SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
@@ -3208,7 +3240,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
     /*--- Check for Boundary condition option agreement ---*/
   if (Kind_InitOption == REYNOLDS){
-    if (Kind_Regime == COMPRESSIBLE && (Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
+    if ((Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
       SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
     }
   }
@@ -3221,13 +3253,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
-  if (Time_Domain && Time_Step <= 0.0){
+  if (Time_Domain && Time_Step <= 0.0 && Unst_CFL == 0.0){
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
-  }
-  
-  if (nExtIter != 0){
-    SU2_MPI::Error("Option EXT_ITER is deprecated as of v7.0. Please use TIME_ITER, OUTER_ITER or ITER \n"
-                   "to specify the number of time iterations, outer multizone iterations or iterations, respectively.", CURRENT_FUNCTION);
   }
   
   if (Unsteady_Simulation == TIME_STEPPING){
@@ -3239,21 +3266,32 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nTimeIter = 1;
     Time_Step = 0;
     
-    ScreenWrtFreq[0] = 1.0;
-    HistoryWrtFreq[0] = 1.0;
-    
-    nExtIter = nIter;
+    ScreenWrtFreq[0]  = 1;
+    HistoryWrtFreq[0] = 1;
   } 
   
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
-    nExtIter = nTimeIter;
   }
   
   if (!Multizone_Problem){
-    ScreenWrtFreq[1] = 0.0;
-    HistoryWrtFreq[1] = 0.0;
+    ScreenWrtFreq[1]  = 0;
+    HistoryWrtFreq[1] = 0;
+    if (!Time_Domain){
+      /*--- If not running multizone or unsteady, INNER_ITER and ITER are interchangeable,
+       * but precedence will be given to INNER_ITER if both options are present. ---*/
+      if (all_options.find("INNER_ITER") != all_options.end()){
+        nInnerIter = nIter;
+      }
+    }
+  }
+  
+  
+  if ((Multizone_Problem || Time_Domain) && all_options.find("ITER") == all_options.end()){
+    SU2_MPI::Error("ITER must not be used when running multizone and/or unsteady problems.\n"
+                   "Use TIME_ITER, OUTER_ITER or INNER_ITER to specify number of time iterations,\n"
+                   "outer iterations or inner iterations, respectively.", CURRENT_FUNCTION);
   }
 
   /*--- If we're solving a purely steady problem with no prescribed grid
@@ -3659,7 +3697,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
   
-  if (Kind_Solver == EULER) Kind_Turb_Model = NONE;
+  if ((Kind_Solver == INC_NAVIER_STOKES) &&
+      (Kind_Turb_Model != NONE))
+    Kind_Solver = INC_RANS;
+  
+  if (Kind_Solver == EULER ||
+      Kind_Solver == INC_EULER ||
+      Kind_Solver == FEM_EULER)
+    Kind_Turb_Model = NONE;
 
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];
@@ -3800,9 +3845,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Evaluate when the Cl should be evaluated ---*/
   
-  Iter_Fixed_CL        = SU2_TYPE::Int(nExtIter / (su2double(Update_Alpha)+1));
-  Iter_Fixed_CM        = SU2_TYPE::Int(nExtIter / (su2double(Update_iH)+1));
-  Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+1));
+  Iter_Fixed_CL        = SU2_TYPE::Int(nInnerIter / (su2double(Update_Alpha)+1));
+  Iter_Fixed_CM        = SU2_TYPE::Int(nInnerIter / (su2double(Update_iH)+1));
+  Iter_Fixed_NetThrust = SU2_TYPE::Int(nInnerIter / (su2double(Update_BCThrust)+1));
 
   /*--- Setting relaxation factor and CFL for the adjoint runs ---*/
 
@@ -3824,9 +3869,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_Flow[1] = Kappa_AdjFlow[1];
   }
   
-  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
-  if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
-  if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
+  if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nInnerIter+1; Update_Alpha = 0; }
+  if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nInnerIter+1; Update_iH = 0; }
+  if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nInnerIter+1; Update_BCThrust = 0; }
 
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
@@ -3960,7 +4005,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == ADJ_RANS               ) ||
              ( Kind_Solver == FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == FEM_RANS               ) ||
-             ( Kind_Solver == FEM_LES                ));
+             ( Kind_Solver == FEM_LES                ) ||
+             ( Kind_Solver == INC_NAVIER_STOKES      ) ||
+             ( Kind_Solver == INC_RANS               ) );
 
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
@@ -4085,70 +4132,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
-  if (DiscreteAdjoint) {
-#if !defined CODI_REVERSE_TYPE
-    if (Kind_SU2 == SU2_CFD) {
-      SU2_MPI::Error(string("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n") +
-                     string("Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)."),
-                     CURRENT_FUNCTION);
-    }
-#endif
-
-    /*--- Disable writing of limiters if enabled ---*/
-    Wrt_Limiters = false;
-
-    if (Unsteady_Simulation) {
-
-      Restart_Flow = false;
-
-      if (GetGrid_Movement()) {
-        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
-      }
-
-      if (Unst_AdjointIter- long(nExtIter) < 0){
-        SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
-                       CURRENT_FUNCTION);
-      }
-
-      /*--- If the averaging interval is not set, we average over all time-steps ---*/
-
-      if (Iter_Avg_Objective == 0.0) {
-        Iter_Avg_Objective = nExtIter;
-      }
-
-    }
-
-    switch(Kind_Solver) {
-      case EULER:
-        Kind_Solver = DISC_ADJ_EULER;
-        break;
-      case RANS:
-        Kind_Solver = DISC_ADJ_RANS;
-        break;
-      case NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
-        break;
-      case FEM_EULER :
-        Kind_Solver = DISC_ADJ_FEM_EULER;
-        break;
-      case FEM_RANS :
-        Kind_Solver = DISC_ADJ_FEM_RANS;
-        break;
-      case FEM_NAVIER_STOKES : 
-        Kind_Solver = DISC_ADJ_FEM_NS;
-        break;
-      case FEM_ELASTICITY:
-        Kind_Solver = DISC_ADJ_FEM;
-        break;
-      default:
-        break;
-    }
-
-    RampOutletPressure = false;
-    RampRotatingFrame = false;
-  }
-  
   delete [] tmp_smooth;
 
   /*--- Make sure that implicit time integration is disabled
@@ -4173,7 +4156,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
   	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
     ConvCriteria = RESIDUAL;
-  		nExtIter += Iter_dCL_dAlpha;
+  		nInnerIter += Iter_dCL_dAlpha;
   		OrderMagResidual = 24;
   		MinLogResidual = -24;
   	}
@@ -4182,7 +4165,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
   if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
-    SU2_MPI::Error("UQ capabilities only implemented for SST turbulence model", CURRENT_FUNCTION);
+    SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 
   /* --- Throw error if invalid componentiality used --- */
@@ -4201,7 +4184,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Checks for incompressible flow problems. ---*/
 
-  if ((Kind_Solver == EULER) && (Kind_Regime == INCOMPRESSIBLE)) {
+  if (Kind_Solver == INC_EULER) {
     /*--- Force inviscid problems to use constant density and disable energy. ---*/
     if (Kind_DensityModel != CONSTANT || Energy_Equation == true) {
       SU2_MPI::Error("Inviscid incompressible problems must be constant density (no energy eqn.).\n Use DENSITY_MODEL= CONSTANT and ENERGY_EQUATION= NO.", CURRENT_FUNCTION);
@@ -4210,7 +4193,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Default values should recover original incompressible behavior (for old config files). ---*/
 
-  if (Kind_Regime == INCOMPRESSIBLE) {
+  if (Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if ((Kind_DensityModel == CONSTANT) || (Kind_DensityModel == BOUSSINESQ))
       Kind_FluidModel = CONSTANT_DENSITY;
   }
@@ -4232,13 +4215,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (Kind_Regime != INCOMPRESSIBLE) {
+  if (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS) {
     if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_IDEAL_GAS) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_IDEAL_GAS/INC_IDEAL_GAS_POLY are for incompressible only.", CURRENT_FUNCTION);
     }
   }
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER) && (Kind_Solver != ADJ_EULER) && (Kind_Solver != DISC_ADJ_EULER)) {
+  if (Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if (Kind_ViscosityModel == SUTHERLAND) {
       if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
@@ -4248,13 +4231,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check the coefficients for the polynomial models. ---*/
   
-  if (Kind_Regime != INCOMPRESSIBLE) {
+  if (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS) {
     if ((Kind_ViscosityModel == POLYNOMIAL_VISCOSITY) || (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
     }
   }
   
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
       sum += GetCp_PolyCoeff(iVar);
@@ -4263,7 +4246,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
   }
   
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
+  if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
       sum += GetMu_PolyCoeff(iVar);
@@ -4272,7 +4255,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("MU_POLYCOEFFS not set for viscosity model POLYNOMIAL_VISCOSITY. \n"), CURRENT_FUNCTION);
   }
   
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
       sum += GetKt_PolyCoeff(iVar);
@@ -4283,13 +4266,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Incompressible solver currently limited to SI units. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (SystemMeasurements == US)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (SystemMeasurements == US)) {
     SU2_MPI::Error("Must use SI units for incompressible solver.", CURRENT_FUNCTION);
   }
 
   /*--- Check that the non-dim type is valid. ---*/
 
-  if (Kind_Regime == INCOMPRESSIBLE) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) {
     if ((Ref_Inc_NonDim != INITIAL_VALUES) && (Ref_Inc_NonDim != REFERENCE_VALUES) && (Ref_Inc_NonDim != DIMENSIONAL)) {
       SU2_MPI::Error("Incompressible non-dim. scheme invalid.\n Must use INITIAL_VALUES, REFERENCE_VALUES, or DIMENSIONAL.", CURRENT_FUNCTION);
     }
@@ -4297,7 +4280,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check that the incompressible inlets are correctly specified. ---*/
   
-  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Inlet != 0)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (nMarker_Inlet != 0)) {
     if (nMarker_Inlet != nInc_Inlet) {
       SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
     }
@@ -4310,7 +4293,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check that the incompressible inlets are correctly specified. ---*/
   
-  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Outlet != 0)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (nMarker_Outlet != 0)) {
     if (nMarker_Outlet != nInc_Outlet) {
       SU2_MPI::Error("Outlet types for incompressible problem improperly specified.\n Use INC_OUTLET_TYPE= PRESSURE_OUTLET or MASS_FLOW_OUTLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET MASS_FLOW_OUTLET", CURRENT_FUNCTION);
     }
@@ -4323,7 +4306,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Grid motion is not yet supported with the incompressible solver. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (GetGrid_Movement())) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (GetGrid_Movement())) {
     SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
   }
 
@@ -4402,8 +4385,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Comm_Level == COMM_NONE)
       SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
 
-    Wrt_Sol_Freq          = nExtIter+1;
-    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    Wrt_Sol_Freq          = nTimeIter+1;
+    Wrt_Sol_Freq_DualTime = nTimeIter+1;
     
     /*--- Write only the restart. ---*/
     
@@ -4418,7 +4401,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Kind_Solver != RANS) &&
       (Kind_Solver != ADJ_RANS) &&
-      (Kind_Solver != DISC_ADJ_RANS)) {
+      (Kind_Solver != DISC_ADJ_RANS) && 
+      (Kind_Solver != INC_RANS) &&
+      (Kind_Solver != DISC_ADJ_INC_RANS)){
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
   
@@ -4430,6 +4415,80 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
                    string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
                    string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
+  }
+  
+  if (DiscreteAdjoint) {
+#if !defined CODI_REVERSE_TYPE
+    if (Kind_SU2 == SU2_CFD) {
+      SU2_MPI::Error(string("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n") +
+                     string("Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)."),
+                     CURRENT_FUNCTION);
+    }
+#endif
+
+    /*--- Disable writing of limiters if enabled ---*/
+    Wrt_Limiters = false;
+
+    if (Unsteady_Simulation) {
+
+      Restart_Flow = false;
+
+      if (GetGrid_Movement()) {
+        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
+      }
+
+      if (Unst_AdjointIter- long(nTimeIter) < 0){
+        SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
+                       CURRENT_FUNCTION);
+      }
+
+      /*--- If the averaging interval is not set, we average over all time-steps ---*/
+
+      if (Iter_Avg_Objective == 0.0) {
+        Iter_Avg_Objective = nTimeIter;
+      }
+
+    }
+    
+    /*--- Note that this is deliberatly done at the end of this routine! ---*/
+    switch(Kind_Solver) {
+      case EULER:
+        Kind_Solver = DISC_ADJ_EULER;
+        break;
+      case RANS:
+        Kind_Solver = DISC_ADJ_RANS;
+        break;
+      case NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+        break;
+      case INC_EULER:
+        Kind_Solver = DISC_ADJ_INC_EULER;
+        break;
+      case INC_RANS:
+        Kind_Solver = DISC_ADJ_INC_RANS;
+        break;
+      case INC_NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_INC_NAVIER_STOKES;
+        break;
+      case FEM_EULER :
+        Kind_Solver = DISC_ADJ_FEM_EULER;
+        break;
+      case FEM_RANS :
+        Kind_Solver = DISC_ADJ_FEM_RANS;
+        break;
+      case FEM_NAVIER_STOKES : 
+        Kind_Solver = DISC_ADJ_FEM_NS;
+        break;
+      case FEM_ELASTICITY:
+        Kind_Solver = DISC_ADJ_FEM;
+        break;
+      default:
+        break;
+    }
+
+    RampOutletPressure = false;
+    RampRotatingFrame = false;
   }
   
 }
@@ -5180,15 +5239,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
     if (!fea){
       if (Kind_Regime == COMPRESSIBLE) {
-      if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-      else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-      else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
-      else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+        if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+        else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+        else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
+        else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     } else if (Kind_Regime == INCOMPRESSIBLE) {
-      if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-      else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
-      else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }
-    }
+        if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+        else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
+        else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }
+      }
       
       if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
       else { cout << "The reference area is " << RefArea;
@@ -5572,8 +5631,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
+    if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
@@ -5609,7 +5669,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
 	if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
           
-        if (Kind_Regime == COMPRESSIBLE) {
+  if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
+      Kind_Solver == NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
+      Kind_Solver == RANS          || Kind_Solver == DISC_ADJ_RANS) {
           switch (Kind_RoeLowDiss) {
             case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
             case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
@@ -5777,6 +5839,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) || 
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
@@ -5785,7 +5849,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) ) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -5872,6 +5936,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
@@ -6069,7 +6135,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS))
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
   }
@@ -6078,13 +6145,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
-    if (SinglezoneDriver){
-      cout << "Maximum number of solver subiterations: " << nIter <<"."<< endl;
-      cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
-    }
-    else{
-      cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
-    }
+    
+    cout << "Maximum number of solver subiterations: " << nInnerIter <<"."<< endl;
+    cout << "Maximum number of physical time-steps: " << nTimeIter <<"."<< endl;
+
 
     if (!fea){
 
@@ -7360,7 +7424,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
   
   /*--- Remove any extension --- */
   
@@ -7379,8 +7443,8 @@ string CConfig::GetFilename(string filename, string ext){
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
-  if (GetWrt_Unsteady() || GetWrt_Dynamic()){
-    filename = GetUnsteady_FileName(filename, (int)GetExtIter(), ext);
+  if (GetTime_Domain()){
+    filename = GetUnsteady_FileName(filename, (int)Iter, ext);
   }
   
   return filename;
@@ -7399,7 +7463,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string e
 
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
+  if ((Time_Domain) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
@@ -7574,18 +7638,17 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
 }
 
 void CConfig::SetGlobalParam(unsigned short val_solver,
-                             unsigned short val_system,
-                             unsigned long val_extiter) {
+                             unsigned short val_system) {
 
   /*--- Set the simulation global time ---*/
   
-  Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
-  Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
+  Current_UnstTime = static_cast<su2double>(TimeIter)*Delta_UnstTime;
+  Current_UnstTimeND = static_cast<su2double>(TimeIter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
   
   switch (val_solver) {
-    case EULER:
+    case EULER: case INC_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -7593,7 +7656,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
-    case NAVIER_STOKES:
+    case NAVIER_STOKES: case INC_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -7605,7 +7668,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case RANS:
+    case RANS: case INC_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -7716,7 +7779,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
 
     case FEM_ELASTICITY:
 
-      Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
+      Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
@@ -9289,6 +9352,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
+    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:    
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
