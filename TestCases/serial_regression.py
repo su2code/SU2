@@ -1076,7 +1076,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66127.000000] #last 4 columns
+    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001

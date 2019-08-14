@@ -995,19 +995,22 @@ def main():
     dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
     dynbeam2d.timeout   = 1600
+    dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
 
-#    # FSI, 2d
-#    fsi2d           = TestCase('fsi2d')
-#    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-#    fsi2d.cfg_file  = "configFSI.cfg"
-#    fsi2d.test_iter = 4
-#    fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
-#    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
-#    fsi2d.timeout   = 1600
-#    fsi2d.tol       = 0.00001
-#    test_list.append(fsi2d)
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
+    fsi2d.timeout   = 1600
+    fsi2d.multizone= True
+    fsi2d.unsteady = True
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)
 
     ##########################
     ### Zonal multiphysics ###
