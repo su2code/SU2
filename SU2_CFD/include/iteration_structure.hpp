@@ -102,6 +102,21 @@ public:
                       CSolver ***solver, CConfig *config, unsigned long IntIter, unsigned long TimeIter);
   
   /*!
+   * \brief Run the mesh deformation algorithms.
+   * \author R. Sanchez
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Current kind of recording.
+   */
+  void SetMesh_Deformation(CGeometry **geometry,
+                           CSolver **solver_container,
+                           CNumerics ***numerics_container,
+                           CConfig *config_container,
+                           unsigned short kind_recording);
+  
+  /*!
    * \brief A virtual member.
    * \param[in] ??? - Description here.
    */

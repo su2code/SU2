@@ -52,6 +52,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   config      = config_container[ZONE_0];
   iteration   = iteration_container[ZONE_0][INST_0];
   solver      = solver_container[ZONE_0][INST_0][MESH_0];
+  numerics    = numerics_container[ZONE_0][INST_0][MESH_0];
   geometry    = geometry_container[ZONE_0][INST_0][MESH_0];
   integration = integration_container[ZONE_0][INST_0];
 
@@ -62,6 +63,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   bool turbo = config->GetBoolTurbomachinery();
   
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
+
+  /*--- Determine if the problem has a mesh deformation solver ---*/
+  bool mesh_def = config->GetDeform_Mesh();
 
   /*--- Initialize the direct iteration ---*/
 
@@ -79,7 +83,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (compressible) direct_output = new CFlowCompOutput(config, nDim);
     else direct_output = new CFlowIncOutput(config, nDim);
     MainVariables = FLOW_CONS_VARS;
-    SecondaryVariables = MESH_COORDS;
+    if (mesh_def) SecondaryVariables = MESH_DEFORM;
+    else          SecondaryVariables = MESH_COORDS;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
@@ -226,6 +231,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
     /*--- Apply the boundary condition to clamped nodes ---*/
     iteration->Postprocess(output_container[ZONE_0],integration_container,geometry_container,solver_container,numerics_container,config_container,surface_movement,grid_movement,FFDBox,ZONE_0,INST_0);
+
+    RecordingState = NONE;
 
   }
 
@@ -402,6 +409,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
+  /*--- Mesh movement ---*/
+
+  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+
   /*--- Zone preprocessing ---*/
 
   direct_iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -531,8 +542,14 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
-
-  solver[ADJFLOW_SOL]->SetSensitivity(geometry,config);
+  switch(SecondaryVariables){
+  case MESH_COORDS:
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  case MESH_DEFORM:
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, solver, config);
+    break;
+  }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

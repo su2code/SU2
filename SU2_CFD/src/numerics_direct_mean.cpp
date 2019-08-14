@@ -327,7 +327,7 @@ CCentLax_Flow::~CCentLax_Flow(void) {
 void CCentLax_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   /*--- Compute dissipation coefficient ---*/
-
+  
   sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
   
@@ -388,9 +388,9 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
-  Pressure_i = V_i[nDim+1];     Pressure_j = V_j[nDim+1];
-  Density_i  = V_i[nDim+2];     Density_j  = V_j[nDim+2];
-  Enthalpy_i = V_i[nDim+3];     Enthalpy_j = V_j[nDim+3];
+  Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
+  Density_i  = V_i[nDim+2];                       Density_j  = V_j[nDim+2];
+  Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
   su2double Energy_i = Enthalpy_i - Pressure_i/Density_i;
   su2double Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
@@ -1504,7 +1504,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Primitive variables at point i ---*/
 
   Pressure_i = V_i[nDim+1];
-  Density_i  = V_i[nDim+2];
+  Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
 
   /*--- Primitive variables at point j ---*/
