@@ -41,7 +41,7 @@ void CSU2BinaryFileWriter::Write_Data(string filename, CParallelDataSorter *data
    one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, GlobalField_Counter, (int)data_sorter->GetnPointsGlobal(), 1, 8};
+  int var_buf[5] = {535532, GlobalField_Counter, (int)data_sorter->GetnPointsGlobal(), 0, 0};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 

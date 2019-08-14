@@ -152,7 +152,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -6799,7 +6799,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
