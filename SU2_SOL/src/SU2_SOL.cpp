@@ -290,6 +290,7 @@ int main(int argc, char *argv[]) {
         
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+        output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
         
       }
 
@@ -305,6 +306,7 @@ int main(int argc, char *argv[]) {
             (StopCalc) || // We have surpassed the requested time
             ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)) // The iteration has been requested
           ){
+          if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << TimeIter << ", t = " << Physical_t << " s ." << endl;
 
           /*--- Load the restart for all the zones. ---*/
           for (iZone = 0; iZone < nZone; iZone++){
@@ -313,12 +315,15 @@ int main(int argc, char *argv[]) {
             config_container[iZone]->SetTimeIter(TimeIter);
             /*--- So far, only enabled for single-instance problems ---*/
             config_container[iZone]->SetiInst(INST_0);
-            solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+            solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
           }
 
-          if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << TimeIter << ", t = " << Physical_t << " s ." << endl;
           
           for (iZone = 0; iZone < nZone; iZone++){
+            
+            /*--- Load history data (volume output might require some values) --- */
+            
+            output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
             
             /*--- Load the data --- */
             
@@ -346,12 +351,17 @@ int main(int argc, char *argv[]) {
         config_container[iZone]->SetiInst(INST_0);
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-        solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], 0, true);
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+        output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
       
       }
       for (iZone = 0; iZone < nZone; iZone++){
+        
+        /*--- Load history data (volume output might require some values) --- */
+        
+        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], 0, 0, 0);
         
         /*--- Load the data --- */
         
@@ -436,10 +446,11 @@ int main(int argc, char *argv[]) {
           solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
           output[ZONE_0] = new CBaselineOutput(config_container[ZONE_0], geometry_container[ZONE_0][INST_0]->GetnDim(), solver_container[ZONE_0][INST_0]);
           output[ZONE_0]->PreprocessVolumeOutput(config_container[ZONE_0]);
+          output[ZONE_0]->PreprocessHistoryOutput(config_container[ZONE_0], false);
          
           SolutionInstantiatedFlow = true;
         }
-          solver_container[ZONE_0][INST_0]->LoadRestart_FSI(geometry_container[ZONE_0][INST_0], config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
+          solver_container[ZONE_0][INST_0]->LoadRestart_FSI(geometry_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
 
 
         /*--- For the structural zone (ZONE_1) ---*/
@@ -454,10 +465,14 @@ int main(int argc, char *argv[]) {
           output[ZONE_1]->PreprocessVolumeOutput(config_container[ZONE_1]);
           SolutionInstantiatedFEM = true;
         }
-          solver_container[ZONE_1][INST_0]->LoadRestart_FSI(geometry_container[ZONE_1][INST_0], config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
+          solver_container[ZONE_1][INST_0]->LoadRestart_FSI(geometry_container[ZONE_1][INST_0], config_container[ZONE_1], TimeIter);
 
         if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
         for (iZone = 0; iZone < nZone; iZone++){
+          
+          /*--- Load history data (volume output might require some values) --- */
+          
+          output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
           
           /*--- Load the data --- */
           
@@ -549,7 +564,7 @@ int main(int argc, char *argv[]) {
       /*--- Definition of the solution class ---*/
 
       solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
-      solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+      solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], 0, true);
     }
 
 //    output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, 0, nZone);
@@ -608,16 +623,21 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
                   output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+                  output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
                   
                   SolutionInstantiated[iZone] = true;
                 }
                   config_container[iZone]->SetiInst(INST_0);
-                  solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                  solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
               }
 
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
               for (iZone = 0; iZone < nZone; iZone++){
+                
+                /*--- Load history data (volume output might require some values) --- */
+                
+                output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
                 
                 /*--- Load the data --- */
                 
@@ -648,18 +668,23 @@ int main(int argc, char *argv[]) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
           config_container[iZone]->SetiInst(iInst);
+          config_container[iZone]->SetTimeIter(iInst);
 
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
-          solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+          solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], iInst, true);
           output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][iInst]->GetnDim(), solver_container[iZone][iInst]);          
           output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+          output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
 
           /*--- Print progress in solution writing to the screen. ---*/
           if (rank == MASTER_NODE) {
             cout << "Storing the volume solution for time instance " << iInst << "." << endl;
           }
 
+          /*--- Load history data (volume output might require some values) --- */
+          
+          output[iZone]->SetHistory_Output(geometry_container[iZone][iInst], &solver_container[iZone][iInst], config_container[iZone], iInst, 0, 0);
             
           /*--- Load the data --- */
           
@@ -727,17 +752,22 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
                   output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+                  output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
                   
                   SolutionInstantiated = true;
                 }
                 config_container[iZone]->SetiInst(INST_0);
-                solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], TimeIter, true);
               }
 
               if (rank == MASTER_NODE)
                 cout << "Writing the volume solution for time step " << TimeIter << "." << endl;
               for (iZone = 0; iZone < nZone; iZone++){
+
+                /*--- Load history data (volume output might require some values) --- */
                 
+                output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], TimeIter, 0, 0);
+                                
                 /*--- Load the data --- */
                 
                 output[iZone]->Load_Data(geometry_container[iZone][INST_0], config_container[iZone], &solver_container[iZone][INST_0]);
@@ -767,13 +797,18 @@ int main(int argc, char *argv[]) {
         config_container[iZone]->SetiInst(INST_0);
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-        solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], 0, true);
         output[iZone] = new CBaselineOutput(config_container[iZone], geometry_container[iZone][INST_0]->GetnDim(), solver_container[iZone][INST_0]);
         output[iZone]->PreprocessVolumeOutput(config_container[iZone]);
+        output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
         
       }
       
       for (iZone = 0; iZone < nZone; iZone++){
+      
+        /*--- Load history data (volume output might require some values) --- */
+        
+        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], iInst, 0, 0);
         
         /*--- Load the data --- */
         

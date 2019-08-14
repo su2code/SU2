@@ -452,7 +452,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
       cout << "Writing Tecplot binary file solution file." << endl;
     }
     
-    filewriter = new CTecplotBinaryFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotBinaryFileWriter(Variable_Names, nDim, curr_TimeIter, GetHistoryFieldValue("TIME_STEP"));
       
     break;
     
@@ -468,7 +468,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
       cout << "Writing Tecplot ASCII file solution file." << endl;
     }
     
-    filewriter = new CTecplotFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotFileWriter(Variable_Names, nDim, curr_TimeIter, GetHistoryFieldValue("TIME_STEP"));
 
     break;
     
