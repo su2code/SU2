@@ -1,0 +1,95 @@
+su2_cfd_src = files(['output_structure.cpp',
+                     'output_cgns.cpp',
+                     'output_fieldview.cpp',
+                     'output_paraview.cpp',
+                     'output_physics.cpp',
+                     'output_su2.cpp',
+                     'output_tecplot.cpp',
+                     'solver_direct_transition.cpp',
+                     'solver_adjoint_turbulent.cpp',
+                     'integration_structure.cpp',
+                     'solver_direct_mean_fem.cpp',
+                     'numerics_adjoint_mean.cpp',
+                     'transport_model.cpp',
+                     'numerics_adjoint_turbulent.cpp',
+                     'fluid_model_pvdw.cpp',
+                     'integration_time.cpp',
+                     'fluid_model_pig.cpp',
+                     'solver_direct_mean.cpp',
+                     'iteration_structure.cpp',
+                     'fluid_model_inc.cpp',
+                     'solver_adjoint_mean.cpp',
+                     'solver_adjoint_elasticity.cpp',
+                     'solver_structure.cpp',
+                     'numerics_direct_transition.cpp',
+                     'solver_template.cpp',
+                     'solver_direct_elasticity.cpp',
+                     'definition_structure.cpp',
+                     'numerics_direct_mean_inc.cpp',
+                     'transfer_physics.cpp',
+                     'solver_direct_turbulent.cpp',
+                     'fluid_model.cpp',
+                     'solver_direct_mean_inc.cpp',
+                     'numerics_direct_mean.cpp',
+                     'solver_direct_heat.cpp',
+                     'numerics_direct_heat.cpp',
+                     'fluid_model_ppr.cpp',
+                     'numerics_direct_elasticity.cpp',
+                     'numerics_direct_turbulent.cpp',
+                     'numerics_direct_elasticity_linear.cpp',
+                     'python_wrapper_structure.cpp',
+                     'numerics_structure.cpp',
+                     'numerics_template.cpp',
+                     'transfer_structure.cpp',
+                     'solver_adjoint_discrete.cpp',
+                     'numerics_direct_elasticity_nonlinear.cpp',
+                     'SU2_CFD.cpp'])
+
+
+su2_cfd_src += files(['variables/CIncNSVariable.cpp',
+                     'variables/CTransLMVariable.cpp',
+	                   'variables/CAdjEulerVariable.cpp',
+                     'variables/CHeatFVMVariable.cpp',
+                     'variables/CTurbVariable.cpp',
+                     'variables/CAdjNSVariable.cpp',
+                     'variables/CBaselineVariable.cpp',
+                     'variables/CDiscAdjFEAVariable.cpp',
+                     'variables/CFEABoundVariable.cpp',
+                     'variables/CDiscAdjVariable.cpp',
+                     'variables/CTurbSAVariable.cpp',
+                     'variables/CFEAVariable.cpp',
+                     'variables/CTurbSSTVariable.cpp',
+                     'variables/CVariable.cpp',
+                     'variables/CNSVariable.cpp',
+                     'variables/CAdjTurbVariable.cpp',
+                     'variables/CIncEulerVariable.cpp',
+                     'variables/CEulerVariable.cpp'])
+
+su2_cfd_src += files(['drivers/CDriver.cpp',
+                      'drivers/CMultizoneDriver.cpp',
+                      'drivers/CSinglezoneDriver.cpp',
+                      'drivers/CDiscAdjSinglezoneDriver.cpp'])
+
+if get_option('enable-normal')
+  su2_cfd = executable('SU2_CFD',
+                       su2_cfd_src, 
+      		       install : true, 
+		       dependencies : [su2_deps, common_dep], 
+		       cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
+endif
+
+if get_option('enable-autodiff')
+  su2_cfd_ad = executable('SU2_CFD_AD',
+                          su2_cfd_src,
+			  install : true, 
+			  dependencies : [su2_deps, codi_dep, commonAD_dep], 
+			  cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
+endif
+
+if get_option('enable-directdiff')
+  su2_cfd_dd = executable('SU2_CFD_DIRECTDIFF',
+                          su2_cfd_src,
+			  install : true, 
+			  dependencies : [su2_deps, codi_dep, commonDD_dep], 
+			  cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
+endif
