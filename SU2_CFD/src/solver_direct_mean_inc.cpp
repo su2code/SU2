@@ -6834,8 +6834,6 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 
 void CIncEulerSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
-  /*---- NOTE: IT MIGHT BE NEEDED TO UPDATE THE GRADIENTS BEFORE COMPUTING THE TRACTIONS FOR THE ADJOINT ---*/
-
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
