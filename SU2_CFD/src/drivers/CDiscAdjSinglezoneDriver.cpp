@@ -191,15 +191,7 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
-    if (config->GetTime_Domain())
-      output_container[ZONE_0]->SetHistory_Output(geometry_container[ZONE_0][INST_0][MESH_0], 
-                                        solver_container[ZONE_0][INST_0][MESH_0], 
-                                        config_container[ZONE_0], 
-                                        config_container[ZONE_0]->GetTimeIter(),
-                                        config_container[ZONE_0]->GetOuterIter(),
-                                        config_container[ZONE_0]->GetInnerIter());
-
+    
     if (StopCalc) break;
 
   }
@@ -405,10 +397,6 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
   /*--- Zone preprocessing ---*/
 
   direct_iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-  /*--- Run one single iteration ---*/
-
-  config->SetInnerIter(1);
 
   /*--- Iterate the direct solver ---*/
 

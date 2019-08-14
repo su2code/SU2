@@ -1475,11 +1475,12 @@ void CFEAIteration::Iterate(COutput *output,
         
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
-
-        StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
-
+        
         integration[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry, solver, numerics,
             config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+
+        StopCalc = Monitor(output, integration, geometry,  solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+        
 
         if (StopCalc) break;
 
@@ -2571,22 +2572,17 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
 #endif
   UsedTime = StopTime - StartTime;
 
-  /*--- If convergence was reached --*/
-  StopCalc = integration[val_iZone][INST_0][ADJFLOW_SOL]->GetConvergence();
-
   /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-  /*--- The logic is right now case dependent ----*/
-  /*--- This needs to be generalized when the new output structure comes ---*/
-  output_history = (steady && !(multizone && (config[val_iZone]->GetnInner_Iter()==1)));
-
-  if (output_history) output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], 
-                                                solver[ZONE_0][INST_0][MESH_0], 
-                                                config[ZONE_0], 
-                                                config[ZONE_0]->GetTimeIter(),
-                                                config[ZONE_0]->GetOuterIter(), 
-                                                config[ZONE_0]->GetInnerIter());
-
+  output->SetHistory_Output(geometry[ZONE_0][INST_0][MESH_0], 
+                            solver[ZONE_0][INST_0][MESH_0], 
+                            config[ZONE_0], 
+                            config[ZONE_0]->GetTimeIter(),
+                            config[ZONE_0]->GetOuterIter(), 
+                            config[ZONE_0]->GetInnerIter());
+  
+  StopCalc = output->GetConvergence();
+  
   return StopCalc;
 
 }
