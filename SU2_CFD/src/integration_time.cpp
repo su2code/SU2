@@ -151,7 +151,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
         
-        Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, config[iZone]->GetTime_Step(), iZone);
+        Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, config[iZone]->GetTimeIter(), iZone);
         
       }
       
