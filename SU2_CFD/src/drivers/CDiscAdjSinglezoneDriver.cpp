@@ -35,7 +35,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
