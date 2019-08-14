@@ -472,7 +472,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
 
-  }else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  }else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -491,8 +491,8 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
   
   switch (solver) {
-    case EULER : SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
-    case NAVIER_STOKES: case RANS:
+    case EULER : case INC_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
+    case NAVIER_STOKES: case RANS: case INC_NAVIER_STOKES: case INC_RANS:
       if (nDim == 2) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
       if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\"" << "\n";
       break;
@@ -520,11 +520,12 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
         SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
         switch (solver) {
-          case EULER : case FEM_EULER:
+          case EULER : case FEM_EULER: case INC_EULER:
             Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
             SurfFlow_file << scientific << Mach << "\n";
             break;
-          case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+          case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES: 
+          case INC_NAVIER_STOKES: case INC_RANS:
             for (iDim = 0; iDim < nDim; iDim++)
               SkinFrictionCoeff[iDim] = FlowSolver->GetCSkinFriction(iMarker, iVertex, iDim);
             HeatFlux = FlowSolver->GetHeatFlux(iMarker, iVertex);
@@ -646,10 +647,10 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           
           Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
           
-          if (solver == EULER || solver == FEM_EULER)
+          if (solver == EULER || solver == FEM_EULER || solver == INC_EULER) 
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
 
-          if (solver == NAVIER_STOKES     || solver == RANS     ||
+          if (solver == NAVIER_STOKES     || solver == RANS     || solver == INC_NAVIER_STOKES || solver == INC_RANS ||
               solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
             Buffer_Send_SkinFriction_x[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 0);
             Buffer_Send_SkinFriction_y[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 1);
@@ -667,8 +668,8 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_Press, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Press, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if (solver == EULER || solver == FEM_EULER) SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if ((solver == NAVIER_STOKES) || (solver == RANS) || (solver == FEM_NAVIER_STOKES) || (solver == FEM_RANS) || (solver == FEM_LES)) {
+  if (solver == EULER || solver == FEM_EULER || solver == INC_EULER) SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  if ((solver == NAVIER_STOKES) || (solver == RANS) || (solver == FEM_NAVIER_STOKES) || (solver == FEM_RANS) || (solver == FEM_LES) || (solver == INC_RANS) || (solver == INC_NAVIER_STOKES)) {
     SU2_MPI::Gather(Buffer_Send_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -690,7 +691,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -709,8 +710,8 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
     
     switch (solver) {
-      case EULER : case FEM_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
-      case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+      case EULER : case FEM_EULER: case INC_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
+      case NAVIER_STOKES: case RANS: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES: case INC_NAVIER_STOKES: case INC_RANS:
         if (nDim == 2) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
         if (nDim == 3) SurfFlow_file << "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\"" << "\n";
         break;
@@ -742,11 +743,13 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         switch (solver) {
           case EULER :
           case FEM_EULER:
+          case INC_EULER:
             Mach = Buffer_Recv_Mach[Total_Index];
             SurfFlow_file << scientific << Mach << "\n";
             break;
           case NAVIER_STOKES: case RANS:
           case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+          case INC_NAVIER_STOKES: case INC_RANS:
             SkinFrictionCoeff[0] = Buffer_Recv_SkinFriction_x[Total_Index];
             SkinFrictionCoeff[1] = Buffer_Recv_SkinFriction_y[Total_Index];
             if (nDim == 3) SkinFrictionCoeff[2] = Buffer_Recv_SkinFriction_z[Total_Index];
@@ -798,7 +801,7 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
 }
 
 void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst) {
-  
+ 
 #ifndef HAVE_MPI
   
   unsigned long iPoint, iVertex, Global_Index;
@@ -814,7 +817,7 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
     
-  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -1070,7 +1073,7 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(iExtIter));
@@ -2315,6 +2318,9 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
   bool flow           = (( config->GetKind_Solver() == EULER             ) ||
                          ( config->GetKind_Solver() == NAVIER_STOKES     ) ||
                          ( config->GetKind_Solver() == RANS              ) ||
+                         ( config->GetKind_Solver() == INC_EULER         ) ||
+                         ( config->GetKind_Solver() == INC_NAVIER_STOKES ) ||
+                         ( config->GetKind_Solver() == INC_RANS          ) ||
                          ( config->GetKind_Solver() == FEM_EULER         ) ||
                          ( config->GetKind_Solver() == FEM_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == FEM_RANS          ) ||
@@ -2353,15 +2359,15 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
    index for their particular solution container. ---*/
   
   switch (Kind_Solver) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; if(config->GetWeakly_Coupled_Heat()) SecondIndex = HEAT_SOL; else SecondIndex = NONE; ThirdIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE;  if(config->GetWeakly_Coupled_Heat()) ThirdIndex = HEAT_SOL; else ThirdIndex = NONE; break;
+    case EULER : case NAVIER_STOKES: case INC_EULER: case INC_NAVIER_STOKES: FirstIndex = FLOW_SOL; if(config->GetWeakly_Coupled_Heat()) SecondIndex = HEAT_SOL; else SecondIndex = NONE; ThirdIndex = NONE; break;
+    case RANS : case INC_RANS: FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE;  if(config->GetWeakly_Coupled_Heat()) ThirdIndex = HEAT_SOL; else ThirdIndex = NONE; break;
     case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case FEM_RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
     case FEM_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Cont()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
-    case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
     case DISC_ADJ_FEM: FirstIndex = ADJFEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
@@ -2393,6 +2399,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     /*--- Add Pressure, Temperature, Cp, Mach to the restart file ---*/
 
     if (Kind_Solver == EULER     || Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS ||
+        Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS ||
         Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS ||
         Kind_Solver == FEM_LES) {
       iVar_PressCp = nVar_Total; nVar_Total += 3;
@@ -2402,6 +2409,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
     if (Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS     ||
+        Kind_Solver == INC_NAVIER_STOKES     || Kind_Solver == INC_RANS     ||
         Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES) {
       iVar_Lam = nVar_Total;
       nVar_Total += 1;
@@ -2414,7 +2422,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     /*--- Add Eddy Viscosity to the restart file ---*/
 
-    if (Kind_Solver == RANS || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES) {
+    if (Kind_Solver == RANS || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES || Kind_Solver == INC_RANS) {
       iVar_Eddy = nVar_Total; nVar_Total += 1;
     }
     
@@ -2422,6 +2430,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     if (config->GetWrt_SharpEdges()) {
       if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+          ((Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||
         ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
         iVar_Sharp = nVar_Total; nVar_Total += 1;
       }
@@ -2453,7 +2462,10 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     if ((Kind_Solver == DISC_ADJ_EULER)         ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == DISC_ADJ_INC_EULER)         ||
+        (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+        (Kind_Solver == DISC_ADJ_INC_RANS)) {
       iVar_Sens    = nVar_Total; nVar_Total += 1;
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
@@ -2463,7 +2475,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     }
 
     if (config->GetExtraOutput()) {
-      if (Kind_Solver == RANS) {
+      if (Kind_Solver == RANS || Kind_Solver == INC_RANS) {
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
       }
     }
@@ -2536,6 +2548,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
   /*--- Auxiliary vectors for surface coefficients ---*/
   
   if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))  ||
+      ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||
       ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
     Aux_Frict_x = new su2double[geometry->GetnPoint()];
     Aux_Frict_y = new su2double[geometry->GetnPoint()];
@@ -2549,7 +2562,10 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       (Kind_Solver == ADJ_RANS)  ||
       (Kind_Solver == DISC_ADJ_EULER) ||
       (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == DISC_ADJ_RANS)) {
+      (Kind_Solver == DISC_ADJ_RANS)  ||
+      (Kind_Solver == DISC_ADJ_INC_EULER) ||
+      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+      (Kind_Solver == DISC_ADJ_INC_RANS)) {
     Aux_Sens = new su2double[geometry->GetnPoint()];
   }
   
@@ -2778,6 +2794,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     /*--- Communicate Pressure, Cp, and Mach ---*/
     
     if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+        ((Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||
       ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
       
       /*--- First, loop through the mesh in order to find and store the
@@ -2846,6 +2863,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     /*--- Communicate Mach---*/
     
     if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+        ((Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||        
       ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
       
       /*--- Loop over this partition to collect the current variable ---*/
@@ -2903,7 +2921,8 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     /*--- Laminar Viscosity ---*/
     
     if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
-      ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
+        ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||        
+        ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3116,7 +3135,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     /*--- Communicate the Eddy Viscosity ---*/
     
-    if (Kind_Solver == RANS || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES) {
+    if (Kind_Solver == RANS || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES || Kind_Solver == INC_RANS) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3170,6 +3189,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     if (config->GetWrt_SharpEdges()) {
       
       if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+          ((Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||
         ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
         
         /*--- Loop over this partition to collect the current variable ---*/
@@ -3224,7 +3244,10 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
         (Kind_Solver == ADJ_RANS)          ||
         (Kind_Solver == DISC_ADJ_EULER)    ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_RANS)  ||
+        (Kind_Solver == DISC_ADJ_INC_EULER)    ||
+        (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+        (Kind_Solver == DISC_ADJ_INC_RANS)) {
       
       /*--- First, loop through the mesh in order to find and store the
        value of the surface sensitivity at any surface nodes. They
@@ -3302,7 +3325,10 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     if ((Kind_Solver == DISC_ADJ_EULER)    ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == DISC_ADJ_INC_EULER)    ||
+        (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+        (Kind_Solver == DISC_ADJ_INC_RANS)) {
       /*--- Loop over this partition to collect the current variable ---*/
       
       jPoint = 0;
@@ -3791,6 +3817,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
   delete [] Local_Halo;
   
   if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+      ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) ||
     ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
     delete[] Aux_Frict_x; delete[] Aux_Frict_y; delete[] Aux_Frict_z;
     delete [] Aux_Heat; delete [] Aux_yPlus;
@@ -3800,7 +3827,10 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
       ( Kind_Solver == ADJ_RANS               ) ||
       ( Kind_Solver == DISC_ADJ_EULER         ) ||
       ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
-      ( Kind_Solver == DISC_ADJ_RANS          )) {
+      ( Kind_Solver == DISC_ADJ_RANS          ) ||
+      ( Kind_Solver == DISC_ADJ_INC_EULER         ) ||
+      ( Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES ) ||
+      ( Kind_Solver == DISC_ADJ_INC_RANS          )) {
     delete [] Aux_Sens;
   }
   
@@ -4034,7 +4064,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -4066,7 +4096,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -4119,14 +4149,16 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
       }
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
       if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
       } else
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
       if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
         if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
@@ -4136,7 +4168,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
       }
     }
     
-    if (Kind_Solver == RANS) {
+    if (Kind_Solver == RANS || Kind_Solver == INC_RANS) {
       if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Eddy_Viscosity\"";
       } else
@@ -4144,7 +4176,8 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
     }
     
     if (config->GetWrt_SharpEdges()) {
-      if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)))  {
+      if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+          ((Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)))  {
         restart_file << "\t\"Sharp_Edge_Dist\"";
       }
     }
@@ -4156,7 +4189,10 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
     }
     if (( Kind_Solver == DISC_ADJ_EULER              ) ||
         ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               )) {
+        ( Kind_Solver == DISC_ADJ_RANS               ) ||
+        ( Kind_Solver == DISC_ADJ_INC_EULER              ) ||
+        ( Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES      ) ||
+        ( Kind_Solver == DISC_ADJ_INC_RANS               )) {
       restart_file << "\t\"Surface_Sensitivity\"\t\"Sensitivity_x\"\t\"Sensitivity_y\"";
       if (geometry->GetnDim() == 3) {
         restart_file << "\t\"Sensitivity_z\"";
@@ -4243,10 +4279,10 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
 
   /*--- Write the general header and flow conditions ----*/
 
-  if (dual_time)
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-  else
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+//  if (dual_time)
+    restart_file <<"EXT_ITER= " << config->GetInnerIter() + 1 << endl;
+//  else
+//    restart_file <<"EXT_ITER= " << config->GetInnerIter() + config->GetInnerIter_OffSet() + 1 << endl;
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
@@ -4329,7 +4365,8 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
+                    (config->GetKind_Solver() == DISC_ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
+                    (config->GetKind_Solver() == INC_RANS));
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
@@ -4349,7 +4386,8 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   bool radiation            = config->AddRadiation();
 
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES) {
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES ||
+      config->GetKind_Solver() == INC_RANS || config->GetKind_Solver()  == INC_NAVIER_STOKES) {
     thermal = true;
   }
   
@@ -4363,7 +4401,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   }
   strcpy (cstr, filename.data());
   
-  if (config->GetWrt_Unsteady() && config->GetRestart()) {
+  if (config->GetTime_Domain() && config->GetRestart()) {
     long iExtIter = config->GetRestart_Iter();
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
@@ -4494,6 +4532,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   switch (config->GetKind_Solver()) {
       
     case EULER : case NAVIER_STOKES: case RANS :
+    case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :
     case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS : case FEM_LES:
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
@@ -4529,6 +4568,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       
     case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       if (!turbo) {
         if (compressible) {
           ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
@@ -4584,8 +4624,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
   bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
   bool fea                  = ((config[val_iZone]->GetKind_Solver()== FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== DISC_ADJ_FEM));
-  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
-  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
+  unsigned long iIntIter    = config[val_iZone]->GetInnerIter();
+  unsigned long iExtIter    = config[val_iZone]->GetInnerIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone      = config[val_iZone]->GetnZone();
   unsigned short nInst      = config[val_iZone]->GetnTimeInstances();
@@ -4603,7 +4643,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
-        (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
+        (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
       output_files = false;
     }
     
@@ -4613,10 +4653,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
     if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
-        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2))) ||
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnInner_Iter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
 
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
@@ -4624,7 +4664,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       switch (config[val_iZone]->GetKind_Solver()) {
 
         case EULER: case NAVIER_STOKES: case RANS:
-
+        case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
@@ -4688,6 +4728,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case INC_EULER:               case INC_NAVIER_STOKES:               case INC_RANS:
         solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
         break;
       }
@@ -4724,16 +4765,22 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
-    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
+    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES ||
+                    config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES || config[val_iZone]->GetKind_Solver() == INC_RANS );
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) || config[val_iZone]->GetKind_Solver()  == INC_RANS ||
+                      config[val_iZone]->GetKind_Solver()  == DISC_ADJ_INC_RANS);
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
     bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-    (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
-    (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
+                (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || 
+                (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || 
+                (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
+                (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
+                (config[val_iZone]->GetKind_Solver() == INC_EULER) || (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
+                (config[val_iZone]->GetKind_Solver() == INC_RANS);
     bool buffet = (config[val_iZone]->GetBuffet_Monitoring() || config[val_iZone]->GetKind_ObjFunc() == BUFFET_SENSOR);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
@@ -4894,9 +4941,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     switch (config[val_iZone]->GetKind_Solver()) {
         
       case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case INC_EULER:               case INC_NAVIER_STOKES:               case INC_RANS:        
       case FEM_EULER:               case FEM_NAVIER_STOKES:               case FEM_RANS:      case FEM_LES:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
         
         /*--- Flow solution coefficients ---*/
         
@@ -5244,7 +5293,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (Unsteady) write_heads = (iIntIter == 0);
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
-    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
+    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnInner_Iter() -1)));
     
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
@@ -5270,9 +5319,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         switch (config[val_iZone]->GetKind_Solver()) {
             
           case EULER : case NAVIER_STOKES: case RANS:
+          case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:         
           case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
           case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER:
           case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+          case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
             
             /*--- Direct coefficients ---*/
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
@@ -5538,6 +5589,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
               switch (config[val_iZone]->GetKind_Solver()) {
               case EULER : case NAVIER_STOKES: case RANS:
+              case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:    
               case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
               case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
 
@@ -5605,6 +5657,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 break;
 
               case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+              case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+                  
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
                 cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetWrt_Sol_Freq() << " iterations): ";
@@ -5639,6 +5693,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
           switch (config[val_iZone]->GetKind_Solver()) {
           case EULER :                  case NAVIER_STOKES:
+          case INC_EULER :              case INC_NAVIER_STOKES: 
           case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
 
             /*--- Visualize the maximum residual ---*/
@@ -5710,7 +5765,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
-          case RANS :
+          case RANS : case INC_RANS:
 
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -5817,6 +5872,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             case ADJ_EULER :              case ADJ_NAVIER_STOKES :
             case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
+            case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:
 
               /*--- Visualize the maximum residual ---*/
               iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
@@ -5869,7 +5925,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
-            case ADJ_RANS : case DISC_ADJ_RANS:
+            case ADJ_RANS : case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
 
               /*--- Visualize the maximum residual ---*/
               iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
@@ -5973,6 +6029,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
+        case INC_EULER : case INC_NAVIER_STOKES:          
         case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
           
           /*--- Write history file ---*/
@@ -6069,7 +6126,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
           
-        case RANS :
+        case RANS : case INC_RANS:
           
           /*--- Write history file ---*/
           
@@ -6241,6 +6298,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
         case ADJ_EULER :              case ADJ_NAVIER_STOKES :
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
+        case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
             config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid << end;
@@ -6294,7 +6352,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
           
-        case ADJ_RANS : case DISC_ADJ_RANS:
+        case ADJ_RANS : case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
           
           if (!DualTime_Iteration) {
             config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid;
@@ -6395,7 +6453,7 @@ void COutputLegacy::SetCFL_Number(CSolver *****solver_container, CConfig **confi
   unsigned short iMesh;
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
+  unsigned long ExtIter = config[val_iZone]->GetInnerIter();
   unsigned short nVar = 1;
 
   bool energy = config[val_iZone]->GetEnergy_Equation();
@@ -6403,6 +6461,7 @@ void COutputLegacy::SetCFL_Number(CSolver *****solver_container, CConfig **confi
 
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
+    case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:      
       if (energy) {
         nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
         RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
@@ -6468,6 +6527,7 @@ void COutputLegacy::SetCFL_Number(CSolver *****solver_container, CConfig **confi
 
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
+  case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:            
     nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
     if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
     else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
@@ -6498,7 +6558,6 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
   bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-  unsigned short Kind_Regime = config[val_iZone]->GetKind_Regime();
   unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
@@ -6879,17 +6938,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     Breakdown_file << "\n" << "\n" << "Problem definition:" << "\n" << "\n";
     
     switch (Kind_Solver) {
-      case EULER:
-        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Euler equations." << "\n";
-        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Euler equations." << "\n";
+      case EULER: case INC_EULER:
+        if (compressible) Breakdown_file << "Compressible Euler equations." << "\n";
+        if (incompressible) Breakdown_file << "Incompressible Euler equations." << "\n";
         break;
-      case NAVIER_STOKES:
-        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
-        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Laminar Navier-Stokes' equations." << "\n";
+      case NAVIER_STOKES: case INC_NAVIER_STOKES:
+        if (compressible) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
+        if (incompressible) Breakdown_file << "Incompressible Laminar Navier-Stokes' equations." << "\n";
         break;
-      case RANS:
-        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible RANS equations." << "\n";
-        if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible RANS equations." << "\n";
+      case RANS: case INC_RANS:
+        if (compressible) Breakdown_file << "Compressible RANS equations." << "\n";
+        if (incompressible) Breakdown_file << "Incompressible RANS equations." << "\n";
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
@@ -6905,7 +6964,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     if (compressible) {
 
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
+    if ((compressible) && (Kind_Solver != FEM_ELASTICITY)) {
       Breakdown_file << "Mach number: " << config[val_iZone]->GetMach() <<"."<< "\n";
       Breakdown_file << "Angle of attack (AoA): " << config[val_iZone]->GetAoA() <<" deg, and angle of sideslip (AoS): " << config[val_iZone]->GetAoS() <<" deg."<< "\n";
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -8344,6 +8403,7 @@ void COutputLegacy::SetResult_Files(CSolver *****solver_container, CGeometry ***
     switch (config[iZone]->GetKind_Solver()) {
         
       case EULER : case NAVIER_STOKES : case RANS :
+      case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS :        
       case FEM_EULER : case FEM_NAVIER_STOKES : case FEM_RANS : case FEM_LES :
         
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
@@ -8351,6 +8411,7 @@ void COutputLegacy::SetResult_Files(CSolver *****solver_container, CGeometry ***
         
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+         case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
@@ -9336,7 +9397,7 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
       (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
@@ -9487,7 +9548,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
       (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
@@ -11335,7 +11396,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
 //    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
 //    strcpy (cstr, filename.data());
 
-    if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
+    if (config[ZONE_FLOW]->GetTime_Domain() && config[ZONE_FLOW]->GetRestart()) {
       long iExtIter = config[ZONE_FLOW]->GetRestart_Iter();
       if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
@@ -11399,11 +11460,13 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
       /*--- Flow residual output ---*/
 
       case EULER : case NAVIER_STOKES: case RANS :
+      case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :        
         FSIHist_file[0] << flow_resid;
         if (turbulent) FSIHist_file[0] << turb_resid;
       break;
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
         FSIHist_file[0] << adj_flow_resid;
         break;
 
@@ -11426,7 +11489,8 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
      /*--- Flow coefficients output ---*/
      switch (config[ZONE_FLOW]->GetKind_Solver()) {
 
-     case EULER : case NAVIER_STOKES: case RANS :
+       case EULER : case NAVIER_STOKES: case RANS :
+       case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS :   
        FSIHist_file[0] << flow_coeff;
        if (turbulent) FSIHist_file[0] << turb_resid;
        if (direct_diff != NO_DERIVATIVE) {
@@ -11435,6 +11499,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
        break;
 
        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:         
          FSIHist_file[0] << adj_flow_resid;
          break;
 
@@ -11472,7 +11537,7 @@ void COutputLegacy::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geom
 
       unsigned short nDim = geometry[ZONE_STRUCT][INST_0][MESH_0]->GetnDim();
 
-      unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
+      unsigned long iExtIter = config[ZONE_STRUCT]->GetInnerIter();
       unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
       unsigned long iOuterIter = config[ZONE_STRUCT]->GetOuterIter();
       su2double dummy = 0.0;
@@ -11975,7 +12040,7 @@ void COutputLegacy::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geome
 
   unsigned short iDim, iSpan;
 
-  unsigned long iExtIter = config[val_iZone]->GetExtIter();
+  unsigned long iExtIter = config[val_iZone]->GetInnerIter();
   su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
   ofstream myfile;
   string spanwise_performance_filename;
@@ -12232,7 +12297,7 @@ void COutputLegacy::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry
   /*--- Other variables ---*/
   unsigned short iVar, kInst;
   unsigned short nVar_output = 5;
-  unsigned long current_iter = config[ZONE_0]->GetExtIter();
+  unsigned long current_iter = config[ZONE_0]->GetInnerIter();
 
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
@@ -12398,11 +12463,13 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
+      case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS :        
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:     
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][iInst][MESH_0],
             solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL],
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
@@ -12430,14 +12497,16 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
         cout << "Loading solution output data locally on each rank." << endl;
 
       switch (config[iZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES: case RANS :
+        case EULER : case NAVIER_STOKES : case RANS :
+        case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS :  
         if (compressible)
           LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         else
           LoadLocalData_IncFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
-      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS: 
         LoadLocalData_AdjFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
@@ -12454,7 +12523,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
+        (config[iZone]->GetnInner_Iter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
 
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
@@ -12475,7 +12544,7 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+        (config[iZone]->GetnInner_Iter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
 
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
@@ -13373,8 +13442,8 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
    in this zone for output. ---*/
 
   switch (config->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
+    case INC_EULER : case INC_NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
+    case INC_RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
     default: SecondIndex = NONE; break;
   }
 
@@ -13504,7 +13573,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
     /*--- Add Laminar Viscosity, Skin Friction, and Heat Flux to the restart file ---*/
 
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
@@ -13535,7 +13604,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
     /*--- Add Y+ and Eddy Viscosity. ---*/
 
-    if (Kind_Solver == RANS) {
+    if (Kind_Solver == INC_RANS) {
       nVar_Par += 2;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
@@ -13597,7 +13666,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
       }
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
       nVar_Par += 2;
       Variable_Names.push_back("Vorticity_x");
       Variable_Names.push_back("Vorticity_y");
@@ -13615,7 +13684,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
 
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
     Aux_Frict_x = new su2double[geometry->GetnPoint()];
     Aux_Frict_y = new su2double[geometry->GetnPoint()];
     Aux_Frict_z = new su2double[geometry->GetnPoint()];
@@ -13795,7 +13864,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
         Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
 
-        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
 
           /*--- Load data for the laminar viscosity. ---*/
 
@@ -13818,7 +13887,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
         /*--- Load data for the Eddy viscosity for RANS. ---*/
 
-        if (Kind_Solver == RANS) {
+        if (Kind_Solver == INC_RANS) {
           Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
@@ -13880,7 +13949,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
           }
         }
         
-        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
           
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
@@ -13928,7 +13997,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
 
   /*--- Free memory for auxiliary vectors. ---*/
   
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if ((Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS)) {
     delete [] Aux_Frict_x;
     delete [] Aux_Frict_y;
     delete [] Aux_Frict_z;
@@ -13954,7 +14023,7 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
   su2double *Grid_Vel = NULL;
   su2double *Normal, Area;
   
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
@@ -13968,8 +14037,10 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
   switch (config->GetKind_Solver()) {
     case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; break;
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Cont()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; break;
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE;  break;
-    case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL;  break;
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: 
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
+      FirstIndex = ADJFLOW_SOL; SecondIndex = NONE;  break;
+    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL;  break;
   }
   
   nVar_First = solver[FirstIndex]->GetnVar();
@@ -14033,7 +14104,10 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
 
   if ((Kind_Solver == DISC_ADJ_EULER)         ||
       (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == DISC_ADJ_RANS)) {
+      (Kind_Solver == DISC_ADJ_RANS) ||
+      (Kind_Solver == DISC_ADJ_INC_EULER)         ||
+      (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+      (Kind_Solver == DISC_ADJ_INC_RANS)) {
     nVar_Par += nDim;
     Variable_Names.push_back("Sensitivity_x");
     Variable_Names.push_back("Sensitivity_y");
@@ -14250,7 +14324,10 @@ void COutputLegacy::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, 
 
       if ((Kind_Solver == DISC_ADJ_EULER)         ||
           (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == DISC_ADJ_RANS)) {
+          (Kind_Solver == DISC_ADJ_RANS) ||
+          (Kind_Solver == DISC_ADJ_INC_EULER)         ||
+          (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) ||
+          (Kind_Solver == DISC_ADJ_INC_RANS)) {
         Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0); iVar++;
         Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1); iVar++;
         if (geometry->GetnDim()== 3) {
@@ -17842,7 +17919,7 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   
   unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
@@ -17878,7 +17955,7 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -17947,10 +18024,10 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   /*--- Write the metadata (master rank alone) ----*/
 
   if (rank == MASTER_NODE) {
-    if (dual_time)
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+//    if (dual_time)
+      restart_file <<"EXT_ITER= " << config->GetInnerIter() + 1 << endl;
+//    else
+//      restart_file <<"EXT_ITER= " << config->GetInnerIter() + config->GetInnerIter_OffSet() + 1 << endl;
     restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
     restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
@@ -17958,7 +18035,15 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
     restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
     restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
     restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
+    if (((config->GetKind_Solver() == DISC_ADJ_EULER)         ||
+        (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+        (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+        (config->GetKind_Solver() == DISC_ADJ_INC_EULER)         ||
+        (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+        (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) && adjoint) {
+      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    }
   }
 
   /*--- All processors close the file. ---*/
@@ -17972,7 +18057,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
   /*--- Local variables ---*/
 
   unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
-  unsigned long iPoint, iExtIter = config->GetExtIter();
+  unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
@@ -18006,7 +18091,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
-  } else if (config->GetWrt_Unsteady()) {
+  } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -18038,9 +18123,9 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
 
   int Restart_ExtIter;
   if (dual_time)
-    Restart_ExtIter= (int)config->GetExtIter() + 1;
+    Restart_ExtIter= (int)config->GetInnerIter() + 1;
   else
-    Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
+    Restart_ExtIter = (int)config->GetInnerIter() + (int)config->GetExtIter_OffSet() + 1;
 
   passivedouble Restart_Metadata[8] = {
     SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
@@ -18053,7 +18138,14 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (((config->GetKind_Solver() == DISC_ADJ_EULER)         ||
+      (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+      (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+      (config->GetKind_Solver() == DISC_ADJ_INC_EULER)         ||
+      (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
+      (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) && adjoint) {
+    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  }
 
   /*--- Set a timer for the binary file writing. ---*/
   
@@ -18843,9 +18935,11 @@ void COutputLegacy::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, C
 
   const unsigned short nDim = geometry->GetnDim();
 
-  bool turbulent = (config->GetKind_Solver() == RANS ||
+  bool turbulent = (config->GetKind_Solver() == RANS || 
+                    config->GetKind_Solver() == INC_RANS ||
                     config->GetKind_Solver() == ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_RANS);
+                    config->GetKind_Solver() == DISC_ADJ_RANS ||
+                    config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
   unsigned short nVar_Turb = 0;
   if (turbulent)

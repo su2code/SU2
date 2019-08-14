@@ -982,7 +982,7 @@ def get_specialCases(config):
     for key in all_special_cases:
         if key in config and config[key] == 'YES':
             special_cases.append(key)
-        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
+        if 'SOLVER' in config and config['SOLVER'] == key:
             special_cases.append(key)
             
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
@@ -1020,7 +1020,7 @@ def get_multizone(config):
     
     multizone = []
     for key in all_multizone_problems:
-        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
+        if 'SOLVER' in config and config['SOLVER'] == key:
             multizone.append(key)
             
     return multizone
