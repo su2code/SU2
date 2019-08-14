@@ -77,16 +77,28 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                      'variables/CAdjNSVariable.cpp',
                      'variables/CBaselineVariable.cpp',
                      'variables/CDiscAdjFEAVariable.cpp',
+                     'variables/CDiscAdjFEABoundVariable.cpp',
+                     'variables/CDiscAdjMeshVariable.cpp',
+                     'variables/CDiscAdjMeshBoundVariable.cpp',
                      'variables/CFEABoundVariable.cpp',
+                     'variables/CFEAFSIBoundVariable.cpp',
                      'variables/CDiscAdjVariable.cpp',
                      'variables/CTurbSAVariable.cpp',
                      'variables/CFEAVariable.cpp',
+                     'variables/CMeshVariable.cpp',
+                     'variables/CMeshBoundVariable.cpp',
+                     'variables/CMeshElement.cpp',
                      'variables/CTurbSSTVariable.cpp',
                      'variables/CVariable.cpp',
                      'variables/CNSVariable.cpp',
                      'variables/CAdjTurbVariable.cpp',
                      'variables/CIncEulerVariable.cpp',
                      'variables/CEulerVariable.cpp'])
+
+su2_cfd_src += files(['solvers/CMeshSolver.cpp',
+                     'solvers/CDiscAdjMeshSolver.cpp'])
+
+su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',

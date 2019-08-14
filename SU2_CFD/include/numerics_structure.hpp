@@ -1339,6 +1339,12 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the element-based local properties in mesh problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetMeshElasticProperties(unsigned long iElem, su2double val_E);
+
+  /*!
    * \brief A virtual member
    * \param[in] config - Config structure
    */
@@ -4175,6 +4181,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEAElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4196,7 +4207,7 @@ public:
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
-  void SetElement_Properties(CElement *element_container, CConfig *config);
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   void ReadDV(CConfig *config);
 
@@ -4242,6 +4253,11 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   */
+  CFEALinearElasticity(void);
+
+  /*!
+   * \brief Constructor of the class (overload).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.

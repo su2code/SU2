@@ -998,16 +998,38 @@ def main():
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
 
-#    # FSI, 2d
-#    fsi2d           = TestCase('fsi2d')
-#    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-#    fsi2d.cfg_file  = "configFSI.cfg"
-#    fsi2d.test_iter = 4
-#    fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
-#    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
-#    fsi2d.timeout   = 1600
-#    fsi2d.tol       = 0.00001
-#    test_list.append(fsi2d)
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
+    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)
+    
+    # FSI, Static, 2D, new mesh solver
+    stat_fsi           = TestCase('stat_fsi')
+    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi.cfg_file  = "config.cfg"
+    stat_fsi.test_iter = 7000
+    stat_fsi.test_vals = [-6.762763, -6.522814, -9.205275, -10.113188] #last 4 columns
+    stat_fsi.su2_exec  = "SU2_CFD"
+    stat_fsi.timeout   = 1600
+    stat_fsi.tol       = 0.00001
+    test_list.append(stat_fsi)
+
+    # FSI, Static, 2D, new mesh solver, restart
+    stat_fsi_restart           = TestCase('stat_fsi_restart')
+    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
+    stat_fsi_restart.cfg_file  = "config_restart.cfg"
+    stat_fsi_restart.test_iter = 1000
+    stat_fsi_restart.test_vals = [-9.692985, -9.452006, -12.132021, -13.042439] #last 4 columns
+    stat_fsi_restart.su2_exec  = "SU2_CFD"
+    stat_fsi_restart.timeout   = 1600
+    stat_fsi_restart.tol       = 0.00001
+    test_list.append(stat_fsi_restart)
 
     ##########################
     ### Zonal multiphysics ###

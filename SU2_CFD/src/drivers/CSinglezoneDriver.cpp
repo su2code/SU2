@@ -161,6 +161,9 @@ void CSinglezoneDriver::Run() {
 
 void CSinglezoneDriver::Postprocess() {
 
+    iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+        numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
     /*--- A corrector step can help preventing numerical instabilities ---*/
 
     if (config_container[ZONE_0]->GetRelaxation())
@@ -304,11 +307,23 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
-  /*--- Dynamic mesh update ---*/
+  /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
     iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0], 
                                                           grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
-                                                          config_container[ZONE_0], 0, TimeIter);  }
+                                                          config_container[ZONE_0], 0, TimeIter);
+  }
+
+  /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
+  /*--- Works if DEFORM_MESH = YES ---*/
+  if (config_container[ZONE_0]->GetDeform_Mesh()) {
+    iteration_container[ZONE_0][INST_0]->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
+                                                             solver_container[ZONE_0][INST_0][MESH_0],
+                                                             numerics_container[ZONE_0][INST_0][MESH_0],
+                                                             config_container[ZONE_0],
+                                                             NONE);
+  }
+
 
 }
 
@@ -366,4 +381,3 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   return StopCalc;
 }
-
