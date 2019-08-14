@@ -300,7 +300,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, true, filename);
+//    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -5064,7 +5064,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, true, filename);
+//    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/

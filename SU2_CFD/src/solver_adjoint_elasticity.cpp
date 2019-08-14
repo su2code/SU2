@@ -1238,7 +1238,7 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   /*--- Read and store the restart metadata. ---*/
 
-  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
+//  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

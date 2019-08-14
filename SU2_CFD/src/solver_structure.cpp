@@ -5476,17 +5476,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiInstance_FileName(filename, config->GetiInst(), ".dat");
-
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetTime_Domain()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(InnerIter), ".dat");
-  } else if (config->GetWrt_Dynamic()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(InnerIter), ".dat");
-  }
+    filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 

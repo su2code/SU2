@@ -224,7 +224,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
 
   }
 
@@ -14196,7 +14196,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
