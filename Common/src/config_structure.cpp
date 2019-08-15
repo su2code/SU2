@@ -1436,7 +1436,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 5.0);
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -14.0);
+  addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
@@ -1460,11 +1460,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief RESIDUAL_FUNC_FLOW\n DESCRIPTION: Flow functional for the Residual criteria\n OPTIONS: See \link Residual_Map \endlink \n DEFAULT: RHO_RESIDUAL \ingroup Config*/
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
   /*!\brief STARTCONV_ITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
-  addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
+  addUnsignedLongOption("CONV_STARTITER", StartConv_Iter, 5);
   /*!\brief CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
-  addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
+  addUnsignedShortOption("CONV_CAUCHY_ELEMS", Cauchy_Elems, 100);
   /*!\brief CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
-  addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
+  addDoubleOption("CONV_CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /*!\brief CAUCHY_FUNC_FLOW
    *  \n DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
