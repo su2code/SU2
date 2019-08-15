@@ -241,6 +241,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", TYPE_COEFFICIENT);
   /// END_GROUP
   
+  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
+  
   /*--- Add analyze surface history fields --- */
   
   AddAnalyzeSurfaceOutput(config);
@@ -605,6 +607,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
   
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
  
   /*--- Set the analyse surface history values --- */
   

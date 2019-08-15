@@ -139,6 +139,8 @@ void CFlowCompFEMOutput::SetHistoryOutputFields(CConfig *config){
    
   /// DESCRIPTION: Linear solver iterations   
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER", "Number of iterations of the linear solver.");
+  
+  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
  
   /*--- Add analyze surface history fields --- */
   
@@ -317,6 +319,7 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   
   SetHistoryOutputValue("AOA", config->GetAoA());
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
   
   /*--- Set the analyse surface history values --- */
   
