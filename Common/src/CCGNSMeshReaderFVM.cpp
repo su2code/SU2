@@ -39,10 +39,10 @@
 #include "../include/toolboxes/CLinearPartitioner.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
 
-CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(string         val_filename,
+CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
                                        unsigned short val_iZone,
                                        unsigned short val_nZone)
-: CMeshReaderFVM(val_filename, val_iZone, val_nZone) {
+: CMeshReaderFVM(val_config, val_iZone, val_nZone) {
 
 #ifdef HAVE_CGNS
   /*--- We use val_iZone with +1 for the 1-based indexing in CGNS. ---*/
@@ -51,12 +51,11 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(string         val_filename,
   
   /*--- The CGNS reader currently assumes a single database. ---*/
   cgnsBase = 1;
-  OpenCGNSFile(val_filename);
+  OpenCGNSFile(config->GetMesh_FileName());
   
   /*--- Read the basic information about the database and zone(s). ---*/
   ReadCGNSDatabaseMetadata();
   ReadCGNSZoneMetadata();
-  ReadCGNSDimension();
   
   /*--- Read the point coordinates into linear partitions. ---*/
   ReadCGNSPointCoordinates();
@@ -152,6 +151,14 @@ void CCGNSMeshReaderFVM::ReadCGNSDatabaseMetadata() {
     cout << "dimension of " << phys_dim << "." << endl;
   }
   
+  /*--- Set the number of dimensions baed on cell_dim. ---*/
+  
+  dimension = (unsigned short)cell_dim;
+  if (rank == MASTER_NODE) {
+    if (dimension == 2) cout << "Two dimensional problem." << endl;
+    if (dimension == 3) cout << "Three dimensional problem." << endl;
+  }
+  
 }
 
 void CCGNSMeshReaderFVM::ReadCGNSZoneMetadata() {
@@ -221,24 +228,6 @@ void CCGNSMeshReaderFVM::ReadCGNSZoneMetadata() {
   if (ngrids > 1) {
     SU2_MPI::Error("CGNS reader currently handles only 1 grid per zone.",
                    CURRENT_FUNCTION);
-  }
-  
-}
-
-void CCGNSMeshReaderFVM::ReadCGNSDimension() {
-  
-  /*--- Check the number of coordinate arrays stored in this zone.
-   Should be 2 for 2D grids and 3 for 3D grids. ---*/
-  
-  int ncoords;
-  if (cg_ncoords(cgnsFileID, cgnsBase, cgnsZone, &ncoords)) cg_error_exit();
-  
-  dimension = (unsigned short)ncoords;
-  if (rank == MASTER_NODE) {
-    cout << "Reading grid coordinates." << endl;
-    if (dimension == 2) cout << "Two dimensional problem." << endl;
-    if (dimension == 3) cout << "Three dimensional problem." << endl;
-    
   }
   
 }
@@ -403,13 +392,7 @@ void CCGNSMeshReaderFVM::ReadCGNSSectionMetadata() {
         (elemType == BAR_2 || elemType == BAR_3))  isInterior[s] = false;
     if ((dimension == 3) &&
         (elemType == TRI_3 || elemType == QUAD_4)) isInterior[s] = false;
-    
-    if ((element_count < (unsigned long)size) && isInterior[s]) {
-      SU2_MPI::Error(string("Section has fewer interior elements than cores.") +
-                     string("\nPlease rerun the calculation with fewer cores."),
-                     CURRENT_FUNCTION);
-    }
-    
+
     /*--- Increment the global element offset for each section
      based on whether or not this is a surface or volume section.
      We also keep a running count of the total elements globally. ---*/
@@ -474,44 +457,47 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   vector<cgsize_t> elemGlobalID(nElems[val_section],0);
   
   /*--- Determine the size of the vector needed to read the connectivity
-   data from the CGNS file. ---*/
+   data from the CGNS file. Only call the CGNS API if we have a non-zero
+   number of elements on this rank. ---*/
   
-  cgsize_t sizeNeeded, sizeOffset;
-  if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                            (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
-                            (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
-                            &sizeNeeded) != CG_OK)
+  cgsize_t sizeNeeded = 0, sizeOffset = 0;
+  if (nElems[val_section] > 0) {
+    if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
+                              (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
+                              (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
+                              &sizeNeeded) != CG_OK)
     cg_error_exit();
+  }
   
   /*--- Allocate the memory for the connectivity, the offset if needed
    and read the data. ---*/
   
   vector<cgsize_t> connElemCGNS(sizeNeeded,0);
-  
   if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
     sizeOffset = nElems[val_section]+1;
-  } else {
-    sizeOffset = 0;
   }
   vector<cgsize_t> connOffsetCGNS(sizeOffset,0);
   
   /*--- Retrieve the connectivity information and store. Note that
    we are only accessing our rank's piece of the data here in the
-   partial read function in the CGNS API. ---*/
+   partial read function in the CGNS API. Only call the CGNS API
+   if we have a non-zero number of elements on this rank. ---*/
   
-  if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
-    if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                      (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
-                                      (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
-                                      connElemCGNS.data(),
-                                      connOffsetCGNS.data(), NULL) != CG_OK)
+  if (nElems[val_section] > 0) {
+    if (elemType == MIXED || elemType == NFACE_n || elemType == NGON_n) {
+      if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
+                                        (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
+                                        (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
+                                        connElemCGNS.data(),
+                                        connOffsetCGNS.data(), NULL) != CG_OK)
       cg_error_exit();
-  } else {
-    if (cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                 (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
-                                 (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
-                                 connElemCGNS.data(), NULL) != CG_OK)
+    } else {
+      if (cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
+                                   (cgsize_t)elementPartitioner.GetFirstIndexOnRank(rank),
+                                   (cgsize_t)elementPartitioner.GetLastIndexOnRank(rank),
+                                   connElemCGNS.data(), NULL) != CG_OK)
       cg_error_exit();
+    }
   }
   
   /*--- Print some information to the console. ---*/

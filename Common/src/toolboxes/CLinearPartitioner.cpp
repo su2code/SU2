@@ -57,7 +57,10 @@ CLinearPartitioner::CLinearPartitioner(unsigned long val_global_count,
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
   
-  unsigned long quotient = val_global_count/size;
+  unsigned long quotient = 0;
+  if (val_global_count >= (unsigned long)size)
+    quotient = val_global_count/size;
+  
   int remainder = int(val_global_count%size);
   for (int ii = 0; ii < size; ii++) {
     sizeOnRank[ii] = quotient + int(ii < remainder);

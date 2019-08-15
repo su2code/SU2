@@ -41,6 +41,9 @@
 #include "../include/toolboxes/CLinearPartitioner.hpp"
 #include "../include/element_structure.hpp"
 #include "../include/CCGNSMeshReaderFVM.hpp"
+#include "../include/CRectangularMeshReaderFVM.hpp"
+#include "../include/CBoxMeshReaderFVM.hpp"
+#include "../include/CMultiGridQueue.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -3694,7 +3697,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       case SU2:
         Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
         break;
-      case CGNS:
+      case CGNS: case RECTANGLE: case BOX:
         Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
         break;
       default:
@@ -9330,45 +9333,60 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   
   /*--- Create a mesh reader to read a CGNS grid into linear partitions. ---*/
   
-  CMeshReaderFVM *CGNSMesh = NULL;
-  CGNSMesh = new CCGNSMeshReaderFVM(config->GetMesh_FileName(), val_iZone, val_nZone);
+  unsigned short val_format = config->GetMesh_FileFormat();
+  
+  CMeshReaderFVM *MeshFVM = NULL;
+  switch (val_format) {
+    case CGNS:
+      MeshFVM = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
+    case RECTANGLE:
+      MeshFVM = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
+    case BOX:
+      MeshFVM = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+      break;
+  }
   
   /*--- Store the dimension of the problem ---*/
   
-  nDim = CGNSMesh->GetDimension();
+  nDim = MeshFVM->GetDimension();
   
   /*--- Store the local and global number of nodes for this rank. ---*/
   
-  nPoint              = CGNSMesh->GetNumberOfLocalPoints();
-  nPointDomain        = CGNSMesh->GetNumberOfLocalPoints();
-  Global_nPoint       = CGNSMesh->GetNumberOfGlobalPoints();
-  Global_nPointDomain = CGNSMesh->GetNumberOfGlobalPoints();
+  nPoint              = MeshFVM->GetNumberOfLocalPoints();
+  nPointDomain        = MeshFVM->GetNumberOfLocalPoints();
+  Global_nPoint       = MeshFVM->GetNumberOfGlobalPoints();
+  Global_nPointDomain = MeshFVM->GetNumberOfGlobalPoints();
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << Global_nPoint << " grid points before partitioning." << endl;
   } else if (rank == MASTER_NODE) {
     cout << Global_nPoint << " grid points." << endl;
   }
-
+  
   /*--- Store the local and global number of interior elements. ---*/
-
-  nElem              = CGNSMesh->GetNumberOfLocalElements();
-  Global_nElem       = CGNSMesh->GetNumberOfGlobalElements();
-  Global_nElemDomain = CGNSMesh->GetNumberOfGlobalElements();
+  
+  nElem              = MeshFVM->GetNumberOfLocalElements();
+  Global_nElem       = MeshFVM->GetNumberOfGlobalElements();
+  Global_nElemDomain = MeshFVM->GetNumberOfGlobalElements();
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << Global_nElem << " volume elements before partitioning." << endl;
   } else if (rank == MASTER_NODE) {
     cout << Global_nElem << " volume elements." << endl;
   }
-
+  
   /*--- Load the grid points, volume elements, and surface elements
    from the mesh object into the proper SU2 data structures. ---*/
   
-  LoadLinearlyPartitionedPoints(config,         CGNSMesh);
-  LoadLinearlyPartitionedVolumeElements(config, CGNSMesh);
-  LoadUnpartitionedSurfaceElements(config,      CGNSMesh);
-
+  LoadLinearlyPartitionedPoints(config,         MeshFVM);
+  LoadLinearlyPartitionedVolumeElements(config, MeshFVM);
+  LoadUnpartitionedSurfaceElements(config,      MeshFVM);
+  
   /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
   
   PrepareAdjacency(config);
@@ -9376,7 +9394,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig        *config,
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/
   
-  if (CGNSMesh != NULL) delete CGNSMesh;
+  if (MeshFVM != NULL) delete MeshFVM;
   
 }
 
@@ -9442,7 +9460,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
   /*--- Some temporaries for the loop below. ---*/
   
   unsigned long Global_Index_Elem = 0, iElem = 0;
-  unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
+  vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON);
   
   /*--- Loop over all of the internal, local volumetric elements. ---*/
   
@@ -9467,84 +9485,84 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case TRIANGLE:
         
         for (unsigned long j = 0; j < N_POINTS_TRIANGLE; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CTriangle(vnodes_cgns[0],
-                                    vnodes_cgns[1],
-                                    vnodes_cgns[2], nDim);
+        elem[iElem] = new CTriangle(connectivity[0],
+                                    connectivity[1],
+                                    connectivity[2], nDim);
         iElem++; nelem_triangle++;
         break;
         
       case QUADRILATERAL:
         
         for (unsigned long j = 0; j < N_POINTS_QUADRILATERAL; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CQuadrilateral(vnodes_cgns[0],
-                                         vnodes_cgns[1],
-                                         vnodes_cgns[2],
-                                         vnodes_cgns[3], nDim);
+        elem[iElem] = new CQuadrilateral(connectivity[0],
+                                         connectivity[1],
+                                         connectivity[2],
+                                         connectivity[3], nDim);
         iElem++; nelem_quad++;
         break;
         
       case TETRAHEDRON:
         
         for (unsigned long j = 0; j < N_POINTS_TETRAHEDRON; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CTetrahedron(vnodes_cgns[0],
-                                       vnodes_cgns[1],
-                                       vnodes_cgns[2],
-                                       vnodes_cgns[3]);
+        elem[iElem] = new CTetrahedron(connectivity[0],
+                                       connectivity[1],
+                                       connectivity[2],
+                                       connectivity[3]);
         iElem++; nelem_tetra++;
         break;
         
       case HEXAHEDRON:
         
         for (unsigned long j = 0; j < N_POINTS_HEXAHEDRON; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CHexahedron(vnodes_cgns[0],
-                                      vnodes_cgns[1],
-                                      vnodes_cgns[2],
-                                      vnodes_cgns[3],
-                                      vnodes_cgns[4],
-                                      vnodes_cgns[5],
-                                      vnodes_cgns[6],
-                                      vnodes_cgns[7]);
+        elem[iElem] = new CHexahedron(connectivity[0],
+                                      connectivity[1],
+                                      connectivity[2],
+                                      connectivity[3],
+                                      connectivity[4],
+                                      connectivity[5],
+                                      connectivity[6],
+                                      connectivity[7]);
         iElem++; nelem_hexa++;
         break;
         
       case PRISM:
         
         for (unsigned long j = 0; j < N_POINTS_PRISM; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CPrism(vnodes_cgns[0],
-                                 vnodes_cgns[1],
-                                 vnodes_cgns[2],
-                                 vnodes_cgns[3],
-                                 vnodes_cgns[4],
-                                 vnodes_cgns[5]);
+        elem[iElem] = new CPrism(connectivity[0],
+                                 connectivity[1],
+                                 connectivity[2],
+                                 connectivity[3],
+                                 connectivity[4],
+                                 connectivity[5]);
         iElem++; nelem_prism++;
         break;
         
       case PYRAMID:
         
         for (unsigned long j = 0; j < N_POINTS_PYRAMID; j++) {
-          vnodes_cgns[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
+          connectivity[j] = connElems[jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j];
         }
         Global_to_Local_Elem[Global_Index_Elem] = iElem;
-        elem[iElem] = new CPyramid(vnodes_cgns[0],
-                                   vnodes_cgns[1],
-                                   vnodes_cgns[2],
-                                   vnodes_cgns[3],
-                                   vnodes_cgns[4]);
+        elem[iElem] = new CPyramid(connectivity[0],
+                                   connectivity[1],
+                                   connectivity[2],
+                                   connectivity[3],
+                                   connectivity[4]);
         iElem++; nelem_pyramid++;
         break;
         
@@ -9616,7 +9634,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
     
     int npe, vtk_type;
     unsigned long iElem = 0;
-    unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
+    vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON);
     
     /*--- Loop over all sections that we extracted from the CGNS file
      that were identified as boundary element sections so that we can
@@ -9624,97 +9642,97 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
     
     for (int iMarker = 0; iMarker < nMarker; iMarker++) {
       
-        /*--- Initialize some counter variables ---*/
-        
-        nelem_edge_bound = 0; nelem_triangle_bound = 0;
-        nelem_quad_bound = 0; iElem = 0;
-        
-        /*--- Get the string name for this marker. ---*/
-        
-        string Marker_Tag = sectionNames[iMarker];
+      /*--- Initialize some counter variables ---*/
+      
+      nelem_edge_bound = 0; nelem_triangle_bound = 0;
+      nelem_quad_bound = 0; iElem = 0;
+      
+      /*--- Get the string name for this marker. ---*/
+      
+      string Marker_Tag = sectionNames[iMarker];
       
       /* Get the marker info and surface connectivity from the mesh object. */
-
+      
       const unsigned long surfElems =
       mesh->GetNumberOfSurfaceElementsForMarker(iMarker);
       
       const vector<unsigned long> &connElems =
       mesh->GetSurfaceElementConnectivityForMarker(iMarker);
-
-        /*--- Set the number of boundary elements in this marker. ---*/
+      
+      /*--- Set the number of boundary elements in this marker. ---*/
+      
+      nElem_Bound[iMarker] = surfElems;
+      
+      /*--- Report the number and name of the marker to the console. ---*/
+      
+      cout << nElem_Bound[iMarker]  << " boundary elements in index ";
+      cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+      
+      /*--- Instantiate the list of elements in the data structure. ---*/
+      
+      bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+      
+      for (unsigned long jElem = 0; jElem < nElem_Bound[iMarker]; jElem++ ) {
         
-        nElem_Bound[iMarker] = surfElems;
+        /*--- Not a mixed section. We already know the element type,
+         which is stored ---*/
         
-        /*--- Report the number and name of the marker to the console. ---*/
+        vtk_type = (int)connElems[jElem*CGNS_CONN_SIZE + 1];
         
-        cout << nElem_Bound[iMarker]  << " boundary elements in index ";
-        cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+        /*--- Store the loop size more easily. ---*/
         
-        /*--- Instantiate the list of elements in the data structure. ---*/
+        npe = (int)(CGNS_CONN_SIZE-CGNS_SKIP_SIZE);
         
-        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+        /*--- Store the nodes for this element more clearly. ---*/
         
-        for (unsigned long jElem = 0; jElem < nElem_Bound[iMarker]; jElem++ ) {
-          
-          /*--- Not a mixed section. We already know the element type,
-           which is stored ---*/
-          
-          vtk_type = (int)connElems[jElem*CGNS_CONN_SIZE + 1];
-          
-          /*--- Store the loop size more easily. ---*/
-          
-          npe = (int)(CGNS_CONN_SIZE-CGNS_SKIP_SIZE);
-          
-          /*--- Store the nodes for this element more clearly. ---*/
-          
-          for (int j = 0; j < npe; j++) {
-            unsigned long nn = jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j;
-            vnodes_cgns[j] = connElems[nn];
-          }
-          
-          /*--- Instantiate the boundary element object. ---*/
-          
-          switch(vtk_type) {
-            case LINE:
-              bound[iMarker][iElem] = new CLine(vnodes_cgns[0],
-                                                vnodes_cgns[1],2);
-              iElem++; nelem_edge_bound++; break;
-            case TRIANGLE:
-              bound[iMarker][iElem] = new CTriangle(vnodes_cgns[0],
-                                                    vnodes_cgns[1],
-                                                    vnodes_cgns[2],3);
-              iElem++; nelem_triangle_bound++; break;
-            case QUADRILATERAL:
-              bound[iMarker][iElem] = new CQuadrilateral(vnodes_cgns[0],
-                                                         vnodes_cgns[1],
-                                                         vnodes_cgns[2],
-                                                         vnodes_cgns[3],3);
-              iElem++; nelem_quad_bound++; break;
-          }
-          
+        for (int j = 0; j < npe; j++) {
+          unsigned long nn = jElem*CGNS_CONN_SIZE + CGNS_SKIP_SIZE + j;
+          connectivity[j] = connElems[nn];
         }
         
-        /*--- Update config file lists in order to store the boundary
-         information for this marker in the correct place. ---*/
+        /*--- Instantiate the boundary element object. ---*/
         
-        Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
-        config->SetMarker_All_TagBound(iMarker, Marker_Tag);
-        config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
-        config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
-        config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
-        config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
-        config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-        config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
-        config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
-        config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
-        config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-        config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
-        config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-        config->SetMarker_All_SendRecv(iMarker, NONE);
-        config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
-        config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-        config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
-
+        switch(vtk_type) {
+          case LINE:
+            bound[iMarker][iElem] = new CLine(connectivity[0],
+                                              connectivity[1],2);
+            iElem++; nelem_edge_bound++; break;
+          case TRIANGLE:
+            bound[iMarker][iElem] = new CTriangle(connectivity[0],
+                                                  connectivity[1],
+                                                  connectivity[2],3);
+            iElem++; nelem_triangle_bound++; break;
+          case QUADRILATERAL:
+            bound[iMarker][iElem] = new CQuadrilateral(connectivity[0],
+                                                       connectivity[1],
+                                                       connectivity[2],
+                                                       connectivity[3],3);
+            iElem++; nelem_quad_bound++; break;
+        }
+        
+      }
+      
+      /*--- Update config file lists in order to store the boundary
+       information for this marker in the correct place. ---*/
+      
+      Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+      config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+      config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+      config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+      config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+      config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+      config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+      config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+      config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+      config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+      config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
+      config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+      config->SetMarker_All_SendRecv(iMarker, NONE);
+      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      
     }
   }
   
@@ -9730,7 +9748,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
   adj_nodes.clear();
   adj_nodes.resize(nPoint);
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    adj_nodes[iPoint].resize(0);
+  adj_nodes[iPoint].resize(0);
   
   /*--- Create a partitioner object so we can transform the global
    index values stored in the elements to a local index. ---*/
@@ -9778,7 +9796,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
               /*--- Build adjacency assuming the VTK connectivity ---*/
               
               if (iNode != jNode)
-                adj_nodes[local_index].push_back(connectivity[jNode]);
+              adj_nodes[local_index].push_back(connectivity[jNode]);
               
             }
             
@@ -9844,7 +9862,7 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
               /*--- Build adjacency assuming the VTK connectivity ---*/
               
               if (iNode != jNode)
-                adj_nodes[local_index].push_back(connectivity[jNode]);
+              adj_nodes[local_index].push_back(connectivity[jNode]);
               
             }
             
@@ -18761,222 +18779,4 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   delete[] Xcoord; delete[] Ycoord;
   if (Zcoord != NULL) delete[] Zcoord;
   delete[] FaceArea;
-}
-
-CMultiGridQueue::CMultiGridQueue(unsigned long val_npoint) {
-  unsigned long iPoint;
-  
-  nPoint = val_npoint;
-  Priority = new short[nPoint];
-  RightCV = new bool[nPoint];
-  
-  QueueCV.resize(1);
-  
-  /*--- Queue initialization with all the points in the finer grid ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    QueueCV[0].push_back(iPoint);
-    Priority[iPoint] = 0;
-    RightCV[iPoint] = true;
-  }
-  
-}
-
-CMultiGridQueue::~CMultiGridQueue(void) {
-  
-  delete[] Priority;
-  delete[] RightCV;
-  
-}
-
-void CMultiGridQueue::AddCV(unsigned long val_new_point, unsigned short val_number_neighbors) {
-  
-  unsigned short Max_Neighbors = QueueCV.size()-1;
-  
-  /*--- Basic check ---*/
-  if (val_new_point > nPoint) {
-    SU2_MPI::Error("The index of the CV is greater than the size of the priority list.", CURRENT_FUNCTION);
-  }
-  
-  /*--- Resize the list ---*/
-  if (val_number_neighbors > Max_Neighbors)
-    QueueCV.resize(val_number_neighbors+1);
-  
-  /*--- Find the point in the queue ---*/
-  bool InQueue = false;
-  if (Priority[val_new_point] == val_number_neighbors) InQueue = true;
-  
-  if (!InQueue) {
-    /*--- Add the control volume, and update the priority list ---*/
-    QueueCV[val_number_neighbors].push_back(val_new_point);
-    Priority[val_new_point] = val_number_neighbors;
-  }
-  
-}
-
-void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
-  unsigned short iPoint;
-  bool check;
-  
-  /*--- Basic check ---*/
-  if (val_remove_point > nPoint) {
-    SU2_MPI::Error("The index of the CV is greater than the size of the priority list." , CURRENT_FUNCTION);
-  }
-  
-  /*--- Find priority of the Control Volume ---*/
-  short Number_Neighbors = Priority[val_remove_point];
-  if (Number_Neighbors == -1) {
-    char buf[200];
-    SPRINTF(buf, "The CV %lu is not in the priority list.", val_remove_point);
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-  
-  /*--- Find the point in the queue ---*/
-  vector<unsigned long>::iterator ItQueue = find(QueueCV[Number_Neighbors].begin(),
-                                                 QueueCV[Number_Neighbors].end(),
-                                                 val_remove_point);
-  if ( ItQueue != QueueCV[Number_Neighbors].end() ) QueueCV[Number_Neighbors].erase(ItQueue);
-  
-  Priority[val_remove_point] = -1;
-  
-  /*--- Check that the size of the queue is the right one ---*/
-  unsigned short Size_QueueCV = 0;
-  check = false;
-  for (iPoint = 0; iPoint < QueueCV.size(); iPoint ++)
-    if (QueueCV[iPoint].size() != 0) { Size_QueueCV = iPoint; check = true;}
-  
-  /*--- Resize the queue, if check = false, the queue is empty, at least
-   we need one element in the queue ---*/
-  if (check) QueueCV.resize(Size_QueueCV+1);
-  else QueueCV.resize(1);
-  
-}
-
-void CMultiGridQueue::MoveCV(unsigned long val_move_point, short val_number_neighbors) {
-  
-  if (val_number_neighbors < 0) {
-    val_number_neighbors = 0;
-    RightCV[val_move_point] = false;
-  }
-  else {
-    RightCV[val_move_point] = true;
-  }
-  
-  /*--- Remove the control volume ---*/
-  RemoveCV(val_move_point);
-  
-  /*--- Add a new control volume ---*/
-  AddCV(val_move_point, val_number_neighbors);
-  
-}
-
-void CMultiGridQueue::IncrPriorityCV(unsigned long val_incr_point) {
-  
-  /*--- Find the priority list ---*/
-  short Number_Neighbors = Priority[val_incr_point];
-  if (Number_Neighbors == -1) {
-    char buf[200];
-    SPRINTF(buf, "The CV %lu is not in the priority list.", val_incr_point);
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-  
-  /*--- Remove the control volume ---*/
-  RemoveCV(val_incr_point);
-  
-  /*--- Increase the priority ---*/
-  AddCV(val_incr_point, Number_Neighbors+1);
-  
-}
-
-void CMultiGridQueue::RedPriorityCV(unsigned long val_red_point) {
-  
-  /*--- Find the priority list ---*/
-  short Number_Neighbors = Priority[val_red_point];
-  if (Number_Neighbors == -1) {
-    char buf[200];
-    SPRINTF(buf, "The CV %lu is not in the priority list.", val_red_point);
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-  
-  if (Number_Neighbors != 0) {
-    
-    /*--- Remove the control volume ---*/
-    RemoveCV(val_red_point);
-    
-    /*--- Increase the priority ---*/
-    AddCV(val_red_point, Number_Neighbors-1);
-    
-  }
-  
-}
-
-void CMultiGridQueue::VisualizeQueue(void) {
-  unsigned short iPoint;
-  unsigned long jPoint;
-  
-  cout << endl;
-  for (iPoint = 0; iPoint < QueueCV.size(); iPoint ++) {
-    cout << "Number of neighbors " << iPoint <<": ";
-    for (jPoint = 0; jPoint < QueueCV[iPoint].size(); jPoint ++) {
-      cout << QueueCV[iPoint][jPoint] << " ";
-    }
-    cout << endl;
-  }
-  
-}
-
-void CMultiGridQueue::VisualizePriority(void) {
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint ++)
-    cout << "Control Volume: " << iPoint <<" Priority: " << Priority[iPoint] << endl;
-  
-}
-
-long CMultiGridQueue::NextCV(void) {
-  if (QueueCV.size() != 0) return QueueCV[QueueCV.size()-1][0];
-  else return -1;
-}
-
-bool CMultiGridQueue::EmptyQueue(void) {
-  unsigned short iPoint;
-  
-  /*--- In case there is only the no agglomerated elements,
-   check if they can be agglomerated or we have already finished ---*/
-  bool check = true;
-  
-  if ( QueueCV.size() == 1 ) {
-    for (iPoint = 0; iPoint < QueueCV[0].size(); iPoint ++) {
-      if (RightCV[QueueCV[0][iPoint]]) { check = false; break; }
-    }
-  }
-  else {
-    for (iPoint = 1; iPoint < QueueCV.size(); iPoint ++)
-      if (QueueCV[iPoint].size() != 0) { check = false; break;}
-  }
-  
-  return check;
-}
-
-unsigned long CMultiGridQueue::TotalCV(void) {
-  unsigned short iPoint;
-  unsigned long TotalCV;
-  
-  TotalCV = 0;
-  for (iPoint = 0; iPoint < QueueCV.size(); iPoint ++)
-    if (QueueCV[iPoint].size() != 0) { TotalCV += QueueCV[iPoint].size(); }
-  
-  return TotalCV;
-}
-
-void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
-  unsigned short iNode;
-  unsigned long jPoint;
-  
-  RemoveCV(iPoint);
-  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
-    jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
-    if (fine_grid->node[jPoint]->GetAgglomerate() == false)
-      IncrPriorityCV(jPoint);
-  }
-  
 }

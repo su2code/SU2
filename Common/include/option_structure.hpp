@@ -1516,12 +1516,16 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  * \brief types of input file formats
  */
 enum ENUM_INPUT {
-  SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  SU2       = 1,  /*!< \brief SU2 input format. */
+  CGNS      = 2,  /*!< \brief CGNS input format for the computational grid. */
+  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS);
+("CGNS", CGNS)
+("RECTANGLE", RECTANGLE)
+("BOX", BOX);
 
 /*!
  * \brief type of solution output file formats
