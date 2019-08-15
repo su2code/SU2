@@ -96,16 +96,16 @@ def main():
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
-    # Fixed CL NACA0012
-    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
-    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 100
-    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
-    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
-    fixedCL_naca0012.timeout   = 1600
-    fixedCL_naca0012.tol       = 0.00001
-    test_list.append(fixedCL_naca0012)
+#    # Fixed CL NACA0012
+#    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
+#    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
+#    fixedCL_naca0012.test_iter = 100
+#    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
+#    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    fixedCL_naca0012.timeout   = 1600
+#    fixedCL_naca0012.tol       = 0.00001
+#    test_list.append(fixedCL_naca0012)
     
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
