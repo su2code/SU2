@@ -469,10 +469,10 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
 
-  }else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+  }else if (config->GetTime_Marching() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -814,10 +814,10 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
   
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
     
-  } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+  } else if (config->GetTime_Marching() && config->GetTime_Domain()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
