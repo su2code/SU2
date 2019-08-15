@@ -4740,6 +4740,7 @@ protected:
   int **SlidingStateNodes;
 
   su2double global_lengthEnergetic[3];
+  vector<su2double> VSTG_VelFluct;
   
 public:
   
