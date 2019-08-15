@@ -109,6 +109,10 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+    
+  /*--- Set runtime option ---*/
+  
+  Runtime_Options();
   
   /*--- Set the current time iteration in the config ---*/
   
@@ -369,3 +373,19 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   return StopCalc;
 }
 
+void CSinglezoneDriver::Runtime_Options(){
+  
+  ifstream runtime_configfile;
+  
+  /*--- Try to open the runtime config file ---*/
+  
+  runtime_configfile.open(runtime_file_name, ios::in);
+  
+  /*--- If succeeded create a temporary config object ---*/
+  
+  if (runtime_configfile.good()){
+    CConfig *runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+    delete runtime;
+  }
+  
+}

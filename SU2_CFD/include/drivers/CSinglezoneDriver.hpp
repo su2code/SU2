@@ -107,5 +107,10 @@ public:
    * \param ExtIter
    */
   virtual bool Monitor(unsigned long TimeIter);
+  
+  /*!
+   * \brief Runtime_Parsing
+   */
+  virtual void Runtime_Options();
 
 };

@@ -1994,6 +1994,8 @@ inline unsigned long CConfig::GetnOuter_Iter(void) { return nOuterIter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return nTimeIter; }
 
+inline void CConfig::SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
+
 inline unsigned long CConfig::GetnIter(void) { return nIter; }
 
 inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
