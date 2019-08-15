@@ -140,8 +140,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetExtIter()
-  nTimeIter = SU2Driver.GetnExtIter()
+  TimeIter = SU2Driver.GetTime_Iter()
+  nTimeIter = SU2Driver.GetnTimeIter()
   time = TimeIter*deltaT
 
   # Extract the initial position of each node on the moving marker
