@@ -808,7 +808,7 @@ int main(int argc, char *argv[]) {
       
         /*--- Load history data (volume output might require some values) --- */
         
-        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], iInst, 0, 0);
+        output[iZone]->SetHistory_Output(geometry_container[iZone][INST_0], &solver_container[iZone][INST_0], config_container[iZone], 0, 0, 0);
         
         /*--- Load the data --- */
         

@@ -4073,8 +4073,6 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   ofstream meta_file;
   string filename, meta_filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   /*--- Retrieve filename from config ---*/
   
@@ -17854,8 +17852,6 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   ofstream restart_file;
   string filename;
   
