@@ -227,6 +227,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Parsing the config file  ---*/
 
   runtime_file = SetRunTime_Parsing(case_filename);
+  
   /*--- Set the default values for all of the options that weren't set ---*/
       
   SetDefault();
@@ -234,9 +235,11 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    config->SetTimeIter(nTimeIter);
+    if (all_options.find("TIME_ITER") == all_options.end())
+      config->SetnTime_Iter(nTimeIter);
+    if (all_options.find("CFL_NUMBER") == all_options.end())
+      config->SetCFL(MESH_0, CFLFineGrid);
   }
-
 }
 
 SU2_MPI::Comm CConfig::GetMPICommunicator() {
@@ -731,6 +734,10 @@ void CConfig::SetRunTime_Options(void) {
   /* DESCRIPTION: Number of external iterations */
   
   addUnsignedLongOption("TIME_ITER", nTimeIter, 999999);
+ 
+  /* DESCRIPTION: CFL Number */
+  
+  addDoubleOption("CFL_NUMBER", CFLFineGrid, 10);
 
 }
 

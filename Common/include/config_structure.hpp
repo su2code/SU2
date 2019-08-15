@@ -8981,10 +8981,16 @@ public:
 
   /*!
    * \brief Get the number of time iterations
-   * \return Number of time steps run for the multizone problem
+   * \return Number of time steps run 
    */
   unsigned long GetnTime_Iter(void);
 
+  /*!
+   * \brief Set the number of time iterations
+   * \param[in] val_iter - Number of time steps run 
+   */
+  void SetnTime_Iter(unsigned long val_iter);
+  
   /*!
    * \brief Get the number of pseudo-time iterations
    * \return Number of pseudo-time steps run for the single-zone problem
