@@ -44,7 +44,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
+  dynamic = (config->GetTime_Domain());  // Dynamic analysis.
   
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;

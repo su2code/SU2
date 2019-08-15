@@ -415,18 +415,18 @@ int main(int argc, char *argv[]) {
       if (
           ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
            ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
-            !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
+            !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
            (StopCalc) ||
-           (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-             (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
+           (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+             (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
             ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
 
           &&
 
           ((TimeIter+1 == config_container[ZONE_1]->GetnTime_Iter()) ||
            (StopCalc) ||
-           ((config_container[ZONE_1]->GetDynamic_Analysis() == DYNAMIC) &&
+           ((config_container[ZONE_1]->GetTime_Domain()) &&
             ((TimeIter == 0) || (TimeIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0))))
 
           ){
@@ -522,9 +522,9 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
-             !(config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) ||
+             !(config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) ||
             (StopCalc) ||
-            ((config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING) &&
+            ((config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
               /*--- Read in the restart file for this time step ---*/
@@ -600,11 +600,11 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (TimeIter != 0) &&
-             !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-               (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
+             !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+               (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
             (StopCalc) ||
-            (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
+            (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
 
@@ -660,7 +660,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    else if (config_container[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE) {
 
       /*--- Read in the restart file for this time step ---*/
       for (iZone = 0; iZone < nZone; iZone++) {
@@ -735,7 +735,7 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             (StopCalc) ||
-            ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+            ((config_container[ZONE_0]->GetTime_Domain()) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
               /*--- Set the current iteration number in the config class. ---*/

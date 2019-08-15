@@ -1838,7 +1838,7 @@ enum ENUM_UNSTEADY {
   HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
-static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
+static const map<string, ENUM_UNSTEADY> TimeMarching_Map = CCreateMap<string, ENUM_UNSTEADY>
 ("NO", STEADY)
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)

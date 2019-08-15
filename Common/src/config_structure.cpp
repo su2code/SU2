@@ -1296,7 +1296,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to time-marching ---*/
 
   /* DESCRIPTION: Unsteady simulation  */
-  addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
+  addEnumOption("TIME_MARCHING", TimeMarching, TimeMarching_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in (heat fvm) solid solvers */
@@ -3008,15 +3008,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for unsteady problem ---*/
   
-  if ((Unsteady_Simulation == TIME_STEPPING ||
-       Unsteady_Simulation == DT_STEPPING_1ST ||
-       Unsteady_Simulation == DT_STEPPING_2ND) && !Time_Domain){
+  if ((TimeMarching == TIME_STEPPING ||
+       TimeMarching == DT_STEPPING_1ST ||
+       TimeMarching == DT_STEPPING_2ND) && !Time_Domain){
     SU2_MPI::Error("TIME_DOMAIN must be set to YES if UNSTEADY_SIMULATION is "
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
   
   if (Time_Domain){
-    if (Unsteady_Simulation == TIME_STEPPING){
+    if (TimeMarching == TIME_STEPPING){
       InnerIter = 1;
     }
   }
@@ -3033,7 +3033,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
-      (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
+      (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
 
   /*--- If Fluid Structure Interaction, set the solver for each zone.
    *--- ZONE_0 is the zone of the fluid.
@@ -3091,20 +3091,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC) nTimeIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
 //  ofstream ConvHistFile;
 
-  if (Kind_Solver == FEM_ELASTICITY) {
+//  if (Kind_Solver == FEM_ELASTICITY) {
 
-	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-	  else { Wrt_Dynamic = true; }
+//	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
+//	  else { Wrt_Dynamic = true; }
 
-  } else {
-    Wrt_Dynamic = false;
-  }
+//  } else {
+//    Wrt_Dynamic = false;
+//  }
 
   if (Kind_Solver == ZONE_SPECIFIC) {
     ZoneSpecific_Problem = true;
@@ -3113,7 +3112,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for unsupported features. ---*/
 
-  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (TimeMarching == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
@@ -3220,7 +3219,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
   
-  if (Unsteady_Simulation == TIME_STEPPING){
+  if (TimeMarching == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
   }
@@ -3231,6 +3230,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     ScreenWrtFreq[0]  = 1;
     HistoryWrtFreq[0] = 1;
+    
+    if (TimeMarching != HARMONIC_BALANCE)
+      TimeMarching = STEADY;
   } 
   
   if (Time_Domain){
@@ -3263,7 +3265,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (GetGrid_Movement()){
     if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-        (Unsteady_Simulation == STEADY && !Time_Domain)){
+        (TimeMarching == STEADY && !Time_Domain)){
       
       if((Kind_GridMovement != ROTATING_FRAME) &&
          (Kind_GridMovement != STEADY_TRANSLATION) &&
@@ -3413,7 +3415,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*-- Setting Harmonic Balance period from the config file */
 
-  if (Unsteady_Simulation == HARMONIC_BALANCE) {
+  if (TimeMarching == HARMONIC_BALANCE) {
   	HarmonicBalance_Period = GetHarmonicBalance_Period();
   	if (HarmonicBalance_Period < 0)  {
       SU2_MPI::Error("Not a valid value for time period!!", CURRENT_FUNCTION);
@@ -3878,7 +3880,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_TimeIntScheme_FEM_Flow == ADER_DG) {
 
-    Unsteady_Simulation = TIME_STEPPING;  // Only time stepping for ADER.
+    TimeMarching = TIME_STEPPING;  // Only time stepping for ADER.
 
     /* If time accurate local time stepping is used, make sure that an unsteady
        CFL is specified. If not, terminate. */
@@ -4107,7 +4109,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Set up the time stepping / unsteady CFL options. ---*/
-  if ((Unsteady_Simulation == TIME_STEPPING) && (Unst_CFL != 0.0)) {
+  if ((TimeMarching == TIME_STEPPING) && (Unst_CFL != 0.0)) {
     for (iCFL = 0; iCFL < nCFL; iCFL++)
       CFL[iCFL] = Unst_CFL;
   }
@@ -4392,7 +4394,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    if (Unsteady_Simulation) {
+    if (TimeMarching) {
 
       Restart_Flow = false;
 
@@ -5863,7 +5865,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"--------------- Time Numerical Integration  ( Zone "  << iZone << " ) ------------------" << endl;
 
     if (!fea) {
-		switch (Unsteady_Simulation) {
+		switch (TimeMarching) {
 		  case NO:
 			cout << "Local time stepping (steady state simulation)." << endl; break;
 		  case TIME_STEPPING:
@@ -5877,8 +5879,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
 			break;
 		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-			if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-			if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+			if (TimeMarching == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+			if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
 			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
 			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
 			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
@@ -5886,7 +5888,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
   }
 	else {
-		switch (Dynamic_Analysis) {
+		switch (Time_Domain) {
 		  case NO:
 			cout << "Static structural analysis." << endl; break;
 		  case YES:
@@ -6087,7 +6089,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         MGTable.PrintFooter();
       }
-			if (Unsteady_Simulation != TIME_STEPPING) {
+			if (TimeMarching != TIME_STEPPING) {
 				cout << "Courant-Friedrichs-Lewy number:   ";
 				cout.precision(3);
 				cout.width(6); cout << CFL[0];
@@ -6212,7 +6214,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
-    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND)) {
+    if ((TimeMarching == DT_STEPPING_1ST) || (TimeMarching == DT_STEPPING_2ND)) {
       cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
       cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<< endl;
     }

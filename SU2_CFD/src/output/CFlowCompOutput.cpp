@@ -655,14 +655,14 @@ su2double CFlowCompOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, 
 
 bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && (curr_InnerIter == 0))||
-        (config->GetUnsteady_Simulation() == STEADY && (curr_InnerIter < 2));
+  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))||
+        (config->GetTime_Marching() == STEADY && (curr_InnerIter < 2));
   
 }
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && curr_InnerIter == 0);
+  return (config->GetTime_Marching() != STEADY && curr_InnerIter == 0);
       
 }
 

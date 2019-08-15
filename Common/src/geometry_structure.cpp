@@ -780,7 +780,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -861,7 +861,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+iDim] = vector[iDim];
             }
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+            if (config->GetTime_Marching() == DT_STEPPING_2ND) {
               vector = node[iPoint]->GetCoord_n1();
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -960,7 +960,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
             break;
           case COORDINATES_OLD:
             node[iPoint]->SetCoord_n(&bufDRecv[buf_offset]);
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            if (config->GetTime_Marching() == DT_STEPPING_2ND)
               node[iPoint]->SetCoord_n1(&bufDRecv[buf_offset+nDim]);
             break;
           case MAX_LENGTH:
@@ -7334,7 +7334,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   string::size_type position;
   bool domain_flag = false;
   bool found_transform = false;
-  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
   bool multizone_file = config->GetMultizone_Mesh();
   bool actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                           (config->GetnMarker_ActDiskOutlet() != 0)) &&
@@ -15761,9 +15761,9 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
                    + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
       
@@ -15959,11 +15959,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   
   unsigned long iTimeIter, nTimeIter;
   su2double delta_T, total_T;
-  if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+  if (config->GetTime_Marching() && config->GetTime_Domain()) {
     nTimeIter = config->GetUnst_AdjointIter();
     delta_T  = config->GetTime_Step();
     total_T  = (su2double)nTimeIter*delta_T;
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
@@ -15990,11 +15990,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    if (config->GetTime_Marching() == HARMONIC_BALANCE)
     	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
 
-    if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
-        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
+    if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
+        (config->GetTime_Marching() == HARMONIC_BALANCE)) {
       if ((SU2_TYPE::Int(iTimeIter) >= 0)    && (SU2_TYPE::Int(iTimeIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iTimeIter));
       if ((SU2_TYPE::Int(iTimeIter) >= 10)   && (SU2_TYPE::Int(iTimeIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iTimeIter));
       if ((SU2_TYPE::Int(iTimeIter) >= 100)  && (SU2_TYPE::Int(iTimeIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iTimeIter));
@@ -16096,7 +16096,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) {
+  if (config->GetTime_Marching()) {
     nTimeIter = config->GetTimeIter();
   }else {
     nTimeIter = 1;
@@ -19604,9 +19604,9 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == DT_STEPPING_1ST)
         GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == DT_STEPPING_2ND)
         GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
                    +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
       

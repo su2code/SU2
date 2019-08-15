@@ -154,9 +154,9 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool time_n_needed  = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -248,9 +248,9 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
+  bool time_n_needed  = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND,
   input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
@@ -437,7 +437,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long TimeIter = config->GetTimeIter();
   su2double seeding = 1.0;
@@ -460,10 +460,10 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_n_needed  = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -727,8 +727,8 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
+      config->GetTime_Marching() == DT_STEPPING_2ND);
   bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
@@ -794,7 +794,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->node[iPoint]->GetCoord();
@@ -909,8 +909,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  bool dual_time_1st = (config_container->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config_container->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
   unsigned long iPoint;

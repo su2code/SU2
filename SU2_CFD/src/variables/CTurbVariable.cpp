@@ -55,7 +55,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++)
       HB_Source[iVar] = 0.0;

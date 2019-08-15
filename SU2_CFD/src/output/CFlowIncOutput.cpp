@@ -605,8 +605,8 @@ su2double CFlowIncOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && (curr_InnerIter == 0))|| 
-        (config->GetUnsteady_Simulation() == STEADY && (curr_TimeIter < 2)); 
+  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curr_TimeIter < 2)); 
   
 }
 

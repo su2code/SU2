@@ -44,8 +44,8 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
                                    unsigned short val_nDim, unsigned short val_nvar, su2double *constants,
                                    CConfig *config) : CTurbVariable(val_nDim, val_nvar, config) {
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Initialization of variables ---*/
 

@@ -593,7 +593,7 @@ void CFluidIteration::Iterate(COutput *output,
                                  unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
   
-  bool unsteady = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
   bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                      (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   TimeIter = config[val_iZone]->GetTimeIter();
@@ -693,8 +693,8 @@ void CFluidIteration::Update(COutput *output,
 
   /*--- Dual time stepping strategy ---*/
   
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
     
     /*--- Update dual time solver on all mesh levels ---*/
     
@@ -1290,8 +1290,8 @@ void CHeatIteration::Update(COutput *output,
   unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
   
   /*--- Dual time stepping strategy ---*/
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
     
     /*--- Update dual time solver ---*/
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
@@ -1341,8 +1341,8 @@ void CHeatIteration::Solve(COutput *output,
                              unsigned short val_iInst) {
 
   /*--- Boolean to determine if we are running a steady or unsteady case ---*/
-  bool steady = (config[val_iZone]->GetUnsteady_Simulation() == STEADY);
-  bool unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool steady = (config[val_iZone]->GetTime_Marching() == STEADY);
+  bool unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
 
   unsigned short Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
@@ -1675,8 +1675,8 @@ void CFEAIteration::Update(COutput *output,
 
   su2double Physical_dt, Physical_t;
     unsigned long TimeIter = config[val_iZone]->GetTimeIter();
-  bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
-  bool static_fem = (config[val_iZone]->GetDynamic_Analysis() == STATIC);         // Static problems
+  bool dynamic = (config[val_iZone]->GetTime_Domain());          // Dynamic problems
+  bool static_fem = (!config[val_iZone]->GetTime_Domain());         // Static problems
   bool fsi = config[val_iZone]->GetFSI_Simulation();         // Fluid-Structure Interaction problems
 
 
@@ -1852,23 +1852,23 @@ void CAdjFluidIteration::Preprocess(COutput *output,
                                        unsigned short val_iInst) {
   
   unsigned short iMesh;
-  bool harmonic_balance = (config[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE);
   bool dynamic_mesh = config[ZONE_0]->GetGrid_Movement();
   unsigned long InnerIter = 0; 
   unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
 
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
-  if (((dynamic_mesh && TimeIter == 0) || config[val_iZone]->GetUnsteady_Simulation()) && !harmonic_balance) {
+  if (((dynamic_mesh && TimeIter == 0) || config[val_iZone]->GetTime_Marching()) && !harmonic_balance) {
     int Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 1;
-    if (rank == MASTER_NODE && val_iZone == ZONE_0 && config[val_iZone]->GetUnsteady_Simulation())
+    if (rank == MASTER_NODE && val_iZone == ZONE_0 && config[val_iZone]->GetTime_Marching())
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
   }
   
   /*--- Continuous adjoint Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
-  if ((InnerIter == 0) || config[val_iZone]->GetUnsteady_Simulation()) {
+  if ((InnerIter == 0) || config[val_iZone]->GetTime_Marching()) {
     
     if (config[val_iZone]->GetKind_Solver() == ADJ_EULER)
       config[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_FLOW_SYS);
@@ -2009,8 +2009,8 @@ void CAdjFluidIteration::Update(COutput *output,
   
   /*--- Dual time stepping strategy ---*/
   
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
     
     /*--- Update dual time solver ---*/
     
@@ -2054,8 +2054,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
@@ -2071,7 +2071,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[val_iZone]->GetUnsteady_Simulation()) {
+  if (config[val_iZone]->GetTime_Marching()) {
 
     Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2;
 
@@ -2541,8 +2541,8 @@ void CDiscAdjFluidIteration::Update(COutput *output,
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
@@ -2562,7 +2562,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     unsigned short val_iInst)     {
 
   bool StopCalc = false;
-  bool steady = (config[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool steady = (config[val_iZone]->GetTime_Marching() == STEADY);
   bool output_history = false;
 
 #ifndef HAVE_MPI
@@ -2620,7 +2620,7 @@ CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config)
     for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
       myfile_res << "Sens_Nu_" << iVar << "\t";
 
-    if (config->GetDynamic_Analysis() == DYNAMIC){
+    if (config->GetTime_Domain()){
         for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++)
           myfile_res << "Sens_Rho_" << iVar << "\t";
     }
@@ -2652,7 +2652,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
 
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   int Direct_Iter;
 
@@ -2763,7 +2763,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         unsigned short val_iInst) {
 
 
-  bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -2793,7 +2793,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   unsigned long InnerIter = config[ZONE_0]->GetInnerIter();
   unsigned long TimeIter = config[val_iZone]->GetTimeIter(), DirectTimeIter;
-  bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   DirectTimeIter = 0;
   if (dynamic){
@@ -3097,7 +3097,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
     unsigned short val_iInst) {
 
 
-  bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   /*--- Global sensitivities ---*/
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry[val_iZone][val_iInst][MESH_0],config[val_iZone]);
@@ -3235,15 +3235,15 @@ void CDiscAdjHeatIteration::Preprocess(COutput *output,
 
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[val_iZone]->GetUnsteady_Simulation()) {
+  if (config[val_iZone]->GetTime_Marching()) {
 
     Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2;
 
@@ -3499,8 +3499,8 @@ void CDiscAdjHeatIteration::Update(COutput *output,
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJHEAT_SOL]->SetConvergence(false);
