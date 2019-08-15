@@ -376,7 +376,8 @@ def init_inria(argument_dict, modes, update = False):
         print('Installing pyAMG for Linux.')
         pyamg_dwnld = 'https://pyamg.saclay.inria.fr/download/LinuxPyAmg.tar.gz'
         pyamg_targz = 'LinuxPyAmg.tar.gz'
-        if sys.maxunicode == 1114111:
+        import sysconfig
+        if sysconfig.get_config_var('Py_UNICODE_SIZE') == 2:
             pyamg_whl   = 'pyamg-1.0.0-cp27-cp27m-linux_x86_64.whl'
         else:
             pyamg_whl   = 'pyamg-1.0.0-cp27-cp27mu-linux_x86_64.whl'
