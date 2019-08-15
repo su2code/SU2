@@ -1046,6 +1046,8 @@ inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_contain
 inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
+inline void CSolver::SetLengthEnergetic(su2double lengthEnergetic, su2double lengthNyquist, su2double maxVelocity){}
+
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetSolution_New();
@@ -1640,6 +1642,12 @@ inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2doubl
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 
 inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf;}
+
+inline void CEulerSolver::SetLengthEnergetic(su2double lengthEnergetic, su2double lengthNyquist, su2double maxVelocity){
+  global_lengthEnergetic[0] = lengthEnergetic;
+  global_lengthEnergetic[1] = lengthNyquist;
+  global_lengthEnergetic[2] = maxVelocity;
+}
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 

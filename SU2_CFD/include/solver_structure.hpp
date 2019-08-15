@@ -51,6 +51,7 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include <numeric>
 
 #include "fluid_model.hpp"
 #include "task_definition.hpp"
@@ -3882,6 +3883,8 @@ public:
    */
   virtual void SetPressure_Inf(su2double p_inf);
   
+  virtual void SetLengthEnergetic(su2double lengthEnergetic, su2double lengthNyquist, su2double maxVelocity);
+  
   /*!
    * \brief A virtual member.
    * \param[in] Value of freestream temperature.
@@ -4736,6 +4739,8 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  su2double global_lengthEnergetic[3];
+  
 public:
   
   
@@ -6466,6 +6471,8 @@ public:
    * \param[in] Value of freestream pressure.
    */
   void SetPressure_Inf(su2double p_inf);
+  
+  void SetLengthEnergetic(su2double lengthEnergetic, su2double lengthNyquist, su2double maxVelocity );
   
   /*!
    * \brief Set the freestream temperature.
@@ -9180,6 +9187,8 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
+  
+  su2double global_lengthEnergetic[3];
 
 public:
   

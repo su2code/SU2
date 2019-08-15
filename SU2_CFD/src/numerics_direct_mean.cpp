@@ -5750,35 +5750,15 @@ void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config)
   
 }
 
-CSourceVolumeSTG::CSourceVolumeSTG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  /*--- Frist check if it is normal body force + Volume STG. ---*/
-  
-  bool use_body_force = config->GetBody_Force();
-  Body_Force_Vector = new su2double[nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    if (use_body_force)
-      Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
-    else Body_Force_Vector[iDim] = 0.0;
-  }
-  
-  Body_Force_VSTG_Vector = new su2double[nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Body_Force_VSTG_Vector[iDim] = 0.0;
-  
-}
+CSourceVolumeSTG::CSourceVolumeSTG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {}
 
-CSourceVolumeSTG::~CSourceVolumeSTG(void) {
-  
-  if (Body_Force_VSTG_Vector != NULL) delete [] Body_Force_VSTG_Vector;
-  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
-  
-}
+CSourceVolumeSTG::~CSourceVolumeSTG(void) {}
 
 void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config) {
   
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
+  su2double C_bf = 1.1;
   
   /*--- Zero the continuity contribution ---*/
   
@@ -5787,15 +5767,14 @@ void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config)
   /*--- Momentum contribution ---*/
   
   for (iDim = 0; iDim < nDim; iDim++){
-    val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_VSTG_Vector[iDim] / Force_Ref;
-    val_residual[iDim+1] += -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+    val_residual[iDim+1] = -Volume * C_bf * U_i[iDim+1] / Force_Ref;
   }
+  
   /*--- Energy contribution ---*/
   
   val_residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++){
-    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_VSTG_Vector[iDim] / Force_Ref;
-    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+    val_residual[nDim+1] += -Volume * C_bf * U_i[iDim+1] / Force_Ref;
   }
 }
 

@@ -417,6 +417,7 @@ public:
   SU2_MPI::Request *req_PeriodicRecv;       /*!< \brief Data structure for periodic recv requests. */
   
   vector<unsigned long> STG_LocalPoint;
+  vector<su2double> STG_GlobalListCoordX;
   vector<su2double> PhaseMode;              /*!< \brief Phase of mode n uniformly distributed in the interval )0,2pi)*/
   vector<su2double> RandUnitVec;            /*!< \brief Random unit vector of direction uniformly distributed over a sphere*/
   vector<su2double> RandUnitNormal;         /*!< \brief Unit vector normal to RandUnitVec*/
@@ -1339,7 +1340,15 @@ public:
 	virtual vector<vector<unsigned long> > GetPlanarPoints();
   
   virtual vector<unsigned long> GetSTG_LocalPoint();
+  
+  virtual vector<su2double> GetSTG_GlobalListCoordX();
 
+  virtual vector<su2double> GetSTG_PhaseMode();
+  
+  virtual vector<su2double> GetSTG_RandUnitVec();
+  
+  virtual vector<su2double> GetSTG_RandUnitNormal();
+  
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with 
 	          x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
@@ -2431,6 +2440,26 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Get all points on the STG box.
    */
   vector<unsigned long> GetSTG_LocalPoint();
+  
+  /*!
+   * \brief Get all coordinates in X-direction (global), i.e. flow direction, inside the STG box.
+   */
+  vector<su2double> GetSTG_GlobalListCoordX();
+
+  /*!
+   * \brief Get all points on the STG box.
+   */
+  vector<su2double> GetSTG_PhaseMode();
+
+  /*!
+   * \brief Get all points on the STG box.
+   */
+  vector<su2double> GetSTG_RandUnitVec();
+
+  /*!
+   * \brief Get all points on the STG box.
+   */
+  vector<su2double> GetSTG_RandUnitNormal();
   
   /*!
    * \brief Read the sensitivity from an input file.

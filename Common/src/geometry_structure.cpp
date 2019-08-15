@@ -67,6 +67,11 @@
 (dest)[1] = (v1)[1] - (v2)[1];	\
 (dest)[2] = (v1)[2] - (v2)[2];
 
+
+bool CompareWithGap (su2double a, su2double b){
+  return abs(a - b) <= 1e-6;
+}
+              
 CGeometry::CGeometry(void) {
   
   size = SU2_MPI::GetSize();
@@ -11396,6 +11401,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   // Read the box values from config file.
   su2double *STGBox = config->GetVolumeSTGBox_Values();
   unsigned long nSTGPts = 0;
+  vector<su2double> STG_ListCoordX;
   
   //Go over the whole mesh and identify the points within the STG box
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
@@ -11405,19 +11411,63 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
     if( node[iPoint]->GetDomain() && !boundary_i ){
       su2double *Coord = node[iPoint]->GetCoord();
       
-      if (Coord[0] > STGBox[0] && Coord[0] < STGBox[3] &&
-          Coord[1] > STGBox[1] && Coord[1] < STGBox[4] &&
-          Coord[2] > STGBox[2] && Coord[2] < STGBox[5] ){
+      if (Coord[0] >= STGBox[0] && Coord[0] <= STGBox[3] &&
+          Coord[1] >= STGBox[1] && Coord[1] <= STGBox[4] &&
+          Coord[2] >= STGBox[2] && Coord[2] <= STGBox[5] ){
         nSTGPts++;
         STG_LocalPoint.push_back(iPoint);
+        STG_ListCoordX.push_back(Coord[0]);
       }
     }
   }
   
+  // Remove sort and remove duplicates based in lower and upper bounds limits.
+  sort( STG_ListCoordX.begin(), STG_ListCoordX.end() );
+  STG_ListCoordX.erase( unique( STG_ListCoordX.begin(), STG_ListCoordX.end(), CompareWithGap ), STG_ListCoordX.end() );
+  
 #ifdef HAVE_MPI
   cout <<"Process "<<rank<<" contains "<<nSTGPts <<" SNG Points."<<endl;
+  
+  vector<int> recvCounts(size), displs(size);
+  
+  /*--- Create the values of recvCounts for the gather of the STG_ListCoordX. ---*/
+  int sizeLocal = STG_ListCoordX.size();
+  
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
+                    MPI_INT, MPI_COMM_WORLD);
+  
+  if (rank == MASTER_NODE){
+    for (unsigned short i; i < recvCounts.size(); i++)
+      cout << recvCounts[i] << endl;
+  }
+  
+  /*--- Create the data for the vector displs from the known values of
+     recvCounts. Also determine the total size of the data.   ---*/
+  displs[0] = 0;
+  for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+  
+  int sizeGlobal = displs.back() + recvCounts.back();
+  
+  /*--- Gather the values from all ranks to all ranks. Use Allgatherv
+   for this purpose.                  ---*/
+  STG_GlobalListCoordX.resize(sizeGlobal);
+  
+  SU2_MPI::Allgatherv(STG_ListCoordX.data(), STG_ListCoordX.size(), MPI_DOUBLE,
+                   STG_GlobalListCoordX.data(), recvCounts.data(), displs.data(),
+                   MPI_DOUBLE, MPI_COMM_WORLD);
+
+  sort( STG_GlobalListCoordX.begin(), STG_GlobalListCoordX.end() );
+  STG_GlobalListCoordX.erase(unique(STG_GlobalListCoordX.begin(), STG_GlobalListCoordX.end(), CompareWithGap), STG_GlobalListCoordX.end());
+
+  if (rank == MASTER_NODE){
+    cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
+    for (unsigned short i; i < STG_GlobalListCoordX.size(); i++)
+      cout << STG_GlobalListCoordX[i] << endl;
+  }
 #else
   cout <<"Number of SNG points: " << nSTGPts << endl;
+  STG_GlobalListCoordX = STG_ListCoordX;
+  
 #endif
   
   // Generate random numbers
@@ -11460,11 +11510,13 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   
   // Resize memory for vectors in other ranks
   if (rank != MASTER_NODE){
+    PhaseMode.resize(NModes);
     RandUnitVec.resize(NModes*nDim);
     RandUnitNormal.resize(NModes*nDim);
   }
 
 #ifdef HAVE_MPI
+  SU2_MPI::Bcast(PhaseMode.data(), PhaseMode.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Bcast(RandUnitVec.data(), RandUnitVec.size() , MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Bcast(RandUnitNormal.data(), RandUnitVec.size(), MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
 #endif

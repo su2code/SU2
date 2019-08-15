@@ -5195,8 +5195,6 @@ public:
  * \author T. Economon
  */
 class CSourceVolumeSTG : public CNumerics {
-  su2double *Body_Force_VSTG_Vector;
-  su2double *Body_Force_Vector;
 public:
   
   /*!

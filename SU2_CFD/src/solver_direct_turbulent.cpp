@@ -879,6 +879,65 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
+  if (config->GetVolumeSTG()){
+    
+    /*--- Loop over the STG box and calculate the most energetic scale. ---*/
+    
+    su2double lengthEnergetic, wallDistance, turb_ke, omega, lengthTurb, maxLength;
+    su2double local_lengthEnergetic[3], max_localVelocity = 0.0, max_lengthEnergetic = 0.0;
+    su2double Density, Velocity2, max_lengthNyquist = 0.0;
+    
+    vector<unsigned long> LocalPoints = geometry[MESH_0]->GetSTG_LocalPoint();
+    
+    for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
+      wallDistance = geometry[MESH_0]->node[LocalPoints[ii]]->GetWall_Distance();
+      maxLength    = geometry[MESH_0]->node[LocalPoints[ii]]->GetMaxLength();
+      turb_ke = solver[MESH_0][TURB_SOL]->node[LocalPoints[ii]]->GetSolution(0);
+      omega   = solver[MESH_0][TURB_SOL]->node[LocalPoints[ii]]->GetSolution(1);
+      
+      Density = solver[MESH_0][FLOW_SOL]->node[LocalPoints[ii]]->GetSolution(0);
+      Velocity2 = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Velocity2 += (solver[MESH_0][FLOW_SOL]->node[LocalPoints[ii]]->GetSolution(iDim+1)/Density)*(solver[MESH_0][FLOW_SOL]->node[LocalPoints[ii]]->GetSolution(iDim+1)/Density);
+      Velocity2 = sqrt(Velocity2);
+      max_localVelocity = max(max_localVelocity, Velocity2);
+      
+      lengthTurb = sqrt(turb_ke) / (0.09 * omega);
+      
+      max_lengthEnergetic = max(max_lengthEnergetic, min( 2.0 * wallDistance, 3.0 * lengthTurb ));
+      
+      
+      /*--- Now ---*/
+      unsigned short nNeigh = geometry[MESH_0]->node[LocalPoints[ii]]->GetnPoint();
+      su2double* Coord_i = geometry[MESH_0]->node[LocalPoints[ii]]->GetCoord();
+      su2double maxdelta = 0.0;
+      for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+        unsigned long jPoint  = geometry[MESH_0]->node[LocalPoints[ii]]->GetPoint(iNeigh);
+        su2double* Coord_j = geometry[MESH_0]->node[jPoint]->GetCoord();
+        maxdelta = max(maxdelta, max( abs(Coord_i[1]-Coord_j[1]), abs(Coord_i[2]-Coord_j[2])) );
+      }
+      max_lengthNyquist = max(2.0 * min( max(maxdelta, 0.3*maxLength) + 0.1 * wallDistance, maxLength ), max_lengthNyquist);
+      
+    }
+    
+    /*--- Find the max value ---*/
+    local_lengthEnergetic[0] = max_lengthEnergetic;
+    local_lengthEnergetic[1] = max_lengthNyquist;
+    local_lengthEnergetic[2] = max_localVelocity;
+    
+    cout << local_lengthEnergetic[0] << " " << local_lengthEnergetic[1] << " " << local_lengthEnergetic[2] << endl;
+
+#ifndef HAVE_MPI
+    global_lengthEnergetic[0] = local_lengthEnergetic[0];
+    global_lengthEnergetic[1] = local_lengthEnergetic[1];
+    global_lengthEnergetic[2] = local_lengthEnergetic[2];
+#else
+    SU2_MPI::Allreduce(&local_lengthEnergetic, &global_lengthEnergetic, 3, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+    solver[MESH_0][FLOW_SOL]->SetLengthEnergetic(global_lengthEnergetic[0],global_lengthEnergetic[1],global_lengthEnergetic[2]);
+  }
+
+  
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   if (Restart_Vars != NULL) delete [] Restart_Vars;
@@ -3044,6 +3103,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         
+//        if ((coord_i[0] <= 4.01) && (coord_i[0] >= 3.99) && (coord_i[2] <= 1.51) && (coord_i[2] >= 1.49))
+//          cout << coord_i[1] << " " << lengthScale << " " << (1.0 - f_d) << " " << " " << kinematicViscosityTurb << " " << kinematicViscosity <<  endl;
+        
+        
         break;
       case SA_ZDES:
         /*--- Recent improvements in the Zonal Detached Eddy Simulation (ZDES) formulation.
@@ -3532,7 +3595,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetVolumeSTG()){
     
     su2double Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
-    su2double rho, omega, lenScale, kinematicViscosityTurb, U_infty, rhoUOmega;
+    su2double rho, omega, lenScale, kinematicViscosityTurb, U0, rhoUOmega;
     
     vector<unsigned long> LocalPoints = geometry->GetSTG_LocalPoint();
     
@@ -3553,12 +3616,12 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       kinematicViscosityTurb  = node[LocalPoints[ii]]->GetmuT()/rho;
       
       /* Get Reference velocity */
-      U_infty = config->GetModVel_FreeStream() / config->GetVelocity_Ref();
+      U0 = global_lengthEnergetic[2];
       
       /* Get specific dissipation rate */
       omega   = node[LocalPoints[ii]]->GetSolution(1);
       
-      rhoUOmega = rho * U_infty * omega;
+      rhoUOmega = rho * U0 * omega;
       
       node[LocalPoints[ii]]->SetKSinkTerm(rhoUOmega, kinematicViscosityTurb, lenScale, Grad_Vel);
     }
@@ -4452,17 +4515,16 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     turb_omega    = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
     
     vorticitymag = sqrt(pow(vorticity[0],2.0) + pow(vorticity[1],2.0) + pow(vorticity[2],2.0));
-    strainvort = sqrt(0.5 * (pow(strainmag,2.0) + pow(vorticitymag,2.0)));
+    //strainvort = sqrt(0.5 * (pow(strainmag,2.0) + pow(vorticitymag,2.0)));
     
-//    su2double uijuij = 0.0,
-//    uijuij = 0.0;
-//    for(iDim = 0; iDim < nDim; iDim++){
-//      for(jDim = 0; jDim < nDim; jDim++){
-//        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
-//      }
-//    }
-//    uijuij = sqrt(fabs(uijuij));
-//    uijuij = max(uijuij,1e-10);
+    su2double uijuij = 0.0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      for(unsigned short jDim = 0; jDim < nDim; jDim++){
+        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+      }
+    }
+    uijuij = sqrt(fabs(uijuij));
+    strainvort = max(uijuij,1e-10);
     
     /*--- Low Reynolds number correction term ---*/
     
@@ -4516,7 +4578,6 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         
         
         vortexTiltingMeasure = node[iPoint]->GetVortex_Tilting();
-        //cout << vortexTiltingMeasure << endl;
         Omega = sqrt(vorticity[0]*vorticity[0] +
                      vorticity[1]*vorticity[1] +
                      vorticity[2]*vorticity[2]);
@@ -4577,7 +4638,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         su2double h_max = geometry->node[iPoint]->GetMaxLength();
         maxDelta = min(cw1*max(wallDistance,h_max),h_max);
         
-        su2double alpha = 0.25 - wallDistance / h_max;
+        su2double alpha = 0.25 - (wallDistance / h_max);
         su2double alpha2 = pow(alpha, 2.0);
         su2double f_b = min(2.0 * exp(-9.0 * pow(alpha,2.0)), 1.0);
         
@@ -4603,6 +4664,10 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         lengthRANS  = sqrt(turb_ke) / ( 0.09 * turb_omega);
         lengthLES   = cDES * maxDelta;
         lengthScale = fd_tilde * (1.0 + f_e) * lengthRANS + (1.0 - fd_tilde) * lengthLES;
+        
+//        if ((coord_i[0] <= 4.01) && (coord_i[0] >= 3.99) && (coord_i[2] <= 1.51) && (coord_i[2] >= 1.49)){
+//          cout << coord_i[1] << " " << lengthScale << " " << lengthLES << " " << lengthRANS << " " << fd_tilde << " "<< (1.0 - f_d) << " " << f_e << " " << f_b  << " " << kinematicViscosityTurb << " " << kinematicViscosity <<  endl;
+//        }
         
         break;
         

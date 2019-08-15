@@ -1716,7 +1716,6 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   }
 
   /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
-  
 
 }
 

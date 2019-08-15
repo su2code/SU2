@@ -478,6 +478,22 @@ inline vector<unsigned long> CGeometry::GetSTG_LocalPoint() { return STG_LocalPo
 
 inline vector<unsigned long> CPhysicalGeometry::GetSTG_LocalPoint() { return STG_LocalPoint; }
 
+inline vector<su2double> CGeometry::GetSTG_GlobalListCoordX() { return STG_GlobalListCoordX; }
+
+inline vector<su2double> CPhysicalGeometry::GetSTG_GlobalListCoordX() { return STG_GlobalListCoordX; }
+
+inline vector<su2double> CGeometry::GetSTG_PhaseMode() { return PhaseMode;}
+
+inline vector<su2double> CPhysicalGeometry::GetSTG_PhaseMode() { return PhaseMode; }
+
+inline vector<su2double> CGeometry::GetSTG_RandUnitVec() { return RandUnitVec;}
+
+inline vector<su2double> CPhysicalGeometry::GetSTG_RandUnitVec() { return RandUnitVec; }
+
+inline vector<su2double> CGeometry::GetSTG_RandUnitNormal() { return RandUnitNormal;}
+
+inline vector<su2double> CPhysicalGeometry::GetSTG_RandUnitNormal() { return RandUnitNormal; }
+
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 
 inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}

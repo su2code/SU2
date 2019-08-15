@@ -253,7 +253,6 @@ void CTurbSSTVariable::SetKSinkTerm(su2double val_rhou0, su2double val_nut, su2d
   /* Smagorinsky SGS kinetic viscosity. */
   su2double nut_sgs = C_s_filter_width*C_s_filter_width*sqrt(strain_rate2);
   
-  Fk = -val_rhou0 * max((val_nut - nut_sgs), 0.);
-  //cout << Fk ;
+  Fk = val_rhou0 * max((val_nut - nut_sgs), 0.);
 }
 
