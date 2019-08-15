@@ -293,7 +293,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       
     }
       
-    case CGNS:
+    case CGNS: {
       
 #ifdef HAVE_CGNS
       
@@ -355,7 +355,15 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 #endif
       
       break;
-      
+    }
+    case RECTANGLE: {
+      nZone = 1;
+      break;
+    }
+    case BOX: {
+      nZone = 1;
+      break;
+    }
   }
 
   return (unsigned short) nZone;
@@ -451,6 +459,14 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
       nDim = cell_dim;
 #endif
 
+      break;
+    }
+    case RECTANGLE: {
+      nDim = 2;
+      break;
+    }
+    case BOX: {
+      nDim = 3;
       break;
     }
   }
@@ -1689,6 +1705,18 @@ void CConfig::SetConfig_Options() {
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  
+  /* DESCRIPTION: List of the number of grid points in the RECTANGLE or BOX grid in the x,y,z directions. (default: (33,33,33) ). */
+  addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
+  
+  /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
+  vector<su2double> default_mesh_box_length(3,1.0);
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
+  
+  /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
+  vector<su2double> default_mesh_box_offset(3,0.0);
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
+  
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
@@ -4403,6 +4431,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
                    string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
                    string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
+  }
+  
+  /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
+  
+  if (nMesh_Box_Size == 0) {
+    nMesh_Box_Size = 3;
+    Mesh_Box_Size = new short [nMesh_Box_Size];
+    Mesh_Box_Size[0] = 33;
+    Mesh_Box_Size[1] = 33;
+    Mesh_Box_Size[2] = 33;
+  } else if (nMesh_Box_Size != 3) {
+    SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
+                   CURRENT_FUNCTION);
   }
   
 }

@@ -38,7 +38,7 @@
 
 #include "../include/CMeshReaderFVM.hpp"
 
-CMeshReaderFVM::CMeshReaderFVM(string         val_filename,
+CMeshReaderFVM::CMeshReaderFVM(CConfig        *val_config,
                                unsigned short val_iZone,
                                unsigned short val_nZone) {
   
@@ -47,6 +47,8 @@ CMeshReaderFVM::CMeshReaderFVM(string         val_filename,
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
+  this->config = val_config;
+
   dimension = 0;
   
   numberOfLocalPoints = 0;

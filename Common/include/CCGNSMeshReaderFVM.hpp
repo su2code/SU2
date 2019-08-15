@@ -1,4 +1,3 @@
-
 /*!
  * \file CCGNSMeshReaderFVM.hpp
  * \brief Header file for the class CCGNSMeshReaderFVM.
@@ -51,9 +50,9 @@
  * \author: T. Economon
  */
 class CCGNSMeshReaderFVM: public CMeshReaderFVM {
-
+  
 private:
-
+  
 #ifdef HAVE_CGNS
   int cgnsFileID; /*!< \brief CGNS file identifier. */
   int cgnsBase;   /*!< \brief CGNS database index. */
@@ -83,11 +82,6 @@ private:
    * \brief Reads all CGNS zone metadata and checks for errors.
    */
   void ReadCGNSZoneMetadata();
-  
-  /*!
-   * \brief Reads the physical dimension of the current zone (2D or 3D).
-   */
-  void ReadCGNSDimension();
   
   /*!
    * \brief Reads the grid points from a CGNS zone into linear partitions across all ranks.
@@ -130,7 +124,7 @@ private:
   string GetCGNSElementType(ElementType_t val_elem_type,
                             int           &val_vtk_type);
 #endif
-
+  
   /*!
    * \brief Routine to launch non-blocking sends and recvs amongst all processors.
    * \param[in] bufSend - Buffer of data to be sent.
@@ -168,7 +162,7 @@ public:
   /*!
    * \brief Constructor of the CCGNSMeshReaderFVM class.
    */
-  CCGNSMeshReaderFVM(string         val_filename,
+  CCGNSMeshReaderFVM(CConfig        *val_config,
                      unsigned short val_iZone,
                      unsigned short val_nZone);
   

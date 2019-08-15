@@ -64,8 +64,11 @@ lib_sources = \
   ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
+  ../include/CMultigridQueue.hpp \
   ../include/CMeshReaderFVM.hpp \
   ../include/CCGNSMeshReaderFVM.hpp \
+  ../include/CRectangularMeshReaderFVM.hpp \
+  ../include/CBoxMeshReaderFVM.hpp \
   ../include/graph_coloring_structure.hpp \
   ../include/grid_adaptation_structure.hpp \
   ../include/grid_adaptation_structure.inl \
@@ -122,8 +125,11 @@ lib_sources = \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
   ../src/geometry_structure.cpp \
+  ../src/CMultigridQueue.cpp \
   ../src/CMeshReaderFVM.cpp \
   ../src/CCGNSMeshReaderFVM.cpp \
+  ../src/CRectangularMeshReaderFVM.cpp \
+  ../src/CBoxMeshReaderFVM.cpp \
   ../src/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \

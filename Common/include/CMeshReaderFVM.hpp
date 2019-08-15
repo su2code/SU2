@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "mpi_structure.hpp"
-#include "option_structure.hpp"
+#include "config_structure.hpp"
 
 /*!
  * \class CMeshReaderFVM
@@ -55,6 +55,8 @@ protected:
   
   int rank;  /*!< \brief MPI Rank. */
   int size;  /*!< \brief MPI Size. */
+  
+  CConfig *config; /*!< \brief Local pointer to the config parameter object. */
   
   unsigned short dimension; /*!< \brief Dimension of the problem (2 or 3). */
 
@@ -78,7 +80,7 @@ public:
    * \param[in] val_iZone  - Current zone index.
    * \param[in] val_nZone  - Total number of zones.
    */
-  CMeshReaderFVM(string         val_filename,
+  CMeshReaderFVM(CConfig        *val_config,
                  unsigned short val_iZone,
                  unsigned short val_nZone);
   
