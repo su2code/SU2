@@ -688,10 +688,10 @@ void COutputLegacy::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    if (config->GetTime_Marching() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+    } else if (config->GetTime_Marching() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -1070,10 +1070,10 @@ void COutputLegacy::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, 
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    if (config->GetTime_Marching() == HARMONIC_BALANCE) {
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
-    } else if (config->GetUnsteady_Simulation() && config->GetTime_Domain()) {
+    } else if (config->GetTime_Marching() && config->GetTime_Domain()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(iExtIter));
@@ -2445,7 +2445,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     if (Kind_Solver == FEM_ELASTICITY)  {
       /*--- If the analysis is dynamic... ---*/
-      if (config->GetDynamic_Analysis() == DYNAMIC) {
+      if (config->GetTime_Domain()) {
         /*--- Velocities ---*/
         iVar_FEA_Vel = nVar_Total;
         if (geometry->GetnDim() == 2) nVar_Total += 2;
@@ -3389,7 +3389,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     /*--- Communicate the Velocities for dynamic FEM problem ---*/
     
-    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetTime_Domain())) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -3452,7 +3452,7 @@ void COutputLegacy::MergeSolution(CConfig *config, CGeometry *geometry, CSolver 
     
     /*--- Communicate the Accelerations for dynamic FEM problem ---*/
     
-    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetTime_Domain())) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -4066,15 +4066,15 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iExtIter = config->GetInnerIter();
   bool grid_movement = config->GetGrid_Movement();
-  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic_fem = (config->GetTime_Domain());
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   ofstream restart_file;
   ofstream meta_file;
   string filename, meta_filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   /*--- Retrieve filename from config ---*/
   
@@ -4094,7 +4094,7 @@ void COutputLegacy::SetRestart(CConfig *config, CGeometry *geometry, CSolver **s
     filename= config->GetMultizone_FileName(filename, val_iZone, ".dat");
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()), ".dat");
   } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -4693,7 +4693,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       
       /*--- Output a file with the forces breakdown. ---*/
       
-      if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      if (config[val_iZone]->GetTime_Marching() == HARMONIC_BALANCE) {
         SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
       
@@ -4730,8 +4730,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
-    if (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-        config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+    if (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST ||
+        config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)
       ExtIter_OffSet = 0;
 
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
@@ -5243,8 +5243,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Header frequency ---*/
     
-    bool Unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                     (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool Unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+                     (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
     bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
@@ -5256,7 +5256,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- We maintain the name, as it is an input of the function ---*/
     /*--- The function GetWrt_Con_Freq_DualTime should be modified to be able to define different frequencies ---*/
     /*--- dynamic determines if the problem is, or not, time dependent ---*/
-    bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+    bool dynamic = (config[val_iZone]->GetTime_Domain());              // Dynamic simulations.
     bool In_NoDynamic = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_Dynamic_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
     bool In_Dynamic_1 = (!DualTime_Iteration && nonlinear_analysis);
@@ -5556,7 +5556,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         ) {
 
           if (!fem) {
-            if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
+            if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_STEPPING)) {
               switch (config[val_iZone]->GetKind_Solver()) {
               case EULER : case NAVIER_STOKES: case RANS:
               case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:    
@@ -5642,10 +5642,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             else {
               if (flow) {
-                if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
+                if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
                 {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
-                } else if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
+                } else if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][val_iInst][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
                 } else {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
@@ -6498,7 +6498,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   
   bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-  bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
+  bool unsteady           = (config[val_iZone]->GetTime_Marching() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
   bool grid_movement      = config[val_iZone]->GetGrid_Movement();
   bool gravity            = config[val_iZone]->GetGravityForce();
@@ -9339,8 +9339,8 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
-      (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
+  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
+      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -9490,8 +9490,8 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
   
   /*--- Write file name with extension if unsteady or steady ---*/
   
-  if ((config->GetUnsteady_Simulation() && config->GetTime_Domain()) ||
-      (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
+  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
+      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -13221,7 +13221,7 @@ void COutputLegacy::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSo
           
             /*--- Get the physical time if necessary. ---*/
             su2double time = 0.0;
-            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+            if (config->GetTime_Marching()) time = config->GetPhysicalTime();
           
             /* Set the pointers to the coordinates and solution of this DOF. */
             const su2double *coor = geometry->node[iPoint]->GetCoord();
@@ -13854,7 +13854,7 @@ void COutputLegacy::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, 
           
             /*--- Get the physical time if necessary. ---*/
             su2double time = 0.0;
-            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+            if (config->GetTime_Marching()) time = config->GetPhysicalTime();
           
             /* Set the pointers to the coordinates and solution of this DOF. */
             const su2double *coor = geometry->node[iPoint]->GetCoord();
@@ -14426,7 +14426,7 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
     }
     
     /*--- If the analysis is dynamic... ---*/
-    if (config->GetDynamic_Analysis() == DYNAMIC) {
+    if (config->GetTime_Domain()) {
       
       /*--- Velocities ---*/
       nVar_Par += 2;
@@ -14560,7 +14560,7 @@ void COutputLegacy::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometr
         
         /*--- Load the velocities and accelerations (dynamic calculations). ---*/
         
-        if (config->GetDynamic_Analysis() == DYNAMIC) {
+        if (config->GetTime_Domain()) {
           
           /*--- Velocities ---*/
           
@@ -17854,8 +17854,8 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   ofstream restart_file;
   string filename;
   
@@ -17883,7 +17883,7 @@ void COutputLegacy::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geom
     filename= config->GetMultiInstance_FileName(filename, val_iInst, ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
   } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -17991,8 +17991,8 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool wrt_perf  = config->GetWrt_Performance();
   ofstream restart_file;
   string filename;
@@ -18019,7 +18019,7 @@ void COutputLegacy::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geo
     filename= config->GetMultiInstance_FileName(filename, val_iInst, ".dat");
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst), ".dat");
   } else if (config->GetTime_Domain()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter), ".dat");
@@ -21256,7 +21256,7 @@ void COutputLegacy::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSol
 
             /*--- Get the physical time if necessary. ---*/
             su2double time = 0.0;
-            if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+            if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
             /* Get the verification solution. */
             su2double mmsSol[5];

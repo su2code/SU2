@@ -118,7 +118,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
   
-  if (config_container[ZONE_0]->GetUnsteady_Simulation())
+  if (config_container[ZONE_0]->GetTime_Marching())
     config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
@@ -203,18 +203,18 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
       /*--- Unsteady problems ---*/
 
-      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+      (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
+        (config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) &&
        ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
                            ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+      ((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND) &&
        ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
 
-      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+      ((config_container[ZONE_0]->GetTime_Domain()) &&
        ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
 
       /*--- No inlet profile file found. Print template. ---*/

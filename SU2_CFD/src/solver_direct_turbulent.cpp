@@ -526,9 +526,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
                               +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
@@ -536,9 +536,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       } else {
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                               +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
@@ -551,9 +551,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       if (implicit) {
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -714,9 +714,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
             + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
@@ -724,9 +724,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       } else {
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
             + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
@@ -739,9 +739,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       if (implicit) {
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -1215,7 +1215,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
   
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
   bool transition_BC = (config->GetKind_Trans_Model() == BC);
   

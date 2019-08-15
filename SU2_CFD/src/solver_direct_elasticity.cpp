@@ -101,7 +101,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   unsigned short iVar, jVar, iDim, jDim;
   unsigned short iTerm, iKind;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
@@ -943,7 +943,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   unsigned long iPoint;
   bool initial_calc = (config->GetTimeIter() == 0) && (config->GetInnerIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetInnerIter() == 0);                          // Checks if it is the first iteration
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
@@ -1581,7 +1581,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
   
   bool prestretch_fem = config->GetPrestretch();
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   bool topology_mode = config->GetTopology_Optimization();
   su2double simp_exponent = config->GetSIMP_Exponent();
@@ -1981,7 +1981,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNu
   
   unsigned long iPoint, iVertex;
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   Solution[0] = 0.0;
   Solution[1] = 0.0;
@@ -2015,7 +2015,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container
                                             unsigned short val_marker) {
   
   unsigned long iPoint, iVertex;
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -3006,7 +3006,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   bool restart = config->GetRestart(); // Restart analysis
   bool fsi = config->GetFSI_Simulation();  // FSI simulation.
-  bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
+  bool stat_fsi = !config->GetTime_Domain();
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
   bool offset = (restart && fsi && (!stat_fsi));
@@ -3081,7 +3081,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar, jVar;
   
   bool first_iter = (config->GetInnerIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
@@ -3253,7 +3253,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());          // Dynamic simulations.
   
   /*--- Update solution ---*/
   
@@ -3319,7 +3319,7 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solve
   unsigned short iVar;
   unsigned long iPoint;
   su2double *valSolutionPred;
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   
   /*--- Update solution and set it to be the solution after applying relaxation---*/
   
@@ -3394,7 +3394,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   unsigned short iVar, jVar;
   
   bool first_iter = (config->GetInnerIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetTime_Domain());              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
@@ -3906,7 +3906,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
   unsigned long iPoint;
   unsigned long nTotalPoint = 1;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   unsigned long TimeIter = config->GetTimeIter();
 
@@ -4041,7 +4041,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
 
   unsigned long TimeIter = config->GetTimeIter();
 
@@ -4315,7 +4315,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   string filename;
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config->GetTime_Domain());
   bool fluid_structure = config->GetFSI_Simulation();
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 

@@ -985,7 +985,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         algorithm below. ---*/
   bool TimeSyncSpecified   = false;
   const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
-  if(config[iZone]->GetUnsteady_Simulation() == TIME_STEPPING &&
+  if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
      config[iZone]->GetUnst_CFL()            != 0.0           &&
      TimeSync                                != 0.0) TimeSyncSpecified = true;
 

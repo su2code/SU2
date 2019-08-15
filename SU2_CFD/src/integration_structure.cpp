@@ -65,8 +65,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
   

@@ -110,9 +110,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename = config->GetSolution_FileName();
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
@@ -136,7 +136,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
@@ -822,7 +822,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   su2double Mach     = config->GetMach();
   su2double Reynolds = config->GetReynolds();
   
-  bool unsteady      = (config->GetUnsteady_Simulation() != NO);
+  bool unsteady      = (config->GetTime_Marching() != NO);
   bool viscous       = config->GetViscous();
   bool grid_movement = config->GetGrid_Movement();
   bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
@@ -1401,8 +1401,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool rans      = ((config->GetKind_Solver() == INC_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution) && (TimeIter == 0) && !restart) {
@@ -1498,7 +1498,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     }
     
     if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
-        (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+        (config->GetTime_Marching() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       
@@ -1644,9 +1644,9 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool time_steping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_steping  = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
 
@@ -2226,7 +2226,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
-      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
       
       /*--- Loop over points ---*/
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5717,7 +5717,7 @@ void CIncEulerSolver::BC_Custom(CGeometry      *geometry,
     /*--- Get the physical time. ---*/
     
     su2double time = 0.0;
-    if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+    if (config->GetTime_Marching()) time = config->GetPhysicalTime();
     
     /*--- Loop over all the vertices on this boundary marker ---*/
     
@@ -5851,9 +5851,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        contribution, as the time derivative should always be zero. ---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
           Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
           Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                             +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
@@ -5923,9 +5923,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            if (config->GetTime_Marching() == DT_STEPPING_1ST)
               Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            if (config->GetTime_Marching() == DT_STEPPING_2ND)
               Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
           }
         }
@@ -6121,9 +6121,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        due to the time discretization has a new form.---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
           Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
           Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
           + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
       }
@@ -6134,9 +6134,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
         for (iVar = 1; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
         for (iDim = 0; iDim < nDim; iDim++)
@@ -6388,7 +6388,7 @@ void CIncEulerSolver::ComputeVerificationError(CGeometry *geometry,
     
       /*--- Get the physical time if necessary. ---*/
       su2double time = 0.0;
-      if (config->GetUnsteady_Simulation()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
     
       /*--- Reset the global error measures to zero. ---*/
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -6473,10 +6473,10 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
-  bool static_fsi = ((config->GetUnsteady_Simulation() == STEADY) &&
+  bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
                      (config->GetFSI_Simulation()));
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool turbulent     = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   
@@ -6759,9 +6759,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FileName();
 
@@ -6783,7 +6783,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
@@ -7552,8 +7552,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool energy = config->GetEnergy_Equation();
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
@@ -7717,7 +7717,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (config->GetTime_Marching() == TIME_STEPPING) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;

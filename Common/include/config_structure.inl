@@ -1298,7 +1298,7 @@ inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) { return Ob
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
+inline unsigned short CConfig::GetTime_Marching(void) { return TimeMarching; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 

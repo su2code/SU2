@@ -1861,7 +1861,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_FEA:
-      if (config->GetDynamic_Analysis() == DYNAMIC)
+      if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
@@ -1985,7 +1985,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel(iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
               }
@@ -2135,7 +2135,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
-              if (config->GetDynamic_Analysis() == DYNAMIC) {
+              if (config->GetTime_Domain()) {
                 node[iPoint]->SetSolution_Vel(iVar, bufDRecv[buf_offset+nVar+iVar]);
                 node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
@@ -3995,7 +3995,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
@@ -5067,9 +5067,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short iDim, iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
   su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
 
   string UnstExt, text_line;
   ifstream restart_file;
