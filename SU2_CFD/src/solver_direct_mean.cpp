@@ -8081,7 +8081,10 @@ void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container
 
 void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
+  string marker;
+  short iMarker;
   unsigned short iDiff_Inputs;
+  unsigned long nVec, iVec;
   bool reset_nondimensionalization = false;
 
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++){
@@ -8091,13 +8094,6 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
     }
 
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-//      case DI_REYNOLDS:
-//        if (!reset) {
-//          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        }
-////        config->SetReynolds(Diff_Inputs_Vars[iDiff_Inputs][0]);
-//        reset_nondimensionalization = true;
-//        break;
       case DI_AOA:
         if (reset) {
           config->SetAoA(Diff_Inputs_Vars[iDiff_Inputs][0]);
@@ -8111,12 +8107,104 @@ void CEulerSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
         }
         break;
 
+      case DI_DENSITY:
+        // TODO Test
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        // TODO Should it be FreeStreamND?
+        config->SetDensity_FreeStreamND(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        reset_nondimensionalization = true;
+        break;
+
+      case DI_INLET_VEL:
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (iMarker == -1) break;  // For MPI case where inlets are distributed
+        config->SetInlet_Ptotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
+          Inlet_Ptotal[iMarker][iVertex] = config->GetInlet_Ptotal(marker);
+        }
+        reset_nondimensionalization = true;
+        break;
+
+      case DI_INLET_TEMP:
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        marker = config->GetDiff_Inputs_Markers()[iDiff_Inputs];
+        iMarker = config->GetMarker_All_TagBound(marker);
+        if (iMarker == -1) break;  // For MPI case where inlets are distributed
+        config->SetInlet_Ttotal(Diff_Inputs_Vars[iDiff_Inputs][0], marker);
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++) {
+          Inlet_Ttotal[iMarker][iVertex] = config->GetInlet_Ttotal(marker);
+        }
+        reset_nondimensionalization = true;
+        break;
+
+      case DI_TEMP:
+        if (reset) {
+          nVec = nPointDomain;
+          for (iVec = 0; iVec < nVec; iVec++) {
+            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            // Index 0 in compressible, nDim+1 in incompressible
+            node[iVec]->SetSolution(0, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+          }
+          reset_nondimensionalization = true; // TODO Is this needed?
+        }
+        break;
+
+      case DI_PRESS:
+        if (reset) {
+          nVec = nPointDomain;
+          for (iVec = 0; iVec < nVec; iVec++) {
+            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            // Index nDim+1 in compressible, 0 in incompressible
+            node[iVec]->SetSolution(nDim+1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+          }
+          reset_nondimensionalization = true; // TODO Is this needed?
+        }
+        break;
+
+      case DI_VEL_X:
+        if (reset) {
+          nVec = nPointDomain;
+          for (iVec = 0; iVec < nVec; iVec++) {
+            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            node[iVec]->SetSolution(1, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+          }
+          reset_nondimensionalization = true; // TODO Is this needed?
+        }
+        break;
+      case DI_VEL_Y:
+        if (reset) {
+          nVec = nPointDomain;
+          for (iVec = 0; iVec < nVec; iVec++) {
+            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            node[iVec]->SetSolution(2, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+          }
+          reset_nondimensionalization = true; // TODO Is this needed?
+        }
+        break;
+      case DI_VEL_Z:
+        if (reset) {
+          nVec = nPointDomain;
+          for (iVec = 0; iVec < nVec; iVec++) {
+            AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+            node[iVec]->SetSolution(3, Diff_Inputs_Vars[iDiff_Inputs][iVec]);
+          }
+          reset_nondimensionalization = true; // TODO Is this needed?
+        }
+        break;
+
       default:
         break;
     }
   }
 
-//  config->SetReynolds(1.0);
 //  reset_nondimensionalization = true;
   if (reset_nondimensionalization) {
     delete FluidModel;
@@ -8130,7 +8218,7 @@ void CEulerSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
   unsigned short iDiff_Inputs;
   for (iDiff_Inputs = 0; iDiff_Inputs < config->GetnDiff_Inputs(); iDiff_Inputs++) {
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
-      case DI_REYNOLDS:
+      case DI_DENSITY:
         SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 
@@ -8147,12 +8235,17 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
 
   for (iDiff_Outputs = 0; iDiff_Outputs < config->GetnDiff_Outputs(); iDiff_Outputs++) {
     switch (config->GetDiff_Outputs()[iDiff_Outputs]) {
+      case DO_CUSTOM:
+        // Placeholder for custom differentiable output
+        break;
+
       case DO_LIFT_COEFFICIENT:
         nVec = 1;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
         Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
         Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_CL[0];  // Only works with one marker for now
         break;
+
       case DO_DRAG_COEFFICIENT:
         nVec = 1;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
@@ -8160,6 +8253,7 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_CD[0];  // Only works with one marker for now
         // TODO Fixed CL and CM Modes (see Evaluate Obj Func below)
         break;
+
       case DO_TOTAL_HEATFLUX:
         nVec = 1;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
@@ -8167,6 +8261,16 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
         Diff_Outputs_Vars[iDiff_Outputs][0] = Surface_HF_Visc[0];  // Only works with one marker for now
         // TODO Fixed CL and CM Modes (see Evaluate Obj Func below)
         break;
+
+      case DO_TEMP:
+        nVec = nPointDomain;
+        Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
+        Diff_Outputs_Vars[iDiff_Outputs].resize(nVec);
+        for (iVec = 0; iVec < nVec; iVec++) {
+          Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetTemperature();
+        }
+        break;
+
       case DO_PRESS:
         nVec = nPointDomain;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
@@ -8175,6 +8279,7 @@ void CEulerSolver::SetDiff_Outputs_Vars(CConfig *config) {
           Diff_Outputs_Vars[iDiff_Outputs][iVec] = node[iVec]->GetPressure();
         }
         break;
+
       case DO_VEL_X:
         nVec = nPointDomain;
         Diff_Outputs_Vars[iDiff_Outputs].reserve(nVec);
@@ -17989,11 +18094,22 @@ void CNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool res
         config->SetMu_Constant(Diff_Inputs_Vars[iDiff_Inputs][0]);
         reset_nondimensionalization = true;
         break;
+
       case DI_PRANDTL_LAM:
         if (!reset) {
           AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
         }
         config->SetPrandtl_Lam(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        reset_nondimensionalization = true;
+        break;
+
+      case DI_VISCOSITY:
+        // TODO Test
+        if (!reset) {
+          AD::RegisterInput(Diff_Inputs_Vars[iDiff_Inputs][0]);
+        }
+        // TODO Should it be FreeStreamND?
+        config->SetViscosity_FreeStreamND(Diff_Inputs_Vars[iDiff_Inputs][0]);
         reset_nondimensionalization = true;
         break;
 
@@ -18017,6 +18133,9 @@ void CNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
     switch (config->GetDiff_Inputs()[iDiff_Inputs]) {
       case DI_PRANDTL_LAM:
       case DI_MU_CONSTANT:
+      case DI_VISCOSITY:
+      case DI_INLET_VEL:
+      case DI_INLET_TEMP:
         SetTotal_Sens_Diff_Inputs(iDiff_Inputs);
         break;
 

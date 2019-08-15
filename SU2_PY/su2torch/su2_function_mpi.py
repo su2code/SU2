@@ -1,10 +1,12 @@
+import os
 import shutil
 from enum import IntEnum
 
-import torch
+import numpy as np
+from mpi4py import MPI
+
 import pysu2
 import pysu2ad
-from mpi4py import MPI
 
 
 class RunCode(IntEnum):
@@ -27,16 +29,24 @@ def run_forward(comm, forward_driver, inputs):
         forward_driver.SetDiff_Inputs_Vars(x.flatten().tolist(), i)
     forward_driver.ApplyDiff_Inputs_Vars()
 
-    forward_driver.Preprocess(0)
-    forward_driver.Run()
-    forward_driver.Output(0)
+    forward_driver.StartSolver()
     comm.Barrier()
     # TODO Way to get results in-memory, without writing to file?
-    if comm.Get_rank() == 0:
-        shutil.move("./restart_flow.dat", "./solution_flow.dat")
+    if comm.Get_rank() == 0 and os.path.isfile('./restart_flow.dat'):
+        shutil.move('./restart_flow.dat', './solution_flow.dat')
+
+    # are we using numpy or torch
+    is_numpy = len(inputs) == 0 or type(inputs[0]) is np.ndarray
+    if is_numpy:
+        new_func = np.array
+        cat_func = np.concatenate
+    else:
+        import torch
+        new_func = inputs[0].new_tensor
+        cat_func = torch.cat
 
     num_diff_outputs = forward_driver.GetnDiff_Outputs()
-    outputs = [inputs[0].new_tensor(forward_driver.GetDiff_Outputs_Vars(i))
+    outputs = [new_func(forward_driver.GetDiff_Outputs_Vars(i))
                for i in range(num_diff_outputs)]
 
     for i in range(num_diff_outputs):
@@ -47,17 +57,18 @@ def run_forward(comm, forward_driver, inputs):
                 outputs[i] = comm.gather(outputs[i], root=0)
                 global_inds = comm.gather(forward_driver.GetAllGlobalIndices(), root=0)
                 if comm.Get_rank() == 0:
-                    outputs[i] = torch.cat(outputs[i])
+                    outputs[i] = cat_func(outputs[i])
                     global_inds = list(sum(global_inds, tuple()))  # join tuples
             else:
                 global_inds = list(forward_driver.GetAllGlobalIndices())
 
             if comm.Get_rank() == 0:
                 # TODO Make the list integers on the C side
-                global_inds = torch.tensor(global_inds, dtype=torch.long)
+                global_inds = np.array(global_inds, dtype=np.long)
                 assert outputs[i].shape[0] == len(global_inds), \
                     'Only full grid outputs supported by now (besides scalars).'
-                outputs[i][global_inds] = outputs[i].clone()  # order by global_inds
+                # order by global_inds
+                outputs[i][global_inds] = outputs[i].copy() if is_numpy else outputs[i].clone()
             else:
                 outputs[i] = None
     return tuple(outputs)
@@ -73,18 +84,22 @@ def run_adjoint(comm, adjoint_driver, inputs, grad_outputs):
     :param grad_outputs: Gradients of a scalar loss with respect to the forward outputs, see SU2Function's backward() method.
     :return: The gradients of the loss with respect to the inputs.
     """
-    # TODO Add checks to make sure these are run before Preprocess
     for i, x in enumerate(inputs):
         adjoint_driver.SetDiff_Inputs_Vars(x.flatten().tolist(), i)
     adjoint_driver.ApplyDiff_Inputs_Vars()
     for i, g in enumerate(grad_outputs):
         adjoint_driver.SetBackprop_Derivs(g.flatten().tolist(), i)
 
-    adjoint_driver.Preprocess(0)
-    adjoint_driver.Run()
+    adjoint_driver.StartSolver()
     comm.Barrier()
-    grads = tuple(inputs[0].new_tensor(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
-                  for i in range(adjoint_driver.GetnDiff_Inputs()))
+
+    # are we using numpy or torch
+    is_numpy = len(inputs) == 0 or type(inputs[0]) is np.ndarray
+    new_func = np.array if is_numpy else inputs[0].new_tensor
+    grads = None
+    if comm.Get_rank() == 0:
+        grads = tuple(new_func(adjoint_driver.GetTotal_Sens_Diff_Inputs(i))
+                      for i in range(adjoint_driver.GetnDiff_Inputs()))
     return grads
 
 
@@ -94,8 +109,7 @@ def main():
     using RunCodes.
     """
     intercomm = MPI.Comm.Get_parent()
-
-    num_zones, dims, num_diff_outputs = intercomm.bcast(None, root=0)
+    num_zones, dims = intercomm.bcast(None, root=0)
 
     inputs = None
     while True:

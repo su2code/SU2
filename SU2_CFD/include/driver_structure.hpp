@@ -1524,6 +1524,12 @@ public:
   void DynamicMeshUpdate(unsigned long ExtIter);
 
   /*!
+   * \brief Get the number of differentiable inputs that were set in the config file.
+   * \return Number of differentiable inputs.
+   */
+  unsigned short GetnDiff_Inputs();
+
+  /*!
    * \brief Get value of one of the differentiable inputs.
    * \param[in] index - The index of the differentiable input as listed in the config file.
    * \return Vector with the differentiable input values

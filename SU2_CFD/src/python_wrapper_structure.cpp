@@ -1307,6 +1307,10 @@ void CSinglezoneDriver::ApplyDiff_Inputs_Vars() {
   }
 }
 
+unsigned short CSinglezoneDriver::GetnDiff_Inputs() {
+  return config_container[0]->GetnDiff_Inputs();
+}
+
 unsigned short CSinglezoneDriver::GetnDiff_Outputs() {
   return config_container[0]->GetnDiff_Outputs();
 }
