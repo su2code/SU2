@@ -768,7 +768,6 @@ CSingleGridIntegration::~CSingleGridIntegration(void) { }
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                                                   CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) {
   unsigned short iMesh;
-  su2double monitor = 0.0;
   
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
@@ -799,13 +798,6 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   /*--- Postprocessing ---*/
   
   solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone], FinestMesh);
-  
-  /*--- Compute adimensional parameters and the convergence monitor ---*/
-  
-  switch (RunTime_EqSystem) {
-    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][iInst][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
-    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
-  }
   
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
     solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->Heat_Fluxes(geometry[iZone][iInst][FinestMesh], solver_container[iZone][iInst][FinestMesh], config[iZone]);

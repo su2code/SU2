@@ -4745,13 +4745,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   string filename, restart_filename;
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
 
   /*--- Restart the solution from file information ---*/
 

@@ -32,7 +32,7 @@ CFVMDataSorter::~CFVMDataSorter(){
 
 void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
   
-  unsigned long iPoint, Global_Index, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned short iMarker;
   int SendRecv, RecvFrom;
   bool notHalo;
@@ -48,7 +48,6 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
         
         /*--- We need to keep one copy of overlapping halo cells. ---*/
         

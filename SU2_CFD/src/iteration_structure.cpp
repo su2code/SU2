@@ -1340,10 +1340,6 @@ void CHeatIteration::Solve(COutput *output,
                              unsigned short val_iZone,
                              unsigned short val_iInst) {
 
-  /*--- Boolean to determine if we are running a steady or unsteady case ---*/
-  bool steady = (config[val_iZone]->GetTime_Marching() == STEADY);
-  bool unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
-
   unsigned short Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
 
@@ -2562,9 +2558,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     unsigned short val_iInst)     {
 
   bool StopCalc = false;
-  bool steady = (config[val_iZone]->GetTime_Marching() == STEADY);
-  bool output_history = false;
-
+  
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else

@@ -5456,9 +5456,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
   string Tag, text_line;
-  unsigned long InnerIter = config->GetInnerIter();
-
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
   ifstream restart_file;
@@ -5474,9 +5471,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
+  
+  filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
   /*--- Read only the number of variables in the restart file. ---*/
 
