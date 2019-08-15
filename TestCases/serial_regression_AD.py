@@ -303,16 +303,16 @@ def main():
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    discadj_multi_py            = TestCase('discadj_multi_py')
-    discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    discadj_multi_py.test_iter  = 10
-    discadj_multi_py.su2_exec   = "discrete_adjoint.py"
-    discadj_multi_py.timeout    = 1600
-    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
-    discadj_multi_py.test_file  = "of_grad_combo.dat"
-    pass_list.append(discadj_multi_py.run_filediff())
-    test_list.append(discadj_multi_py)
+#    discadj_multi_py            = TestCase('discadj_multi_py')
+#    discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+#    discadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+#    discadj_multi_py.test_iter  = 10
+#    discadj_multi_py.su2_exec   = "discrete_adjoint.py"
+#    discadj_multi_py.timeout    = 1600
+#    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
+#    discadj_multi_py.test_file  = "of_grad_combo.dat"
+#    pass_list.append(discadj_multi_py.run_filediff())
+#    test_list.append(discadj_multi_py)
 
     # Tests summary
     print('==================================================================')
