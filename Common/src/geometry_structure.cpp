@@ -16096,8 +16096,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetTime_Marching()) {
-    nTimeIter = config->GetTimeIter();
+  if (config->GetTime_Domain()) {
+    nTimeIter = config->GetnTime_Iter();
   }else {
     nTimeIter = 1;
   }
