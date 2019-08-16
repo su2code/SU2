@@ -2305,7 +2305,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   int iProcessor;
   
-  bool grid_movement  = (config->GetGrid_Movement());
+  bool dynamic_grid = (config->GetGrid_Movement() ||
+                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool transition     = (config->GetKind_Trans_Model() == LM);
@@ -2329,7 +2330,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Set the non-dimensionalization ---*/
   if (flow) {
-    if (grid_movement) {
+    if (dynamic_grid) {
       Gas_Constant = config->GetGas_ConstantND();
       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
       Mach_Motion = config->GetMach_Motion();
@@ -2381,7 +2382,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     /*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
     
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       iVar_GridVel = nVar_Total;
       if (geometry->GetnDim() == 2) nVar_Total += 2;
       else if (geometry->GetnDim() == 3) nVar_Total += 3;
@@ -2711,7 +2712,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
      Also, in the future more routines like this could be used to write
      an arbitrary number of additional variables to the file. ---*/
     
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       
       /*--- Loop over this partition to collect the current variable ---*/
       
@@ -4032,7 +4033,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_grid = (config->GetGrid_Movement() ||
+                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
@@ -4108,7 +4110,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     
     /*--- Mesh velocities for dynamic mesh cases ---*/
     
-    if (grid_movement && !fem) {
+    if (dynamic_grid && !fem) {
       if (nDim == 2) {
         restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"";
       } else {
@@ -6438,7 +6440,8 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
-  bool grid_movement      = config[val_iZone]->GetGrid_Movement();
+  bool dynamic_grid       = (config[val_iZone]->GetGrid_Movement() ||
+                            (config[val_iZone]->GetDeform_Mesh()&&(config[val_iZone]->GetUnsteady_Simulation() != NO)));
   bool gravity            = config[val_iZone]->GetGravityForce();
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
   bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
@@ -6895,7 +6898,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
       }
     }
     
-    if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+    if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
     else Breakdown_file << "Force coefficients computed using free-stream values." << "\n";
     
     if (incompressible) {
@@ -7193,19 +7196,19 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
       if (config[val_iZone]->GetRef_Inc_NonDim() == DIMENSIONAL) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
         Breakdown_file << "are set to 1.0 in order to perform a dimensional calculation." << "\n";
-        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
         else Breakdown_file << "Force coefficients computed using initial values." << "\n";
       }
       else if (config[val_iZone]->GetRef_Inc_NonDim() == INITIAL_VALUES) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
         Breakdown_file << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << "\n";
-        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
         else Breakdown_file << "Force coefficients computed using initial values." << "\n";
       }
       else if (config[val_iZone]->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
         Breakdown_file << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << "\n";
-        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
         else Breakdown_file << "Force coefficients computed using reference values." << "\n";
       }
       Breakdown_file << "The reference area for force coeffs. is " << config[val_iZone]->GetRefArea() << " m^2." << "\n";
@@ -8832,7 +8835,8 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   ofstream Cp_File;
   unsigned short iDim;
   
-  bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_grid = (config->GetGrid_Movement() ||
+                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   
   Plane_P0 = new su2double[3];
   Plane_P0_ = new su2double[3];
@@ -8855,7 +8859,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   RefLength = config->GetRefLength();
   Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     Gas_Constant = config->GetGas_ConstantND();
     Mach2Vel = sqrt(
                     Gamma * Gas_Constant * config->GetTemperature_FreeStreamND());
@@ -12646,7 +12650,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement        = (config->GetGrid_Movement());
+  bool dynamic_grid         = (config->GetGrid_Movement() ||
+                              (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   
@@ -12656,7 +12661,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
-  if (grid_movement) {
+  if (dynamic_grid) {
     Gas_Constant = config->GetGas_ConstantND();
     Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
     Mach_Motion = config->GetMach_Motion();
@@ -12774,7 +12779,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add the grid velocity. ---*/
     
-    if (grid_movement) {
+    if (dynamic_grid) {
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
       
@@ -13081,7 +13086,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load buffers with the three grid velocity components. ---*/
         
-        if (grid_movement) {
+        if (dynamic_grid) {
           Grid_Vel = geometry->node[iPoint]->GetGridVel();
           Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
           Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
@@ -13272,7 +13277,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double Q, Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
 
   bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement        = (config->GetGrid_Movement());
+  bool dynamic_grid = (config->GetGrid_Movement() ||
+                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   bool variable_density     = (config->GetKind_DensityModel() == VARIABLE);
   bool energy               = config->GetEnergy_Equation();
@@ -13419,7 +13425,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Add the grid velocity. ---*/
 
-    if (grid_movement) {
+    if (dynamic_grid) {
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
 
@@ -13712,7 +13718,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
         /*--- Load buffers with the three grid velocity components. ---*/
 
-        if (grid_movement) {
+        if (dynamic_grid) {
           Grid_Vel = geometry->node[iPoint]->GetGridVel();
           Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
           Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
@@ -13886,7 +13892,8 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Normal, Area;
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool grid_movement  = (config->GetGrid_Movement());
+  bool dynamic_grid = (config->GetGrid_Movement() ||
+                      (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo;
@@ -14037,7 +14044,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- Add the grid velocity. ---*/
     
-    if (grid_movement) {
+    if (dynamic_grid) {
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
       Variable_Names.push_back("Grid_Velocity_x");
@@ -14230,7 +14237,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         
         /*--- Load buffers with the three grid velocity components. ---*/
         
-        if (grid_movement) {
+        if (dynamic_grid) {
           Grid_Vel = geometry->node[iPoint]->GetGridVel();
           Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
           Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
