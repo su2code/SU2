@@ -514,16 +514,16 @@ def main():
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
 
-    # Inviscid fixed CL NACA0012
-    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
-    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
-    contadj_fixed_CL_naca0012.timeout   = 1600
-    contadj_fixed_CL_naca0012.tol       = 0.00001
-    test_list.append(contadj_fixed_CL_naca0012)
+#    # Inviscid fixed CL NACA0012
+#    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+#    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+#    contadj_fixed_CL_naca0012.test_iter = 100
+#    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
+#    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    contadj_fixed_CL_naca0012.timeout   = 1600
+#    contadj_fixed_CL_naca0012.tol       = 0.00001
+#    test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
