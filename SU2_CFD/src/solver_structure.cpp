@@ -120,6 +120,9 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   
   rotate_periodic   = false;
   implicit_periodic = false;
+
+  /*--- Flags for the dynamic grid (rigid movement or unsteady deformation). ---*/
+  dynamic_grid = false;
   
 }
 
@@ -5384,6 +5387,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   }
+
+  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
   
 }
 
@@ -5415,6 +5420,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
 
   }
+
+  dynamic_grid = (config->GetGrid_Movement() || (config->GetDeform_Mesh()&&(config->GetUnsteady_Simulation() != NO)));
 
 }
 
@@ -5685,7 +5692,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
   unsigned short iInst = config->GetiInst();
-  bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
 
@@ -5762,7 +5768,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
-      if (grid_movement && val_update_geo) {
+      if (dynamic_grid && val_update_geo) {
 
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
@@ -5808,7 +5814,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
-  if (grid_movement && val_update_geo) {
+  if (dynamic_grid && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
