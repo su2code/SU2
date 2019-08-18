@@ -18490,17 +18490,17 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (Conn_BoundLine_Par != NULL) delete [] Conn_BoundLine_Par;
-    if (Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
-    if (Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
+    if (nParallel_Line > 0 && Conn_BoundLine_Par != NULL) delete [] Conn_BoundLine_Par;
+    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
+    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
   }
   else {
-    if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
