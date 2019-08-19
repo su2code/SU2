@@ -70,6 +70,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/drivers/CSinglezoneDriver.cpp \
   ../src/drivers/CDiscAdjSinglezoneDriver.cpp \
   ../src/drivers/CDriver.cpp \
+  ../src/drivers/CDummyDriver.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -130,10 +131,10 @@ su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
 
-libSU2Core_cxx_flags = -fPIC
+libSU2Core_cxx_flags = -fPIC -std=c++11
 libSU2Core_libadd = 
 
-su2_cfd_cxx_flags =
+su2_cfd_cxx_flags = -fPIC -std=c++11
 su2_cfd_ldadd =
 
 # always link to built dependencies from ./externals
