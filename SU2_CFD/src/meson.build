@@ -68,7 +68,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
-                      'drivers/CDiscAdjSinglezoneDriver.cpp'])
+                      'drivers/CDiscAdjSinglezoneDriver.cpp',
+                      'drivers/CDummyDriver.cpp'])
 
 if get_option('enable-normal')
   su2_cfd = executable('SU2_CFD',
