@@ -228,7 +228,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] format - The data format of the output files.
    */
-  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+  void SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
   
   /*!
    * \brief Write the linear partitioned surface data in parallel to file. ::Load_Data() has to be called before!
@@ -236,7 +236,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] format - The data format of the output files.
    */
-  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format);
+  void SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep);
   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing output data in parallel.

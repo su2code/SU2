@@ -285,14 +285,14 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
 
 }
 
-unsigned long CDriver::GetnExtIter() {
+unsigned long CDriver::GetnTimeIter() {
 
-    return config_container[ZONE_0]->GetnExtIter();
+    return config_container[ZONE_0]->GetnTime_Iter();
 }
 
-unsigned long CDriver::GetExtIter(){
+unsigned long CDriver::GetTime_Iter(){
 
-  return ExtIter;
+  return TimeIter;
 }
 
 su2double CDriver::GetUnsteady_TimeStep(){
@@ -513,7 +513,7 @@ su2double CDriver::GetVertexTemperature(unsigned short iMarker, unsigned short i
   su2double vertexWallTemp(0.0);
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
@@ -595,7 +595,7 @@ su2double CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned shor
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-
+  
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
 
