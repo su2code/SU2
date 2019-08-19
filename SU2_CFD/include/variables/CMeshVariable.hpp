@@ -94,36 +94,6 @@ public:
   }
 
   /*!
-   * \brief Move Displacement into Displacement_n.
-   */
-  inline void SetSolution_time_n(void){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution_time_n[iDim] = Solution[iDim];
-  }
-
-  /*!
-   * \brief Set the value of the displacement at time n.
-   * \param[in] iDim - Index of Displacement_n[nDim]
-   * \param[in] val_coord - Value of Displacement_n[nDim]
-   */
-  inline void SetSolution_time_n(unsigned short iDim, su2double val_disp) { Solution_time_n[iDim] = val_disp;}
-
-  /*!
-   * \brief Move Displacement_n into Displacement_n1.
-   */
-  inline void SetSolution_time_n1(void){
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution_time_n1[iDim] = Solution_time_n[iDim];
-  }
-
-  /*!
-   * \brief Set the value of the displacement at time n-1.
-   * \param[in] iDim - Index of Displacement_n1[nDim]
-   * \param[in] val_coord - Value of Displacement_n1[nDim]
-   */
-  inline void SetSolution_time_n1(unsigned short iDim, su2double val_disp) { Solution_time_n1[iDim] = val_disp;}
-
-  /*!
    * \brief Get the value of the wall distance in reference coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.

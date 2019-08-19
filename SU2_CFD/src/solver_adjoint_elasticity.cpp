@@ -703,7 +703,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint solution at time n ---*/
 
-      node[iPoint]->SetSolution_time_n(Solution);
+      node[iPoint]->Set_Solution_time_n(Solution);
     }
 
     /*--- The acceleration solution at time n... ---*/

@@ -2079,26 +2079,6 @@ public:
   inline virtual su2double* GetSolution_Accel_Direct() {return NULL; }
 
   /*!
-   * \brief Set the value of the old solution.
-   */
-  inline virtual void SetSolution_time_n(void) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_time_n - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(unsigned short val_var, su2double val_solution) {}
-
-  /*!
-   * \brief Set the value of the old solution.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_time_n(su2double *val_solution_time_n) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution_time_n[iVar] = val_solution_time_n[iVar];
-  }
-
-  /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] val_solution - Solution of the problem (velocity).
    */
@@ -2135,6 +2115,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   inline su2double GetSolution_time_n(unsigned short val_var) {return Solution_time_n[val_var]; }
+
+  /*!
+   * \brief Get the solution at time n-1.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  inline su2double GetSolution_time_n1(unsigned short val_var) {return Solution_time_n1[val_var]; }
 
   /*!
    * \brief Get the velocity (Structural Analysis).
