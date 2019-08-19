@@ -2138,9 +2138,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
-  /* DESCRIPTION: Initialize FSI structures, as loads will come from a python wrapper */
-  addBoolOption("PY_FSI", pyFSI, false);
-
   /* DESCRIPTION: Topology optimization options */
   addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
@@ -3198,11 +3195,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-
+  
   if (GetGrid_Movement()){
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+    if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
         (Unsteady_Simulation == STEADY && !Time_Domain)){
-
+      
       if((Kind_GridMovement != ROTATING_FRAME) &&
          (Kind_GridMovement != STEADY_TRANSLATION) &&
          (Kind_GridMovement != NONE)){
