@@ -108,7 +108,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
-  ../src/transfer_structure.cpp \
+  ../src/transfer/CTransfer.cpp \
+  ../src/transfer/CTransfer_BoundaryDisplacements.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
