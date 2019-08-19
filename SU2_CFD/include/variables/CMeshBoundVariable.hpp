@@ -1,8 +1,8 @@
 /*!
- * \file CVariable.hpp
+ * \file CMeshBoundVariable.hpp
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement at the moving boundaries.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the

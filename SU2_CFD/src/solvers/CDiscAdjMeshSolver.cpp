@@ -1,7 +1,7 @@
 /*!
- * \file solver_adjoint_mesh.cpp
+ * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the

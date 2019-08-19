@@ -1,7 +1,7 @@
 /*!
  * \file CDiscAdjMeshVariable.cpp
  * \brief Main subroutines for the discrete adjoint mesh variable structure.
- * \author R. Sanchez
+ * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
