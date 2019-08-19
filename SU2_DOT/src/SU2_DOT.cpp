@@ -999,7 +999,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     
     /*--- Write to file ---*/
     
-    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat());
+    output->SetSurface_Output(geometry[iZone][INST_0], config[iZone], config[iZone]->GetOutput_FileFormat(), false);
 
     /*--- Deallocate ---*/
     

@@ -98,16 +98,17 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
   v_y     =      4.0;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_Regime() != COMPRESSIBLE)
-    SU2_MPI::Error("Compressible flow equations must be selected for the MMS NS Unit Quad case",
+  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
+     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
+     Kind_Solver != FEM_LES)    SU2_MPI::Error("Compressible flow equations must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if((config->GetKind_Solver() != NAVIER_STOKES) &&
-     (config->GetKind_Solver() != FEM_NAVIER_STOKES))
+  if((Kind_Solver != NAVIER_STOKES) &&
+     (Kind_Solver != FEM_NAVIER_STOKES))
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 

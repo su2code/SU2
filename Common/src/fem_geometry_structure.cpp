@@ -340,7 +340,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- and must be generalized later. As this number is also needed   ---*/
   /*--- in the solver, it is worthwhile to create a separate function  ---*/
   /*--- for this purpose.                                              ---*/
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  const bool compressible = (Kind_Solver == FEM_EULER) ||
+                            (Kind_Solver == FEM_NAVIER_STOKES) ||
+                            (Kind_Solver == FEM_RANS) ||
+                            (Kind_Solver == FEM_LES);
 
   unsigned short nVar;
   if( compressible ) nVar = nDim + 2;
@@ -5431,14 +5435,14 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   bool FullMassMatrix   = false, FullInverseMassMatrix = false;
   bool LumpedMassMatrix = false, DerMetricTerms = false;
 
-  if(config->GetUnsteady_Simulation() == STEADY ||
-     config->GetUnsteady_Simulation() == ROTATIONAL_FRAME) {
+  if(config->GetTime_Marching() == STEADY ||
+     config->GetTime_Marching() == ROTATIONAL_FRAME) {
     if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
     else                     FullInverseMassMatrix = true;
   }
-  else if(config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-          config->GetUnsteady_Simulation() == DT_STEPPING_2ND ||
-          config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  else if(config->GetTime_Marching() == DT_STEPPING_1ST ||
+          config->GetTime_Marching() == DT_STEPPING_2ND ||
+          config->GetTime_Marching() == HARMONIC_BALANCE) {
     if( UseLumpedMassMatrix ) FullMassMatrix = LumpedMassMatrix = true;
     else                      FullInverseMassMatrix = true;
   }

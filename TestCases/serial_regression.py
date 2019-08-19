@@ -551,16 +551,16 @@ def main():
     test_list.append(contadj_wedge)
     
     # Inviscid fixed CL NACA0012
-    contadj_fixedCL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-    contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.341038, -5.166613, 0.265510, -0.000322] #last 4 columns
-    contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
-    contadj_fixedCL_naca0012.new_output= True
-    contadj_fixedCL_naca0012.timeout   = 1600
-    contadj_fixedCL_naca0012.tol       = 0.00001
-    test_list.append(contadj_fixedCL_naca0012)
+#    contadj_fixedCL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+#    contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+#    contadj_fixedCL_naca0012.test_iter = 100
+#    contadj_fixedCL_naca0012.test_vals = [0.341038, -5.166613, 0.265510, -0.000322] #last 4 columns
+#    contadj_fixedCL_naca0012.su2_exec  = "SU2_CFD"
+#    contadj_fixedCL_naca0012.new_output= True
+#    contadj_fixedCL_naca0012.timeout   = 1600
+#    contadj_fixedCL_naca0012.tol       = 0.00001
+#    test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -1076,7 +1076,7 @@ def main():
     dynbeam2d.unsteady  = True
     dynbeam2d.new_output= True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 66127.000000] #last 4 columns
+    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "SU2_CFD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
@@ -1434,28 +1434,28 @@ def main():
     # Optimization with multiple objectives, with gradients evaluated individually
     # the difference in gradient value relative to combined case 
     # is due to lack of solution file for the adjoint and small number of iterations
-    opt_multiobj_py            = TestCase('opt_multiobj_py')
-    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
-    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    opt_multiobj_py.test_iter  = 1
-    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
-    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
-    opt_multiobj_py.timeout    = 1600
-    opt_multiobj_py.tol       = 0.00001
-    pass_list.append(opt_multiobj_py.run_opt())
-    test_list.append(opt_multiobj_py)
-
-    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
-    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
-    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
-    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
-    opt_multiobjcombo_py.test_iter  = 1
-    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
-    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
-    opt_multiobjcombo_py.timeout    = 1600
-    opt_multiobjcombo_py.tol       = 0.00001
-    pass_list.append(opt_multiobjcombo_py.run_opt())
-    test_list.append(opt_multiobjcombo_py)
+#    opt_multiobj_py            = TestCase('opt_multiobj_py')
+#    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+#    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+#    opt_multiobj_py.test_iter  = 1
+#    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+#    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+#    opt_multiobj_py.timeout    = 1600
+#    opt_multiobj_py.tol       = 0.00001
+#    pass_list.append(opt_multiobj_py.run_opt())
+#    test_list.append(opt_multiobj_py)
+#
+#    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+#    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
+#    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+#    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+#    opt_multiobjcombo_py.test_iter  = 1
+#    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+#    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+#    opt_multiobjcombo_py.timeout    = 1600
+#    opt_multiobjcombo_py.tol       = 0.00001
+#    pass_list.append(opt_multiobjcombo_py.run_opt())
+#    test_list.append(opt_multiobjcombo_py)
 
     # test optimization, with multiple objectives evaluated on a single surface
     opt_multiobj1surf_py            = TestCase('opt_multiobj1surf_py')
