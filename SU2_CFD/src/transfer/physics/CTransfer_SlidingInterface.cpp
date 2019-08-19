@@ -1,6 +1,6 @@
 /*!
  * \file CTransfer_SlidingInterface.cpp
- * \brief Declaration and inlines of the class to transfer conservative variables 
+ * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
  * \version 6.2.0 "Falcon"
@@ -43,7 +43,8 @@ CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
 
 }
 
-CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer() {
+CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
+                                                       CConfig *config) : CTransfer() {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -80,13 +81,14 @@ CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
 
 
 void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config) {
+                                                       CGeometry *donor_geometry, CGeometry *target_geometry,
+                                                       CConfig *donor_config, CConfig *target_config) {
 
 }
 
-void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+                                                   CConfig *donor_config, unsigned long Marker_Donor,
+                                                   unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short iVar, nDonorVar;
   nDonorVar = donor_solution->GetnPrimVar();
@@ -104,13 +106,13 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
     for (iVar = 0; iVar < nDonorVar; iVar++)
-    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
 
   }
 }
 
 void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                          unsigned long Vertex_Target, unsigned short nDonorPoints) {
+                                                           unsigned long Vertex_Target, unsigned short nDonorPoints) {
 
   target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, nDonorPoints); // This is to allocate
   target_solution->SetSlidingStateStructure(Marker_Target, Vertex_Target);
@@ -121,14 +123,14 @@ void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solut
 void CTransfer_SlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
                                                         su2double donorCoeff){
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
 
   Target_Variable[nVar] = donorCoeff;
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                          CConfig *target_config, unsigned long Marker_Target,
-                          unsigned long Vertex_Target, unsigned long Point_Target) {
+                                                    CConfig *target_config, unsigned long Marker_Target,
+                                                    unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar, iDonorVertex, nTargetVar;
   nTargetVar = target_solution->GetnPrimVar();

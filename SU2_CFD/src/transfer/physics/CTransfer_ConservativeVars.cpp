@@ -42,7 +42,8 @@ CTransfer_ConservativeVars::CTransfer_ConservativeVars(void) : CTransfer() {
 
 }
 
-CTransfer_ConservativeVars::CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_ConservativeVars::CTransfer_ConservativeVars(unsigned short val_nVar, unsigned short val_nConst,
+                                                       CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
 
 }
 
@@ -56,8 +57,9 @@ void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, 
                                                        CConfig *donor_config, CConfig *target_config) {
 }
 
-void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+                                                   CConfig *donor_config, unsigned long Marker_Donor,
+                                                   unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   su2double *Solution;
   unsigned short iVar;
@@ -70,8 +72,8 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
 }
 
 void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                          CConfig *target_config, unsigned long Marker_Target,
-                          unsigned long Vertex_Target, unsigned long Point_Target) {
+                                                    CConfig *target_config, unsigned long Marker_Target,
+                                                    unsigned long Vertex_Target, unsigned long Point_Target) {
 
   /*--- Set the target solution with the value of the Target Variable ---*/
   target_solution->node[Point_Target]->SetSolution(Target_Variable);
