@@ -124,15 +124,18 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   }
   
   /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
+
   Run();
   
   /*--- Output the solution in files. ---*/
 
-  Output(0);
+  Output(TimeIter);
 
 }
 
 void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
+
+  bool TimeDomain = driver_config->GetTime_Domain();
 
   unsigned short RestartFormat = SU2_RESTART_ASCII;
   unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
@@ -161,15 +164,15 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- Unsteady problems ---*/
         
-        (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-          (config_container[iZone]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-         ((TimeIter == 0) || (ExtIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        (((config_container[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+          (config_container[iZone]->GetTime_Marching() == TIME_STEPPING)) &&
+         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
         
-        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
          ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
                               ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
         
-        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+        ((config_container[iZone]->GetTime_Marching() == DT_STEPPING_2ND) &&
          ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
         
         ((config_container[iZone]->GetDynamic_Analysis() == DYNAMIC) &&
@@ -183,14 +186,6 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
       
       output_files = true;
       
-    }
-    
-    /*--- Determine whether a solution doesn't need to be written
-   after the current iteration ---*/
-    
-    if (config_container[iZone]->GetFixed_CL_Mode()) {
-      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
     }
     
     /*--- write the solution ---*/
@@ -222,17 +217,17 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- Write restart files ---*/
         
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
         
         /*--- Write visualization files ---*/
         
         if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         
         if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);
         
         output_container[iZone]->DeallocateData_Parallel();
         
@@ -336,9 +331,7 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(FLOW_CONS_VARS, FULL_TAPE, ZONE_0);
     }
 
-    Set_OldAdjoints(); SetIter_Zero();
-
-    AD::ClearAdjoints();
+    Set_OldAdjoints(); SetIter_Zero(); AD::ClearAdjoints();
 
     SetAdj_ObjFunction();
 
@@ -826,13 +819,13 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  bool TimeDomain = config_container[ZONE_0]->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
   su2double seeding = 1.0;
 
-  if (time_stepping){
-    if (ExtIter < IterAvg_Obj){
+  if (TimeDomain){
+    if (TimeIter < IterAvg_Obj){
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else{
