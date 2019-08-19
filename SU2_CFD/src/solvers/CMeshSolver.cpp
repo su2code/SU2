@@ -1,5 +1,5 @@
 /*!
- * \file solver_direct_mesh.cpp
+ * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
  * \version 6.2.0 "Falcon"

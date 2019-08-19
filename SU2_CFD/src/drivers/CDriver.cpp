@@ -3405,14 +3405,14 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         if (solver_container[targetZone][INST_0][MESH_0][MESH_SOL] != NULL){
           transfer_types[donorZone][targetZone] = BOUNDARY_DISPLACEMENTS;
           nVarTransfer = 0;
-          transfer[donorZone][targetZone] = new CTransfer_BoundaryDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+          transfer[donorZone][targetZone] = new CTransfer_BoundaryDisplacements(nVar, nVarTransfer, config[donorZone]);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver. "<< endl;
         }
         /*--- We keep the legacy method temporarily until FSI-adjoint has been adapted ---*/
         else{
           transfer_types[donorZone][targetZone] = STRUCTURAL_DISPLACEMENTS_LEGACY;
         nVarTransfer = 0;
-        transfer[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+        transfer[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config[donorZone]);
         if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
         }
       }
