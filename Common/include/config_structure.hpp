@@ -1082,7 +1082,7 @@ private:
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
-
+  
   
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.

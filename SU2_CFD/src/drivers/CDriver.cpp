@@ -45,8 +45,8 @@
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false) {
-
+                 SU2_Comm MPICommunicator, bool dummy_geo):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), 
+  ExtIter(0), nZone(val_nZone), StopCalc(false), fsi(false), fem_solver(false), dummy_geometry(dummy_geo) {
 
   unsigned short jZone;
 
@@ -110,7 +110,7 @@ CDriver::CDriver(char* confFile,
        identified and linked, face areas and volumes of the dual mesh cells are
        computed, and the multigrid levels are created using an agglomeration procedure. ---*/
       
-      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);  
+      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dummy_geometry);  
       
       /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
        The solver classes are specific to a particular set of governing equations,
@@ -588,24 +588,43 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
                 (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
-  fsi = config_container[ZONE_0]->GetFSI_Simulation(); 
+  fsi = config_container[ZONE_0]->GetFSI_Simulation();
 }
 
-void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry){
+void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, bool dummy){
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------- Geometry Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
-  
-  if( fem_solver ) {
-    switch( config->GetKind_FEM_Flow() ) {
-      case DG: {
-          Geometrical_Preprocessing_DGFEM(config, geometry);
-          break;
-        }
+  if (!dummy){
+    if (rank == MASTER_NODE)
+      cout << endl <<"------------------- Geometry Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
+    
+    if( fem_solver ) {
+      switch( config->GetKind_FEM_Flow() ) {
+        case DG: {
+            Geometrical_Preprocessing_DGFEM(config, geometry);
+            break;
+          }
+      }
     }
-  }
-  else {
-    Geometrical_Preprocessing_FVM(config, geometry);
+    else {
+      Geometrical_Preprocessing_FVM(config, geometry);
+    }
+  } else {
+    if (rank == MASTER_NODE)
+      cout << endl <<"-------------------------- Using Dummy Geometry -------------------------" << endl;
+    
+    unsigned short iMGlevel;
+    
+    geometry = new CGeometry*[config->GetnMGLevels()+1];
+    
+    if (!fem_solver){
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        geometry[iMGlevel] = new CDummyGeometry(config);
+      }
+    } else {
+      geometry[ZONE_0] = new CDummyMeshFEM_DG(config);
+    }
+    
+    nDim = geometry[ZONE_0]->GetnDim();
   }
 
   /*--- Computation of wall distances for turbulence modeling ---*/
@@ -3977,7 +3996,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -4305,7 +4324,8 @@ CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
     SU2_Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
-        MPICommunicator) {
+        MPICommunicator,
+        false) {
   unsigned short kInst;
 
   nInstHB = nInst[ZONE_0];
@@ -4855,7 +4875,8 @@ CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                            val_nZone,
-                                                           MPICommunicator) {
+                                                           MPICommunicator,
+                                                           false) {
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
 
@@ -5349,8 +5370,9 @@ void CFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
                                      SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                                            val_nZone,
-                                                                            MPICommunicator) {
+                                                                         val_nZone,
+                                                                         MPICommunicator,
+                                                                         false) {
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -6913,7 +6935,8 @@ CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                                        val_nZone,
-                                                                                       MPICommunicator) { }
+                                                                                       MPICommunicator,
+                                                                                       false) { }
 
 CMultiphysicsZonalDriver::~CMultiphysicsZonalDriver(void) { }
 
