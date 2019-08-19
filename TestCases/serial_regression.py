@@ -1036,6 +1036,17 @@ def main():
     stat_fsi_restart.tol       = 0.00001
     test_list.append(stat_fsi_restart)
 
+    # FSI, Dynamic, 2D, new mesh solver
+    dyn_fsi           = TestCase('dyn_fsi')
+    dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
+    dyn_fsi.cfg_file  = "config.cfg"
+    dyn_fsi.test_iter = 4000
+    dyn_fsi.test_vals = [-4.828422, -3.010379, -7.776602, -8.791331] #last 4 columns
+    dyn_fsi.su2_exec  = "SU2_CFD"
+    dyn_fsi.timeout   = 1600
+    dyn_fsi.tol       = 0.00001
+    test_list.append(dyn_fsi)
+
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"

@@ -1003,6 +1003,17 @@ def main():
     stat_fsi.tol       = 0.00001
     test_list.append(stat_fsi)
 
+    # FSI, Dynamic, 2D, new mesh solver
+    dyn_fsi           = TestCase('dyn_fsi')
+    dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
+    dyn_fsi.cfg_file  = "config.cfg"
+    dyn_fsi.test_iter = 4000
+    dyn_fsi.test_vals = [-4.828420, -3.010379, -7.776603, -8.791332] #last 4 columns
+    dyn_fsi.su2_exec  = "SU2_CFD"
+    dyn_fsi.timeout   = 1600
+    dyn_fsi.tol       = 0.00001
+    test_list.append(dyn_fsi)
+
     # FSI, Static, 2D, new mesh solver, restart
     stat_fsi_restart           = TestCase('stat_fsi_restart')
     stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
