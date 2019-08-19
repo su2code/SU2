@@ -40,10 +40,8 @@
 # ----------------------------------------------------------------------
 
 import sys
-import shutil
 from optparse import OptionParser	# use a parser for configuration
 import pysu2ad as pysu2          # imports the SU2 adjoint-wrapped module
-from math import *
 
 # -------------------------------------------------------------------
 #  Main 
@@ -75,6 +73,8 @@ def main():
   options.fsi = options.fsi.upper() == 'TRUE'
   options.fem = options.fem.upper() == 'TRUE'
   options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+
+  print(args)
 
   # Import mpi4py for parallel run
   if options.with_MPI == True:
@@ -111,13 +111,9 @@ def main():
 
   # Number of vertices on the specified marker (per rank)
   nVertex_Marker = 0         #total number of vertices (physical + halo)
-  nVertex_Marker_HALO = 0    #number of halo vertices
-  nVertex_Marker_PHYS = 0    #number of physical vertices
 
   if MarkerID != None:
     nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
-    nVertex_Marker_HALO = SU2Driver.GetNumberHaloVertices(MarkerID)
-    nVertex_Marker_PHYS = nVertex_Marker - nVertex_Marker_HALO
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
@@ -139,7 +135,7 @@ def main():
   SU2Driver.Update()
   
   # Monitor the solver and output solution to file if required
-  stopCalc = SU2Driver.Monitor(0)
+  SU2Driver.Monitor(0)
   
   # Output the solution to file
   SU2Driver.Output(0)
