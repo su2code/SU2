@@ -3033,21 +3033,25 @@ public:
 
 };
 
-/*!
- * \brief The CDummyGeometry class
+/*! 
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
  */
 class CDummyGeometry : public CGeometry{
   
 public:
   /*!
-   * \brief CDummyGeometry
-   * \param config
-   * \param nDim
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
    */
   CDummyGeometry(CConfig *config);
   
-  /*!
-  */
+  /*! 
+	 * \brief Destructor of the class.
+	 */
   ~CDummyGeometry();
   
 };
