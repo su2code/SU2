@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_elastic_mesh_solver
+        - develop
 
 virtualenv:
   system_site_packages: true
