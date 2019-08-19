@@ -26,7 +26,6 @@ su2_cfd_src = files(['output_structure.cpp',
                      'solver_direct_elasticity.cpp',
                      'definition_structure.cpp',
                      'numerics_direct_mean_inc.cpp',
-                     'transfer_physics.cpp',
                      'solver_direct_turbulent.cpp',
                      'fluid_model.cpp',
                      'solver_direct_mean_inc.cpp',
@@ -77,7 +76,15 @@ su2_cfd_src += files(['solvers/CMeshSolver.cpp',
 su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
 
 su2_cfd_src += files(['transfer/CTransfer.cpp',
-                      'transfer/physics/CTransfer_BoundaryDisplacements.cpp'])
+                      'transfer/physics/CTransfer_BoundaryDisplacements.cpp',
+                      'transfer/physics/CTransfer_ConjugateHeatVars.cpp',
+                      'transfer/physics/CTransfer_ConservativeVars.cpp',
+                      'transfer/physics/CTransfer_FlowTraction.cpp',
+                      'transfer/physics/CTransfer_FlowTraction_DiscAdj.cpp',
+                      'transfer/physics/CTransfer_MixingPlaneInterface.cpp',
+                      'transfer/physics/CTransfer_SlidingInterface.cpp',
+                      'transfer/physics/CTransfer_StructuralDisplacements.cpp',
+                      'transfer/physics/CTransfer_StructuralDisplacements_DiscAdj.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',

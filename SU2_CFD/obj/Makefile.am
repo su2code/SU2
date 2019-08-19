@@ -108,9 +108,16 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CMeshSolver.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
-  ../src/transfer_physics.cpp \
   ../src/transfer/CTransfer.cpp \
-  ../src/transfer/CTransfer_BoundaryDisplacements.cpp \
+  ../src/transfer/physics/CTransfer_BoundaryDisplacements.cpp \
+  ../src/transfer/physics/CTransfer_ConjugateHeatVars.cpp \
+  ../src/transfer/physics/CTransfer_ConservativeVars.cpp \
+  ../src/transfer/physics/CTransfer_FlowTraction.cpp \
+  ../src/transfer/physics/CTransfer_FlowTraction_DiscAdj.cpp \
+  ../src/transfer/physics/CTransfer_MixingPlaneInterface.cpp \
+  ../src/transfer/physics/CTransfer_SlidingInterface.cpp \
+  ../src/transfer/physics/CTransfer_StructuralDisplacements.cpp \
+  ../src/transfer/physics/CTransfer_StructuralDisplacements_DiscAdj.cpp \
   ../src/transport_model.cpp \
   ../src/variables/CFEAFSIBoundVariable.cpp \
   ../src/variables/CFEABoundVariable.cpp \
