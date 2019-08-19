@@ -11426,7 +11426,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
   STG_ListCoordX.erase( unique( STG_ListCoordX.begin(), STG_ListCoordX.end(), CompareWithGap ), STG_ListCoordX.end() );
   
 #ifdef HAVE_MPI
-  cout <<"Process "<<rank<<" contains "<<nSTGPts <<" SNG Points."<<endl;
+  //cout <<"Process "<<rank<<" contains "<<nSTGPts <<" SNG Points."<<endl;
   
   vector<int> recvCounts(size), displs(size);
   
@@ -11437,8 +11437,8 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
                     MPI_INT, MPI_COMM_WORLD);
   
   if (rank == MASTER_NODE){
-    for (unsigned short i; i < recvCounts.size(); i++)
-      cout << recvCounts[i] << endl;
+    cout << "After AllGather: " << recvCounts.size() << endl;
+    for(std::vector<int>::size_type i = 0; i != recvCounts.size(); i++) cout << recvCounts[i] << endl;
   }
   
   /*--- Create the data for the vector displs from the known values of
@@ -11461,8 +11461,7 @@ void CPhysicalGeometry::STGPreprocessing(CConfig *config) {
 
   if (rank == MASTER_NODE){
     cout << "After AllGatherv: " << STG_GlobalListCoordX.size() << endl;
-    for (unsigned short i; i < STG_GlobalListCoordX.size(); i++)
-      cout << STG_GlobalListCoordX[i] << endl;
+    for(std::vector<int>::size_type i = 0; i != STG_GlobalListCoordX.size(); i++) cout << STG_GlobalListCoordX[i] << endl;
   }
 #else
   cout <<"Number of SNG points: " << nSTGPts << endl;

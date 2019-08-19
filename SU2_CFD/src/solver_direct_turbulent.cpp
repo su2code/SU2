@@ -925,7 +925,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     local_lengthEnergetic[1] = max_lengthNyquist;
     local_lengthEnergetic[2] = max_localVelocity;
     
-    cout << local_lengthEnergetic[0] << " " << local_lengthEnergetic[1] << " " << local_lengthEnergetic[2] << endl;
+    //cout << local_lengthEnergetic[0] << " " << local_lengthEnergetic[1] << " " << local_lengthEnergetic[2] << endl;
 
 #ifndef HAVE_MPI
     global_lengthEnergetic[0] = local_lengthEnergetic[0];
