@@ -42,7 +42,12 @@ CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_Dis
 
 }
 
-CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar,
+                                                                                     unsigned short val_nConst,
+                                                                                     CConfig *config)
+  : CTransfer(val_nVar,
+              val_nConst,
+              config) {
 
 }
 
@@ -51,13 +56,20 @@ CTransfer_StructuralDisplacements_DiscAdj::~CTransfer_StructuralDisplacements_Di
 }
 
 
-void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                                      CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                                      CConfig *struct_config, CConfig *flow_config) {
+void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *struct_solution,
+                                                                      CSolver *flow_solution,
+                                                                      CGeometry *struct_geometry,
+                                                                      CGeometry *flow_geometry,
+                                                                      CConfig *struct_config,
+                                                                      CConfig *flow_config) {
 }
 
-void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struct_solution,
+                                                                  CGeometry *struct_geometry,
+                                                                  CConfig *struct_config,
+                                                                  unsigned long Marker_Struct,
+                                                                  unsigned long Vertex_Struct,
+                                                                  unsigned long Point_Struct) {
 
 
   su2double *Coord_Struct, *Displacement_Struct;
@@ -68,13 +80,16 @@ void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struc
   /*--- The displacements come from the predicted solution ---*/
   Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution();
 
-  for (iVar = 0; iVar < nVar; iVar++) 
+  for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
 }
 
-void CTransfer_StructuralDisplacements_DiscAdj::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
+void CTransfer_StructuralDisplacements_DiscAdj::SetTarget_Variable(CSolver *flow_solution,
+                                                                   CGeometry *flow_geometry,
+                                                                   CConfig *flow_config,
+                                                                   unsigned long Marker_Flow,
+                                                                   unsigned long Vertex_Flow,
+                                                                   unsigned long Point_Flow) {
 
   su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar;

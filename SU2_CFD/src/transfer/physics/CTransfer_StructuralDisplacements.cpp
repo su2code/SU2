@@ -42,7 +42,9 @@ CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(void) : CTr
 
 }
 
-CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(unsigned short val_nVar,
+                                                                     unsigned short val_nConst, CConfig *config) :
+  CTransfer(val_nVar, val_nConst, config) {
 
 }
 
@@ -56,8 +58,9 @@ void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_so
                                                               CConfig *struct_config, CConfig *flow_config) {
 }
 
-void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
+                                                          CConfig *struct_config, unsigned long Marker_Struct,
+                                                          unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   su2double *DisplacementDonor, *DisplacementDonor_Prev;
   unsigned short iVar;
@@ -67,13 +70,13 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 
   DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Pred_Old();
 
-  for (iVar = 0; iVar < nVar; iVar++) 
-  Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 }
 
 void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
+                                                           CConfig *flow_config, unsigned long Marker_Flow,
+                                                           unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
   flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(Target_Variable);
 }

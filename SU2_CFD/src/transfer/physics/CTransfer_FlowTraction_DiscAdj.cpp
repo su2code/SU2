@@ -42,7 +42,9 @@ CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(void) : CTransfer
 
 }
 
-CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer_FlowTraction(val_nVar, val_nConst, config) {
+CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst,
+                                                               CConfig *config) :
+  CTransfer_FlowTraction(val_nVar, val_nConst, config) {
 
 }
 

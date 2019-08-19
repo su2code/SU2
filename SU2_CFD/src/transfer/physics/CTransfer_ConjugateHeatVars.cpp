@@ -1,6 +1,6 @@
 /*!
  * \file CTransfer_ConjugateHeatVars.cpp
- * \brief Declaration and inlines of the class to transfer temperature and heatflux 
+ * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
  * \version 6.2.0 "Falcon"
@@ -42,7 +42,8 @@ CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(void) : CTransfer() {
 
 }
 
-CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_ConjugateHeatVars::CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst,
+                                                         CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
 
 }
 
@@ -50,8 +51,9 @@ CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
 
 }
 
-void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+                                                    CConfig *donor_config, unsigned long Marker_Donor,
+                                                    unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned long iPoint;
   unsigned long PointNormal;
@@ -61,7 +63,8 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
       dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
-      thermal_diffusivity, thermal_conductivity, thermal_conductivityND, heat_flux_density, conductivity_over_dist, Temperature_Ref;
+      thermal_diffusivity, thermal_conductivity, thermal_conductivityND,
+      heat_flux_density, conductivity_over_dist, Temperature_Ref;
   su2double Gamma = donor_config->GetGamma();
   su2double Gas_Constant = donor_config->GetGas_ConstantND();
   su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
@@ -119,9 +122,9 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
     Twall   = donor_solution->node[Point_Donor]->GetSolution(0)*Temperature_Ref;
     Tnormal = donor_solution->node[PointNormal]->GetSolution(0)*Temperature_Ref;
 
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
-//    }
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
+    //    }
 
     dTdn = (Twall - Tnormal)/dist;
   }
@@ -129,7 +132,8 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
     cout << "WARNING: Transfer of conjugate heat variables is called with non-supported donor solver!" << endl;
   }
 
-  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
+  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity)
+   *--- and set it as second donor variable ---*/
   if (compressible_flow) {
 
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
@@ -154,7 +158,8 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
         break;
 
       case CONSTANT_PRANDTL:
-        thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()*donor_config->GetViscosity_Ref();
+        thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
+                               *donor_config->GetViscosity_Ref();
         break;
     }
 
@@ -187,11 +192,15 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 }
 
 void CTransfer_ConjugateHeatVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                          CConfig *target_config, unsigned long Marker_Target,
-                          unsigned long Vertex_Target, unsigned long Point_Target) {
+                                                     CConfig *target_config, unsigned long Marker_Target,
+                                                     unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0, target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 1, target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2, target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);
-  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 3, target_config->GetRelaxation_Factor_CHT(), Target_Variable[3]);
+  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,
+                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
+  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 1,
+                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
+  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2,
+                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);
+  target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 3,
+                                            target_config->GetRelaxation_Factor_CHT(), Target_Variable[3]);
 }

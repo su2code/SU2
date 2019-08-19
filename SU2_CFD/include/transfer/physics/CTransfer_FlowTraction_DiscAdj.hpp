@@ -73,7 +73,7 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                 CGeometry *donor_geometry, CGeometry *target_geometry,
-                 CConfig *donor_config, CConfig *target_config);
+                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config);
 
 };

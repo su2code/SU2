@@ -42,7 +42,8 @@ CTransfer_FlowTraction::CTransfer_FlowTraction(void) : CTransfer() {
 
 }
 
-CTransfer_FlowTraction::CTransfer_FlowTraction(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_FlowTraction::CTransfer_FlowTraction(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
+  CTransfer(val_nVar, val_nConst, config) {
 
 }
 
@@ -55,7 +56,7 @@ void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
   /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
         and integrate on the structural side rather than directly transferring forces. ---*/
   consistent_interpolation = (!flow_config->GetConservativeInterpolation() ||
-                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
+                              (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   su2double *Velocity_ND, *Velocity_Real;
@@ -83,7 +84,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++) 
+  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
     struct_solution->node[iPoint]->Clear_FlowTraction();
 
   Preprocess(flow_config);
@@ -117,8 +118,9 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 }
 
-void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-                                           unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
+void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
+                                               CConfig *flow_config, unsigned long Marker_Flow,
+                                               unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
 
   unsigned short iVar, jVar;
@@ -129,9 +131,9 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
   bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
-                              (flow_config->GetKind_Solver() == RANS) ||
-                              (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                              (flow_config->GetKind_Solver() == DISC_ADJ_RANS));
+                             (flow_config->GetKind_Solver() == RANS) ||
+                             (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+                             (flow_config->GetKind_Solver() == DISC_ADJ_RANS));
 
   // Parameters for the calculations
   // Pn: Pressure
@@ -163,7 +165,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Pn = flow_solution->node[Point_Flow]->GetPressure();
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-  for (iVar = 0; iVar < nVar; iVar++) 
+  for (iVar = 0; iVar < nVar; iVar++)
     Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
 
   // Calculate tn in the fluid nodes for the viscous term
@@ -180,13 +182,14 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
     // Divergence of the velocity
     div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_Vel[iVar][iVar];
-  
+
     for (iVar = 0; iVar < nVar; iVar++) {
-      
+
       for (jVar = 0 ; jVar < nVar; jVar++) {
-      
+
         // Viscous stress
-        Tau[iVar][jVar] = Viscosity*(Grad_Vel[jVar][iVar] + Grad_Vel[iVar][jVar]) - TWO3*Viscosity*div_vel*delta[iVar][jVar];
+        Tau[iVar][jVar] = Viscosity*(Grad_Vel[jVar][iVar] + Grad_Vel[iVar][jVar])
+                          - TWO3*Viscosity*div_vel*delta[iVar][jVar];
 
         // Viscous component in the tn vector --> Units of force (non-dimensional).
         Donor_Variable[iVar] += Tau[iVar][jVar]*Normal_Flow[jVar];
@@ -202,8 +205,8 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 }
 
 void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-                        CConfig *fea_config, unsigned long Marker_Struct,
-                        unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                CConfig *fea_config, unsigned long Marker_Struct,
+                                                unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   /*--- Add to the Flow traction. If nonconservative interpolation is in use,
         this is a stress and is integrated by the structural solver later on. ---*/

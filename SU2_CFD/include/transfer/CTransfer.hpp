@@ -65,8 +65,8 @@ using namespace std;
 class CTransfer {
 protected:
 
-  int rank, 	/*!< \brief MPI Rank. */
-  size;       	/*!< \brief MPI Size. */
+  int rank,  /*!< \brief MPI Rank. */
+  size;      /*!< \brief MPI Size. */
 
   su2double *Physical_Constants;
   su2double *Donor_Variable;
@@ -74,12 +74,9 @@ protected:
   bool valAggregated;
 
   /*--- Mixing Plane interface variable ---*/
-  su2double 	  *SpanValueCoeffTarget;
+  su2double *SpanValueCoeffTarget;
   unsigned short *SpanLevelDonor;
   unsigned short nSpanMaxAllZones;
-
-
-
 
   unsigned short nVar;
 
@@ -197,7 +194,6 @@ public:
    */
   inline virtual void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }
 
-
   /*!
    * \brief Transfer pre-processing for the mixing plane inteface.
    * \param[in] donor_geometry - Geometry of the donor mesh.
@@ -207,7 +203,6 @@ public:
    */
   void Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
                                       CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
-
 
   /*!
    * \brief Interpolate data and scatter it into different processors, for matching meshes.
@@ -241,7 +236,6 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
-
 
 };
 

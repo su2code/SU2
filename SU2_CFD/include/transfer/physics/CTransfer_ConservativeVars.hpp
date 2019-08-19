@@ -73,8 +73,8 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                 CGeometry *donor_geometry, CGeometry *target_geometry,
-                 CConfig *donor_config, CConfig *target_config);
+                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config);
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -86,7 +86,7 @@ public:
    * \param[in] Point_Donor - Index of the donor point.
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-               unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+                         unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -98,7 +98,7 @@ public:
    * \param[in] Point_Target - Index of the target point.
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
-              unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+                          unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
 
 
 };

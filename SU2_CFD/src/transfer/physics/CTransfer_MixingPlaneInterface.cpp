@@ -1,6 +1,6 @@
 /*!
  * \file CTransfer_MixingPlaneInterface.cpp
- * \brief Declaration and inlines of the class to transfer average variables 
+ * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
  * \version 6.2.0 "Falcon"
@@ -42,15 +42,13 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer
 
 }
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config){
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst,
+                                                               CConfig *donor_config, CConfig *target_config){
   unsigned short iVar;
   nVar = val_nVar;
 
-
   Donor_Variable     = new su2double[nVar + 5];
   Target_Variable    = new su2double[nVar + 5];
-
-
 
   for (iVar = 0; iVar < nVar + 5; iVar++){
     Donor_Variable[iVar]  = 0.0;
@@ -81,8 +79,8 @@ void CTransfer_MixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CC
 }
 
 void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-    CConfig *donor_config, unsigned long Marker_Donor,
-    unsigned long iSpan, unsigned long rank) {
+                                                       CConfig *donor_config, unsigned long Marker_Donor,
+                                                       unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
   bool turbulent = ((donor_config->GetKind_Solver() == RANS) || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -116,8 +114,8 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 
 
 void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-    CConfig *target_config, unsigned long Marker_Target,
-    unsigned long iSpan, unsigned long rank) {
+                                                        CConfig *target_config, unsigned long Marker_Target,
+                                                        unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
   bool turbulent = ((target_config->GetKind_Solver() == RANS) || (target_config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -140,7 +138,8 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
+                                                      unsigned short donorZone){
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
@@ -163,7 +162,8 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
   }
 }
 
-void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
+void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
+                                                              unsigned short donorZone){
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){

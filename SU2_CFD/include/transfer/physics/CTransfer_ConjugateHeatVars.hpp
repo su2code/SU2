@@ -1,6 +1,6 @@
 /*!
  * \file CTransfer_ConjugateHeatVars.hpp
- * \brief Declaration and inlines of the class to transfer temperature and heatflux 
+ * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
  * \version 6.2.0 "Falcon"
@@ -73,7 +73,7 @@ public:
    * \param[in] Point_Donor - Index of the donor point.
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-               unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+                         unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -85,5 +85,5 @@ public:
    * \param[in] Point_Target - Index of the target point.
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
-              unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+                          unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
 };

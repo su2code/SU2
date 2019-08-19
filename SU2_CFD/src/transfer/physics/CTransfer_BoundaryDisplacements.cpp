@@ -40,7 +40,7 @@
 CTransfer_BoundaryDisplacements::CTransfer_BoundaryDisplacements(unsigned short val_nVar,
                                                                  unsigned short val_nConst,
                                                                  CConfig *config) :
-                                                                 CTransfer(val_nVar, val_nConst, config) {
+  CTransfer(val_nVar, val_nConst, config) {
 
 }
 
@@ -50,8 +50,8 @@ CTransfer_BoundaryDisplacements::~CTransfer_BoundaryDisplacements(void) {
 
 
 void CTransfer_BoundaryDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                              CConfig *struct_config, CConfig *flow_config) {
+                                                            CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                            CConfig *struct_config, CConfig *flow_config) {
 }
 
 void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry,
@@ -70,8 +70,8 @@ void CTransfer_BoundaryDisplacements::GetDonor_Variable(CSolver *struct_solution
 }
 
 void CTransfer_BoundaryDisplacements::SetTarget_Variable(CSolver *mesh_solver, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Mesh) {
+                                                         CConfig *flow_config, unsigned long Marker_Flow,
+                                                         unsigned long Vertex_Flow, unsigned long Point_Mesh) {
 
   /*--- Impose the boundary displacements ---*/
 
