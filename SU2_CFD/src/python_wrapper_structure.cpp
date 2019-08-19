@@ -1085,12 +1085,11 @@ vector<passivedouble> CDriver::GetVelocity(unsigned short iMarker, unsigned shor
 
 vector<passivedouble> CDriver::GetVelocity_n(unsigned short iMarker, unsigned short iVertex) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
   vector<su2double> Velocity_n(3, 0.0);
   vector<passivedouble> Velocity_n_passive(3, 0.0);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
     Velocity_n[0] = solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n(0);
@@ -1116,12 +1115,11 @@ vector<passivedouble> CDriver::GetVelocity_n(unsigned short iMarker, unsigned sh
 
 vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned short iVertex) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
   vector<su2double> FlowLoad_Sens(3, 0.0);
   vector<passivedouble> FlowLoad_Sens_passive(3, 0.0);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
 
   FlowLoad_Sens[0] = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->GetFlowTractionSensitivity(0);
   FlowLoad_Sens[1] = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->node[iPoint]->GetFlowTractionSensitivity(1);
@@ -1140,14 +1138,14 @@ vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, u
 
 vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned short iVertex) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
   vector<su2double> FlowLoad(3, 0.0);
   vector<passivedouble> FlowLoad_passive(3, 0.0);
 
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+
   if (config_container[ZONE_0]->GetMarker_All_Fluid_Load(iMarker) == YES) {
     FlowLoad[0] = solver->GetVertexTractions(iMarker, iVertex, 0);
     FlowLoad[1] = solver->GetVertexTractions(iMarker, iVertex, 1);
@@ -1199,14 +1197,14 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned short i
 
 vector<passivedouble> CDriver::GetVertex_UndeformedCoord(unsigned short iMarker, unsigned short iVertex) {
 
-  unsigned long iPoint, GlobalIndex;
+  unsigned long iPoint;
   vector<su2double> MeshCoord(3, 0.0);
   vector<passivedouble> MeshCoord_passive(3, 0.0);
 
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->node[iPoint]->GetGlobalIndex();
+
   if (solver != NULL) {
     MeshCoord[0] = solver->node[iPoint]->GetMesh_Coord(0);
     MeshCoord[1] = solver->node[iPoint]->GetMesh_Coord(1);

@@ -60,9 +60,6 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   unsigned long iPoint;
   long iVertex;
   bool isVertex;
-  bool restart = config->GetRestart();
-
-  restart = false;
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
