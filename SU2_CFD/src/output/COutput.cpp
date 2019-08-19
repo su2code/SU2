@@ -138,6 +138,10 @@ COutput::COutput(CConfig *config, unsigned short nDim) {
   
   Build_Offset_Cache = false;
   
+  curr_InnerIter = 0;
+  curr_OuterIter = 0;
+  curr_TimeIter  = 0;
+  
 }
 
 COutput::~COutput(void) {
@@ -249,7 +253,6 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
   unsigned short iMesh;
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned long ExtIter = config[val_iZone]->GetExtIter();
   unsigned short nVar = 1;
 
   bool energy = config[val_iZone]->GetEnergy_Equation();
@@ -257,6 +260,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
+    case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:
       if (energy) {
         nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
         RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
@@ -294,7 +298,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   /*--- Detect a stall in the residual ---*/
 
-  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+  if ((fabs(Diff) <= RhoRes_New*1E-8) && (curr_InnerIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
 
   CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
   CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
@@ -322,6 +326,7 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
 
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
+  case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS:      
     nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
     if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
     else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
@@ -464,7 +469,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
       cout << "Writing Tecplot binary file solution file." << endl;
     }
     
-    filewriter = new CTecplotBinaryFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotBinaryFileWriter(Variable_Names, nDim, curr_TimeIter, GetHistoryFieldValue("TIME_STEP"));
       
     break;
     
@@ -480,7 +485,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
       cout << "Writing Tecplot ASCII file solution file." << endl;
     }
     
-    filewriter = new CTecplotFileWriter(Variable_Names, nDim, curr_TimeIter, config->GetTime_Step());
+    filewriter = new CTecplotFileWriter(Variable_Names, nDim, curr_TimeIter, GetHistoryFieldValue("TIME_STEP"));
 
     break;
     
@@ -520,7 +525,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
   } 
 }
 
-void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
   
   CParallelDataSorter* surface_sort = NULL;
   CFileWriter*         file_writer = NULL;
@@ -539,11 +544,24 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
   surface_sort->SortOutputData(config, geometry);
   
+  string FileName = SurfaceFilename;
+  
+  /*--- Remove extension --- */
+  
+  unsigned short lastindex = FileName.find_last_of(".");
+  FileName = FileName.substr(0, lastindex);
+  
+  /*--- Add time iteration if requested --- */
+  
+  if (time_dep){
+    FileName = config->GetFilename(FileName, "", curr_TimeIter);
+  }
+  
   if (surface_sort->GetnElem() > 0){
   
     /*--- Write data to file --- */
   
-    file_writer->Write_Data(config->GetFilename(SurfaceFilename, ""), surface_sort);
+    file_writer->Write_Data(FileName, surface_sort);
   
   }
   
@@ -552,12 +570,23 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
 }
 
-void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
   
   string FileName = VolumeFilename;
   
   if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
     FileName = RestartFilename;
+  }
+  
+  /*--- Remove extension --- */
+  
+  unsigned short lastindex = FileName.find_last_of(".");
+  FileName = FileName.substr(0, lastindex);
+  
+  /*--- Add time iteration if requested --- */
+  
+  if (time_dep){
+    FileName = config->GetFilename(FileName, "", curr_TimeIter);
   }
   
   CFileWriter* file_writer = NULL;
@@ -568,7 +597,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Write data to file --- */
   
-  file_writer->Write_Data(config->GetFilename(FileName, ""), data_sorter);
+  file_writer->Write_Data(FileName, data_sorter);
   
   if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
     cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";
@@ -899,12 +928,12 @@ void COutput::PrepareHistoryFile(CConfig *config){
    /*--- Append the restart iteration: if dynamic problem and restart ---*/
   
   if (config->GetTime_Domain() && config->GetRestart()) {
-    long iExtIter = config->GetRestart_Iter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+    long iIter = config->GetRestart_Iter();
+    if (SU2_TYPE::Int(iIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 10) && (SU2_TYPE::Int(iIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 100) && (SU2_TYPE::Int(iIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iIter));
+    if ((SU2_TYPE::Int(iIter) >= 1000) && (SU2_TYPE::Int(iIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iIter));
+    if (SU2_TYPE::Int(iIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iIter));
     strcat(char_histfile, buffer);
   }
   
@@ -1156,19 +1185,13 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
 
       for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
         
-        if (jPoint == 0){
-          Build_Offset_Cache = true;
-        } else {
-          Build_Offset_Cache = false;
-        }
+        Build_Offset_Cache = !Offset_Cache.size() ? true : false;
         
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
         
         jPoint++;
-       
-        /*--- Reset the cache index ---*/   
         
-        Offset_Cache_Index = 0;
+        CheckOffsetCache();        
 
       }
     }
@@ -1177,47 +1200,30 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       
-      /*--- Build the offset cache if it is the first point --- */
-      
-      if (iPoint == 0){
-        Build_Offset_Cache = true;
-      } else {
-        Build_Offset_Cache = false;
-      }
-      
       /*--- Check for halos & write only if requested ---*/
       /*--- Load the volume data into the Local_Data() array. --- */
       
+      Build_Offset_Cache = !Offset_Cache.size() ? true : false;
+
       LoadVolumeData(config, geometry, solver, iPoint);
-      
-      /*--- Reset the cache index ---*/
-      
-      Offset_Cache_Index = 0;
 
     }
     
     /*--- Reset the offset cache and index --- */
     Offset_Cache_Index = 0;
-    Offset_Cache.clear();    
+    Offset_Cache.clear(); 
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-        
-        if (iVertex == 0){
-          Build_Offset_Cache = true;
-        } else {
-          Build_Offset_Cache = false;
-        }
-        
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
+  
+        if(geometry->node[iPoint]->GetDomain()){
+          
+          Build_Offset_Cache = !Offset_Cache.size() ? true : false;
+   
           LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+          
         }
-        
-        /*--- Reset the cache index ---*/ 
-        
-        Offset_Cache_Index = 0;
       }   
     } 
   }
@@ -1248,6 +1254,9 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     if (Offset != -1){
       Local_Data[iPoint][Offset] = value;
     }   
+    if (Offset_Cache_Index == Offset_Cache.size()){
+      Offset_Cache_Index = 0;
+    }
   }
   
 }
@@ -1268,14 +1277,6 @@ void COutput::CheckOffsetCache(){
     vector<short>::iterator it = std::unique( Offset_Cache_Copy.begin(), Offset_Cache_Copy.end() );
     if (it != Offset_Cache_Copy.end() ){
       SU2_MPI::Error("Offset cache contains duplicate entries.", CURRENT_FUNCTION);
-    }
-    
-    /*--- Check if the size of the offset cache matches the size of the volume output list. 
-       * If that is not the case, then probably SetVolumeOutputValue() was not called for all fields declared with
-       * AddVolumeOutput(). ---*/
-    
-    if (VolumeOutput_List.size() != Offset_Cache.size()){
-      SU2_MPI::Error("Offset cache size and volume output size do not match.", CURRENT_FUNCTION);
     }
   }
   Offset_Cache_Checked = true;
@@ -1363,8 +1364,6 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
 }
 
 bool COutput::WriteScreen_Header(CConfig *config) {  
-
-  bool write_header = false;
   
   unsigned long RestartIter = 0;
   
@@ -1372,7 +1371,9 @@ bool COutput::WriteScreen_Header(CConfig *config) {
     RestartIter = config->GetRestart_Iter();
   }
   
-  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
+  unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
+  unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
+  unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
   
   /*--- Header is always disabled for multizone problems unless explicitely requested --- */
   
@@ -1388,26 +1389,30 @@ bool COutput::WriteScreen_Header(CConfig *config) {
     return true;
   }
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     return false;
   }
    
-  if (SU2_TYPE::Int(ScreenWrt_Freq[2]) == 0 && SU2_TYPE::Int(ScreenWrt_Freq[1]) == 0){
+  /*--- If there is no inner or outer iteration, don't print header ---*/
+  if (ScreenWrt_Freq_Outer == 0 && ScreenWrt_Freq_Inner == 0){
     return false;
   }
   
+  /*--- Print header if we are at the first inner iteration ---*/
+  
   if (curr_InnerIter == 0){
-    write_header = true;
+    return true;
   }
   
-  return write_header;
+  return false;
 }
 
 bool COutput::WriteScreen_Output(CConfig *config) {
   
-  su2double* ScreenWrt_Freq = config->GetScreen_Wrt_Freq();
-    
+  unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
+  unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
+  unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);    
   
   if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
     
@@ -1417,7 +1422,7 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(ScreenWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, ScreenWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1426,14 +1431,14 @@ bool COutput::WriteScreen_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(ScreenWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter, ScreenWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(ScreenWrt_Freq[2])) &&
+  if (!PrintOutput(curr_InnerIter, ScreenWrt_Freq_Inner) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;
@@ -1446,11 +1451,13 @@ bool COutput::WriteScreen_Output(CConfig *config) {
 
 bool COutput::WriteHistoryFile_Output(CConfig *config) { 
 
-  su2double* HistoryWrt_Freq = config->GetHistory_Wrt_Freq();
+  unsigned long HistoryWrt_Freq_Inner = config->GetHistory_Wrt_Freq(2);
+  unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
+  unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);    
     
   /*--- Check if screen output should be written --- */
   
-  if (!PrintOutput(curr_TimeIter, SU2_TYPE::Int(HistoryWrt_Freq[0]))&& 
+  if (!PrintOutput(curr_TimeIter, HistoryWrt_Freq_Time)&& 
       !(curr_TimeIter == config->GetnTime_Iter() - 1)){
     
     return false;
@@ -1459,14 +1466,14 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
   
   if (Convergence) {return true;}
   
-  if (!PrintOutput(curr_OuterIter, SU2_TYPE::Int(HistoryWrt_Freq[1])) && 
+  if (!PrintOutput(curr_OuterIter,HistoryWrt_Freq_Outer) && 
       !(curr_OuterIter == config->GetnOuter_Iter() - 1)){
     
     return false;
     
   }
   
-  if (!PrintOutput(curr_InnerIter, SU2_TYPE::Int(HistoryWrt_Freq[2])) &&
+  if (!PrintOutput(curr_InnerIter, HistoryWrt_Freq_Inner) &&
       !(curr_InnerIter == config->GetnInner_Iter() - 1)){
     
     return false;
@@ -1490,9 +1497,9 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
   /// Description: The current time
-  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_FIXED, "TIME_DOMAIN", "Current physical time (s)");
+  AddHistoryOutput("CUR_TIME", "Cur_Time", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current physical time (s)");
   /// Description: The current time step
-  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_FIXED, "TIME_DOMAIN", "Current time step (s)");
+  AddHistoryOutput("TIME_STEP", "Time_Step", FORMAT_SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
  
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("PHYS_TIME",   "Time(sec)", FORMAT_SCIENTIFIC, "PHYS_TIME", "Average wall-clock time"); 
@@ -1505,8 +1512,12 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("INNER_ITER", curr_InnerIter);
   SetHistoryOutputValue("OUTER_ITER", curr_OuterIter); 
   
-  SetHistoryOutputValue("CUR_TIME",  curr_TimeIter*config->GetTime_Step());
-  SetHistoryOutputValue("TIME_STEP", config->GetTime_Step());
+  if (config->GetTime_Domain()){
+    SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());           
+    if (curr_InnerIter == 0){
+      SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));      
+    }
+  }
   
   su2double StopTime, UsedTime;
 #ifndef HAVE_MPI

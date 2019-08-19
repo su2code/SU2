@@ -71,15 +71,15 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
   epsilon = 0.001;
   
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Regime() != INCOMPRESSIBLE)
+  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
   
-  if(config->GetKind_Solver() != EULER)
+  if(Kind_Solver != INC_EULER)
     SU2_MPI::Error("Euler equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
   

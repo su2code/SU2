@@ -105,10 +105,9 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-               unsigned short RunTime_EqSystem, unsigned long Iteration);
+               unsigned short RunTime_EqSystem);
 
   /*! 
    * \brief Do the time integration (explicit or implicit) of the numerical system.
@@ -117,10 +116,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-              unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
+              unsigned short iRKStep, unsigned short RunTime_EqSystem);
   
   /*! 
    * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework.
@@ -132,7 +130,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-                  unsigned short RunTime_EqSystem, unsigned long Iteration);
+                  unsigned short RunTime_EqSystem);
 
   /*!
    * \brief Initialize the adjoint solution using the primal problem.
@@ -146,16 +144,6 @@ public:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*! 
-   * \brief Do the convergence analysis to determine if the code must stop the execution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
-                unsigned long Iteration, su2double monitor, unsigned short iMesh);
-  
-  /*! 
    * \brief Average the scalar output in case there is a unsteady solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -165,37 +153,6 @@ public:
    */
   void Average_Monitoring(CGeometry *geometry, CConfig *config,
                 unsigned long Iteration, su2double monitor, unsigned short iMesh);
-
-  /*!
-   * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - Solution of the problem
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter);
-
-  /*!
-   * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - Solution of the problem
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter);
-
-
-  /*!
-   * \brief Do the convergence analysis to determine if the FSI problem has converged on the structural side.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Iteration - Current iteration.
-   * \param[in] monitor - Objective function that is use to study its convergence.
-   */
-  void Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter);
-
 
   /*!
    * \brief Get the value of the convergence.
@@ -271,10 +228,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -285,11 +241,10 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] mu - Variable for controlling the kind of multigrid algorithm.   
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   virtual void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                 unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                 unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -297,11 +252,10 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
    */
   virtual void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
-                                         CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
+                                         CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                          su2double *monitor);
   
   /*! 
@@ -398,10 +352,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
 
 
   /*!
@@ -411,10 +364,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   virtual void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
 
   
   /*! 
@@ -474,7 +426,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
@@ -488,8 +440,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Compute the non-dimensional parameters.
@@ -501,7 +452,7 @@ public:
    * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
    */
   void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
-                                 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
+                                 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, 
                                  su2double *monitor);
 
   /*! 
@@ -640,10 +591,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
   
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -700,10 +650,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
 
 };
 
@@ -734,10 +683,9 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                            CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                            CConfig **config, unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst);
   /*!
    * \brief Perform the spatial integration of the numerical system.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -763,7 +711,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
+                        unsigned short iStep, unsigned short RunTime_EqSystem);
 };
 
 #include "integration_structure.inl"

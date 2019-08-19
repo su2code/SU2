@@ -455,8 +455,8 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 
 bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
   
-  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
-        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  return (config->GetTime_Marching() != STEADY && (curr_InnerIter == 0))|| 
+        (config->GetTime_Marching() == STEADY && (curr_TimeIter < 2)); 
   
 }
 

@@ -54,8 +54,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Array initialization ---*/
   Psi = NULL;
@@ -131,7 +131,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
     IntBoundary_Jump[iVar] = 0.0;
 
   /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++)
       HB_Source[iVar] = 0.0;
@@ -146,8 +146,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   /*--- Array initialization ---*/
   Psi = NULL;
@@ -218,7 +218,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
     IntBoundary_Jump[iVar] = 0.0;
 
   /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
     HB_Source = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++)
       HB_Source[iVar] = 0.0;

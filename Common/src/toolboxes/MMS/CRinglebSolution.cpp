@@ -61,16 +61,18 @@ CRinglebSolution::CRinglebSolution(unsigned short val_nDim,
   tGamOvGm1 = Gamma*tovGm1;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetUnsteady_Simulation() != STEADY)
+  if(config->GetTime_Marching() != STEADY)
     SU2_MPI::Error("Steady mode must be selected for the Ringleb case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_Regime() != COMPRESSIBLE)
+  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
+     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
+     Kind_Solver != FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the Ringleb case",
                    CURRENT_FUNCTION);
 
-  if((config->GetKind_Solver() != EULER) &&
-     (config->GetKind_Solver() != FEM_EULER))
+  if((Kind_Solver != EULER) &&
+     (Kind_Solver != FEM_EULER))
     SU2_MPI::Error("Euler equations must be selected for the Ringleb case",
                    CURRENT_FUNCTION);
 
