@@ -1082,8 +1082,6 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
   
-  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
-
   
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9065,12 +9063,6 @@ public:
   bool GetWrt_ForcesBreakdown(void);
 
   /*!
-   * \brief Boolean to check whether dry run mode is enabled
-   * \return YES if dry run mode is enabled.
-   */
-  bool GetDryRun();
-
-  /*!
    * \brief Get the number of screen output variables requested (maximum 6)
    */
   unsigned short GetnScreenOutput(void);
@@ -9128,7 +9120,7 @@ public:
    * \return 
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter);
-  
+
 };
 
 #include "config_structure.inl"

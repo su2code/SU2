@@ -1379,12 +1379,25 @@ protected:
                                           vector<su2double>    &metricTerms);
 };
 
+/*! 
+ * \class CDummyMeshFEM_DG
+ * \brief Class for defining a DG geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
 class CDummyMeshFEM_DG : public CMeshFEM_DG {
   
 public:
-  
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
   CDummyMeshFEM_DG(CConfig *config);
   
+  /*! 
+	 * \brief Destructor of the class.
+	 */
   ~CDummyMeshFEM_DG();
   
 };
