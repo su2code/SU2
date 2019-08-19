@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
             
             /*--- If requested, write the volume output for visualization purposes --- */
             
-            output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+            output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
     
             /*--- Deallocate data --- */
             
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
       
         /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), false);
 
         /*--- Deallocate data --- */
         
@@ -480,7 +480,7 @@ int main(int argc, char *argv[]) {
         
           /*--- If requested, write the volume output for visualization purposes --- */
           
-          output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+          output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
   
           /*--- Deallocate data --- */
           
@@ -645,7 +645,7 @@ int main(int argc, char *argv[]) {
               
                 /*--- If requested, write the volume output for visualization purposes --- */
                 
-                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
         
                 /*--- Deallocate data --- */
                 
@@ -692,7 +692,7 @@ int main(int argc, char *argv[]) {
           
           /*--- If requested, write the volume output for visualization purposes --- */
           
-          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst], config_container[iZone], config->GetOutput_FileFormat());
+          output[iZone]->SetVolume_Output(geometry_container[iZone][iInst], config_container[iZone], config->GetOutput_FileFormat(), true);
           
           /*--- Deallocate data --- */
           
@@ -774,7 +774,7 @@ int main(int argc, char *argv[]) {
               
                 /*--- If requested, write the volume output for visualization purposes --- */
                 
-                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+                output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), true);
         
                 /*--- Deallocate data --- */
                 
@@ -816,7 +816,7 @@ int main(int argc, char *argv[]) {
         
         /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat());
+        output[iZone]->SetVolume_Output(geometry_container[iZone][INST_0], config_container[iZone], config->GetOutput_FileFormat(), false);
         
         /*--- Deallocate data --- */
         

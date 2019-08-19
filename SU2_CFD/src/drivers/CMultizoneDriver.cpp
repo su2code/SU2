@@ -482,8 +482,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
   unsigned short RestartFormat = SU2_RESTART_ASCII;
   unsigned short OutputFormat = config_container[ZONE_0]->GetOutput_FileFormat();
-  
-
+  bool TimeDomain = driver_config->GetTime_Domain();
   
   for (iZone = 0; iZone < nZone; iZone++){
     
@@ -569,17 +568,17 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- Write restart files ---*/
         
-        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat);
+        output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], RestartFormat, TimeDomain);
         
         /*--- Write visualization files ---*/
         
         if (Wrt_Vol)
-          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetVolume_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         
         if (Wrt_Surf)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat);
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], OutputFormat, TimeDomain);
         if (Wrt_CSV)
-          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV);    
+          output_container[iZone]->SetSurface_Output(geometry_container[iZone][iInst][MESH_0], config_container[iZone], CSV, TimeDomain);    
         
         output_container[iZone]->DeallocateData_Parallel();
         

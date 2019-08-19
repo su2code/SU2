@@ -504,16 +504,16 @@ void CIteration::Output(COutput *output,
       
       /*--- Write restart files ---*/
       
-      output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], RestartFormat);
+      output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], RestartFormat, false);
       
       /*--- Write visualization files ---*/
       
       if (Wrt_Vol)
-        output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat);
+        output->SetVolume_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat, false);
       if (Wrt_Surf)
-        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat);
+        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OutputFormat,false);
       if (Wrt_CSV)
-        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], CSV);    
+        output->SetSurface_Output(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], CSV, false);    
       
       output->DeallocateData_Parallel();      
     
