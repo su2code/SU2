@@ -5819,7 +5819,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
     /*--- Push solution back to correct array ---*/
 
     for(iPoint=0; iPoint<geometry_container[ZONE_STRUCT][INST_0][MESH_0]->GetnPoint();iPoint++){
-      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_time_n();
+      solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->node[iPoint]->Set_Solution_time_n();
     }
 
     /*--- Push solution back to correct array ---*/

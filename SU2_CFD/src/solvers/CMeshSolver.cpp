@@ -802,7 +802,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Load data from the restart into correct containers. ---*/
-
   counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
@@ -1002,6 +1001,9 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
 
+  InitiateComms(geometry, config, SOLUTION_TIME_N);
+  CompleteComms(geometry, config, SOLUTION_TIME_N);
+
   /*-------------------------------------------------------------------------------------------*/
   /*------------ Now, load the restart file for time n-1, if the simulation is 2nd Order ------*/
   /*-------------------------------------------------------------------------------------------*/
@@ -1075,12 +1077,9 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     if (Restart_Data != NULL) delete [] Restart_Data;
     Restart_Vars = NULL; Restart_Data = NULL;
 
+    InitiateComms(geometry, config, SOLUTION_TIME_N1);
+    CompleteComms(geometry, config, SOLUTION_TIME_N1);
+
   }
-
-  /*--- It's necessary to communicate this information ---*/
-  //geometry->Set_MPI_OldCoord(config);
-
-  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
-  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
 
 }

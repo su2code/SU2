@@ -662,7 +662,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver->node[iPoint]->SetSolution_time_n();
+    solver->node[iPoint]->Set_Solution_time_n();
     solver->node[iPoint]->SetSolution_Vel_time_n();
     solver->node[iPoint]->SetSolution_Accel_time_n();
     
@@ -707,7 +707,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
+    solver_container[FEA_SOL]->node[iPoint]->Set_Solution_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
     solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
     

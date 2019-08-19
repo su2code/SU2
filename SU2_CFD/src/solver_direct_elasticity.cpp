@@ -1993,7 +1993,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, CConfig *c
       if (dynamic) {
         node[iPoint]->SetSolution_Vel(Solution);
         node[iPoint]->SetSolution_Accel(Solution);
-        node[iPoint]->SetSolution_time_n(Solution);
+        node[iPoint]->Set_Solution_time_n(Solution);
         node[iPoint]->SetSolution_Vel_time_n(Solution);
         node[iPoint]->SetSolution_Accel_time_n(Solution);
     }
@@ -4458,7 +4458,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
       for (iVar = 0; iVar < nVar; iVar++) {
         node[iPoint_Local]->SetSolution(iVar, Sol[iVar]);
         if (dynamic) {
-          node[iPoint_Local]->SetSolution_time_n(iVar, Sol[iVar]);
+          node[iPoint_Local]->Set_Solution_time_n(iVar, Sol[iVar]);
           node[iPoint_Local]->SetSolution_Vel(iVar, Sol[iVar+nVar]);
           node[iPoint_Local]->SetSolution_Vel_time_n(iVar, Sol[iVar+nVar]);
           node[iPoint_Local]->SetSolution_Accel(iVar, Sol[iVar+2*nVar]);

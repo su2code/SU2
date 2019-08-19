@@ -1891,6 +1891,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case SOLUTION_TIME_N:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_TIME_N1:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2020,6 +2028,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = node[iPoint]->GetBound_Disp(iDim);
+            break;
+          case SOLUTION_TIME_N:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_time_n(iVar);
+            break;
+          case SOLUTION_TIME_N1:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_time_n1(iVar);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2151,7 +2167,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case SOLUTION_FEA_OLD:
             for (iVar = 0; iVar < nVar; iVar++) {
-              node[iPoint]->SetSolution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->Set_Solution_time_n(iVar, bufDRecv[buf_offset+iVar]);
               node[iPoint]->SetSolution_Vel_time_n(iVar, bufDRecv[buf_offset+nVar+iVar]);
               node[iPoint]->SetSolution_Accel_time_n(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
@@ -2174,6 +2190,14 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               node[iPoint]->SetBound_Disp(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case SOLUTION_TIME_N:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->Set_Solution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_TIME_N1:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->Set_Solution_time_n1(iVar, bufDRecv[buf_offset+iVar]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
