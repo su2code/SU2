@@ -2810,10 +2810,20 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
   vector<su2double> Normal(nDim),
                     UnitNormal(nDim),
                     RefUnitNormal(nDim);
- 
-  /*--- Allocate memory and set default value to false. ---*/
-  bound_is_straight.reserve(nMarker_Global);
-  fill(bound_is_straight.begin(), bound_is_straight.end(), false);
+  
+  /*--- Assume now that this boundary marker is straight. As soon as one
+        AreaElement is found that is not aligend with a Reference then it is 
+        certain that the boundary marker is not straight and one can stop 
+        searching. Another possibility is that this process doesn't own
+        any nodes of that boundary, in that case we also have to assume the
+        boundary is straight.
+        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets therefore
+        the value true which could be wrong. ---*/
+  bound_is_straight.resize(nMarker);
+  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+  /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results 
+        on screen as nMarker can vary across ranks.  ---*/
+  vector<bool> bound_is_straight_Global(nMarker_Global, true);
 
   /*--- Loop over all local markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2831,37 +2841,29 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
             matching unique string tags. ---*/
       for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
 
-        /*--- Assume now that this boundary marker is straight. As soon as one
-          AreaElement is found that is not aligend with a Reference then it is 
-          certain that the boundary marker is not straight and one can stop 
-          searching. Another possibility is that this process doesn't own
-          any nodes of that boundary, in that case we also have to assume the
-          boundary is straight.
-          Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets therefore
-          the value true which could be wrong. ---*/
-        bound_is_straight[iMarker_Global] = true;
-
         Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
         if (Local_TagBound == Global_TagBound) {
 
           RefUnitNormal_defined = false;
           iVertex = 0;
 
-          while(bound_is_straight[iMarker_Global] == true && iVertex < nVertex[iMarker]) {
+          while(bound_is_straight_Global[iMarker_Global] == true && iVertex < nVertex[iMarker]) {
 
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
+            UnitNormal = Normal;
             /*--- Compute unit normal using inner_product from the STl. ---*/
             Area = sqrt(inner_product(Normal.begin(), Normal.end(), Normal.begin(), 0.0));
             
             /*--- Negate for outward convention. ---*/
-            for_each(Normal.begin(), Normal.end(), [Area](su2double &iNormal) { iNormal /= -Area; });
+            for_each(UnitNormal.begin(), UnitNormal.end(), [Area](su2double &iNormal) { iNormal /= -Area; });
 
             /*--- Check if unit normal is within tolerance of the Reference unit normal. 
                   Reference unit normal = first unit normal found. ---*/
             if(RefUnitNormal_defined) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 if( abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon ) {
-                  bound_is_straight[iMarker_Global] = false;
+                  bound_is_straight_Global[iMarker_Global] = false;
+                  bound_is_straight[iMarker] = false;
                   break;
                 }
               }
@@ -2873,34 +2875,37 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           iVertex++;
           } //while iVertex
         }//if Local == Global
+        break;
       }//for iMarker_Global
-    }//if sym or euler ...
+    } else { bound_is_straight[iMarker] = false; }//if sym or euler ...
   }//for iMarker
 
-  /*--- Communicate results. ---*/
-  vector<int> Buff_Send_isStraight(nMarker_Global),
-              Buff_Recv_isStraight(nMarker_Global);
+  /*--- Communicate results and print on screen. ---*/
+  if(print_on_screen) {
+    vector<int> Buff_Send_isStraight(nMarker_Global),
+                Buff_Recv_isStraight(nMarker_Global);
 
-  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
-    Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight[iMarker_Global]);
- 
-  /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
-  SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), 
-                     nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
+    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int> (bound_is_straight_Global[iMarker_Global]);
+  
+    /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
+    SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), 
+                       nMarker_Global, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
 
-  /*--- Print results on screen. ---*/
-  for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-    if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
-        config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
+    /*--- Print results on screen. ---*/
+    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+      if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+          config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
 
-      if(rank == MASTER_NODE && print_on_screen) {
-        cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
-        if(Buff_Send_isStraight[iMarker_Global] == false) cout << " NOT";
-        if(nDim == 2) cout << " straight." << endl;
-        if(nDim == 3) cout << " plane." << endl;
-      }
-    }//if sym or euler
-  }//for iMarker_Global
+        if(rank == MASTER_NODE) {
+          cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
+          if(Buff_Send_isStraight[iMarker_Global] == false) cout << " NOT";
+          if(nDim == 2) cout << " straight." << endl;
+          if(nDim == 3) cout << " plane." << endl;
+        }
+      }//if sym or euler
+    }//for iMarker_Global
+  }//if print_on_scren
 
 }
 
