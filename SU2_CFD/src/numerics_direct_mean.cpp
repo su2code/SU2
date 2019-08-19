@@ -5760,6 +5760,8 @@ void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config)
   su2double Force_Ref = config->GetForce_Ref();
   su2double C_bf = 1.1;
   
+  su2double Fmomentum[3] = {V_i[1], V_i[2], V_i[3]};
+  
   /*--- Zero the continuity contribution ---*/
   
   val_residual[0] = 0.0;
@@ -5767,14 +5769,14 @@ void CSourceVolumeSTG::ComputeResidual(su2double *val_residual, CConfig *config)
   /*--- Momentum contribution ---*/
   
   for (iDim = 0; iDim < nDim; iDim++){
-    val_residual[iDim+1] = -Volume * C_bf * U_i[iDim+1] * U_i[0] / Force_Ref;
+    val_residual[iDim+1] = -Volume * C_bf * Fmomentum[iDim] * U_i[0] / Force_Ref;
   }
   
   /*--- Energy contribution ---*/
   
   val_residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++){
-    val_residual[nDim+1] += -Volume * C_bf * U_i[iDim+1] * U_i[0]/ Force_Ref;
+    val_residual[nDim+1] += -Volume * C_bf * U_i[iDim+1] * Fmomentum[iDim]/ Force_Ref;
   }
 }
 

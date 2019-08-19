@@ -4062,7 +4062,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         
         // Initialize auxiliar array for the conservative variables.
         su2double Uaux[5] = {0.0,0.0,0.0,0.0,0.0};
-        Uaux[0] = node[LocalPoints[ii]]->GetDensity();
         
         Coord = geometry->node[LocalPoints[ii]]->GetCoord();
         
@@ -4156,11 +4155,14 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         VSTG_VelFluct[ii*nDim+2] = wturb * alpha_x * U0;
 
         //cout << rank <<  " Value: " << Coord[0] << " " << ListCoordX[indx] << " " << alpha_x << " " << CoordX_Sum << '\n';
-  //      if ((Coord[0] <= 0.201) && (Coord[0] >= 0.199) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
-  //        cout << config->GetIntIter() << " " << Uaux[1] << " " << " "<< Uaux[2] << " " << Uaux[3] << endl;
-          
+//        if ((Coord[0] <= 1.001) && (Coord[0] >= 0.999) && (Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
+//          cout << config->GetIntIter() << " " << Uaux[1] << " " << " "<< Uaux[2] << " " << Uaux[3] << endl;
+        
+        /*--- Load the primitive variables (Velocity fluctuations) ---*/
+        numerics->SetPrimitive(Uaux, Uaux);
+        
         /*--- Load the conservative variables ---*/
-        numerics->SetConservative(Uaux, Uaux);
+        numerics->SetConservative(node[LocalPoints[ii]]->GetSolution(), node[LocalPoints[ii]]->GetSolution());
         
         /*--- Load the volume of the dual mesh cell ---*/
         numerics->SetVolume(geometry->node[LocalPoints[ii]]->GetVolume());
@@ -4176,17 +4178,24 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     else{
       for(vector<int>::size_type ii = 0; ii != LocalPoints.size(); ii++) {
         
+        Coord = geometry->node[LocalPoints[ii]]->GetCoord();
+        
         // Initialize auxiliar array for the conservative variables.
         su2double Uaux[5] = {0.0,0.0,0.0,0.0,0.0};
         
         // Load to Uaux the fluctuations calculated during the
         // first iteration of the dual time stepping.
-        Uaux[0] = node[LocalPoints[ii]]->GetDensity();
         for (iDim = 0; iDim < nDim; iDim++)
           Uaux[iDim+1] = VSTG_VelFluct[ii*nDim+iDim];
         
+//        if ((Coord[0] <= 1.001) && (Coord[0] >= 0.999) && (Coord[1] <= 0.001) && (Coord[1] >= -0.001) && (Coord[2] <= 2.401) && (Coord[2] >= 2.399))
+//          cout << config->GetIntIter() << " " << Uaux[1] << " " << " "<< Uaux[2] << " " << Uaux[3] << endl;
+        
+        /*--- Load the primitive variables (Velocity fluctuations) ---*/
+        numerics->SetPrimitive(Uaux, Uaux);
+        
         /*--- Load the conservative variables ---*/
-        numerics->SetConservative(Uaux, Uaux);
+        numerics->SetConservative(node[LocalPoints[ii]]->GetSolution(), node[LocalPoints[ii]]->GetSolution());
         
         /*--- Load the volume of the dual mesh cell ---*/
         numerics->SetVolume(geometry->node[LocalPoints[ii]]->GetVolume());
