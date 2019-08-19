@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
         
         /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat());
+        output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
       
       } 
       
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
         
         /*--- If requested, write the volume output for visualization purposes --- */
         
-        output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat());
+        output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
         
       }
       
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Write the in the native su2 format ---*/
     
-    output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], SU2_MESH);
+    output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], SU2_MESH, false);
     
     
     if (config_container[iZone]->GetVisualize_Volume_Def()){
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
       
       /*--- If requested, write the volume output for visualization purposes --- */
       
-      output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat());
+      output[iZone]->SetVolume_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
     
     } 
     
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
       
       /*--- If requested, write the volume output for visualization purposes --- */
       
-      output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat());
+      output[iZone]->SetSurface_Output(geometry_container[iZone], config_container[iZone], config->GetOutput_FileFormat(), false);
       
     }
     

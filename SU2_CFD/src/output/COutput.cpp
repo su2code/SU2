@@ -137,6 +137,10 @@ COutput::COutput(CConfig *config, unsigned short nDim) {
   
   Build_Offset_Cache = false;
   
+  curr_InnerIter = 0;
+  curr_OuterIter = 0;
+  curr_TimeIter  = 0;
+  
 }
 
 COutput::~COutput(void) {
@@ -508,7 +512,7 @@ void COutput::SetFileWriter(CConfig *config, CGeometry *geometry, CParallelDataS
   } 
 }
 
-void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
   
   CParallelDataSorter* surface_sort = NULL;
   CFileWriter*         file_writer = NULL;
@@ -527,11 +531,24 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
   surface_sort->SortOutputData(config, geometry);
   
+  string FileName = SurfaceFilename;
+  
+  /*--- Remove extension --- */
+  
+  unsigned short lastindex = FileName.find_last_of(".");
+  FileName = FileName.substr(0, lastindex);
+  
+  /*--- Add time iteration if requested --- */
+  
+  if (time_dep){
+    FileName = config->GetFilename(FileName, "", curr_TimeIter);
+  }
+  
   if (surface_sort->GetnElem() > 0){
   
     /*--- Write data to file --- */
   
-    file_writer->Write_Data(config->GetFilename(SurfaceFilename, "", curr_TimeIter), surface_sort);
+    file_writer->Write_Data(FileName, surface_sort);
   
   }
   
@@ -540,12 +557,23 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   
 }
 
-void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format){
+void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned short format, bool time_dep){
   
   string FileName = VolumeFilename;
   
   if(format == SU2_RESTART_ASCII || format == SU2_RESTART_BINARY){
     FileName = RestartFilename;
+  }
+  
+  /*--- Remove extension --- */
+  
+  unsigned short lastindex = FileName.find_last_of(".");
+  FileName = FileName.substr(0, lastindex);
+  
+  /*--- Add time iteration if requested --- */
+  
+  if (time_dep){
+    FileName = config->GetFilename(FileName, "", curr_TimeIter);
   }
   
   CFileWriter* file_writer = NULL;
@@ -556,7 +584,7 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   
   /*--- Write data to file --- */
   
-  file_writer->Write_Data(config->GetFilename(FileName, "", curr_TimeIter), data_sorter);
+  file_writer->Write_Data(FileName, data_sorter);
   
   if ((rank == MASTER_NODE) && config->GetWrt_Performance()) {
     cout << "Wrote " << file_writer->Get_Filesize()/(1.0e6) << " MB to disk in ";

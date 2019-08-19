@@ -191,6 +191,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   bool Wrt_Surf = config_container[ZONE_0]->GetWrt_Srf_Sol();
   bool Wrt_Vol  = config_container[ZONE_0]->GetWrt_Vol_Sol();
   bool Wrt_CSV  = config_container[ZONE_0]->GetWrt_Csv_Sol();
+  bool TimeDomain = config_container[ZONE_0]->GetTime_Domain();
   
   if (config_container[ZONE_0]->GetWrt_Binary_Restart()){
     RestartFormat = SU2_RESTART_BINARY;
@@ -269,16 +270,16 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
       
       /*--- Write restart files ---*/
       
-      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat);
+      output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], RestartFormat, TimeDomain);
       
       /*--- Write visualization files ---*/
       
       if (Wrt_Vol)
-        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetVolume_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
       if (Wrt_Surf)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat);
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], OutputFormat, TimeDomain);
       if (Wrt_CSV)
-        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV);    
+        output_container[ZONE_0]->SetSurface_Output(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0], CSV, TimeDomain);    
       
       output_container[ZONE_0]->DeallocateData_Parallel();
       
