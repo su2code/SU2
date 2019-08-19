@@ -104,7 +104,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                        // FSI simulation
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   
   bool de_effects = config->GetDE_Effects();                      // Test whether we consider dielectric elastomers
@@ -953,7 +952,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
   
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
   bool consistent_interpolation = (!config->GetConservativeInterpolation() ||
                                   (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
   
@@ -3015,7 +3014,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   su2double TransferTime = 1.0;
 
   bool restart = config->GetRestart(); // Restart analysis
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());  // FSI simulation.
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);  // FSI simulation.
   bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
@@ -3095,7 +3094,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
@@ -3404,7 +3402,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                      // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
@@ -3953,7 +3950,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
@@ -4088,7 +4085,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());
+  bool fsi = (config->GetnMarker_Fluid_Load() > 0);
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double distance_sq = 0.0 ;
@@ -4401,7 +4398,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short nZone = geometry[MESH_0]->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fluid_structure = (config->GetFSI_Simulation() || config->GetpyFSI());
+  bool fluid_structure = (config->GetnMarker_Fluid_Load() > 0);
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (dynamic) nSolVar = 3 * nVar;
