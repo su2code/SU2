@@ -106,7 +106,8 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
     SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
   
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
-  
+  SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
+    
 }
   
 
@@ -121,6 +122,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
   AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    FORMAT_SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", FORMAT_SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", TYPE_COEFFICIENT);
+  AddHistoryOutput("CFL_NUMBER", "CFL number", FORMAT_SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
   
 }
 

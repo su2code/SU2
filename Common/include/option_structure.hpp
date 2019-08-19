@@ -193,27 +193,33 @@ enum ENUM_SOLVER {
   EULER = 1,							/*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,					/*!< \brief Definition of the Navier-Stokes' solver. */
   RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION_FVM = 28,     /*!< \brief Definition of the finite volume heat solver. */
-  FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
-  FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
-  ZONE_SPECIFIC = 31,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
-  DISC_ADJ_EULER = 35,
-  DISC_ADJ_RANS = 36,
-  DISC_ADJ_NAVIER_STOKES = 37,
-  DISC_ADJ_HEAT = 38,
-  DISC_ADJ_FEM_EULER = 65,
-  DISC_ADJ_FEM_RANS = 66,
-  DISC_ADJ_FEM_NS = 67,
-  DISC_ADJ_FEM = 40,
-  FEM_EULER = 50,                       /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 99
+  INC_EULER = 4,							/*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES =5,					/*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS = 6,								/*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION_FVM = 7,     /*!< \brief Definition of the finite volume heat solver. */
+  FLUID_STRUCTURE_INTERACTION = 8,		/*!< \brief Definition of a FSI solver. */
+  FEM_ELASTICITY = 9,					/*!< \brief Definition of a FEM solver. */
+  ADJ_EULER = 10,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES = 11,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS = 12,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER = 13,                 /*!< \brief Definition of template solver. */
+  ZONE_SPECIFIC = 14,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
+  DISC_ADJ_EULER = 15,
+  DISC_ADJ_RANS = 16,
+  DISC_ADJ_NAVIER_STOKES = 17,
+  DISC_ADJ_INC_EULER = 18,
+  DISC_ADJ_INC_RANS = 19,
+  DISC_ADJ_INC_NAVIER_STOKES = 20,
+  DISC_ADJ_HEAT = 21,
+  DISC_ADJ_FEM_EULER = 22,
+  DISC_ADJ_FEM_RANS = 23,
+  DISC_ADJ_FEM_NS = 24,
+  DISC_ADJ_FEM = 25,
+  FEM_EULER = 26,                       /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES = 27,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS = 28,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES = 29,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS = 30
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -221,6 +227,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("EULER", EULER)
 ("NAVIER_STOKES", NAVIER_STOKES)
 ("RANS", RANS)
+("INC_EULER", INC_EULER)
+("INC_NAVIER_STOKES", INC_NAVIER_STOKES)
+("INC_RANS", INC_RANS)
 ("FEM_EULER", FEM_EULER)
 ("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
 ("FEM_RANS", FEM_RANS)
@@ -232,7 +241,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
-("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_NAVIER_STOKES)
+("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
+("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
+("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
 ("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
 ("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
 ("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
@@ -275,7 +287,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
  */
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
-  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 9,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -394,10 +406,8 @@ static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_T
 enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
+  NO_FLOW = 2
 };
-static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
-("COMPRESSIBLE", COMPRESSIBLE)
-("INCOMPRESSIBLE", INCOMPRESSIBLE);
 
 /*!
  * \brief different non-dimensional modes
@@ -1832,7 +1842,7 @@ enum ENUM_UNSTEADY {
   HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
-static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
+static const map<string, ENUM_UNSTEADY> TimeMarching_Map = CCreateMap<string, ENUM_UNSTEADY>
 ("NO", STEADY)
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)

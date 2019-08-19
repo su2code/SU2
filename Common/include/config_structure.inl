@@ -298,13 +298,9 @@ inline bool CConfig::GetContinuous_Adjoint(void) { return ContinuousAdjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }
 
-inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
-
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
 inline su2double CConfig::GetHarmonicBalance_Period(void) { return HarmonicBalance_Period; }
-
-inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
 inline void CConfig::SetExtIter_OffSet(unsigned long val_iter) { ExtIter_OffSet = val_iter; }
 
@@ -314,10 +310,6 @@ inline void CConfig::SetInnerIter(unsigned long val_iter) { InnerIter = val_iter
 
 inline void CConfig::SetTimeIter(unsigned long val_iter) { TimeIter = val_iter; }
 
-inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
-
-inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
-
 inline unsigned long CConfig::GetExtIter_OffSet(void) { return ExtIter_OffSet; }
 
 inline unsigned long CConfig::GetOuterIter(void) { return OuterIter; }
@@ -325,8 +317,6 @@ inline unsigned long CConfig::GetOuterIter(void) { return OuterIter; }
 inline unsigned long CConfig::GetInnerIter(void) { return InnerIter; }
 
 inline unsigned long CConfig::GetTimeIter(void) { return TimeIter; }
-
-inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
 inline unsigned long CConfig::GetUnst_nIntIter(void) { return Unst_nIntIter; }
 
@@ -443,8 +433,6 @@ inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 inline void CConfig::SetSemiSpan(su2double val_semispan) { SemiSpan = val_semispan; }
 
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
-
-inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
 
 inline su2double CConfig::GetMach(void) { return Mach; }
 
@@ -851,8 +839,6 @@ inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 inline void CConfig::SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
-
-inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
@@ -1312,7 +1298,7 @@ inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) { return Ob
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
+inline unsigned short CConfig::GetTime_Marching(void) { return TimeMarching; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
@@ -2010,6 +1996,8 @@ inline unsigned long CConfig::GetnOuter_Iter(void) { return nOuterIter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return nTimeIter; }
 
+inline void CConfig::SetnTime_Iter(unsigned long val_iter) { nTimeIter = val_iter; }
+
 inline unsigned long CConfig::GetnIter(void) { return nIter; }
 
 inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
@@ -2054,14 +2042,14 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
-inline bool CConfig::GetDryRun() {return dry_run;}
-
 inline string CConfig::GetConv_Field(){ return ConvField; }
 
 inline void  CConfig::Set_StartTime(su2double starttime){StartTime = starttime;}
 
 inline su2double  CConfig::Get_StartTime() {return StartTime;}
 
-inline su2double* CConfig::GetScreen_Wrt_Freq() {return ScreenWrtFreq;}
+inline unsigned long CConfig::GetHistory_Wrt_Freq(unsigned short iter) {return HistoryWrtFreq[iter];}
 
-inline su2double* CConfig::GetHistory_Wrt_Freq() {return HistoryWrtFreq;}
+inline unsigned long CConfig::GetScreen_Wrt_Freq(unsigned short iter) {return ScreenWrtFreq[iter];}
+
+

@@ -70,7 +70,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
 
   bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
 
-  bool dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic_analysis = (config->GetTime_Domain());
   bool fsi_analysis = config->GetFSI_Simulation();
 
   VonMises_Stress       = 0.0;

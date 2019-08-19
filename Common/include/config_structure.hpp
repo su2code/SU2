@@ -163,7 +163,7 @@ private:
   su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
   su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
   su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
-  unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  unsigned short TimeMarching;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -645,7 +645,6 @@ private:
   Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
   Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
   Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
-  bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
@@ -1064,8 +1063,8 @@ private:
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
   su2double *default_wrt_freq;
-  su2double *HistoryWrtFreq,    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
-            *ScreenWrtFreq;     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
+  unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
+                ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
@@ -1084,8 +1083,6 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
   
-  bool dry_run;                 /*!< Run driver construction with dummy geometry class */
-
   
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -3019,12 +3016,6 @@ public:
   void SetnMarker_All(unsigned short val_nmarker);
   
   /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
-   */
-  unsigned long GetnExtIter(void);
-  
-  /*!
    * \brief Get the number of internal iterations.
    * \return Number of internal iterations.
    */
@@ -3061,20 +3052,6 @@ public:
   su2double GetHarmonicBalance_Period(void);
   
   /*!
-   * \brief Set the number of external iterations.
-   * \note This is important in no time depending methods, where only
-   *       one external iteration is needed.
-   * \param[in] val_niter - Set the number of external iterations.
-   */
-  void SetnExtIter(unsigned long val_niter);
-  
-  /*!
-   * \brief Set the current external iteration number.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void SetExtIter(unsigned long val_iter);
-  
-  /*!
    * \brief Set the current external iteration number.
    * \param[in] val_iter - Current external iteration number.
    */
@@ -3105,18 +3082,6 @@ public:
   unsigned long GetTimeIter();
   
   /*!
-   * \brief Set the current internal iteration number.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void SetIntIter(unsigned long val_iter);
-  
-  /*!
-   * \brief Get the current external iteration number.
-   * \return Current external iteration.
-   */
-  unsigned long GetExtIter(void);
-  
-  /*!
    * \brief Get the current internal iteration number.
    * \return Current external iteration.
    */
@@ -3134,13 +3099,6 @@ public:
    */
   unsigned long GetInnerIter(void);
   
-  
-  /*!
-   * \brief Get the current internal iteration number.
-   * \return Current internal iteration.
-   */
-  unsigned long GetIntIter(void);
-
   /*!
    * \brief Set the current physical time.
    * \param[in] val_t - Current physical time.
@@ -5129,7 +5087,7 @@ public:
    * \return The kind of time integration: Steady state, time stepping method (unsteady) or
    *         dual time stepping method (unsteady).
    */
-  unsigned short GetUnsteady_Simulation(void);
+  unsigned short GetTime_Marching(void);
   
   /*!
    * \brief Provides the number of chemical reactions in the chemistry model
@@ -5419,7 +5377,7 @@ public:
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext);
+  string GetFilename(string filename, string ext, unsigned long Iter);
   
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -6356,7 +6314,7 @@ public:
    * \param[in] val_solver - Solver of the simulation.
    * \param[in] val_system - Runtime system that we are solving.
    */
-  void SetGlobalParam(unsigned short val_solver, unsigned short val_system, unsigned long val_extiter);
+  void SetGlobalParam(unsigned short val_solver, unsigned short val_system);
   
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
@@ -9028,10 +8986,16 @@ public:
 
   /*!
    * \brief Get the number of time iterations
-   * \return Number of time steps run for the multizone problem
+   * \return Number of time steps run 
    */
   unsigned long GetnTime_Iter(void);
 
+  /*!
+   * \brief Set the number of time iterations
+   * \param[in] val_iter - Number of time steps run 
+   */
+  void SetnTime_Iter(unsigned long val_iter);
+  
   /*!
    * \brief Get the number of pseudo-time iterations
    * \return Number of pseudo-time steps run for the single-zone problem
@@ -9106,12 +9070,6 @@ public:
   bool GetWrt_ForcesBreakdown(void);
 
   /*!
-   * \brief Boolean to check whether dry run mode is enabled
-   * \return YES if dry run mode is enabled.
-   */
-  bool GetDryRun();
-
-  /*!
    * \brief Get the number of screen output variables requested (maximum 6)
    */
   unsigned short GetnScreenOutput(void);
@@ -9159,16 +9117,17 @@ public:
   su2double Get_StartTime();
 
   /*!
-   * \brief GetHistory_Wrt_Freq
+   * \brief GetHistory_Wrt_Freq_Inner
    * \return 
    */
-  su2double* GetHistory_Wrt_Freq();
+  unsigned long GetHistory_Wrt_Freq(unsigned short iter);
   
   /*!
-   * \brief GetScreen_Wrt_Freq
+   * \brief GetScreen_Wrt_Freq_Inner
    * \return 
    */
-  su2double* GetScreen_Wrt_Freq();
+  unsigned long GetScreen_Wrt_Freq(unsigned short iter);
+
 };
 
 #include "config_structure.inl"

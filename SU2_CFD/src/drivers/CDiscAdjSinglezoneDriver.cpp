@@ -45,11 +45,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
 
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
-  if (!config_container[ZONE_0]->GetTime_Domain())
-    nAdjoint_Iter = config_container[ZONE_0]->GetnIter();
-  else {
-    nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
-  }
+  nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
+  
 
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
@@ -71,6 +68,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -122,11 +120,6 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver(void) {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
-
-  /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-  /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-
-  config_container[ZONE_0]->SetExtIter(TimeIter);
   
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
@@ -161,8 +154,6 @@ void CDiscAdjSinglezoneDriver::Run() {
      *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
 
     config->SetInnerIter(Adjoint_Iter);
-    if(!config->GetTime_Domain() && (MainVariables == FLOW_CONS_VARS))
-      config->SetExtIter(Adjoint_Iter);
 
     /*--- Secondary sensitivities must be computed with a certain frequency. ---*/
     /*--- It is also done at the beginning so all memory gets allocated.     ---*/
@@ -200,15 +191,7 @@ void CDiscAdjSinglezoneDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
-    if (config->GetTime_Domain())
-      output_container[ZONE_0]->SetHistory_Output(geometry_container[ZONE_0][INST_0][MESH_0], 
-                                        solver_container[ZONE_0][INST_0][MESH_0], 
-                                        config_container[ZONE_0], 
-                                        config_container[ZONE_0]->GetTimeIter(),
-                                        config_container[ZONE_0]->GetOuterIter(),
-                                        config_container[ZONE_0]->GetInnerIter());
-
+    
     if (StopCalc) break;
 
   }
@@ -221,7 +204,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   if (config->GetKind_Solver() == DISC_ADJ_EULER ||
       config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-      config->GetKind_Solver() == DISC_ADJ_RANS){
+      config->GetKind_Solver() == DISC_ADJ_RANS ||
+      config->GetKind_Solver() == DISC_ADJ_INC_EULER ||
+      config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES ||
+      config->GetKind_Solver() == DISC_ADJ_INC_RANS){
 
     /*--- Compute the geometrical sensitivities ---*/
     SecondaryRecording();
@@ -289,13 +275,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
   if (time_stepping){
-    if (ExtIter < IterAvg_Obj){
+    if (TimeIter < IterAvg_Obj){
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
     else{
@@ -326,7 +311,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case EULER:                    case NAVIER_STOKES:                   case RANS:
+  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:    
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
@@ -413,10 +398,6 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   direct_iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-  /*--- Run one single iteration ---*/
-
-  config->SetIntIter(1);
-
   /*--- Iterate the direct solver ---*/
 
   direct_iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -440,6 +421,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
     switch (config->GetKind_Solver()) {
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
            << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))

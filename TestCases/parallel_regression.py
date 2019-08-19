@@ -96,16 +96,16 @@ def main():
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
-    # Fixed CL NACA0012
-    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
-    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 100
-    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
-    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
-    fixedCL_naca0012.timeout   = 1600
-    fixedCL_naca0012.tol       = 0.00001
-    test_list.append(fixedCL_naca0012)
+#    # Fixed CL NACA0012
+#    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
+#    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
+#    fixedCL_naca0012.test_iter = 100
+#    fixedCL_naca0012.test_vals = [-2.474140, 2.927471, 0.290169, 0.019080] #last 4 columns
+#    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    fixedCL_naca0012.timeout   = 1600
+#    fixedCL_naca0012.tol       = 0.00001
+#    test_list.append(fixedCL_naca0012)
     
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
@@ -514,16 +514,16 @@ def main():
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
 
-    # Inviscid fixed CL NACA0012
-    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
-    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixed_CL_naca0012.test_iter = 100
-    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
-    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
-    contadj_fixed_CL_naca0012.timeout   = 1600
-    contadj_fixed_CL_naca0012.tol       = 0.00001
-    test_list.append(contadj_fixed_CL_naca0012)
+#    # Inviscid fixed CL NACA0012
+#    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+#    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+#    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+#    contadj_fixed_CL_naca0012.test_iter = 100
+#    contadj_fixed_CL_naca0012.test_vals = [0.378865, -5.157403, 0.268320, -0.000149] #last 4 columns
+#    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
+#    contadj_fixed_CL_naca0012.timeout   = 1600
+#    contadj_fixed_CL_naca0012.tol       = 0.00001
+#    test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -992,22 +992,25 @@ def main():
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [6.000000, 1.000000, 0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
+    dynbeam2d.test_vals = [0.000000, 0.000000, 0.000000, 6.6127e+04] #last 4 columns
     dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
     dynbeam2d.timeout   = 1600
+    dynbeam2d.unsteady  = True
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
 
-#    # FSI, 2d
-#    fsi2d           = TestCase('fsi2d')
-#    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-#    fsi2d.cfg_file  = "configFSI.cfg"
-#    fsi2d.test_iter = 4
-#    fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
-#    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
-#    fsi2d.timeout   = 1600
-#    fsi2d.tol       = 0.00001
-#    test_list.append(fsi2d)
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [4.000000, 0.000000, -3.822809, -4.641483] #last 4 columns
+    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
+    fsi2d.timeout   = 1600
+    fsi2d.multizone= True
+    fsi2d.unsteady = True
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)
 
     ##########################
     ### Zonal multiphysics ###
@@ -1018,8 +1021,8 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [10.000000, -2.601006, -3.342894] #last 4 columns
-    cht_incompressible.su2_exec  = "SU2_CFD"
+    cht_incompressible.test_vals = [10.000000, -2.607260, -2.708775] #last 4 columns
+    cht_incompressible.su2_exec  = "mpirun -n 2 SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
     cht_incompressible.tol       = 0.00001

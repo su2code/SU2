@@ -64,8 +64,8 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
 CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim, unsigned short val_nvar,
                                    CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST)
+      || (config->GetTime_Marching() == DT_STEPPING_2ND);
 
   bool fsi = config->GetFSI_Simulation();
 

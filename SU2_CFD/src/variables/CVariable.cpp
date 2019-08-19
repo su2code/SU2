@@ -138,11 +138,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
       Gradient[iVar][iDim] = 0.0;
   }
 
-  if (config->GetUnsteady_Simulation() != NO) {
+  if (config->GetTime_Marching() != NO) {
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
   }
-  else if (config->GetDynamic_Analysis() == DYNAMIC) {
+  else if (config->GetTime_Domain()) {
     Solution_time_n = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = 0.0;
   }
