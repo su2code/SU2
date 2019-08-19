@@ -152,7 +152,7 @@ lib_sources = \
   ../src/linear_algebra/CSysSolve.cpp \
   ../src/linear_algebra/CSysSolve_b.cpp
 
-lib_cxxflags = -fPIC
+lib_cxxflags = -fPIC -std=c++11
 lib_ldadd =
 
 # always link to built dependencies from ./externals

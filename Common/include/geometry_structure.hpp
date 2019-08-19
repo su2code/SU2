@@ -422,6 +422,11 @@ public:
 	 */
 	CGeometry(void);
 
+  /*!
+	 * \brief Constructor of the class.
+	 */
+	CGeometry(CConfig *config, unsigned short nDim);
+
 	/*! 
 	 * \brief Destructor of the class.
 	 */
@@ -3032,6 +3037,29 @@ public:
 	 */
 	void Update(unsigned long val_update_point, CGeometry *fine_grid);
 
+};
+
+/*! 
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
+class CDummyGeometry : public CGeometry{
+  
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyGeometry(CConfig *config);
+  
+  /*! 
+	 * \brief Destructor of the class.
+	 */
+  ~CDummyGeometry();
+  
 };
 
 #include "geometry_structure.inl"
