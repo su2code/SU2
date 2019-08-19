@@ -1,6 +1,7 @@
 /*!
- * \file transfer_structure.cpp
- * \brief Main subroutines for physics of the information transfer between zones
+ * \file CTransfer_FlowTraction.cpp
+ * \brief Declaration and inlines of the class to transfer flow tractions
+ *        from a fluid zone into a structural zone.
  * \author R. Sanchez
  * \version 6.2.0 "Falcon"
  *
@@ -35,7 +36,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/transfer/CTransfer.hpp"
+#include "../../../include/transfer/physics/CTransfer_FlowTraction.hpp"
 
 CTransfer_FlowTraction::CTransfer_FlowTraction(void) : CTransfer() {
 
@@ -209,121 +210,3 @@ void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry
   fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
 
 }
-
-CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(void) : CTransfer() {
-
-}
-
-CTransfer_StructuralDisplacements::CTransfer_StructuralDisplacements(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
-
-}
-
-CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
-
-}
-
-
-void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                              CConfig *struct_config, CConfig *flow_config) {
-}
-
-void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
-
-  su2double *DisplacementDonor, *DisplacementDonor_Prev;
-  unsigned short iVar;
-
-  /*--- The displacements come from the predicted solution ---*/
-  DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
-
-  DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Pred_Old();
-
-  for (iVar = 0; iVar < nVar; iVar++) 
-  Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
-}
-
-void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
-
-  flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(Target_Variable);
-}
-
-CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(void) : CTransfer() {
-
-}
-
-CTransfer_StructuralDisplacements_DiscAdj::CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
-
-}
-
-CTransfer_StructuralDisplacements_DiscAdj::~CTransfer_StructuralDisplacements_DiscAdj(void) {
-
-}
-
-
-void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                                      CGeometry *struct_geometry, CGeometry *flow_geometry,
-                                                                      CConfig *struct_config, CConfig *flow_config) {
-}
-
-void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
-
-
-  su2double *Coord_Struct, *Displacement_Struct;
-  unsigned short iVar;
-
-  Coord_Struct = struct_geometry->node[Point_Struct]->GetCoord();
-
-  /*--- The displacements come from the predicted solution ---*/
-  Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution();
-
-  for (iVar = 0; iVar < nVar; iVar++) 
-    Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
-}
-
-void CTransfer_StructuralDisplacements_DiscAdj::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                               CConfig *flow_config, unsigned long Marker_Flow,
-                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
-
-  su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
-  unsigned short iVar;
-
-  Coord = flow_geometry->node[Point_Flow]->GetCoord();
-
-  for (iVar = 0; iVar < nVar; iVar++)
-    VarCoord[iVar] = Target_Variable[iVar]-Coord[iVar];
-
-  flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(VarCoord);
-}
-
-CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(void) : CTransfer_FlowTraction() {
-
-}
-
-CTransfer_FlowTraction_DiscAdj::CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer_FlowTraction(val_nVar, val_nConst, config) {
-
-}
-
-CTransfer_FlowTraction_DiscAdj::~CTransfer_FlowTraction_DiscAdj(void) {
-
-}
-
-void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                           CConfig *flow_config, CConfig *struct_config){
-
-  /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-
-  for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
-    struct_solution->node[iPoint]->Clear_FlowTraction();
-
-  Preprocess(flow_config);
-
-  /*--- No ramp applied ---*/
-  Physical_Constants[1] = 1.0;
-}
-
-
