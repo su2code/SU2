@@ -40,7 +40,6 @@ su2_cfd_src = files(['output_structure.cpp',
                      'python_wrapper_structure.cpp',
                      'numerics_structure.cpp',
                      'numerics_template.cpp',
-                     'transfer_structure.cpp',
                      'solver_adjoint_discrete.cpp',
                      'numerics_direct_elasticity_nonlinear.cpp',
                      'SU2_CFD.cpp'])
@@ -76,6 +75,9 @@ su2_cfd_src += files(['solvers/CMeshSolver.cpp',
                      'solvers/CDiscAdjMeshSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CFEAMeshElasticity.cpp'])
+
+su2_cfd_src += files(['transfer/CTransfer.cpp',
+                      'transfer/physics/CTransfer_BoundaryDisplacements.cpp'])
 
 su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CMultizoneDriver.cpp',
