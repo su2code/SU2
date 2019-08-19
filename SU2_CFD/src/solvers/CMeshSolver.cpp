@@ -217,7 +217,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
 
 CMeshSolver::~CMeshSolver(void) {
 
-  unsigned short iDim, iVar;
+  unsigned short iDim;
 
   delete [] Residual;
   delete [] Solution;
@@ -446,7 +446,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- Compute the element distances ---*/
-
+  nNodes = 0; // If there is no correct VTK type, the code will fail rather than introduce hidden results
   for (iElem = 0; iElem < nElement; iElem++) {
 
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      nNodes = 3;
@@ -877,7 +877,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   unsigned short iMarker;
   unsigned long iVertex, iNode;
-  su2double *VarDisp = NULL;
 
   su2double VarCoord[3] = {0.0, 0.0, 0.0};
 

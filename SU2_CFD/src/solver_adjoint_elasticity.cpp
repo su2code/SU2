@@ -81,20 +81,11 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   unsigned short iVar, iMarker, iDim;
 
-  bool restart = config->GetRestart();
-
-  restart = false;
-
-  unsigned long iVertex, iPoint, index;
+  unsigned long iVertex, iPoint;
   string text_line, mesh_filename;
-  ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
