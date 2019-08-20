@@ -45,44 +45,29 @@ bin_PROGRAMS =
 if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_MET
 
-su2_dot_sources = ../include/SU2_MET.hpp \
+su2_met_sources = ../include/SU2_MET.hpp \
     ../src/SU2_MET.cpp
 
-su2_dot_ldadd =
-su2_dot_cxx_flags =
+su2_met_ldadd =
+su2_met_cxx_flags =
 
-if BUILD_NORMAL
-su2_dot_ldadd += \
-  ../../SU2_CFD/obj/libSU2Core.a \
-  ../../Common/lib/libSU2.a
-endif
-
-if BUILD_REVERSE
-su2_dot_ldadd += \
+su2_met_ldadd += \
   ../../SU2_CFD/obj/libSU2Core_AD.a \
   ../../Common/lib/libSU2_AD.a
 endif
 
 # always link to built dependencies from ./externals
-su2_dot_cxx_flags += @su2_externals_INCLUDES@
-su2_dot_ldadd += @su2_externals_LIBS@
-su2_dot_ldadd += @su2_externals_LIBPTHREAD@
+su2_met_cxx_flags += @su2_externals_INCLUDES@
+su2_met_ldadd += @su2_externals_LIBS@
+su2_met_ldadd += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
-su2_dot_cxx_flags += @MUTATIONPP_CXX@
-su2_dot_ldadd += @MUTATIONPP_LD@
+su2_met_cxx_flags += @MUTATIONPP_CXX@
+su2_met_ldadd += @MUTATIONPP_LD@
 # endif
 
-if BUILD_NORMAL
-___bin_SU2_MET_SOURCES = ${su2_dot_sources}
-___bin_SU2_MET_CXXFLAGS = ${su2_dot_cxx_flags}
-___bin_SU2_MET_LDADD =  ${su2_dot_ldadd}
-endif
-
-if BUILD_REVERSE
-___bin_SU2_MET_AD_SOURCES = ${su2_dot_sources}
-___bin_SU2_MET_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-___bin_SU2_MET_AD_LDADD = @REVERSE_LIBS@ ${su2_dot_ldadd}
-endif
+___bin_SU2_MET_SOURCES = ${su2_met_sources}
+___bin_SU2_MET_CXXFLAGS = @REVERSE_CXX@ ${su2_met_cxx_flags} 
+___bin_SU2_MET_LDADD = @REVERSE_LIBS@ ${su2_met_ldadd}
 
 endif
