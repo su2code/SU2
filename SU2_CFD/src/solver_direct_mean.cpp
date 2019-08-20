@@ -7826,10 +7826,10 @@ void CEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                  CNumerics      *visc_numerics,
                                  CConfig        *config,
                                  unsigned short val_marker) {
-  
+
   /*--- Call the equivalent symmetry plane boundary condition. ---*/
   BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  
+
 }
 
 
@@ -7844,11 +7844,12 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned long iVertex, iPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
-       viscous = config->GetViscous();
+       viscous  = config->GetViscous();
   
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i,
-            *V_reflected, *V_domain,
+            *V_reflected, 
+            *V_domain,
             *Normal     = new su2double[nDim],
             *UnitNormal = new su2double[nDim];
 
@@ -7867,27 +7868,28 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     if (iVertex == 0 || 
-        geometry->bound_is_straight[val_marker] != true){
+        geometry->bound_is_straight[val_marker] != true) {
 
-      /*---------------------------------------------------------------------------------------------*/
-      /*--- Preprocessing: On a symmetry-plane, the Unit-Normal is constant. Therefore a constant ---*/
-      /*---                Unit-Tangential to that Unit-Normal can be prescribed. The computation ---*/
-      /*---                of these vectors is done outside the loop (over all Marker-vertices).  ---*/
-      /*---                The "Normal" in SU2 is an Area-Normal and is most likely not constant  ---*/
-      /*---                on the symmetry-plane.                                                 ---*/
-      /*--- Edit July 2019: In order to use this BC_Sym_Plane method for slip walls in viscous    ---*/
-      /*---                 flow the unit-normal & tangent computation is moved into the loop over---*/
-      /*---                 all vertices. Slip walls can have a non-straight line or plane as a   ---*/
-      /*---                 boundary, therefore the assumption of a constant unit-normal is not   ---*/
-      /*---                 valid in these cases. https://github.com/su2code/SU2/issues/735       ---*/
-      /*---------------------------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------------------------*/
+      /*--- Preprocessing:                                                                         ---*/
+      /*--- Compute the unit normal and (in case of viscous flow) a corresponding unit tangential  ---*/
+      /*--- to that normal. On a straight(2D)/plane(3D) boundary these two vectors are constant.   ---*/
+      /*--- This circumstance is checked in gemoetry->ComputeSurf_Straightness(...) and stored     ---*/
+      /*--- such that the recomputation does not occur for each node. On true symmetry planes, the ---*/
+      /*--- normal is constant but this routines is used for Symmetry, Euler-Wall in inviscid flow ---*/
+      /*--- and Euler Wall in viscous flow as well. In the latter curvy boundaries are likely to   ---*/
+      /*--- happen. In doubt, the conditional above which checks straightness can be thrown out    ---*/
+      /*--- such that the recomputation is done for each node (which comes with a tiny performance ---*/
+      /*--- penalty).                                                                              ---*/
+      /*----------------------------------------------------------------------------------------------*/
 
       /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
       for (iDim = 0; iDim < nDim; iDim++)
         Normal[iDim] = -Normal[iDim];
 
-      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity component gradients. ---*/
+      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity 
+            component gradients. ---*/
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
@@ -7896,7 +7898,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
 
-      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as 
+            t*n=0 && |t|_2 = 1 ---*/
       if (viscous) {
         switch( nDim ) {
           case 2: {
@@ -7905,30 +7908,19 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
             break;
           }
           case 3: {
-            /*--- Find the largest entry index of the UnitNormal, and create unit Tangential vector based on that. ---*/
-            unsigned short Largest, Arbitrary, Zero;
-            if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && 
-                    abs(UnitNormal[0]) >= abs(UnitNormal[2])) {Largest=0;Arbitrary=1;Zero=2;}
-            else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && 
-                    abs(UnitNormal[1]) >= abs(UnitNormal[2])) {Largest=1;Arbitrary=0;Zero=2;}
-            else                                              {Largest=2;Arbitrary=1;Zero=0;}
-
-            Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-            Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
-            Tangential[Zero] =  0.0;
-            break;
-          }
-          case 4: {
+            /*--- n = ai + bj + ck, if |b| > |c| ---*/
             if( abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+              /*--- t = bi + (c-a)j - bk  ---*/
               Tangential[0] = UnitNormal[1];
               Tangential[1] = UnitNormal[2] - UnitNormal[0];
               Tangential[2] = -UnitNormal[1];
             } else {
+              /*--- t = ci - cj + (b-a)k  ---*/
               Tangential[0] = UnitNormal[2];
               Tangential[1] = -UnitNormal[2];
               Tangential[2] = UnitNormal[1] - UnitNormal[0];
             }
-            /*--- Make it a unit vector.  ---*/
+            /*--- Make it a unit vector. ---*/
             TangentialNorm = sqrt(pow(Tangential[0],2) + pow(Tangential[1],2) + pow(Tangential[2],2));
             Tangential[0] = Tangential[0] / TangentialNorm;
             Tangential[1] = Tangential[1] / TangentialNorm;
@@ -7960,7 +7952,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                   geometry->node[iPoint]->GetGridVel());
       
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal); 
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
@@ -7985,7 +7977,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), 
+                                  node[iPoint]->GetSecondary());
       
       /*--- Compute the residual using an upwind scheme. ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -8008,14 +8001,16 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*---         determined additionally such that symmetry at the boundary is   ---*/
         /*---         enforced. Based on the Viscous_Residual routine.                ---*/
         /*-------------------------------------------------------------------------------*/
-        
+
         /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), 
+                                geometry->node[iPoint]->GetCoord());
         visc_numerics->SetNormal(Normal);
         
         /*--- Set the primitive and Secondary variables. ---*/
         visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), 
+                                    node[iPoint]->GetSecondary());
         
         /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
               1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
