@@ -425,8 +425,8 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").split(',')
-    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").split(',')
+    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
+    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
     
     func = []
     folder = []
@@ -464,45 +464,47 @@ def multipoint( config, state=None, step=1e-2 ):
     #  FIRST POINT
     # ----------------------------------------------------
   
+    konfig = copy.deepcopy(config)
+    ztate  = copy.deepcopy(state)
+    
     # will run in DIRECT/
 
-    config.AOA = aoa_list[0]
-    config.SIDESLIP_ANGLE = sideslip_list[0]
-    config.MACH_NUMBER = mach_list[0]
-    config.REYNOLDS_NUMBER = reynolds_list[0]
-    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
-    config.FREESTREAM_PRESSURE = freestream_press_list[0]
-    config.TARGET_CL = target_cl_list[0]
-    orig_marker_outlet = config['MARKER_OUTLET']
+    konfig.AOA = aoa_list[0]
+    konfig.SIDESLIP_ANGLE = sideslip_list[0]
+    konfig.MACH_NUMBER = mach_list[0]
+    konfig.REYNOLDS_NUMBER = reynolds_list[0]
+    konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    konfig.FREESTREAM_PRESSURE = freestream_press_list[0]
+    konfig.TARGET_CL = target_cl_list[0]
+    orig_marker_outlet = konfig['MARKER_OUTLET']
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
-    config.MARKER_OUTLET = new_marker_outlet
-    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
-    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+    konfig.MARKER_OUTLET = new_marker_outlet
+    konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
 
-    state.find_files(config)
+    ztate.find_files(konfig)
 
-    func[0] = aerodynamics(config,state)
+    func[0] = aerodynamics(konfig,ztate)
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/')+'/DIRECT/'
 
     # files to pull
-    files = state.FILES
+    files = ztate.FILES
     pull = []; link = []
     
     # files: mesh
     name = files['MESH']
-    name = su2io.expand_part(name,config)
+    name = su2io.expand_part(name,konfig)
     link.extend(name)
     
     # files: direct solution
     if 'DIRECT' in files:
       name = files['DIRECT']
-      name = su2io.expand_time(name,config)
+      name = su2io.expand_time(name,konfig)
       link.extend( name )
     else:
-      config['RESTART_SOL'] = 'NO'
+      konfig['RESTART_SOL'] = 'NO'
     
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and
@@ -535,18 +537,32 @@ def multipoint( config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)-1):
 
-      config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
-      config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+      konfig = copy.deepcopy(config)
+      ztate  = copy.deepcopy(state)
 
-      ztate.find_files(config)
+      konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+
+      ztate.find_files(konfig)
+      files = ztate.FILES
+      link = []
+
+      # files: mesh
+      name = files['MESH']
+      name = su2io.expand_part(name,konfig)
+      link.extend(name)
+
+      # files: direction solution
+      if 'DIRECT' in files:
+        name = files['DIRECT']
+        name = su2io.expand_time(name,konfig)
+        link.extend( name )
+      else:
+        konfig['RESTART_SOL'] = 'NO'
 
       # pull needed files, start folder_1
       with redirect_folder( folder[i+1], pull, link ) as push:
         with redirect_output(log_direct):
           
-          konfig = copy.deepcopy(config)
-          ztate  = copy.deepcopy(state)
-
           konfig.AOA = aoa_list[i+1]
           konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
           konfig.MACH_NUMBER = mach_list[i+1]
@@ -563,6 +579,22 @@ def multipoint( config, state=None, step=1e-2 ):
           ztate.FUNCTIONS.clear()
             
           func[i+1] = aerodynamics(konfig,ztate)
+          
+          # direct files to push
+          dst = os.getcwd()
+          dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
+          name = ztate.FILES['DIRECT']
+          name = su2io.expand_zones(name,konfig)
+          name = su2io.expand_time(name,konfig)
+          push.extend(name)
+
+      # Link direct solution to MULTIPOINT_# folder
+      src = os.getcwd()
+      src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+      
+      # make unix link
+      string = "ln -s " + src + " " + dst
+      os.system(string)
       
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
