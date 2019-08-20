@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity_nonlinear.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

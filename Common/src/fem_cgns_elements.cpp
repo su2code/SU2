@@ -2,7 +2,7 @@
  * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.

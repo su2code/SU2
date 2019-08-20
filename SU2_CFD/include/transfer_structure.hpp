@@ -3,7 +3,7 @@
  * \brief Headers of the transfer structure
  *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -59,7 +59,7 @@ using namespace std;
  * \class CTransfer
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer {
@@ -241,7 +241,7 @@ public:
  * \class CTransfer_FlowTraction
  * \brief Transfer flow tractions from a fluid zone into a structural zone
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_FlowTraction : public CTransfer {
@@ -317,7 +317,7 @@ public:
  * \class CTransfer_StructuralDisplacements
  * \brief Transfer structural displacements from a structural zone into a fluid zone
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_StructuralDisplacements : public CTransfer {
@@ -386,7 +386,7 @@ public:
  * \class CTransfer_FlowTraction_DiscAdj
  * \brief Transfer flow tractions from a fluid zone into a structural zone in a discrete adjoint simulation
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_FlowTraction_DiscAdj : public CTransfer_FlowTraction {
@@ -431,7 +431,7 @@ public:
  * \class CTransfer_StructuralDisplacements_DiscAdj
  * \brief Transfer structural displacements from a structural zone into a fluid zone in a discrete adjoint simulation
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_StructuralDisplacements_DiscAdj : public CTransfer {
@@ -500,7 +500,7 @@ public:
  * \class CTransfer_ConservativeVars
  * \brief Transfer conservative variables from a generic zone into another
  * \author R. Sanchez
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_ConservativeVars : public CTransfer {
@@ -570,7 +570,7 @@ public:
  * \class CTransfer_MixingPlaneInterface
  * \brief Transfer average variables needed for MixingPlane computation from a generic zone into another one
  * \author S. Vitale
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 
@@ -652,7 +652,7 @@ void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config);
  * \class CTransfer_SlidingInterface
  * \brief Transfer conservative variables from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 
 class CTransfer_SlidingInterface : public CTransfer {
@@ -741,7 +741,7 @@ public:
  * \class CTransfer_ConjugateHeatVars
  * \brief Transfer temperature and heatflux density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CTransfer_ConjugateHeatVars : public CTransfer {
 

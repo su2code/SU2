@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -44,7 +44,7 @@
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
