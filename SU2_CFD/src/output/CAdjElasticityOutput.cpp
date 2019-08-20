@@ -88,7 +88,11 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  RestartFilename = config->GetRestart_AdjFileName();
+  
+  /*--- Add the obj. function extension --- */
+  
+  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
 
   /*--- Set the default convergence field --- */
 
