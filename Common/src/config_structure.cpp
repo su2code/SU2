@@ -352,6 +352,10 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       
       nZone = nzones;
       
+#else
+      SU2_MPI::Error(string(" SU2 built without CGNS support. \n") +
+                     string(" To use CGNS, build SU2 accordingly."),
+                     CURRENT_FUNCTION);
 #endif
       
       break;
@@ -457,8 +461,13 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
       /*--- Set the problem dimension as read from the CGNS file ---*/
       nDim = cell_dim;
+      
+#else
+      SU2_MPI::Error(string(" SU2 built without CGNS support. \n") +
+                     string(" To use CGNS, build SU2 accordingly."),
+                     CURRENT_FUNCTION);
 #endif
-
+      
       break;
     }
     case RECTANGLE: {
