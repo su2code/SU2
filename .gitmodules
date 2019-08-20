@@ -6,6 +6,15 @@
 	path = externals/medi
 	url = https://github.com/SciCompKL/MeDiPack
 	ignore = dirty
+<<<<<<< HEAD
 [submodule "externals/libMeshb"]
 	path = externals/libMeshb
 	url = https://github.com/bmunguia/libMeshb
+=======
+[submodule "externals/ninja"]
+	path = externals/ninja
+	url = https://github.com/ninja-build/ninja
+[submodule "externals/meson"]
+	path = externals/meson
+	url = https://github.com/mesonbuild/meson
+>>>>>>> develop
