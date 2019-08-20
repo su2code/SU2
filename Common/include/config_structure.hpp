@@ -1006,6 +1006,7 @@ private:
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  su2double MinLowDissipation;   /*!< \brief Min low dissipation constant for DDES simulations. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
@@ -1078,6 +1079,7 @@ private:
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  bool Restart_Average;                      /*!< \brief Whether or not to restart average process from a previous averaged solution. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
   unsigned short Kind_Verification_Solution;  /*!< \brief Verification solution for accuracy assessment. */
 
@@ -8955,7 +8957,13 @@ public:
    * \return Value of Low dissipation approach.
    */
    unsigned short GetKind_RoeLowDiss(void);
-    
+  
+  /*!
+   * \brief Get the lower bound of low dissipation parameter.
+   * \return Value of lower bound of the low dissipation parameter.
+   */
+  su2double GetMinLowDissipation(void);
+  
   /*!
    * \brief Get the DES Constant.
    * \return Value of DES constant.
@@ -8996,6 +9004,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+ 
+  /*!
+   * \brief Get Restart Average.
+   * \return YES if restart computing averages
+   */
+  bool GetRestart_Average(void);
 
   /*!
    * \brief Get the verification solution.

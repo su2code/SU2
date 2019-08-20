@@ -269,6 +269,20 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the average solution vector.
+   */
+  virtual su2double GetSolution_Avg(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the RMS solution vector.
+   */
+  virtual su2double GetSolution_RMS(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
    */
   virtual su2double GetRoe_Dissipation(void);
   
@@ -311,6 +325,20 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the average solution vector.
+   */
+  virtual void AddSolution_Avg(unsigned short val_var, su2double val_solution);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the RMS solution vector.
+   */
+  virtual void AddSolution_RMS(unsigned short val_var, su2double val_solution);
 
   /*!
    * \brief Add a value to the solution, clipping the values.
@@ -3089,6 +3117,12 @@ protected:
   /*--- Old solution container for BGS iterations ---*/
   su2double* Solution_BGS_k;
   
+  /*--- New solution container for Average ---*/
+  su2double *Solution_Avg;
+  
+  /*--- New solution container for RMS ---*/
+  su2double *Solution_RMS;
+  
 public:
   
   /*!
@@ -3140,6 +3174,34 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution_New(unsigned short val_var, su2double val_solution);
+  
+  /*!
+   * \brief Get the solution average of Calculate Averages.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the average solution vector.
+   */
+  su2double GetSolution_Avg(unsigned short val_var);
+  
+  /*!
+   * \brief Get the solution RMS of Calculate Averages.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the RMS solution vector.
+   */
+  su2double GetSolution_RMS(unsigned short val_var);
+  
+  /*!
+   * \brief Add a value to the new solution container for Calculate Averages.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the average solution.
+   */
+  void AddSolution_Avg(unsigned short val_var, su2double val_solution);
+  
+  /*!
+   * \brief Add a value to the new solution container for Calculate Averages.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the RMS solution.
+   */
+  void AddSolution_RMS(unsigned short val_var, su2double val_solution);
 
   /*!
    * \brief Set to zero the gradient of the primitive variables.

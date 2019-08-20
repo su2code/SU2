@@ -2315,6 +2315,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: Lower bound of the low dissipation parameter*/
+  addDoubleOption("MIN_LOW_DISSIPATION", MinLowDissipation, 0.05);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
   
@@ -2338,6 +2341,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Compute Average for unsteady simulations */
   addBoolOption("COMPUTE_AVERAGE", Compute_Average, false);
+  
+  /* DESCRIPTION: Restart from a previous averaged solution for unsteady simulations */
+  addBoolOption("RESTART_AVERAGE", Restart_Average, false);
   
   /* DESCRIPTION: Multipoint design Mach number*/
   addPythonOption("MULTIPOINT_MACH_NUMBER");
@@ -2869,6 +2875,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Regime == EULER) && (Buffet_Monitoring == true)){
     SU2_MPI::Error("Buffet monitoring incompatible with Euler Solver", CURRENT_FUNCTION);
+  }
+  
+  if ((Kind_Solver == EULER) && (Kind_RoeLowDiss != NO_ROELOWDISS) && (Unsteady_Simulation == DT_STEPPING_2ND)){
+    SU2_MPI::Error("Low dissipation convective schemes are only available for Unsteady Dual Time-Step NS or RANS simulations.", CURRENT_FUNCTION);
   }
   
   /*--- Check for Fluid model consistency ---*/

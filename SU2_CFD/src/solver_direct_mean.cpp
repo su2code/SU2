@@ -3088,6 +3088,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
+  
+  bool calculate_average = config->GetCompute_Average();
 
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution)  && (ExtIter == 0) && !restart) {
@@ -3282,6 +3284,104 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
   }
 
+  /*--- Update the values for Calculate Averages. ---*/
+  
+  if (calculate_average && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))){
+    
+    su2double *Solution_Avg_Aux= NULL, *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
+    unsigned long iMarker, iVertex;
+    unsigned short iVar;
+    
+    if (config->GetKind_Solver() == RANS){
+      
+      /*--- Copy from COutput::LoadLocalData_Flow for computing mean skin friction values
+       *
+       * Auxiliary vectors for variables defined on surfaces only. ---*/
+      
+      Aux_Frict_x = new su2double[geometry[MESH_0]->GetnPoint()];
+      Aux_Frict_y = new su2double[geometry[MESH_0]->GetnPoint()];
+      Aux_Frict_z = new su2double[geometry[MESH_0]->GetnPoint()];
+      
+      /*--- First, loop through the mesh in order to find and store the
+       value of the viscous coefficients at any surface nodes. They
+       will be placed in an auxiliary vector and then communicated like
+       all other volumetric variables. ---*/
+      
+      for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+        Aux_Frict_x[iPoint] = 0.0;
+        Aux_Frict_y[iPoint] = 0.0;
+        Aux_Frict_z[iPoint] = 0.0;
+      }
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_Plotting(iMarker) == YES) {
+          for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+            Aux_Frict_x[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0);
+            Aux_Frict_y[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
+            if (nDim == 3) Aux_Frict_z[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
+          }
+        }
+      }
+    }
+    
+    Solution_Avg_Aux = new su2double[solver_container[MESH_0][FLOW_SOL]->GetnVar()];
+    
+    for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution_Avg_Aux[iVar] = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+      
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(0, Solution_Avg_Aux[0]);
+      
+      for ( iDim = 0; iDim < nDim; iDim++)
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+      
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar-1, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      
+      if (config->GetKind_Solver() == RANS){
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+1, Aux_Frict_x[iPoint]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+2, Aux_Frict_y[iPoint]);
+        if (nDim == 3){
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+3, Aux_Frict_z[iPoint]);
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+4, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetEddyViscosity()/solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+            solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+5, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation());
+          }
+        }
+        else{
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+3, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetEddyViscosity()/solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+            solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(nVar+4, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation());
+            //cout << solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetRoe_Dissipation() << endl;
+          }
+        }
+      }
+      
+      if (nDim == 2){
+        for ( iDim = 0; iDim < nDim; iDim++)
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(2, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(3, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      }
+      else{
+        for ( iDim = 0; iDim < nDim; iDim++)
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(3, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(4, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(5, Solution_Avg_Aux[2]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_RMS(6, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      }
+    }
+    
+    if ( calculate_average && config->GetKind_Solver() == RANS) {
+      delete [] Aux_Frict_x;
+      delete [] Aux_Frict_y;
+      delete [] Aux_Frict_z;
+    }
+    
+  }
+  
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -13348,7 +13448,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-
+  
+  bool compute_average = (config->GetCompute_Average() && config->GetRestart_Average());
+  bool isAverageRestartFile = false;
+  string averageField = "DensityMean";
+  string primeField = "UUPrimeMean";
+  unsigned short averageIndex = 0, averageVars = 0;
+  unsigned short primeIndex = 0, primeVars = 4;
+  
   string UnstExt, text_line;
   ifstream restart_file;
 
@@ -13396,6 +13503,22 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
+  /*--- Check if the restart file contains average data ---*/
+  
+  if (compute_average){
+    if(std::find(config->fields.begin(), config->fields.end(), averageField) != config->fields.end()) {
+      isAverageRestartFile = true;
+      averageIndex = std::find(config->fields.begin(), config->fields.end(), averageField) - config->fields.begin();
+      primeIndex   = std::find(config->fields.begin(), config->fields.end(), primeField) - config->fields.begin();
+      averageVars = primeIndex - averageIndex;
+      
+      /*--- The number of variables of the prime average is 4 for 2D (3 Stresses + Pressure)
+       and 7 for 3D (6 Stresses + Pressure)---*/
+      
+      if (geometry[MESH_0]->GetnDim() == 3) primeVars = 7;
+    }
+  }
+
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
@@ -13414,6 +13537,17 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
+
+      /*--- If compute average is true and it is an averaged restart file,
+       load the data from restart file. ---*/
+      
+      if ( compute_average && isAverageRestartFile ){
+        for(iVar = 0; iVar < averageVars; iVar++){
+          node[iPoint_Local]->AddSolution_Avg(iVar, Restart_Data[index + averageIndex - skipVars + iVar]);
+        }
+        // todo: Add the prime vars for restart average
+      }
+
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
@@ -13452,7 +13586,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
         }
       }
-
+      
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
@@ -15662,15 +15796,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
-  /*--- Roe Low Dissipation Sensor ---*/
-  
-  if (roe_low_dissipation){
-    SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetUpwind_Ducros_Sensor(geometry, config);
-    }
-  }
-  
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -15707,6 +15832,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   if (wall_functions)
     SetTauWall_WF(geometry, solver_container, config);
+  
+  /*--- Roe Low Dissipation Sensor ---*/
+  
+  if (roe_low_dissipation){
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetUpwind_Ducros_Sensor(geometry, config);
+    }
+  }
 
   /*--- Initialize the Jacobian matrices ---*/
   

@@ -1895,15 +1895,15 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
 
   /*--- A minimum level of upwinding is used to enhance stability ---*/
 
-  const su2double Min_Dissipation = 0.05;
+  const su2double Min_Dissipation = config->GetMinLowDissipation();
   
   const su2double Mean_Dissipation = 0.5*(Dissipation_i + Dissipation_j);
   const su2double Mean_Sensor = 0.5*(Sensor_i + Sensor_j);
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
-
-    Dissipation_ij = max(0.05,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
     
+    Dissipation_ij = max(Min_Dissipation,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
+
     if (roe_low_diss == FD_DUCROS){
       
       /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
@@ -1913,7 +1913,7 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
       if (0.5*(Sensor_i + Sensor_j) > 0.65)
         Ducros_ij = 1.0;
       else
-        Ducros_ij = 0.05;
+        Ducros_ij = Min_Dissipation;
       
       Dissipation_ij = max(Ducros_ij, Dissipation_ij);
     }

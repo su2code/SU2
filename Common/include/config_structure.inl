@@ -1992,9 +1992,13 @@ inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
 inline unsigned long CConfig::GetNumberModes(void) {return NumberModes; }
 
+inline su2double CConfig::GetMinLowDissipation(void) {return MinLowDissipation; }
+
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
+
+inline bool CConfig::GetRestart_Average(void) {return Restart_Average;}
 
 inline unsigned short CConfig::GetVerification_Solution(void) {return Kind_Verification_Solution;}
 
