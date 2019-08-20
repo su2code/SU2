@@ -425,7 +425,9 @@ def multipoint( config, state=None, step=1e-2 ):
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
     outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
-
+    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").split(',')
+    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").split(',')
+    
     func = []
     folder = []
     for i in range(len(weight_list)):
@@ -475,6 +477,10 @@ def multipoint( config, state=None, step=1e-2 ):
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
     new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
+    config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+
+    state.find_files(config)
 
     func[0] = aerodynamics(config,state)
 
@@ -528,6 +534,11 @@ def multipoint( config, state=None, step=1e-2 ):
         os.system(string)
 
     for i in range(len(weight_list)-1):
+
+      config.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+      config.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+
+      ztate.find_files(config)
 
       # pull needed files, start folder_1
       with redirect_folder( folder[i+1], pull, link ) as push:
