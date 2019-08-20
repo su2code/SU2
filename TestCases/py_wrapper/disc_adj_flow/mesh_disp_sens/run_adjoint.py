@@ -52,27 +52,12 @@ def main():
   # Command line options
   parser=OptionParser()
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
-                    metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-                    metavar="ZONES")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
-  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
-                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
-
   (options, args) = parser.parse_args()
-  options.nDim  = int( options.nDim )
-  options.nZone = int( options.nZone )
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.fem = options.fem.upper() == 'TRUE'
-  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+  options.nDim  = 2
+  options.nZone = 1
 
   print(args)
 
@@ -86,15 +71,7 @@ def main():
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  try:
-    SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
-  except TypeError as exception:
-    print('A TypeError occured in pysu2.CDriver : ',exception)
-    if options.with_MPI == True:
-      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
-    else:
-      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-    return
+  SU2Driver = pysu2.CDiscAdjSinglezoneDriver(options.filename, options.nZone, comm);
 
   MarkerID = None
   MarkerName = 'wallF'       # Specified by the user
