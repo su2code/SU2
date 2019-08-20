@@ -538,10 +538,14 @@ void COutput::SetSurface_Output(CGeometry *geometry, CConfig *config, unsigned s
   unsigned short lastindex = FileName.find_last_of(".");
   FileName = FileName.substr(0, lastindex);
   
+  if (format != SU2_MESH){
+    FileName = config->GetMultizone_FileName(FileName, config->GetiZone(),"");
+  }
+
   /*--- Add time iteration if requested --- */
   
   if (time_dep){
-    FileName = config->GetFilename(FileName, "", curr_TimeIter);
+    FileName = config->GetUnsteady_FileName(FileName, curr_TimeIter, "");
   }
   
   if (surface_sort->GetnElem() > 0){
@@ -570,10 +574,14 @@ void COutput::SetVolume_Output(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned short lastindex = FileName.find_last_of(".");
   FileName = FileName.substr(0, lastindex);
   
+  if (format != SU2_MESH){
+    FileName = config->GetMultizone_FileName(FileName, config->GetiZone(),"");
+  }
+
   /*--- Add time iteration if requested --- */
   
   if (time_dep){
-    FileName = config->GetFilename(FileName, "", curr_TimeIter);
+    FileName = config->GetUnsteady_FileName(FileName, curr_TimeIter, "");
   }
   
   CFileWriter* file_writer = NULL;
