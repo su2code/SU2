@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

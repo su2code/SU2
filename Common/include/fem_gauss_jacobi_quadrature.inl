@@ -2,7 +2,7 @@
  * \file fem_gauss_jacobi_quadrature.inl
  * \brief In-Line functions of the <i>fem_gauss_jacobi_quadrature.hpp</i> file.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

@@ -2,7 +2,7 @@
  * \file CHeatFVMVariable.hpp
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author F. Palacios, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -43,7 +43,7 @@
  * \class CHeatFVMVariable
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  */
 class CHeatFVMVariable : public CVariable {
 protected:

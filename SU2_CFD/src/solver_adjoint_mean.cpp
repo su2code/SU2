@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subroutines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon, H. Kline
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

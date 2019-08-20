@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 6.2.0 "Falcon"
+ * \version 7.0.0 "Blackbird"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
