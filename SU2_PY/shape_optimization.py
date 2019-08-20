@@ -134,18 +134,18 @@ def shape_optimization( filename                           ,
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     
-    its              = int ( config.OPT_ITERATIONS )                      # number of opt iterations
-    bound_upper      = float ( config.OPT_BOUND_UPPER )                   # variable bound to be scaled by the line search
-    bound_lower      = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
-    relax_factor     = float ( config.OPT_RELAX_FACTOR )                  # line search scale
-    gradient_factor  = float ( config.OPT_GRADIENT_FACTOR )               # objective function and gradient scale
-    def_dv           = config.DEFINITION_DV                               # complete definition of the desing variable
-    n_dv             = sum(def_dv['SIZE'])                                # number of design variables
-    accu             = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
-    x0          = [0.0]*n_dv # initial design
-    xb_low           = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
-    xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
-    xb          = list(zip(xb_low, xb_up)) # design bounds
+    its               = int ( config.OPT_ITERATIONS )                      # number of opt iterations
+    bound_upper       = float ( config.OPT_BOUND_UPPER )                   # variable bound to be scaled by the line search
+    bound_lower       = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
+    relax_factor      = float ( config.OPT_RELAX_FACTOR )                  # line search scale
+    gradient_factor   = float ( config.OPT_GRADIENT_FACTOR )               # objective function and gradient scale
+    def_dv            = config.DEFINITION_DV                               # complete definition of the desing variable
+    n_dv              = sum(def_dv['SIZE'])                                # number of design variables
+    accu              = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
+    x0                = [0.0]*n_dv # initial design
+    xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
+    xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
+    xb                = list(zip(xb_low, xb_up)) # design bounds
     
     # State
     state = SU2.io.State()
