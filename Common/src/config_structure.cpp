@@ -7418,7 +7418,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string e
 
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Time_Domain) || (Wrt_Dynamic)) {
+  if (Time_Domain) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
