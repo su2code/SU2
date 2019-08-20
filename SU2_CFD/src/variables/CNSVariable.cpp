@@ -165,7 +165,7 @@ void CNSVariable::SetRoe_Dissipation_FD(Idx_t iPoint, su2double val_wall_dist){
 
   /*--- Constants for Roe Dissipation ---*/
 
-  constexpr passivedouble k2 = pow(0.41,2.0);
+  const passivedouble k2 = pow(0.41,2.0);
 
   AD::StartPreacc();
   AD::SetPreaccIn(Gradient_Primitive[iPoint], nVar, nDim);
