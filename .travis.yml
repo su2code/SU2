@@ -38,11 +38,7 @@ env:
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
-<<<<<<< HEAD
-        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --enable-PY_WRAPPER --disable-tecio"
-=======
         - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true"
->>>>>>> develop
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
