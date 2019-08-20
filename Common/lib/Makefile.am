@@ -64,7 +64,7 @@ lib_sources = \
   ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
-  ../include/CMultigridQueue.hpp \
+  ../include/CMultiGridQueue.hpp \
   ../include/CMeshReaderFVM.hpp \
   ../include/CCGNSMeshReaderFVM.hpp \
   ../include/CRectangularMeshReaderFVM.hpp \
@@ -125,7 +125,7 @@ lib_sources = \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
   ../src/geometry_structure.cpp \
-  ../src/CMultigridQueue.cpp \
+  ../src/CMultiGridQueue.cpp \
   ../src/CMeshReaderFVM.cpp \
   ../src/CCGNSMeshReaderFVM.cpp \
   ../src/CRectangularMeshReaderFVM.cpp \
