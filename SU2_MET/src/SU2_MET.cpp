@@ -69,11 +69,8 @@ int main(int argc, char *argv[]) {
    for variables allocation). ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_CFD);
+  config = new CConfig(config_file_name, SU2_MET);
   nZone    = config->GetnZone();
-  fsi      = config->GetFSI_Simulation();
-  turbo    = config->GetBoolTurbomachinery();
-  zone_specific = config->GetBoolZoneSpecific();
 
   CErrorEstimationDriver *ErrorEstimationDriver = NULL;
 
