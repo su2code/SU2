@@ -2730,7 +2730,6 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics,
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
             delete numerics[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
           
         }
