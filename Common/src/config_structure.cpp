@@ -2433,10 +2433,10 @@ void CConfig::SetConfig_Options() {
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
 
   /* DESCRIPTION: Multipoint design flow solution files */
-  addPythonOption("MULTIPOINT_SOLUTION_FLOW_FILENAME")
+  addPythonOption("MULTIPOINT_SOLUTION_FLOW_FILENAME");
 
     /* DESCRIPTION: Multipoint design adjoint solution files */
-  addPythonOption("MULTIPOINT_SOLUTION_FLOW_FILENAME")
+  addPythonOption("MULTIPOINT_SOLUTION_ADJ_FILENAME");
   
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);

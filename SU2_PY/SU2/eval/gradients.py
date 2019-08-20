@@ -423,6 +423,10 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
+    outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
+    solution_flow_list = config['MULTIPOINT_SOLUTION_FLOW_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
+    solution_adj_list = config['MULTIPOINT_SOLUTION_ADJ_FILENAME'].replace("(", "").replace(")", "").replace(" ", "").split(',')
+
 
     grads = []
     folder = []
@@ -470,15 +474,28 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # will run in ADJOINT/
 
-    config.AOA = aoa_list[0]
-    config.SIDESLIP_ANGLE = sideslip_list[0]
-    config.MACH_NUMBER = mach_list[0]
-    config.REYNOLDS_NUMBER = reynolds_list[0]
-    config.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
-    config.FREESTREAM_PRESSURE = freestream_press_list[0]
-    config.TARGET_CL = target_cl_list[0]   
+    konfig = copy.deepcopy(config)
+    ztate  = copy.deepcopy(state)
+    
+    # will run in DIRECT/
 
-    grads[0] = gradient(base_name,'DISCRETE_ADJOINT',config,state)
+    konfig.AOA = aoa_list[0]
+    konfig.SIDESLIP_ANGLE = sideslip_list[0]
+    konfig.MACH_NUMBER = mach_list[0]
+    konfig.REYNOLDS_NUMBER = reynolds_list[0]
+    konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[0]
+    konfig.FREESTREAM_PRESSURE = freestream_press_list[0]
+    konfig.TARGET_CL = target_cl_list[0]
+    orig_marker_outlet = konfig['MARKER_OUTLET']
+    orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
+    new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
+    konfig.MARKER_OUTLET = new_marker_outlet
+    konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[0]
+    konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[0]
+
+    ztate.find_files(konfig)
+
+    grads[0] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
 
     src = os.getcwd()
     src = os.path.abspath(src).rstrip('/') + '/' + ADJ_NAME + '/'
@@ -489,12 +506,12 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # ----------------------------------------------------
     
     # files to pull
-    files = state.FILES
+    files = ztate.FILES
     pull = []; link = []
     
     # files: mesh
     name = files['MESH']
-    name = su2io.expand_part(name,config)
+    name = su2io.expand_part(name,konfig)
     link.extend(name)
     
     # files: direct solution
@@ -503,10 +520,10 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # files: adjoint solution
     if ADJ_NAME in files:
       name = files[ADJ_NAME]
-      name = su2io.expand_time(name,config)
+      name = su2io.expand_time(name,konfig)
       link.extend(name)
     else:
-      config['RESTART_SOL'] = 'NO'
+      konfig['RESTART_SOL'] = 'NO'
 
     # files: target equivarea adjoint weights
     ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in MULTIPOINT/
@@ -527,28 +544,69 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 
     for i in range(len(weight_list)-1):
 
+      konfig = copy.deepcopy(config)
+      ztate  = copy.deepcopy(state)
+
+      konfig.SOLUTION_FLOW_FILENAME = solution_flow_list[i+1]
+      konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
+
+      ztate.find_files(konfig)
+      files = ztate.FILES
+      link = []
+
+      # files: mesh
+      name = files['MESH']
+      name = su2io.expand_part(name,konfig)
+      link.extend(name)
+
+      # files: adjoint solution
+      if ADJ_NAME in files:
+        name = files[ADJ_NAME]
+        name = su2io.expand_time(name,konfig)
+        link.extend(name)
+      else:
+        konfig['RESTART_SOL'] = 'NO'
+
       # pull needed files, start folder
       with redirect_folder( folder[i+1], pull, link ) as push:
         with redirect_output(log_direct):
     
-          konfig = copy.deepcopy(config)
-          ztate  = copy.deepcopy(state)
-        
           konfig.AOA = aoa_list[i+1]
           konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
           konfig.MACH_NUMBER = mach_list[i+1]
           konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
           konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
           konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
-          konfig.TARGET_CL = target_cl_list[i+1]         
+          konfig.TARGET_CL = target_cl_list[i+1]
+
+          orig_marker_outlet = config['MARKER_OUTLET']
+          orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
+          new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
+          konfig.MARKER_OUTLET = new_marker_outlet         
  
           # let's start somethin somthin
-          del ztate.GRADIENTS[base_name]
+          ztate.GRADIENTS.clear()
           #ztate.find_files(konfig)
             
           # the gradient
           grads[i+1] = gradient(base_name,'DISCRETE_ADJOINT',konfig,ztate)
-        
+
+          # adjoint files to push
+          dst = os.getcwd()
+          dst = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
+          name = ztate.FILES[ADJ_NAME]
+          name = su2io.expand_zones(name,konfig)
+          name = su2io.expand_time(name,konfig)
+          push.extend(name)
+      
+      # Link adjoint solution to MULTIPOINT_# folder
+      src = os.getcwd()
+      src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['DIRECT']
+      
+      # make unix link
+      string = "ln -s " + src + " " + dst
+      os.system(string)
+    
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------
