@@ -1,8 +1,8 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CDummyDriver.hpp
+ * \brief Headers of the main subroutines for driving single or multi-zone problems.
+ *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
+ * \author T. Economon, H. Kline, R. Sanchez
  * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -37,28 +37,33 @@
  */
 
 #pragma once
+#include "CDriver.hpp"
 
-#include "../../Common/include/mpi_structure.hpp"
-#include <CLI11.hpp>
-
-#include <ctime>
-
-#include "drivers/CDriver.hpp"
-#include "drivers/CSinglezoneDriver.hpp"
-#include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "drivers/CDummyDriver.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
-#include "../include/transfer_structure.hpp"
-
-using namespace std;
+/*!
+ * \brief CDummyDriver class that constructs the driver without running a solver.
+ */
+class CDummyDriver : public CDriver {
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CDummyDriver (char* confFile,
+               unsigned short val_nZone,
+               SU2_Comm MPICommunicator);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDummyDriver(){}
+  
+  /*!
+   * \brief Does nothing except printing the information that no solver is running.
+   */
+  void StartSolver();
+  
+};
