@@ -38,7 +38,7 @@
 #include "../../include/output/CMeshOutput.hpp"
 #include "../../../Common/include/geometry_structure.hpp"
 
-CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   

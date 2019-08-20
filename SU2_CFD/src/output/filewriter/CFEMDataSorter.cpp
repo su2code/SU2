@@ -1,10 +1,8 @@
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../../Common/include/fem_geometry_structure.hpp"
 
-CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> >& Local_Data) : CParallelDataSorter(config, nFields){
+CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields) : CParallelDataSorter(config, nFields){
  
-  this->Local_Data = &Local_Data;
-    
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
   
@@ -13,6 +11,10 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
   
+  /*--- Create the map from the global DOF ID to the local index. ---*/
+
+  vector<unsigned long> globalID;
+  
   /*--- Update the solution by looping over the owned volume elements. ---*/
   
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -20,6 +22,10 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
     /* Count up the number of local points we have for allocating storage. */
     
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+      
+      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      globalID.push_back(globalIndex);
+      
       nLocalPoint_Sort++;
     }
   }
@@ -40,6 +46,11 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, unsigned sh
   /*--- Create a linear partition --- */
   
   CreateLinearPartition(nGlobalPoint_Sort);  
+  
+  /*--- Prepare the send buffers ---*/
+  
+  PrepareSendBuffers(globalID);
+  
 }
 
 CFEMDataSorter::~CFEMDataSorter(){
@@ -48,14 +59,15 @@ CFEMDataSorter::~CFEMDataSorter(){
   delete [] end_node;
   delete [] nPoint_Cum;
   delete [] nPoint_Lin;
+
+  if (connSend != NULL)    delete [] connSend;
+  if (Index != NULL)       delete [] Index;
+  if (idSend != NULL)      delete [] idSend;
   
 }
 
 
 void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
-
-  unsigned long iProcessor;
-  unsigned long iPoint, Global_Index;
 
   /* For convenience, set the total number of variables stored at each DOF. */
 
@@ -66,162 +78,6 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   SU2_MPI::Status status;
   int ind;
 #endif
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-
-  //map<unsigned long, unsigned long> mapLocal2Global;
-  vector<unsigned long> globalID;
-
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Loop over the DOFs for this element and store the solution. */
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      globalID.push_back(globalIndex);
-    }
-  }
-
-  /*--- We start with the grid nodes distributed across all procs with
-   no particular ordering assumed. We need to loop through our local partition
-   and decide how many nodes we must send to each other rank in order to
-   have all nodes sorted according to a linear partitioning of the grid
-   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
-   First, initialize a counter and flag. ---*/
-
-  int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
-  int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
-  int *nPoint_Flag = new int[size];
-
-  for (int ii=0; ii < size; ii++) {
-    nPoint_Send[ii] = 0;
-    nPoint_Recv[ii] = 0;
-    nPoint_Flag[ii]= -1;
-  }
-  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
-
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++ ) {
-
-    /*--- Get the global index of the current point. ---*/
-
-    Global_Index = globalID[iPoint];
-
-    /*--- Search for the processor that owns this point ---*/
-
-    iProcessor = FindProcessor(Global_Index);   
-
-    /*--- If we have not visted this node yet, increment our
-     number of elements that must be sent to a particular proc. ---*/
-
-    if (nPoint_Flag[iProcessor] != (int)iPoint) {
-      nPoint_Flag[iProcessor] = (int)iPoint;
-      nPoint_Send[iProcessor+1]++;
-    }
-
-  }
-
-  /*--- Communicate the number of nodes to be sent/recv'd amongst
-   all processors. After this communication, each proc knows how
-   many cells it will receive from each other processor. ---*/
-
-#ifdef HAVE_MPI
-  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
-
-  /*--- Prepare to send coordinates. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
-
-  int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
-
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
-
-    nPoint_Send[ii+1] += nPoint_Send[ii];
-    nPoint_Recv[ii+1] += nPoint_Recv[ii];
-  }
-
-  /*--- Allocate memory to hold the connectivity that we are sending. ---*/
-
-  su2double *connSend = NULL;
-  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
-    connSend[ii] = 0;
-
-  /*--- Allocate arrays for sending the global ID. ---*/
-
-  unsigned long *idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++)
-    idSend[ii] = 0;
-
-  /*--- Create an index variable to keep track of our index
-   positions as we load up the send buffer. ---*/
-
-  unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
-
-  unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
-
-  /*--- Loop through our elements and load the elems and their
-   additional data that we will send to the other procs. ---*/
-
-  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
-
-    /*--- Get the index of the current point. ---*/
-
-    Global_Index = globalID[iPoint];
-
-    /*--- Search for the processor that owns this point. ---*/
-
-    iProcessor = FindProcessor(Global_Index);
-
-    /*--- Load data into the buffer for sending. ---*/
-
-    if (nPoint_Flag[iProcessor] != (int)iPoint) {
-
-      nPoint_Flag[iProcessor] = (int)iPoint;
-      unsigned long nn = index[iProcessor];
-
-      /*--- Load the data values. ---*/
-
-      for (unsigned short kk = 0; kk < VARS_PER_POINT; kk++) {
-        connSend[nn] = (*Local_Data)[iPoint][kk]; nn++;
-      }
-
-      /*--- Load the global ID (minus offset) for sorting the
-       points once they all reach the correct processor. ---*/
-
-      nn = idIndex[iProcessor];
-      idSend[nn] = Global_Index - beg_node[iProcessor];
-
-      /*--- Increment the index by the message length ---*/
-
-      index[iProcessor]  += VARS_PER_POINT;
-      idIndex[iProcessor]++;
-
-    }
-
-  }
-
-  /*--- Free memory after loading up the send buffer. ---*/
-
-  delete [] index;
-  delete [] idIndex;
 
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
@@ -335,6 +191,9 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] send_req;
   delete [] recv_req;
 #endif
+  
+  delete [] connSend;
+  connSend = NULL;
 
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate the
@@ -364,13 +223,8 @@ void CFEMDataSorter::SortOutputData(CConfig *config, CGeometry *geometry) {
 
   /*--- Free temporary memory from communications ---*/
 
-  delete [] connSend;
   delete [] connRecv;
-  delete [] idSend;
   delete [] idRecv;
-  delete [] nPoint_Recv;
-  delete [] nPoint_Send;
-  delete [] nPoint_Flag;
   
 }
 
