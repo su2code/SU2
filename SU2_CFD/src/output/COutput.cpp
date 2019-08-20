@@ -53,7 +53,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-COutput::COutput(CConfig *config, unsigned short nDim) {
+COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): fem_output(fem_output) {
   
   this->nDim = nDim;
 
@@ -110,10 +110,6 @@ COutput::COutput(CConfig *config, unsigned short nDim) {
   grid_movement = config->GetGrid_Movement(); 
   
   multizone     = config->GetMultizone_Problem();
-  
-  /*--- Default is not to use the FEM output merging --- */
-  
-  fem_output = false;
 
   /*--- Default is to write history to file and screen --- */
 
@@ -348,19 +344,17 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
   
   if (fem_output){
   
-    data_sorter = new CFEMDataSorter(config, geometry, GlobalField_Counter, Local_Data);
+    data_sorter = new CFEMDataSorter(config, geometry, GlobalField_Counter);
 
   }  else {
     
-    data_sorter = new CFVMDataSorter(config, geometry, GlobalField_Counter, Local_Data);
+    data_sorter = new CFVMDataSorter(config, geometry, GlobalField_Counter);
     
   }  
 
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
-   
-  Local_Data.resize(data_sorter->GetnLocalPointSort(), std::vector<su2double>(GlobalField_Counter, 0.0));
-  
+    
   /*--- Collect that data defined in the subclasses from the different processors ---*/
   
   if (rank == MASTER_NODE)
@@ -1073,14 +1067,6 @@ void COutput::CheckHistoryOutput(){
 
 void COutput::PreprocessVolumeOutput(CConfig *config){
 
-//  /*--- Make sure that coordinates are always in the volume output --- */
-  
-//  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
-//    RequestedVolumeFields.push_back("COORDINATES");
-//    nRequestedVolumeFields++;
-//  }
-  
-  
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
   SetVolumeOutputFields(config);
@@ -1150,7 +1136,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
     cout << endl;
   }
-  
 }
 
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){
@@ -1236,7 +1221,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
       const short Offset = VolumeOutput_Map[name].Offset;
       Offset_Cache.push_back(Offset);        
       if (Offset != -1){
-        Local_Data[iPoint][Offset] = value;
+        data_sorter->SetUnsorted_Data(iPoint, Offset, value);
       }
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
@@ -1247,7 +1232,7 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     
     const short Offset = Offset_Cache[Offset_Cache_Index++];
     if (Offset != -1){
-      Local_Data[iPoint][Offset] = value;
+      data_sorter->SetUnsorted_Data(iPoint, Offset, value);
     }   
     if (Offset_Cache_Index == Offset_Cache.size()){
       Offset_Cache_Index = 0;

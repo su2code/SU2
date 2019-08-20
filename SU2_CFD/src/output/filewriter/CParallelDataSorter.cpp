@@ -25,11 +25,32 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, unsigned short nFields
   
   Parallel_Data = NULL;
   
+  nPoint_Send  = NULL;
+  nPoint_Recv  = NULL;
+  Index        = NULL;
+  connSend     = NULL;
+  idSend       = NULL;
+  nSends = 0;
+  nRecvs = 0;
+  
   nLocalPoint_Sort  = 0;
   nGlobalPoint_Sort = 0;
+  
+  nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
+  nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
+  
+  for (int ii=0; ii < size; ii++) {
+    nPoint_Send[ii] = 0;
+    nPoint_Recv[ii] = 0;
+  }
+  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
+
 }
 
 CParallelDataSorter::~CParallelDataSorter(){
+  
+  if (nPoint_Send != NULL) delete [] nPoint_Send;
+  if (nPoint_Recv != NULL) delete [] nPoint_Recv;
   
   DeallocateConnectivity();
   
@@ -125,6 +146,112 @@ unsigned long CParallelDataSorter::GetnElem(GEO_TYPE type){
   return 0;
 }
 
+
+void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalID){
+  
+  unsigned long iPoint;
+  unsigned short iProcessor;
+  
+  int VARS_PER_POINT = GlobalField_Counter;
+  
+  /*--- We start with the grid nodes distributed across all procs with
+   no particular ordering assumed. We need to loop through our local partition
+   and decide how many nodes we must send to each other rank in order to
+   have all nodes sorted according to a linear partitioning of the grid
+   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
+   First, initialize a counter and flag. ---*/
+  
+  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++ ) {
+    
+    iProcessor = FindProcessor(globalID[iPoint]);
+    
+    /*--- If we have not visited this node yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
+    
+    nPoint_Send[iProcessor+1]++;
+  }
+  
+  /*--- Communicate the number of nodes to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nPoint_Recv[1] = nPoint_Send[1];
+#endif
+  
+  /*--- Prepare to send coordinates. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  nSends = 0; nRecvs = 0;
+
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
+    
+    nPoint_Send[ii+1] += nPoint_Send[ii];
+    nPoint_Recv[ii+1] += nPoint_Recv[ii];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  connSend = NULL;
+  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
+  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
+    connSend[ii] = 0;
+  
+  /*--- Allocate arrays for sending the global ID. ---*/
+  
+  idSend = new unsigned long[nPoint_Send[size]];
+  for (int ii = 0; ii < nPoint_Send[size]; ii++)
+    idSend[ii] = 0;
+  
+  /*--- Create an index variable to keep track of our index
+   positions as we load up the send buffer. ---*/
+  
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
+  
+  unsigned long *idIndex = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
+  
+  Index = new unsigned long[nLocalPoint_Sort];
+
+  /*--- Loop through our elements and load the elems and their
+   additional data that we will send to the other procs. ---*/
+  
+  for (iPoint = 0; iPoint < nLocalPoint_Sort; iPoint++) {
+    
+    iProcessor = FindProcessor(globalID[iPoint]);
+
+    /*--- Load the global ID (minus offset) for sorting the
+         points once they all reach the correct processor. ---*/
+    
+    unsigned long nn = idIndex[iProcessor];
+    idSend[nn] = globalID[iPoint] - beg_node[iProcessor];
+    
+    /*--- Store the index this point has in the send buffer ---*/
+    
+    Index[iPoint] = index[iProcessor]; 
+    
+    /*--- Increment the index by the message length ---*/
+    
+    index[iProcessor]  += VARS_PER_POINT;
+    idIndex[iProcessor]++;
+
+
+  }
+  
+  /*--- Free memory after loading up the send buffer. ---*/
+  
+  delete [] index;
+  delete [] idIndex;
+}
 
 unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) {
   

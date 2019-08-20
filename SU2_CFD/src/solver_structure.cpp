@@ -5456,7 +5456,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
   string Tag, text_line;
-  unsigned short nZone = geometry->GetnZone();
 
   ifstream restart_file;
   string filename;
