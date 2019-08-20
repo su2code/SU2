@@ -54,7 +54,6 @@ su2_met_cxx_flags =
 su2_met_ldadd += \
   ../../SU2_CFD/obj/libSU2Core_AD.a \
   ../../Common/lib/libSU2_AD.a
-endif
 
 # always link to built dependencies from ./externals
 su2_met_cxx_flags += @su2_externals_INCLUDES@
