@@ -423,6 +423,11 @@ public:
 	 */
 	CGeometry(void);
 
+  /*!
+	 * \brief Constructor of the class.
+	 */
+	CGeometry(CConfig *config, unsigned short nDim);
+
 	/*! 
 	 * \brief Destructor of the class.
 	 */
@@ -2971,6 +2976,29 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
 
+};
+
+/*! 
+ * \class CDummyGeometry
+ * \brief Class for defining a geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without 
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
+class CDummyGeometry : public CGeometry{
+  
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyGeometry(CConfig *config);
+  
+  /*! 
+	 * \brief Destructor of the class.
+	 */
+  ~CDummyGeometry();
+  
 };
 
 #include "geometry_structure.inl"
