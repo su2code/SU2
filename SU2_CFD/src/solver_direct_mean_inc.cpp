@@ -6460,13 +6460,17 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry *geometry, CCo
           }
 
           /*--- m_dot = dot_prod(n*v) * A * rho * Axifactor, with n beeing unit normal. ---*/
-          MassFlow_Local = inner_product(AreaNormal.begin(), AreaNormal.end(), 
-                                         node[iPoint]->GetSolution()+1, MassFlow_Local);
+          MassFlow_Local = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            MassFlow_Local += AreaNormal[iDim] * node[iPoint]->GetSolution()[iDim+1];
+
           MassFlow_Local *= node[iPoint]->GetDensity() * AxiFactor; 
 
           /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
-          FaceArea += sqrt(AxiFactor * inner_product(AreaNormal.begin(), AreaNormal.end(), 
-                                                     AreaNormal.begin(), 0.0) );
+          FaceArea = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2);
+          FaceArea = sqrt(FaceArea);
           Area_Local += FaceArea;
           
           Average_Density_Local += FaceArea * node[iPoint]->GetDensity();
@@ -8606,22 +8610,32 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   
   su2double *GridVel, *Normal, Area, Wall_HeatFlux;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  bool energy        = config->GetEnergy_Equation();
+  bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement       = config->GetGrid_Movement();
+  bool energy              = config->GetEnergy_Equation();
   bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
 
+  /*--- Variable allocation for streamwise periodicity ---*/
   su2double Cp, 
             thermal_conductivity, 
             dot_product, 
-            norm2_translation = 0.0, 
+            norm2_translation, 
             scalar_factor,
-            massflow = config->GetStreamwise_Periodic_MassFlow(),
-            integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+            massflow,
+            integratedHeatFlow;
+
+  /*--- Variable initialization for streamwise periodicity ---*/
+  if(energy && streamwise_periodic) {
+    massflow = config->GetStreamwise_Periodic_MassFlow();
+    integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
+
+    norm2_translation = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+    }
   }
+  
+  
 
   /*--- Identify the boundary by string name ---*/
   

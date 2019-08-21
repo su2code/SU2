@@ -862,8 +862,9 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
   /*--- Compute square of the distance between the 2 periodic surfaces via inner product with itself: 
         dot_prod(t*t) = (|t|_2)^2 ---*/
-  norm2_translation = inner_product(Streamwise_Coord_Vector.begin(), Streamwise_Coord_Vector.end(), 
-                                    Streamwise_Coord_Vector.begin(), 0.0);
+  norm2_translation = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    norm2_translation += Streamwise_Coord_Vector[iDim] * Streamwise_Coord_Vector[iDim];
 
 }
 
@@ -900,8 +901,9 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
     scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
     
     /*--- Compute scalar-product dot_prod(v*t) ---*/
-    dot_product = inner_product(Streamwise_Coord_Vector.begin(), Streamwise_Coord_Vector.end(), 
-                                V_i+1, 0.0 );
+    dot_product = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      dot_product += Streamwise_Coord_Vector[iDim] * V_i[iDim+1];
     
     val_residual[nDim+1] = Volume * scalar_factor * dot_product;
 
@@ -913,8 +915,10 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual, su2
       scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
-      dot_product = inner_product(Streamwise_Coord_Vector.begin(), Streamwise_Coord_Vector.end(), 
-                                  PrimVar_Grad_i[nDim+5], 0.0); // gradient of eddy viscosity
+      dot_product = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
+
       val_residual[nDim+1] -= Volume * scalar_factor * dot_product;
     }//if turbulent
     
