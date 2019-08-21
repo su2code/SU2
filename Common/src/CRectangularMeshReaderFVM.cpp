@@ -91,8 +91,14 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   for (unsigned long jNode = 0; jNode < mNode; jNode++) {
     for (unsigned long iNode = 0; iNode < nNode; iNode++) {
       if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
-        localPointCoordinates[0].push_back(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox);
-        localPointCoordinates[1].push_back(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
+        
+        /* Store the coordinates more clearly. */
+        const su2double x = Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox;
+        const su2double y = Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy;
+        
+        /* Load into the coordinate class data structure. */
+        localPointCoordinates[0].push_back(x);
+        localPointCoordinates[1].push_back(y);
         numberOfLocalPoints++;
       }
       globalIndex++;

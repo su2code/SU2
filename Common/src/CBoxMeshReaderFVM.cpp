@@ -95,9 +95,16 @@ void CBoxMeshReaderFVM::ComputeBoxPointCoordinates() {
     for (unsigned long jNode = 0; jNode < mNode; jNode++) {
       for (unsigned long iNode = 0; iNode < nNode; iNode++) {
         if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
-          localPointCoordinates[0].push_back(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox);
-          localPointCoordinates[1].push_back(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
-          localPointCoordinates[2].push_back(Lz*((su2double)kNode)/((su2double)(pNode-1))+Oz);
+          
+          /* Store the coordinates more clearly. */
+          const su2double x = Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox;
+          const su2double y = Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy;
+          const su2double z = Lz*((su2double)kNode)/((su2double)(pNode-1))+Oz;
+
+          /* Load into the coordinate class data structure. */
+          localPointCoordinates[0].push_back(x);
+          localPointCoordinates[1].push_back(y);
+          localPointCoordinates[2].push_back(z);
           numberOfLocalPoints++;
         }
         globalIndex++;

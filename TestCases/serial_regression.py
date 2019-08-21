@@ -363,7 +363,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-8.108218, -2.158606, 0.019142, 1.902461] #last 4 columns
+    inc_lam_bend.test_vals = [-3.450832, -3.083603, -0.020698, -0.168320] #last 4 columns
     inc_lam_bend.su2_exec  = "SU2_CFD"
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
