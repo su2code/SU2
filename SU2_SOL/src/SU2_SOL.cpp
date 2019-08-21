@@ -706,7 +706,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    else if (config_container[ZONE_0]->GetWrt_Dynamic()){
+    else if (config_container[ZONE_0]->GetTime_Domain()){
 
       /*--- Dynamic simulation: merge all unsteady time steps. First,
        find the frequency and total number of files to write. ---*/

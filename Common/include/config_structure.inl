@@ -1519,8 +1519,6 @@ inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_
 
 inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 
-inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
-
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
 inline su2double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
@@ -1874,26 +1872,6 @@ inline su2double CConfig::GetRadialBasisFunctionParameter(void) {return RadialBa
 inline bool CConfig::GetConservativeInterpolation(void) { return ConservativeInterpolation; }
 
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
-
-inline su2double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }
-
-inline su2double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI; }
-
-inline su2double CConfig::GetOrderMagResidual_BGS_F(void) { return OrderMagResidual_BGS_F; }
-
-inline su2double CConfig::GetMinLogResidual_BGS_F(void) { return MinLogResidual_BGS_F; }
-
-inline su2double CConfig::GetOrderMagResidual_BGS_S(void) { return OrderMagResidual_BGS_S; }
-
-inline su2double CConfig::GetMinLogResidual_BGS_S(void) { return MinLogResidual_BGS_S; }
-
-inline su2double CConfig::GetResidual_FEM_UTOL(void) { return Res_FEM_UTOL; }
-
-inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
-
-inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
-
-inline su2double CConfig::GetCriteria_FEM_ADJ(void) { return Res_FEM_ADJ; }
 
 inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_LoadTransfer; }
 
