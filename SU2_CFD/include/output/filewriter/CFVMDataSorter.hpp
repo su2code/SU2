@@ -6,11 +6,11 @@
 class CFVMDataSorter : public CParallelDataSorter{
   
 private:
-  std::vector<std::vector<su2double> >* Local_Data;
   int* Local_Halo;
   
+
 public:
-  CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields, std::vector<std::vector<su2double> >& Local_Data);
+  CFVMDataSorter(CConfig *config, CGeometry *geometry, unsigned short nFields);
   
   ~CFVMDataSorter();
   

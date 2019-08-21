@@ -7414,7 +7414,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) {
 
-  string UnstExt, UnstFilename = val_filename;
+  string UnstExt="", UnstFilename = val_filename;
   char buffer[50];
 
   /*--- Check that a positive value iteration is requested (for now). ---*/
@@ -7422,21 +7422,23 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string e
   if (val_iter < 0) {
     SU2_MPI::Error("Requesting a negative iteration number for the restart file!!", CURRENT_FUNCTION);
   }
-
+  
+  unsigned short lastindex = UnstFilename.find_last_of(".");
+  UnstFilename = UnstFilename.substr(0, lastindex);
+  
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Time_Domain) || (Wrt_Dynamic)) {
-    unsigned short lastindex = UnstFilename.find_last_of(".");
-    UnstFilename = UnstFilename.substr(0, lastindex);
+  if (Time_Domain) {
+
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
     if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
     if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
     if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
     if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
-    string UnstExt = string(buffer);
-    UnstExt += ext;
-    UnstFilename.append(UnstExt);
+    UnstExt = string(buffer);
   }
+  UnstExt += ext;
+  UnstFilename.append(UnstExt);
 
   return UnstFilename;
 }

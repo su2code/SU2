@@ -40,7 +40,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
   
   /*--- Set the default history fields if nothing is set in the config file ---*/
   

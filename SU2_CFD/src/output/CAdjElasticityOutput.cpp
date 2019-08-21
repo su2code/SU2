@@ -40,7 +40,7 @@
 #include "../../../Common/include/geometry_structure.hpp"
 #include "../../include/solver_structure.hpp"
 
-CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim) {
+CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
  
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -88,7 +88,11 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
   
   /*--- Set the restart filename --- */
   
-  RestartFilename = config->GetRestart_FileName();
+  RestartFilename = config->GetRestart_AdjFileName();
+  
+  /*--- Add the obj. function extension --- */
+  
+  RestartFilename = config->GetObjFunc_Extension(RestartFilename);
 
   /*--- Set the default convergence field --- */
 

@@ -44,8 +44,17 @@ protected:
   
   su2double** Parallel_Data;
   
-  bool connectivity_sorted;  
+  bool connectivity_sorted; 
   
+  int *nPoint_Send;
+  int *nPoint_Recv;
+  unsigned long *Index;
+  su2double *connSend;
+  unsigned long *idSend;
+  int nSends, nRecvs;
+
+  void PrepareSendBuffers(std::vector<unsigned long>& globalID);  
+
 public:
   
   CParallelDataSorter(CConfig *config, unsigned short nFields);
@@ -179,4 +188,7 @@ public:
    */
   unsigned short FindProcessor(unsigned long global_index);
   
+  void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
+    connSend[Index[iPoint] + iField] = data;
+  }
 };
