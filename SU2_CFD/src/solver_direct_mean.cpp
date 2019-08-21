@@ -7357,9 +7357,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Update dCL_dAlpha estimate if this isn't the first update---*/
 
-    if (AoA_Counter > 1) {
-      dCL_dAlpha = (Total_CL - Total_CL_Prev)/(AoA_old - AoA_Prev); // * 180.0 / PI_NUMBER;
-    }
+    // if (AoA_Counter > 1) {
+    //   dCL_dAlpha = (Total_CL - Total_CL_Prev)/(AoA_old - AoA_Prev); // * 180.0 / PI_NUMBER;
+    // }
 
     /*--- Store current C_L and AoA to estimate dCL_dAlpha for next update ---*/
 
