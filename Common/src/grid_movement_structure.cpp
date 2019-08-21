@@ -2346,7 +2346,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()); // This should be consistent over all Rigid_* routines
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   
   /*--- Retrieve values from the config file ---*/
@@ -6347,7 +6347,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double time_new, time_old;
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iDim = 0;
   
   /*--- Retrieve values from the config file ---*/
