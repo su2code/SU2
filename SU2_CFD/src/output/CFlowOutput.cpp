@@ -836,11 +836,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
           
           /*--- The Pressure file uses the global numbering ---*/
           
-#ifndef HAVE_MPI
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-#else
           iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
-#endif
           
           if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
             Point2Vertex[iPoint][0] = iMarker;
@@ -911,8 +907,8 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver_container, CGeometry *geom
       }
     }
     
-    su2double MyPressDiff = PressDiff;
 #ifdef HAVE_MPI
+    su2double MyPressDiff = PressDiff;    
     SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
     
