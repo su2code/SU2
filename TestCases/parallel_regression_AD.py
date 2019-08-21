@@ -79,7 +79,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-0.747330, -0.782632, 326.910000, 0.000000] #last 4 columns
+    discadj_arina2k.test_vals    = [2.228982, 1.717042, 4.7258e+04, 0.0000e+00] #last 4 columns
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
