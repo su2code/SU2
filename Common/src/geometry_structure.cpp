@@ -2851,14 +2851,16 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
             UnitNormal = Normal;
-            /*--- Compute unit normal using inner_product from the STl. ---*/
+
+            /*--- Compute unit normal. ---*/
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               Area = Normal[iDim]*Normal[iDim];
             Area = sqrt(Area);
             
             /*--- Negate for outward convention. ---*/
-            for_each(UnitNormal.begin(), UnitNormal.end(), [Area](su2double &iNormal) { iNormal /= -Area; });
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitNormal[iDim] /= -Area;
 
             /*--- Check if unit normal is within tolerance of the Reference unit normal. 
                   Reference unit normal = first unit normal found. ---*/
@@ -2878,7 +2880,6 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           iVertex++;
           } //while iVertex
         }//if Local == Global
-        break;
       }//for iMarker_Global
     } else { bound_is_straight[iMarker] = false; }//if sym or euler ...
   }//for iMarker
