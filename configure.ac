@@ -217,6 +217,7 @@ AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
 AC_SUBST([su2_externals_LIBPTHREAD])
 
+su2_externals_INCLUDES="-I\$(top_srcdir)/externals/CLI11 $su2_externals_INCLUDES"
 
 ##########################
 

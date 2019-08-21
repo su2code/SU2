@@ -106,9 +106,10 @@ protected:
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
             PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
-
+  bool dummy_geometry;
+  
 public:
-	
+
   /*! 
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -118,7 +119,7 @@ public:
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          SU2_Comm MPICommunicator);
+          SU2_Comm MPICommunicator, bool dummy_geo);
 
   /*!
    * \brief Destructor of the class.
@@ -145,7 +146,7 @@ protected:
   /*!
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
-  void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry);
+  void Geometrical_Preprocessing(CConfig *config, CGeometry **&geometry, bool dummy);
   
   /*!
    * \brief Do the geometrical preprocessing for the DG FEM solver.
@@ -1344,7 +1345,3 @@ public:
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
 };
-
-
-
-
