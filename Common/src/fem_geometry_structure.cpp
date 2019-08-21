@@ -6955,9 +6955,6 @@ CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
   newBound            = NULL;
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
-  
-  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
 
   XCoordList.clear();
   Xcoord_plane.clear();

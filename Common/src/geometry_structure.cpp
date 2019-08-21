@@ -93,9 +93,6 @@ CGeometry::CGeometry(void) {
   newBound            = NULL;
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
-  
-  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
 
   XCoordList.clear();
   Xcoord_plane.clear();
@@ -18807,9 +18804,6 @@ CDummyGeometry::CDummyGeometry(CConfig *config){
   nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
   
-  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-
   XCoordList.clear();
   Xcoord_plane.clear();
   Ycoord_plane.clear();
