@@ -4932,21 +4932,21 @@ CFSIDriver::CFSIDriver(char* confFile,
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
 
   unsigned short iZone;
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-       case RANS: case EULER: case NAVIER_STOKES:
-      case INC_RANS: case INC_EULER: case INC_NAVIER_STOKES:   
-         nVar_Flow = solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
-         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
-         break;
-       case FEM_ELASTICITY:
-         nVar_Struct = solver_container[iZone][INST_0][MESH_0][FEA_SOL]->GetnVar();
-         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
-         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
-         break;
-    }
-  }
+//  for (iZone = 0; iZone < nZone; iZone++){
+//    switch (config_container[iZone]->GetKind_Solver()) {
+//       case RANS: case EULER: case NAVIER_STOKES:
+//      case INC_RANS: case INC_EULER: case INC_NAVIER_STOKES:   
+//         nVar_Flow = solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+//         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
+//         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
+//         break;
+//       case FEM_ELASTICITY:
+//         nVar_Struct = solver_container[iZone][INST_0][MESH_0][FEA_SOL]->GetnVar();
+//         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
+//         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
+//         break;
+//    }
+//  }
 
   init_res_flow   = new su2double[nVar_Flow];
   init_res_struct = new su2double[nVar_Struct];
@@ -5450,23 +5450,23 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   direct_iteration = new CIteration*[nZone];
 
   unsigned short iZone;
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
-       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
-         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
-         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
-         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
-         break;
-       case DISC_ADJ_FEM:
-         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
-         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
-         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
-         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
-         break;
-    }
-  }
+//  for (iZone = 0; iZone < nZone; iZone++){
+//    switch (config_container[iZone]->GetKind_Solver()) {
+//      case DISC_ADJ_INC_RANS: case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:      
+//       case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+//         direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+//         nVar_Flow = solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar();
+//         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
+//         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
+//         break;
+//       case DISC_ADJ_FEM:
+//         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
+//         nVar_Struct = solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetnVar();
+//         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
+//         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
+//         break;
+//    }
+//  }
 
   init_res_flow   = new su2double[nVar_Flow];
   init_res_struct = new su2double[nVar_Struct];
@@ -6619,30 +6619,30 @@ bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
 
   su2double residual_1, residual_2;
 
-  if (kind_recording == FLOW_CONS_VARS) {
+//  if (kind_recording == FLOW_CONS_VARS) {
 
-      /*--- Set the convergence criteria (only residual possible as of now) ---*/
+//      /*--- Set the convergence criteria (only residual possible as of now) ---*/
 
-      residual_1 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
-      residual_2 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
+//      residual_1 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
+//      residual_2 = log10(solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
 
-      flow_convergence = ((residual_1 < config_container[ZONE_FLOW]->GetMinLogResidual()) &&
-                          (residual_2 < config_container[ZONE_FLOW]->GetMinLogResidual()));
+//      flow_convergence = ((residual_1 < config_container[ZONE_FLOW]->GetMinLogResidual()) &&
+//                          (residual_2 < config_container[ZONE_FLOW]->GetMinLogResidual()));
 
-  }
+//  }
 
-  if (kind_recording == FEA_DISP_VARS) {
+//  if (kind_recording == FEA_DISP_VARS) {
 
-    /*--- Set the convergence criteria (only residual possible as of now) ---*/
+//    /*--- Set the convergence criteria (only residual possible as of now) ---*/
 
-    residual_1 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
-    residual_2 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
+//    residual_1 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
+//    residual_2 = log10(solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
 
-    // Temporary, until function is added
-    struct_convergence = ((residual_1 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
-                          (residual_2 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
+//    // Temporary, until function is added
+//    struct_convergence = ((residual_1 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
+//                          (residual_2 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
 
-  }
+//  }
 
   switch (kind_recording){
   case FLOW_CONS_VARS:      adjoint_convergence = flow_convergence; break;

@@ -85,18 +85,7 @@ private:
   unsigned short nZoneSpecified; /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
-  su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
   su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_F; /*!< \brief Minimum value of the log residual. */
-  su2double OrderMagResidual_BGS_S; /*!< \brief Order of magnitude reduction. */
-  su2double MinLogResidual_BGS_S; /*!< \brief Minimum value of the log residual. */
-  su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
-  su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
-  su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
-  su2double Res_FEM_ADJ;     /*!< \brief Convergence criteria for adjoint FEM. */
   su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
   su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -6106,76 +6095,10 @@ public:
   unsigned short GetContainerPosition(unsigned short val_eqsystem);
   
   /*!
-   * \brief Value of the order of magnitude reduction of the residual.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual(void);
-  
-  /*!
    * \brief Value of the minimum residual value (log10 scale).
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the residual for FSI applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidualFSI(void);
-  
-  /*!
-   * \brief Value of the minimum residual value for FSI applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidualFSI(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_F(void);
-  
-  /*!
-   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
-   * \return Value of the order of magnitude reduction of the residual.
-   */
-  su2double GetOrderMagResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
-   * \return Value of the minimum residual value (log10 scale).
-   */
-  su2double GetMinLogResidual_BGS_S(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_UTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_RTOL(void);
-  
-  /*!
-   * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
-   * \return Value of Res_FEM_UTOL (log10 scale).
-   */
-  su2double GetResidual_FEM_ETOL(void);
-  
-  /*!
-   * \brief Value of the maximum objective function for FEM elasticity adjoint (log10 scale).
-   * \return Value of Res_FEM_ADJ (log10 scale).
-   */
-  su2double GetCriteria_FEM_ADJ(void);
   
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
